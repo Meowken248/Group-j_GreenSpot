@@ -1,16 +1,48 @@
-# React + Vite
+# FrontEnd - GreenSpot (React + Vite)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Ứng dụng client GreenSpot xây dựng bằng React 19, Vite và Mapbox GL.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 1. Cài đặt các gói phụ thuộc
 
-## React Compiler
+```bash
+cd FrontEnd
+npm install
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the Oxlint configuration
+## 2. Cấu hình biến môi trường (.env)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+Tạo file `.env` trong thư mục `FrontEnd/` từ file mẫu `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+Nội dung file `.env`:
+```env
+# Mapbox Public Token (giới hạn theo domain trong Mapbox dashboard)
+VITE_MAPBOX_TOKEN=pk.xxxxx
+```
+
+> **Lưu ý**: `VITE_MAPBOX_TOKEN` là Public token (bắt đầu bằng `pk.`). Bạn có thể tạo và cấu hình URL restriction trong [Mapbox Dashboard](https://account.mapbox.com/access-tokens/).
+
+---
+
+## 3. Khởi chạy ứng dụng
+
+```bash
+npm run dev
+```
+
+Ứng dụng sẽ chạy tại địa chỉ: [http://localhost:5173](http://localhost:5173)
+
+---
+
+## 4. Build dự án
+
+```bash
+npm run build
+```

@@ -46,9 +46,28 @@ cd FrontEnd
 # Cài đặt dependencies
 npm install
 
+# Tạo file .env từ file mẫu nếu chưa có
+cp .env.example .env
+
 # Khởi chạy FrontEnd dev server
 npm run dev
 ```
+
+---
+
+## Cấu hình biến môi trường Mapbox
+
+- **FrontEnd (`FrontEnd/.env`)**:
+  ```env
+  # Public token (bắt đầu bằng pk.), giới hạn theo domain trong Mapbox dashboard
+  VITE_MAPBOX_TOKEN=pk.xxxxx
+  ```
+
+- **BackEnd (`BackEnd/.env`)**:
+  ```env
+  # Secret token (bắt đầu bằng sk.) cho Geocoding API, KHÔNG lộ ra frontend
+  MAPBOX_SECRET_TOKEN=sk.xxxxx
+  ```
 
 ---
 
