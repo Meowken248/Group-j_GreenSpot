@@ -50,11 +50,13 @@ DIRECT_URL="postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-[REGION].pooler
 
 ## 3. Khởi chạy cơ sở dữ liệu PostgreSQL (Docker Local)
 
-Tại thư mục gốc của repository (`Group-j_GreenSpot`):
+Toàn bộ cấu hình Docker nằm ngay trong thư mục `BackEnd/`:
 
 ```bash
-# 1. Bật Docker Desktop trên máy tính
-# 2. Khởi chạy container PostgreSQL ngầm
+# Di chuyển vào thư mục BackEnd (nếu chưa ở trong BackEnd)
+cd BackEnd
+
+# Khởi chạy container PostgreSQL ngầm
 docker compose up -d
 
 # Kiểm tra container đã hoạt động
@@ -64,16 +66,16 @@ docker ps
 docker compose down
 ```
 
-Thông số database mặc định (có thể tùy chỉnh):
-- **Host**: `localhost`
-- **Port**: `5432` (mặc định) hoặc tùy chỉnh qua biến `POSTGRES_PORT` trong `.env` ở root (ví dụ: `5433` nếu cổng 5432 bị chiếm)
-- **User**: `postgres` hoặc tùy chỉnh qua `POSTGRES_USER`
-- **Password**: `postgres` hoặc tùy chỉnh qua `POSTGRES_PASSWORD`
-- **Database**: `greenspot_db` hoặc tùy chỉnh qua `POSTGRES_DB`
+Thông số database đọc trực tiếp từ file `BackEnd/.env`:
+- **Port**: `POSTGRES_PORT` (mặc định `5432`, đổi thành `5433` nếu cổng 5432 trên máy bạn đã bị chiếm)
+- **User**: `POSTGRES_USER` (mặc định `postgres`)
+- **Password**: `POSTGRES_PASSWORD` (mặc định `postgres`)
+- **Database**: `POSTGRES_DB` (mặc định `greenspot_db`)
 
-> **Lưu ý**: Mỗi thành viên có thể cấu hình port hoặc mật khẩu riêng trong `.env` ở thư mục gốc, sau đó cập nhật tương ứng chuỗi `DATABASE_URL` trong `BackEnd/.env`.
+> **Lợi ích**: Toàn bộ cấu hình Docker và kết nối Prisma đều quản lý tập trung trong đúng **1 file duy nhất `BackEnd/.env`**!
 
 ---
+
 
 
 ## 4. Các lệnh quản lý Database với Prisma
