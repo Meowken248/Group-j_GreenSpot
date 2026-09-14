@@ -15,10 +15,14 @@ Dự án GreenSpot bao gồm FrontEnd (Vite + React) và BackEnd (Next.js + Pris
 ## Hướng dẫn khởi chạy nhanh (Quick Start)
 
 ### 1. Khởi chạy Database (PostgreSQL với Docker)
-Đảm bảo đã mở Docker Desktop, sau đó chạy tại thư mục gốc:
+Đảm bảo đã mở Docker Desktop:
+
+- Nếu cổng `5432` hoặc mật khẩu trên máy bạn khác với mặc định, bạn chỉ cần tạo file `.env` từ `.env.example` ở thư mục gốc và đổi `POSTGRES_PORT` (ví dụ `5433`) hoặc `POSTGRES_PASSWORD`.
+- Khởi chạy container:
 ```bash
 docker compose up -d
 ```
+*(Nếu đổi port hoặc mật khẩu, nhớ cập nhật `DATABASE_URL` trong `BackEnd/.env` tương ứng).*
 
 ### 2. Cài đặt và chạy BackEnd
 ```bash

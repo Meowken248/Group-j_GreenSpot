@@ -64,14 +64,17 @@ docker ps
 docker compose down
 ```
 
-Thông số database mặc định:
+Thông số database mặc định (có thể tùy chỉnh):
 - **Host**: `localhost`
-- **Port**: `5432`
-- **User**: `postgres`
-- **Password**: `postgres`
-- **Database**: `greenspot_db`
+- **Port**: `5432` (mặc định) hoặc tùy chỉnh qua biến `POSTGRES_PORT` trong `.env` ở root (ví dụ: `5433` nếu cổng 5432 bị chiếm)
+- **User**: `postgres` hoặc tùy chỉnh qua `POSTGRES_USER`
+- **Password**: `postgres` hoặc tùy chỉnh qua `POSTGRES_PASSWORD`
+- **Database**: `greenspot_db` hoặc tùy chỉnh qua `POSTGRES_DB`
+
+> **Lưu ý**: Mỗi thành viên có thể cấu hình port hoặc mật khẩu riêng trong `.env` ở thư mục gốc, sau đó cập nhật tương ứng chuỗi `DATABASE_URL` trong `BackEnd/.env`.
 
 ---
+
 
 ## 4. Các lệnh quản lý Database với Prisma
 
