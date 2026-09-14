@@ -7,24 +7,15 @@ Dự án GreenSpot bao gồm FrontEnd (Vite + React) và BackEnd (Next.js + Pris
 ## Cấu trúc dự án
 
 - **FrontEnd**: Ứng dụng client xây dựng bằng Vite, React và Mapbox GL.
-- **BackEnd**: API server xây dựng bằng Next.js (App Router), TypeScript và Prisma ORM.
-- **docker-compose.yml**: File cấu hình khởi chạy cơ sở dữ liệu PostgreSQL cho môi trường local.
+- **BackEnd**: API server xây dựng bằng Next.js (App Router), TypeScript, Prisma ORM và Docker Compose cho PostgreSQL.
 
 ---
 
 ## Hướng dẫn khởi chạy nhanh (Quick Start)
 
-### 1. Khởi chạy Database (PostgreSQL với Docker)
-Đảm bảo đã mở Docker Desktop:
+### 1. Cài đặt và chạy BackEnd (kèm Database)
+Toàn bộ cơ sở dữ liệu và API server nằm trong `BackEnd/`:
 
-- Nếu cổng `5432` hoặc mật khẩu trên máy bạn khác với mặc định, bạn chỉ cần tạo file `.env` từ `.env.example` ở thư mục gốc và đổi `POSTGRES_PORT` (ví dụ `5433`) hoặc `POSTGRES_PASSWORD`.
-- Khởi chạy container:
-```bash
-docker compose up -d
-```
-*(Nếu đổi port hoặc mật khẩu, nhớ cập nhật `DATABASE_URL` trong `BackEnd/.env` tương ứng).*
-
-### 2. Cài đặt và chạy BackEnd
 ```bash
 cd BackEnd
 
@@ -34,8 +25,12 @@ npm install --legacy-peer-deps
 # Tạo file .env từ file mẫu nếu chưa có
 cp .env.example .env
 
+# Khởi chạy PostgreSQL container bằng Docker (đảm bảo Docker Desktop đã mở)
+docker compose up -d
+
 # Đẩy schema vào database
 npm run db:push
+
 
 # Khởi chạy BackEnd server (cổng 3000)
 npm run dev
