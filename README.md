@@ -1,1 +1,64 @@
-# Group-j_English-Center
+# GreenSpot
+
+Dự án GreenSpot bao gồm FrontEnd (Vite + React) và BackEnd (Next.js + Prisma + PostgreSQL).
+
+---
+
+## Cấu trúc dự án
+
+- **FrontEnd**: Ứng dụng client xây dựng bằng Vite, React và Mapbox GL.
+- **BackEnd**: API server xây dựng bằng Next.js (App Router), TypeScript và Prisma ORM.
+- **docker-compose.yml**: File cấu hình khởi chạy cơ sở dữ liệu PostgreSQL cho môi trường local.
+
+---
+
+## Hướng dẫn khởi chạy nhanh (Quick Start)
+
+### 1. Khởi chạy Database (PostgreSQL với Docker)
+Đảm bảo đã mở Docker Desktop, sau đó chạy tại thư mục gốc:
+```bash
+docker compose up -d
+```
+
+### 2. Cài đặt và chạy BackEnd
+```bash
+cd BackEnd
+
+# Cài đặt dependencies
+npm install --legacy-peer-deps
+
+# Tạo file .env từ file mẫu nếu chưa có
+cp .env.example .env
+
+# Đẩy schema vào database
+npm run db:push
+
+# Khởi chạy BackEnd server (cổng 3000)
+npm run dev
+```
+> Kiểm tra kết nối DB tại: [http://localhost:3000/api/db-test](http://localhost:3000/api/db-test)
+
+### 3. Cài đặt và chạy FrontEnd
+Mở một terminal khác:
+```bash
+cd FrontEnd
+
+# Cài đặt dependencies
+npm install
+
+# Khởi chạy FrontEnd dev server
+npm run dev
+```
+
+---
+
+## Các lệnh Prisma Database trong BackEnd
+
+| Lệnh | Mô tả |
+|---|---|
+| `npm run db:push` | Đồng bộ schema từ `prisma/schema.prisma` trực tiếp vào database |
+| `npm run db:migrate` | Áp dụng database migrations |
+| `npm run db:generate` | Tạo lại code cho Prisma Client |
+| `npm run db:studio` | Mở giao diện xem và chỉnh sửa dữ liệu Prisma Studio |
+
+Chi tiết hơn xem tại [BackEnd/README.md](BackEnd/README.md).
