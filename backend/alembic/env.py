@@ -9,7 +9,7 @@ from alembic import context
 
 from app.config import settings
 from app.database import Base
-import app.models  # Nạp toàn bộ 42 models vào Base.metadata
+import app.models  
 
 config = context.config
 
@@ -35,8 +35,26 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+import os
+
+
+def include_object(object, name, type_, reflected, compare_to):
+    filter_tables = os.getenv("ALEMBIC_FILTER_TABLES")
+    if filter_tables and type_ == "table":
+        return name in set(filter_tables.split(","))
+    if type_ == "index" and name and name.startswith("idx_"):
+        for c in getattr(object, "columns", []):
+            if "geometry" in str(type(c.type)).lower():
+                return False
+    return True
+
+
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        include_object=include_object,
+    )
 
     with context.begin_transaction():
         context.run_migrations()
