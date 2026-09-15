@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Hỗ trợ đóng gói ứng dụng tối ưu cho Docker (kích thước nhỏ gọn, chạy độc lập)
+  output: "standalone",
 };
 
 export default nextConfig;
