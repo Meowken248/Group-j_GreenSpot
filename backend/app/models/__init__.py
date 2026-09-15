@@ -1,4 +1,4 @@
-# Export toàn bộ 42 SQLAlchemy Models của Hệ thống EcoReport
+# Export toàn bộ 54 SQLAlchemy Models của Hệ thống EcoReport
 # Phục vụ FastAPI ORM, Alembic Auto-migration và Data Access Layer
 
 from app.database import Base
@@ -82,6 +82,30 @@ from app.models.system import (
     DBBackup,
 )
 
+# 10. IoT Sensors & Telemetry (3 models)
+from app.models.iot import (
+    IoTSensorStation,
+    IoTSensorTelemetry,
+    IoTSensorAlert,
+)
+
+# 11. Logistics & Fleet Management (3 models)
+from app.models.fleet import (
+    WasteCollectionRoute,
+    RouteCheckpoint,
+    VehicleFuelLog,
+)
+
+# 12. Legal Regulations, Violation Records & Assets (6 models)
+from app.models.legal_assets import (
+    PenaltyRegulation,
+    ViolationRecord,
+    SystemTranslation,
+    FileStorageAsset,
+    EnvironmentalSubscription,
+    AIKnowledgeEmbedding,
+)
+
 __all__ = [
     "Base",
     "TimestampMixin",
@@ -137,4 +161,19 @@ __all__ = [
     "Report",
     "SystemConfig",
     "DBBackup",
+    # IoT Sensors
+    "IoTSensorStation",
+    "IoTSensorTelemetry",
+    "IoTSensorAlert",
+    # Fleet & Routes
+    "WasteCollectionRoute",
+    "RouteCheckpoint",
+    "VehicleFuelLog",
+    # Legal & Assets
+    "PenaltyRegulation",
+    "ViolationRecord",
+    "SystemTranslation",
+    "FileStorageAsset",
+    "EnvironmentalSubscription",
+    "AIKnowledgeEmbedding",
 ]

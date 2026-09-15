@@ -1,6 +1,6 @@
 // ============================================================================
-// PRISMA SCHEMA CHO HỆ THỐNG ECOREPORT (42 BẢNG)
-// Quản lý & Phản ánh Sự cố Môi trường Đô thị WebGIS
+// PRISMA SCHEMA CHO HỆ THỐNG ECOREPORT (54 BẢNG NÂNG CAO)
+// Quản lý & Phản ánh Sự cố Môi trường Đô thị Thông minh WebGIS
 // PostgreSQL 16 + PostGIS 3.4
 // ============================================================================
 
@@ -86,6 +86,7 @@ model User {
   mapFavorites       UserMapFavorite[]
   rewardTransactions RewardTransaction[]
   teamMemberships    TeamMember[]
+  violationsIssued   ViolationRecord[]    @relation("ViolationsRecordedByUser")
 
   @@map("users")
 }
@@ -742,7 +743,7 @@ model ChatbotConversation {
 }
 
 model ChatbotMessage {
-  messageId             BigInt              @id @default(autoincrement()) @map("message_id")
+  messageId             BigInt              @id @default(autoincrement()) @map("message_id") @db.Uuid
   conversationId        String              @map("conversation_id") @db.Uuid
   senderType            String              @map("sender_type") @db.VarChar(20)
   messageText           String              @map("message_text") @db.Text
@@ -825,4 +826,232 @@ model DBBackup {
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   @@map("db_backups")
+}
+
+// ============================================================================
+// 10. CẢM BIẾN IOT & QUAN TRẮC MÔI TRƯỜNG (3 MODELS)
+// ============================================================================
+
+model IoTSensorStation {
+  stationId        Int                  @id @default(autoincrement()) @map("station_id")
+  stationCode      String               @unique @map("station_code") @db.VarChar(50)
+  stationName      String               @map("station_name") @db.VarChar(150)
+  stationType      String               @map("station_type") @db.VarChar(50)
+  unitId           Int?                 @map("unit_id")
+  location         Unsupported("geometry(Point,4326)")
+  address          String               @db.VarChar(255)
+  installationDate DateTime?            @map("installation_date") @db.Date
+  firmwareVersion  String               @default("v1.4.2") @map("firmware_version") @db.VarChar(50)
+  batteryPowered   Boolean              @default(false) @map("battery_powered")
+  solarPowered     Boolean              @default(true) @map("solar_powered")
+  status           String               @default("ONLINE") @db.VarChar(30)
+  metadata         Json?
+  createdAt        DateTime             @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  telemetries      IoTSensorTelemetry[]
+  alerts           IoTSensorAlert[]
+
+  @@map("iot_sensor_stations")
+}
+
+model IoTSensorTelemetry {
+  telemetryId         BigInt           @id @default(autoincrement()) @map("telemetry_id")
+  stationId           Int              @map("station_id")
+  aqiIndex            Int?             @map("aqi_index")
+  pm25                Decimal?         @map("pm2_5") @db.Decimal(6, 2)
+  pm10                Decimal?         @db.Decimal(6, 2)
+  co2Ppm              Decimal?         @map("co2_ppm") @db.Decimal(7, 2)
+  temperatureC        Decimal?         @map("temperature_c") @db.Decimal(4, 1)
+  humidityPercent     Decimal?         @map("humidity_percent") @db.Decimal(4, 1)
+  waterLevelCm        Decimal?         @map("water_level_cm") @db.Decimal(6, 2)
+  waterPh             Decimal?         @map("water_ph") @db.Decimal(4, 2)
+  dissolvedOxygenMgL  Decimal?         @map("dissolved_oxygen_mg_l") @db.Decimal(5, 2)
+  recordedAt          DateTime         @default(now()) @map("recorded_at") @db.Timestamptz
+
+  station             IoTSensorStation @relation(fields: [stationId], references: [stationId], onDelete: Cascade)
+
+  @@map("iot_sensor_telemetry")
+}
+
+model IoTSensorAlert {
+  alertId         String           @id @default(dbgenerated("uuid_generate_v4()")) @map("alert_id") @db.Uuid
+  stationId       Int              @map("station_id")
+  parameterName   String           @map("parameter_name") @db.VarChar(50)
+  measuredValue   Decimal          @map("measured_value") @db.Decimal(10, 2)
+  thresholdLimit  Decimal          @map("threshold_limit") @db.Decimal(10, 2)
+  qcvnStandard    String           @default("QCVN 05:2023/BTNM") @map("qcvn_standard") @db.VarChar(50)
+  alertLevel      String           @default("WARNING") @map("alert_level") @db.VarChar(20)
+  message         String           @db.Text
+  isAcknowledged  Boolean          @default(false) @map("is_acknowledged")
+  acknowledgedBy  String?          @map("acknowledged_by") @db.Uuid
+  acknowledgedAt  DateTime?        @map("acknowledged_at") @db.Timestamptz
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  station         IoTSensorStation @relation(fields: [stationId], references: [stationId], onDelete: Cascade)
+
+  @@map("iot_sensor_alerts")
+}
+
+// ============================================================================
+// 11. LOGISTICS & LỘ TRÌNH THU GOM RÁC (3 MODELS)
+// ============================================================================
+
+model WasteCollectionRoute {
+  routeId                  Int               @id @default(autoincrement()) @map("route_id")
+  routeCode                String            @unique @map("route_code") @db.VarChar(50)
+  routeName                String            @map("route_name") @db.VarChar(150)
+  unitId                   Int?              @map("unit_id")
+  assignedTeamId           Int?              @map("assigned_team_id")
+  routePath                Unsupported("geometry(MultiLineString,4326)") @map("route_path")
+  totalDistanceKm          Decimal           @map("total_distance_km") @db.Decimal(6, 2)
+  estimatedDurationMinutes Int               @map("estimated_duration_minutes")
+  operatingDays            String            @default("2,4,6") @map("operating_days") @db.VarChar(50)
+  startTimeScheduled       DateTime          @default(dbgenerated("'05:00:00'::time")) @map("start_time_scheduled") @db.Time
+  endTimeScheduled         DateTime          @default(dbgenerated("'11:00:00'::time")) @map("end_time_scheduled") @db.Time
+  isActive                 Boolean           @default(true) @map("is_active")
+  createdAt                DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  checkpoints              RouteCheckpoint[]
+
+  @@map("waste_collection_routes")
+}
+
+model RouteCheckpoint {
+  checkpointId          Int                  @id @default(autoincrement()) @map("checkpoint_id")
+  routeId               Int                  @map("route_id")
+  checkpointName        String               @map("checkpoint_name") @db.VarChar(150)
+  sequenceOrder         Int                  @map("sequence_order")
+  location              Unsupported("geometry(Point,4326)")
+  address               String               @db.VarChar(255)
+  expectedArrivalTime   DateTime?            @map("expected_arrival_time") @db.Time
+  expectedWasteVolumeM3 Decimal              @default(1.5) @map("expected_waste_volume_m3") @db.Decimal(6, 2)
+  stopDurationMinutes   Int                  @default(10) @map("stop_duration_minutes")
+  createdAt             DateTime             @default(now()) @map("created_at") @db.Timestamptz
+
+  route                 WasteCollectionRoute @relation(fields: [routeId], references: [routeId], onDelete: Cascade)
+
+  @@unique([routeId, sequenceOrder])
+  @@map("route_checkpoints")
+}
+
+model VehicleFuelLog {
+  logId              BigInt   @id @default(autoincrement()) @map("log_id")
+  teamId             Int      @map("team_id")
+  driverId           String?  @map("driver_id") @db.Uuid
+  logDate            DateTime @map("log_date") @db.Date
+  startOdometerKm    Decimal  @map("start_odometer_km") @db.Decimal(9, 2)
+  endOdometerKm      Decimal  @map("end_odometer_km") @db.Decimal(9, 2)
+  distanceTraveledKm Decimal? @map("distance_traveled_km") @db.Decimal(7, 2)
+  fuelLitersAdded    Decimal  @default(0.0) @map("fuel_liters_added") @db.Decimal(6, 2)
+  fuelCostVnd        Decimal  @default(0.0) @map("fuel_cost_vnd") @db.Decimal(12, 2)
+  notes              String?  @db.Text
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("vehicle_fuel_logs")
+}
+
+// ============================================================================
+// 12. PHÁP LÝ, XỬ PHẠT, TỆP TIN & TRI THỨC AI RAG (6 MODELS)
+// ============================================================================
+
+model PenaltyRegulation {
+  regulationId     Int               @id @default(autoincrement()) @map("regulation_id")
+  decreeReference  String            @default("Nghị định 45/2022/NĐ-CP") @map("decree_reference") @db.VarChar(100)
+  articleClause    String            @map("article_clause") @db.VarChar(50)
+  violationBehavior String           @map("violation_behavior") @db.Text
+  minFineVnd       Decimal           @map("min_fine_vnd") @db.Decimal(12, 2)
+  maxFineVnd       Decimal           @map("max_fine_vnd") @db.Decimal(12, 2)
+  remedialMeasures String?           @map("remedial_measures") @db.Text
+  isActive         Boolean           @default(true) @map("is_active")
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz
+
+  violations       ViolationRecord[]
+
+  @@map("penalty_regulations")
+}
+
+model ViolationRecord {
+  recordId            String            @id @default(dbgenerated("uuid_generate_v4()")) @map("record_id") @db.Uuid
+  recordCode          String            @unique @map("record_code") @db.VarChar(50)
+  incidentId          String?           @map("incident_id") @db.Uuid
+  regulationId        Int               @map("regulation_id")
+  unitId              Int?              @map("unit_id")
+  offenderName        String?           @map("offender_name") @db.VarChar(150)
+  offenderIdCard      String?           @map("offender_id_card") @db.VarChar(20)
+  offenderVehiclePlate String?          @map("offender_vehicle_plate") @db.VarChar(30)
+  location            Unsupported("geometry(Point,4326)")
+  address             String            @db.VarChar(255)
+  recordedBy          String            @map("recorded_by") @db.Uuid
+  fineAmountVnd       Decimal           @map("fine_amount_vnd") @db.Decimal(12, 2)
+  status              String            @default("PENDING_PAYMENT") @db.VarChar(30)
+  evidenceMediaUrls   String[]          @map("evidence_media_urls")
+  paymentDeadline     DateTime?         @map("payment_deadline") @db.Date
+  paidAt              DateTime?         @map("paid_at") @db.Timestamptz
+  notes               String?           @db.Text
+  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  officer             User              @relation("ViolationsRecordedByUser", fields: [recordedBy], references: [userId])
+  regulation          PenaltyRegulation @relation(fields: [regulationId], references: [regulationId])
+
+  @@map("violation_records")
+}
+
+model SystemTranslation {
+  translationId   Int      @id @default(autoincrement()) @map("translation_id")
+  locale          String   @db.VarChar(10)
+  translationKey  String   @map("translation_key") @db.VarChar(150)
+  translationText String   @map("translation_text") @db.Text
+  category        String   @default("UI") @db.VarChar(50)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([locale, translationKey])
+  @@map("system_translations")
+}
+
+model FileStorageAsset {
+  assetId          String   @id @default(dbgenerated("uuid_generate_v4()")) @map("asset_id") @db.Uuid
+  storageProvider  String   @default("MINIO") @map("storage_provider") @db.VarChar(30)
+  bucketName       String   @default("ecoreport-media") @map("bucket_name") @db.VarChar(100)
+  filePath         String   @unique @map("file_path") @db.VarChar(500)
+  originalFilename String   @map("original_filename") @db.VarChar(255)
+  fileSizeBytes    BigInt   @map("file_size_bytes")
+  mimeType         String   @map("mime_type") @db.VarChar(100)
+  sha256Hash       String   @map("sha256_hash") @db.VarChar(64)
+  cdnUrl           String?  @map("cdn_url") @db.VarChar(500)
+  isPublic         Boolean  @default(true) @map("is_public")
+  virusScanStatus  String   @default("CLEAN") @map("virus_scan_status") @db.VarChar(20)
+  uploaderId       String?  @map("uploader_id") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("file_storage_assets")
+}
+
+model EnvironmentalSubscription {
+  subscriptionId String    @id @default(dbgenerated("uuid_generate_v4()")) @map("subscription_id") @db.Uuid
+  userId         String?   @map("user_id") @db.Uuid
+  email          String?   @db.VarChar(255)
+  topic          String    @db.VarChar(50)
+  unitId         Int?      @map("unit_id")
+  isActive       Boolean   @default(true) @map("is_active")
+  subscribedAt   DateTime  @default(now()) @map("subscribed_at") @db.Timestamptz
+  unsubscribedAt DateTime? @map("unsubscribed_at") @db.Timestamptz
+
+  @@map("environmental_subscriptions")
+}
+
+model AIKnowledgeEmbedding {
+  knowledgeId        String   @id @default(dbgenerated("uuid_generate_v4()")) @map("knowledge_id") @db.Uuid
+  documentTitle      String   @map("document_title") @db.VarChar(255)
+  documentType       String   @map("document_type") @db.VarChar(50)
+  chunkIndex         Int      @default(0) @map("chunk_index")
+  chunkContent       String   @map("chunk_content") @db.Text
+  metadata           Json?
+  embeddingDimension Int      @default(1536) @map("embedding_dimension")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("ai_knowledge_embeddings")
 }
