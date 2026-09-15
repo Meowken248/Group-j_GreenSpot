@@ -29,6 +29,7 @@ def run_migrations_offline() -> None:
         dialect_opts={"paramstyle": "named"},
     )
 
+
     with context.begin_transaction():
         context.run_migrations()
 
