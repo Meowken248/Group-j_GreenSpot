@@ -9,6 +9,7 @@ from alembic import context
 
 from app.config import settings
 from app.database import Base
+import app.models  # Nạp toàn bộ 42 models vào Base.metadata
 
 config = context.config
 

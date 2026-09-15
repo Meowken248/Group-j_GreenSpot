@@ -1,0 +1,828 @@
+// ============================================================================
+// PRISMA SCHEMA CHO HỆ THỐNG ECOREPORT (42 BẢNG)
+// Quản lý & Phản ánh Sự cố Môi trường Đô thị WebGIS
+// PostgreSQL 16 + PostGIS 3.4
+// ============================================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis, uuidOssp(map: "uuid-ossp"), pg_trgm, unaccent, btree_gist]
+}
+
+// ============================================================================
+// 1. RBAC & NGƯỜI DÙNG (7 MODELS)
+// ============================================================================
+
+model Role {
+  roleId          Int              @id @default(autoincrement()) @map("role_id")
+  roleCode        String           @unique @map("role_code") @db.VarChar(50)
+  roleName        String           @map("role_name") @db.VarChar(100)
+  description     String?          @db.Text
+  isSystem        Boolean          @default(false) @map("is_system")
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  users           User[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  permissionId    Int              @id @default(autoincrement()) @map("permission_id")
+  module          String           @db.VarChar(50)
+  action          String           @db.VarChar(50)
+  permissionCode  String           @unique @map("permission_code") @db.VarChar(100)
+  description     String?          @db.Text
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       Int        @map("role_id")
+  permissionId Int        @map("permission_id")
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz
+
+  role         Role       @relation(fields: [roleId], references: [roleId], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [permissionId], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model User {
+  userId             String               @id @default(dbgenerated("uuid_generate_v4()")) @map("user_id") @db.Uuid
+  email              String               @unique @db.VarChar(255)
+  phoneNumber        String?              @unique @map("phone_number") @db.VarChar(20)
+  passwordHash       String               @map("password_hash") @db.VarChar(255)
+  fullName           String               @map("full_name") @db.VarChar(150)
+  avatarUrl          String?              @map("avatar_url") @db.VarChar(500)
+  roleId             Int                  @map("role_id")
+  status             String               @default("ACTIVE") @db.VarChar(30)
+  emailVerifiedAt    DateTime?            @map("email_verified_at") @db.Timestamptz
+  phoneVerifiedAt    DateTime?            @map("phone_verified_at") @db.Timestamptz
+  twoFactorEnabled   Boolean              @default(false) @map("two_factor_enabled")
+  twoFactorSecret    String?              @map("two_factor_secret") @db.VarChar(255)
+  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  role               Role                 @relation(fields: [roleId], references: [roleId])
+  sessions           UserSession[]
+  privacySettings    UserPrivacySetting?
+  incidentsReported  Incident[]           @relation("ReporterIncidents")
+  assignedDispatches Assignment[]         @relation("AssignedByOfficer")
+  auditLogs          AuditLog[]
+  notifications      Notification[]
+  watchAreas         UserWatchArea[]
+  mapFavorites       UserMapFavorite[]
+  rewardTransactions RewardTransaction[]
+  teamMemberships    TeamMember[]
+
+  @@map("users")
+}
+
+model UserSession {
+  sessionId    String   @id @default(dbgenerated("uuid_generate_v4()")) @map("session_id") @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  jwtId        String   @unique @map("jwt_id") @db.VarChar(255)
+  deviceName   String?  @map("device_name") @db.VarChar(150)
+  clientType   String   @default("WEB") @map("client_type") @db.VarChar(50)
+  ipAddress    String?  @map("ip_address") @db.VarChar(45)
+  userAgent    String?  @map("user_agent") @db.Text
+  lastActiveAt DateTime @default(now()) @map("last_active_at") @db.Timestamptz
+  expiresAt    DateTime @map("expires_at") @db.Timestamptz
+  isRevoked    Boolean  @default(false) @map("is_revoked")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user         User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("user_sessions")
+}
+
+model RefreshToken {
+  tokenId   String   @id @default(dbgenerated("uuid_generate_v4()")) @map("token_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @unique @map("token_hash") @db.VarChar(255)
+  sessionId String?  @map("session_id") @db.Uuid
+  isUsed    Boolean  @default(false) @map("is_used")
+  isRevoked Boolean  @default(false) @map("is_revoked")
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("refresh_tokens")
+}
+
+model UserPrivacySetting {
+  settingId                  String   @id @default(dbgenerated("uuid_generate_v4()")) @map("setting_id") @db.Uuid
+  userId                     String   @unique @map("user_id") @db.Uuid
+  isAnonymousByDefault       Boolean  @default(false) @map("is_anonymous_by_default")
+  hideExactGps               Boolean  @default(true) @map("hide_exact_gps")
+  spatialJitterRadiusMeters  Int      @default(50) @map("spatial_jitter_radius_meters")
+  maskPhoneNumber            Boolean  @default(true) @map("mask_phone_number")
+  allowPushNotifications     Boolean  @default(true) @map("allow_push_notifications")
+  allowEmailNotifications    Boolean  @default(true) @map("allow_email_notifications")
+  createdAt                  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  user                       User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("user_privacy_settings")
+}
+
+// ============================================================================
+// 2. ĐỊA LÝ & HẠ TẦNG MÔI TRƯỜNG (3 MODELS)
+// ============================================================================
+
+model AdministrativeUnit {
+  unitId     Int                  @id @default(autoincrement()) @map("unit_id")
+  unitCode   String               @unique @map("unit_code") @db.VarChar(20)
+  name       String               @db.VarChar(150)
+  level      String               @db.VarChar(20)
+  parentId   Int?                 @map("parent_id")
+  boundary   Unsupported("geometry(MultiPolygon,4326)")?
+  centroid   Unsupported("geometry(Point,4326)")?
+  areaKm2    Decimal?             @map("area_km2") @db.Decimal(10, 2)
+  population Int?
+  createdAt  DateTime             @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  parent     AdministrativeUnit?  @relation("UnitHierarchy", fields: [parentId], references: [unitId])
+  children   AdministrativeUnit[] @relation("UnitHierarchy")
+  incidents  Incident[]
+  workTeams  WorkTeam[]
+  facilities EssentialFacility[]
+
+  @@map("administrative_units")
+}
+
+model EssentialFacility {
+  facilityId         Int                 @id @default(autoincrement()) @map("facility_id")
+  facilityName       String              @map("facility_name") @db.VarChar(200)
+  facilityType       String              @map("facility_type") @db.VarChar(50)
+  address            String              @db.VarChar(255)
+  unitId             Int?                @map("unit_id")
+  location           Unsupported("geometry(Point,4326)")
+  contactPhone       String?             @map("contact_phone") @db.VarChar(20)
+  capacityPeople     Int?                @map("capacity_people")
+  vulnerabilityLevel String              @default("HIGH") @map("vulnerability_level") @db.VarChar(20)
+  metadata           Json?
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  unit               AdministrativeUnit? @relation(fields: [unitId], references: [unitId])
+
+  @@map("essential_facilities")
+}
+
+model RecyclingFacility {
+  facilityId         Int                 @id @default(autoincrement()) @map("facility_id")
+  name               String              @db.VarChar(200)
+  facilityCode       String?             @unique @map("facility_code") @db.VarChar(50)
+  address            String              @db.VarChar(255)
+  unitId             Int?                @map("unit_id")
+  location           Unsupported("geometry(Point,4326)")
+  acceptedWasteTypes String[]            @map("accepted_waste_types")
+  operatingHours     String?             @map("operating_hours") @db.VarChar(100)
+  contactPhone       String?             @map("contact_phone") @db.VarChar(20)
+  managingOrg        String?             @map("managing_org") @db.VarChar(150)
+  isActive           Boolean             @default(true) @map("is_active")
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("recycling_facilities")
+}
+
+// ============================================================================
+// 3. TIẾP NHẬN SỰ CỐ & ĐA PHƯƠNG TIỆN (6 MODELS)
+// ============================================================================
+
+model WasteCategory {
+  categoryId      Int                 @id @default(autoincrement()) @map("category_id")
+  categoryCode    String              @unique @map("category_code") @db.VarChar(50)
+  name            String              @db.VarChar(150)
+  description     String?             @db.Text
+  defaultSeverity String              @default("MEDIUM") @map("default_severity") @db.VarChar(20)
+  slaHours        Int                 @default(48) @map("sla_hours")
+  colorHex        String              @default("#22C55E") @map("color_hex") @db.VarChar(10)
+  iconName        String              @default("trash-2") @map("icon_name") @db.VarChar(50)
+  isActive        Boolean             @default(true) @map("is_active")
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  incidents       Incident[]
+  slaPolicies     SLAPolicy[]
+
+  @@map("waste_categories")
+}
+
+model Incident {
+  incidentId          String               @id @default(dbgenerated("uuid_generate_v4()")) @map("incident_id") @db.Uuid
+  trackingCode        String               @unique @map("tracking_code") @db.VarChar(30)
+  reporterId          String?              @map("reporter_id") @db.Uuid
+  categoryId          Int                  @map("category_id")
+  unitId              Int?                 @map("unit_id")
+  title               String               @db.VarChar(255)
+  description         String               @db.Text
+  addressText         String               @map("address_text") @db.VarChar(500)
+  location            Unsupported("geometry(Point,4326)")
+  maskedLocation      Unsupported("geometry(Point,4326)")? @map("masked_location")
+  latitude            Decimal              @db.Decimal(10, 7)
+  longitude           Decimal              @db.Decimal(10, 7)
+  severity            String               @default("MEDIUM") @db.VarChar(20)
+  status              String               @default("PENDING") @db.VarChar(30)
+  riskScore           Decimal              @default(0.00) @map("risk_score") @db.Decimal(5, 2)
+  estimatedVolumeM3   Decimal?             @map("estimated_volume_m3") @db.Decimal(8, 2)
+  isAnonymous         Boolean              @default(false) @map("is_anonymous")
+  reporterPhoneMasked String?              @map("reporter_phone_masked") @db.VarChar(20)
+  upvotesCount        Int                  @default(0) @map("upvotes_count")
+  slaDeadline         DateTime?            @map("sla_deadline") @db.Timestamptz
+  resolvedAt          DateTime?            @map("resolved_at") @db.Timestamptz
+  closedAt            DateTime?            @map("closed_at") @db.Timestamptz
+  createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  reporter            User?                @relation("ReporterIncidents", fields: [reporterId], references: [userId])
+  category            WasteCategory        @relation(fields: [categoryId], references: [categoryId])
+  administrativeUnit  AdministrativeUnit?  @relation(fields: [unitId], references: [unitId])
+  media               IncidentMedia[]
+  statusHistory       IncidentStatusHistory[]
+  comments            IncidentComment[]
+  assignments         Assignment[]
+  transfers           IncidentTransfer[]
+  aiSummary           AIIncidentSummary?
+
+  @@map("incidents")
+}
+
+model IncidentMedia {
+  mediaId           String               @id @default(dbgenerated("uuid_generate_v4()")) @map("media_id") @db.Uuid
+  incidentId        String               @map("incident_id") @db.Uuid
+  mediaType         String               @map("media_type") @db.VarChar(20)
+  phase             String               @default("BEFORE") @db.VarChar(20)
+  fileUrl           String               @map("file_url") @db.VarChar(500)
+  thumbnailUrl      String?              @map("thumbnail_url") @db.VarChar(500)
+  fileSizeBytes     BigInt?              @map("file_size_bytes")
+  mimeType          String?              @map("mime_type") @db.VarChar(100)
+  exifLatitude      Decimal?             @map("exif_latitude") @db.Decimal(10, 7)
+  exifLongitude     Decimal?             @map("exif_longitude") @db.Decimal(10, 7)
+  exifCapturedAt    DateTime?            @map("exif_captured_at") @db.Timestamptz
+  isTamperedWarning Boolean              @default(false) @map("is_tampered_warning")
+  uploaderId        String?              @map("uploader_id") @db.Uuid
+  createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz
+
+  incident          Incident             @relation(fields: [incidentId], references: [incidentId], onDelete: Cascade)
+  aiAnalyses        AIAnalysisResult[]
+
+  @@map("incident_media")
+}
+
+model IncidentStatusHistory {
+  historyId    String   @id @default(dbgenerated("uuid_generate_v4()")) @map("history_id") @db.Uuid
+  incidentId   String   @map("incident_id") @db.Uuid
+  fromStatus   String?  @map("from_status") @db.VarChar(30)
+  toStatus     String   @map("to_status") @db.VarChar(30)
+  changedBy    String?  @map("changed_by") @db.Uuid
+  changeReason String?  @map("change_reason") @db.Text
+  notes        String?  @db.Text
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  incident     Incident @relation(fields: [incidentId], references: [incidentId], onDelete: Cascade)
+
+  @@map("incident_status_history")
+}
+
+model IncidentComment {
+  commentId       String            @id @default(dbgenerated("uuid_generate_v4()")) @map("comment_id") @db.Uuid
+  incidentId      String            @map("incident_id") @db.Uuid
+  authorId        String            @map("author_id") @db.Uuid
+  content         String            @db.Text
+  isInternal      Boolean           @default(false) @map("is_internal")
+  parentCommentId String?           @map("parent_comment_id") @db.Uuid
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  incident        Incident          @relation(fields: [incidentId], references: [incidentId], onDelete: Cascade)
+  parentComment   IncidentComment?  @relation("CommentThread", fields: [parentCommentId], references: [commentId])
+  childComments   IncidentComment[] @relation("CommentThread")
+
+  @@map("incident_comments")
+}
+
+model IncidentTransfer {
+  transferId      String   @id @default(dbgenerated("uuid_generate_v4()")) @map("transfer_id") @db.Uuid
+  incidentId      String   @map("incident_id") @db.Uuid
+  fromUnitId      Int      @map("from_unit_id")
+  toUnitId        Int      @map("to_unit_id")
+  transferredBy   String   @map("transferred_by") @db.Uuid
+  reason          String   @db.Text
+  escalationLevel String   @default("WARD_TO_DISTRICT") @map("escalation_level") @db.VarChar(20)
+  status          String   @default("PENDING") @db.VarChar(20)
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  resolvedAt      DateTime? @map("resolved_at") @db.Timestamptz
+
+  incident        Incident @relation(fields: [incidentId], references: [incidentId], onDelete: Cascade)
+
+  @@map("incident_transfers")
+}
+
+// ============================================================================
+// 4. ĐIỀU PHỐI HIỆN TRƯỜNG & NGHIỆM THU (5 MODELS)
+// ============================================================================
+
+model WorkTeam {
+  teamId        Int                 @id @default(autoincrement()) @map("team_id")
+  teamCode      String              @unique @map("team_code") @db.VarChar(50)
+  teamName      String              @map("team_name") @db.VarChar(150)
+  leaderId      String?             @map("leader_id") @db.Uuid
+  unitId        Int?                @map("unit_id")
+  contactPhone  String?             @map("contact_phone") @db.VarChar(20)
+  vehiclePlate  String?             @map("vehicle_plate") @db.VarChar(30)
+  vehicleType   String              @default("COMPACTOR_TRUCK") @map("vehicle_type") @db.VarChar(50)
+  capacityTons  Decimal             @default(5.0) @map("capacity_tons") @db.Decimal(5, 2)
+  status        String              @default("ACTIVE") @db.VarChar(30)
+  isActive      Boolean             @default(true) @map("is_active")
+  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  unit          AdministrativeUnit? @relation(fields: [unitId], references: [unitId])
+  members       TeamMember[]
+  assignments   Assignment[]
+  kpiEvaluations KPIEvaluation[]
+
+  @@map("work_teams")
+}
+
+model TeamMember {
+  membershipId Int      @id @default(autoincrement()) @map("membership_id")
+  teamId       Int      @map("team_id")
+  userId       String   @map("user_id") @db.Uuid
+  roleInTeam   String   @default("WORKER") @map("role_in_team") @db.VarChar(50)
+  joinedAt     DateTime @default(now()) @map("joined_at") @db.Timestamptz
+  isActive     Boolean  @default(true) @map("is_active")
+
+  team         WorkTeam @relation(fields: [teamId], references: [teamId], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@map("team_members")
+}
+
+model WorkerLocation {
+  locationId        BigInt   @id @default(autoincrement()) @map("location_id")
+  teamId            Int      @map("team_id")
+  userId            String?  @map("user_id") @db.Uuid
+  currentLocation   Unsupported("geometry(Point,4326)") @map("current_location")
+  latitude          Decimal  @db.Decimal(10, 7)
+  longitude         Decimal  @db.Decimal(10, 7)
+  speedKmh          Decimal  @default(0.0) @map("speed_kmh") @db.Decimal(5, 2)
+  headingDegrees    Decimal? @map("heading_degrees") @db.Decimal(5, 2)
+  batteryPercentage Int?     @map("battery_percentage")
+  recordedAt        DateTime @default(now()) @map("recorded_at") @db.Timestamptz
+
+  @@map("worker_locations")
+}
+
+model Assignment {
+  assignmentId   String        @id @default(dbgenerated("uuid_generate_v4()")) @map("assignment_id") @db.Uuid
+  assignmentCode String        @unique @map("assignment_code") @db.VarChar(30)
+  incidentId     String        @map("incident_id") @db.Uuid
+  teamId         Int           @map("team_id")
+  assignedBy     String        @map("assigned_by") @db.Uuid
+  priority       String        @default("MEDIUM") @db.VarChar(20)
+  dispatchNotes  String?       @map("dispatch_notes") @db.Text
+  deadline       DateTime?     @db.Timestamptz
+  status         String        @default("ASSIGNED") @db.VarChar(30)
+  acceptedAt     DateTime?     @map("accepted_at") @db.Timestamptz
+  startedAt      DateTime?     @map("started_at") @db.Timestamptz
+  completedAt    DateTime?     @map("completed_at") @db.Timestamptz
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  incident       Incident      @relation(fields: [incidentId], references: [incidentId], onDelete: Cascade)
+  team           WorkTeam      @relation(fields: [teamId], references: [teamId])
+  officer        User          @relation("AssignedByOfficer", fields: [assignedBy], references: [userId])
+  verification   Verification?
+
+  @@map("assignments")
+}
+
+model Verification {
+  verificationId       String     @id @default(dbgenerated("uuid_generate_v4()")) @map("verification_id") @db.Uuid
+  assignmentId         String     @unique @map("assignment_id") @db.Uuid
+  incidentId           String     @map("incident_id") @db.Uuid
+  verifiedBy           String     @map("verified_by") @db.Uuid
+  status               String     @db.VarChar(30)
+  cleanlinessScore     Int?       @map("cleanliness_score")
+  beforeMediaId        String?    @map("before_media_id") @db.Uuid
+  afterMediaId         String?    @map("after_media_id") @db.Uuid
+  actualWasteVolumeM3  Decimal?   @map("actual_waste_volume_m3") @db.Decimal(8, 2)
+  actualDisposalMethod String?    @map("actual_disposal_method") @db.VarChar(100)
+  feedbackNotes        String?    @map("feedback_notes") @db.Text
+  verifiedAt           DateTime   @default(now()) @map("verified_at") @db.Timestamptz
+  createdAt            DateTime   @default(now()) @map("created_at") @db.Timestamptz
+
+  assignment           Assignment @relation(fields: [assignmentId], references: [assignmentId], onDelete: Cascade)
+
+  @@map("verifications")
+}
+
+// ============================================================================
+// 5. GIÁM SÁT SLA, KIỂM TOÁN & KPI (3 MODELS)
+// ============================================================================
+
+model SLAPolicy {
+  policyId                   Int            @id @default(autoincrement()) @map("policy_id")
+  name                       String         @db.VarChar(150)
+  categoryId                 Int?           @map("category_id")
+  severity                   String         @db.VarChar(20)
+  responseTimeHours          Int            @default(4) @map("response_time_hours")
+  resolutionTimeHours        Int            @default(48) @map("resolution_time_hours")
+  warningThresholdPercentage Int            @default(80) @map("warning_threshold_percentage")
+  penaltyPointsPerHour       Decimal        @default(0.5) @map("penalty_points_per_hour") @db.Decimal(4, 2)
+  isActive                   Boolean        @default(true) @map("is_active")
+  createdAt                  DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                  DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  category                   WasteCategory? @relation(fields: [categoryId], references: [categoryId], onDelete: Cascade)
+
+  @@unique([categoryId, severity])
+  @@map("sla_policies")
+}
+
+model AuditLog {
+  logId        BigInt   @id @default(autoincrement()) @map("log_id")
+  userId       String?  @map("user_id") @db.Uuid
+  action       String   @db.VarChar(50)
+  tableName    String   @map("table_name") @db.VarChar(100)
+  recordId     String?  @map("record_id") @db.VarChar(100)
+  oldData      Json?    @map("old_data")
+  newData      Json?    @map("new_data")
+  ipAddress    String?  @map("ip_address") @db.VarChar(45)
+  userAgent    String?  @map("user_agent") @db.Text
+  requestUri   String?  @map("request_uri") @db.VarChar(500)
+  isSuspicious Boolean  @default(false) @map("is_suspicious")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user         User?    @relation(fields: [userId], references: [userId], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
+
+model KPIEvaluation {
+  evaluationId            Int      @id @default(autoincrement()) @map("evaluation_id")
+  teamId                  Int      @map("team_id")
+  unitId                  Int?     @map("unit_id")
+  evaluationMonth         Int      @map("evaluation_month")
+  evaluationYear          Int      @map("evaluation_year")
+  totalAssigned           Int      @default(0) @map("total_assigned")
+  completedOnTime         Int      @default(0) @map("completed_on_time")
+  completedOverdue        Int      @default(0) @map("completed_overdue")
+  slaComplianceRate       Decimal  @default(100.00) @map("sla_compliance_rate") @db.Decimal(5, 2)
+  averageCleanlinessScore Decimal  @default(5.00) @map("average_cleanliness_score") @db.Decimal(3, 2)
+  penaltyScore            Decimal  @default(0.00) @map("penalty_score") @db.Decimal(5, 2)
+  bonusScore              Decimal  @default(0.00) @map("bonus_score") @db.Decimal(5, 2)
+  finalKpiScore           Decimal  @default(100.00) @map("final_kpi_score") @db.Decimal(5, 2)
+  rankGrade               String   @default("EXCELLENT") @map("rank_grade") @db.VarChar(20)
+  notes                   String?  @db.Text
+  evaluatedAt             DateTime @default(now()) @map("evaluated_at") @db.Timestamptz
+
+  team                    WorkTeam @relation(fields: [teamId], references: [teamId], onDelete: Cascade)
+
+  @@unique([teamId, evaluationMonth, evaluationYear])
+  @@map("kpi_evaluations")
+}
+
+// ============================================================================
+// 6. WEBGIS NÂNG CAO, GEOFENCING & TUYẾN ĐƯỜNG (5 MODELS)
+// ============================================================================
+
+model UserWatchArea {
+  areaId          String   @id @default(dbgenerated("uuid_generate_v4()")) @map("area_id") @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  areaName        String   @map("area_name") @db.VarChar(150)
+  centerPoint     Unsupported("geometry(Point,4326)") @map("center_point")
+  radiusMeters    Int      @default(500) @map("radius_meters")
+  geofencePolygon Unsupported("geometry(Polygon,4326)")? @map("geofence_polygon")
+  notifyPush      Boolean  @default(true) @map("notify_push")
+  notifyEmail     Boolean  @default(true) @map("notify_email")
+  notifySms       Boolean  @default(false) @map("notify_sms")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  user            User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("user_watch_areas")
+}
+
+model IncidentClusterHotspot {
+  clusterId               Int      @id @default(autoincrement()) @map("cluster_id")
+  unitId                  Int?     @map("unit_id")
+  clusterType             String   @default("HOTSPOT") @map("cluster_type") @db.VarChar(30)
+  centroid                Unsupported("geometry(Point,4326)")
+  boundary                Unsupported("geometry(Polygon,4326)")?
+  incidentCount           Int      @default(1) @map("incident_count")
+  averageRiskScore        Decimal  @default(0.00) @map("average_risk_score") @db.Decimal(5, 2)
+  dominantWasteCategoryId Int?     @map("dominant_waste_category_id")
+  status                  String   @default("ACTIVE") @db.VarChar(30)
+  firstDetectedAt         DateTime @default(now()) @map("first_detected_at") @db.Timestamptz
+  lastDetectedAt          DateTime @default(now()) @map("last_detected_at") @db.Timestamptz
+  updatedAt               DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("incident_clusters_hotspots")
+}
+
+model UserMapFavorite {
+  favoriteId     String   @id @default(dbgenerated("uuid_generate_v4()")) @map("favorite_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  title          String   @db.VarChar(150)
+  filterParams   Json     @map("filter_params")
+  viewportCenter Unsupported("geometry(Point,4326)")? @map("viewport_center")
+  zoomLevel      Int      @default(14) @map("zoom_level")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user           User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("user_map_favorites")
+}
+
+model FloodZoneMonitoring {
+  zoneId                     Int      @id @default(autoincrement()) @map("zone_id")
+  zoneName                   String   @map("zone_name") @db.VarChar(200)
+  unitId                     Int?     @map("unit_id")
+  boundary                   Unsupported("geometry(MultiPolygon,4326)")
+  rainfallMm                 Decimal  @default(0.0) @map("rainfall_mm") @db.Decimal(6, 2)
+  floodDepthCm               Decimal  @default(0.0) @map("flood_depth_cm") @db.Decimal(6, 2)
+  riskLevel                  String   @default("LOW") @map("risk_level") @db.VarChar(20)
+  blockedDrainagePointsCount Int      @default(0) @map("blocked_drainage_points_count")
+  isActivelyFlooded          Boolean  @default(false) @map("is_actively_flooded")
+  recordedAt                 DateTime @default(now()) @map("recorded_at") @db.Timestamptz
+  updatedAt                  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("flood_zones_monitoring")
+}
+
+model SafeRouteCache {
+  routeId             String   @id @default(dbgenerated("uuid_generate_v4()")) @map("route_id") @db.Uuid
+  userId              String?  @map("user_id") @db.Uuid
+  originPoint         Unsupported("geometry(Point,4326)") @map("origin_point")
+  destinationPoint    Unsupported("geometry(Point,4326)") @map("destination_point")
+  fastestRouteGeom    Unsupported("geometry(LineString,4326)")? @map("fastest_route_geom")
+  fastestDistanceKm   Decimal? @map("fastest_distance_km") @db.Decimal(6, 2)
+  fastestDurationMins Decimal? @map("fastest_duration_mins") @db.Decimal(6, 2)
+  fastestRiskIndex    Decimal? @map("fastest_risk_index") @db.Decimal(5, 2)
+  safestRouteGeom     Unsupported("geometry(LineString,4326)")? @map("safest_route_geom")
+  safestDistanceKm    Decimal? @map("safest_distance_km") @db.Decimal(6, 2)
+  safestDurationMins  Decimal? @map("safest_duration_mins") @db.Decimal(6, 2)
+  safestRiskIndex     Decimal? @map("safest_risk_index") @db.Decimal(5, 2)
+  hazardsAvoidedCount Int      @default(0) @map("hazards_avoided_count")
+  calculatedAt        DateTime @default(now()) @map("calculated_at") @db.Timestamptz
+
+  @@map("safe_routes_cache")
+}
+
+// ============================================================================
+// 7. TRÍ TUỆ NHÂN TẠO AI & YOLOV8 (3 MODELS)
+// ============================================================================
+
+model AIAnalysisResult {
+  analysisId          String        @id @default(dbgenerated("uuid_generate_v4()")) @map("analysis_id") @db.Uuid
+  mediaId             String        @map("media_id") @db.Uuid
+  incidentId          String        @map("incident_id") @db.Uuid
+  modelVersion        String        @default("yolov8x-environment-v2.1") @map("model_version") @db.VarChar(50)
+  detectedClasses     String[]      @map("detected_classes")
+  confidenceScore     Decimal       @map("confidence_score") @db.Decimal(5, 4)
+  boundingBoxes       Json          @map("bounding_boxes")
+  estimatedVolumeM3   Decimal?      @map("estimated_volume_m3") @db.Decimal(8, 2)
+  estimatedWeightKg   Decimal?      @map("estimated_weight_kg") @db.Decimal(8, 2)
+  suggestedSeverity   String?       @map("suggested_severity") @db.VarChar(20)
+  suggestedCategoryId Int?          @map("suggested_category_id")
+  rawResponse         Json?         @map("raw_response")
+  processingTimeMs    Int?          @map("processing_time_ms")
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz
+
+  media               IncidentMedia @relation(fields: [mediaId], references: [mediaId], onDelete: Cascade)
+
+  @@map("ai_analysis_results")
+}
+
+model AIDuplicateGroup {
+  groupId               String   @id @default(dbgenerated("uuid_generate_v4()")) @map("group_id") @db.Uuid
+  primaryIncidentId     String   @map("primary_incident_id") @db.Uuid
+  duplicateIncidentId   String   @map("duplicate_incident_id") @db.Uuid
+  similarityScore       Decimal  @map("similarity_score") @db.Decimal(5, 4)
+  spatialDistanceMeters Decimal  @map("spatial_distance_meters") @db.Decimal(8, 2)
+  timeDeltaMinutes      Int      @map("time_delta_minutes")
+  aiConfidence          Decimal  @map("ai_confidence") @db.Decimal(5, 4)
+  isConfirmedByOfficer  Boolean  @default(false) @map("is_confirmed_by_officer")
+  confirmedBy           String?  @map("confirmed_by") @db.Uuid
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([primaryIncidentId, duplicateIncidentId])
+  @@map("ai_duplicate_groups")
+}
+
+model AIIncidentSummary {
+  summaryId                 String   @id @default(dbgenerated("uuid_generate_v4()")) @map("summary_id") @db.Uuid
+  incidentId                String   @unique @map("incident_id") @db.Uuid
+  aiExecutiveSummary        String   @map("ai_executive_summary") @db.Text
+  keyEnvironmentalThreats   String[] @map("key_environmental_threats")
+  suggestedPriority         String?  @map("suggested_priority") @db.VarChar(20)
+  recommendedEquipment      String[] @map("recommended_equipment")
+  estimatedCleanupTimeHours Decimal? @map("estimated_cleanup_time_hours") @db.Decimal(4, 1)
+  modelName                 String   @default("Gemini-1.5-Pro") @map("model_name") @db.VarChar(50)
+  createdAt                 DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  incident                  Incident @relation(fields: [incidentId], references: [incidentId], onDelete: Cascade)
+
+  @@map("ai_incident_summaries")
+}
+
+// ============================================================================
+// 8. CỘNG ĐỒNG, ĐIỂM THƯỞNG XANH & CHATBOT (6 MODELS)
+// ============================================================================
+
+model EnvironmentalCampaign {
+  campaignId             Int                   @id @default(autoincrement()) @map("campaign_id")
+  title                  String                @db.VarChar(200)
+  description            String                @db.Text
+  organizerId            String?               @map("organizer_id") @db.Uuid
+  unitId                 Int?                  @map("unit_id")
+  targetLocation         Unsupported("geometry(Point,4326)")? @map("target_location")
+  locationAddress        String                @map("location_address") @db.VarChar(255)
+  startTime              DateTime              @map("start_time") @db.Timestamptz
+  endTime                DateTime              @map("end_time") @db.Timestamptz
+  maxVolunteers          Int                   @default(50) @map("max_volunteers")
+  currentVolunteersCount Int                   @default(0) @map("current_volunteers_count")
+  rewardPointsAwarded    Int                   @default(100) @map("reward_points_awarded")
+  bannerImageUrl         String?               @map("banner_image_url") @db.VarChar(500)
+  status                 String                @default("UPCOMING") @db.VarChar(30)
+  createdAt              DateTime              @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt              DateTime              @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  participants           CampaignParticipant[]
+
+  @@map("environmental_campaigns")
+}
+
+model CampaignParticipant {
+  participantId     Int                   @id @default(autoincrement()) @map("participant_id")
+  campaignId        Int                   @map("campaign_id")
+  userId            String                @map("user_id") @db.Uuid
+  registeredAt      DateTime              @default(now()) @map("registered_at") @db.Timestamptz
+  isCheckedIn       Boolean               @default(false) @map("is_checked_in")
+  checkedInAt       DateTime?             @map("checked_in_at") @db.Timestamptz
+  pointsCredited    Int                   @default(0) @map("points_credited")
+  certificateIssued Boolean               @default(false) @map("certificate_issued")
+  certificateUrl    String?               @map("certificate_url") @db.VarChar(500)
+
+  campaign          EnvironmentalCampaign @relation(fields: [campaignId], references: [campaignId], onDelete: Cascade)
+
+  @@unique([campaignId, userId])
+  @@map("campaign_participants")
+}
+
+model CitizenReward {
+  rewardId           Int                 @id @default(autoincrement()) @map("reward_id")
+  rewardCode         String              @unique @map("reward_code") @db.VarChar(50)
+  title              String              @db.VarChar(150)
+  description        String?             @db.Text
+  pointsRequired     Int                 @map("points_required")
+  rewardType         String              @default("VOUCHER") @map("reward_type") @db.VarChar(30)
+  stockQuantity      Int                 @default(100) @map("stock_quantity")
+  imageUrl           String?             @map("image_url") @db.VarChar(500)
+  isActive           Boolean             @default(true) @map("is_active")
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz
+
+  rewardTransactions RewardTransaction[]
+
+  @@map("citizen_rewards")
+}
+
+model RewardTransaction {
+  transactionId   String         @id @default(dbgenerated("uuid_generate_v4()")) @map("transaction_id") @db.Uuid
+  userId          String         @map("user_id") @db.Uuid
+  rewardId        Int?           @map("reward_id")
+  incidentId      String?        @map("incident_id") @db.Uuid
+  transactionType String         @map("transaction_type") @db.VarChar(20)
+  pointsAmount    Int            @map("points_amount")
+  balanceAfter    Int            @map("balance_after")
+  description     String?        @db.VarChar(255)
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz
+
+  user            User           @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  reward          CitizenReward? @relation(fields: [rewardId], references: [rewardId])
+
+  @@map("reward_transactions")
+}
+
+model ChatbotConversation {
+  conversationId     String           @id @default(dbgenerated("uuid_generate_v4()")) @map("conversation_id") @db.Uuid
+  userId             String?          @map("user_id") @db.Uuid
+  sessionToken       String           @map("session_token") @db.VarChar(255)
+  channel            String           @default("WEB_PORTAL") @db.VarChar(30)
+  isResolved         Boolean          @default(false) @map("is_resolved")
+  satisfactionRating Int?             @map("satisfaction_rating")
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  messages           ChatbotMessage[]
+
+  @@map("chatbot_conversations")
+}
+
+model ChatbotMessage {
+  messageId             BigInt              @id @default(autoincrement()) @map("message_id")
+  conversationId        String              @map("conversation_id") @db.Uuid
+  senderType            String              @map("sender_type") @db.VarChar(20)
+  messageText           String              @map("message_text") @db.Text
+  detectedIntent        String?             @map("detected_intent") @db.VarChar(100)
+  extractedEntities     Json?               @map("extracted_entities")
+  confidenceScore       Decimal?            @map("confidence_score") @db.Decimal(5, 4)
+  suggestedQuickReplies String[]            @map("suggested_quick_replies")
+  createdAt             DateTime            @default(now()) @map("created_at") @db.Timestamptz
+
+  conversation          ChatbotConversation @relation(fields: [conversationId], references: [conversationId], onDelete: Cascade)
+
+  @@map("chatbot_messages")
+}
+
+// ============================================================================
+// 9. QUẢN TRỊ HỆ THỐNG, BÁO CÁO & THÔNG BÁO (4 MODELS)
+// ============================================================================
+
+model Notification {
+  notificationId   String    @id @default(dbgenerated("uuid_generate_v4()")) @map("notification_id") @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  title            String    @db.VarChar(200)
+  message          String    @db.Text
+  notificationType String    @map("notification_type") @db.VarChar(50)
+  referenceType    String?   @map("reference_type") @db.VarChar(50)
+  referenceId      String?   @map("reference_id") @db.VarChar(100)
+  actionUrl        String?   @map("action_url") @db.VarChar(500)
+  isRead           Boolean   @default(false) @map("is_read")
+  readAt           DateTime? @map("read_at") @db.Timestamptz
+  deliveryChannels String[]  @default(["IN_APP"]) @map("delivery_channels")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user             User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model Report {
+  reportId      String    @id @default(dbgenerated("uuid_generate_v4()")) @map("report_id") @db.Uuid
+  reportCode    String    @unique @map("report_code") @db.VarChar(50)
+  title         String    @db.VarChar(255)
+  reportType    String    @map("report_type") @db.VarChar(30)
+  unitId        Int?      @map("unit_id")
+  generatedBy   String?   @map("generated_by") @db.Uuid
+  startDate     DateTime  @map("start_date") @db.Date
+  endDate       DateTime  @map("end_date") @db.Date
+  parameters    Json?
+  summaryData   Json?     @map("summary_data")
+  filePdfUrl    String?   @map("file_pdf_url") @db.VarChar(500)
+  fileExcelUrl  String?   @map("file_excel_url") @db.VarChar(500)
+  status        String    @default("GENERATING") @db.VarChar(30)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("reports")
+}
+
+model SystemConfig {
+  configId    Int      @id @default(autoincrement()) @map("config_id")
+  configKey   String   @unique @map("config_key") @db.VarChar(100)
+  configValue String   @map("config_value") @db.Text
+  valueType   String   @default("STRING") @map("value_type") @db.VarChar(20)
+  description String?  @db.Text
+  isPublic    Boolean  @default(false) @map("is_public")
+  updatedBy   String?  @map("updated_by") @db.Uuid
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("system_configs")
+}
+
+model DBBackup {
+  backupId        Int      @id @default(autoincrement()) @map("backup_id")
+  backupFilename  String   @map("backup_filename") @db.VarChar(255)
+  backupType      String   @default("FULL") @map("backup_type") @db.VarChar(20)
+  fileSizeBytes   BigInt   @map("file_size_bytes")
+  storagePath     String   @map("storage_path") @db.VarChar(500)
+  checksumSha256  String?  @map("checksum_sha256") @db.VarChar(64)
+  status          String   @default("COMPLETED") @db.VarChar(20)
+  createdBy       String?  @map("created_by") @db.Uuid
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("db_backups")
+}
