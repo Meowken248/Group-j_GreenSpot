@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+sqlalchemy>=2.0.0
+asyncpg
+alembic
+geoalchemy2
+pydantic-settings
+python-dotenv
+

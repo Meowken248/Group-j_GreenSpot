@@ -1,77 +1,54 @@
 services:
-  # ============================================================================
-  # 1. PostgreSQL Database Service
-  # ============================================================================
-  postgres:
-    image: postgres:16-alpine
-    container_name: greenspot_postgres
-    restart: unless-stopped
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: ecoreport_db
+    restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-greenspot_db}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-greenspot_db}" ]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      - greenspot_network
 
-  # ============================================================================
-  # 2. Adminer - Giao diện Web trực quan quản lý PostgreSQL (truy cập: http://localhost:8080)
-  # ============================================================================
-  adminer:
-    image: adminer:4.8.1-standalone
-    container_name: greenspot_adminer
-    restart: unless-stopped
-    ports:
-      - "${ADMINER_PORT:-8080}:8080"
-    environment:
-      ADMINER_DEFAULT_SERVER: postgres
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - greenspot_network
-
-  # ============================================================================
-  # 3. Next.js App (Tùy chọn: Chạy toàn bộ App trong Docker khi deploy/test)
-  #    Kích hoạt bằng lệnh: docker compose --profile full up -d
-  # ============================================================================
-  app:
+  backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: greenspot_app
-    restart: unless-stopped
-    ports:
-      - "${APP_PORT:-3000}:3000"
+    container_name: ecoreport_backend
+    restart: always
     environment:
-      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-greenspot_db}?schema=public"
-      NEXT_PUBLIC_MAPBOX_TOKEN: ${NEXT_PUBLIC_MAPBOX_TOKEN}
-      MAPBOX_SECRET_TOKEN: ${MAPBOX_SECRET_TOKEN}
-      NODE_ENV: production
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/postgres
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
     depends_on:
-      postgres:
+      db:
         condition: service_healthy
-    networks:
-      - greenspot_network
-    profiles:
-      - full
-      - app
 
-# ==============================================================================
-# Volumes & Networks
-# ==============================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ecoreport_frontend
+    restart: always
+    environment:
+      VITE_API_URL: http://localhost:8000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
 volumes:
   postgres_data:
-    driver: local
 
-networks:
-  greenspot_network:
-    driver: bridge
