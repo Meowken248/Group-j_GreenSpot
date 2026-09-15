@@ -1,82 +1,36 @@
-# GreenSpot
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Dự án GreenSpot bao gồm FrontEnd (Vite + React) và BackEnd (Next.js + Prisma + PostgreSQL).
+## Getting Started
 
----
-
-## Cấu trúc dự án
-
-- **FrontEnd**: Ứng dụng client xây dựng bằng Vite, React và Mapbox GL.
-- **BackEnd**: API server xây dựng bằng Next.js (App Router), TypeScript, Prisma ORM và Docker Compose cho PostgreSQL.
-
----
-
-## Hướng dẫn khởi chạy nhanh (Quick Start)
-
-### 1. Cài đặt và chạy BackEnd (kèm Database)
-Toàn bộ cơ sở dữ liệu và API server nằm trong `BackEnd/`:
+First, run the development server:
 
 ```bash
-cd BackEnd
-
-# Cài đặt dependencies
-npm install --legacy-peer-deps
-
-# Tạo file .env từ file mẫu nếu chưa có
-cp .env.example .env
-
-# Khởi chạy PostgreSQL container bằng Docker (đảm bảo Docker Desktop đã mở)
-docker compose up -d
-
-# Đẩy schema vào database
-npm run db:push
-
-
-# Khởi chạy BackEnd server (cổng 3000)
 npm run dev
-```
-> Kiểm tra kết nối DB tại: [http://localhost:3000/api/db-test](http://localhost:3000/api/db-test)
-
-### 3. Cài đặt và chạy FrontEnd
-Mở một terminal khác:
-```bash
-cd FrontEnd
-
-# Cài đặt dependencies
-npm install
-
-# Tạo file .env từ file mẫu nếu chưa có
-cp .env.example .env
-
-# Khởi chạy FrontEnd dev server
-npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
----
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Cấu hình biến môi trường Mapbox
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-- **FrontEnd (`FrontEnd/.env`)**:
-  ```env
-  # Public token (bắt đầu bằng pk.), giới hạn theo domain trong Mapbox dashboard
-  VITE_MAPBOX_TOKEN=pk.xxxxx
-  ```
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-- **BackEnd (`BackEnd/.env`)**:
-  ```env
-  # Secret token (bắt đầu bằng sk.) cho Geocoding API, KHÔNG lộ ra frontend
-  MAPBOX_SECRET_TOKEN=sk.xxxxx
-  ```
+## Learn More
 
----
+To learn more about Next.js, take a look at the following resources:
 
-## Các lệnh Prisma Database trong BackEnd
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-| Lệnh | Mô tả |
-|---|---|
-| `npm run db:push` | Đồng bộ schema từ `prisma/schema.prisma` trực tiếp vào database |
-| `npm run db:migrate` | Áp dụng database migrations |
-| `npm run db:generate` | Tạo lại code cho Prisma Client |
-| `npm run db:studio` | Mở giao diện xem và chỉnh sửa dữ liệu Prisma Studio |
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-Chi tiết hơn xem tại [BackEnd/README.md](BackEnd/README.md).
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

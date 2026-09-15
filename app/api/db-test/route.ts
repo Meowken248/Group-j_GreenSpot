@@ -3,9 +3,9 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    // Thử truy vấn cơ bản kiểm tra kết nối với PostgreSQL
+    // Truy vấn cơ bản kiểm tra kết nối với PostgreSQL
     await prisma.$queryRaw`SELECT 1`;
-    
+
     // Đếm số user trong bảng mẫu
     const userCount = await prisma.user.count();
 
@@ -30,3 +30,4 @@ export async function GET() {
     );
   }
 }
+
