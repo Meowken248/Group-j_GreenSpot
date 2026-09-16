@@ -1,9 +1,9 @@
 import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import Map, { NavigationControl, FullscreenControl, Marker, Source, Layer, type MapRef } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { HCM_LANDMARKS, type HCMLocation } from "../data/hcmLocations";
+import type { FeatureCollection } from "geojson";
+import type { HCMLocation } from "../data/hcmLocations";
 import {
-  HCM_ECO_LOCATIONS,
   CATEGORY_CONFIG,
   type EcoLocation,
   type EcoCategory,
@@ -16,10 +16,16 @@ import {
 import {
   reverseGeocodeOSM,
   getRouteOSRM,
-  HCM_DISTRICT_BOUNDARIES,
   type ReverseGeocodeResult,
   type RouteResult,
 } from "../services/osmAdvancedService";
+import {
+  fetchEcoLocationsAPI,
+  fetchDistrictBoundariesAPI,
+  fetchLandmarksAPI,
+  fetchLiveWeatherAPI,
+  type LiveWeatherResponse,
+} from "../services/ecoApiService";
 
 // Bộ sưu tập bản đồ nền OpenStreetMap đa dạng
 export const MAP_STYLES = {
@@ -185,6 +191,62 @@ function EcoMap() {
     lng: 106.7025,
   });
 
+  // States nạp dữ liệu động từ API (Không khởi tạo cứng)
+  const [ecoLocations, setEcoLocations] = useState<EcoLocation[]>([]);
+  const [categoryCounts, setCategoryCounts] = useState<{
+    all: number;
+    incident: number;
+    green_spot: number;
+    recycling: number;
+    sensor: number;
+  }>({ all: 0, incident: 0, green_spot: 0, recycling: 0, sensor: 0 });
+  const [loadingEco, setLoadingEco] = useState<boolean>(true);
+
+  const [landmarks, setLandmarks] = useState<HCMLocation[]>([]);
+  const [districtBoundaries, setDistrictBoundaries] = useState<FeatureCollection | null>(null);
+  const [liveWeather, setLiveWeather] = useState<LiveWeatherResponse | null>(null);
+
+  // 1. Tải danh sách địa điểm môi trường từ Backend API (PostgreSQL/PostGIS)
+  useEffect(() => {
+    let isMounted = true;
+    setLoadingEco(true);
+    fetchEcoLocationsAPI(selectedCategory === "all" ? undefined : selectedCategory).then((res) => {
+      if (!isMounted) return;
+      if (res && res.data) {
+        setEcoLocations(res.data);
+        if (res.counts) setCategoryCounts(res.counts);
+      }
+      setLoadingEco(false);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedCategory]);
+
+  // 2. Tải Ranh giới quận/huyện, Điểm Landmark Quick Tour, và Thời tiết thời gian thực
+  useEffect(() => {
+    fetchDistrictBoundariesAPI().then((data) => {
+      if (data) setDistrictBoundaries(data);
+    });
+
+    fetchLandmarksAPI().then((data) => {
+      if (data && data.length > 0) setLandmarks(data);
+    });
+
+    fetchLiveWeatherAPI().then((data) => {
+      if (data) setLiveWeather(data);
+    });
+
+    // Định kỳ 3 phút tự động làm mới thời tiết & AQI
+    const timer = setInterval(() => {
+      fetchLiveWeatherAPI().then((data) => {
+        if (data) setLiveWeather(data);
+      });
+    }, 180000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   // Tự động gọi API tìm kiếm trực tiếp quán xá, số nhà toàn TP.HCM (Debounce 350ms)
   useEffect(() => {
     if (!searchQuery.trim() || searchQuery.trim().length < 2) {
@@ -264,48 +326,33 @@ function EcoMap() {
     setCalculatingRoute(false);
   };
 
-  // Danh sách địa điểm môi trường sau khi lọc
+  // Danh sách địa điểm môi trường hiển thị sau khi lọc
   const filteredLocations = useMemo(() => {
-    if (selectedCategory === "all") return HCM_ECO_LOCATIONS;
-    return HCM_ECO_LOCATIONS.filter((loc) => loc.category === selectedCategory);
-  }, [selectedCategory]);
+    if (selectedCategory === "all") return ecoLocations;
+    return ecoLocations.filter((loc) => loc.category === selectedCategory);
+  }, [ecoLocations, selectedCategory]);
 
-  // Đếm số lượng theo danh mục
-  const categoryCounts = useMemo(() => {
-    const counts = {
-      all: HCM_ECO_LOCATIONS.length,
-      incident: 0,
-      green_spot: 0,
-      recycling: 0,
-      sensor: 0,
-    };
-    HCM_ECO_LOCATIONS.forEach((l) => {
-      counts[l.category]++;
-    });
-    return counts;
-  }, []);
-
-  // Lọc nội bộ
+  // Lọc nội bộ từ dữ liệu đã tải qua API
   const localSearchResults = useMemo(() => {
     if (!searchQuery.trim()) return { ecoMatches: [] as EcoLocation[], landmarkMatches: [] as HCMLocation[] };
     const q = searchQuery.toLowerCase();
 
-    const ecoMatches = HCM_ECO_LOCATIONS.filter(
+    const ecoMatches = ecoLocations.filter(
       (l) =>
         l.name.toLowerCase().includes(q) ||
         l.district.toLowerCase().includes(q) ||
         l.address.toLowerCase().includes(q)
     );
 
-    const landmarkMatches = HCM_LANDMARKS.filter(
+    const landmarkMatches = landmarks.filter(
       (l) =>
         l.name.toLowerCase().includes(q) ||
         l.district.toLowerCase().includes(q) ||
-        l.description.toLowerCase().includes(q)
+        (l.description && l.description.toLowerCase().includes(q))
     );
 
     return { ecoMatches, landmarkMatches };
-  }, [searchQuery]);
+  }, [searchQuery, ecoLocations, landmarks]);
 
   // Điều hướng camera
   const handleFlyToLocation = (lng: number, lat: number, zoom = 16.5, pitch = 55, bearing = -15) => {
@@ -675,8 +722,8 @@ function EcoMap() {
           ))}
         </div>
 
-        {/* Hàng 2: Bộ lọc danh mục môi trường */}
-        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+        {/* Hàng 2: Bộ lọc danh mục môi trường (Dữ liệu API) */}
+        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}>
           <button
             onClick={() => setSelectedCategory("all")}
             style={{
@@ -694,7 +741,7 @@ function EcoMap() {
               backdropFilter: "blur(12px)",
             }}
           >
-            <span>🌐 Tất cả ({categoryCounts.all})</span>
+            <span>🌐 Tất cả ({loadingEco ? "..." : categoryCounts.all})</span>
           </button>
 
           {(Object.keys(CATEGORY_CONFIG) as EcoCategory[]).map((catKey) => {
@@ -720,7 +767,7 @@ function EcoMap() {
                 }}
               >
                 <span>{cfg.icon}</span>
-                <span>{cfg.name} ({categoryCounts[catKey]})</span>
+                <span>{cfg.name} ({loadingEco ? "..." : categoryCounts[catKey]})</span>
               </button>
             );
           })}
@@ -1126,7 +1173,7 @@ function EcoMap() {
           ✨ Tour nhanh:
         </span>
         <div style={{ display: "flex", gap: 6 }}>
-          {HCM_LANDMARKS.map((loc) => (
+          {landmarks.map((loc) => (
             <button
               key={loc.id}
               onClick={() => handleSelectLandmark(loc)}
@@ -1146,14 +1193,14 @@ function EcoMap() {
                 transition: "all 0.2s ease",
               }}
             >
-              <span>{loc.icon}</span>
+              <span>{loc.icon || "📍"}</span>
               <span>{loc.name}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* 7. WIDGET MÔI TRƯỜNG & CHỈ SỐ KHÔNG KHÍ TP.HCM */}
+      {/* 7. WIDGET MÔI TRƯỜNG & CHỈ SỐ KHÔNG KHÍ TP.HCM (LIVE API) */}
       <div
         style={{
           position: "absolute",
@@ -1167,28 +1214,46 @@ function EcoMap() {
           boxShadow: "0 8px 28px rgba(0, 0, 0, 0.12)",
           border: "1px solid rgba(255, 255, 255, 0.8)",
           fontFamily: "'Inter', sans-serif",
-          minWidth: 190,
+          minWidth: 200,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 5 }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#10b981", boxShadow: "0 0 8px #10b981" }} />
             Khí hậu TP.HCM
           </span>
-          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981", boxShadow: "0 0 8px #10b981" }} />
+          <span style={{ fontSize: 9.5, color: "#059669", fontWeight: 700, background: "#ecfdf5", padding: "1px 5px", borderRadius: 6 }}>
+            Trực tiếp API
+          </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#0f172a" }}>29°C</div>
-            <div style={{ fontSize: 11, color: "#64748b" }}>Nắng nhẹ ven sông</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "#0f172a" }}>
+              {liveWeather ? liveWeather.temp : "28°C"}
+            </div>
+            <div style={{ fontSize: 11, color: "#64748b" }}>
+              {liveWeather ? liveWeather.desc : "Nắng ấm ven sông"}
+            </div>
           </div>
           <div style={{ borderLeft: "1px solid #e2e8f0", paddingLeft: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: "#059669" }}>AQI 42</span>
-              <span style={{ fontSize: 10, background: "#dcfce7", color: "#15803d", fontWeight: 700, padding: "1px 5px", borderRadius: 6 }}>
-                Tốt
+              <span style={{ fontSize: 16, fontWeight: 800, color: liveWeather && liveWeather.aqi > 100 ? "#ea580c" : "#059669" }}>
+                AQI {liveWeather ? liveWeather.aqi : 42}
+              </span>
+              <span style={{
+                fontSize: 10,
+                background: liveWeather && liveWeather.aqi > 100 ? "#ffedd5" : "#dcfce7",
+                color: liveWeather && liveWeather.aqi > 100 ? "#c2410c" : "#15803d",
+                fontWeight: 700,
+                padding: "1px 5px",
+                borderRadius: 6,
+              }}>
+                {liveWeather ? liveWeather.aqiStatus : "Tốt"}
               </span>
             </div>
-            <div style={{ fontSize: 10.5, color: "#64748b" }}>Chất lượng trong lành</div>
+            <div style={{ fontSize: 10.5, color: "#64748b" }}>
+              {liveWeather ? `PM2.5: ${liveWeather.pm25} µg/m³` : "Chất lượng trong lành"}
+            </div>
           </div>
         </div>
         {mouseCoords && (
@@ -1241,9 +1306,9 @@ function EcoMap() {
           />
         )}
 
-        {/* 2. LỚP RANH GIỚI CÁC QUẬN / HUYỆN TP.HCM (GeoJSON Polygons) */}
-        {showDistricts && (
-          <Source id="hcm-districts" type="geojson" data={HCM_DISTRICT_BOUNDARIES}>
+        {/* 2. LỚP RANH GIỚI CÁC QUẬN / HUYỆN TP.HCM (GeoJSON Polygons từ API) */}
+        {showDistricts && districtBoundaries && (
+          <Source id="hcm-districts" type="geojson" data={districtBoundaries}>
             <Layer
               id="districts-fill"
               type="fill"
