@@ -1,3 +1,14 @@
+:root {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 html,
 body,
 #root {
@@ -6,5 +17,6 @@ body,
   margin: 0;
   padding: 0;
   overflow: hidden;
-  color: blue;
+  position: relative;
+  background-color: #0f172a;
 }
