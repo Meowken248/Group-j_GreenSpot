@@ -26,21 +26,123 @@ import {
   fetchLiveWeatherAPI,
   type LiveWeatherResponse,
 } from "../services/ecoApiService";
+import { useFastGeolocation } from "../hooks/useFastGeolocation";
 
-// Bộ sưu tập bản đồ nền OpenStreetMap đa dạng
+// Bộ sưu tập bản đồ nền Google Tile Cluster & OpenStreetMap phong phú
 export const MAP_STYLES = {
+  googleRoadmap: {
+    id: "googleRoadmap",
+    name: "Google Maps",
+    icon: "🗺️",
+    sourceName: null,
+    isGoogle: true,
+    url: {
+      version: 8,
+      sources: {
+        "google-roadmap-tiles": {
+          type: "raster",
+          tiles: [
+            "https://mt0.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
+            "https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
+            "https://mt2.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
+            "https://mt3.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
+          ],
+          tileSize: 256,
+          attribution: "© Google Maps (Tile Cluster)",
+          maxzoom: 22,
+        },
+      },
+      layers: [
+        {
+          id: "google-roadmap-layer",
+          type: "raster",
+          source: "google-roadmap-tiles",
+          minzoom: 0,
+          maxzoom: 22,
+        },
+      ],
+    },
+  },
+  googleHybrid: {
+    id: "googleHybrid",
+    name: "Google Vệ tinh",
+    icon: "🛰️",
+    sourceName: null,
+    isGoogle: true,
+    url: {
+      version: 8,
+      sources: {
+        "google-hybrid-tiles": {
+          type: "raster",
+          tiles: [
+            "https://mt0.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+            "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+            "https://mt2.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+            "https://mt3.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+          ],
+          tileSize: 256,
+          attribution: "© Google Maps Hybrid (Tile Cluster)",
+          maxzoom: 22,
+        },
+      },
+      layers: [
+        {
+          id: "google-hybrid-layer",
+          type: "raster",
+          source: "google-hybrid-tiles",
+          minzoom: 0,
+          maxzoom: 22,
+        },
+      ],
+    },
+  },
+  googleTraffic: {
+    id: "googleTraffic",
+    name: "Giao thông",
+    icon: "🚦",
+    sourceName: null,
+    isGoogle: true,
+    url: {
+      version: 8,
+      sources: {
+        "google-traffic-tiles": {
+          type: "raster",
+          tiles: [
+            "https://mt0.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}",
+            "https://mt1.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}",
+            "https://mt2.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}",
+            "https://mt3.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}",
+          ],
+          tileSize: 256,
+          attribution: "© Google Maps Traffic (Tile Cluster)",
+          maxzoom: 22,
+        },
+      },
+      layers: [
+        {
+          id: "google-traffic-layer",
+          type: "raster",
+          source: "google-traffic-tiles",
+          minzoom: 0,
+          maxzoom: 22,
+        },
+      ],
+    },
+  },
   voyager: {
     id: "voyager",
     name: "Sinh động",
-    icon: "🗺️",
+    icon: "🎨",
     sourceName: "carto",
+    isGoogle: false,
     url: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
   },
   osmDetailed: {
     id: "osmDetailed",
-    name: "Số nhà & Hẻm (OSM)",
+    name: "Số nhà (OSM)",
     icon: "🏘️",
     sourceName: null,
+    isGoogle: false,
     url: {
       version: 8,
       sources: {
@@ -62,37 +164,12 @@ export const MAP_STYLES = {
       ],
     },
   },
-  cyclosm: {
-    id: "cyclosm",
-    name: "Làn xe đạp & Xanh",
-    icon: "🚲",
-    sourceName: null,
-    url: {
-      version: 8,
-      sources: {
-        "cyclosm-tiles": {
-          type: "raster",
-          tiles: ["https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png"],
-          tileSize: 256,
-          attribution: "© CyclOSM • Tuyến xe đạp & Giao thông xanh",
-        },
-      },
-      layers: [
-        {
-          id: "cyclosm-layer",
-          type: "raster",
-          source: "cyclosm-tiles",
-          minzoom: 0,
-          maxzoom: 19,
-        },
-      ],
-    },
-  },
   opentopo: {
     id: "opentopo",
-    name: "Địa hình & Cao độ",
+    name: "Địa hình",
     icon: "⛰️",
     sourceName: null,
+    isGoogle: false,
     url: {
       version: 8,
       sources: {
@@ -114,39 +191,12 @@ export const MAP_STYLES = {
       ],
     },
   },
-  satellite: {
-    id: "satellite",
-    name: "Vệ tinh",
-    icon: "🛰️",
-    sourceName: null,
-    url: {
-      version: 8,
-      sources: {
-        "esri-satellite": {
-          type: "raster",
-          tiles: [
-            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-          ],
-          tileSize: 256,
-          attribution: "Esri, Maxar",
-        },
-      },
-      layers: [
-        {
-          id: "esri-satellite-layer",
-          type: "raster",
-          source: "esri-satellite",
-          minzoom: 0,
-          maxzoom: 19,
-        },
-      ],
-    },
-  },
   dark: {
     id: "dark",
     name: "Ban đêm",
     icon: "🌙",
     sourceName: "carto",
+    isGoogle: false,
     url: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
   },
 };
@@ -156,8 +206,11 @@ type StyleKey = keyof typeof MAP_STYLES;
 function EcoMap() {
   const mapRef = useRef<MapRef>(null);
 
-  // States bản đồ & bộ lọc
-  const [activeStyle, setActiveStyle] = useState<StyleKey>("voyager");
+  // Hook GPS siêu tốc
+  const { coords: gpsCoords, refreshGps } = useFastGeolocation();
+
+  // States bản đồ & bộ lọc (Mặc định dùng Google Maps Tile Cluster)
+  const [activeStyle, setActiveStyle] = useState<StyleKey>("googleRoadmap");
   const [is3D, setIs3D] = useState<boolean>(true);
   const [showDistricts, setShowDistricts] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<EcoCategory | "all">("all");
@@ -798,6 +851,25 @@ function EcoMap() {
         <div style={{ display: "flex", alignItems: "center", gap: 6, paddingRight: 6, borderRight: "1px solid rgba(0,0,0,0.08)" }}>
           <span style={{ fontSize: 18 }}>🌱</span>
           <span style={{ fontWeight: 800, fontSize: 14, color: "#1b4332", letterSpacing: "-0.4px" }}>EcoReport</span>
+          {MAP_STYLES[activeStyle].isGoogle && (
+            <span
+              style={{
+                fontSize: 9.5,
+                fontWeight: 700,
+                background: "rgba(16, 185, 129, 0.15)",
+                color: "#059669",
+                padding: "2px 7px",
+                borderRadius: 999,
+                border: "1px solid rgba(16, 185, 129, 0.35)",
+                whiteSpace: "nowrap",
+                display: "flex",
+                alignItems: "center",
+                gap: 3,
+              }}
+            >
+              <span>⚡</span> Google Cluster
+            </span>
+          )}
         </div>
 
         {/* Các nút chọn kiểu bản đồ */}
@@ -805,6 +877,7 @@ function EcoMap() {
           {(Object.keys(MAP_STYLES) as StyleKey[]).map((key) => {
             const item = MAP_STYLES[key];
             const isActive = activeStyle === key;
+            const isGoogle = item.isGoogle;
             return (
               <button
                 key={key}
@@ -815,18 +888,35 @@ function EcoMap() {
                   gap: 4,
                   padding: "5px 10px",
                   borderRadius: 20,
-                  border: "none",
+                  border: isGoogle && isActive ? "1px solid #10b981" : "none",
                   cursor: "pointer",
                   fontSize: 11.5,
                   fontWeight: isActive ? 700 : 500,
-                  background: isActive ? "#2d6a4f" : "transparent",
+                  background: isActive
+                    ? (isGoogle ? "linear-gradient(135deg, #059669 0%, #10b981 100%)" : "#2d6a4f")
+                    : "transparent",
                   color: isActive ? "#ffffff" : "#475569",
                   transition: "all 0.2s ease",
-                  boxShadow: isActive ? "0 4px 12px rgba(45, 106, 79, 0.35)" : "none",
+                  boxShadow: isActive ? "0 4px 12px rgba(16, 185, 129, 0.35)" : "none",
                 }}
               >
                 <span>{item.icon}</span>
                 <span>{item.name}</span>
+                {isGoogle && (
+                  <span
+                    style={{
+                      fontSize: 8.5,
+                      fontWeight: 800,
+                      background: isActive ? "rgba(0,0,0,0.22)" : "rgba(16,185,129,0.12)",
+                      color: isActive ? "#ffffff" : "#059669",
+                      padding: "1px 4px",
+                      borderRadius: 4,
+                      marginLeft: 1,
+                    }}
+                  >
+                    G
+                  </span>
+                )}
               </button>
             );
           })}
@@ -853,6 +943,39 @@ function EcoMap() {
           }}
         >
           <span>{is3D ? "🏢 3D" : "📐 2D"}</span>
+        </button>
+
+        {/* Nút định vị GPS siêu tốc */}
+        <button
+          onClick={() => {
+            refreshGps();
+            if (gpsCoords && mapRef.current) {
+              mapRef.current.flyTo({
+                center: [gpsCoords.lng, gpsCoords.lat],
+                zoom: 16,
+                pitch: is3D ? 58 : 0,
+                duration: 1200,
+              });
+            }
+          }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            padding: "5px 10px",
+            borderRadius: 20,
+            border: gpsCoords ? "1px solid #10b981" : "1px solid #cbd5e1",
+            cursor: "pointer",
+            fontSize: 11.5,
+            fontWeight: 700,
+            background: gpsCoords ? "rgba(16, 185, 129, 0.12)" : "rgba(241, 245, 249, 0.8)",
+            color: gpsCoords ? "#059669" : "#64748b",
+            transition: "all 0.2s ease",
+            marginLeft: 2,
+          }}
+          title={gpsCoords ? `Vị trí GPS: ${gpsCoords.lat.toFixed(4)}, ${gpsCoords.lng.toFixed(4)}` : "Đang tìm GPS..."}
+        >
+          <span>🎯 GPS</span>
         </button>
       </div>
 
@@ -1502,6 +1625,36 @@ function EcoMap() {
             </Marker>
           );
         })}
+
+        {/* 7. MARKER ĐỊNH VỊ GPS THỜI GIAN THỰC (PULSE BEACON NEON XANH) */}
+        {gpsCoords && (
+          <Marker longitude={gpsCoords.lng} latitude={gpsCoords.lat} anchor="center">
+            <div style={{ position: "relative", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+              <div
+                style={{
+                  position: "absolute",
+                  width: "100%",
+                  height: "100%",
+                  borderRadius: "50%",
+                  background: "rgba(16, 185, 129, 0.35)",
+                  border: "2px solid #10b981",
+                  animation: "radarPing 1.8s infinite",
+                }}
+              />
+              <div
+                style={{
+                  width: 14,
+                  height: 14,
+                  borderRadius: "50%",
+                  background: "#10b981",
+                  boxShadow: "0 0 12px #10b981",
+                  border: "2px solid #ffffff",
+                  zIndex: 2,
+                }}
+              />
+            </div>
+          </Marker>
+        )}
       </Map>
 
       {/* Hiệu ứng Animation CSS */}

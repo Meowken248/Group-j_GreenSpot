@@ -26,7 +26,13 @@ export const GoogleMapView: FC = () => {
   const trafficLayerRef = useRef<google.maps.TrafficLayer | null>(null);
 
   // Engine state (Google Maps SDK hoặc Google Tile Cluster)
-  const [engine, setEngine] = useState<MapEngineType>("google");
+  const [engine, setEngine] = useState<MapEngineType>(() => {
+    const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    if (!key || key.trim() === "" || key.includes("YOUR_") || key.includes("AIzaSy")) {
+      return "fallback";
+    }
+    return "google";
+  });
   const [authFailed, setAuthFailed] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
@@ -64,8 +70,9 @@ export const GoogleMapView: FC = () => {
     return unsub;
   }, []);
 
-  // Khởi tạo Google Maps SDK bất đồng bộ
+  // Khởi tạo Google Maps SDK bất đồng bộ (chỉ khi ở chế độ google)
   useEffect(() => {
+    if (engine !== "google") return;
     let isCancelled = false;
 
     loadGoogleMaps()
