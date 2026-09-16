@@ -1,29 +1,35 @@
 import { type FC } from "react";
-import type { Coordinates, MapEngineType } from "../../types/map";
+import type { Coordinates, MapBaseType } from "../../types/map";
 
 interface MapHudProps {
-  engine: MapEngineType;
+  mapType: MapBaseType;
+  showTraffic: boolean;
   coords: Coordinates | null;
   accuracy: number | null;
   isLocating: boolean;
   isFromCache: boolean;
   gpsFixDurationMs: number | null;
-  mapLatency: number | null;
   gpsError: string | null;
-  loadError: string | null;
 }
 
 export const MapHud: FC<MapHudProps> = ({
-  engine,
+  mapType,
+  showTraffic,
   coords,
   accuracy,
   isLocating,
   isFromCache,
   gpsFixDurationMs,
-  mapLatency,
   gpsError,
-  loadError,
 }) => {
+  const getMapModeName = () => {
+    let base = "Google Đường phố";
+    if (mapType === "satellite") base = "Google Vệ tinh";
+    if (mapType === "osm") base = "OpenStreetMap";
+    if (showTraffic) base += " + Traffic";
+    return base;
+  };
+
   return (
     <div className="metrics-hud">
       <div className="hud-title">
@@ -38,15 +44,9 @@ export const MapHud: FC<MapHudProps> = ({
 
       <div className="hud-grid">
         <div className="hud-item">
-          <span className="hud-label">
-            {engine === "google" ? "Google Maps SDK:" : "Engine:"}
-          </span>
+          <span className="hud-label">Lớp bản đồ:</span>
           <span className="hud-value highlight-fast">
-            {engine === "google"
-              ? mapLatency !== null
-                ? `${mapLatency} ms`
-                : "Đang nạp..."
-              : "Direct Google Tile Cluster"}
+            {getMapModeName()}
           </span>
         </div>
 
@@ -73,7 +73,6 @@ export const MapHud: FC<MapHudProps> = ({
       </div>
 
       {gpsError && <div className="error-banner">⚠️ {gpsError}</div>}
-      {loadError && <div className="error-banner">❌ {loadError}</div>}
     </div>
   );
 };

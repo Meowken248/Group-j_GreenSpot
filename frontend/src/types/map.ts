@@ -14,14 +14,13 @@ export interface GeoLocationState {
 
 export type MapEngineType = "google" | "fallback";
 
-export type MapBaseType = "roadmap" | "satellite";
+export type MapBaseType = "roadmap" | "satellite" | "osm";
 
 export interface MapMetrics {
-  mapLatency: number | null;
   gpsFixDurationMs: number | null;
   coords: Coordinates | null;
   accuracy: number | null;
   isLocating: boolean;
   isFromCache: boolean;
-  engine: MapEngineType;
+  mapType: MapBaseType;
 }

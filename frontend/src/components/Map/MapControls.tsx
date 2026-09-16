@@ -1,14 +1,12 @@
 import { type FC } from "react";
-import type { MapBaseType, MapEngineType } from "../../types/map";
+import type { MapBaseType } from "../../types/map";
 
 interface MapControlsProps {
   isLocating: boolean;
-  engine: MapEngineType;
   mapType: MapBaseType;
   showTraffic: boolean;
   showCircle: boolean;
   onRecenter: () => void;
-  onToggleEngine: () => void;
   onToggleMapType: () => void;
   onToggleTraffic: () => void;
   onToggleCircle: () => void;
@@ -16,46 +14,47 @@ interface MapControlsProps {
 
 export const MapControls: FC<MapControlsProps> = ({
   isLocating,
-  engine,
   mapType,
   showTraffic,
   showCircle,
   onRecenter,
-  onToggleEngine,
   onToggleMapType,
   onToggleTraffic,
   onToggleCircle,
 }) => {
+  const getMapTypeLabel = () => {
+    switch (mapType) {
+      case "satellite":
+        return "Vệ tinh (Google Satellite)";
+      case "osm":
+        return "OpenStreetMap (OSM)";
+      default:
+        return "Bản đồ đường (Google Roadmap)";
+    }
+  };
+
   return (
     <div className="map-controls-group">
       <button
         className={`control-btn ${isLocating ? "locating" : ""}`}
         onClick={onRecenter}
-        title="Định vị lại vị trí của tôi"
+        title="Định vị lại vị trí GPS của bạn"
       >
         🎯
       </button>
 
       <button
-        className="control-btn"
-        onClick={onToggleEngine}
-        title={`Đổi động cơ hiển thị (Hiện tại: ${engine === "google" ? "Google Maps SDK" : "Google Tiles Core"})`}
-      >
-        🔄
-      </button>
-
-      <button
-        className={`control-btn ${mapType === "satellite" ? "active" : ""}`}
+        className={`control-btn ${mapType !== "roadmap" ? "active" : ""}`}
         onClick={onToggleMapType}
-        title="Đổi kiểu bản đồ (Vệ tinh / Bản đồ đường)"
+        title={`Đổi kiểu bản đồ (Hiện tại: ${getMapTypeLabel()})`}
       >
-        🗺️
+        {mapType === "satellite" ? "🛰️" : mapType === "osm" ? "🌐" : "🗺️"}
       </button>
 
       <button
         className={`control-btn ${showTraffic ? "active" : ""}`}
         onClick={onToggleTraffic}
-        title="Bật / Tắt lớp giao thông thời gian thực"
+        title={`Lớp giao thông thời gian thực (${showTraffic ? "Đang BẬT" : "Đang TẮT"})`}
       >
         🚦
       </button>
@@ -63,7 +62,7 @@ export const MapControls: FC<MapControlsProps> = ({
       <button
         className={`control-btn ${showCircle ? "active" : ""}`}
         onClick={onToggleCircle}
-        title="Bật / Tắt vòng tròn bán kính GPS"
+        title={`Vòng tròn bán kính GPS (${showCircle ? "Đang BẬT" : "Đang TẮT"})`}
       >
         ⭕
       </button>

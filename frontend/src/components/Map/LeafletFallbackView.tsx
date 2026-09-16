@@ -1,5 +1,7 @@
 import { useEffect, useRef, type FC } from "react";
 import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import type { MapBaseType } from "../../types/map";
 
 export type TileLayerType = "google_roadmap" | "google_hybrid" | "google_traffic" | "osm";
 
@@ -7,18 +9,20 @@ interface LeafletFallbackViewProps {
   coords: { lat: number; lng: number } | null;
   accuracy: number | null;
   showCircle: boolean;
-  mapType: "roadmap" | "satellite";
+  mapType: MapBaseType;
   showTraffic: boolean;
+  searchLocation?: { lat: number; lng: number; name: string } | null;
   onMapReady?: (map: L.Map) => void;
 }
 
 const DEFAULT_CENTER = { lat: 10.7769, lng: 106.7009 };
 
-// Các lớp bản đồ Google Maps và OSM chính hãng không có watermark và tốc độ cực nhanh
+// Các lớp bản đồ Google Maps và OSM chính hãng tốc độ cao
 const TILE_URLS = {
   google_roadmap: "https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
   google_hybrid: "https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
   google_traffic: "https://mt{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}",
+  google_hybrid_traffic: "https://mt{s}.google.com/vt/lyrs=y,traffic&x={x}&y={y}&z={z}",
   osm: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
 };
 
@@ -28,6 +32,7 @@ export const LeafletFallbackView: FC<LeafletFallbackViewProps> = ({
   showCircle,
   mapType,
   showTraffic,
+  searchLocation,
   onMapReady,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -35,6 +40,7 @@ export const LeafletFallbackView: FC<LeafletFallbackViewProps> = ({
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const circleRef = useRef<L.Circle | null>(null);
+  const searchMarkerRef = useRef<L.Marker | null>(null);
 
   const coordsRef = useRef(coords);
   const accuracyRef = useRef(accuracy);
@@ -49,10 +55,12 @@ export const LeafletFallbackView: FC<LeafletFallbackViewProps> = ({
   }, [coords, accuracy, onMapReady]);
 
   // Xác định URL tile dựa trên loại bản đồ và lớp giao thông
-  const getActiveTileUrl = (type: "roadmap" | "satellite", traffic: boolean) => {
-    if (traffic) return TILE_URLS.google_traffic;
-    if (type === "satellite") return TILE_URLS.google_hybrid;
-    return TILE_URLS.google_roadmap;
+  const getActiveTileUrl = (type: MapBaseType, traffic: boolean) => {
+    if (type === "osm") return TILE_URLS.osm;
+    if (type === "satellite") {
+      return traffic ? TILE_URLS.google_hybrid_traffic : TILE_URLS.google_hybrid;
+    }
+    return traffic ? TILE_URLS.google_traffic : TILE_URLS.google_roadmap;
   };
 
   useEffect(() => {
@@ -162,6 +170,39 @@ export const LeafletFallbackView: FC<LeafletFallbackViewProps> = ({
       circleRef.current.remove();
     }
   }, [showCircle]);
+
+  // Cập nhật marker địa điểm khi người dùng tìm kiếm
+  useEffect(() => {
+    if (!searchLocation || !mapRef.current) return;
+
+    if (searchMarkerRef.current) {
+      searchMarkerRef.current.remove();
+    }
+
+    const pinIcon = L.divIcon({
+      className: "custom-search-pin",
+      html: `
+        <div style="
+          font-size: 26px;
+          line-height: 1;
+          filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+          cursor: pointer;
+        ">
+          📍
+        </div>
+      `,
+      iconSize: [28, 28],
+      iconAnchor: [14, 26],
+    });
+
+    const marker = L.marker([searchLocation.lat, searchLocation.lng], { icon: pinIcon })
+      .addTo(mapRef.current)
+      .bindPopup(`<strong style="font-size: 13px; color: #0f172a;">${searchLocation.name}</strong>`)
+      .openPopup();
+
+    searchMarkerRef.current = marker;
+    mapRef.current.flyTo([searchLocation.lat, searchLocation.lng], 16, { duration: 1 });
+  }, [searchLocation]);
 
   return (
     <div
