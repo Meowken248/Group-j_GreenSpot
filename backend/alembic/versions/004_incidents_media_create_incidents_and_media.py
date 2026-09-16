@@ -30,7 +30,7 @@ def upgrade() -> None:
     sa.Column('sla_hours', sa.Integer(), nullable=False),
     sa.Column('color_hex', sa.String(length=10), nullable=False),
     sa.Column('icon_name', sa.String(length=50), nullable=False),
-    sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('is_active', sa.Boolean(), server_default=sa.text('true'), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.PrimaryKeyConstraint('category_id'),
@@ -82,7 +82,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('comment_id')
     )
     op.create_table('incident_media',
-    sa.Column('media_id', sa.UUID(), nullable=False),
+    sa.Column('media_id', sa.UUID(), server_default=sa.text('uuid_generate_v4()'), nullable=False),
     sa.Column('incident_id', sa.UUID(), nullable=False),
     sa.Column('media_type', sa.String(length=20), nullable=False),
     sa.Column('phase', sa.String(length=20), nullable=False),
@@ -93,7 +93,7 @@ def upgrade() -> None:
     sa.Column('exif_latitude', sa.Numeric(precision=10, scale=7), nullable=True),
     sa.Column('exif_longitude', sa.Numeric(precision=10, scale=7), nullable=True),
     sa.Column('exif_captured_at', sa.DateTime(timezone=True), nullable=True),
-    sa.Column('is_tampered_warning', sa.Boolean(), nullable=False),
+    sa.Column('is_tampered_warning', sa.Boolean(), server_default=sa.text('false'), nullable=False),
     sa.Column('uploader_id', sa.UUID(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['incident_id'], ['incidents.incident_id'], ondelete='CASCADE'),
@@ -101,7 +101,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('media_id')
     )
     op.create_table('incident_status_history',
-    sa.Column('history_id', sa.UUID(), nullable=False),
+    sa.Column('history_id', sa.UUID(), server_default=sa.text('uuid_generate_v4()'), nullable=False),
     sa.Column('incident_id', sa.UUID(), nullable=False),
     sa.Column('from_status', sa.String(length=30), nullable=True),
     sa.Column('to_status', sa.String(length=30), nullable=False),

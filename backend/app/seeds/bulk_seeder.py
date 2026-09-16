@@ -56,21 +56,21 @@ async def run_bulk_seed(target_count: int = 100000):
             (5, '26794', 'Phường Thảo Điền', 'WARD')
             ON CONFLICT DO NOTHING;
 
-            INSERT INTO work_teams (team_id, team_code, team_name, unit_id, status) VALUES
-            (1, 'TEAM-TD-01', 'Đội Cơ động 1', 3, 'ACTIVE'),
-            (2, 'TEAM-TD-02', 'Đội Canô Kênh rạch', 4, 'ACTIVE'),
-            (3, 'TEAM-TD-03', 'Đội Ứng phó Nhanh', 5, 'ACTIVE')
+            INSERT INTO work_teams (team_id, team_code, team_name, unit_id, vehicle_type, capacity_tons, status, is_active) VALUES
+            (1, 'TEAM-TD-01', 'Đội Cơ động 1', 3, 'TRUCK_COMPACTOR', 5.0, 'ACTIVE', TRUE),
+            (2, 'TEAM-TD-02', 'Đội Canô Kênh rạch', 4, 'BOAT_WATERWAY', 2.5, 'ACTIVE', TRUE),
+            (3, 'TEAM-TD-03', 'Đội Ứng phó Nhanh', 5, 'PICKUP_VAN', 1.5, 'ACTIVE', TRUE)
             ON CONFLICT DO NOTHING;
 
-            INSERT INTO iot_sensor_stations (station_id, station_code, station_name, station_type, unit_id, location, address) VALUES
-            (1, 'IOT-01', 'Trạm Linh Trung', 'AIR_QUALITY', 3, ST_SetSRID(ST_MakePoint(106.7735, 10.8712), 4326), 'Linh Trung'),
-            (2, 'IOT-02', 'Trạm Hiệp Bình Chánh', 'FLOOD_ULTRASONIC', 4, ST_SetSRID(ST_MakePoint(106.7245, 10.8330), 4326), 'HBC')
+            INSERT INTO iot_sensor_stations (station_id, station_code, station_name, station_type, unit_id, location, address, firmware_version, battery_powered, solar_powered, status) VALUES
+            (1, 'IOT-01', 'Trạm Linh Trung', 'AIR_QUALITY', 3, ST_SetSRID(ST_MakePoint(106.7735, 10.8712), 4326), 'Linh Trung', 'v2.1.0', TRUE, TRUE, 'ONLINE'),
+            (2, 'IOT-02', 'Trạm Hiệp Bình Chánh', 'FLOOD_ULTRASONIC', 4, ST_SetSRID(ST_MakePoint(106.7245, 10.8330), 4326), 'HBC', 'v2.1.0', TRUE, TRUE, 'ONLINE')
             ON CONFLICT DO NOTHING;
 
-            INSERT INTO penalty_regulations (regulation_id, decree_reference, article_clause, violation_behavior, min_fine_vnd, max_fine_vnd) VALUES
-            (1, 'NĐ 45/2022', 'Điều 26.1a', 'Vứt tàn thuốc lá', 100000, 150000),
-            (2, 'NĐ 45/2022', 'Điều 26.1c', 'Vứt rác bừa bãi vỉa hè', 1000000, 2000000),
-            (3, 'NĐ 45/2022', 'Điều 26.2', 'Đổ xà bần lấn chiếm đường', 10000000, 20000000)
+            INSERT INTO penalty_regulations (regulation_id, decree_reference, article_clause, violation_behavior, min_fine_vnd, max_fine_vnd, is_active) VALUES
+            (1, 'NĐ 45/2022', 'Điều 26.1a', 'Vứt tàn thuốc lá', 100000, 150000, TRUE),
+            (2, 'NĐ 45/2022', 'Điều 26.1c', 'Vứt rác bừa bãi vỉa hè', 1000000, 2000000, TRUE),
+            (3, 'NĐ 45/2022', 'Điều 26.2', 'Đổ xà bần lấn chiếm đường', 10000000, 20000000, TRUE)
             ON CONFLICT DO NOTHING;
         """)
 

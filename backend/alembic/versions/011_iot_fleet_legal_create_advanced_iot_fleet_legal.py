@@ -103,7 +103,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('log_id')
     )
     op.create_table('violation_records',
-    sa.Column('record_id', sa.UUID(), nullable=False),
+    sa.Column('record_id', sa.UUID(), server_default=sa.text('uuid_generate_v4()'), nullable=False),
     sa.Column('record_code', sa.String(length=50), nullable=False),
     sa.Column('incident_id', sa.UUID(), nullable=True),
     sa.Column('regulation_id', sa.Integer(), nullable=False),
@@ -115,7 +115,7 @@ def upgrade() -> None:
     sa.Column('address', sa.String(length=255), nullable=False),
     sa.Column('recorded_by', sa.UUID(), nullable=False),
     sa.Column('fine_amount_vnd', sa.Numeric(precision=12, scale=2), nullable=False),
-    sa.Column('status', sa.String(length=30), nullable=False),
+    sa.Column('status', sa.String(length=30), server_default=sa.text("'PENDING_PAYMENT'"), nullable=False),
     sa.Column('evidence_media_urls', sa.ARRAY(sa.Text()), nullable=True),
     sa.Column('payment_deadline', sa.Date(), nullable=True),
     sa.Column('paid_at', sa.DateTime(timezone=True), nullable=True),

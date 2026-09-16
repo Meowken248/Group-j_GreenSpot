@@ -30,7 +30,7 @@ def upgrade() -> None:
     sa.Column('resolution_time_hours', sa.Integer(), nullable=False),
     sa.Column('warning_threshold_percentage', sa.Integer(), nullable=False),
     sa.Column('penalty_points_per_hour', sa.Numeric(precision=4, scale=2), nullable=False),
-    sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('is_active', sa.Boolean(), server_default=sa.text('true'), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['category_id'], ['waste_categories.category_id'], ondelete='CASCADE'),
@@ -47,7 +47,7 @@ def upgrade() -> None:
     sa.Column('ip_address', sa.String(length=45), nullable=True),
     sa.Column('user_agent', sa.Text(), nullable=True),
     sa.Column('request_uri', sa.String(length=500), nullable=True),
-    sa.Column('is_suspicious', sa.Boolean(), nullable=False),
+    sa.Column('is_suspicious', sa.Boolean(), server_default=sa.text('false'), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('log_id')
