@@ -1,21 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import type { GeoLocationState } from "../types/map";
+import { CACHE_KEY, DEFAULT_FALLBACK_LOCATION } from "../constants/mapConstants";
 
-export interface GeoLocationState {
-  coords: { lat: number; lng: number } | null;
-  accuracy: number | null;
-  isLocating: boolean;
-  error: string | null;
-  isFromCache: boolean;
-  gpsFixDurationMs: number | null;
-}
-
-const CACHE_KEY = "greenspot_last_gps_v1";
-
-// Vị trí mặc định tối ưu (Trung tâm TP. Hồ Chí Minh làm fallback)
-export const DEFAULT_FALLBACK_LOCATION = {
-  lat: 10.7769,
-  lng: 106.7009,
-};
+export type { GeoLocationState };
+export { DEFAULT_FALLBACK_LOCATION };
 
 function getInitialState(): GeoLocationState {
   try {
