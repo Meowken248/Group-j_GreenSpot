@@ -24,7 +24,7 @@ services:
     container_name: ecoreport_backend
     restart: always
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/postgres
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/ecoreport_db
     ports:
       - "8000:8000"
     volumes:
