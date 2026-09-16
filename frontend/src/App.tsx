@@ -1,48 +1,72 @@
 import { useState } from "react";
+import GoogleMapView from "./components/Map/GoogleMapView";
 import api from "./api/client";
 import "./App.css";
 
 function App() {
-  const [status, setStatus] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [backendStatus, setBackendStatus] = useState<string | null>(null);
+  const [checkingBackend, setCheckingBackend] = useState(false);
+  const [showDrawer, setShowDrawer] = useState(false);
 
   const checkHealth = async () => {
-    setLoading(true);
-    setError(null);
+    setCheckingBackend(true);
     try {
       const response = await api.get("/health");
-      setStatus(JSON.stringify(response.data));
+      setBackendStatus(`Online (${JSON.stringify(response.data)})`);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message);
+        setBackendStatus(`Offline: ${err.message}`);
       } else {
-        setError("Failed to connect to backend");
+        setBackendStatus("Failed to connect to backend");
       }
     } finally {
-      setLoading(false);
+      setCheckingBackend(false);
     }
   };
 
   return (
-    <div className="container">
-      <h1>EcoReport</h1>
-      <p>Project Skeleton</p>
-      <div>
-        <button onClick={checkHealth} disabled={loading}>
-          {loading ? "Checking..." : "Check Backend Health"}
+    <div className="app-container">
+      {/* High Performance Google Map & GPS Layer */}
+      <GoogleMapView />
+
+      {/* Collapsible Backend Diagnostic Badge (Top Right) */}
+      <div className="quick-status-badge">
+        <button
+          className="health-badge-btn"
+          onClick={() => {
+            setShowDrawer((prev) => !prev);
+            if (!backendStatus) checkHealth();
+          }}
+          title="Kiểm tra trạng thái Backend"
+        >
+          <span className="dot online" />
+          <span>API Service</span>
         </button>
+
+        {showDrawer && (
+          <div className="health-popover">
+            <div className="popover-header">
+              <strong>Backend Diagnostic</strong>
+              <button className="close-btn" onClick={() => setShowDrawer(false)}>×</button>
+            </div>
+            <p className="popover-desc">Kiểm tra kết nối microservice FastAPI backend qua axios client.</p>
+            <div className="popover-actions">
+              <button
+                className="btn-action"
+                onClick={checkHealth}
+                disabled={checkingBackend}
+              >
+                {checkingBackend ? "Đang ping..." : "Ping /health"}
+              </button>
+            </div>
+            {backendStatus && (
+              <div className={`status-pill ${backendStatus.startsWith("Online") ? "success" : "warning"}`}>
+                {backendStatus}
+              </div>
+            )}
+          </div>
+        )}
       </div>
-      {status && (
-        <div className="status-box">
-          <strong>Backend Response:</strong> {status}
-        </div>
-      )}
-      {error && (
-        <div className="status-box" style={{ color: "red" }}>
-          <strong>Error:</strong> {error}
-        </div>
-      )}
     </div>
   );
 }
