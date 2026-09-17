@@ -1,3 +1,4 @@
+import asyncio
 from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,207 +12,239 @@ router = APIRouter(prefix="/eco-locations", tags=["Eco Locations"])
 async def get_eco_locations(
     category: Optional[str] = Query(None, description="Lọc theo loại: incident, green_spot, recycling, sensor"),
     district: Optional[str] = Query(None, description="Lọc theo quận/huyện"),
+    lat: Optional[float] = Query(None, description="Vĩ độ người dùng (để tính khoảng cách)"),
+    lng: Optional[float] = Query(None, description="Kinh độ người dùng (để tính khoảng cách)"),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    API tải danh sách toàn bộ các địa điểm môi trường TP.HCM từ PostgreSQL/PostGIS:
-    - Sự cố ô nhiễm (incidents)
-    - Điểm xanh & công viên sinh thái (essential_facilities)
-    - Trạm thu gom rác tái chế & pin cũ (recycling_facilities)
-    - Trạm cảm biến quan trắc IoT (iot_sensor_stations)
+    API tải danh sách các địa điểm môi trường TP.HCM từ PostgreSQL/PostGIS.
+    Tối ưu hóa:
+    - Truy vấn có chọn lọc (chỉ truy vấn bảng cần thiết theo category).
+    - Tự động chạy song song (asyncio.gather) khi truy vấn toàn bộ.
+    - Hỗ trợ tính khoảng cách GPS thời gian thực.
     """
     locations: List[Dict[str, Any]] = []
 
-    # 1. Truy vấn Sự cố Môi trường
-    inc_query = """
-        SELECT 
-            i.incident_id::text as id,
-            i.title as name,
-            'incident' as category,
-            COALESCE(u.name, 'TP. Hồ Chí Minh') as district,
-            i.address_text as address,
-            i.latitude::float as latitude,
-            i.longitude::float as longitude,
-            i.status,
-            i.severity,
-            i.risk_score::float as risk_score,
-            i.description,
-            i.tracking_code,
-            i.upvotes_count,
-            wc.name as category_name
-        FROM incidents i
-        LEFT JOIN administrative_units u ON i.unit_id = u.unit_id
-        LEFT JOIN waste_categories wc ON i.category_id = wc.category_id
-        ORDER BY i.created_at DESC;
-    """
-    inc_rows = await db.execute(text(inc_query))
-    for row in inc_rows.mappings():
-        st = row["status"]
-        if st == "PENDING":
-            status_code = "pending"
-            status_text = "Chờ đội phản ứng nhanh"
-        elif st == "IN_PROGRESS":
-            status_code = "processing"
-            status_text = "Đang xử lý tại hiện trường"
-        elif st == "RESOLVED":
-            status_code = "resolved"
-            status_text = "Đã nghiệm thu xử lý"
-        else:
-            status_code = "warning"
-            status_text = "Cảnh báo khẩn"
+    # Hàm truy vấn Sự cố môi trường
+    async def fetch_incidents():
+        inc_query = """
+            SELECT 
+                i.incident_id::text as id,
+                i.title as name,
+                'incident' as category,
+                COALESCE(u.name, 'TP. Hồ Chí Minh') as district,
+                i.address_text as address,
+                i.latitude::float as latitude,
+                i.longitude::float as longitude,
+                i.status,
+                i.severity,
+                i.risk_score::float as risk_score,
+                i.description,
+                i.tracking_code,
+                i.upvotes_count,
+                wc.name as category_name
+            FROM incidents i
+            LEFT JOIN administrative_units u ON i.unit_id = u.unit_id
+            LEFT JOIN waste_categories wc ON i.category_id = wc.category_id
+            ORDER BY i.created_at DESC;
+        """
+        rows = await db.execute(text(inc_query))
+        res = []
+        for row in rows.mappings():
+            st = row["status"]
+            if st == "PENDING":
+                status_code = "pending"
+                status_text = "Chờ đội phản ứng nhanh"
+            elif st == "IN_PROGRESS":
+                status_code = "processing"
+                status_text = "Đang xử lý tại hiện trường"
+            elif st == "RESOLVED":
+                status_code = "resolved"
+                status_text = "Đã nghiệm thu xử lý"
+            else:
+                status_code = "warning"
+                status_text = "Cảnh báo khẩn"
 
-        locations.append({
-            "id": row["id"],
-            "name": row["name"],
-            "category": "incident",
-            "district": row["district"],
-            "address": row["address"],
-            "latitude": row["latitude"],
-            "longitude": row["longitude"],
-            "status": status_code,
-            "statusText": status_text,
-            "metricLabel": "Điểm rủi ro ô nhiễm",
-            "metricValue": f"{row['risk_score']} / 100",
-            "severity": row["severity"],
-            "description": row["description"],
-            "trackingCode": row["tracking_code"],
-            "upvotes": row["upvotes_count"],
-            "wasteType": row["category_name"],
-            "reportedAt": "Hôm nay, 08:30",
-        })
+            res.append({
+                "id": row["id"],
+                "name": row["name"],
+                "category": "incident",
+                "district": row["district"],
+                "address": row["address"],
+                "latitude": row["latitude"],
+                "longitude": row["longitude"],
+                "status": status_code,
+                "statusText": status_text,
+                "metricLabel": "Điểm rủi ro ô nhiễm",
+                "metricValue": f"{row['risk_score']} / 100",
+                "severity": row["severity"],
+                "description": row["description"],
+                "trackingCode": row["tracking_code"],
+                "upvotes": row["upvotes_count"],
+                "wasteType": row["category_name"],
+                "reportedAt": "Hôm nay, 08:30",
+            })
+        return res
 
-    # 2. Truy vấn Điểm xanh & Công viên sinh thái
-    green_query = """
-        SELECT 
-            f.facility_id::text as id,
-            f.facility_name as name,
-            'green_spot' as category,
-            COALESCE(u.name, 'TP. Hồ Chí Minh') as district,
-            f.address,
-            ST_Y(f.location)::float as latitude,
-            ST_X(f.location)::float as longitude,
-            COALESCE(f.metadata->>'status', 'Không gian xanh trong lành') as status_text,
-            f.vulnerability_level,
-            f.metadata
-        FROM essential_facilities f
-        LEFT JOIN administrative_units u ON f.unit_id = u.unit_id
-        WHERE f.facility_type IN ('PARK', 'BOTANICAL_GARDEN', 'ECO_TOURISM', 'BIOSPHERE_RESERVE')
-        ORDER BY f.facility_id ASC;
-    """
-    green_rows = await db.execute(text(green_query))
-    for row in green_rows.mappings():
-        meta = row["metadata"] or {}
-        locations.append({
-            "id": f"green-{row['id']}",
-            "name": row["name"],
-            "category": "green_spot",
-            "district": row["district"],
-            "address": row["address"],
-            "latitude": row["latitude"],
-            "longitude": row["longitude"],
-            "status": "optimal",
-            "statusText": row["status_text"],
-            "metricLabel": "Độ phủ xanh / Quy mô",
-            "metricValue": f"{meta.get('area_m2', 100000):,} m²",
-            "rating": meta.get("rating", 4.8),
-            "description": f"{row['name']} - {row['address']}. Không gian xanh công cộng bảo vệ môi trường đô thị TP.HCM.",
-        })
+    # Hàm truy vấn Điểm xanh & Công viên sinh thái
+    async def fetch_green_spots():
+        green_query = """
+            SELECT 
+                f.facility_id::text as id,
+                f.facility_name as name,
+                'green_spot' as category,
+                COALESCE(u.name, 'TP. Hồ Chí Minh') as district,
+                f.address,
+                ST_Y(f.location)::float as latitude,
+                ST_X(f.location)::float as longitude,
+                COALESCE(f.metadata->>'status', 'Không gian xanh trong lành') as status_text,
+                f.vulnerability_level,
+                f.metadata
+            FROM essential_facilities f
+            LEFT JOIN administrative_units u ON f.unit_id = u.unit_id
+            WHERE f.facility_type IN ('PARK', 'BOTANICAL_GARDEN', 'ECO_TOURISM', 'BIOSPHERE_RESERVE')
+            ORDER BY f.facility_id ASC;
+        """
+        rows = await db.execute(text(green_query))
+        res = []
+        for row in rows.mappings():
+            meta = row["metadata"] or {}
+            res.append({
+                "id": f"green-{row['id']}",
+                "name": row["name"],
+                "category": "green_spot",
+                "district": row["district"],
+                "address": row["address"],
+                "latitude": row["latitude"],
+                "longitude": row["longitude"],
+                "status": "optimal",
+                "statusText": row["status_text"],
+                "metricLabel": "Độ phủ xanh / Quy mô",
+                "metricValue": f"{meta.get('area_m2', 100000):,} m²",
+                "rating": meta.get("rating", 4.8),
+                "description": f"{row['name']} - {row['address']}. Không gian xanh công cộng bảo vệ môi trường đô thị TP.HCM.",
+            })
+        return res
 
-    # 3. Truy vấn Trạm thu gom & Tái chế
-    rec_query = """
-        SELECT 
-            r.facility_id::text as id,
-            r.name,
-            'recycling' as category,
-            COALESCE(u.name, 'TP. Hồ Chí Minh') as district,
-            r.address,
-            ST_Y(r.location)::float as latitude,
-            ST_X(r.location)::float as longitude,
-            r.is_active,
-            r.accepted_waste_types,
-            r.operating_hours,
-            r.contact_phone,
-            r.managing_org
-        FROM recycling_facilities r
-        LEFT JOIN administrative_units u ON r.unit_id = u.unit_id
-        ORDER BY r.facility_id ASC;
-    """
-    rec_rows = await db.execute(text(rec_query))
-    for row in rec_rows.mappings():
-        accepted = ", ".join(row["accepted_waste_types"] or [])
-        is_act = row["is_active"]
-        locations.append({
-            "id": f"rec-{row['id']}",
-            "name": row["name"],
-            "category": "recycling",
-            "district": row["district"],
-            "address": row["address"],
-            "latitude": row["latitude"],
-            "longitude": row["longitude"],
-            "status": "active" if is_act else "warning",
-            "statusText": "Đang mở cửa tiếp nhận" if is_act else "Tạm dừng tiếp nhận",
-            "metricLabel": "Thời gian hoạt động",
-            "metricValue": row["operating_hours"] or "08:00 - 17:00",
-            "acceptedTypes": accepted,
-            "contactPhone": row["contact_phone"],
-            "managingOrg": row["managing_org"],
-            "description": f"Điểm tiếp nhận phân loại chất thải tái chế: {accepted}. Quản lý bởi: {row['managing_org'] or 'UBND'}.",
-        })
+    # Hàm truy vấn Trạm tái chế
+    async def fetch_recycling():
+        rec_query = """
+            SELECT 
+                r.facility_id::text as id,
+                r.name,
+                'recycling' as category,
+                COALESCE(u.name, 'TP. Hồ Chí Minh') as district,
+                r.address,
+                ST_Y(r.location)::float as latitude,
+                ST_X(r.location)::float as longitude,
+                r.is_active,
+                r.accepted_waste_types,
+                r.operating_hours,
+                r.contact_phone,
+                r.managing_org
+            FROM recycling_facilities r
+            LEFT JOIN administrative_units u ON r.unit_id = u.unit_id
+            ORDER BY r.facility_id ASC;
+        """
+        rows = await db.execute(text(rec_query))
+        res = []
+        for row in rows.mappings():
+            accepted = ", ".join(row["accepted_waste_types"] or [])
+            is_act = row["is_active"]
+            res.append({
+                "id": f"rec-{row['id']}",
+                "name": row["name"],
+                "category": "recycling",
+                "district": row["district"],
+                "address": row["address"],
+                "latitude": row["latitude"],
+                "longitude": row["longitude"],
+                "status": "active" if is_act else "warning",
+                "statusText": "Đang mở cửa tiếp nhận" if is_act else "Tạm dừng tiếp nhận",
+                "metricLabel": "Thời gian hoạt động",
+                "metricValue": row["operating_hours"] or "08:00 - 17:00",
+                "acceptedTypes": accepted,
+                "contactPhone": row["contact_phone"],
+                "managingOrg": row["managing_org"],
+                "description": f"Điểm tiếp nhận phân loại chất thải tái chế: {accepted}. Quản lý bởi: {row['managing_org'] or 'UBND'}.",
+            })
+        return res
 
-    # 4. Truy vấn Trạm quan trắc IoT
-    iot_query = """
-        SELECT 
-            s.station_id::text as id,
-            s.station_name as name,
-            'sensor' as category,
-            COALESCE(u.name, 'TP. Hồ Chí Minh') as district,
-            s.address,
-            ST_Y(s.location)::float as latitude,
-            ST_X(s.location)::float as longitude,
-            s.station_type,
-            s.status,
-            s.metadata
-        FROM iot_sensor_stations s
-        LEFT JOIN administrative_units u ON s.unit_id = u.unit_id
-        ORDER BY s.station_id ASC;
-    """
-    iot_rows = await db.execute(text(iot_query))
-    for row in iot_rows.mappings():
-        meta = row["metadata"] or {}
-        st_type = row["station_type"]
-        status_label = meta.get("status", "Hoạt động tốt")
-        
-        if "aqi" in meta:
-            m_label = "Chỉ số AQI"
-            m_val = f"AQI {meta['aqi']} ({meta.get('status', 'Tốt')})"
-        elif "water_level_cm" in meta:
-            m_label = "Mực nước ngập"
-            m_val = f"{meta['water_level_cm']} cm"
-        elif "tide_level_m" in meta:
-            m_label = "Thủy triều ven sông"
-            m_val = f"{meta['tide_level_m']} m"
-        else:
-            m_label = "Trạng thái viễn trắc"
-            m_val = "Bình thường"
+    # Hàm truy vấn Cảm biến IoT
+    async def fetch_sensors():
+        iot_query = """
+            SELECT 
+                s.station_id::text as id,
+                s.station_name as name,
+                'sensor' as category,
+                COALESCE(u.name, 'TP. Hồ Chí Minh') as district,
+                s.address,
+                ST_Y(s.location)::float as latitude,
+                ST_X(s.location)::float as longitude,
+                s.station_type,
+                s.status,
+                s.metadata
+            FROM iot_sensor_stations s
+            LEFT JOIN administrative_units u ON s.unit_id = u.unit_id
+            ORDER BY s.station_id ASC;
+        """
+        rows = await db.execute(text(iot_query))
+        res = []
+        for row in rows.mappings():
+            meta = row["metadata"] or {}
+            st_type = row["station_type"]
+            status_label = meta.get("status", "Hoạt động tốt")
 
-        locations.append({
-            "id": f"sensor-{row['id']}",
-            "name": row["name"],
-            "category": "sensor",
-            "district": row["district"],
-            "address": row["address"],
-            "latitude": row["latitude"],
-            "longitude": row["longitude"],
-            "status": "active",
-            "statusText": f"Online • {status_label}",
-            "metricLabel": m_label,
-            "metricValue": m_val,
-            "sensorType": st_type,
-            "metrics": meta,
-            "description": f"{row['name']} - Trạm cảm biến truyền dữ liệu viễn trắc thời gian thực về Trung tâm điều hành EcoReport.",
-        })
+            if "aqi" in meta:
+                m_label = "Chỉ số AQI"
+                m_val = f"AQI {meta['aqi']} ({meta.get('status', 'Tốt')})"
+            elif "water_level_cm" in meta:
+                m_label = "Mực nước ngập"
+                m_val = f"{meta['water_level_cm']} cm"
+            elif "tide_level_m" in meta:
+                m_label = "Thủy triều ven sông"
+                m_val = f"{meta['tide_level_m']} m"
+            else:
+                m_label = "Trạng thái viễn trắc"
+                m_val = "Bình thường"
 
-    # Tính toán tổng số lượng theo từng danh mục
+            res.append({
+                "id": f"sensor-{row['id']}",
+                "name": row["name"],
+                "category": "sensor",
+                "district": row["district"],
+                "address": row["address"],
+                "latitude": row["latitude"],
+                "longitude": row["longitude"],
+                "status": "active",
+                "statusText": f"Online • {status_label}",
+                "metricLabel": m_label,
+                "metricValue": m_val,
+                "sensorType": st_type,
+                "metrics": meta,
+                "description": f"{row['name']} - Trạm cảm biến truyền dữ liệu viễn trắc thời gian thực về Trung tâm điều hành EcoReport.",
+            })
+        return res
+
+    # Tối ưu hóa: Chỉ thực hiện truy vấn các bảng cần thiết
+    query_all = category is None or category == "all"
+    tasks = []
+
+    if query_all or category == "incident":
+        tasks.append(fetch_incidents())
+    if query_all or category == "green_spot":
+        tasks.append(fetch_green_spots())
+    if query_all or category == "recycling":
+        tasks.append(fetch_recycling())
+    if query_all or category == "sensor":
+        tasks.append(fetch_sensors())
+
+    # Chạy song song qua asyncio.gather
+    results = await asyncio.gather(*tasks)
+    for res_list in results:
+        locations.extend(res_list)
+
+    # Đếm số lượng theo danh mục
     counts = {
         "all": len(locations),
         "incident": sum(1 for x in locations if x["category"] == "incident"),
@@ -220,12 +253,28 @@ async def get_eco_locations(
         "sensor": sum(1 for x in locations if x["category"] == "sensor"),
     }
 
-    # Lọc nếu có query param
+    # Lọc quận/huyện nếu có
     filtered_locations = locations
-    if category and category != "all":
-        filtered_locations = [x for x in filtered_locations if x["category"] == category]
     if district:
         filtered_locations = [x for x in filtered_locations if district.lower() in x["district"].lower()]
+
+    # Tính khoảng cách GPS nếu có lat/lng truyền vào
+    if lat is not None and lng is not None:
+        import math
+
+        def haversine(lat1, lon1, lat2, lon2):
+            R = 6371.0
+            dlat = math.radians(lat2 - lat1)
+            dlon = math.radians(lon2 - lon1)
+            a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
+            c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+            return round(R * c, 2)
+
+        for loc in filtered_locations:
+            if loc.get("latitude") and loc.get("longitude"):
+                loc["distanceKm"] = haversine(lat, lng, loc["latitude"], loc["longitude"])
+
+        filtered_locations.sort(key=lambda x: x.get("distanceKm", 9999))
 
     return {
         "success": True,
