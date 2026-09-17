@@ -4,7 +4,14 @@ from sqlalchemy.orm import DeclarativeBase
 
 from app.config import settings
 
-engine = create_async_engine(settings.DATABASE_URL, echo=False)
+# Đảm bảo URL kết nối sử dụng asyncpg driver cho async SQLAlchemy engine
+db_url = settings.DATABASE_URL
+if db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+if "?schema=" in db_url:
+    db_url = db_url.split("?schema=")[0]
+
+engine = create_async_engine(db_url, echo=False)
 
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
@@ -22,4 +29,3 @@ class Base(DeclarativeBase):
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         yield session
-
