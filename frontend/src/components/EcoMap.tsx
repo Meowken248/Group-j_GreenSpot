@@ -206,8 +206,29 @@ type StyleKey = keyof typeof MAP_STYLES;
 function EcoMap() {
   const mapRef = useRef<MapRef>(null);
 
-  // Hook GPS siêu tốc
-  const { coords: gpsCoords, refreshGps } = useFastGeolocation();
+  // Hook GPS siêu tốc & độ chính xác cao
+  const {
+    coords: gpsCoords,
+    accuracy: gpsAccuracy,
+    accuracyLevel,
+    isLocked,
+    isLocating: isLocatingGps,
+    refreshGps,
+  } = useFastGeolocation();
+  const hasAutoCenteredGpsRef = useRef(false);
+
+  // Tự động căn giữa bản đồ tới vị trí GPS chính xác của người dùng ở lần khóa đầu tiên
+  useEffect(() => {
+    if (gpsCoords && !hasAutoCenteredGpsRef.current && mapRef.current) {
+      hasAutoCenteredGpsRef.current = true;
+      mapRef.current.flyTo({
+        center: [gpsCoords.lng, gpsCoords.lat],
+        zoom: 16,
+        duration: 1500,
+        essential: true,
+      });
+    }
+  }, [gpsCoords]);
 
   // States bản đồ & bộ lọc (Mặc định dùng Google Maps Tile Cluster)
   const [activeStyle, setActiveStyle] = useState<StyleKey>("googleRoadmap");
@@ -945,7 +966,7 @@ function EcoMap() {
           <span>{is3D ? "🏢 3D" : "📐 2D"}</span>
         </button>
 
-        {/* Nút định vị GPS siêu tốc */}
+        {/* Nút định vị GPS siêu tốc & độ chính xác cao */}
         <button
           onClick={() => {
             refreshGps();
@@ -962,20 +983,41 @@ function EcoMap() {
             display: "flex",
             alignItems: "center",
             gap: 4,
-            padding: "5px 10px",
+            padding: "5px 11px",
             borderRadius: 20,
-            border: gpsCoords ? "1px solid #10b981" : "1px solid #cbd5e1",
+            border: isLocked
+              ? "1px solid #10b981"
+              : gpsCoords
+              ? "1px solid #0ea5e9"
+              : "1px solid #cbd5e1",
             cursor: "pointer",
             fontSize: 11.5,
             fontWeight: 700,
-            background: gpsCoords ? "rgba(16, 185, 129, 0.12)" : "rgba(241, 245, 249, 0.8)",
-            color: gpsCoords ? "#059669" : "#64748b",
+            background: isLocked
+              ? "rgba(16, 185, 129, 0.15)"
+              : gpsCoords
+              ? "rgba(14, 165, 233, 0.12)"
+              : "rgba(241, 245, 249, 0.8)",
+            color: isLocked ? "#059669" : gpsCoords ? "#0284c7" : "#64748b",
             transition: "all 0.2s ease",
             marginLeft: 2,
+            boxShadow: isLocked ? "0 0 10px rgba(16, 185, 129, 0.3)" : "none",
           }}
-          title={gpsCoords ? `Vị trí GPS: ${gpsCoords.lat.toFixed(4)}, ${gpsCoords.lng.toFixed(4)}` : "Đang tìm GPS..."}
+          title={
+            gpsCoords
+              ? `Vị trí GPS: ${gpsCoords.lat.toFixed(5)}, ${gpsCoords.lng.toFixed(5)} (Cấp độ: ${accuracyLevel}, Sai số: ±${gpsAccuracy || 15}m - ${isLocked ? "Đã khóa vệ tinh" : "Đang tinh chỉnh"})`
+              : "Đang tìm kiếm tín hiệu GPS..."
+          }
         >
-          <span>🎯 GPS</span>
+          <span>
+            {isLocatingGps
+              ? "🛰️ Đang dò..."
+              : isLocked
+              ? `🎯 GPS (±${gpsAccuracy || 10}m)`
+              : gpsCoords
+              ? `🎯 GPS (±${gpsAccuracy || 25}m)`
+              : "🎯 GPS"}
+          </span>
         </button>
       </div>
 
@@ -1626,29 +1668,51 @@ function EcoMap() {
           );
         })}
 
-        {/* 7. MARKER ĐỊNH VỊ GPS THỜI GIAN THỰC (PULSE BEACON NEON XANH) */}
+        {/* 7. MARKER ĐỊNH VỊ GPS THỜI GIAN THỰC (RADAR HALO & VÒNG BÁN KÍNH SAI SỐ) */}
         {gpsCoords && (
           <Marker longitude={gpsCoords.lng} latitude={gpsCoords.lat} anchor="center">
-            <div style={{ position: "relative", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+            <div
+              style={{
+                position: "relative",
+                width: 46,
+                height: 46,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                pointerEvents: "none",
+              }}
+            >
+              {/* Vòng lan tỏa sóng radar chính xác cao */}
               <div
                 style={{
                   position: "absolute",
                   width: "100%",
                   height: "100%",
                   borderRadius: "50%",
-                  background: "rgba(16, 185, 129, 0.35)",
-                  border: "2px solid #10b981",
-                  animation: "radarPing 1.8s infinite",
+                  background: isLocked ? "rgba(16, 185, 129, 0.28)" : "rgba(14, 165, 233, 0.25)",
+                  border: isLocked ? "2px solid #10b981" : "2px solid #38bdf8",
+                  animation: "radarPing 2s infinite ease-out",
                 }}
               />
+              {/* Vòng hào quang tĩnh */}
+              <div
+                style={{
+                  position: "absolute",
+                  width: 26,
+                  height: 26,
+                  borderRadius: "50%",
+                  background: isLocked ? "rgba(16, 185, 129, 0.25)" : "rgba(14, 165, 233, 0.2)",
+                }}
+              />
+              {/* Tâm chấm GPS neon */}
               <div
                 style={{
                   width: 14,
                   height: 14,
                   borderRadius: "50%",
-                  background: "#10b981",
-                  boxShadow: "0 0 12px #10b981",
-                  border: "2px solid #ffffff",
+                  background: isLocked ? "#10b981" : "#0284c7",
+                  boxShadow: isLocked ? "0 0 14px #10b981" : "0 0 12px #0284c7",
+                  border: "2.5px solid #ffffff",
                   zIndex: 2,
                 }}
               />
