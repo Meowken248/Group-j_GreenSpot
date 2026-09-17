@@ -166,17 +166,13 @@ class EcoService:
             return res
 
         if query_all or category == "incident":
-            tasks.append(handle_incidents())
+            locations.extend(await handle_incidents())
         if query_all or category == "green_spot":
-            tasks.append(handle_green_spots())
+            locations.extend(await handle_green_spots())
         if query_all or category == "recycling":
-            tasks.append(handle_recycling())
+            locations.extend(await handle_recycling())
         if query_all or category == "sensor":
-            tasks.append(handle_sensors())
-
-        results = await asyncio.gather(*tasks)
-        for res_list in results:
-            locations.extend(res_list)
+            locations.extend(await handle_sensors())
 
         counts = {
             "all": len(locations),

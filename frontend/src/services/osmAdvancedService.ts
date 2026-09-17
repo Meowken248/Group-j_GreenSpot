@@ -19,6 +19,10 @@ export interface RouteResult {
   };
   distanceKm: number;
   durationMin: number;
+  startCoords?: [number, number];
+  destCoords?: [number, number];
+  destName?: string;
+  startLabel?: string;
 }
 
 // In-memory cache cho Reverse Geocoding và Lộ trình OSRM

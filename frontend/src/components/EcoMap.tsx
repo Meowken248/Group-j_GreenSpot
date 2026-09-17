@@ -26,7 +26,11 @@ import {
   fetchLiveWeatherAPI,
   type LiveWeatherResponse,
 } from "../services/ecoApiService";
-import { useFastGeolocation } from "../hooks/useFastGeolocation";
+import {
+  useFastGeolocation,
+  DEFAULT_FALLBACK_LOCATION,
+  calculateDistanceMeters,
+} from "../hooks/useFastGeolocation";
 
 // Bộ sưu tập bản đồ nền Google Tile Cluster & OpenStreetMap phong phú
 export const MAP_STYLES = {
@@ -388,27 +392,66 @@ function EcoMap() {
   };
 
   // 2. TÍNH NĂNG CHỈ ĐƯỜNG THỰC TẾ OSRM (ROUTING POLYLINE)
-  const handleCalculateRoute = async (destLng: number, destLat: number) => {
+  const handleCalculateRoute = async (destLng: number, destLat: number, destName?: string) => {
     setCalculatingRoute(true);
-    // Tính toán từ vị trí tâm bản đồ hoặc điểm click đến đích
-    const startLng = clickedAddress ? clickedAddress.lng : mapCenter.lng;
-    const startLat = clickedAddress ? clickedAddress.lat : mapCenter.lat;
+
+    // Điểm xuất phát ưu tiên:
+    // 1. Vị trí GPS hiện tại của người dùng (gpsCoords)
+    // 2. Trung tâm TP.HCM (DEFAULT_FALLBACK_LOCATION) hoặc tâm bản đồ (mapCenter)
+    let startLng = gpsCoords ? gpsCoords.lng : null;
+    let startLat = gpsCoords ? gpsCoords.lat : null;
+    let startLabel = "Vị trí hiện tại (GPS)";
+
+    if (!startLng || !startLat) {
+      if (
+        Math.abs(DEFAULT_FALLBACK_LOCATION.lng - destLng) > 0.001 ||
+        Math.abs(DEFAULT_FALLBACK_LOCATION.lat - destLat) > 0.001
+      ) {
+        startLng = DEFAULT_FALLBACK_LOCATION.lng;
+        startLat = DEFAULT_FALLBACK_LOCATION.lat;
+        startLabel = "Bến Nghé, Quận 1";
+      } else {
+        startLng = mapCenter.lng;
+        startLat = mapCenter.lat;
+        startLabel = "Tâm bản đồ";
+      }
+    }
+
+    // Kiểm tra khoảng cách: nếu điểm xuất phát và đích đến quá gần (< 25m)
+    const distMeters = calculateDistanceMeters(
+      { lat: startLat, lng: startLng },
+      { lat: destLat, lng: destLng }
+    );
+
+    if (distMeters < 25) {
+      alert("Điểm xuất phát và điểm đích đang trùng nhau (khoảng cách < 25m). Bạn đang ở ngay tại vị trí này rồi!");
+      setCalculatingRoute(false);
+      return;
+    }
 
     const route = await getRouteOSRM(startLng, startLat, destLng, destLat);
     if (route) {
-      setActiveRoute(route);
+      setActiveRoute({
+        ...route,
+        startCoords: [startLng, startLat],
+        destCoords: [destLng, destLat],
+        destName: destName || clickedAddress?.placeName || "Điểm đến",
+        startLabel,
+      });
       // Zoom vừa khít cả tuyến đường
       if (mapRef.current) {
         const boundsLng = [Math.min(startLng, destLng), Math.max(startLng, destLng)];
         const boundsLat = [Math.min(startLat, destLat), Math.max(startLat, destLat)];
         mapRef.current.fitBounds(
           [
-            [boundsLng[0] - 0.01, boundsLat[0] - 0.01],
-            [boundsLng[1] + 0.01, boundsLat[1] + 0.01],
+            [boundsLng[0] - 0.015, boundsLat[0] - 0.015],
+            [boundsLng[1] + 0.015, boundsLat[1] + 0.015],
           ],
           { padding: 80, duration: 1500 }
         );
       }
+    } else {
+      alert("Không thể tính toán lộ trình OSRM giữa 2 điểm này. Vui lòng thử lại!");
     }
     setCalculatingRoute(false);
   };
@@ -1083,14 +1126,20 @@ function EcoMap() {
         >
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.85, textTransform: "uppercase" }}>
-              🚗 Lộ trình OSRM thực tế
+              🚗 Lộ trình OSRM {activeRoute.destName ? `➔ ${activeRoute.destName}` : "thực tế"}
             </div>
             <div style={{ fontSize: 16, fontWeight: 800, marginTop: 2 }}>
               {activeRoute.distanceKm} km • ~{activeRoute.durationMin} phút di chuyển
             </div>
+            {activeRoute.startLabel && (
+              <div style={{ fontSize: 10.5, opacity: 0.85, marginTop: 2 }}>
+                Xuất phát: {activeRoute.startLabel}
+              </div>
+            )}
           </div>
           <button
             onClick={() => setActiveRoute(null)}
+            title="Đóng lộ trình"
             style={{
               border: "none",
               background: "rgba(255,255,255,0.2)",
@@ -1170,7 +1219,7 @@ function EcoMap() {
 
               <div style={{ display: "flex", gap: 8 }}>
                 <button
-                  onClick={() => handleCalculateRoute(clickedAddress.lng, clickedAddress.lat)}
+                  onClick={() => handleCalculateRoute(clickedAddress.lng, clickedAddress.lat, clickedAddress.placeName || clickedAddress.fullAddress)}
                   disabled={calculatingRoute}
                   style={{
                     flex: 1,
@@ -1251,7 +1300,7 @@ function EcoMap() {
 
               <div style={{ display: "flex", gap: 8 }}>
                 <button
-                  onClick={() => handleCalculateRoute(selectedPOI.longitude, selectedPOI.latitude)}
+                  onClick={() => handleCalculateRoute(selectedPOI.longitude, selectedPOI.latitude, selectedPOI.name)}
                   disabled={calculatingRoute}
                   style={{
                     flex: 1,
@@ -1325,7 +1374,7 @@ function EcoMap() {
 
               <div style={{ display: "flex", gap: 8 }}>
                 <button
-                  onClick={() => handleCalculateRoute(selectedLocation.longitude, selectedLocation.latitude)}
+                  onClick={() => handleCalculateRoute(selectedLocation.longitude, selectedLocation.latitude, selectedLocation.name)}
                   disabled={calculatingRoute}
                   style={{
                     flex: 1,
@@ -1542,29 +1591,55 @@ function EcoMap() {
 
         {/* 3. LỚP VẼ TUYẾN ĐƯỜNG THỰC TẾ OSRM (Glowing Route Polyline) */}
         {activeRoute && (
-          <Source id="osrm-route-source" type="geojson" data={{ type: "Feature", properties: {}, geometry: activeRoute.geometry }}>
-            {/* Đường viền phát sáng mờ ngoài */}
-            <Layer
-              id="route-casing"
-              type="line"
-              layout={{ "line-join": "round", "line-cap": "round" }}
-              paint={{
-                "line-color": "#60a5fa",
-                "line-width": 10,
-                "line-opacity": 0.5,
-              }}
-            />
-            {/* Đường lộ trình chính */}
-            <Layer
-              id="route-line"
-              type="line"
-              layout={{ "line-join": "round", "line-cap": "round" }}
-              paint={{
-                "line-color": "#2563eb",
-                "line-width": 5,
-              }}
-            />
-          </Source>
+          <>
+            <Source id="osrm-route-source" type="geojson" data={{ type: "Feature", properties: {}, geometry: activeRoute.geometry }}>
+              {/* Đường viền phát sáng mờ ngoài */}
+              <Layer
+                id="route-casing"
+                type="line"
+                layout={{ "line-join": "round", "line-cap": "round" }}
+                paint={{
+                  "line-color": "#60a5fa",
+                  "line-width": 10,
+                  "line-opacity": 0.5,
+                }}
+              />
+              {/* Đường lộ trình chính */}
+              <Layer
+                id="route-line"
+                type="line"
+                layout={{ "line-join": "round", "line-cap": "round" }}
+                paint={{
+                  "line-color": "#2563eb",
+                  "line-width": 5,
+                }}
+              />
+            </Source>
+
+            {/* Marker cờ xuất phát */}
+            {activeRoute.startCoords && (
+              <Marker longitude={activeRoute.startCoords[0]} latitude={activeRoute.startCoords[1]} anchor="bottom">
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", pointerEvents: "none" }}>
+                  <div style={{ background: "#059669", color: "#ffffff", padding: "2px 8px", borderRadius: 8, fontSize: 10, fontWeight: 700, boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
+                    🚩 Xuất phát
+                  </div>
+                  <div style={{ fontSize: 18 }}>📍</div>
+                </div>
+              </Marker>
+            )}
+
+            {/* Marker cờ đích đến */}
+            {activeRoute.destCoords && (
+              <Marker longitude={activeRoute.destCoords[0]} latitude={activeRoute.destCoords[1]} anchor="bottom">
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", pointerEvents: "none" }}>
+                  <div style={{ background: "#dc2626", color: "#ffffff", padding: "2px 8px", borderRadius: 8, fontSize: 10, fontWeight: 700, boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
+                    🏁 {activeRoute.destName || "Đích đến"}
+                  </div>
+                  <div style={{ fontSize: 18 }}>🏁</div>
+                </div>
+              </Marker>
+            )}
+          </>
         )}
 
         {/* 4. MARKER VỊ TRÍ CLICK BẢN ĐỒ (Reverse Geocode Pin) */}

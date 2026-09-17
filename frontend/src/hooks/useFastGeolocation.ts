@@ -3,7 +3,7 @@ import type { Coordinates, GeoLocationState, GpsAccuracyLevel } from "../types/m
 import { CACHE_KEY, DEFAULT_FALLBACK_LOCATION } from "../constants/mapConstants";
 
 export type { Coordinates, GeoLocationState, GpsAccuracyLevel };
-export { DEFAULT_FALLBACK_LOCATION };
+export { DEFAULT_FALLBACK_LOCATION, calculateDistanceMeters };
 
 // Thời gian hiệu lực tối đa của vị trí lưu trong cache: 5 phút (300,000 ms)
 const CACHE_MAX_AGE_MS = 5 * 60 * 1000;
