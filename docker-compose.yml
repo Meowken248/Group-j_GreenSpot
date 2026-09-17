@@ -6,12 +6,11 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
+      POSTGRES_DB: ecoreport_db
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
@@ -25,7 +24,7 @@ services:
     container_name: ecoreport_backend
     restart: always
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/postgres
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/ecoreport_db
     ports:
       - "8000:8000"
     volumes:

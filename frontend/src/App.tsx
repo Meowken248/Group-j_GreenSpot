@@ -1,5 +1,5 @@
-import { useState } from "react";
-import GoogleMapView from "./components/Map/GoogleMapView";
+import { useState, useEffect } from "react";
+import EcoMap from "./components/EcoMap";
 import api from "./api/client";
 import "./App.css";
 
@@ -24,22 +24,27 @@ function App() {
     }
   };
 
+  useEffect(() => {
+    checkHealth();
+  }, []);
+
   return (
     <div className="app-container">
-      {/* High Performance Google Map & GPS Layer */}
-      <GoogleMapView />
+      {/* BẢN ĐỒ MÔI TRƯỜNG HỢP NHẤT (ĐÃ TÍCH HỢP GOOGLE TILE CLUSTER & GPS) */}
+      <EcoMap />
 
-      {/* Collapsible Backend Diagnostic Badge (Top Right) */}
+      {/* NÚT KIỂM TRA MICROSERVICE BACKEND (GÓC TRÊN BÊN PHẢI) */}
       <div className="quick-status-badge">
         <button
+          type="button"
           className="health-badge-btn"
           onClick={() => {
             setShowDrawer((prev) => !prev);
             if (!backendStatus) checkHealth();
           }}
-          title="Kiểm tra trạng thái Backend"
+          title="Kiểm tra trạng thái Backend FastAPI"
         >
-          <span className="dot online" />
+          <span className={`dot ${backendStatus?.startsWith("Online") ? "online" : "offline"}`} />
           <span>API Service</span>
         </button>
 
@@ -47,11 +52,20 @@ function App() {
           <div className="health-popover">
             <div className="popover-header">
               <strong>Backend Diagnostic</strong>
-              <button className="close-btn" onClick={() => setShowDrawer(false)}>×</button>
+              <button
+                type="button"
+                className="close-btn"
+                onClick={() => setShowDrawer(false)}
+              >
+                ×
+              </button>
             </div>
-            <p className="popover-desc">Kiểm tra kết nối microservice FastAPI backend qua axios client.</p>
+            <p className="popover-desc">
+              Kiểm tra kết nối microservice FastAPI backend qua axios client.
+            </p>
             <div className="popover-actions">
               <button
+                type="button"
                 className="btn-action"
                 onClick={checkHealth}
                 disabled={checkingBackend}
@@ -60,7 +74,11 @@ function App() {
               </button>
             </div>
             {backendStatus && (
-              <div className={`status-pill ${backendStatus.startsWith("Online") ? "success" : "warning"}`}>
+              <div
+                className={`status-pill ${
+                  backendStatus.startsWith("Online") ? "success" : "warning"
+                }`}
+              >
                 {backendStatus}
               </div>
             )}
