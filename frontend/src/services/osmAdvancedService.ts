@@ -21,8 +21,19 @@ export interface RouteResult {
   durationMin: number;
 }
 
-// 1. DỊCH TỌA ĐỘ NGƯỢC THÀNH SỐ NHÀ & ĐỊA CHỈ (REVERSE GEOCODING)
+// In-memory cache cho Reverse Geocoding và Lộ trình OSRM
+const reverseGeocodeCache = new Map<string, { data: ReverseGeocodeResult; time: number }>();
+const routeCache = new Map<string, { data: RouteResult; time: number }>();
+const OSM_CACHE_TTL_MS = 10 * 60 * 1000; // 10 phút
+
+// 1. DỊCH TỌA ĐỘ NGƯỢC THÀNH SỐ NHÀ & ĐỊA CHỈ (REVERSE GEOCODING KÈM CACHE)
 export async function reverseGeocodeOSM(lat: number, lng: number): Promise<ReverseGeocodeResult> {
+  const key = `${lat.toFixed(4)}_${lng.toFixed(4)}`;
+  const cached = reverseGeocodeCache.get(key);
+  if (cached && Date.now() - cached.time < OSM_CACHE_TTL_MS) {
+    return cached.data;
+  }
+
   try {
     const url = `https://photon.komoot.io/reverse?lon=${lng}&lat=${lat}`;
     const res = await fetch(url);
@@ -42,7 +53,7 @@ export async function reverseGeocodeOSM(lat: number, lng: number): Promise<Rever
       } else if (street) {
         addressParts.push(street);
       } else if (houseNumber) {
-        addressParts.push(`Số ${houseNumber}`);
+        addressParts.push(`Số nhà ${houseNumber}`);
       }
 
       if (district) addressParts.push(district);
@@ -51,7 +62,7 @@ export async function reverseGeocodeOSM(lat: number, lng: number): Promise<Rever
       const fullAddress = addressParts.length > 0 ? addressParts.join(", ") : `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
       const placeName = p.name || (houseNumber && street ? `Số ${houseNumber} ${street}` : fullAddress);
 
-      return {
+      const result: ReverseGeocodeResult = {
         placeName,
         houseNumber,
         street,
@@ -61,28 +72,43 @@ export async function reverseGeocodeOSM(lat: number, lng: number): Promise<Rever
         lat,
         lng,
       };
+
+      if (reverseGeocodeCache.size > 150) {
+        const oldest = reverseGeocodeCache.keys().next().value;
+        if (oldest) reverseGeocodeCache.delete(oldest);
+      }
+      reverseGeocodeCache.set(key, { data: result, time: Date.now() });
+
+      return result;
     }
   } catch (err) {
     console.warn("Lỗi Reverse Geocode OSM:", err);
   }
 
   // Fallback nếu không có kết quả
-  return {
+  const fallback: ReverseGeocodeResult = {
     placeName: "Vị trí đã chọn",
     fullAddress: `Tọa độ: ${lat.toFixed(5)}°N, ${lng.toFixed(5)}°E`,
     district: "TP. Hồ Chí Minh",
     lat,
     lng,
   };
+  return fallback;
 }
 
-// 2. TÍNH TOÁN LỘ TRÌNH & CHỈ ĐƯỜNG THỰC TẾ TRÊN MẠNG ĐƯỜNG (OSRM ROUTING)
+// 2. TÍNH TOÁN LỘ TRÌNH & CHỈ ĐƯỜNG THỰC TẾ TRÊN MẠNG ĐƯỜNG (OSRM ROUTING KÈM CACHE)
 export async function getRouteOSRM(
   startLng: number,
   startLat: number,
   endLng: number,
   endLat: number
 ): Promise<RouteResult | null> {
+  const routeKey = `${startLng.toFixed(4)},${startLat.toFixed(4)}_${endLng.toFixed(4)},${endLat.toFixed(4)}`;
+  const cachedRoute = routeCache.get(routeKey);
+  if (cachedRoute && Date.now() - cachedRoute.time < OSM_CACHE_TTL_MS) {
+    return cachedRoute.data;
+  }
+
   try {
     const url = `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson`;
     const res = await fetch(url);
@@ -91,11 +117,19 @@ export async function getRouteOSRM(
     const data = await res.json();
     if (data.routes && data.routes.length > 0) {
       const route = data.routes[0];
-      return {
+      const result: RouteResult = {
         geometry: route.geometry,
         distanceKm: parseFloat((route.distance / 1000).toFixed(1)),
         durationMin: Math.max(1, Math.round(route.duration / 60)),
       };
+
+      if (routeCache.size > 80) {
+        const oldest = routeCache.keys().next().value;
+        if (oldest) routeCache.delete(oldest);
+      }
+      routeCache.set(routeKey, { data: result, time: Date.now() });
+
+      return result;
     }
   } catch (err) {
     console.warn("Lỗi tính toán lộ trình OSRM:", err);
