@@ -251,6 +251,7 @@ function EcoMap() {
   const [activeStyle, setActiveStyle] = useState<StyleKey>("googleRoadmap");
   const [is3D, setIs3D] = useState<boolean>(true);
   const [showDistricts, setShowDistricts] = useState<boolean>(false);
+  const [showLayersModal, setShowLayersModal] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<EcoCategory | "all">("all");
   
   // Selection States
@@ -373,19 +374,32 @@ function EcoMap() {
   }, [poiType]);
 
   // Tự động nạp quán xá khi người dùng kéo bản đồ (Auto-fetch on move)
-  // Chỉ nạp khi mức zoom >= 14 để tránh tải quá nhiều POI khi đang xem toàn cảnh thành phố
+  // Cho phép nạp từ mức zoom >= 12 để bao quát cấp độ quận/phường
   useEffect(() => {
-    if (!autoFetchPOI || currentZoom < 14) return;
+    if (!autoFetchPOI || currentZoom < 12) return;
 
     const timer = setTimeout(() => {
       handleLoadNearbyPOIs(mapCenter.lat, mapCenter.lng, poiType);
-    }, 600);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [mapCenter, autoFetchPOI, poiType, currentZoom, handleLoadNearbyPOIs]);
 
+  // Bật/tắt tự nạp quán xá và tự động quét ngay vị trí hiện tại
+  const handleToggleAutoFetch = () => {
+    const nextVal = !autoFetchPOI;
+    setAutoFetchPOI(nextVal);
+    if (nextVal) {
+      if (currentZoom < 12 && mapRef.current) {
+        mapRef.current.easeTo({ zoom: 14, duration: 800 });
+      }
+      handleLoadNearbyPOIs(mapCenter.lat, mapCenter.lng, poiType);
+    }
+  };
+
   // 1. TÍNH NĂNG CLICK BẢN ĐỒ LẤY SỐ NHÀ (REVERSE GEOCODING)
   const handleMapClick = async (e: any) => {
+    setShowLayersModal(false);
     const { lng, lat } = e.lngLat;
     setLoadingReverse(true);
     setSelectedLocation(null);
@@ -542,96 +556,294 @@ function EcoMap() {
   return (
     <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden", userSelect: "none" }}>
       
-      {/* 1. THANH TÌM KIẾM ĐỊA ĐIỂM / QUÁN XÁ / SỐ NHÀ TOÀN TP.HCM */}
+      {/* 1. KHỐI TÌM KIẾM & BỘ LỌC ĐỒNG BỘ GÓC TRÁI (Apple / Google Maps Style) */}
       <div
         style={{
           position: "absolute",
           top: 16,
           left: 16,
           zIndex: 25,
-          width: 370,
+          width: 380,
+          maxWidth: "calc(100vw - 32px)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
           fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         }}
       >
+        {/* Khung tìm kiếm & Danh mục chính */}
         <div
           style={{
-            position: "relative",
-            display: "flex",
-            alignItems: "center",
-            background: "rgba(255, 255, 255, 0.94)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
+            background: "#ffffff",
             borderRadius: 16,
-            padding: "9px 14px",
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0, 0, 0, 0.04)",
-            border: "1px solid rgba(255, 255, 255, 0.85)",
+            boxShadow: "0 4px 20px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04)",
+            border: "1px solid #e2e8f0",
+            padding: "8px 10px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
           }}
         >
-          <span style={{ fontSize: 16, marginRight: 8, opacity: 0.7 }}>
-            {isSearchingLive ? "⏳" : "🔍"}
-          </span>
-          <input
-            type="text"
-            placeholder="Tìm số nhà, hẻm, quán ăn, cafe khắp TP.HCM..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => setIsSearchFocused(true)}
-            style={{
-              flex: 1,
-              border: "none",
-              outline: "none",
-              background: "transparent",
-              fontSize: 13,
-              fontWeight: 500,
-              color: "#0f172a",
-            }}
-          />
-          {searchQuery && (
-            <button
-              onClick={() => {
-                setSearchQuery("");
-                setLiveSearchResults([]);
-                setIsSearchFocused(false);
-              }}
-              style={{
-                border: "none",
-                background: "rgba(0,0,0,0.06)",
-                borderRadius: "50%",
-                width: 22,
-                height: 22,
-                cursor: "pointer",
-                fontSize: 12,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#64748b",
-              }}
-            >
-              ✕
-            </button>
-          )}
-        </div>
-
-        {/* Menu kết quả tìm kiếm */}
-        {isSearchFocused && searchQuery.trim().length > 0 && (
+          {/* Hàng ô tìm kiếm */}
           <div
             style={{
-              marginTop: 8,
-              background: "rgba(255, 255, 255, 0.96)",
-              backdropFilter: "blur(24px)",
-              WebkitBackdropFilter: "blur(24px)",
+              display: "flex",
+              alignItems: "center",
+              padding: "7px 10px",
+              borderRadius: 10,
+              background: "#f8fafc",
+              border: "1px solid #e2e8f0",
+            }}
+          >
+            <span style={{ fontSize: 14, marginRight: 8, color: "#64748b", display: "flex", alignItems: "center" }}>
+              {isSearchingLive || loadingPOIs ? "⏳" : "🔍"}
+            </span>
+            <input
+              type="text"
+              placeholder="Tìm số nhà, hẻm, quán ăn, cafe khắp TP.HCM..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              style={{
+                flex: 1,
+                border: "none",
+                outline: "none",
+                background: "transparent",
+                fontSize: 13,
+                fontWeight: 500,
+                color: "#0f172a",
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setLiveSearchResults([]);
+                  setIsSearchFocused(false);
+                }}
+                style={{
+                  border: "none",
+                  background: "#e2e8f0",
+                  color: "#64748b",
+                  borderRadius: "50%",
+                  width: 20,
+                  height: 20,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 10,
+                  fontWeight: 700,
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Hàng nút lọc danh mục chính (Trượt ngang tinh tế) */}
+          <div
+            style={{
+              display: "flex",
+              gap: 6,
+              overflowX: "auto",
+              paddingBottom: 2,
+              scrollbarWidth: "none",
+            }}
+          >
+            <button
+              onClick={() => setSelectedCategory("all")}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                padding: "5px 10px",
+                borderRadius: 20,
+                border: selectedCategory === "all" ? "1px solid #0f172a" : "1px solid #e2e8f0",
+                background: selectedCategory === "all" ? "#0f172a" : "#ffffff",
+                color: selectedCategory === "all" ? "#ffffff" : "#475569",
+                fontSize: 11.5,
+                fontWeight: 600,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <span>Tất cả</span>
+              <span
+                style={{
+                  fontSize: 10,
+                  background: selectedCategory === "all" ? "rgba(255,255,255,0.2)" : "#f1f5f9",
+                  color: selectedCategory === "all" ? "#ffffff" : "#64748b",
+                  padding: "1px 5px",
+                  borderRadius: 10,
+                }}
+              >
+                {loadingEco ? "..." : categoryCounts.all}
+              </span>
+            </button>
+
+            {(Object.keys(CATEGORY_CONFIG) as EcoCategory[]).map((catKey) => {
+              const cfg = CATEGORY_CONFIG[catKey];
+              const isSelected = selectedCategory === catKey;
+              return (
+                <button
+                  key={catKey}
+                  onClick={() => setSelectedCategory(catKey)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                    padding: "5px 10px",
+                    borderRadius: 20,
+                    border: isSelected ? `1px solid ${cfg.color}` : "1px solid #e2e8f0",
+                    background: isSelected ? cfg.color : "#ffffff",
+                    color: isSelected ? "#ffffff" : "#475569",
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <span>{cfg.icon}</span>
+                  <span>{cfg.name}</span>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      background: isSelected ? "rgba(255,255,255,0.25)" : "#f1f5f9",
+                      color: isSelected ? "#ffffff" : "#64748b",
+                      padding: "1px 5px",
+                      borderRadius: 10,
+                    }}
+                  >
+                    {loadingEco ? "..." : categoryCounts[catKey]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Thanh công cụ nạp Quán xá & Điểm dịch vụ (Hiện đại, tối giản) */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingTop: 6,
+              borderTop: "1px solid #f1f5f9",
+              gap: 4,
+            }}
+          >
+            {/* Phân loại quán */}
+            <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
+              {(
+                [
+                  { id: "all", label: "Tất cả", icon: "📍" },
+                  { id: "cafe", label: "Cafe", icon: "☕" },
+                  { id: "restaurant", label: "Ăn uống", icon: "🍜" },
+                  { id: "shop", label: "Cửa hàng", icon: "🛍️" },
+                ] as const
+              ).map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    setPoiType(t.id);
+                    handleLoadNearbyPOIs(mapCenter.lat, mapCenter.lng, t.id);
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 2,
+                    padding: "3px 6px",
+                    borderRadius: 6,
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: 10.5,
+                    fontWeight: poiType === t.id ? 700 : 500,
+                    background: poiType === t.id ? "#0f172a" : "transparent",
+                    color: poiType === t.id ? "#ffffff" : "#64748b",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <span>{t.icon}</span>
+                  <span>{t.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Nút Tự nạp & Quét quanh đây */}
+            <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+              <button
+                onClick={handleToggleAutoFetch}
+                title={autoFetchPOI ? "Đang bật tự nạp POI khi di chuyển" : "Bật tự nạp POI khi di chuyển"}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "3px 8px",
+                  borderRadius: 6,
+                  border: autoFetchPOI ? "1px solid #10b981" : "1px solid #e2e8f0",
+                  background: autoFetchPOI ? "#ecfdf5" : "#ffffff",
+                  color: autoFetchPOI ? "#059669" : "#64748b",
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <span style={{ fontSize: 8 }}>{autoFetchPOI ? "🟢" : "⚪"}</span>
+                <span>Tự nạp</span>
+              </button>
+
+              <button
+                onClick={() => handleLoadNearbyPOIs(mapCenter.lat, mapCenter.lng, poiType)}
+                disabled={loadingPOIs}
+                title="Quét nạp quán quanh tâm bản đồ"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 3,
+                  padding: "3px 8px",
+                  borderRadius: 6,
+                  border: "1px solid #e2e8f0",
+                  background: "#f8fafc",
+                  color: "#0f172a",
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <span>{loadingPOIs ? "⏳" : "⚡"}</span>
+                <span>{loadingPOIs ? "Quét..." : "Quét"}</span>
+                {livePOIs.length > 0 && (
+                  <span style={{ fontSize: 9.5, color: "#64748b" }}>
+                    ({livePOIs.length})
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Kết quả tìm kiếm (Dropdown) */}
+        {isSearchFocused && (liveSearchResults.length > 0 || localSearchResults.ecoMatches.length > 0) && (
+          <div
+            style={{
+              background: "#ffffff",
               borderRadius: 16,
-              boxShadow: "0 14px 40px rgba(0, 0, 0, 0.2)",
-              border: "1px solid rgba(255, 255, 255, 0.85)",
-              maxHeight: 380,
+              boxShadow: "0 10px 30px rgba(0, 0, 0, 0.12)",
+              border: "1px solid #e2e8f0",
+              maxHeight: 360,
               overflowY: "auto",
               padding: "6px",
             }}
           >
             {liveSearchResults.length > 0 && (
               <div style={{ marginBottom: 6 }}>
-                <div style={{ fontSize: 10.5, fontWeight: 700, color: "#f97316", padding: "4px 10px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                  ⚡ Quán xá & Số nhà thực tế (OSM):
+                <div style={{ fontSize: 10.5, fontWeight: 700, color: "#0f172a", padding: "4px 10px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  Quán xá & Số nhà (OSM):
                 </div>
                 {liveSearchResults.map((poi) => (
                   <div
@@ -646,29 +858,29 @@ function EcoMap() {
                       alignItems: "center",
                       gap: 10,
                       padding: "8px 10px",
-                      borderRadius: 10,
+                      borderRadius: 8,
                       cursor: "pointer",
                       transition: "background 0.15s ease",
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(249, 115, 22, 0.08)")}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                   >
-                    <span style={{ fontSize: 18 }}>{poi.icon}</span>
+                    <span style={{ fontSize: 16 }}>{poi.icon}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>
+                      <div style={{ fontSize: 12.5, fontWeight: 600, color: "#0f172a" }}>
                         {poi.name}
                       </div>
                       <div style={{ fontSize: 11, color: "#64748b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        📍 {poi.fullAddress}
+                        {poi.fullAddress}
                       </div>
                     </div>
                     {poi.houseNumber && (
                       <span
                         style={{
                           fontSize: 10,
-                          fontWeight: 700,
-                          color: "#c2410c",
-                          background: "#ffedd5",
+                          fontWeight: 600,
+                          color: "#475569",
+                          background: "#f1f5f9",
                           padding: "2px 6px",
                           borderRadius: 6,
                           whiteSpace: "nowrap",
@@ -685,7 +897,7 @@ function EcoMap() {
             {localSearchResults.ecoMatches.length > 0 && (
               <div style={{ marginBottom: 6 }}>
                 <div style={{ fontSize: 10.5, fontWeight: 700, color: "#059669", padding: "4px 10px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                  🌱 Địa điểm môi trường EcoReport:
+                  Địa điểm môi trường EcoReport:
                 </div>
                 {localSearchResults.ecoMatches.map((loc) => {
                   const cat = CATEGORY_CONFIG[loc.category];
@@ -702,16 +914,16 @@ function EcoMap() {
                         alignItems: "center",
                         gap: 10,
                         padding: "8px 10px",
-                        borderRadius: 10,
+                        borderRadius: 8,
                         cursor: "pointer",
                         transition: "background 0.15s ease",
                       }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(16, 185, 129, 0.08)")}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
                       onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                     >
-                      <span style={{ fontSize: 18 }}>{cat.icon}</span>
+                      <span style={{ fontSize: 16 }}>{cat.icon}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{loc.name}</div>
+                        <div style={{ fontSize: 12.5, fontWeight: 600, color: "#0f172a" }}>{loc.name}</div>
                         <div style={{ fontSize: 11, color: "#64748b" }}>{loc.district} • {loc.address}</div>
                       </div>
                     </div>
@@ -721,416 +933,268 @@ function EcoMap() {
             )}
           </div>
         )}
-      </div>
 
-      {/* 2. THANH TIỆN ÍCH NẠP QUÁN XÁ & BỘ LỌC + RANH GIỚI QUẬN (Bên trái) */}
-      <div
-        style={{
-          position: "absolute",
-          top: 72,
-          left: 16,
-          zIndex: 20,
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-          maxWidth: "430px",
-          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-        }}
-      >
-        {/* Hàng 1: Nút nạp quán xá + Chế độ Tự nạp khi lướt + Nút Bật ranh giới quận */}
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-          <button
-            onClick={() => handleLoadNearbyPOIs(mapCenter.lat, mapCenter.lng, poiType)}
-            disabled={loadingPOIs}
+        {/* Thẻ chi tiết Địa điểm / Quán xá / Vị trí click (Docked thanh lịch bên trái) */}
+        {(selectedLocation || selectedPOI || clickedAddress) && (
+          <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "6px 12px",
-              borderRadius: 14,
-              border: "1px solid #ea580c",
-              cursor: "pointer",
-              fontSize: 11.5,
-              fontWeight: 700,
-              background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-              color: "#ffffff",
-              boxShadow: "0 4px 14px rgba(234, 88, 12, 0.35)",
-              transition: "all 0.2s ease",
+              background: "#ffffff",
+              borderRadius: 16,
+              boxShadow: "0 8px 30px rgba(0, 0, 0, 0.12)",
+              border: "1px solid #e2e8f0",
+              padding: "16px",
             }}
           >
-            <span>{loadingPOIs ? "⏳" : "⚡"}</span>
-            <span>{loadingPOIs ? "Đang quét..." : "Nạp quán quanh đây"}</span>
-            {livePOIs.length > 0 && (
-              <span style={{ background: "#ffffff", color: "#ea580c", padding: "1px 5px", borderRadius: 8, fontSize: 10 }}>
-                {livePOIs.length}
-              </span>
-            )}
-          </button>
-
-          {/* Toggle tự nạp */}
-          <button
-            onClick={() => setAutoFetchPOI(!autoFetchPOI)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              padding: "6px 10px",
-              borderRadius: 14,
-              border: autoFetchPOI ? "1px solid #16a34a" : "1px solid rgba(255,255,255,0.8)",
-              background: autoFetchPOI ? "#dcfce7" : "rgba(255, 255, 255, 0.9)",
-              color: autoFetchPOI ? "#15803d" : "#475569",
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: "pointer",
-              backdropFilter: "blur(12px)",
-            }}
-          >
-            <span>{autoFetchPOI ? "🟢" : "⚪"}</span>
-            <span>Tự nạp</span>
-          </button>
-
-          {/* Nút bật/tắt Ranh giới quận/huyện */}
-          <button
-            onClick={() => setShowDistricts(!showDistricts)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              padding: "6px 10px",
-              borderRadius: 14,
-              border: showDistricts ? "1px solid #3b82f6" : "1px solid rgba(255,255,255,0.8)",
-              background: showDistricts ? "#eff6ff" : "rgba(255, 255, 255, 0.9)",
-              color: showDistricts ? "#1d4ed8" : "#475569",
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: "pointer",
-              backdropFilter: "blur(12px)",
-            }}
-          >
-            <span>🗺️</span>
-            <span>{showDistricts ? "Ẩn ranh giới" : "Ranh giới quận"}</span>
-          </button>
-        </div>
-
-        {/* Hàng 1.5: Bộ lọc loại quán xá & tiện ích OSM */}
-        <div style={{ display: "flex", gap: 4, alignItems: "center", background: "rgba(255,255,255,0.75)", padding: "3px 6px", borderRadius: 12, backdropFilter: "blur(8px)", width: "fit-content" }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: "#64748b", marginRight: 2 }}>Loại quán:</span>
-          {(
-            [
-              { id: "all", label: "Tất cả", icon: "📍" },
-              { id: "cafe", label: "Cafe", icon: "☕" },
-              { id: "restaurant", label: "Ăn uống", icon: "🍜" },
-              { id: "shop", label: "Cửa hàng", icon: "🛍️" },
-            ] as const
-          ).map((t) => (
-            <button
-              key={t.id}
-              onClick={() => {
-                setPoiType(t.id);
-                handleLoadNearbyPOIs(mapCenter.lat, mapCenter.lng, t.id);
-              }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 3,
-                padding: "2px 7px",
-                borderRadius: 8,
-                border: "none",
-                cursor: "pointer",
-                fontSize: 10.5,
-                fontWeight: poiType === t.id ? 700 : 500,
-                background: poiType === t.id ? "#ea580c" : "transparent",
-                color: poiType === t.id ? "#ffffff" : "#475569",
-                transition: "all 0.15s ease",
-              }}
-            >
-              <span>{t.icon}</span>
-              <span>{t.label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Hàng 2: Bộ lọc danh mục môi trường (Dữ liệu API) */}
-        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}>
-          <button
-            onClick={() => setSelectedCategory("all")}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              padding: "4px 9px",
-              borderRadius: 12,
-              border: selectedCategory === "all" ? "1px solid #10b981" : "1px solid rgba(255,255,255,0.7)",
-              cursor: "pointer",
-              fontSize: 11,
-              fontWeight: selectedCategory === "all" ? 700 : 500,
-              background: selectedCategory === "all" ? "#10b981" : "rgba(255, 255, 255, 0.88)",
-              color: selectedCategory === "all" ? "#ffffff" : "#334155",
-              backdropFilter: "blur(12px)",
-            }}
-          >
-            <span>🌐 Tất cả ({loadingEco ? "..." : categoryCounts.all})</span>
-          </button>
-
-          {(Object.keys(CATEGORY_CONFIG) as EcoCategory[]).map((catKey) => {
-            const cfg = CATEGORY_CONFIG[catKey];
-            const isSelected = selectedCategory === catKey;
-            return (
-              <button
-                key={catKey}
-                onClick={() => setSelectedCategory(catKey)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  padding: "4px 9px",
-                  borderRadius: 12,
-                  border: isSelected ? `1px solid ${cfg.color}` : "1px solid rgba(255,255,255,0.7)",
-                  cursor: "pointer",
-                  fontSize: 11,
-                  fontWeight: isSelected ? 700 : 500,
-                  background: isSelected ? cfg.color : "rgba(255, 255, 255, 0.88)",
-                  color: isSelected ? "#ffffff" : "#334155",
-                  backdropFilter: "blur(12px)",
-                }}
-              >
-                <span>{cfg.icon}</span>
-                <span>{cfg.name} ({loadingEco ? "..." : categoryCounts[catKey]})</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 3. THANH ĐIỀU KHIỂN STYLE BẢN ĐỒ & 3D (Ở giữa phía trên) */}
-      <div
-        style={{
-          position: "absolute",
-          top: 16,
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 15,
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          padding: "6px 12px",
-          background: "rgba(255, 255, 255, 0.94)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          borderRadius: 999,
-          boxShadow: "0 8px 30px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.06)",
-          border: "1px solid rgba(255, 255, 255, 0.85)",
-          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 6, paddingRight: 6, borderRight: "1px solid rgba(0,0,0,0.08)" }}>
-          <span style={{ fontSize: 18 }}>🌱</span>
-          <span style={{ fontWeight: 800, fontSize: 14, color: "#1b4332", letterSpacing: "-0.4px" }}>EcoReport</span>
-          {MAP_STYLES[activeStyle].isGoogle && (
-            <span
-              style={{
-                fontSize: 9.5,
-                fontWeight: 700,
-                background: "rgba(16, 185, 129, 0.15)",
-                color: "#059669",
-                padding: "2px 7px",
-                borderRadius: 999,
-                border: "1px solid rgba(16, 185, 129, 0.35)",
-                whiteSpace: "nowrap",
-                display: "flex",
-                alignItems: "center",
-                gap: 3,
-              }}
-            >
-              <span>⚡</span> Google Cluster
-            </span>
-          )}
-        </div>
-
-        {/* Các nút chọn kiểu bản đồ */}
-        <div style={{ display: "flex", gap: 3 }}>
-          {(Object.keys(MAP_STYLES) as StyleKey[]).map((key) => {
-            const item = MAP_STYLES[key];
-            const isActive = activeStyle === key;
-            const isGoogle = item.isGoogle;
-            return (
-              <button
-                key={key}
-                onClick={() => setActiveStyle(key)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  padding: "5px 10px",
-                  borderRadius: 20,
-                  border: isGoogle && isActive ? "1px solid #10b981" : "none",
-                  cursor: "pointer",
-                  fontSize: 11.5,
-                  fontWeight: isActive ? 700 : 500,
-                  background: isActive
-                    ? (isGoogle ? "linear-gradient(135deg, #059669 0%, #10b981 100%)" : "#2d6a4f")
-                    : "transparent",
-                  color: isActive ? "#ffffff" : "#475569",
-                  transition: "all 0.2s ease",
-                  boxShadow: isActive ? "0 4px 12px rgba(16, 185, 129, 0.35)" : "none",
-                }}
-              >
-                <span>{item.icon}</span>
-                <span>{item.name}</span>
-                {isGoogle && (
-                  <span
+            {clickedAddress ? (
+              <div>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: "#2563eb", textTransform: "uppercase" }}>
+                      Vị trí đã chọn trên bản đồ
+                    </div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginTop: 2 }}>
+                      {clickedAddress.placeName}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setClickedAddress(null)}
                     style={{
-                      fontSize: 8.5,
-                      fontWeight: 800,
-                      background: isActive ? "rgba(0,0,0,0.22)" : "rgba(16,185,129,0.12)",
-                      color: isActive ? "#ffffff" : "#059669",
-                      padding: "1px 4px",
-                      borderRadius: 4,
-                      marginLeft: 1,
+                      border: "none",
+                      background: "#f1f5f9",
+                      borderRadius: "50%",
+                      width: 24,
+                      height: 24,
+                      cursor: "pointer",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: "#64748b",
                     }}
                   >
-                    G
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+                    ✕
+                  </button>
+                </div>
 
-        {/* Nút bật/tắt 3D */}
-        <button
-          onClick={toggle3DView}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-            padding: "5px 10px",
-            borderRadius: 20,
-            border: is3D ? "1px solid #10b981" : "1px solid #cbd5e1",
-            cursor: "pointer",
-            fontSize: 11.5,
-            fontWeight: 700,
-            background: is3D ? "linear-gradient(135deg, #059669 0%, #10b981 100%)" : "rgba(241, 245, 249, 0.8)",
-            color: is3D ? "#ffffff" : "#64748b",
-            transition: "all 0.2s ease",
-            boxShadow: is3D ? "0 4px 12px rgba(16, 185, 129, 0.35)" : "none",
-            marginLeft: 2,
-          }}
-        >
-          <span>{is3D ? "🏢 3D" : "📐 2D"}</span>
-        </button>
+                <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "8px 10px", marginBottom: 12 }}>
+                  {clickedAddress.houseNumber && (
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", marginBottom: 2 }}>
+                      🏠 Số nhà: {clickedAddress.houseNumber}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 11.5, color: "#475569" }}>
+                    📍 {clickedAddress.fullAddress}
+                  </div>
+                </div>
 
-        {/* Nút định vị GPS siêu tốc & độ chính xác cao */}
-        <button
-          onClick={() => {
-            refreshGps(true); // Xóa cache cũ & quét tươi vị trí
-            if (gpsCoords && mapRef.current) {
-              mapRef.current.flyTo({
-                center: [gpsCoords.lng, gpsCoords.lat],
-                zoom: gpsSource === "gps" ? 16 : 14,
-                pitch: is3D ? 58 : 0,
-                duration: 1200,
-              });
-            }
-          }}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-            padding: "5px 11px",
-            borderRadius: 20,
-            border: isLocked
-              ? "1px solid #10b981"
-              : gpsSource === "gps"
-              ? "1px solid #0ea5e9"
-              : gpsSource === "network"
-              ? "1px solid #f59e0b"
-              : "1px solid #cbd5e1",
-            cursor: "pointer",
-            fontSize: 11.5,
-            fontWeight: 700,
-            background: isLocked
-              ? "rgba(16, 185, 129, 0.15)"
-              : gpsSource === "gps"
-              ? "rgba(14, 165, 233, 0.12)"
-              : gpsSource === "network"
-              ? "rgba(245, 158, 11, 0.15)"
-              : "rgba(241, 245, 249, 0.8)",
-            color: isLocked
-              ? "#059669"
-              : gpsSource === "gps"
-              ? "#0284c7"
-              : gpsSource === "network"
-              ? "#d97706"
-              : "#64748b",
-            transition: "all 0.2s ease",
-            marginLeft: 2,
-            boxShadow: isLocked
-              ? "0 0 10px rgba(16, 185, 129, 0.3)"
-              : gpsSource === "network"
-              ? "0 0 8px rgba(245, 158, 11, 0.25)"
-              : "none",
-          }}
-          title={
-            gpsCoords
-              ? `Vị trí: ${gpsCoords.lat.toFixed(5)}, ${gpsCoords.lng.toFixed(5)}\nNguồn: ${
-                  gpsSource === "gps"
-                    ? "Vệ tinh GPS / Wi-Fi"
-                    : gpsSource === "network"
-                    ? "Ước tính theo IP mạng"
-                    : gpsSource === "cache"
-                    ? "Bộ nhớ đệm (vị trí gần nhất)"
-                    : "Mặc định TP.HCM"
-                } (Cấp độ: ${accuracyLevel}, Sai số: ±${gpsAccuracy || 15}m - ${
-                  isLocked ? "Đã khóa vệ tinh" : "Đang tinh chỉnh"
-                })\nClick để làm mới và xóa cache.`
-              : gpsError || "Đang tìm kiếm tín hiệu GPS..."
-          }
-        >
-          <span>
-            {!gpsCoords && isLocatingGps
-              ? "🛰️ Đang dò..."
-              : isLocked
-              ? `🎯 GPS (±${gpsAccuracy || 10}m)`
-              : gpsSource === "gps"
-              ? `🎯 GPS (±${gpsAccuracy || 25}m)`
-              : gpsSource === "network"
-              ? "📶 Ước lượng IP"
-              : gpsSource === "cache"
-              ? "💾 Cache GPS"
-              : "📍 Mặc định TP.HCM"}
-          </span>
-        </button>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => handleCalculateRoute(clickedAddress.lng, clickedAddress.lat, clickedAddress.placeName || clickedAddress.fullAddress)}
+                    disabled={calculatingRoute}
+                    style={{
+                      flex: 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      padding: "9px 12px",
+                      borderRadius: 10,
+                      background: "#0f172a",
+                      color: "#ffffff",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span>🧭</span> {calculatingRoute ? "Đang tính..." : "Chỉ đường từ vị trí của tôi"}
+                  </button>
+                  <button
+                    onClick={() => alert(`Đã ghi nhận tọa độ ${clickedAddress.lat.toFixed(5)}, ${clickedAddress.lng.toFixed(5)} để gửi báo cáo sự cố!`)}
+                    style={{
+                      padding: "9px 12px",
+                      borderRadius: 10,
+                      border: "1px solid #e2e8f0",
+                      background: "#f8fafc",
+                      color: "#0f172a",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Báo cáo
+                  </button>
+                </div>
+              </div>
+            ) : selectedPOI ? (
+              <div>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 22 }}>{selectedPOI.icon}</span>
+                    <div>
+                      <div style={{ fontSize: 10.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
+                        {selectedPOI.categoryName}
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
+                        {selectedPOI.name}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedPOI(null)}
+                    style={{
+                      border: "none",
+                      background: "#f1f5f9",
+                      borderRadius: "50%",
+                      width: 24,
+                      height: 24,
+                      cursor: "pointer",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: "#64748b",
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "8px 10px", marginBottom: 12 }}>
+                  {selectedPOI.houseNumber && (
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", marginBottom: 2 }}>
+                      🏠 Số nhà: {selectedPOI.houseNumber}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 11.5, color: "#475569" }}>
+                    📍 {selectedPOI.fullAddress}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleCalculateRoute(selectedPOI.longitude, selectedPOI.latitude, selectedPOI.name)}
+                  disabled={calculatingRoute}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    padding: "9px 12px",
+                    borderRadius: 10,
+                    background: "#0f172a",
+                    color: "#ffffff",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  <span>🧭</span> {calculatingRoute ? "Đang tính..." : "Chỉ đường từ vị trí của tôi"}
+                </button>
+              </div>
+            ) : selectedLocation ? (
+              <div>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 22 }}>{CATEGORY_CONFIG[selectedLocation.category].icon}</span>
+                    <div>
+                      <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", color: CATEGORY_CONFIG[selectedLocation.category].color }}>
+                        {CATEGORY_CONFIG[selectedLocation.category].name}
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
+                        {selectedLocation.name}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedLocation(null)}
+                    style={{
+                      border: "none",
+                      background: "#f1f5f9",
+                      borderRadius: "50%",
+                      width: 24,
+                      height: 24,
+                      cursor: "pointer",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: "#64748b",
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 7px", borderRadius: 6, background: "#f1f5f9", fontSize: 11, fontWeight: 600, color: "#334155", marginBottom: 4 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: CATEGORY_CONFIG[selectedLocation.category].color }} />
+                    {selectedLocation.statusText}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: "#64748b" }}>
+                    📍 {selectedLocation.address} ({selectedLocation.district})
+                  </div>
+                </div>
+
+                <div style={{ background: "#f8fafc", borderRadius: 10, padding: "8px 12px", marginBottom: 12, border: "1px solid #e2e8f0" }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>
+                    {selectedLocation.metricLabel}
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginTop: 2 }}>
+                    {selectedLocation.metricValue}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleCalculateRoute(selectedLocation.longitude, selectedLocation.latitude, selectedLocation.name)}
+                  disabled={calculatingRoute}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    padding: "9px 12px",
+                    borderRadius: 10,
+                    background: "#0f172a",
+                    color: "#ffffff",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  <span>🧭</span> {calculatingRoute ? "Đang tính..." : "Chỉ đường từ vị trí của tôi"}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        )}
       </div>
 
-      {/* 4. BẢNG THÔNG BÁO LỘ TRÌNH OSRM ROUTING (Góc trên bên phải) */}
+      {/* 2. BẢNG THÔNG BÁO LỘ TRÌNH OSRM ROUTING (Góc trên) */}
       {activeRoute && (
         <div
           style={{
             position: "absolute",
-            top: 76,
-            right: 20,
-            zIndex: 35,
-            background: "linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)",
-            color: "#ffffff",
-            borderRadius: 18,
-            padding: "12px 18px",
-            boxShadow: "0 12px 36px rgba(37, 99, 235, 0.35)",
-            fontFamily: "'Inter', sans-serif",
+            top: 16,
+            right: 70,
+            zIndex: 24,
+            background: "#ffffff",
+            borderRadius: 14,
+            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+            border: "1px solid #e2e8f0",
+            padding: "10px 14px",
             display: "flex",
             alignItems: "center",
-            gap: 16,
+            gap: 12,
+            fontFamily: "'Inter', sans-serif",
           }}
         >
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.85, textTransform: "uppercase" }}>
-              🚗 Lộ trình OSRM {activeRoute.destName ? `➔ ${activeRoute.destName}` : "thực tế"}
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#2563eb", textTransform: "uppercase" }}>
+              Lộ trình OSRM {activeRoute.destName ? `➔ ${activeRoute.destName}` : ""}
             </div>
-            <div style={{ fontSize: 16, fontWeight: 800, marginTop: 2 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a" }}>
               {activeRoute.distanceKm} km • ~{activeRoute.durationMin} phút di chuyển
             </div>
             {activeRoute.startLabel && (
-              <div style={{ fontSize: 10.5, opacity: 0.85, marginTop: 2 }}>
+              <div style={{ fontSize: 10.5, color: "#64748b" }}>
                 Xuất phát: {activeRoute.startLabel}
               </div>
             )}
@@ -1140,13 +1204,14 @@ function EcoMap() {
             title="Đóng lộ trình"
             style={{
               border: "none",
-              background: "rgba(255,255,255,0.2)",
-              color: "#ffffff",
+              background: "#f1f5f9",
+              color: "#64748b",
               borderRadius: "50%",
-              width: 26,
-              height: 26,
+              width: 24,
+              height: 24,
               cursor: "pointer",
               fontWeight: 700,
+              fontSize: 10,
             }}
           >
             ✕
@@ -1154,366 +1219,345 @@ function EcoMap() {
         </div>
       )}
 
-      {/* 5. THẺ CHI TIẾT ĐỊA ĐIỂM / QUÁN XÁ / VỊ TRÍ CLICK (Detail Card) */}
-      {(selectedLocation || selectedPOI || clickedAddress) && (
-        <div
-          style={{
-            position: "absolute",
-            top: activeRoute ? 140 : 80,
-            right: 20,
-            zIndex: 30,
-            width: 360,
-            background: "rgba(255, 255, 255, 0.96)",
-            backdropFilter: "blur(24px)",
-            WebkitBackdropFilter: "blur(24px)",
-            borderRadius: 20,
-            boxShadow: "0 16px 40px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.06)",
-            border: "1px solid rgba(255, 255, 255, 0.85)",
-            padding: "18px 20px",
-            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-            animation: "slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
-          }}
-        >
-          {clickedAddress ? (
-            /* Chi tiết vị trí người dùng vừa click trên bản đồ (Reverse Geocoding) */
-            <div>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 26 }}>📍</span>
-                  <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#2563eb", textTransform: "uppercase" }}>
-                      Vị trí bạn đã bấm (Reverse Geocode)
-                    </div>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a" }}>
-                      {clickedAddress.placeName}
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setClickedAddress(null)}
-                  style={{
-                    border: "none",
-                    background: "rgba(0,0,0,0.06)",
-                    borderRadius: "50%",
-                    width: 26,
-                    height: 26,
-                    cursor: "pointer",
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div style={{ background: "#eff6ff", border: "1px solid #dbeafe", borderRadius: 12, padding: "10px 12px", marginBottom: 12 }}>
-                {clickedAddress.houseNumber && (
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8", marginBottom: 3 }}>
-                    🏠 Số nhà: {clickedAddress.houseNumber}
-                  </div>
-                )}
-                <div style={{ fontSize: 12, color: "#334155" }}>
-                  📍 {clickedAddress.fullAddress}
-                </div>
-              </div>
-
-              <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  onClick={() => handleCalculateRoute(clickedAddress.lng, clickedAddress.lat, clickedAddress.placeName || clickedAddress.fullAddress)}
-                  disabled={calculatingRoute}
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
-                    padding: "9px 14px",
-                    borderRadius: 12,
-                    background: "linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)",
-                    color: "#ffffff",
-                    fontSize: 12.5,
-                    fontWeight: 600,
-                    border: "none",
-                    cursor: "pointer",
-                    boxShadow: "0 4px 12px rgba(37, 99, 235, 0.35)",
-                  }}
-                >
-                  <span>🧭</span> {calculatingRoute ? "Đang tính..." : "Chỉ đường từ vị trí của tôi"}
-                </button>
-                <button
-                  onClick={() => alert(`Đã ghi nhận tọa độ ${clickedAddress.lat.toFixed(5)}, ${clickedAddress.lng.toFixed(5)} để gửi báo cáo sự cố!`)}
-                  style={{
-                    padding: "9px 12px",
-                    borderRadius: 12,
-                    border: "1px solid #10b981",
-                    background: "#ecfdf5",
-                    color: "#059669",
-                    fontSize: 12.5,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                  }}
-                >
-                  📢 Báo cáo tại đây
-                </button>
-              </div>
-            </div>
-          ) : selectedPOI ? (
-            /* Chi tiết Quán xá / Số nhà từ Live API */
-            <div>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 26 }}>{selectedPOI.icon}</span>
-                  <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#ea580c", textTransform: "uppercase" }}>
-                      {selectedPOI.categoryName}
-                    </div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: "#0f172a" }}>
-                      {selectedPOI.name}
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setSelectedPOI(null)}
-                  style={{
-                    border: "none",
-                    background: "rgba(0,0,0,0.06)",
-                    borderRadius: "50%",
-                    width: 26,
-                    height: 26,
-                    cursor: "pointer",
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div style={{ background: "#fff7ed", border: "1px solid #ffedd5", borderRadius: 12, padding: "10px 12px", marginBottom: 12 }}>
-                {selectedPOI.houseNumber && (
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#c2410c", marginBottom: 3 }}>
-                    🏠 Số nhà: {selectedPOI.houseNumber}
-                  </div>
-                )}
-                <div style={{ fontSize: 12, color: "#475569" }}>
-                  📍 {selectedPOI.fullAddress}
-                </div>
-              </div>
-
-              <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  onClick={() => handleCalculateRoute(selectedPOI.longitude, selectedPOI.latitude, selectedPOI.name)}
-                  disabled={calculatingRoute}
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
-                    padding: "9px 14px",
-                    borderRadius: 12,
-                    background: "linear-gradient(135deg, #ea580c 0%, #f97316 100%)",
-                    color: "#ffffff",
-                    fontSize: 12.5,
-                    fontWeight: 600,
-                    border: "none",
-                    cursor: "pointer",
-                    boxShadow: "0 4px 12px rgba(234, 88, 12, 0.35)",
-                  }}
-                >
-                  <span>🧭</span> {calculatingRoute ? "Đang tính..." : "Chỉ đường từ vị trí của tôi"}
-                </button>
-              </div>
-            </div>
-          ) : selectedLocation ? (
-            /* Chi tiết Địa điểm Môi trường */
-            <div>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 24 }}>{CATEGORY_CONFIG[selectedLocation.category].icon}</span>
-                  <div>
-                    <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", color: CATEGORY_CONFIG[selectedLocation.category].color }}>
-                      {CATEGORY_CONFIG[selectedLocation.category].name}
-                    </div>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a" }}>
-                      {selectedLocation.name}
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setSelectedLocation(null)}
-                  style={{
-                    border: "none",
-                    background: "rgba(0,0,0,0.06)",
-                    borderRadius: "50%",
-                    width: 26,
-                    height: 26,
-                    cursor: "pointer",
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 8px", borderRadius: 8, background: "#f1f5f9", fontSize: 11, fontWeight: 600, color: "#334155", marginBottom: 6 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: CATEGORY_CONFIG[selectedLocation.category].color }} />
-                  {selectedLocation.statusText}
-                </div>
-                <div style={{ fontSize: 12, color: "#64748b" }}>
-                  📍 {selectedLocation.address} ({selectedLocation.district})
-                </div>
-              </div>
-
-              <div style={{ background: "#f8fafc", borderRadius: 14, padding: "10px 14px", marginBottom: 12, border: "1px solid #e2e8f0" }}>
-                <div style={{ fontSize: 10.5, fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>
-                  {selectedLocation.metricLabel}
-                </div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", marginTop: 2 }}>
-                  {selectedLocation.metricValue}
-                </div>
-              </div>
-
-              <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  onClick={() => handleCalculateRoute(selectedLocation.longitude, selectedLocation.latitude, selectedLocation.name)}
-                  disabled={calculatingRoute}
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
-                    padding: "8px 14px",
-                    borderRadius: 12,
-                    background: "linear-gradient(135deg, #059669 0%, #10b981 100%)",
-                    color: "#ffffff",
-                    fontSize: 12.5,
-                    fontWeight: 600,
-                    border: "none",
-                    cursor: "pointer",
-                    boxShadow: "0 4px 12px rgba(16, 185, 129, 0.35)",
-                  }}
-                >
-                  <span>🧭</span> {calculatingRoute ? "Đang tính..." : "Chỉ đường từ vị trí của tôi"}
-                </button>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      )}
-
-      {/* 6. BỘ ĐIỀU HƯỚNG "QUICK TOUR TP.HCM" */}
+      {/* 3. THANH CÔNG CỤ BẢN ĐỒ GỌN GÀNG GÓC PHẢI (Layers, GPS, 3D) */}
       <div
         style={{
           position: "absolute",
-          bottom: 24,
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 15,
+          top: 16,
+          right: 16,
+          zIndex: 25,
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        }}
+      >
+        {/* Nút Lớp bản đồ & Menu Popover */}
+        <div style={{ position: "relative" }}>
+          <button
+            onClick={() => setShowLayersModal(!showLayersModal)}
+            title="Lớp bản đồ & Kiểu hiển thị"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 12,
+              background: showLayersModal ? "#0f172a" : "#ffffff",
+              color: showLayersModal ? "#ffffff" : "#0f172a",
+              border: "1px solid #e2e8f0",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 18,
+              transition: "all 0.15s ease",
+            }}
+          >
+            🥞
+          </button>
+
+          {/* Menu chọn kiểu bản đồ & lớp phủ */}
+          {showLayersModal && (
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                right: 50,
+                width: 270,
+                background: "#ffffff",
+                borderRadius: 16,
+                boxShadow: "0 10px 30px rgba(0, 0, 0, 0.15)",
+                border: "1px solid #e2e8f0",
+                padding: "12px",
+                zIndex: 40,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #f1f5f9" }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#0f172a" }}>Lớp & Kiểu bản đồ</span>
+                <button
+                  onClick={() => setShowLayersModal(false)}
+                  style={{ border: "none", background: "transparent", color: "#94a3b8", cursor: "pointer", fontSize: 13, fontWeight: 700 }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Grid bản đồ nền */}
+              <div style={{ fontSize: 10.5, fontWeight: 600, color: "#64748b", textTransform: "uppercase", marginBottom: 6 }}>
+                Bản đồ nền
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 12 }}>
+                {(Object.keys(MAP_STYLES) as StyleKey[]).map((key) => {
+                  const item = MAP_STYLES[key];
+                  const isActive = activeStyle === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        setActiveStyle(key);
+                        setShowLayersModal(false);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: "8px 10px",
+                        borderRadius: 10,
+                        border: isActive ? "1.5px solid #0f172a" : "1px solid #e2e8f0",
+                        background: isActive ? "#f8fafc" : "#ffffff",
+                        color: isActive ? "#0f172a" : "#475569",
+                        fontSize: 11.5,
+                        fontWeight: isActive ? 700 : 500,
+                        cursor: "pointer",
+                        textAlign: "left",
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      <span style={{ fontSize: 14 }}>{item.icon}</span>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {item.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Toggles tính năng */}
+              <div style={{ fontSize: 10.5, fontWeight: 600, color: "#64748b", textTransform: "uppercase", marginBottom: 6 }}>
+                Lớp phủ & Tính năng
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div
+                  onClick={toggle3DView}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "7px 10px",
+                    borderRadius: 10,
+                    background: is3D ? "#f8fafc" : "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    cursor: "pointer",
+                  }}
+                >
+                  <span style={{ fontSize: 11.5, fontWeight: 600, color: "#0f172a", display: "flex", alignItems: "center", gap: 6 }}>
+                    <span>🏢</span> Tòa nhà 3D
+                  </span>
+                  <span style={{ fontSize: 12 }}>{is3D ? "🟢" : "⚪"}</span>
+                </div>
+
+                <div
+                  onClick={() => setShowDistricts(!showDistricts)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "7px 10px",
+                    borderRadius: 10,
+                    background: showDistricts ? "#f8fafc" : "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    cursor: "pointer",
+                  }}
+                >
+                  <span style={{ fontSize: 11.5, fontWeight: 600, color: "#0f172a", display: "flex", alignItems: "center", gap: 6 }}>
+                    <span>🗺️</span> Ranh giới quận/huyện
+                  </span>
+                  <span style={{ fontSize: 12 }}>{showDistricts ? "🟢" : "⚪"}</span>
+                </div>
+
+                <div
+                  onClick={handleToggleAutoFetch}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "7px 10px",
+                    borderRadius: 10,
+                    background: autoFetchPOI ? "#f8fafc" : "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    cursor: "pointer",
+                  }}
+                >
+                  <span style={{ fontSize: 11.5, fontWeight: 600, color: "#0f172a", display: "flex", alignItems: "center", gap: 6 }}>
+                    <span>⚡</span> Tự nạp quán khi lướt
+                  </span>
+                  <span style={{ fontSize: 12 }}>{autoFetchPOI ? "🟢" : "⚪"}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Nút Định vị GPS */}
+        <button
+          onClick={() => {
+            refreshGps(true);
+            if (gpsCoords && mapRef.current) {
+              mapRef.current.flyTo({
+                center: [gpsCoords.lng, gpsCoords.lat],
+                zoom: gpsSource === "gps" ? 16 : 14,
+                pitch: is3D ? 58 : 0,
+                duration: 1200,
+              });
+            }
+          }}
+          title={
+            gpsCoords
+              ? `Vị trí: ${gpsCoords.lat.toFixed(5)}, ${gpsCoords.lng.toFixed(5)}\nNguồn: ${
+                  gpsSource === "gps"
+                    ? "Vệ tinh GPS / Wi-Fi"
+                    : gpsSource === "network"
+                    ? "Ước tính theo IP mạng"
+                    : gpsSource === "cache"
+                    ? "Bộ nhớ đệm"
+                    : "Mặc định TP.HCM"
+                } (Cấp độ: ${accuracyLevel}, Sai số: ±${gpsAccuracy || 15}m - ${
+                  isLocked ? "Đã khóa vệ tinh" : "Đang tinh chỉnh"
+                })\nClick để làm mới và xóa cache.`
+              : gpsError || (isLocatingGps ? "Đang tìm kiếm tín hiệu GPS..." : "Chưa có GPS")
+          }
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 12,
+            background: "#ffffff",
+            color: isLocked ? "#10b981" : gpsCoords ? "#2563eb" : "#64748b",
+            border: isLocked ? "1.5px solid #10b981" : "1px solid #e2e8f0",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 18,
+            transition: "all 0.15s ease",
+          }}
+        >
+          {isLocatingGps && !gpsCoords ? "⏳" : "🎯"}
+        </button>
+
+        {/* Nút Chuyển đổi 2D / 3D */}
+        <button
+          onClick={toggle3DView}
+          title={is3D ? "Chuyển sang góc nhìn 2D phẳng" : "Chuyển sang góc nhìn 3D nghiêng"}
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 12,
+            background: is3D ? "#0f172a" : "#ffffff",
+            color: is3D ? "#ffffff" : "#475569",
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 13,
+            fontWeight: 700,
+            transition: "all 0.15s ease",
+          }}
+        >
+          {is3D ? "3D" : "2D"}
+        </button>
+      </div>
+
+      {/* 4. CHỈ SỐ THỜI TIẾT & AQI TINH GỌN GÓC DƯỚI BÊN TRÁI */}
+      <div
+        title={
+          liveWeather
+            ? `${liveWeather.desc} • PM2.5: ${liveWeather.pm25} µg/m³\n${
+                mouseCoords ? `Tọa độ chuột: ${mouseCoords.lat.toFixed(4)}°N, ${mouseCoords.lng.toFixed(4)}°E` : ""
+              }`
+            : mouseCoords
+            ? `Tọa độ: ${mouseCoords.lat.toFixed(4)}°N, ${mouseCoords.lng.toFixed(4)}°E`
+            : "Thời tiết & Không khí TP.HCM"
+        }
+        style={{
+          position: "absolute",
+          bottom: 20,
+          left: 16,
+          zIndex: 20,
           display: "flex",
           alignItems: "center",
           gap: 8,
-          padding: "8px 12px",
-          background: "rgba(255, 255, 255, 0.88)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
+          padding: "7px 12px",
+          background: "rgba(255, 255, 255, 0.92)",
+          backdropFilter: "blur(12px)",
           borderRadius: 24,
-          boxShadow: "0 10px 35px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.05)",
-          border: "1px solid rgba(255, 255, 255, 0.8)",
-          maxWidth: "92vw",
-          overflowX: "auto",
+          boxShadow: "0 2px 10px rgba(0, 0, 0, 0.08)",
+          border: "1px solid #e2e8f0",
           fontFamily: "'Inter', sans-serif",
+          fontSize: 12,
+          fontWeight: 600,
+          color: "#0f172a",
+          cursor: "default",
         }}
       >
-        <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "#047857", whiteSpace: "nowrap" }}>
-          ✨ Tour nhanh:
+        <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#10b981" }} />
+        <span>{liveWeather ? liveWeather.temp : "28°C"}</span>
+        <span style={{ color: "#cbd5e1" }}>•</span>
+        <span style={{ color: liveWeather && liveWeather.aqi > 100 ? "#ea580c" : "#059669" }}>
+          AQI {liveWeather ? liveWeather.aqi : 42} ({liveWeather ? liveWeather.aqiStatus : "Tốt"})
         </span>
-        <div style={{ display: "flex", gap: 6 }}>
-          {landmarks.map((loc) => (
-            <button
-              key={loc.id}
-              onClick={() => handleSelectLandmark(loc)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "7px 13px",
-                borderRadius: 16,
-                border: "1px solid rgba(0,0,0,0.06)",
-                cursor: "pointer",
-                fontSize: 12,
-                fontWeight: 600,
-                background: "rgba(255, 255, 255, 0.9)",
-                color: "#1e293b",
-                whiteSpace: "nowrap",
-                transition: "all 0.2s ease",
-              }}
-            >
-              <span>{loc.icon || "📍"}</span>
-              <span>{loc.name}</span>
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* 7. WIDGET MÔI TRƯỜNG & CHỈ SỐ KHÔNG KHÍ TP.HCM (LIVE API) */}
+      {/* 5. TOUR NHANH ĐỊA DANH GÓC DƯỚI Ở GIỮA */}
       <div
         style={{
           position: "absolute",
-          bottom: 24,
-          left: 20,
-          zIndex: 15,
-          background: "rgba(255, 255, 255, 0.88)",
-          backdropFilter: "blur(16px)",
-          borderRadius: 18,
-          padding: "12px 16px",
-          boxShadow: "0 8px 28px rgba(0, 0, 0, 0.12)",
-          border: "1px solid rgba(255, 255, 255, 0.8)",
+          bottom: 20,
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 20,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          padding: "5px 8px",
+          background: "rgba(255, 255, 255, 0.92)",
+          backdropFilter: "blur(12px)",
+          borderRadius: 24,
+          boxShadow: "0 2px 10px rgba(0, 0, 0, 0.08)",
+          border: "1px solid #e2e8f0",
+          maxWidth: "85vw",
+          overflowX: "auto",
+          scrollbarWidth: "none",
           fontFamily: "'Inter', sans-serif",
-          minWidth: 200,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 5 }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#10b981", boxShadow: "0 0 8px #10b981" }} />
-            Khí hậu TP.HCM
-          </span>
-          <span style={{ fontSize: 9.5, color: "#059669", fontWeight: 700, background: "#ecfdf5", padding: "1px 5px", borderRadius: 6 }}>
-            Trực tiếp API
-          </span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#0f172a" }}>
-              {liveWeather ? liveWeather.temp : "28°C"}
-            </div>
-            <div style={{ fontSize: 11, color: "#64748b" }}>
-              {liveWeather ? liveWeather.desc : "Nắng ấm ven sông"}
-            </div>
-          </div>
-          <div style={{ borderLeft: "1px solid #e2e8f0", paddingLeft: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: liveWeather && liveWeather.aqi > 100 ? "#ea580c" : "#059669" }}>
-                AQI {liveWeather ? liveWeather.aqi : 42}
-              </span>
-              <span style={{
-                fontSize: 10,
-                background: liveWeather && liveWeather.aqi > 100 ? "#ffedd5" : "#dcfce7",
-                color: liveWeather && liveWeather.aqi > 100 ? "#c2410c" : "#15803d",
-                fontWeight: 700,
-                padding: "1px 5px",
-                borderRadius: 6,
-              }}>
-                {liveWeather ? liveWeather.aqiStatus : "Tốt"}
-              </span>
-            </div>
-            <div style={{ fontSize: 10.5, color: "#64748b" }}>
-              {liveWeather ? `PM2.5: ${liveWeather.pm25} µg/m³` : "Chất lượng trong lành"}
-            </div>
-          </div>
-        </div>
-        {mouseCoords && (
-          <div style={{ marginTop: 8, paddingTop: 6, borderTop: "1px solid #f1f5f9", fontSize: 10.5, color: "#94a3b8", fontFamily: "monospace" }}>
-            📍 {mouseCoords.lat.toFixed(4)}°N, {mouseCoords.lng.toFixed(4)}°E
-          </div>
-        )}
+        <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", paddingLeft: 4, whiteSpace: "nowrap" }}>
+          Tour:
+        </span>
+        {landmarks.map((loc) => (
+          <button
+            key={loc.id}
+            onClick={() => handleSelectLandmark(loc)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "4px 9px",
+              borderRadius: 14,
+              border: "none",
+              cursor: "pointer",
+              fontSize: 11,
+              fontWeight: 600,
+              background: "#f8fafc",
+              color: "#334155",
+              whiteSpace: "nowrap",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#0f172a";
+              e.currentTarget.style.color = "#ffffff";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#f8fafc";
+              e.currentTarget.style.color = "#334155";
+            }}
+          >
+            <span>{loc.icon || "📍"}</span>
+            <span>{loc.name}</span>
+          </button>
+        ))}
       </div>
 
       {/* BẢN ĐỒ MAPLIBRE CHÍNH */}
@@ -1548,8 +1592,8 @@ function EcoMap() {
         style={{ width: "100%", height: "100%", cursor: loadingReverse ? "wait" : "default" }}
         mapStyle={MAP_STYLES[activeStyle].url as any}
       >
-        <NavigationControl position="top-right" />
-        <FullscreenControl position="top-right" />
+        <NavigationControl position="bottom-right" />
+        <FullscreenControl position="bottom-right" />
 
         {/* 1. LỚP TÒA NHÀ 3D */}
         {is3D && (activeStyle === "voyager" || activeStyle === "dark") && (
@@ -1826,7 +1870,7 @@ function EcoMap() {
         })}
 
         {/* 6. HỆ THỐNG MARKER QUÁN XÁ & SỐ NHÀ TẢI TỰ ĐỘNG QUA LIVE API (Level of Detail Google Maps) */}
-        {currentZoom >= 13.5 &&
+        {currentZoom >= 12 &&
           livePOIs.map((poi) => {
             const isSelected = selectedPOI?.id === poi.id;
             const isHovered = hoveredPoiId === poi.id;
@@ -1841,10 +1885,11 @@ function EcoMap() {
             };
             const theme = categoryTheme[poi.category] || { bg: "#ea580c", color: "#ffffff" };
 
-            // Kích thước pin
+            // Kích thước pin theo mức zoom (LOD)
+            const isLowZoom = currentZoom < 13.5;
             const isHighZoom = currentZoom >= 15.5;
-            const dotSize = isHighZoom ? 22 : 18;
-            const iconSize = isHighZoom ? 11 : 9;
+            const dotSize = isHighZoom ? 22 : isLowZoom ? 11 : 18;
+            const iconSize = isHighZoom ? 11 : isLowZoom ? 0 : 9;
 
             return (
               <Marker
@@ -1891,7 +1936,7 @@ function EcoMap() {
                       fontSize: iconSize,
                     }}
                   >
-                    <span>{poi.icon}</span>
+                    {!isLowZoom && <span>{poi.icon}</span>}
                   </div>
 
                   {/* Tooltip khi hover */}
