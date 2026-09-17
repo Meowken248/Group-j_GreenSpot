@@ -213,23 +213,35 @@ function EcoMap() {
     accuracyLevel,
     isLocked,
     isLocating: isLocatingGps,
+    source: gpsSource,
+    error: gpsError,
     refreshGps,
   } = useFastGeolocation();
   const hasAutoCenteredGpsRef = useRef(false);
+  const lastCenteredSourceRef = useRef<string | null>(null);
   const lastMouseMoveRef = useRef<number>(0);
 
-  // Tự động căn giữa bản đồ tới vị trí GPS chính xác của người dùng ở lần khóa đầu tiên
+  // Tự động căn giữa bản đồ:
+  // 1. Khi có tọa độ đầu tiên
+  // 2. Tự động nâng cấp bay lại về tâm khi bắt được tín hiệu GPS vệ tinh độ chính xác cao
   useEffect(() => {
-    if (gpsCoords && !hasAutoCenteredGpsRef.current && mapRef.current) {
-      hasAutoCenteredGpsRef.current = true;
-      mapRef.current.flyTo({
-        center: [gpsCoords.lng, gpsCoords.lat],
-        zoom: 16,
-        duration: 1500,
-        essential: true,
-      });
+    if (gpsCoords && mapRef.current) {
+      const isFirstCenter = !hasAutoCenteredGpsRef.current;
+      const isUpgradeToRealGps =
+        gpsSource === "gps" && lastCenteredSourceRef.current !== "gps";
+
+      if (isFirstCenter || isUpgradeToRealGps) {
+        hasAutoCenteredGpsRef.current = true;
+        lastCenteredSourceRef.current = gpsSource;
+        mapRef.current.flyTo({
+          center: [gpsCoords.lng, gpsCoords.lat],
+          zoom: gpsSource === "gps" ? 16 : 14,
+          duration: 1500,
+          essential: true,
+        });
+      }
     }
-  }, [gpsCoords]);
+  }, [gpsCoords, gpsSource]);
 
   // States bản đồ & bộ lọc (Mặc định dùng Google Maps Tile Cluster)
   const [activeStyle, setActiveStyle] = useState<StyleKey>("googleRoadmap");
@@ -970,11 +982,11 @@ function EcoMap() {
         {/* Nút định vị GPS siêu tốc & độ chính xác cao */}
         <button
           onClick={() => {
-            refreshGps();
+            refreshGps(true); // Xóa cache cũ & quét tươi vị trí
             if (gpsCoords && mapRef.current) {
               mapRef.current.flyTo({
                 center: [gpsCoords.lng, gpsCoords.lat],
-                zoom: 16,
+                zoom: gpsSource === "gps" ? 16 : 14,
                 pitch: is3D ? 58 : 0,
                 duration: 1200,
               });
@@ -988,26 +1000,50 @@ function EcoMap() {
             borderRadius: 20,
             border: isLocked
               ? "1px solid #10b981"
-              : gpsCoords
+              : gpsSource === "gps"
               ? "1px solid #0ea5e9"
+              : gpsSource === "network"
+              ? "1px solid #f59e0b"
               : "1px solid #cbd5e1",
             cursor: "pointer",
             fontSize: 11.5,
             fontWeight: 700,
             background: isLocked
               ? "rgba(16, 185, 129, 0.15)"
-              : gpsCoords
+              : gpsSource === "gps"
               ? "rgba(14, 165, 233, 0.12)"
+              : gpsSource === "network"
+              ? "rgba(245, 158, 11, 0.15)"
               : "rgba(241, 245, 249, 0.8)",
-            color: isLocked ? "#059669" : gpsCoords ? "#0284c7" : "#64748b",
+            color: isLocked
+              ? "#059669"
+              : gpsSource === "gps"
+              ? "#0284c7"
+              : gpsSource === "network"
+              ? "#d97706"
+              : "#64748b",
             transition: "all 0.2s ease",
             marginLeft: 2,
-            boxShadow: isLocked ? "0 0 10px rgba(16, 185, 129, 0.3)" : "none",
+            boxShadow: isLocked
+              ? "0 0 10px rgba(16, 185, 129, 0.3)"
+              : gpsSource === "network"
+              ? "0 0 8px rgba(245, 158, 11, 0.25)"
+              : "none",
           }}
           title={
             gpsCoords
-              ? `Vị trí GPS: ${gpsCoords.lat.toFixed(5)}, ${gpsCoords.lng.toFixed(5)} (Cấp độ: ${accuracyLevel}, Sai số: ±${gpsAccuracy || 15}m - ${isLocked ? "Đã khóa vệ tinh" : "Đang tinh chỉnh"})`
-              : "Đang tìm kiếm tín hiệu GPS..."
+              ? `Vị trí: ${gpsCoords.lat.toFixed(5)}, ${gpsCoords.lng.toFixed(5)}\nNguồn: ${
+                  gpsSource === "gps"
+                    ? "Vệ tinh GPS / Wi-Fi"
+                    : gpsSource === "network"
+                    ? "Ước tính theo IP mạng"
+                    : gpsSource === "cache"
+                    ? "Bộ nhớ đệm (vị trí gần nhất)"
+                    : "Mặc định TP.HCM"
+                } (Cấp độ: ${accuracyLevel}, Sai số: ±${gpsAccuracy || 15}m - ${
+                  isLocked ? "Đã khóa vệ tinh" : "Đang tinh chỉnh"
+                })\nClick để làm mới và xóa cache.`
+              : gpsError || "Đang tìm kiếm tín hiệu GPS..."
           }
         >
           <span>
@@ -1015,9 +1051,13 @@ function EcoMap() {
               ? "🛰️ Đang dò..."
               : isLocked
               ? `🎯 GPS (±${gpsAccuracy || 10}m)`
-              : gpsCoords
+              : gpsSource === "gps"
               ? `🎯 GPS (±${gpsAccuracy || 25}m)`
-              : "🎯 GPS"}
+              : gpsSource === "network"
+              ? "📶 Ước lượng IP"
+              : gpsSource === "cache"
+              ? "💾 Cache GPS"
+              : "📍 Mặc định TP.HCM"}
           </span>
         </button>
       </div>

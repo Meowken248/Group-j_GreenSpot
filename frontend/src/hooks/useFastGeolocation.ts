@@ -106,7 +106,7 @@ export function useFastGeolocation() {
 
   // Fallback định vị qua IP khi GPS phần cứng bị từ chối hoặc không khả dụng
   const fetchIpFallback = useCallback(async () => {
-    if (stateRef.current.coords && !stateRef.current.isFromCache) return;
+    if (stateRef.current.coords && stateRef.current.source === "gps") return;
 
     try {
       abortControllerRef.current = new AbortController();
@@ -116,10 +116,9 @@ export function useFastGeolocation() {
       if (!res.ok) throw new Error("IP API failed");
       const data = await res.json();
 
-      if (data.latitude && data.longitude) {
+      if (data && !data.error && data.latitude && data.longitude) {
         const ipCoords = { lat: data.latitude, lng: data.longitude };
         setState((prev) => {
-          // Không đè nếu đã có GPS thực sự
           if (prev.coords && prev.source === "gps") return prev;
           return {
             ...prev,
@@ -135,9 +134,39 @@ export function useFastGeolocation() {
             lastUpdated: Date.now(),
           };
         });
+        return;
       }
+      throw new Error("No lat/lng from ipapi");
     } catch {
-      // Nếu fallback IP cũng lỗi, gán tọa độ mặc định
+      // Fallback tầng 2: Sử dụng ipwho.is nếu ipapi.co bị rate limit hoặc lỗi mạng
+      try {
+        const res2 = await fetch("https://ipwho.is/");
+        const data2 = await res2.json();
+        if (data2 && data2.success && data2.latitude && data2.longitude) {
+          const ipCoords = { lat: data2.latitude, lng: data2.longitude };
+          setState((prev) => {
+            if (prev.coords && prev.source === "gps") return prev;
+            return {
+              ...prev,
+              coords: ipCoords,
+              accuracy: 3500,
+              accuracyLevel: "approximate",
+              isLocating: false,
+              isLocked: false,
+              error: null,
+              isFromCache: false,
+              source: "network",
+              gpsFixDurationMs: Math.round(performance.now() - startTimeRef.current),
+              lastUpdated: Date.now(),
+            };
+          });
+          return;
+        }
+      } catch {
+        // Tiếp tục rơi xuống fallback mặc định
+      }
+
+      // Nếu tất cả các kênh IP đều lỗi, gán tọa độ mặc định TP.HCM
       setState((prev) => ({
         ...prev,
         isLocating: false,
@@ -224,13 +253,15 @@ export function useFastGeolocation() {
           handlePositionUpdate(pos);
         },
         (err) => {
-          // Nếu bị lỗi ngay từ đầu (ví dụ người dùng từ chối quyền), kích hoạt fallback IP
+          // Nếu bị lỗi ngay từ đầu (từ chối quyền hoặc thiết bị không có GPS), kích hoạt fallback IP
           if (err.code === err.PERMISSION_DENIED) {
             setState((prev) => ({
               ...prev,
               isLocating: false,
-              error: "Bạn đã từ chối quyền truy cập GPS. Đang hiển thị vị trí ước lượng qua mạng.",
+              error: "Bạn chưa cấp quyền truy cập GPS. Đang hiển thị vị trí ước lượng qua mạng.",
             }));
+            fetchIpFallback();
+          } else if (!stateRef.current.coords) {
             fetchIpFallback();
           }
         },
@@ -255,6 +286,9 @@ export function useFastGeolocation() {
             } else if (err.code === err.TIMEOUT && !stateRef.current.coords) {
               msg = "Quá thời gian phản hồi GPS. Đang thử vị trí qua mạng...";
               fetchIpFallback();
+            } else if (err.code === err.POSITION_UNAVAILABLE && !stateRef.current.coords) {
+              msg = "Thiết bị không có GPS vệ tinh. Đang thử vị trí qua mạng...";
+              fetchIpFallback();
             }
 
             setState((prev) => ({
@@ -262,6 +296,7 @@ export function useFastGeolocation() {
               isLocating: false,
               error: prev.coords ? null : msg,
               coords: prev.coords || DEFAULT_FALLBACK_LOCATION,
+              source: prev.coords ? prev.source : "fallback",
             }));
           },
           {
@@ -293,7 +328,14 @@ export function useFastGeolocation() {
   }, [startLocating]);
 
   // Hàm làm mới định vị cưỡng bức khi người dùng bấm nút GPS
-  const refreshGps = useCallback(() => {
+  const refreshGps = useCallback((clearCache = false) => {
+    if (clearCache) {
+      try {
+        localStorage.removeItem(CACHE_KEY);
+      } catch {
+        // Bỏ qua lỗi xóa cache
+      }
+    }
     startLocating(true);
   }, [startLocating]);
 
