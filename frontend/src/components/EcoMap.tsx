@@ -360,25 +360,34 @@ function EcoMap() {
   }, [searchQuery, mapCenter]);
 
   // Tải quán xá, số nhà quanh tọa độ chỉ định
-  const handleLoadNearbyPOIs = useCallback(async (lat: number, lng: number, type: "all" | "cafe" | "restaurant" | "shop" = poiType) => {
-    setLoadingPOIs(true);
-    const pois = await fetchNearbyPOIsAPI(lat, lng, type);
-    
-    setLivePOIs((prev) => {
-      const existingIds = new Set(prev.map((p) => p.id));
-      const newItems = pois.filter((p) => !existingIds.has(p.id));
-      return [...newItems, ...prev].slice(0, 80);
-    });
-    setLoadingPOIs(false);
-  }, [poiType]);
+  const handleLoadNearbyPOIs = useCallback(
+    async (
+      lat: number,
+      lng: number,
+      type: "all" | "cafe" | "restaurant" | "shop" = poiType,
+      reset = false
+    ) => {
+      setLoadingPOIs(true);
+      const pois = await fetchNearbyPOIsAPI(lat, lng, type);
+
+      setLivePOIs((prev) => {
+        if (reset || prev.length === 0) return pois.slice(0, 80);
+        const existingIds = new Set(prev.map((p) => p.id));
+        const newItems = pois.filter((p) => !existingIds.has(p.id));
+        return [...newItems, ...prev].slice(0, 80);
+      });
+      setLoadingPOIs(false);
+    },
+    [poiType]
+  );
 
   // Tự động nạp quán xá khi người dùng kéo bản đồ (Auto-fetch on move)
-  // Cho phép nạp từ mức zoom >= 12 để bao quát cấp độ quận/phường
+  // Cho phép nạp từ mức zoom >= 10 để bao quát cấp độ quận/phường
   useEffect(() => {
-    if (!autoFetchPOI || currentZoom < 12) return;
+    if (!autoFetchPOI || currentZoom < 10) return;
 
     const timer = setTimeout(() => {
-      handleLoadNearbyPOIs(mapCenter.lat, mapCenter.lng, poiType);
+      handleLoadNearbyPOIs(mapCenter.lat, mapCenter.lng, poiType, false);
     }, 500);
 
     return () => clearTimeout(timer);
@@ -389,10 +398,8 @@ function EcoMap() {
     const nextVal = !autoFetchPOI;
     setAutoFetchPOI(nextVal);
     if (nextVal) {
-      if (currentZoom < 12 && mapRef.current) {
-        mapRef.current.easeTo({ zoom: 14, duration: 800 });
-      }
-      handleLoadNearbyPOIs(mapCenter.lat, mapCenter.lng, poiType);
+      const center = mapRef.current ? mapRef.current.getCenter() : mapCenter;
+      handleLoadNearbyPOIs(center.lat, center.lng, poiType, true);
     }
   };
 
@@ -534,7 +541,10 @@ function EcoMap() {
     setSelectedLocation(null);
     setSelectedPOI(null);
     setClickedAddress(null);
+    setMapCenter({ lat: loc.latitude, lng: loc.longitude });
+    setCurrentZoom(loc.zoom);
     handleFlyToLocation(loc.longitude, loc.latitude, loc.zoom, loc.pitch, loc.bearing);
+    handleLoadNearbyPOIs(loc.latitude, loc.longitude, poiType, true);
   };
 
   // Chuyển đổi 2D/3D
@@ -747,7 +757,8 @@ function EcoMap() {
                   key={t.id}
                   onClick={() => {
                     setPoiType(t.id);
-                    handleLoadNearbyPOIs(mapCenter.lat, mapCenter.lng, t.id);
+                    const center = mapRef.current ? mapRef.current.getCenter() : mapCenter;
+                    handleLoadNearbyPOIs(center.lat, center.lng, t.id, true);
                   }}
                   style={{
                     display: "flex",
@@ -795,7 +806,10 @@ function EcoMap() {
               </button>
 
               <button
-                onClick={() => handleLoadNearbyPOIs(mapCenter.lat, mapCenter.lng, poiType)}
+                onClick={() => {
+                  const center = mapRef.current ? mapRef.current.getCenter() : mapCenter;
+                  handleLoadNearbyPOIs(center.lat, center.lng, poiType, true);
+                }}
                 disabled={loadingPOIs}
                 title="Quét nạp quán quanh tâm bản đồ"
                 style={{
@@ -1525,11 +1539,16 @@ function EcoMap() {
           setCurrentZoom(e.viewState.zoom);
         }}
         onMoveEnd={(e) => {
+          const lat = e.viewState.latitude;
+          const lng = e.viewState.longitude;
           setMapCenter({
-            lat: e.viewState.latitude,
-            lng: e.viewState.longitude,
+            lat,
+            lng,
           });
           setCurrentZoom(e.viewState.zoom);
+          if (autoFetchPOI && e.viewState.zoom >= 10) {
+            handleLoadNearbyPOIs(lat, lng, poiType, false);
+          }
         }}
         onMouseMove={(e) => {
           // Throttle state update to prevent massive re-rendering
@@ -1820,7 +1839,7 @@ function EcoMap() {
         })}
 
         {/* 6. HỆ THỐNG MARKER QUÁN XÁ & SỐ NHÀ TẢI TỰ ĐỘNG QUA LIVE API (Level of Detail Google Maps) */}
-        {currentZoom >= 12 &&
+        {currentZoom >= 10 &&
           livePOIs.map((poi) => {
             const isSelected = selectedPOI?.id === poi.id;
             const isHovered = hoveredPoiId === poi.id;
@@ -1835,11 +1854,13 @@ function EcoMap() {
             };
             const theme = categoryTheme[poi.category] || { bg: "#ea580c", color: "#ffffff" };
 
-            // Kích thước pin theo mức zoom (LOD)
-            const isLowZoom = currentZoom < 13.5;
+            // Kích thước pin theo mức zoom (LOD phong cách Google Maps)
+            const isVeryLowZoom = currentZoom < 12;
+            const isLowZoom = currentZoom >= 12 && currentZoom < 13.5;
             const isHighZoom = currentZoom >= 15.5;
-            const dotSize = isHighZoom ? 22 : isLowZoom ? 11 : 18;
-            const iconSize = isHighZoom ? 11 : isLowZoom ? 0 : 9;
+            const dotSize = isHighZoom ? 22 : isLowZoom ? 12 : isVeryLowZoom ? 9 : 17;
+            const iconSize = isHighZoom ? 11 : isLowZoom ? 0 : isVeryLowZoom ? 0 : 8.5;
+            const showIcon = currentZoom >= 13.5;
 
             return (
               <Marker
@@ -1886,7 +1907,7 @@ function EcoMap() {
                       fontSize: iconSize,
                     }}
                   >
-                    {!isLowZoom && <span>{poi.icon}</span>}
+                    {showIcon && <span>{poi.icon}</span>}
                   </div>
 
                   {/* Tooltip khi hover */}

@@ -172,7 +172,7 @@ export async function fetchNearbyPOIsAPI(
   lng: number,
   type: "all" | "cafe" | "restaurant" | "shop" = "all"
 ): Promise<LivePOI[]> {
-  // Quantize tọa độ để tái sử dụng cache khi di chuyển vi mô (lưới ~100m)
+  // Quantize tọa độ để tái sử dụng cache khi di chuyển vi mô (lưới ~150m)
   const quantizedLat = lat.toFixed(3);
   const quantizedLng = lng.toFixed(3);
   const cacheKey = `${type}_${quantizedLat}_${quantizedLng}`;
@@ -180,11 +180,19 @@ export async function fetchNearbyPOIsAPI(
   const cached = getFromCache(nearbyCache, cacheKey);
   if (cached) return cached;
 
+  // Tính Bounding Box ~2.5km quanh tọa độ tâm để BẮT BUỘC kết quả nằm trong tầm nhìn bản đồ
+  const delta = 0.024;
+  const minLon = (lng - delta).toFixed(4);
+  const minLat = (lat - delta).toFixed(4);
+  const maxLon = (lng + delta).toFixed(4);
+  const maxLat = (lat + delta).toFixed(4);
+  const bboxParam = `&bbox=${minLon},${minLat},${maxLon},${maxLat}`;
+
   const keywordsMap = {
-    all: ["cafe", "quan an", "cua hang"],
-    cafe: ["cafe", "ca phe", "tra sua"],
-    restaurant: ["quan an", "nha hang", "pho"],
-    shop: ["cua hang", "circle k", "sieu thi"],
+    all: ["cafe", "coffee", "quan", "an", "pho", "shop", "mart"],
+    cafe: ["cafe", "coffee", "ca phe", "tra sua", "tea"],
+    restaurant: ["quan", "an", "pho", "nha hang", "com", "bun", "lau"],
+    shop: ["shop", "cua hang", "mart", "sieu thi", "circle k"],
   };
 
   const queries = keywordsMap[type] || keywordsMap.all;
@@ -192,7 +200,7 @@ export async function fetchNearbyPOIsAPI(
   try {
     const promises = queries.map((q) =>
       fetch(
-        `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=${lat}&lon=${lng}&limit=8`
+        `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}${bboxParam}&limit=10`
       ).then((r) => (r.ok ? r.json() : { features: [] }))
     );
 
@@ -203,7 +211,7 @@ export async function fetchNearbyPOIsAPI(
     for (const res of results) {
       if (res.features && Array.isArray(res.features)) {
         for (const feat of res.features) {
-          const id = `${feat.properties?.osm_type}_${feat.properties?.osm_id}`;
+          const id = `${feat.properties?.osm_type}_${feat.properties?.osm_id || Math.random()}`;
           if (!seenIds.has(id)) {
             seenIds.add(id);
             combinedFeatures.push(feat);
