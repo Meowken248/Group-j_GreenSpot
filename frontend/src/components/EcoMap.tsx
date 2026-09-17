@@ -281,6 +281,10 @@ function EcoMap() {
     lat: 10.7745,
     lng: 106.7025,
   });
+  // Zoom level hiện tại của bản đồ (điều khiển mức độ chi tiết LOD giống Google Maps)
+  const [currentZoom, setCurrentZoom] = useState<number>(14);
+  const [hoveredPoiId, setHoveredPoiId] = useState<string | null>(null);
+  const [hoveredEcoId, setHoveredEcoId] = useState<string | null>(null);
 
   // States nạp dữ liệu động từ API (Không khởi tạo cứng)
   const [ecoLocations, setEcoLocations] = useState<EcoLocation[]>([]);
@@ -369,15 +373,16 @@ function EcoMap() {
   }, [poiType]);
 
   // Tự động nạp quán xá khi người dùng kéo bản đồ (Auto-fetch on move)
+  // Chỉ nạp khi mức zoom >= 14 để tránh tải quá nhiều POI khi đang xem toàn cảnh thành phố
   useEffect(() => {
-    if (!autoFetchPOI) return;
+    if (!autoFetchPOI || currentZoom < 14) return;
 
     const timer = setTimeout(() => {
       handleLoadNearbyPOIs(mapCenter.lat, mapCenter.lng, poiType);
     }, 600);
 
     return () => clearTimeout(timer);
-  }, [mapCenter, autoFetchPOI, poiType, handleLoadNearbyPOIs]);
+  }, [mapCenter, autoFetchPOI, poiType, currentZoom, handleLoadNearbyPOIs]);
 
   // 1. TÍNH NĂNG CLICK BẢN ĐỒ LẤY SỐ NHÀ (REVERSE GEOCODING)
   const handleMapClick = async (e: any) => {
@@ -1522,11 +1527,15 @@ function EcoMap() {
           bearing: -15,
         }}
         onClick={handleMapClick}
+        onMove={(e) => {
+          setCurrentZoom(e.viewState.zoom);
+        }}
         onMoveEnd={(e) => {
           setMapCenter({
             lat: e.viewState.latitude,
             lng: e.viewState.longitude,
           });
+          setCurrentZoom(e.viewState.zoom);
         }}
         onMouseMove={(e) => {
           // Throttle state update to prevent massive re-rendering
@@ -1635,152 +1644,310 @@ function EcoMap() {
           </>
         )}
 
-        {/* 4. MARKER VỊ TRÍ CLICK BẢN ĐỒ (Reverse Geocode Pin) */}
+        {/* 4. MARKER VỊ TRÍ CLICK BẢN ĐỒ (Google Maps Drop Pin) */}
         {clickedAddress && (
           <Marker longitude={clickedAddress.lng} latitude={clickedAddress.lat} anchor="bottom">
-            <div style={{ cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div
-                style={{
-                  background: "#1d4ed8",
-                  color: "#ffffff",
-                  padding: "4px 8px",
-                  borderRadius: 12,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  boxShadow: "0 4px 14px rgba(29, 78, 216, 0.4)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                <span>📍</span>
-                <span>{clickedAddress.houseNumber ? `Số ${clickedAddress.houseNumber}` : "Vị trí đã chọn"}</span>
-              </div>
-              <div style={{ width: 0, height: 0, borderLeft: "4px solid transparent", borderRight: "4px solid transparent", borderTop: "6px solid #1d4ed8" }} />
+            <div
+              style={{
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                transform: "translateY(2px)",
+                transition: "transform 0.2s ease",
+              }}
+              title={clickedAddress.placeName || "Vị trí đã chọn"}
+            >
+              {/* Google Maps Drop Pin SVG */}
+              <svg width="24" height="30" viewBox="0 0 24 30" fill="none" style={{ filter: "drop-shadow(0 3px 6px rgba(0,0,0,0.35))" }}>
+                <path
+                  d="M12 0C5.37 0 0 5.37 0 12C0 19.5 12 30 12 30C12 30 24 19.5 24 12C24 5.37 18.63 0 12 0Z"
+                  fill="#ea4335"
+                />
+                <circle cx="12" cy="11" r="5" fill="#ffffff" />
+                <circle cx="12" cy="11" r="2.5" fill="#b91c1c" />
+              </svg>
+
+              {/* Text label: chỉ hiện khi zoom sát (>= 15.5) với viền trắng halo Google Maps */}
+              {currentZoom >= 15.5 && (
+                <span
+                  style={{
+                    marginTop: 2,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "#b91c1c",
+                    textShadow: "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 1px 3px rgba(0,0,0,0.2)",
+                    maxWidth: 100,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    textAlign: "center",
+                    pointerEvents: "none",
+                  }}
+                >
+                  {clickedAddress.houseNumber ? `Số ${clickedAddress.houseNumber}` : "Vị trí đã chọn"}
+                </span>
+              )}
             </div>
           </Marker>
         )}
 
-        {/* 5. HỆ THỐNG MARKER SINH THÁI TP.HCM */}
+        {/* 5. HỆ THỐNG MARKER SINH THÁI TP.HCM (Điểm nổi bật thu nhỏ gọn như Google Maps) */}
         {filteredLocations.map((loc) => {
           const cfg = CATEGORY_CONFIG[loc.category];
           const isSelected = selectedLocation?.id === loc.id;
+          const isHovered = hoveredEcoId === loc.id;
           const isWarning = loc.status === "pending" || loc.status === "warning";
+
+          // Kích thước pin biến đổi theo mức zoom (nhỏ gọn như Google Maps)
+          const pinSize = currentZoom < 13.5 ? 18 : currentZoom < 15.5 ? 22 : 26;
+          const iconSize = currentZoom < 13.5 ? 10 : currentZoom < 15.5 ? 12 : 14;
 
           return (
             <Marker
               key={loc.id}
               longitude={loc.longitude}
               latitude={loc.latitude}
-              anchor="bottom"
+              anchor="center"
               onClick={(e) => {
                 e.originalEvent.stopPropagation();
                 handleSelectEcoLocation(loc);
               }}
             >
               <div
+                onMouseEnter={() => setHoveredEcoId(loc.id)}
+                onMouseLeave={() => setHoveredEcoId(null)}
                 style={{
                   position: "relative",
                   cursor: "pointer",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
-                  transform: isSelected ? "scale(1.25)" : "scale(1)",
-                  transition: "transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                  zIndex: isSelected ? 25 : 5,
+                  transform: isSelected ? "scale(1.25)" : isHovered ? "scale(1.15)" : "scale(1)",
+                  transition: "transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                  zIndex: isSelected ? 30 : isHovered ? 25 : 10,
                 }}
               >
-                {isWarning && (
+                {/* Radar ping nếu có cảnh báo */}
+                {isWarning && currentZoom >= 13 && (
                   <div
                     style={{
                       position: "absolute",
-                      top: 2,
+                      top: "50%",
                       left: "50%",
-                      transform: "translateX(-50%)",
-                      width: 32,
-                      height: 32,
+                      transform: "translate(-50%, -50%)",
+                      width: pinSize + 12,
+                      height: pinSize + 12,
                       borderRadius: "50%",
                       backgroundColor: cfg.color,
-                      opacity: 0.4,
+                      opacity: 0.35,
                       animation: "radarPing 1.8s infinite",
+                      pointerEvents: "none",
                     }}
                   />
                 )}
+
+                {/* Chấm tròn pin Google Maps */}
                 <div
                   style={{
-                    width: 32,
-                    height: 32,
+                    width: pinSize,
+                    height: pinSize,
                     borderRadius: "50%",
                     backgroundColor: "#ffffff",
-                    border: `2.5px solid ${cfg.color}`,
+                    border: `${pinSize >= 22 ? 2 : 1.5}px solid ${cfg.color}`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     boxShadow: isSelected
-                      ? `0 0 0 4px ${cfg.color}44, 0 6px 16px rgba(0,0,0,0.3)`
-                      : `0 3px 10px rgba(0,0,0,0.15)`,
-                    fontSize: 16,
+                      ? `0 0 0 3px ${cfg.color}55, 0 4px 12px rgba(0,0,0,0.3)`
+                      : isHovered
+                      ? `0 3px 10px rgba(0,0,0,0.25)`
+                      : `0 2px 6px rgba(0,0,0,0.18)`,
+                    fontSize: iconSize,
+                    color: cfg.color,
                   }}
                 >
                   {cfg.icon}
                 </div>
-                <div style={{ width: 0, height: 0, borderLeft: "5px solid transparent", borderRight: "5px solid transparent", borderTop: `6px solid ${cfg.color}`, marginTop: -1 }} />
+
+                {/* Tooltip khi hover */}
+                {isHovered && !isSelected && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: "100%",
+                      left: "50%",
+                      transform: "translateX(-50%) translateY(-6px)",
+                      backgroundColor: "rgba(15, 23, 42, 0.92)",
+                      backdropFilter: "blur(6px)",
+                      color: "#ffffff",
+                      padding: "4px 8px",
+                      borderRadius: 6,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+                      pointerEvents: "none",
+                      zIndex: 60,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                  >
+                    <span>{cfg.icon}</span>
+                    <span>{loc.name}</span>
+                  </div>
+                )}
+
+                {/* Nhãn chữ phong cách Google Maps khi zoom gần */}
+                {currentZoom >= 15.5 && (
+                  <span
+                    style={{
+                      marginTop: 2,
+                      fontSize: 10.5,
+                      fontWeight: 700,
+                      color: cfg.color,
+                      textShadow: "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 1px 2px rgba(0,0,0,0.15)",
+                      maxWidth: 85,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      pointerEvents: "none",
+                      lineHeight: 1.2,
+                      textAlign: "center",
+                    }}
+                  >
+                    {loc.name}
+                  </span>
+                )}
               </div>
             </Marker>
           );
         })}
 
-        {/* 6. HỆ THỐNG MARKER QUÁN XÁ & SỐ NHÀ TẢI TỰ ĐỘNG QUA LIVE API */}
-        {livePOIs.map((poi) => {
-          const isSelected = selectedPOI?.id === poi.id;
-          return (
-            <Marker
-              key={poi.id}
-              longitude={poi.longitude}
-              latitude={poi.latitude}
-              anchor="bottom"
-              onClick={(e) => {
-                e.originalEvent.stopPropagation();
-                handleSelectLivePOI(poi);
-              }}
-            >
-              <div
-                style={{
-                  position: "relative",
-                  cursor: "pointer",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  transform: isSelected ? "scale(1.25)" : "scale(1)",
-                  transition: "transform 0.2s ease",
-                  zIndex: isSelected ? 30 : 10,
+        {/* 6. HỆ THỐNG MARKER QUÁN XÁ & SỐ NHÀ TẢI TỰ ĐỘNG QUA LIVE API (Level of Detail Google Maps) */}
+        {currentZoom >= 13.5 &&
+          livePOIs.map((poi) => {
+            const isSelected = selectedPOI?.id === poi.id;
+            const isHovered = hoveredPoiId === poi.id;
+
+            // Màu chủ đề theo danh mục POI giống Google Maps
+            const categoryTheme: Record<string, { bg: string; color: string }> = {
+              cafe: { bg: "#ea580c", color: "#ffffff" },
+              restaurant: { bg: "#e11d48", color: "#ffffff" },
+              shop: { bg: "#2563eb", color: "#ffffff" },
+              address: { bg: "#475569", color: "#ffffff" },
+              amenity: { bg: "#059669", color: "#ffffff" },
+            };
+            const theme = categoryTheme[poi.category] || { bg: "#ea580c", color: "#ffffff" };
+
+            // Kích thước pin
+            const isHighZoom = currentZoom >= 15.5;
+            const dotSize = isHighZoom ? 22 : 18;
+            const iconSize = isHighZoom ? 11 : 9;
+
+            return (
+              <Marker
+                key={poi.id}
+                longitude={poi.longitude}
+                latitude={poi.latitude}
+                anchor="center"
+                onClick={(e) => {
+                  e.originalEvent.stopPropagation();
+                  handleSelectLivePOI(poi);
                 }}
               >
                 <div
+                  onMouseEnter={() => setHoveredPoiId(poi.id)}
+                  onMouseLeave={() => setHoveredPoiId(null)}
                   style={{
-                    padding: "4px 8px",
-                    borderRadius: 14,
-                    backgroundColor: isSelected ? "#ea580c" : "#ffffff",
-                    border: isSelected ? "2px solid #ffffff" : "2px solid #f97316",
-                    color: isSelected ? "#ffffff" : "#c2410c",
+                    position: "relative",
+                    cursor: "pointer",
                     display: "flex",
+                    flexDirection: "column",
                     alignItems: "center",
-                    gap: 4,
-                    boxShadow: "0 3px 10px rgba(234, 88, 12, 0.25)",
-                    fontSize: 11,
-                    fontWeight: 700,
-                    whiteSpace: "nowrap",
+                    transform: isSelected ? "scale(1.25)" : isHovered ? "scale(1.15)" : "scale(1)",
+                    transition: "transform 0.2s ease",
+                    zIndex: isSelected ? 40 : isHovered ? 30 : 15,
                   }}
                 >
-                  <span>{poi.icon}</span>
-                  <span>{poi.houseNumber ? `Số ${poi.houseNumber}` : poi.name}</span>
+                  {/* Chấm tròn nhỏ gọn phong cách Google Maps */}
+                  <div
+                    style={{
+                      width: dotSize,
+                      height: dotSize,
+                      borderRadius: "50%",
+                      backgroundColor: theme.bg,
+                      color: theme.color,
+                      border: "1.5px solid #ffffff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxShadow: isSelected
+                        ? `0 0 0 3px ${theme.bg}55, 0 4px 10px rgba(0,0,0,0.3)`
+                        : isHovered
+                        ? "0 3px 8px rgba(0,0,0,0.25)"
+                        : "0 1.5px 4px rgba(0,0,0,0.2)",
+                      fontSize: iconSize,
+                    }}
+                  >
+                    <span>{poi.icon}</span>
+                  </div>
+
+                  {/* Tooltip khi hover */}
+                  {isHovered && !isSelected && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        bottom: "100%",
+                        left: "50%",
+                        transform: "translateX(-50%) translateY(-6px)",
+                        backgroundColor: "rgba(15, 23, 42, 0.92)",
+                        backdropFilter: "blur(6px)",
+                        color: "#ffffff",
+                        padding: "4px 8px",
+                        borderRadius: 6,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        whiteSpace: "nowrap",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+                        pointerEvents: "none",
+                        zIndex: 60,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <span>{poi.icon}</span>
+                      <span>{poi.houseNumber ? `Số ${poi.houseNumber}` : poi.name}</span>
+                    </div>
+                  )}
+
+                  {/* Chữ viền trắng Google Maps (Chỉ hiện khi zoom sát >= 15.5) */}
+                  {isHighZoom && (
+                    <span
+                      style={{
+                        marginTop: 2,
+                        fontSize: 10,
+                        fontWeight: 600,
+                        color: "#1e293b",
+                        textShadow: "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 1px 2px rgba(0,0,0,0.15)",
+                        maxWidth: 85,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        pointerEvents: "none",
+                        lineHeight: 1.2,
+                        textAlign: "center",
+                      }}
+                    >
+                      {poi.houseNumber ? `Số ${poi.houseNumber}` : poi.name}
+                    </span>
+                  )}
                 </div>
-                <div style={{ width: 0, height: 0, borderLeft: "4px solid transparent", borderRight: "4px solid transparent", borderTop: isSelected ? "5px solid #ea580c" : "5px solid #f97316" }} />
-              </div>
-            </Marker>
-          );
-        })}
+              </Marker>
+            );
+          })}
 
         {/* 7. MARKER ĐỊNH VỊ GPS THỜI GIAN THỰC (RADAR HALO & VÒNG BÁN KÍNH SAI SỐ) */}
         {gpsCoords && (
