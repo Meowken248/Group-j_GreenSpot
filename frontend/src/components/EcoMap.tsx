@@ -216,6 +216,7 @@ function EcoMap() {
     refreshGps,
   } = useFastGeolocation();
   const hasAutoCenteredGpsRef = useRef(false);
+  const lastMouseMoveRef = useRef<number>(0);
 
   // Tự động căn giữa bản đồ tới vị trí GPS chính xác của người dùng ở lần khóa đầu tiên
   useEffect(() => {
@@ -1446,7 +1447,12 @@ function EcoMap() {
           });
         }}
         onMouseMove={(e) => {
-          setMouseCoords({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+          // Throttle state update to prevent massive re-rendering
+          const now = Date.now();
+          if (now - lastMouseMoveRef.current > 100) {
+            setMouseCoords({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+            lastMouseMoveRef.current = now;
+          }
         }}
         style={{ width: "100%", height: "100%", cursor: loadingReverse ? "wait" : "default" }}
         mapStyle={MAP_STYLES[activeStyle].url as any}
@@ -1724,8 +1730,8 @@ function EcoMap() {
       {/* Hiệu ứng Animation CSS */}
       <style>{`
         @keyframes radarPing {
-          0% { transform: translateX(-50%) scale(0.8); opacity: 0.8; }
-          100% { transform: translateX(-50%) scale(2.2); opacity: 0; }
+          0% { transform: scale(0.8); opacity: 0.8; }
+          100% { transform: scale(2.2); opacity: 0; }
         }
         @keyframes slideIn {
           from { opacity: 0; transform: translateX(20px); }

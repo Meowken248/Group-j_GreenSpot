@@ -157,8 +157,8 @@ export function useFastGeolocation() {
     const prev = stateRef.current;
     if (prev.coords) {
       const distanceMoved = calculateDistanceMeters(prev.coords, newCoords);
-      // Lọc bỏ nhiễu vi mô (< 2.5m) nếu độ chính xác không cải thiện vượt bậc
-      if (distanceMoved < 2.5 && roundedAcc >= (prev.accuracy || 999)) {
+      // Lọc bỏ nhiễu vi mô (< 5.0m) nếu độ chính xác không cải thiện vượt bậc
+      if (distanceMoved < 5.0 && roundedAcc >= (prev.accuracy || 999)) {
         return;
       }
     }
