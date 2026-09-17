@@ -98,3 +98,30 @@ export async function fetchLiveWeatherAPI(): Promise<LiveWeatherResponse | null>
     return null;
   }
 }
+
+/**
+ * 5. Tải danh sách địa điểm gần nhất quanh tọa độ GPS người dùng (PostGIS Spatial Nearest Query)
+ */
+export async function fetchNearestLocationsAPI(
+  lat: number,
+  lng: number,
+  radiusKm = 5.0,
+  category?: string
+): Promise<any> {
+  try {
+    const url = new URL(`${API_BASE_URL}/api/v1/spatial/nearest`);
+    url.searchParams.set("lat", lat.toString());
+    url.searchParams.set("lng", lng.toString());
+    url.searchParams.set("radius_km", radiusKm.toString());
+    if (category && category !== "all") {
+      url.searchParams.set("category", category);
+    }
+    const res = await fetch(url.toString());
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn("Không thể kết nối API /api/v1/spatial/nearest:", err);
+    return null;
+  }
+}
+
