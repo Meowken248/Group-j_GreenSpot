@@ -1,4 +1,4 @@
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useFastGeolocation } from '../useFastGeolocation';
 import { describe, it, expect, vi, beforeEach } from 'vitest';

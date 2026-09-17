@@ -4,6 +4,8 @@ Hỗ trợ PostgreSQL 16 + PostGIS 3.4
 """
 
 import asyncio
+import asyncpg
+from app.core.config import settings
 from sqlalchemy import text
 from app.database import engine
 
