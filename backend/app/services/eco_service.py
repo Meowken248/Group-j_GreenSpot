@@ -1,5 +1,4 @@
 import asyncio
-import math
 from typing import Optional, List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud.eco_crud import (
@@ -8,16 +7,6 @@ from app.crud.eco_crud import (
     query_recycling_facilities,
     query_iot_sensor_stations,
 )
-
-
-def calculate_haversine_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Tính khoảng cách đường chim bay theo km giữa 2 tọa độ GPS."""
-    R = 6371.0
-    dlat = math.radians(lat2 - lat1)
-    dlon = math.radians(lon2 - lon1)
-    a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    return round(R * c, 2)
 
 
 class EcoService:
@@ -33,7 +22,7 @@ class EcoService:
         Nghiệp vụ tổng hợp địa điểm môi trường:
         - Tải có chọn lọc theo category.
         - Chạy song song asyncio.gather khi cần nhiều bảng.
-        - Format các chỉ số hiển thị và tính khoảng cách GPS.
+        - Tối ưu hóa tính toán khoảng cách bằng PostGIS (ST_DistanceSphere) nếu có lat/lng.
         """
         locations: List[Dict[str, Any]] = []
         query_all = category is None or category == "all"
@@ -41,7 +30,7 @@ class EcoService:
 
         # 1. Sự cố môi trường
         async def handle_incidents():
-            rows = await query_incidents(db)
+            rows = await query_incidents(db, lat=lat, lng=lng)
             res = []
             for row in rows:
                 st = row["status"]
@@ -54,7 +43,7 @@ class EcoService:
                 else:
                     status_code, status_text = "warning", "Cảnh báo khẩn"
 
-                res.append({
+                item = {
                     "id": row["id"],
                     "name": row["name"],
                     "category": "incident",
@@ -72,16 +61,19 @@ class EcoService:
                     "upvotes": row["upvotes_count"],
                     "wasteType": row["category_name"],
                     "reportedAt": "Hôm nay, 08:30",
-                })
+                }
+                if "distance_km" in row:
+                    item["distanceKm"] = round(float(row["distance_km"]), 2)
+                res.append(item)
             return res
 
         # 2. Điểm xanh & công viên
         async def handle_green_spots():
-            rows = await query_green_spots(db)
+            rows = await query_green_spots(db, lat=lat, lng=lng)
             res = []
             for row in rows:
                 meta = row["metadata"] or {}
-                res.append({
+                item = {
                     "id": f"green-{row['id']}",
                     "name": row["name"],
                     "category": "green_spot",
@@ -95,17 +87,20 @@ class EcoService:
                     "metricValue": f"{meta.get('area_m2', 100000):,} m²",
                     "rating": meta.get("rating", 4.8),
                     "description": f"{row['name']} - {row['address']}. Không gian xanh công cộng bảo vệ môi trường đô thị TP.HCM.",
-                })
+                }
+                if "distance_km" in row:
+                    item["distanceKm"] = round(float(row["distance_km"]), 2)
+                res.append(item)
             return res
 
         # 3. Trạm tái chế
         async def handle_recycling():
-            rows = await query_recycling_facilities(db)
+            rows = await query_recycling_facilities(db, lat=lat, lng=lng)
             res = []
             for row in rows:
                 accepted = ", ".join(row["accepted_waste_types"] or [])
                 is_act = row["is_active"]
-                res.append({
+                item = {
                     "id": f"rec-{row['id']}",
                     "name": row["name"],
                     "category": "recycling",
@@ -121,12 +116,15 @@ class EcoService:
                     "contactPhone": row["contact_phone"],
                     "managingOrg": row["managing_org"],
                     "description": f"Điểm tiếp nhận phân loại chất thải tái chế: {accepted}. Quản lý bởi: {row['managing_org'] or 'UBND'}.",
-                })
+                }
+                if "distance_km" in row:
+                    item["distanceKm"] = round(float(row["distance_km"]), 2)
+                res.append(item)
             return res
 
         # 4. Trạm cảm biến IoT
         async def handle_sensors():
-            rows = await query_iot_sensor_stations(db)
+            rows = await query_iot_sensor_stations(db, lat=lat, lng=lng)
             res = []
             for row in rows:
                 meta = row["metadata"] or {}
@@ -146,7 +144,7 @@ class EcoService:
                     m_label = "Trạng thái viễn trắc"
                     m_val = "Bình thường"
 
-                res.append({
+                item = {
                     "id": f"sensor-{row['id']}",
                     "name": row["name"],
                     "category": "sensor",
@@ -161,7 +159,10 @@ class EcoService:
                     "sensorType": st_type,
                     "metrics": meta,
                     "description": f"{row['name']} - Trạm cảm biến truyền dữ liệu viễn trắc thời gian thực về Trung tâm điều hành EcoReport.",
-                })
+                }
+                if "distance_km" in row:
+                    item["distanceKm"] = round(float(row["distance_km"]), 2)
+                res.append(item)
             return res
 
         if query_all or category == "incident":
@@ -190,9 +191,7 @@ class EcoService:
             filtered = [x for x in filtered if district.lower() in x["district"].lower()]
 
         if lat is not None and lng is not None:
-            for loc in filtered:
-                if loc.get("latitude") and loc.get("longitude"):
-                    loc["distanceKm"] = calculate_haversine_distance_km(lat, lng, loc["latitude"], loc["longitude"])
+            # Sort all combined locations by distance
             filtered.sort(key=lambda x: x.get("distanceKm", 9999))
 
         return {
