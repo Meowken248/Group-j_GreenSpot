@@ -251,7 +251,6 @@ function EcoMap() {
   const [activeStyle, setActiveStyle] = useState<StyleKey>("googleRoadmap");
   const [is3D, setIs3D] = useState<boolean>(true);
   const [showDistricts, setShowDistricts] = useState<boolean>(false);
-  const [showLayersModal, setShowLayersModal] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<EcoCategory | "all">("all");
   
   // Selection States
@@ -399,7 +398,6 @@ function EcoMap() {
 
   // 1. TÍNH NĂNG CLICK BẢN ĐỒ LẤY SỐ NHÀ (REVERSE GEOCODING)
   const handleMapClick = async (e: any) => {
-    setShowLayersModal(false);
     const { lng, lat } = e.lngLat;
     setLoadingReverse(true);
     setSelectedLocation(null);
@@ -1167,13 +1165,206 @@ function EcoMap() {
         )}
       </div>
 
-      {/* 2. BẢNG THÔNG BÁO LỘ TRÌNH OSRM ROUTING (Góc trên) */}
+      {/* 2. THANH ĐIỀU KHIỂN BẢN ĐỒ & CÁC LỚP BẢN ĐỒ TRỰC TIẾP (Google Maps / Apple Maps Style) */}
+      <div
+        style={{
+          position: "absolute",
+          top: 16,
+          left: 412,
+          right: 16,
+          zIndex: 22,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 10,
+          pointerEvents: "none",
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        }}
+      >
+        {/* Dãy nút chọn kiểu bản đồ trực quan */}
+        <div
+          style={{
+            pointerEvents: "auto",
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            background: "rgba(255, 255, 255, 0.95)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            borderRadius: 999,
+            padding: "4px 8px",
+            boxShadow: "0 4px 18px rgba(0, 0, 0, 0.08)",
+            border: "1px solid #e2e8f0",
+            overflowX: "auto",
+            scrollbarWidth: "none",
+            maxWidth: "calc(100% - 240px)",
+          }}
+        >
+          {/* Logo brand nhỏ tinh tế */}
+          <div style={{ display: "flex", alignItems: "center", gap: 5, paddingRight: 8, marginRight: 4, borderRight: "1px solid #e2e8f0" }}>
+            <span style={{ fontSize: 15 }}>🌱</span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", whiteSpace: "nowrap" }}>EcoReport</span>
+          </div>
+
+          {(Object.keys(MAP_STYLES) as StyleKey[]).map((key) => {
+            const item = MAP_STYLES[key];
+            const isActive = activeStyle === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setActiveStyle(key)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "5px 10px",
+                  borderRadius: 999,
+                  border: isActive ? "1px solid #0f172a" : "none",
+                  cursor: "pointer",
+                  fontSize: 11.5,
+                  fontWeight: isActive ? 700 : 500,
+                  background: isActive ? "#0f172a" : "transparent",
+                  color: isActive ? "#ffffff" : "#475569",
+                  transition: "all 0.15s ease",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span>{item.icon}</span>
+                <span>{item.name}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Cụm công cụ: Ranh giới quận + 3D + GPS */}
+        <div
+          style={{
+            pointerEvents: "auto",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            background: "rgba(255, 255, 255, 0.95)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            borderRadius: 999,
+            padding: "4px 8px",
+            boxShadow: "0 4px 18px rgba(0, 0, 0, 0.08)",
+            border: "1px solid #e2e8f0",
+          }}
+        >
+          {/* Nút bật/tắt Ranh giới quận/huyện */}
+          <button
+            onClick={() => setShowDistricts(!showDistricts)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "5px 10px",
+              borderRadius: 999,
+              border: showDistricts ? "1px solid #3b82f6" : "none",
+              cursor: "pointer",
+              fontSize: 11.5,
+              fontWeight: showDistricts ? 700 : 500,
+              background: showDistricts ? "#eff6ff" : "transparent",
+              color: showDistricts ? "#1d4ed8" : "#475569",
+              transition: "all 0.15s ease",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <span>🗺️</span>
+            <span>{showDistricts ? "Ẩn ranh giới" : "Ranh giới quận"}</span>
+          </button>
+
+          {/* Nút 3D / 2D */}
+          <button
+            onClick={toggle3DView}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "5px 10px",
+              borderRadius: 999,
+              border: is3D ? "1px solid #0f172a" : "none",
+              cursor: "pointer",
+              fontSize: 11.5,
+              fontWeight: is3D ? 700 : 500,
+              background: is3D ? "#0f172a" : "transparent",
+              color: is3D ? "#ffffff" : "#475569",
+              transition: "all 0.15s ease",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <span>{is3D ? "🏢 3D" : "📐 2D"}</span>
+          </button>
+
+          {/* Nút Định vị GPS */}
+          <button
+            onClick={() => {
+              refreshGps(true);
+              if (gpsCoords && mapRef.current) {
+                mapRef.current.flyTo({
+                  center: [gpsCoords.lng, gpsCoords.lat],
+                  zoom: gpsSource === "gps" ? 16 : 14,
+                  pitch: is3D ? 58 : 0,
+                  duration: 1200,
+                });
+              }
+            }}
+            title={
+              gpsCoords
+                ? `Vị trí: ${gpsCoords.lat.toFixed(5)}, ${gpsCoords.lng.toFixed(5)}\nNguồn: ${
+                    gpsSource === "gps"
+                      ? "Vệ tinh GPS / Wi-Fi"
+                      : gpsSource === "network"
+                      ? "Ước tính theo IP mạng"
+                      : gpsSource === "cache"
+                      ? "Bộ nhớ đệm"
+                      : "Mặc định TP.HCM"
+                  } (Cấp độ: ${accuracyLevel}, Sai số: ±${gpsAccuracy || 15}m - ${
+                    isLocked ? "Đã khóa vệ tinh" : "Đang tinh chỉnh"
+                  })\nClick để làm mới và xóa cache.`
+                : gpsError || (isLocatingGps ? "Đang tìm kiếm tín hiệu GPS..." : "Chưa có GPS")
+            }
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "5px 11px",
+              borderRadius: 999,
+              border: isLocked ? "1px solid #10b981" : "1px solid #e2e8f0",
+              cursor: "pointer",
+              fontSize: 11.5,
+              fontWeight: 700,
+              background: isLocked ? "#ecfdf5" : gpsCoords ? "#eff6ff" : "#f8fafc",
+              color: isLocked ? "#059669" : gpsCoords ? "#2563eb" : "#64748b",
+              transition: "all 0.15s ease",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <span>
+              {!gpsCoords && isLocatingGps
+                ? "🛰️ Đang dò..."
+                : isLocked
+                ? `🎯 GPS (±${gpsAccuracy || 10}m)`
+                : gpsSource === "gps"
+                ? `🎯 GPS (±${gpsAccuracy || 25}m)`
+                : gpsSource === "network"
+                ? "📶 Ước lượng IP"
+                : gpsSource === "cache"
+                ? "💾 Cache GPS"
+                : "📍 Mặc định TP.HCM"}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* 3. BẢNG THÔNG BÁO LỘ TRÌNH OSRM ROUTING (Góc trên bên phải, hiển thị khi có lộ trình) */}
       {activeRoute && (
         <div
           style={{
             position: "absolute",
-            top: 16,
-            right: 70,
+            top: 72,
+            right: 16,
             zIndex: 24,
             background: "#ffffff",
             borderRadius: 14,
@@ -1218,247 +1409,6 @@ function EcoMap() {
           </button>
         </div>
       )}
-
-      {/* 3. THANH CÔNG CỤ BẢN ĐỒ GỌN GÀNG GÓC PHẢI (Layers, GPS, 3D) */}
-      <div
-        style={{
-          position: "absolute",
-          top: 16,
-          right: 16,
-          zIndex: 25,
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-        }}
-      >
-        {/* Nút Lớp bản đồ & Menu Popover */}
-        <div style={{ position: "relative" }}>
-          <button
-            onClick={() => setShowLayersModal(!showLayersModal)}
-            title="Lớp bản đồ & Kiểu hiển thị"
-            style={{
-              width: 42,
-              height: 42,
-              borderRadius: 12,
-              background: showLayersModal ? "#0f172a" : "#ffffff",
-              color: showLayersModal ? "#ffffff" : "#0f172a",
-              border: "1px solid #e2e8f0",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 18,
-              transition: "all 0.15s ease",
-            }}
-          >
-            🥞
-          </button>
-
-          {/* Menu chọn kiểu bản đồ & lớp phủ */}
-          {showLayersModal && (
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                right: 50,
-                width: 270,
-                background: "#ffffff",
-                borderRadius: 16,
-                boxShadow: "0 10px 30px rgba(0, 0, 0, 0.15)",
-                border: "1px solid #e2e8f0",
-                padding: "12px",
-                zIndex: 40,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #f1f5f9" }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "#0f172a" }}>Lớp & Kiểu bản đồ</span>
-                <button
-                  onClick={() => setShowLayersModal(false)}
-                  style={{ border: "none", background: "transparent", color: "#94a3b8", cursor: "pointer", fontSize: 13, fontWeight: 700 }}
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Grid bản đồ nền */}
-              <div style={{ fontSize: 10.5, fontWeight: 600, color: "#64748b", textTransform: "uppercase", marginBottom: 6 }}>
-                Bản đồ nền
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 12 }}>
-                {(Object.keys(MAP_STYLES) as StyleKey[]).map((key) => {
-                  const item = MAP_STYLES[key];
-                  const isActive = activeStyle === key;
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => {
-                        setActiveStyle(key);
-                        setShowLayersModal(false);
-                      }}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        padding: "8px 10px",
-                        borderRadius: 10,
-                        border: isActive ? "1.5px solid #0f172a" : "1px solid #e2e8f0",
-                        background: isActive ? "#f8fafc" : "#ffffff",
-                        color: isActive ? "#0f172a" : "#475569",
-                        fontSize: 11.5,
-                        fontWeight: isActive ? 700 : 500,
-                        cursor: "pointer",
-                        textAlign: "left",
-                        transition: "all 0.15s ease",
-                      }}
-                    >
-                      <span style={{ fontSize: 14 }}>{item.icon}</span>
-                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {item.name}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Toggles tính năng */}
-              <div style={{ fontSize: 10.5, fontWeight: 600, color: "#64748b", textTransform: "uppercase", marginBottom: 6 }}>
-                Lớp phủ & Tính năng
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <div
-                  onClick={toggle3DView}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "7px 10px",
-                    borderRadius: 10,
-                    background: is3D ? "#f8fafc" : "#ffffff",
-                    border: "1px solid #e2e8f0",
-                    cursor: "pointer",
-                  }}
-                >
-                  <span style={{ fontSize: 11.5, fontWeight: 600, color: "#0f172a", display: "flex", alignItems: "center", gap: 6 }}>
-                    <span>🏢</span> Tòa nhà 3D
-                  </span>
-                  <span style={{ fontSize: 12 }}>{is3D ? "🟢" : "⚪"}</span>
-                </div>
-
-                <div
-                  onClick={() => setShowDistricts(!showDistricts)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "7px 10px",
-                    borderRadius: 10,
-                    background: showDistricts ? "#f8fafc" : "#ffffff",
-                    border: "1px solid #e2e8f0",
-                    cursor: "pointer",
-                  }}
-                >
-                  <span style={{ fontSize: 11.5, fontWeight: 600, color: "#0f172a", display: "flex", alignItems: "center", gap: 6 }}>
-                    <span>🗺️</span> Ranh giới quận/huyện
-                  </span>
-                  <span style={{ fontSize: 12 }}>{showDistricts ? "🟢" : "⚪"}</span>
-                </div>
-
-                <div
-                  onClick={handleToggleAutoFetch}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "7px 10px",
-                    borderRadius: 10,
-                    background: autoFetchPOI ? "#f8fafc" : "#ffffff",
-                    border: "1px solid #e2e8f0",
-                    cursor: "pointer",
-                  }}
-                >
-                  <span style={{ fontSize: 11.5, fontWeight: 600, color: "#0f172a", display: "flex", alignItems: "center", gap: 6 }}>
-                    <span>⚡</span> Tự nạp quán khi lướt
-                  </span>
-                  <span style={{ fontSize: 12 }}>{autoFetchPOI ? "🟢" : "⚪"}</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Nút Định vị GPS */}
-        <button
-          onClick={() => {
-            refreshGps(true);
-            if (gpsCoords && mapRef.current) {
-              mapRef.current.flyTo({
-                center: [gpsCoords.lng, gpsCoords.lat],
-                zoom: gpsSource === "gps" ? 16 : 14,
-                pitch: is3D ? 58 : 0,
-                duration: 1200,
-              });
-            }
-          }}
-          title={
-            gpsCoords
-              ? `Vị trí: ${gpsCoords.lat.toFixed(5)}, ${gpsCoords.lng.toFixed(5)}\nNguồn: ${
-                  gpsSource === "gps"
-                    ? "Vệ tinh GPS / Wi-Fi"
-                    : gpsSource === "network"
-                    ? "Ước tính theo IP mạng"
-                    : gpsSource === "cache"
-                    ? "Bộ nhớ đệm"
-                    : "Mặc định TP.HCM"
-                } (Cấp độ: ${accuracyLevel}, Sai số: ±${gpsAccuracy || 15}m - ${
-                  isLocked ? "Đã khóa vệ tinh" : "Đang tinh chỉnh"
-                })\nClick để làm mới và xóa cache.`
-              : gpsError || (isLocatingGps ? "Đang tìm kiếm tín hiệu GPS..." : "Chưa có GPS")
-          }
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: 12,
-            background: "#ffffff",
-            color: isLocked ? "#10b981" : gpsCoords ? "#2563eb" : "#64748b",
-            border: isLocked ? "1.5px solid #10b981" : "1px solid #e2e8f0",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 18,
-            transition: "all 0.15s ease",
-          }}
-        >
-          {isLocatingGps && !gpsCoords ? "⏳" : "🎯"}
-        </button>
-
-        {/* Nút Chuyển đổi 2D / 3D */}
-        <button
-          onClick={toggle3DView}
-          title={is3D ? "Chuyển sang góc nhìn 2D phẳng" : "Chuyển sang góc nhìn 3D nghiêng"}
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: 12,
-            background: is3D ? "#0f172a" : "#ffffff",
-            color: is3D ? "#ffffff" : "#475569",
-            border: "1px solid #e2e8f0",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 13,
-            fontWeight: 700,
-            transition: "all 0.15s ease",
-          }}
-        >
-          {is3D ? "3D" : "2D"}
-        </button>
-      </div>
 
       {/* 4. CHỈ SỐ THỜI TIẾT & AQI TINH GỌN GÓC DƯỚI BÊN TRÁI */}
       <div
