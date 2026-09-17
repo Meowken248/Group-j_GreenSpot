@@ -8,7 +8,7 @@ import argparse
 import asyncio
 import time
 import asyncpg
-from app.config import settings
+from app.core.config import settings
 
 
 async def run_bulk_seed(target_count: int = 100000):

@@ -12,7 +12,7 @@ Nạp dữ liệu thực tế đầy đủ:
 import asyncio
 import uuid
 import asyncpg
-from app.config import settings
+from app.core.config import settings
 
 SEED_SQL = """
 -- 1. ROLES

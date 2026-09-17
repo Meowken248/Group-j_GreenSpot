@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 import EcoMap from '../EcoMap';
 import { describe, it, expect, vi } from 'vitest';
@@ -13,7 +14,7 @@ vi.mock('react-map-gl/maplibre', () => ({
 }));
 
 // Mock ResizeObserver
-(global as any).ResizeObserver = class ResizeObserver {
+(globalThis as any).ResizeObserver = class ResizeObserver {
   observe() {}
   unobserve() {}
   disconnect() {}

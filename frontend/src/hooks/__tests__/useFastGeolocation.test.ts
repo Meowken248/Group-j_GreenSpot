@@ -1,5 +1,6 @@
+import '@testing-library/jest-dom';
 import { renderHook, act } from '@testing-library/react';
-import { useFastGeolocation, DEFAULT_FALLBACK_LOCATION } from '../useFastGeolocation';
+import { useFastGeolocation } from '../useFastGeolocation';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 describe('useFastGeolocation', () => {
@@ -14,10 +15,10 @@ describe('useFastGeolocation', () => {
       watchPosition: vi.fn(),
       clearWatch: vi.fn(),
     };
-    (global as any).navigator.geolocation = mockGeolocation;
+    (globalThis as any).navigator.geolocation = mockGeolocation;
     
     // Mock fetch for IP Fallback
-    (global as any).fetch = vi.fn().mockResolvedValue({
+    (globalThis as any).fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ latitude: 10.123, longitude: 106.123 }),
     });

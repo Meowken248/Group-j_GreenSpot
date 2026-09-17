@@ -204,10 +204,6 @@ ON CONFLICT DO NOTHING;
 """
 
 
-import asyncpg
-from app.config import settings
-
-
 async def seed():
     print("🌱 Đang nạp dữ liệu mẫu (Seed Data) vào PostgreSQL...")
     url = settings.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
