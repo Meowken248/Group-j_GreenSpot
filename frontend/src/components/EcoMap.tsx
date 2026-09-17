@@ -395,26 +395,19 @@ function EcoMap() {
   const handleCalculateRoute = async (destLng: number, destLat: number, destName?: string) => {
     setCalculatingRoute(true);
 
-    // Điểm xuất phát ưu tiên:
-    // 1. Vị trí GPS hiện tại của người dùng (gpsCoords)
-    // 2. Trung tâm TP.HCM (DEFAULT_FALLBACK_LOCATION) hoặc tâm bản đồ (mapCenter)
-    let startLng = gpsCoords ? gpsCoords.lng : null;
-    let startLat = gpsCoords ? gpsCoords.lat : null;
-    let startLabel = "Vị trí hiện tại (GPS)";
+    // Điểm xuất phát: BẮT BUỘC ƯU TIÊN VỊ TRÍ GPS ĐANG ĐỨNG CỦA NGƯỜI DÙNG
+    let startLng: number;
+    let startLat: number;
+    let startLabel: string;
 
-    if (!startLng || !startLat) {
-      if (
-        Math.abs(DEFAULT_FALLBACK_LOCATION.lng - destLng) > 0.001 ||
-        Math.abs(DEFAULT_FALLBACK_LOCATION.lat - destLat) > 0.001
-      ) {
-        startLng = DEFAULT_FALLBACK_LOCATION.lng;
-        startLat = DEFAULT_FALLBACK_LOCATION.lat;
-        startLabel = "Bến Nghé, Quận 1";
-      } else {
-        startLng = mapCenter.lng;
-        startLat = mapCenter.lat;
-        startLabel = "Tâm bản đồ";
-      }
+    if (gpsCoords && typeof gpsCoords.lng === "number" && typeof gpsCoords.lat === "number") {
+      startLng = gpsCoords.lng;
+      startLat = gpsCoords.lat;
+      startLabel = "Vị trí GPS của bạn";
+    } else {
+      startLng = DEFAULT_FALLBACK_LOCATION.lng;
+      startLat = DEFAULT_FALLBACK_LOCATION.lat;
+      startLabel = "Trung tâm TP.HCM (Chưa có GPS)";
     }
 
     // Kiểm tra khoảng cách: nếu điểm xuất phát và đích đến quá gần (< 25m)
@@ -424,7 +417,7 @@ function EcoMap() {
     );
 
     if (distMeters < 25) {
-      alert("Điểm xuất phát và điểm đích đang trùng nhau (khoảng cách < 25m). Bạn đang ở ngay tại vị trí này rồi!");
+      alert("Bạn đang ở ngay tại vị trí này rồi (khoảng cách < 25m)! Hãy chọn một địa điểm khác trên bản đồ để vẽ lộ trình.");
       setCalculatingRoute(false);
       return;
     }
@@ -1090,7 +1083,7 @@ function EcoMap() {
           }
         >
           <span>
-            {isLocatingGps
+            {!gpsCoords && isLocatingGps
               ? "🛰️ Đang dò..."
               : isLocked
               ? `🎯 GPS (±${gpsAccuracy || 10}m)`
@@ -1238,7 +1231,7 @@ function EcoMap() {
                     boxShadow: "0 4px 12px rgba(37, 99, 235, 0.35)",
                   }}
                 >
-                  <span>🧭</span> {calculatingRoute ? "Đang tính..." : "Vẽ đường đi OSRM"}
+                  <span>🧭</span> {calculatingRoute ? "Đang tính..." : "Chỉ đường từ vị trí của tôi"}
                 </button>
                 <button
                   onClick={() => alert(`Đã ghi nhận tọa độ ${clickedAddress.lat.toFixed(5)}, ${clickedAddress.lng.toFixed(5)} để gửi báo cáo sự cố!`)}
@@ -1319,7 +1312,7 @@ function EcoMap() {
                     boxShadow: "0 4px 12px rgba(234, 88, 12, 0.35)",
                   }}
                 >
-                  <span>🧭</span> {calculatingRoute ? "Đang tính..." : "Chỉ đường OSRM"}
+                  <span>🧭</span> {calculatingRoute ? "Đang tính..." : "Chỉ đường từ vị trí của tôi"}
                 </button>
               </div>
             </div>
@@ -1393,7 +1386,7 @@ function EcoMap() {
                     boxShadow: "0 4px 12px rgba(16, 185, 129, 0.35)",
                   }}
                 >
-                  <span>🧭</span> {calculatingRoute ? "Đang tính..." : "Chỉ đường OSRM"}
+                  <span>🧭</span> {calculatingRoute ? "Đang tính..." : "Chỉ đường từ vị trí của tôi"}
                 </button>
               </div>
             </div>
