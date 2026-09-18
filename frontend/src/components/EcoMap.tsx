@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo, useEffect, useCallback } from "react";
-import Map, { NavigationControl, FullscreenControl, Marker, Source, Layer, type MapRef } from "react-map-gl/maplibre";
+import Map, { NavigationControl, FullscreenControl, Marker, Popup, Source, Layer, type MapRef } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { FeatureCollection } from "geojson";
 import type { HCMLocation } from "../data/hcmLocations";
@@ -24,6 +24,7 @@ import {
   fetchDistrictBoundariesAPI,
   fetchLandmarksAPI,
   fetchLiveWeatherAPI,
+  fetchWeatherHeatmapAPI,
   type LiveWeatherResponse,
 } from "../services/ecoApiService";
 import {
@@ -31,6 +32,7 @@ import {
   DEFAULT_FALLBACK_LOCATION,
   calculateDistanceMeters,
 } from "../hooks/useFastGeolocation";
+import LiveWeatherRadarMap, { type WeatherOverlay } from "./LiveWeatherRadarMap";
 
 // Bộ sưu tập bản đồ nền Google Tile Cluster & OpenStreetMap phong phú
 export const MAP_STYLES = {
@@ -252,6 +254,16 @@ function EcoMap() {
   const [is3D, setIs3D] = useState<boolean>(true);
   const [showDistricts, setShowDistricts] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<EcoCategory | "all">("all");
+
+  // Heatmap States (Bản đồ nhiệt: Nhiệt độ thời tiết, Chỉ số AQI, Mật độ rủi ro)
+  const [activeHeatmap, setActiveHeatmap] = useState<"none" | "temperature" | "aqi" | "risk">("none");
+  const [showHeatmapMenu, setShowHeatmapMenu] = useState<boolean>(false);
+  const [weatherHeatmapData, setWeatherHeatmapData] = useState<FeatureCollection | null>(null);
+  const [selectedHeatmapStation, setSelectedHeatmapStation] = useState<any | null>(null);
+
+  // Live Weather Radar State (Mô phỏng trường gió động lực học & dải nhiệt vi khí hậu)
+  const [showLiveRadar, setShowLiveRadar] = useState<boolean>(false);
+  const [liveRadarOverlay, setLiveRadarOverlay] = useState<WeatherOverlay>("temp");
   
   // Selection States
   const [selectedLocation, setSelectedLocation] = useState<EcoLocation | null>(null);
@@ -332,15 +344,55 @@ function EcoMap() {
       if (data) setLiveWeather(data);
     });
 
+    // Tải sẵn dữ liệu bản đồ nhiệt thời tiết & AQI toàn quốc
+    fetchWeatherHeatmapAPI().then((data) => {
+      if (data) setWeatherHeatmapData(data);
+    });
+
     // Định kỳ 3 phút tự động làm mới thời tiết & AQI
     const timer = setInterval(() => {
       fetchLiveWeatherAPI().then((data) => {
         if (data) setLiveWeather(data);
       });
+      fetchWeatherHeatmapAPI().then((data) => {
+        if (data) setWeatherHeatmapData(data);
+      });
     }, 180000);
 
     return () => clearInterval(timer);
   }, []);
+
+  // GeoJSON cho bản đồ nhiệt mật độ rủi ro sự cố môi trường
+  const incidentRiskGeoJSON = useMemo<FeatureCollection>(() => {
+    const features = ecoLocations
+      .filter((loc) => loc.category === "incident")
+      .map((loc) => {
+        let weight = 0.5;
+        if (loc.severity === "CRITICAL") weight = 1.0;
+        else if (loc.severity === "HIGH") weight = 0.75;
+        else if (loc.severity === "LOW") weight = 0.25;
+
+        return {
+          type: "Feature" as const,
+          id: loc.id,
+          geometry: {
+            type: "Point" as const,
+            coordinates: [loc.longitude, loc.latitude],
+          },
+          properties: {
+            id: loc.id,
+            name: loc.name,
+            weight,
+            severity: loc.severity,
+          },
+        };
+      });
+
+    return {
+      type: "FeatureCollection",
+      features,
+    };
+  }, [ecoLocations]);
 
   // Tự động gọi API tìm kiếm trực tiếp quán xá, số nhà toàn TP.HCM (Debounce 350ms)
   useEffect(() => {
@@ -1266,7 +1318,7 @@ function EcoMap() {
             border: "1px solid #e2e8f0",
           }}
         >
-          {/* Nút bật/tắt Ranh giới quận/huyện */}
+          {/* Nút bật/tắt Ranh giới khu vực / quận huyện */}
           <button
             onClick={() => setShowDistricts(!showDistricts)}
             style={{
@@ -1286,8 +1338,247 @@ function EcoMap() {
             }}
           >
             <span>🗺️</span>
-            <span>{showDistricts ? "Ẩn ranh giới" : "Ranh giới quận"}</span>
+            <span>{showDistricts ? "Ẩn ranh giới" : "Ranh giới khu vực"}</span>
           </button>
+
+          {/* NÚT MỞ RADAR KHÍ TƯỢNG ĐỘNG LỰC HỌC (CHẾ ĐỘ MÔ PHỎNG GIÓ & DẢI NHIỆT VI KHÍ HẬU) */}
+          <button
+            onClick={() => {
+              setLiveRadarOverlay("temp");
+              setShowLiveRadar(true);
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "5px 12px",
+              borderRadius: 999,
+              border: "1px solid rgba(249, 115, 22, 0.4)",
+              cursor: "pointer",
+              fontSize: 11.5,
+              fontWeight: 700,
+              background: "linear-gradient(135deg, #ea580c, #c2410c)",
+              color: "#ffffff",
+              boxShadow: "0 2px 10px rgba(234, 88, 12, 0.35)",
+              transition: "all 0.15s ease",
+              whiteSpace: "nowrap",
+            }}
+            title="Mở Radar Khí tượng & Luồng gió động lực học thời gian thực"
+          >
+            <span style={{ fontSize: 13 }}>🌪️</span>
+            <span>Radar Khí tượng</span>
+            <span
+              style={{
+                background: "rgba(255, 255, 255, 0.25)",
+                fontSize: 9,
+                padding: "1px 5px",
+                borderRadius: 4,
+                letterSpacing: 0.5,
+                fontWeight: 800,
+              }}
+            >
+              LIVE
+            </span>
+          </button>
+
+          {/* Nút Menu Bản đồ nhiệt thời tiết & môi trường */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => setShowHeatmapMenu(!showHeatmapMenu)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "5px 11px",
+                borderRadius: 999,
+                border: activeHeatmap !== "none" ? "1px solid #f97316" : "1px solid transparent",
+                cursor: "pointer",
+                fontSize: 11.5,
+                fontWeight: activeHeatmap !== "none" ? 700 : 500,
+                background: activeHeatmap !== "none" ? "linear-gradient(135deg, #fff7ed, #ffedd5)" : "transparent",
+                color: activeHeatmap !== "none" ? "#c2410c" : "#475569",
+                boxShadow: activeHeatmap !== "none" ? "0 2px 8px rgba(249, 115, 22, 0.2)" : "none",
+                transition: "all 0.15s ease",
+                whiteSpace: "nowrap",
+              }}
+            >
+              <span>{activeHeatmap === "temperature" ? "🌡️" : activeHeatmap === "aqi" ? "💨" : activeHeatmap === "risk" ? "🚨" : "🔥"}</span>
+              <span>
+                {activeHeatmap === "temperature"
+                  ? "Nhiệt độ (°C)"
+                  : activeHeatmap === "aqi"
+                  ? "Không khí (AQI)"
+                  : activeHeatmap === "risk"
+                  ? "Điểm nóng rủi ro"
+                  : "Bản đồ nhiệt"}
+              </span>
+              <span style={{ fontSize: 9 }}>▼</span>
+            </button>
+
+            {/* Dropdown Menu chọn chế độ Bản đồ nhiệt */}
+            {showHeatmapMenu && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  marginTop: 6,
+                  background: "rgba(255, 255, 255, 0.96)",
+                  backdropFilter: "blur(16px)",
+                  WebkitBackdropFilter: "blur(16px)",
+                  borderRadius: 12,
+                  boxShadow: "0 10px 25px rgba(0, 0, 0, 0.15)",
+                  border: "1px solid #e2e8f0",
+                  padding: 6,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 4,
+                  zIndex: 50,
+                  minWidth: 205,
+                }}
+              >
+                {/* Lựa chọn Radar Khí tượng trực tiếp trong menu */}
+                <button
+                  onClick={() => {
+                    setLiveRadarOverlay("temp");
+                    setShowLiveRadar(true);
+                    setShowHeatmapMenu(false);
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "7px 10px",
+                    borderRadius: 8,
+                    border: "1px solid #fdba74",
+                    background: "linear-gradient(135deg, #fff7ed, #ffedd5)",
+                    color: "#c2410c",
+                    fontWeight: 700,
+                    fontSize: 12,
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  <span style={{ fontSize: 16 }}>🌪️</span>
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <span>Radar Khí tượng & Luồng gió</span>
+                    <span style={{ fontSize: 10, color: "#ea580c", fontWeight: 500 }}>
+                      Mô phỏng trường gió & vi khí hậu trực tiếp
+                    </span>
+                  </div>
+                </button>
+
+                <div style={{ height: 1, backgroundColor: "#f1f5f9", margin: "2px 0" }} />
+
+                <button
+                  onClick={() => {
+                    setActiveHeatmap("temperature");
+                    setShowHeatmapMenu(false);
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "7px 10px",
+                    borderRadius: 8,
+                    border: "none",
+                    background: activeHeatmap === "temperature" ? "#fff7ed" : "transparent",
+                    color: activeHeatmap === "temperature" ? "#ea580c" : "#334155",
+                    fontWeight: activeHeatmap === "temperature" ? 700 : 500,
+                    fontSize: 12,
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  <span>🌡️</span>
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <span>Nhiệt độ thời tiết (°C)</span>
+                    <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 400 }}>Dải nhiệt vi khí hậu toàn quốc</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveHeatmap("aqi");
+                    setShowHeatmapMenu(false);
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "7px 10px",
+                    borderRadius: 8,
+                    border: "none",
+                    background: activeHeatmap === "aqi" ? "#ecfdf5" : "transparent",
+                    color: activeHeatmap === "aqi" ? "#059669" : "#334155",
+                    fontWeight: activeHeatmap === "aqi" ? 700 : 500,
+                    fontSize: 12,
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  <span>💨</span>
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <span>Chất lượng không khí (AQI)</span>
+                    <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 400 }}>Bụi mịn PM2.5 & cảnh báo</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveHeatmap("risk");
+                    setShowHeatmapMenu(false);
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "7px 10px",
+                    borderRadius: 8,
+                    border: "none",
+                    background: activeHeatmap === "risk" ? "#fef2f2" : "transparent",
+                    color: activeHeatmap === "risk" ? "#dc2626" : "#334155",
+                    fontWeight: activeHeatmap === "risk" ? 700 : 500,
+                    fontSize: 12,
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  <span>🚨</span>
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <span>Điểm nóng sự cố ô nhiễm</span>
+                    <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 400 }}>Mật độ bãi rác & ô nhiễm</span>
+                  </div>
+                </button>
+
+                {activeHeatmap !== "none" && (
+                  <button
+                    onClick={() => {
+                      setActiveHeatmap("none");
+                      setShowHeatmapMenu(false);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      border: "none",
+                      borderTop: "1px solid #f1f5f9",
+                      marginTop: 2,
+                      background: "transparent",
+                      color: "#64748b",
+                      fontSize: 11.5,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span>⏹️</span>
+                    <span>Tắt bản đồ nhiệt</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Nút 3D / 2D */}
           <button
@@ -1599,6 +1890,200 @@ function EcoMap() {
                 "line-color": ["get", "color"],
                 "line-width": 2.5,
                 "line-dasharray": [3, 1],
+              }}
+            />
+          </Source>
+        )}
+
+        {/* 2.5 LỚP BẢN ĐỒ NHIỆT THỜI TIẾT & MÔI TRƯỜNG (MapLibre Heatmap Layers) */}
+        {activeHeatmap === "temperature" && weatherHeatmapData && (
+          <Source id="weather-temp-heatmap-source" type="geojson" data={weatherHeatmapData}>
+            <Layer
+              id="weather-temp-heatmap"
+              type="heatmap"
+              paint={{
+                "heatmap-weight": [
+                  "interpolate",
+                  ["linear"],
+                  ["get", "temperature"],
+                  18, 0.1,
+                  24, 0.35,
+                  28, 0.6,
+                  32, 0.85,
+                  38, 1.0,
+                ],
+                "heatmap-intensity": [
+                  "interpolate",
+                  ["linear"],
+                  ["zoom"],
+                  3, 1.2,
+                  7, 2.0,
+                  12, 3.2,
+                ],
+                "heatmap-color": [
+                  "interpolate",
+                  ["linear"],
+                  ["heatmap-density"],
+                  0, "rgba(59, 130, 246, 0)",
+                  0.12, "rgba(6, 182, 212, 0.5)",
+                  0.28, "rgba(16, 185, 129, 0.7)",
+                  0.48, "rgba(234, 179, 8, 0.8)",
+                  0.70, "rgba(249, 115, 22, 0.9)",
+                  1.0, "rgba(239, 68, 68, 0.95)",
+                ],
+                "heatmap-radius": [
+                  "interpolate",
+                  ["linear"],
+                  ["zoom"],
+                  3, 90,
+                  6, 160,
+                  10, 240,
+                  14, 320,
+                ],
+                "heatmap-opacity": 0.82,
+              }}
+            />
+            <Layer
+              id="weather-temp-points"
+              type="circle"
+              minzoom={6}
+              paint={{
+                "circle-radius": [
+                  "interpolate",
+                  ["linear"],
+                  ["zoom"],
+                  6, 4,
+                  11, 10,
+                ],
+                "circle-color": [
+                  "interpolate",
+                  ["linear"],
+                  ["get", "temperature"],
+                  18, "#3b82f6",
+                  25, "#10b981",
+                  30, "#eab308",
+                  34, "#f97316",
+                  38, "#ef4444",
+                ],
+                "circle-stroke-width": 2,
+                "circle-stroke-color": "#ffffff",
+                "circle-opacity": 0.9,
+              }}
+            />
+          </Source>
+        )}
+
+        {activeHeatmap === "aqi" && weatherHeatmapData && (
+          <Source id="weather-aqi-heatmap-source" type="geojson" data={weatherHeatmapData}>
+            <Layer
+              id="weather-aqi-heatmap"
+              type="heatmap"
+              paint={{
+                "heatmap-weight": [
+                  "interpolate",
+                  ["linear"],
+                  ["get", "aqi"],
+                  0, 0.1,
+                  50, 0.3,
+                  100, 0.55,
+                  150, 0.8,
+                  200, 1.0,
+                ],
+                "heatmap-intensity": [
+                  "interpolate",
+                  ["linear"],
+                  ["zoom"],
+                  3, 0.7,
+                  8, 1.5,
+                  13, 2.8,
+                ],
+                "heatmap-color": [
+                  "interpolate",
+                  ["linear"],
+                  ["heatmap-density"],
+                  0, "rgba(16, 185, 129, 0)",
+                  0.2, "rgba(16, 185, 129, 0.65)",
+                  0.45, "rgba(234, 179, 8, 0.75)",
+                  0.65, "rgba(249, 115, 22, 0.85)",
+                  0.85, "rgba(239, 68, 68, 0.9)",
+                  1.0, "rgba(147, 51, 234, 0.95)",
+                ],
+                "heatmap-radius": [
+                  "interpolate",
+                  ["linear"],
+                  ["zoom"],
+                  3, 30,
+                  7, 65,
+                  11, 110,
+                  15, 160,
+                ],
+                "heatmap-opacity": 0.75,
+              }}
+            />
+            <Layer
+              id="weather-aqi-points"
+              type="circle"
+              minzoom={6}
+              paint={{
+                "circle-radius": [
+                  "interpolate",
+                  ["linear"],
+                  ["zoom"],
+                  6, 4,
+                  11, 10,
+                ],
+                "circle-color": [
+                  "interpolate",
+                  ["linear"],
+                  ["get", "aqi"],
+                  0, "#10b981",
+                  50, "#eab308",
+                  100, "#f97316",
+                  150, "#ef4444",
+                  200, "#9333ea",
+                ],
+                "circle-stroke-width": 2,
+                "circle-stroke-color": "#ffffff",
+                "circle-opacity": 0.9,
+              }}
+            />
+          </Source>
+        )}
+
+        {activeHeatmap === "risk" && (
+          <Source id="incident-risk-heatmap-source" type="geojson" data={incidentRiskGeoJSON}>
+            <Layer
+              id="incident-risk-heatmap"
+              type="heatmap"
+              paint={{
+                "heatmap-weight": ["get", "weight"],
+                "heatmap-intensity": [
+                  "interpolate",
+                  ["linear"],
+                  ["zoom"],
+                  4, 0.8,
+                  9, 1.8,
+                  14, 3.0,
+                ],
+                "heatmap-color": [
+                  "interpolate",
+                  ["linear"],
+                  ["heatmap-density"],
+                  0, "rgba(254, 240, 138, 0)",
+                  0.2, "rgba(234, 179, 8, 0.6)",
+                  0.5, "rgba(249, 115, 22, 0.8)",
+                  0.8, "rgba(239, 68, 68, 0.9)",
+                  1.0, "rgba(185, 28, 28, 0.95)",
+                ],
+                "heatmap-radius": [
+                  "interpolate",
+                  ["linear"],
+                  ["zoom"],
+                  4, 25,
+                  8, 55,
+                  12, 100,
+                ],
+                "heatmap-opacity": 0.8,
               }}
             />
           </Source>
@@ -2016,7 +2501,154 @@ function EcoMap() {
             </div>
           </Marker>
         )}
+        {/* Popup chi tiết trạm quan trắc khi click trên bản đồ nhiệt */}
+        {selectedHeatmapStation && (
+          <Popup
+            longitude={selectedHeatmapStation.geometry.coordinates[0]}
+            latitude={selectedHeatmapStation.geometry.coordinates[1]}
+            anchor="bottom"
+            onClose={() => setSelectedHeatmapStation(null)}
+            closeOnClick={false}
+          >
+            <div style={{ padding: "6px 8px", minWidth: 210, fontFamily: "sans-serif" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ fontWeight: 700, fontSize: 13, color: "#0f172a" }}>
+                  📍 {selectedHeatmapStation.properties.city}
+                </span>
+                <span style={{ fontSize: 10, background: "#f1f5f9", padding: "2px 6px", borderRadius: 6, color: "#64748b" }}>
+                  {selectedHeatmapStation.properties.region}
+                </span>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 6 }}>
+                <div style={{ background: "#f8fafc", padding: "6px 8px", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                  <div style={{ fontSize: 10, color: "#64748b" }}>🌡️ Nhiệt độ</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#ea580c" }}>
+                    {selectedHeatmapStation.properties.temperature}°C
+                  </div>
+                  <div style={{ fontSize: 10, color: "#64748b" }}>{selectedHeatmapStation.properties.desc}</div>
+                </div>
+
+                <div style={{ background: "#f8fafc", padding: "6px 8px", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                  <div style={{ fontSize: 10, color: "#64748b" }}>💨 Chỉ số AQI</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: selectedHeatmapStation.properties.aqi > 100 ? "#dc2626" : "#059669" }}>
+                    {selectedHeatmapStation.properties.aqi}
+                  </div>
+                  <div style={{ fontSize: 10, color: selectedHeatmapStation.properties.aqi > 100 ? "#dc2626" : "#059669" }}>
+                    {selectedHeatmapStation.properties.aqiStatus}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#64748b", borderTop: "1px solid #f1f5f9", paddingTop: 4 }}>
+                <span>💧 Độ ẩm: {selectedHeatmapStation.properties.humidity}%</span>
+                <span>🌬️ Gió: {selectedHeatmapStation.properties.wind} km/h</span>
+              </div>
+              <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 4 }}>
+                Bụi mịn PM2.5: {selectedHeatmapStation.properties.pm25} µg/m³
+              </div>
+            </div>
+          </Popup>
+        )}
       </Map>
+
+      {/* Floating Heatmap Legend (Thước đo chú giải bản đồ nhiệt) */}
+      {activeHeatmap !== "none" && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 58,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 25,
+            background: "rgba(255, 255, 255, 0.94)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            border: "1px solid rgba(226, 232, 240, 0.85)",
+            borderRadius: 16,
+            padding: "8px 16px",
+            boxShadow: "0 8px 30px rgba(0, 0, 0, 0.12)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 6,
+            pointerEvents: "auto",
+            maxWidth: "92vw",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", gap: 14 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#1e293b", display: "flex", alignItems: "center", gap: 6 }}>
+              <span>{activeHeatmap === "temperature" ? "🌡️" : activeHeatmap === "aqi" ? "💨" : "🚨"}</span>
+              <span>
+                {activeHeatmap === "temperature"
+                  ? "Bản đồ nhiệt độ thời tiết Việt Nam (°C)"
+                  : activeHeatmap === "aqi"
+                  ? "Bản đồ ô nhiễm không khí (US AQI & PM2.5)"
+                  : "Bản đồ mật độ rủi ro sự cố môi trường"}
+              </span>
+            </span>
+            <button
+              onClick={() => setActiveHeatmap("none")}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "#94a3b8",
+                fontSize: 14,
+                padding: "2px 6px",
+                borderRadius: 6,
+              }}
+              title="Đóng bản đồ nhiệt"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Thanh gradient dải màu */}
+          <div
+            style={{
+              width: 320,
+              height: 10,
+              borderRadius: 999,
+              background:
+                activeHeatmap === "temperature"
+                  ? "linear-gradient(to right, #3b82f6, #10b981, #eab308, #f97316, #ef4444)"
+                  : activeHeatmap === "aqi"
+                  ? "linear-gradient(to right, #10b981, #eab308, #f97316, #ef4444, #9333ea)"
+                  : "linear-gradient(to right, #fef08a, #eab308, #f97316, #ef4444, #991b1b)",
+              boxShadow: "inset 0 1px 2px rgba(0,0,0,0.2)",
+            }}
+          />
+
+          {/* Mức giá trị */}
+          <div style={{ display: "flex", justifyContent: "space-between", width: 320, fontSize: 10, fontWeight: 600, color: "#64748b" }}>
+            {activeHeatmap === "temperature" ? (
+              <>
+                <span style={{ color: "#2563eb" }}>≤ 18°C (Mát)</span>
+                <span>25°C</span>
+                <span>30°C</span>
+                <span>34°C</span>
+                <span style={{ color: "#dc2626" }}>≥ 38°C (Nóng gắt)</span>
+              </>
+            ) : activeHeatmap === "aqi" ? (
+              <>
+                <span style={{ color: "#059669" }}>0-50 (Tốt)</span>
+                <span style={{ color: "#ca8a04" }}>51-100 (TB)</span>
+                <span style={{ color: "#ea580c" }}>101-150 (Kém)</span>
+                <span style={{ color: "#dc2626" }}>151-200 (Xấu)</span>
+                <span style={{ color: "#7e22ce" }}>200+ (Nguy hại)</span>
+              </>
+            ) : (
+              <>
+                <span style={{ color: "#ca8a04" }}>Rủi ro thấp</span>
+                <span style={{ color: "#ea580c" }}>Trung bình</span>
+                <span style={{ color: "#dc2626" }}>Báo động</span>
+                <span style={{ color: "#991b1b" }}>Khẩn cấp</span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Hiệu ứng Animation CSS */}
       <style>{`
@@ -2029,6 +2661,14 @@ function EcoMap() {
           to { opacity: 1; transform: translateX(0); }
         }
       `}</style>
+
+      {/* 8. CHẾ ĐỘ RADAR KHÍ TƯỢNG ĐỘNG (LIVE PARTICLE STREAMLINES & THERMAL RADAR) */}
+      {showLiveRadar && (
+        <LiveWeatherRadarMap
+          onClose={() => setShowLiveRadar(false)}
+          initialOverlay={liveRadarOverlay}
+        />
+      )}
     </div>
   );
 }

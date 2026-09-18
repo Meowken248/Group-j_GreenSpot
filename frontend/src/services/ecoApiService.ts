@@ -125,3 +125,18 @@ export async function fetchNearestLocationsAPI(
   }
 }
 
+/**
+ * 6. Tải GeoJSON Bản đồ nhiệt Thời tiết & Chất lượng không khí (Weather & AQI Heatmap) toàn quốc
+ */
+export async function fetchWeatherHeatmapAPI(): Promise<FeatureCollection | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/v1/weather/heatmap`);
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data: FeatureCollection = await res.json();
+    return data;
+  } catch (err) {
+    console.warn("Không thể kết nối API /api/v1/weather/heatmap:", err);
+    return null;
+  }
+}
+

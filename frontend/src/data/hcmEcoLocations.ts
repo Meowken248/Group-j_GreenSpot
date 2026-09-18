@@ -15,6 +15,12 @@ export interface EcoLocation {
   description: string;
   imageUrl?: string;
   reportedAt?: string;
+  severity?: string;
+  riskScore?: number;
+  upvotes?: number;
+  wasteType?: string;
+  trackingCode?: string;
+  distanceKm?: number;
 }
 
 export const CATEGORY_CONFIG: Record<
