@@ -31,6 +31,8 @@ import {
   DEFAULT_FALLBACK_LOCATION,
   calculateDistanceMeters,
 } from "../hooks/useFastGeolocation";
+import FloodMapPanel from "./FloodMapPanel";
+import { FLOOD_LEVEL_CONFIG, type FloodPoint } from "../services/floodService";
 
 // Bộ sưu tập bản đồ nền Google Tile Cluster & OpenStreetMap phong phú
 export const MAP_STYLES = {
@@ -300,6 +302,23 @@ function EcoMap() {
   const [landmarks, setLandmarks] = useState<HCMLocation[]>([]);
   const [districtBoundaries, setDistrictBoundaries] = useState<FeatureCollection | null>(null);
   const [liveWeather, setLiveWeather] = useState<LiveWeatherResponse | null>(null);
+
+  // Flood Map States
+  const [showFloodPanel, setShowFloodPanel] = useState<boolean>(false);
+  const [floodPoints, setFloodPoints] = useState<FloodPoint[]>([]);
+
+  const handleFloodFlyTo = useCallback((lng: number, lat: number) => {
+    mapRef.current?.flyTo({
+      center: [lng, lat],
+      zoom: 15,
+      duration: 1200,
+      essential: true,
+    });
+  }, []);
+
+  const handleFloodPointsLoaded = useCallback((points: FloodPoint[]) => {
+    setFloodPoints(points);
+  }, []);
 
   // 1. Tải danh sách địa điểm môi trường từ Backend API (PostgreSQL/PostGIS)
   useEffect(() => {
@@ -2016,7 +2035,56 @@ function EcoMap() {
             </div>
           </Marker>
         )}
+
+        {/* FLOOD MARKERS — hiển thị khi bật panel ngập */}
+        {showFloodPanel && floodPoints.map((fp) => {
+          const cfg = FLOOD_LEVEL_CONFIG[fp.level];
+          return (
+            <Marker key={`flood-${fp.id}`} longitude={fp.lng} latitude={fp.lat}>
+              <div
+                className={`flood-map-marker${fp.level === "EMERGENCY" ? " emergency" : ""}`}
+                style={{ background: cfg.color }}
+                title={`${fp.road} — ${cfg.label} (${fp.water_depth_cm}cm)`}
+                onClick={() => handleFloodFlyTo(fp.lng, fp.lat)}
+              />
+            </Marker>
+          );
+        })}
       </Map>
+
+      {/* NÚT TOGGLE FLOOD MAP (GÓC DƯỚI BÊN PHẢI) */}
+      <button
+        type="button"
+        className={`flood-toggle-btn${showFloodPanel ? " active" : ""}`}
+        onClick={() => setShowFloodPanel((prev) => !prev)}
+        style={{ position: "absolute", bottom: 20, right: 16, top: "auto", left: "auto", zIndex: 25 }}
+        title="Bản đồ ngập TP.HCM"
+      >
+        <span className="flood-toggle-icon">🌊</span>
+        {showFloodPanel ? "Ẩn ngập" : "Theo dõi ngập"}
+      </button>
+
+      {/* FLOOD MAP PANEL OVERLAY */}
+      {showFloodPanel && (
+        <FloodMapPanel
+          onClose={() => setShowFloodPanel(false)}
+          onFlyTo={handleFloodFlyTo}
+          onPointsLoaded={handleFloodPointsLoaded}
+        />
+      )}
+
+      {/* FLOOD LEGEND (khi có flood markers hiển thị) */}
+      {showFloodPanel && floodPoints.length > 0 && (
+        <div className="flood-legend">
+          <strong>Chú thích ngập</strong>
+          {(Object.entries(FLOOD_LEVEL_CONFIG) as [string, { label: string; color: string }][]).map(([key, cfg]) => (
+            <div key={key} className="flood-legend-item">
+              <span className="flood-legend-dot" style={{ background: cfg.color }} />
+              {cfg.label}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Hiệu ứng Animation CSS */}
       <style>{`
