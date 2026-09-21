@@ -1,109 +1,52 @@
-# Export toàn bộ 54 SQLAlchemy Models của Hệ thống EcoReport
-# Phục vụ FastAPI ORM, Alembic Auto-migration và Data Access Layer
+"""
+GreenSpot Domain Models Registry
+Tập trung và đồng bộ toàn bộ các Thực thể Dữ liệu (ORM Models) chuẩn hóa của hệ thống.
+"""
 
 from app.database import Base
 from app.models.base import TimestampMixin, UUIDPrimaryKeyMixin
 
-# 1. RBAC, Users & Sessions (7 models)
+# 1. Quản lý Người dùng & Phân quyền (RBAC)
 from app.models.rbac import (
     Role,
     Permission,
     RolePermission,
     User,
-    UserSession,
-    RefreshToken,
-    UserPrivacySetting,
 )
 
-# 2. Administrative & Facilities (3 models)
+# 2. Không gian Hành chính & Cơ sở Xanh (Spatial WebGIS)
 from app.models.spatial import (
     AdministrativeUnit,
     EssentialFacility,
     RecyclingFacility,
 )
 
-# 3. Incidents & Media (6 models)
+# 3. Sự cố Môi trường Đô thị (Incidents & Media)
 from app.models.incident import (
     WasteCategory,
     Incident,
     IncidentMedia,
-    IncidentStatusHistory,
-    IncidentComment,
-    IncidentTransfer,
 )
 
-# 4. Dispatch & Verification (5 models)
-from app.models.dispatch import (
-    WorkTeam,
-    TeamMember,
-    WorkerLocation,
-    Assignment,
-    Verification,
-)
-
-# 5. SLA, Audit & KPI (3 models)
-from app.models.sla_audit import (
-    SLAPolicy,
-    AuditLog,
-    KPIEvaluation,
-)
-
-# 6. WebGIS Advanced (5 models)
-from app.models.webgis import (
-    UserWatchArea,
-    IncidentClusterHotspot,
-    UserMapFavorite,
-    FloodZoneMonitoring,
-    SafeRouteCache,
-)
-
-# 7. AI & Smart Analytics (3 models)
-from app.models.ai import (
-    AIAnalysisResult,
-    AIDuplicateGroup,
-    AIIncidentSummary,
-)
-
-# 8. Community & Chatbot (6 models)
-from app.models.community import (
-    EnvironmentalCampaign,
-    CampaignParticipant,
-    CitizenReward,
-    RewardTransaction,
-    ChatbotConversation,
-    ChatbotMessage,
-)
-
-# 9. System, Reports & Notifications (4 models)
-from app.models.system import (
-    Notification,
-    Report,
-    SystemConfig,
-    DBBackup,
-)
-
-# 10. IoT Sensors & Telemetry (3 models)
+# 4. Trạm Quan trắc Cảm biến IoT
 from app.models.iot import (
     IoTSensorStation,
-    IoTSensorTelemetry,
-    IoTSensorAlert,
 )
 
-# 11. Logistics & Fleet Management (3 models)
-from app.models.fleet import (
-    WasteCollectionRoute,
-    RouteCheckpoint,
-    VehicleFuelLog,
-)
-
-# 12. Legal Regulations, Violation Records & Assets (6 models)
-from app.models.legal_assets import (
-    PenaltyRegulation,
-    ViolationRecord,
-    SystemTranslation,
-    FileStorageAsset,
-    EnvironmentalSubscription,
-    AIKnowledgeEmbedding,
+# 5. Thủy triều, Điểm ngập lụt Đô thị & Lộ trình Né ngập (Flood & Tide Domain)
+from app.models.flood import (
+    TideStation,
+    TideHarmonicConstituent,
+    TideWaterLevelRecord,
+    FloodHotspot,
+    FloodRiskAssessment,
+    FloodCommunityReport,
+    SafeNavigationRoute,
+    TideState,
+    TideAlertLevel,
+    FloodCauseType,
+    FloodSeverityLevel,
+    RouteSafetyStatus,
 )
 
 __all__ = [
@@ -115,65 +58,27 @@ __all__ = [
     "Permission",
     "RolePermission",
     "User",
-    "UserSession",
-    "RefreshToken",
-    "UserPrivacySetting",
-    # Spatial
+    # Spatial & Green Facilities
     "AdministrativeUnit",
     "EssentialFacility",
     "RecyclingFacility",
-    # Incident
+    # Environmental Incidents
     "WasteCategory",
     "Incident",
     "IncidentMedia",
-    "IncidentStatusHistory",
-    "IncidentComment",
-    "IncidentTransfer",
-    # Dispatch
-    "WorkTeam",
-    "TeamMember",
-    "WorkerLocation",
-    "Assignment",
-    "Verification",
-    # SLA & Audit
-    "SLAPolicy",
-    "AuditLog",
-    "KPIEvaluation",
-    # WebGIS
-    "UserWatchArea",
-    "IncidentClusterHotspot",
-    "UserMapFavorite",
-    "FloodZoneMonitoring",
-    "SafeRouteCache",
-    # AI
-    "AIAnalysisResult",
-    "AIDuplicateGroup",
-    "AIIncidentSummary",
-    # Community & Chatbot
-    "EnvironmentalCampaign",
-    "CampaignParticipant",
-    "CitizenReward",
-    "RewardTransaction",
-    "ChatbotConversation",
-    "ChatbotMessage",
-    # System
-    "Notification",
-    "Report",
-    "SystemConfig",
-    "DBBackup",
     # IoT Sensors
     "IoTSensorStation",
-    "IoTSensorTelemetry",
-    "IoTSensorAlert",
-    # Fleet & Routes
-    "WasteCollectionRoute",
-    "RouteCheckpoint",
-    "VehicleFuelLog",
-    # Legal & Assets
-    "PenaltyRegulation",
-    "ViolationRecord",
-    "SystemTranslation",
-    "FileStorageAsset",
-    "EnvironmentalSubscription",
-    "AIKnowledgeEmbedding",
+    # Flood, Tide & Safe Navigation
+    "TideStation",
+    "TideHarmonicConstituent",
+    "TideWaterLevelRecord",
+    "FloodHotspot",
+    "FloodRiskAssessment",
+    "FloodCommunityReport",
+    "SafeNavigationRoute",
+    "TideState",
+    "TideAlertLevel",
+    "FloodCauseType",
+    "FloodSeverityLevel",
+    "RouteSafetyStatus",
 ]

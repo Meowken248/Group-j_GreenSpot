@@ -251,6 +251,60 @@ VALUES
 ('IOT-HCM-07', 'Trạm Khí tượng Sinh thái Rừng Sác Cần Giờ', 'AIR_QUALITY', 6,
  ST_SetSRID(ST_MakePoint(106.8850, 10.4200), 4326), 'Trạm bảo tồn Rừng Sác, Cần Giờ', '2025-01-05', 'v2.1.0', FALSE, TRUE, 'ONLINE',
  '{"aqi": 22, "status": "Rất trong lành", "pm25": 4.1, "temp": 28.0, "salinity_ppt": 18.5}'::jsonb);
+
+-- 7. TIDE STATIONS (TRẠM QUAN TRẮC THỦY TRIỀU)
+INSERT INTO tide_stations (station_id, station_code, station_name, river_system, location, datum_offset_meters, mean_sea_level_meters, is_active)
+VALUES
+(1, 'PHU_AN', 'Trạm Thủy văn Phú An', 'Sông Sài Gòn', ST_SetSRID(ST_MakePoint(106.7130, 10.7930), 4326), 0.000, 0.000, TRUE),
+(2, 'NHA_BE', 'Trạm Thủy văn Nhà Bè', 'Sông Đồng Điền', ST_SetSRID(ST_MakePoint(106.7460, 10.6550), 4326), 0.000, 0.000, TRUE)
+ON CONFLICT (station_code) DO NOTHING;
+
+-- 8. TIDE HARMONIC CONSTITUENTS (HẰNG SỐ ĐIỀU HÒA THIÊN VĂN TRẠM PHÚ AN)
+INSERT INTO tide_harmonic_constituents (station_id, name, angular_speed_deg_per_hour, amplitude_meters, phase_lag_degrees)
+VALUES
+(1, 'M2', 28.984104, 0.8500, 120.500),
+(1, 'S2', 30.000000, 0.3500, 160.200),
+(1, 'K1', 15.041069, 0.4200, 275.000),
+(1, 'O1', 13.943036, 0.3100, 240.800)
+ON CONFLICT (station_id, name) DO NOTHING;
+
+-- 9. FLOOD HOTSPOTS (10 ĐIỂM ĐEN NGẬP ÚNG TIÊU BIỂU TẠI TP.HCM)
+INSERT INTO flood_hotspots (
+    hotspot_code, street_name, ward_name, district_name, location,
+    elevation_meters, primary_cause, threshold_tide_meters, threshold_rain_mm_per_hour,
+    historical_max_depth_cm, drainage_system_rating, is_active
+)
+VALUES
+('FL-Q7-TXS', 'Đường Trần Xuân Soạn', 'Phường Tân Hưng', 'Quận 7',
+ ST_SetSRID(ST_MakePoint(106.7025, 10.7480), 4326), 1.25, 'TIDAL', 1.50, 35.0, 50.0, 2, TRUE),
+
+('FL-Q7-HTP', 'Đường Huỳnh Tấn Phát', 'Phường Phú Mỹ', 'Quận 7',
+ ST_SetSRID(ST_MakePoint(106.7380, 10.7250), 4326), 1.40, 'COMBINED', 1.55, 25.0, 45.0, 2, TRUE),
+
+('FL-NB-LVL', 'Đường Lê Văn Lương (Cầu Rạch Tôm)', 'Xã Nhơn Đức', 'Huyện Nhà Bè',
+ ST_SetSRID(ST_MakePoint(106.7050, 10.6650), 4326), 1.20, 'TIDAL', 1.48, 30.0, 60.0, 1, TRUE),
+
+('FL-TD-QH', 'Đường Quốc Hương (Thảo Điền)', 'Phường Thảo Điền', 'TP. Thủ Đức',
+ ST_SetSRID(ST_MakePoint(106.7320, 10.8050), 4326), 1.35, 'COMBINED', 1.55, 20.0, 40.0, 2, TRUE),
+
+('FL-BT-NHC', 'Đường Nguyễn Hữu Cảnh', 'Phường 22', 'Quận Bình Thạnh',
+ ST_SetSRID(ST_MakePoint(106.7150, 10.7920), 4326), 1.50, 'RAINFALL', 1.65, 25.0, 35.0, 3, TRUE),
+
+('FL-BT-UVK', 'Đường Ung Văn Khiêm', 'Phường 25', 'Quận Bình Thạnh',
+ ST_SetSRID(ST_MakePoint(106.7180, 10.8080), 4326), 1.30, 'COMBINED', 1.52, 25.0, 45.0, 2, TRUE),
+
+('FL-TD-DXH', 'Đường Đỗ Xuân Hợp', 'Phường Phước Long B', 'TP. Thủ Đức',
+ ST_SetSRID(ST_MakePoint(106.7720, 10.8250), 4326), 1.60, 'RAINFALL', 1.70, 30.0, 35.0, 3, TRUE),
+
+('FL-Q12-NVQ', 'Đường Nguyễn Văn Quá', 'Phường Đông Hưng Thuận', 'Quận 12',
+ ST_SetSRID(ST_MakePoint(106.6320, 10.8420), 4326), 1.70, 'RAINFALL', 1.75, 25.0, 40.0, 2, TRUE),
+
+('FL-TD-VVN', 'Đường Võ Văn Ngân (Chợ Thủ Đức)', 'Phường Linh Chiểu', 'TP. Thủ Đức',
+ ST_SetSRID(ST_MakePoint(106.7620, 10.8520), 4326), 2.10, 'RAINFALL', 1.80, 20.0, 50.0, 2, TRUE),
+
+('FL-Q4-BVD', 'Đường Bến Vân Đồn - Cầu Calmette', 'Phường 13', 'Quận 4',
+ ST_SetSRID(ST_MakePoint(106.7010, 10.7630), 4326), 1.45, 'TIDAL', 1.58, 40.0, 30.0, 3, TRUE)
+ON CONFLICT (hotspot_code) DO NOTHING;
 """
 
 async def run_clean_seed():
@@ -266,12 +320,16 @@ async def run_clean_seed():
         print("  - Điểm xanh & Công viên (Green Spaces)")
         print("  - Trạm thu gom rác tái chế (Recycling Facilities)")
         print("  - Trạm quan trắc cảm biến IoT (IoT Sensor Stations)")
+        print("  - Trạm thủy văn thủy triều & Hằng số thiên văn (Tide Stations)")
+        print("  - Điểm đen ngập lụt đô thị TP.HCM (Flood Hotspots)")
         
         inc_count = await conn.fetchval("SELECT count(*) FROM incidents;")
         fac_count = await conn.fetchval("SELECT count(*) FROM essential_facilities;")
         rec_count = await conn.fetchval("SELECT count(*) FROM recycling_facilities;")
         iot_count = await conn.fetchval("SELECT count(*) FROM iot_sensor_stations;")
-        print(f"📊 Tổng kiểm tra: {inc_count} Sự cố, {fac_count} Điểm xanh, {rec_count} Trạm tái chế, {iot_count} Trạm IoT.")
+        tide_count = await conn.fetchval("SELECT count(*) FROM tide_stations;")
+        flood_count = await conn.fetchval("SELECT count(*) FROM flood_hotspots;")
+        print(f"📊 Tổng kiểm tra: {inc_count} Sự cố, {fac_count} Điểm xanh, {rec_count} Trạm tái chế, {iot_count} Trạm IoT, {tide_count} Trạm triều, {flood_count} Điểm đen ngập.")
     finally:
         await conn.close()
 
