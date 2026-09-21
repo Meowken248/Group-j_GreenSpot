@@ -37,6 +37,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      network: host
     container_name: ecoreport_frontend
     restart: always
     environment:
