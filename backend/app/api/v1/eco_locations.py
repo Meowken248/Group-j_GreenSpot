@@ -3,6 +3,9 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from app.database import get_db
+from app.services.flood_engine import flood_engine
+from app.services.tide_service import tide_engine
+from app.services.weather_service import weather_service
 
 router = APIRouter(prefix="/eco-locations", tags=["Eco Locations"])
 
@@ -211,6 +214,86 @@ async def get_eco_locations(
             "description": f"{row['name']} - Trạm cảm biến truyền dữ liệu viễn trắc thời gian thực về Trung tâm điều hành EcoReport.",
         })
 
+    # 5. Truy vấn Điểm đen ngập lụt & Triều cường đô thị (Tính toán rủi ro động Realtime)
+    curr_tide = tide_engine.get_current_tide("PHU_AN")
+    curr_weather = await weather_service.get_hcm_rainfall()
+    tide_m = float(curr_tide["water_level_m"])
+    rain_mmh = float(curr_weather.get("rainfall_current_mmh", 0.0))
+
+    flood_query = """
+        SELECT 
+            h.hotspot_id::text as id,
+            h.hotspot_code,
+            h.street_name,
+            h.ward_name,
+            COALESCE(h.district_name, 'TP. Hồ Chí Minh') as district,
+            CONCAT(h.street_name, COALESCE(', ' || h.ward_name, ''), ', ', h.district_name) as address,
+            ST_Y(h.location)::float as latitude,
+            ST_X(h.location)::float as longitude,
+            h.threshold_tide_meters::float as threshold_tide,
+            h.threshold_rain_mm_per_hour::float as threshold_rain,
+            h.historical_max_depth_cm::float as max_depth,
+            h.drainage_system_rating,
+            h.primary_cause
+        FROM flood_hotspots h
+        WHERE h.is_active = TRUE
+        ORDER BY h.hotspot_id ASC;
+    """
+    flood_rows = await db.execute(text(flood_query))
+    for row in flood_rows.mappings():
+        class TempH:
+            hotspot_id = row["id"]
+            hotspot_code = row["hotspot_code"]
+            street_name = row["street_name"]
+            ward_name = row["ward_name"]
+            district_name = row["district"]
+            threshold_tide_meters = row["threshold_tide"]
+            threshold_rain_mm_per_hour = row["threshold_rain"]
+            drainage_system_rating = row["drainage_system_rating"]
+            historical_max_depth_cm = row["max_depth"]
+            primary_cause = row["primary_cause"]
+
+        risk_data = flood_engine.calculate_hotspot_risk(TempH(), tide_m, rain_mmh)
+        depth_cm = risk_data["predicted_depth_cm"]
+        severity = risk_data["severity_level"]
+        
+        # Ánh xạ status frontend: optimal / pending / processing / warning
+        if severity in ("SEVERE", "IMPASSABLE"):
+            loc_status = "warning"
+            status_text = f"Cảnh báo: Ngập sâu {depth_cm}cm"
+        elif severity == "MODERATE":
+            loc_status = "processing"
+            status_text = f"Ngập vừa {depth_cm}cm"
+        elif severity == "MINOR":
+            loc_status = "pending"
+            status_text = f"Ngập nhẹ {depth_cm}cm"
+        else:
+            loc_status = "optimal"
+            status_text = "Khô ráo • An toàn"
+
+        cause_desc = "Triều cường" if row["primary_cause"] == "TIDAL" else "Mưa lớn" if row["primary_cause"] == "RAINFALL" else "Mưa kết hợp Triều cường"
+
+        locations.append({
+            "id": f"flood-{row['id']}",
+            "name": f"Điểm ngập {row['street_name']}",
+            "category": "flood",
+            "district": row["district"],
+            "address": row["address"],
+            "latitude": row["latitude"],
+            "longitude": row["longitude"],
+            "status": loc_status,
+            "statusText": status_text,
+            "metricLabel": "Độ sâu ngập / Nguy cơ",
+            "metricValue": f"{depth_cm} cm ({severity})",
+            "severityLevel": severity,
+            "causeType": row["primary_cause"],
+            "causeDesc": cause_desc,
+            "riskScore": risk_data["risk_score"],
+            "isImpassableBikes": risk_data["is_impassable_for_bikes"],
+            "isImpassableCars": risk_data["is_impassable_for_cars"],
+            "description": f"{risk_data['advisory_notice']} (Nguyên nhân chính: {cause_desc}, Ngưỡng triều: {row['threshold_tide']}m, Ngưỡng mưa: {row['threshold_rain']}mm/h).",
+        })
+
     # Tính toán tổng số lượng theo từng danh mục
     counts = {
         "all": len(locations),
@@ -218,6 +301,7 @@ async def get_eco_locations(
         "green_spot": sum(1 for x in locations if x["category"] == "green_spot"),
         "recycling": sum(1 for x in locations if x["category"] == "recycling"),
         "sensor": sum(1 for x in locations if x["category"] == "sensor"),
+        "flood": sum(1 for x in locations if x["category"] == "flood"),
     }
 
     # Lọc nếu có query param

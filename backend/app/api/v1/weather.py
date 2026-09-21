@@ -4,6 +4,7 @@ import asyncio
 import urllib.request
 from typing import Dict, Any
 from fastapi import APIRouter
+from app.services.tide_service import tide_engine
 
 router = APIRouter(prefix="/weather", tags=["Live Weather & Air Quality"])
 
@@ -87,6 +88,8 @@ async def get_current_weather():
         pm25 = round(curr_aq.get("pm2_5", 11.5), 1)
         pm10 = round(curr_aq.get("pm10", 22.0), 1)
 
+        curr_tide = tide_engine.get_current_tide("PHU_AN")
+
         result = {
             "success": True,
             "city": "TP. Hồ Chí Minh",
@@ -99,6 +102,14 @@ async def get_current_weather():
             "aqiStatus": get_aqi_status(us_aqi),
             "pm25": pm25,
             "pm10": pm10,
+            "tide": {
+                "water_level_m": curr_tide["water_level_m"],
+                "state": curr_tide["state"],
+                "state_label": curr_tide["state_label"],
+                "alert_level": curr_tide["alert_level"],
+                "alert_label": curr_tide["alert_label"],
+                "is_flood_risk": curr_tide["is_flood_risk"],
+            },
             "updatedAt": "Vừa cập nhật",
         }
 
@@ -110,6 +121,19 @@ async def get_current_weather():
         # Nếu mất mạng ngoài hoặc timeout, dùng dữ liệu fallback an toàn
         if _cached_weather:
             return _cached_weather
+
+        try:
+            fallback_tide = tide_engine.get_current_tide("PHU_AN")
+            tide_dict = {
+                "water_level_m": fallback_tide["water_level_m"],
+                "state": fallback_tide["state"],
+                "state_label": fallback_tide["state_label"],
+                "alert_level": fallback_tide["alert_level"],
+                "alert_label": fallback_tide["alert_label"],
+                "is_flood_risk": fallback_tide["is_flood_risk"],
+            }
+        except Exception:
+            tide_dict = None
 
         return {
             "success": True,
@@ -123,5 +147,6 @@ async def get_current_weather():
             "aqiStatus": "Tốt",
             "pm25": 11.2,
             "pm10": 21.0,
+            "tide": tide_dict,
             "updatedAt": "Ngoại tuyến",
         }

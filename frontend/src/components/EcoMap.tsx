@@ -252,7 +252,8 @@ function EcoMap() {
     green_spot: number;
     recycling: number;
     sensor: number;
-  }>({ all: 0, incident: 0, green_spot: 0, recycling: 0, sensor: 0 });
+    flood: number;
+  }>({ all: 0, incident: 0, green_spot: 0, recycling: 0, sensor: 0, flood: 0 });
   const [loadingEco, setLoadingEco] = useState<boolean>(true);
 
   const [landmarks, setLandmarks] = useState<HCMLocation[]>([]);
@@ -1222,8 +1223,24 @@ function EcoMap() {
               </div>
 
               <div style={{ marginBottom: 12 }}>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 8px", borderRadius: 8, background: "#f1f5f9", fontSize: 11, fontWeight: 600, color: "#334155", marginBottom: 6 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: CATEGORY_CONFIG[selectedLocation.category].color }} />
+                <div style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  padding: "4px 10px",
+                  borderRadius: 8,
+                  background: selectedLocation.category === "flood" && (selectedLocation.severityLevel === "SEVERE" || selectedLocation.severityLevel === "IMPASSABLE") ? "#fee2e2" : selectedLocation.category === "flood" && selectedLocation.severityLevel === "MODERATE" ? "#ffedd5" : "#f1f5f9",
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  color: selectedLocation.category === "flood" && (selectedLocation.severityLevel === "SEVERE" || selectedLocation.severityLevel === "IMPASSABLE") ? "#dc2626" : selectedLocation.category === "flood" && selectedLocation.severityLevel === "MODERATE" ? "#c2410c" : "#334155",
+                  marginBottom: 6
+                }}>
+                  <span style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    background: selectedLocation.category === "flood" && (selectedLocation.severityLevel === "SEVERE" || selectedLocation.severityLevel === "IMPASSABLE") ? "#dc2626" : CATEGORY_CONFIG[selectedLocation.category].color
+                  }} />
                   {selectedLocation.statusText}
                 </div>
                 <div style={{ fontSize: 12, color: "#64748b" }}>
@@ -1231,14 +1248,68 @@ function EcoMap() {
                 </div>
               </div>
 
-              <div style={{ background: "#f8fafc", borderRadius: 14, padding: "10px 14px", marginBottom: 12, border: "1px solid #e2e8f0" }}>
-                <div style={{ fontSize: 10.5, fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>
-                  {selectedLocation.metricLabel}
+              {selectedLocation.category === "flood" ? (
+                /* Card chuyên biệt cho Điểm Ngập & Triều Cường */
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 8,
+                  }}>
+                    <div style={{ background: "#f0f9ff", borderRadius: 12, padding: "9px 12px", border: "1px solid #bae6fd" }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "#0369a1", textTransform: "uppercase" }}>
+                        Mức ngập dự báo
+                      </div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "#0c4a6e", marginTop: 2 }}>
+                        {selectedLocation.metricValue}
+                      </div>
+                    </div>
+                    <div style={{ background: "#f8fafc", borderRadius: 12, padding: "9px 12px", border: "1px solid #e2e8f0" }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
+                        Nguyên nhân chính
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#1e293b", marginTop: 2 }}>
+                        {selectedLocation.causeDesc || "Triều cường đô thị"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Khả năng lưu thông phương tiện */}
+                  <div style={{ background: "#f8fafc", borderRadius: 12, padding: "10px 12px", border: "1px solid #e2e8f0" }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: "#475569", marginBottom: 6, textTransform: "uppercase" }}>
+                      Khả năng lưu thông:
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span>🛵 Xe máy:</span>
+                        <span style={{ fontWeight: 700, color: selectedLocation.isImpassableBikes ? "#dc2626" : "#16a34a" }}>
+                          {selectedLocation.isImpassableBikes ? "❌ Nguy cơ chết máy cao" : "✅ Lưu thông bình thường"}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span>🚗 Ô tô con:</span>
+                        <span style={{ fontWeight: 700, color: selectedLocation.isImpassableCars ? "#dc2626" : "#16a34a" }}>
+                          {selectedLocation.isImpassableCars ? "❌ Nguy cơ ngập gầm xe" : "✅ Lưu thông an toàn"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Lời khuyên an toàn */}
+                  <div style={{ background: "#fffbeb", borderRadius: 12, padding: "9px 12px", border: "1px solid #fef3c7", fontSize: 11.5, color: "#92400e", lineHeight: 1.4 }}>
+                    ⚠️ {selectedLocation.description}
+                  </div>
                 </div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", marginTop: 2 }}>
-                  {selectedLocation.metricValue}
+              ) : (
+                <div style={{ background: "#f8fafc", borderRadius: 14, padding: "10px 14px", marginBottom: 12, border: "1px solid #e2e8f0" }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>
+                    {selectedLocation.metricLabel}
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", marginTop: 2 }}>
+                    {selectedLocation.metricValue}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div style={{ display: "flex", gap: 8 }}>
                 <button
@@ -1378,6 +1449,32 @@ function EcoMap() {
               {liveWeather ? `PM2.5: ${liveWeather.pm25} µg/m³` : "Chất lượng trong lành"}
             </div>
           </div>
+          {liveWeather?.tide && (
+            <div style={{ borderLeft: "1px solid #e2e8f0", paddingLeft: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <span style={{
+                  fontSize: 15,
+                  fontWeight: 800,
+                  color: liveWeather.tide.alert_level === "ALERT_3" ? "#dc2626" : liveWeather.tide.alert_level === "ALERT_2" ? "#ea580c" : liveWeather.tide.alert_level === "ALERT_1" ? "#f59e0b" : "#0284c7"
+                }}>
+                  🌊 {liveWeather.tide.water_level_m >= 0 ? `+${liveWeather.tide.water_level_m.toFixed(2)}m` : `${liveWeather.tide.water_level_m.toFixed(2)}m`}
+                </span>
+                <span style={{
+                  fontSize: 9.5,
+                  background: liveWeather.tide.alert_level === "NORMAL" ? "#e0f2fe" : "#fee2e2",
+                  color: liveWeather.tide.alert_level === "NORMAL" ? "#0369a1" : "#dc2626",
+                  fontWeight: 700,
+                  padding: "1px 5px",
+                  borderRadius: 6,
+                }}>
+                  {liveWeather.tide.state_label}
+                </span>
+              </div>
+              <div style={{ fontSize: 10.5, color: "#64748b" }}>
+                Trạm Phú An ({liveWeather.tide.alert_label})
+              </div>
+            </div>
+          )}
         </div>
         {mouseCoords && (
           <div style={{ marginTop: 8, paddingTop: 6, borderTop: "1px solid #f1f5f9", fontSize: 10.5, color: "#94a3b8", fontFamily: "monospace" }}>
@@ -1510,7 +1607,24 @@ function EcoMap() {
         {filteredLocations.map((loc) => {
           const cfg = CATEGORY_CONFIG[loc.category];
           const isSelected = selectedLocation?.id === loc.id;
-          const isWarning = loc.status === "pending" || loc.status === "warning";
+          
+          let markerColor = cfg.color;
+          let isWarning = loc.status === "pending" || loc.status === "warning";
+          
+          if (loc.category === "flood") {
+            if (loc.severityLevel === "IMPASSABLE" || loc.severityLevel === "SEVERE") {
+              markerColor = "#dc2626";
+              isWarning = true;
+            } else if (loc.severityLevel === "MODERATE") {
+              markerColor = "#ea580c";
+              isWarning = true;
+            } else if (loc.severityLevel === "MINOR") {
+              markerColor = "#f59e0b";
+              isWarning = true;
+            } else {
+              markerColor = "#0284c7";
+            }
+          }
 
           return (
             <Marker
@@ -1545,7 +1659,7 @@ function EcoMap() {
                       width: 32,
                       height: 32,
                       borderRadius: "50%",
-                      backgroundColor: cfg.color,
+                      backgroundColor: markerColor,
                       opacity: 0.4,
                       animation: "radarPing 1.8s infinite",
                     }}
@@ -1557,19 +1671,39 @@ function EcoMap() {
                     height: 32,
                     borderRadius: "50%",
                     backgroundColor: "#ffffff",
-                    border: `2.5px solid ${cfg.color}`,
+                    border: `2.5px solid ${markerColor}`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     boxShadow: isSelected
-                      ? `0 0 0 4px ${cfg.color}44, 0 6px 16px rgba(0,0,0,0.3)`
+                      ? `0 0 0 4px ${markerColor}44, 0 6px 16px rgba(0,0,0,0.3)`
                       : `0 3px 10px rgba(0,0,0,0.15)`,
                     fontSize: 16,
                   }}
                 >
                   {cfg.icon}
                 </div>
-                <div style={{ width: 0, height: 0, borderLeft: "5px solid transparent", borderRight: "5px solid transparent", borderTop: `6px solid ${cfg.color}`, marginTop: -1 }} />
+                {loc.category === "flood" && loc.severityLevel && loc.severityLevel !== "SAFE" && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: -8,
+                      right: -12,
+                      background: markerColor,
+                      color: "#ffffff",
+                      fontSize: 9,
+                      fontWeight: 800,
+                      padding: "1px 5px",
+                      borderRadius: 8,
+                      border: "1.5px solid #ffffff",
+                      boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {loc.metricValue.split(" ")[0]}cm
+                  </div>
+                )}
+                <div style={{ width: 0, height: 0, borderLeft: "5px solid transparent", borderRight: "5px solid transparent", borderTop: `6px solid ${markerColor}`, marginTop: -1 }} />
               </div>
             </Marker>
           );

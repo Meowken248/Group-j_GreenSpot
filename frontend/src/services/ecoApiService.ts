@@ -14,6 +14,7 @@ export interface EcoLocationsApiResponse {
     green_spot: number;
     recycling: number;
     sensor: number;
+    flood: number;
   };
   data: EcoLocation[];
 }
@@ -30,6 +31,14 @@ export interface LiveWeatherResponse {
   aqiStatus: string;
   pm25: number;
   pm10: number;
+  tide?: {
+    water_level_m: number;
+    state: string;
+    state_label: string;
+    alert_level: string;
+    alert_label: string;
+    is_flood_risk: boolean;
+  };
   updatedAt: string;
 }
 

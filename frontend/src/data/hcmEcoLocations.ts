@@ -1,4 +1,4 @@
-export type EcoCategory = "incident" | "green_spot" | "recycling" | "sensor";
+export type EcoCategory = "incident" | "green_spot" | "recycling" | "sensor" | "flood";
 
 export interface EcoLocation {
   id: string;
@@ -15,6 +15,12 @@ export interface EcoLocation {
   description: string;
   imageUrl?: string;
   reportedAt?: string;
+  severityLevel?: string;
+  causeType?: string;
+  causeDesc?: string;
+  isImpassableBikes?: boolean;
+  isImpassableCars?: boolean;
+  riskScore?: number;
 }
 
 export const CATEGORY_CONFIG: Record<
@@ -48,6 +54,13 @@ export const CATEGORY_CONFIG: Record<
     color: "#8b5cf6",
     bgColor: "rgba(139, 92, 246, 0.12)",
     borderColor: "#a78bfa",
+  },
+  flood: {
+    name: "Điểm ngập & Triều cường",
+    icon: "🌊",
+    color: "#0284c7",
+    bgColor: "rgba(2, 132, 199, 0.12)",
+    borderColor: "#38bdf8",
   },
 };
 
