@@ -28,6 +28,20 @@ import {
 } from "../services/ecoApiService";
 import { useFastGeolocation } from "../hooks/useFastGeolocation";
 
+// Cấu hình danh mục dự phòng an toàn (tránh lỗi undefined khi chưa kịp đồng bộ)
+export const DEFAULT_CATEGORY_CFG = {
+  name: "Địa điểm môi trường",
+  icon: "📍",
+  color: "#0284c7",
+  bgColor: "rgba(2, 132, 199, 0.12)",
+  borderColor: "#38bdf8",
+};
+
+export const getCategoryConfig = (category?: string) => {
+  if (!category) return DEFAULT_CATEGORY_CFG;
+  return (CATEGORY_CONFIG as any)[category] || DEFAULT_CATEGORY_CFG;
+};
+
 // Bộ sưu tập bản đồ nền Google Tile Cluster & OpenStreetMap phong phú
 export const MAP_STYLES = {
   googleRoadmap: {
@@ -614,7 +628,7 @@ function EcoMap() {
                   🌱 Địa điểm môi trường EcoReport:
                 </div>
                 {localSearchResults.ecoMatches.map((loc) => {
-                  const cat = CATEGORY_CONFIG[loc.category];
+                  const cat = getCategoryConfig(loc.category);
                   return (
                     <div
                       key={loc.id}
@@ -799,7 +813,7 @@ function EcoMap() {
           </button>
 
           {(Object.keys(CATEGORY_CONFIG) as EcoCategory[]).map((catKey) => {
-            const cfg = CATEGORY_CONFIG[catKey];
+            const cfg = getCategoryConfig(catKey);
             const isSelected = selectedCategory === catKey;
             return (
               <button
@@ -1197,10 +1211,10 @@ function EcoMap() {
             <div>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 24 }}>{CATEGORY_CONFIG[selectedLocation.category].icon}</span>
+                  <span style={{ fontSize: 24 }}>{getCategoryConfig(selectedLocation.category).icon}</span>
                   <div>
-                    <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", color: CATEGORY_CONFIG[selectedLocation.category].color }}>
-                      {CATEGORY_CONFIG[selectedLocation.category].name}
+                    <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", color: getCategoryConfig(selectedLocation.category).color }}>
+                      {getCategoryConfig(selectedLocation.category).name}
                     </div>
                     <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a" }}>
                       {selectedLocation.name}
@@ -1239,7 +1253,7 @@ function EcoMap() {
                     width: 7,
                     height: 7,
                     borderRadius: "50%",
-                    background: selectedLocation.category === "flood" && (selectedLocation.severityLevel === "SEVERE" || selectedLocation.severityLevel === "IMPASSABLE") ? "#dc2626" : CATEGORY_CONFIG[selectedLocation.category].color
+                    background: selectedLocation.category === "flood" && (selectedLocation.severityLevel === "SEVERE" || selectedLocation.severityLevel === "IMPASSABLE") ? "#dc2626" : getCategoryConfig(selectedLocation.category).color
                   }} />
                   {selectedLocation.statusText}
                 </div>
@@ -1605,7 +1619,7 @@ function EcoMap() {
 
         {/* 5. HỆ THỐNG MARKER SINH THÁI TP.HCM */}
         {filteredLocations.map((loc) => {
-          const cfg = CATEGORY_CONFIG[loc.category];
+          const cfg = getCategoryConfig(loc.category);
           const isSelected = selectedLocation?.id === loc.id;
           
           let markerColor = cfg.color;
