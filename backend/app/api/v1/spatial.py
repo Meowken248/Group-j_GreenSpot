@@ -46,3 +46,49 @@ async def get_landmarks():
     API trả về danh sách các điểm Quick Tour 3D tiêu biểu của TP.HCM.
     """
     return SpatialService.get_landmarks_service()
+
+
+from sqlalchemy.future import select
+from sqlalchemy import func
+from app.models.webgis import FloodZoneMonitoring
+import json
+from app.services.waterworks_etl_service import WaterworksETLService
+
+@router.post("/hcm-waterworks/sync")
+async def sync_waterworks(db: AsyncSession = Depends(get_db)):
+    """
+    Kích hoạt tiến trình ETL để lấy dữ liệu Trạm bơm & Cống ngăn triều từ Cổng dữ liệu mở.
+    """
+    return await WaterworksETLService.sync_waterworks_from_opendata(db)
+
+@router.get("/hcm-waterworks")
+async def get_waterworks(db: AsyncSession = Depends(get_db)):
+    """
+    Trả về danh sách trạm bơm, cống ngăn triều (GeoJSON).
+    """
+    stmt = select(
+        FloodZoneMonitoring.zone_name,
+        func.ST_AsGeoJSON(FloodZoneMonitoring.boundary).label("geometry"),
+        FloodZoneMonitoring.risk_level
+    ).where(FloodZoneMonitoring.zone_name.like("[Hạ tầng]%"))
+    
+    result = await db.execute(stmt)
+    rows = result.all()
+    
+    features = []
+    for row in rows:
+        geom = json.loads(row.geometry) if row.geometry else None
+        if geom:
+            features.append({
+                "type": "Feature",
+                "properties": {
+                    "name": row.zone_name,
+                    "risk_level": row.risk_level
+                },
+                "geometry": geom
+            })
+            
+    return {
+        "type": "FeatureCollection",
+        "features": features
+    }

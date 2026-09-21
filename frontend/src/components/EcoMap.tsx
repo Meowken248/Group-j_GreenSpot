@@ -1623,6 +1623,44 @@ function EcoMap() {
           </Source>
         )}
 
+        {/* 2.6 LỚP CÔNG TRÌNH THỦY LỢI (TRẠM BƠM & CỐNG NGĂN TRIỀU) - TỪ BACKEND ETL */}
+        <Source
+          id="hcm-waterworks-source"
+          type="geojson"
+          data={`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/api/v1/spatial/hcm-waterworks`}
+        >
+          <Layer
+            id="hcm-waterworks-fill"
+            type="fill"
+            paint={{
+              "fill-color": [
+                "match",
+                ["get", "risk_level"],
+                "HIGH", "#ef4444",
+                "MEDIUM", "#f59e0b",
+                "LOW", "#10b981",
+                "#3b82f6"
+              ],
+              "fill-opacity": 0.4,
+            }}
+          />
+          <Layer
+            id="hcm-waterworks-outline"
+            type="line"
+            paint={{
+              "line-color": [
+                "match",
+                ["get", "risk_level"],
+                "HIGH", "#b91c1c",
+                "MEDIUM", "#b45309",
+                "LOW", "#047857",
+                "#1d4ed8"
+              ],
+              "line-width": 2,
+            }}
+          />
+        </Source>
+
         {/* 3. LỚP VẼ TUYẾN ĐƯỜNG THỰC TẾ OSRM (Glowing Route Polyline) */}
         {activeRoute && (
           <>

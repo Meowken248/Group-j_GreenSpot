@@ -6,4 +6,6 @@ alembic
 geoalchemy2
 pydantic-settings
 python-dotenv
-
+httpx
+openpyxl
+shapely
