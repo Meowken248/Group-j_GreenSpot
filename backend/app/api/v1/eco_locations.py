@@ -12,8 +12,10 @@ router = APIRouter(prefix="/eco-locations", tags=["Eco Locations"])
 
 @router.get("")
 async def get_eco_locations(
-    category: Optional[str] = Query(None, description="Lọc theo loại: incident, green_spot, recycling, sensor"),
+    category: Optional[str] = Query(None, description="Lọc theo loại: incident, green_spot, recycling, sensor, flood"),
     district: Optional[str] = Query(None, description="Lọc theo quận/huyện"),
+    simulate_tide: Optional[float] = Query(None, description="Mô phỏng mực nước triều (m)"),
+    simulate_rain: Optional[float] = Query(None, description="Mô phỏng lượng mưa (mm/h)"),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -22,6 +24,7 @@ async def get_eco_locations(
     - Điểm xanh & công viên sinh thái (essential_facilities)
     - Trạm thu gom rác tái chế & pin cũ (recycling_facilities)
     - Trạm cảm biến quan trắc IoT (iot_sensor_stations)
+    - Điểm đen ngập lụt & hành lang đường ngập (flood_hotspots + road_corridor)
     """
     locations: List[Dict[str, Any]] = []
 
@@ -217,8 +220,8 @@ async def get_eco_locations(
     # 5. Truy vấn Điểm đen ngập lụt & Triều cường đô thị (Tính toán rủi ro động Realtime)
     curr_tide = tide_engine.get_current_tide("PHU_AN")
     curr_weather = await weather_service.get_hcm_rainfall()
-    tide_m = float(curr_tide["water_level_m"])
-    rain_mmh = float(curr_weather.get("rainfall_current_mmh", 0.0))
+    tide_m = float(simulate_tide) if simulate_tide is not None else float(curr_tide["water_level_m"])
+    rain_mmh = float(simulate_rain) if simulate_rain is not None else float(curr_weather.get("rainfall_current_mmh", 0.0))
 
     flood_query = """
         SELECT 
@@ -230,6 +233,7 @@ async def get_eco_locations(
             CONCAT(h.street_name, COALESCE(', ' || h.ward_name, ''), ', ', h.district_name) as address,
             ST_Y(h.location)::float as latitude,
             ST_X(h.location)::float as longitude,
+            ST_AsGeoJSON(h.road_corridor)::json as road_corridor,
             h.threshold_tide_meters::float as threshold_tide,
             h.threshold_rain_mm_per_hour::float as threshold_rain,
             h.historical_max_depth_cm::float as max_depth,
@@ -281,6 +285,7 @@ async def get_eco_locations(
             "address": row["address"],
             "latitude": row["latitude"],
             "longitude": row["longitude"],
+            "roadCorridor": row["road_corridor"],
             "status": loc_status,
             "statusText": status_text,
             "metricLabel": "Độ sâu ngập / Nguy cơ",

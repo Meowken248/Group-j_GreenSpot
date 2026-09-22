@@ -146,6 +146,7 @@ class FloodRiskEngine:
                 FloodHotspot,
                 text("ST_X(location)::float as lng"),
                 text("ST_Y(location)::float as lat"),
+                text("ST_AsGeoJSON(road_corridor)::json as corridor"),
             )
             .where(FloodHotspot.is_active == True)
             .order_by(FloodHotspot.hotspot_id)
@@ -154,10 +155,11 @@ class FloodRiskEngine:
         rows = result.all()
 
         evaluations: List[Dict[str, Any]] = []
-        for hotspot, lng, lat in rows:
+        for hotspot, lng, lat, corridor in rows:
             eval_data = cls.calculate_hotspot_risk(hotspot, tide_m, rain_mmh)
             eval_data["longitude"] = round(lng, 6)
             eval_data["latitude"] = round(lat, 6)
+            eval_data["road_corridor"] = corridor
             evaluations.append(eval_data)
 
         return evaluations
@@ -167,30 +169,39 @@ class FloodRiskEngine:
         cls,
         db: AsyncSession,
         coordinates: List[List[float]],  # [[lng, lat], [lng, lat], ...]
-        buffer_meters: float = 150.0,
+        buffer_meters: float = 60.0,
+        tide_level_override: Optional[float] = None,
+        rainfall_override: Optional[float] = None,
     ) -> Dict[str, Any]:
         """
-        Kiểm tra một tuyến đường (Polyline) xem có đi qua hoặc đi gần điểm ngập lụt nguy hiểm nào không.
-        Sử dụng PostGIS ST_DWithin trên hệ tọa độ hình cầu 4326.
+        Kiểm tra tuyến đường (chuỗi tọa độ [lng, lat]) có đi qua hoặc gần điểm đen ngập lụt không.
+        Sử dụng PostGIS ST_DWithin với đoạn hành lang đường ngập road_corridor LineString.
         """
-        if not coordinates or len(coordinates) < 2:
+        if len(coordinates) < 2:
             return {
-                "status": RouteSafetyStatus.CLEAR.value,
                 "is_safe": True,
+                "hazard_level": "CLEAR",
                 "hazard_count": 0,
                 "hazards": [],
-                "recommendation": "Lộ trình hợp lệ, không phát hiện rủi ro.",
+                "recommendation": "Lộ trình quá ngắn hoặc không hợp lệ.",
             }
 
         # Tạo chuỗi WKT LINESTRING từ mảng tọa độ
-        coord_strings = [f"{coord[0]} {coord[1]}" for coord in coordinates]
-        linestring_wkt = f"LINESTRING({', '.join(coord_strings)})"
+        points_str = ", ".join(f"{pt[0]} {pt[1]}" for pt in coordinates)
+        linestring_wkt = f"LINESTRING({points_str})"
 
         # Lấy thông số triều và mưa hiện tại
-        curr_tide = tide_engine.get_current_tide("PHU_AN")
-        tide_m = float(curr_tide["water_level_m"])
-        weather_data = await weather_service.get_hcm_rainfall()
-        rain_mmh = float(weather_data.get("rainfall_current_mmh", 0.0))
+        if tide_level_override is not None:
+            tide_m = tide_level_override
+        else:
+            curr_tide = tide_engine.get_current_tide("PHU_AN")
+            tide_m = float(curr_tide["water_level_m"])
+
+        if rainfall_override is not None:
+            rain_mmh = rainfall_override
+        else:
+            weather_data = await weather_service.get_hcm_rainfall()
+            rain_mmh = float(weather_data.get("rainfall_current_mmh", 0.0))
 
         # Truy vấn các điểm ngập nằm trong bán kính buffer_meters so với lộ trình
         query = text("""
@@ -199,15 +210,16 @@ class FloodRiskEngine:
                 h.hotspot_code,
                 h.street_name,
                 h.district_name,
-                h.threshold_tide_meters::float,
-                h.threshold_rain_mm_per_hour::float,
-                h.historical_max_depth_cm::float,
+                h.threshold_tide_meters::float as threshold_tide_meters,
+                h.threshold_rain_mm_per_hour::float as threshold_rain_mm_per_hour,
+                h.historical_max_depth_cm::float as historical_max_depth_cm,
                 h.drainage_system_rating,
                 h.primary_cause,
                 ST_X(h.location)::float as lng,
                 ST_Y(h.location)::float as lat,
+                ST_AsGeoJSON(h.road_corridor)::json as road_corridor,
                 ST_Distance(
-                    h.location::geography,
+                    COALESCE(h.road_corridor, h.location)::geography,
                     ST_GeomFromText(:route_wkt, 4326)::geography
                 ) as distance_to_route_meters
             FROM flood_hotspots h

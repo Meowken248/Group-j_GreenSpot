@@ -162,6 +162,19 @@ async def get_landmarks():
             "tag": "Rừng ngập mặn",
             "status": "Bảo tồn nghiêm ngặt",
         },
+        {
+            "id": "cho-thu-duc",
+            "name": "Chợ Thủ Đức",
+            "district": "TP. Thủ Đức",
+            "description": "Khu vực trũng ngã 5 Chợ Thủ Đức: Võ Văn Ngân, Tô Ngọc Vân, Hồ Văn Tư, Dương Văn Cam.",
+            "longitude": 106.7585,
+            "latitude": 10.8506,
+            "zoom": 16.5,
+            "pitch": 45,
+            "bearing": -10,
+            "tag": "Điểm ngập",
+            "status": "Đoạn đường ngập úng",
+        },
     ]
     return {
         "success": True,

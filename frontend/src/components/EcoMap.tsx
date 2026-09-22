@@ -274,11 +274,18 @@ function EcoMap() {
   const [districtBoundaries, setDistrictBoundaries] = useState<FeatureCollection | null>(null);
   const [liveWeather, setLiveWeather] = useState<LiveWeatherResponse | null>(null);
 
+  // Chế độ hiển thị ngập lụt (Mặc định bật mô phỏng triều đỉnh 1.68m để hiển thị rõ các đoạn đường ngập úng)
+  const [simulateFlood, setSimulateFlood] = useState<boolean>(true);
+
   // 1. Tải danh sách địa điểm môi trường từ Backend API (PostgreSQL/PostGIS)
   useEffect(() => {
     let isMounted = true;
     setLoadingEco(true);
-    fetchEcoLocationsAPI(selectedCategory === "all" ? undefined : selectedCategory).then((res) => {
+    fetchEcoLocationsAPI(
+      selectedCategory === "all" ? undefined : selectedCategory,
+      simulateFlood ? 1.68 : undefined,
+      simulateFlood ? 30.0 : undefined
+    ).then((res) => {
       if (!isMounted) return;
       if (res && res.data) {
         setEcoLocations(res.data);
@@ -289,7 +296,7 @@ function EcoMap() {
     return () => {
       isMounted = false;
     };
-  }, [selectedCategory]);
+  }, [selectedCategory, simulateFlood]);
 
   // 2. Tải Ranh giới quận/huyện, Điểm Landmark Quick Tour, và Thời tiết thời gian thực
   useEffect(() => {
@@ -356,8 +363,20 @@ function EcoMap() {
     return () => clearTimeout(timer);
   }, [mapCenter, autoFetchPOI, poiType, handleLoadNearbyPOIs]);
 
-  // 1. TÍNH NĂNG CLICK BẢN ĐỒ LẤY SỐ NHÀ (REVERSE GEOCODING)
+  // 1. TÍNH NĂNG CLICK BẢN ĐỒ LẤY SỐ NHÀ (REVERSE GEOCODING) HOẶC CLICK VÀO ĐOẠN ĐƯỜNG NGẬP
   const handleMapClick = async (e: any) => {
+    // Nếu click vào đoạn đường ngập
+    if (e.features && e.features.length > 0) {
+      const f = e.features.find((feat: any) => feat.layer.id === "flood-corridor-main" || feat.layer.id === "flood-corridor-glow");
+      if (f && f.properties && f.properties.id) {
+        const found = ecoLocations.find((l) => l.id === f.properties.id);
+        if (found) {
+          handleSelectEcoLocation(found);
+          return;
+        }
+      }
+    }
+
     const { lng, lat } = e.lngLat;
     setLoadingReverse(true);
     setSelectedLocation(null);
@@ -399,6 +418,34 @@ function EcoMap() {
     if (selectedCategory === "all") return ecoLocations;
     return ecoLocations.filter((loc) => loc.category === selectedCategory);
   }, [ecoLocations, selectedCategory]);
+
+  // GeoJSON các đoạn đường ngập úng (LineString / MultiLineString vẽ trực tiếp lên lòng đường)
+  const floodCorridorsGeoJSON = useMemo<FeatureCollection>(() => {
+    const features: any[] = [];
+    ecoLocations.forEach((loc) => {
+      if (loc.category === "flood" && loc.roadCorridor) {
+        features.push({
+          type: "Feature",
+          id: loc.id,
+          properties: {
+            id: loc.id,
+            name: loc.name,
+            streetName: loc.name.replace("Điểm ngập ", ""),
+            severity: loc.severityLevel || "SAFE",
+            depth: loc.metricValue,
+            statusText: loc.statusText,
+            color: "#0284c7", // Màu xanh nước ngập như người dùng vẽ trong ảnh
+          },
+          geometry: loc.roadCorridor,
+        });
+      }
+    });
+
+    return {
+      type: "FeatureCollection",
+      features,
+    };
+  }, [ecoLocations]);
 
   // Lọc nội bộ từ dữ liệu đã tải qua API
   const localSearchResults = useMemo(() => {
@@ -839,6 +886,32 @@ function EcoMap() {
               </button>
             );
           })}
+
+          {/* Nút Chuyển Đổi Triều Cường Mô Phỏng để hiển thị rõ các đoạn đường ngập úng */}
+          <button
+            onClick={() => setSimulateFlood(!simulateFlood)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "4px 10px",
+              borderRadius: 12,
+              border: simulateFlood ? "1px solid #0284c7" : "1px solid rgba(255,255,255,0.7)",
+              cursor: "pointer",
+              fontSize: 11,
+              fontWeight: 700,
+              background: simulateFlood
+                ? "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)"
+                : "rgba(255, 255, 255, 0.88)",
+              color: simulateFlood ? "#ffffff" : "#0369a1",
+              boxShadow: simulateFlood ? "0 4px 14px rgba(2, 132, 199, 0.35)" : "none",
+              backdropFilter: "blur(12px)",
+              transition: "all 0.2s ease",
+            }}
+            title="Bật/Tắt hiển thị các đoạn đường ngập lụt theo mô phỏng triều cường đỉnh 1.68m"
+          >
+            <span>{simulateFlood ? "🌊 Triều đỉnh 1.68m (Đang ngập)" : "🌤️ Triều thực tế"}</span>
+          </button>
         </div>
       </div>
 
@@ -1518,6 +1591,7 @@ function EcoMap() {
           setMouseCoords({ lat: e.lngLat.lat, lng: e.lngLat.lng });
         }}
         style={{ width: "100%", height: "100%", cursor: loadingReverse ? "wait" : "default" }}
+        interactiveLayerIds={["flood-corridor-main", "flood-corridor-glow"]}
         mapStyle={MAP_STYLES[activeStyle].url as any}
       >
         <NavigationControl position="top-right" />
@@ -1558,6 +1632,47 @@ function EcoMap() {
                 "line-color": ["get", "color"],
                 "line-width": 2.5,
                 "line-dasharray": [3, 1],
+              }}
+            />
+          </Source>
+        )}
+
+        {/* 2.5. LỚP ĐOẠN ĐƯỜNG NGẬP LỤT & TRIỀU CƯỜNG (FLOODED ROAD CORRIDORS - VẼ TRỰC TIẾP LÊN LÒNG ĐƯỜNG) */}
+        {floodCorridorsGeoJSON.features.length > 0 && (
+          <Source id="flood-corridors-source" type="geojson" data={floodCorridorsGeoJSON}>
+            {/* Lớp 1: Hào quang phát sáng tỏa rộng dưới mặt đường */}
+            <Layer
+              id="flood-corridor-glow"
+              type="line"
+              layout={{ "line-join": "round", "line-cap": "round" }}
+              paint={{
+                "line-color": "#38bdf8",
+                "line-width": 18,
+                "line-opacity": 0.45,
+                "line-blur": 3,
+              }}
+            />
+            {/* Lớp 2: Vệt nước ngập xanh cyan đậm đà chạy dọc lòng đường (giống hệt hình vẽ người dùng) */}
+            <Layer
+              id="flood-corridor-main"
+              type="line"
+              layout={{ "line-join": "round", "line-cap": "round" }}
+              paint={{
+                "line-color": "#0284c7",
+                "line-width": 8.5,
+                "line-opacity": 0.92,
+              }}
+            />
+            {/* Lớp 3: Đường vân sóng nước màu trắng chuyển động */}
+            <Layer
+              id="flood-corridor-wave"
+              type="line"
+              layout={{ "line-join": "round", "line-cap": "round" }}
+              paint={{
+                "line-color": "#ffffff",
+                "line-width": 2,
+                "line-dasharray": [2, 3],
+                "line-opacity": 0.85,
               }}
             />
           </Source>

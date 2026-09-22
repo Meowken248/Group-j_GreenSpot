@@ -45,11 +45,21 @@ export interface LiveWeatherResponse {
 /**
  * 1. Tải danh sách địa điểm môi trường trực tiếp từ Backend API (PostgreSQL/PostGIS)
  */
-export async function fetchEcoLocationsAPI(category?: string): Promise<EcoLocationsApiResponse | null> {
+export async function fetchEcoLocationsAPI(
+  category?: string,
+  simulateTide?: number,
+  simulateRain?: number
+): Promise<EcoLocationsApiResponse | null> {
   try {
     const url = new URL(`${API_BASE_URL}/api/v1/eco-locations`);
     if (category && category !== "all") {
       url.searchParams.set("category", category);
+    }
+    if (simulateTide !== undefined) {
+      url.searchParams.set("simulate_tide", simulateTide.toString());
+    }
+    if (simulateRain !== undefined) {
+      url.searchParams.set("simulate_rain", simulateRain.toString());
     }
     const res = await fetch(url.toString());
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);

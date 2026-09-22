@@ -25,7 +25,7 @@ def upgrade() -> None:
         sa.Column("ward_name", sa.String(length=100), nullable=True),
         sa.Column("district_name", sa.String(length=100), nullable=True),
         sa.Column("location", geoalchemy2.types.Geometry(geometry_type="POINT", srid=4326), nullable=False),
-        sa.Column("road_corridor", geoalchemy2.types.Geometry(geometry_type="LINESTRING", srid=4326), nullable=True),
+        sa.Column("road_corridor", geoalchemy2.types.Geometry(geometry_type="GEOMETRY", srid=4326), nullable=True),
         sa.Column("elevation_meters", sa.Numeric(precision=5, scale=2), nullable=True),
         sa.Column("primary_cause", sa.String(length=20), server_default="COMBINED", nullable=False),
         sa.Column("threshold_tide_meters", sa.Numeric(precision=4, scale=2), server_default="1.50", nullable=False),

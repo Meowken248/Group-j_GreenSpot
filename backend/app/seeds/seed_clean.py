@@ -270,40 +270,60 @@ ON CONFLICT (station_id, name) DO NOTHING;
 
 -- 9. FLOOD HOTSPOTS (10 ĐIỂM ĐEN NGẬP ÚNG TIÊU BIỂU TẠI TP.HCM)
 INSERT INTO flood_hotspots (
-    hotspot_code, street_name, ward_name, district_name, location,
+    hotspot_code, street_name, ward_name, district_name, location, road_corridor,
     elevation_meters, primary_cause, threshold_tide_meters, threshold_rain_mm_per_hour,
     historical_max_depth_cm, drainage_system_rating, is_active
 )
 VALUES
 ('FL-Q7-TXS', 'Đường Trần Xuân Soạn', 'Phường Tân Hưng', 'Quận 7',
- ST_SetSRID(ST_MakePoint(106.7025, 10.7480), 4326), 1.25, 'TIDAL', 1.50, 35.0, 50.0, 2, TRUE),
+ ST_SetSRID(ST_MakePoint(106.7025, 10.7480), 4326),
+ ST_SetSRID(ST_GeomFromText('LINESTRING(106.6915 10.7512, 106.6970 10.7495, 106.7025 10.7480, 106.7085 10.7472, 106.7140 10.7478, 106.7200 10.7495)'), 4326),
+ 1.25, 'TIDAL', 1.50, 35.0, 50.0, 2, TRUE),
 
 ('FL-Q7-HTP', 'Đường Huỳnh Tấn Phát', 'Phường Phú Mỹ', 'Quận 7',
- ST_SetSRID(ST_MakePoint(106.7380, 10.7250), 4326), 1.40, 'COMBINED', 1.55, 25.0, 45.0, 2, TRUE),
+ ST_SetSRID(ST_MakePoint(106.7380, 10.7250), 4326),
+ ST_SetSRID(ST_GeomFromText('LINESTRING(106.7335 10.7390, 106.7355 10.7320, 106.7380 10.7250, 106.7398 10.7180, 106.7415 10.7110, 106.7435 10.7040)'), 4326),
+ 1.40, 'COMBINED', 1.55, 25.0, 45.0, 2, TRUE),
 
 ('FL-NB-LVL', 'Đường Lê Văn Lương (Cầu Rạch Tôm)', 'Xã Nhơn Đức', 'Huyện Nhà Bè',
- ST_SetSRID(ST_MakePoint(106.7050, 10.6650), 4326), 1.20, 'TIDAL', 1.48, 30.0, 60.0, 1, TRUE),
+ ST_SetSRID(ST_MakePoint(106.7050, 10.6650), 4326),
+ ST_SetSRID(ST_GeomFromText('LINESTRING(106.7032 10.6800, 106.7040 10.6725, 106.7050 10.6650, 106.7062 10.6575, 106.7078 10.6500)'), 4326),
+ 1.20, 'TIDAL', 1.48, 30.0, 60.0, 1, TRUE),
 
 ('FL-TD-QH', 'Đường Quốc Hương (Thảo Điền)', 'Phường Thảo Điền', 'TP. Thủ Đức',
- ST_SetSRID(ST_MakePoint(106.7320, 10.8050), 4326), 1.35, 'COMBINED', 1.55, 20.0, 40.0, 2, TRUE),
+ ST_SetSRID(ST_MakePoint(106.7320, 10.8050), 4326),
+ ST_SetSRID(ST_GeomFromText('LINESTRING(106.7280 10.8005, 106.7300 10.8028, 106.7320 10.8050, 106.7342 10.8082, 106.7358 10.8118)'), 4326),
+ 1.35, 'COMBINED', 1.55, 20.0, 40.0, 2, TRUE),
 
 ('FL-BT-NHC', 'Đường Nguyễn Hữu Cảnh', 'Phường 22', 'Quận Bình Thạnh',
- ST_SetSRID(ST_MakePoint(106.7150, 10.7920), 4326), 1.50, 'RAINFALL', 1.65, 25.0, 35.0, 3, TRUE),
+ ST_SetSRID(ST_MakePoint(106.7150, 10.7920), 4326),
+ ST_SetSRID(ST_GeomFromText('LINESTRING(106.7085 10.7845, 106.7118 10.7882, 106.7150 10.7920, 106.7192 10.7962, 106.7235 10.7990)'), 4326),
+ 1.50, 'RAINFALL', 1.65, 25.0, 35.0, 3, TRUE),
 
 ('FL-BT-UVK', 'Đường Ung Văn Khiêm', 'Phường 25', 'Quận Bình Thạnh',
- ST_SetSRID(ST_MakePoint(106.7180, 10.8080), 4326), 1.30, 'COMBINED', 1.52, 25.0, 45.0, 2, TRUE),
+ ST_SetSRID(ST_MakePoint(106.7180, 10.8080), 4326),
+ ST_SetSRID(ST_GeomFromText('LINESTRING(106.7245 10.7995, 106.7212 10.8038, 106.7180 10.8080, 106.7142 10.8118, 106.7108 10.8145)'), 4326),
+ 1.30, 'COMBINED', 1.52, 25.0, 45.0, 2, TRUE),
 
 ('FL-TD-DXH', 'Đường Đỗ Xuân Hợp', 'Phường Phước Long B', 'TP. Thủ Đức',
- ST_SetSRID(ST_MakePoint(106.7720, 10.8250), 4326), 1.60, 'RAINFALL', 1.70, 30.0, 35.0, 3, TRUE),
+ ST_SetSRID(ST_MakePoint(106.7720, 10.8250), 4326),
+ ST_SetSRID(ST_GeomFromText('LINESTRING(106.7655 10.8160, 106.7688 10.8205, 106.7720 10.8250, 106.7752 10.8295, 106.7785 10.8340)'), 4326),
+ 1.60, 'RAINFALL', 1.70, 30.0, 35.0, 3, TRUE),
 
 ('FL-Q12-NVQ', 'Đường Nguyễn Văn Quá', 'Phường Đông Hưng Thuận', 'Quận 12',
- ST_SetSRID(ST_MakePoint(106.6320, 10.8420), 4326), 1.70, 'RAINFALL', 1.75, 25.0, 40.0, 2, TRUE),
+ ST_SetSRID(ST_MakePoint(106.6320, 10.8420), 4326),
+ ST_SetSRID(ST_GeomFromText('LINESTRING(106.6255 10.8325, 106.6288 10.8372, 106.6320 10.8420, 106.6352 10.8468, 106.6385 10.8515)'), 4326),
+ 1.70, 'RAINFALL', 1.75, 25.0, 40.0, 2, TRUE),
 
-('FL-TD-VVN', 'Đường Võ Văn Ngân (Chợ Thủ Đức)', 'Phường Linh Chiểu', 'TP. Thủ Đức',
- ST_SetSRID(ST_MakePoint(106.7620, 10.8520), 4326), 2.10, 'RAINFALL', 1.80, 20.0, 50.0, 2, TRUE),
+('FL-TD-VVN', 'Khu vực Chợ Thủ Đức (Võ Văn Ngân - Tô Ngọc Vân - Hồ Văn Tư)', 'Phường Linh Chiểu', 'TP. Thủ Đức',
+ ST_SetSRID(ST_MakePoint(106.7585, 10.8506), 4326),
+ ST_SetSRID(ST_GeomFromText('MULTILINESTRING((106.7585 10.8506, 106.7600 10.8510, 106.7620 10.8515, 106.7645 10.8522), (106.7585 10.8506, 106.7582 10.8520, 106.7578 10.8535, 106.7575 10.8550), (106.7585 10.8506, 106.7575 10.8490, 106.7565 10.8475, 106.7555 10.8460), (106.7585 10.8506, 106.7565 10.8500, 106.7550 10.8495, 106.7535 10.8490))'), 4326),
+ 2.10, 'RAINFALL', 1.80, 20.0, 50.0, 2, TRUE),
 
 ('FL-Q4-BVD', 'Đường Bến Vân Đồn - Cầu Calmette', 'Phường 13', 'Quận 4',
- ST_SetSRID(ST_MakePoint(106.7010, 10.7630), 4326), 1.45, 'TIDAL', 1.58, 40.0, 30.0, 3, TRUE)
+ ST_SetSRID(ST_MakePoint(106.7010, 10.7630), 4326),
+ ST_SetSRID(ST_GeomFromText('LINESTRING(106.7065 10.7680, 106.7038 10.7655, 106.7010 10.7630, 106.6972 10.7608, 106.6932 10.7588)'), 4326),
+ 1.45, 'TIDAL', 1.58, 40.0, 30.0, 3, TRUE)
 ON CONFLICT (hotspot_code) DO NOTHING;
 """
 

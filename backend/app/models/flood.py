@@ -185,7 +185,7 @@ class FloodHotspot(Base, TimestampMixin):
     
     # Không gian địa lý PostGIS
     location = mapped_column(Geometry(geometry_type="POINT", srid=4326), nullable=False, comment="Tọa độ tâm điểm đen")
-    road_corridor = mapped_column(Geometry(geometry_type="LINESTRING", srid=4326), nullable=True, comment="Đoạn đường chịu ảnh hưởng ngập")
+    road_corridor = mapped_column(Geometry(geometry_type="GEOMETRY", srid=4326), nullable=True, comment="Đoạn đường chịu ảnh hưởng ngập (LineString hoặc MultiLineString)")
     
     elevation_meters: Mapped[Optional[float]] = mapped_column(Numeric(5, 2), comment="Cao độ mặt đường trung bình (m)")
     primary_cause: Mapped[FloodCauseType] = mapped_column(String(20), default=FloodCauseType.COMBINED, nullable=False)

@@ -21,6 +21,10 @@ export interface EcoLocation {
   isImpassableBikes?: boolean;
   isImpassableCars?: boolean;
   riskScore?: number;
+  roadCorridor?: {
+    type: "LineString" | "MultiLineString";
+    coordinates: any;
+  } | null;
 }
 
 export const CATEGORY_CONFIG: Record<
