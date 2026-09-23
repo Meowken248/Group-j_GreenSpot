@@ -8,6 +8,8 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from datetime import datetime, timedelta, timezone
 import uuid
+import urllib.request
+import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -182,7 +184,51 @@ async def submit_flood_report(
 
     expires_at = datetime.now(timezone.utc) + timedelta(hours=3)
 
-    insert_query = text("""
+    # Khởi tạo thuật toán OSRM bám đường động (Dynamic Snap-to-Road)
+    # Lấy 1 đoạn khoảng 100m xung quanh điểm báo cáo
+    start_lng, start_lat = payload.longitude - 0.0005, payload.latitude - 0.0005
+    end_lng, end_lat = payload.longitude + 0.0005, payload.latitude + 0.0005
+    osrm_url = f"http://router.project-osrm.org/route/v1/driving/{start_lng},{start_lat};{end_lng},{end_lat}?overview=full&geometries=geojson"
+    
+    road_corridor_wkt = f"LINESTRING({payload.longitude - 0.0001} {payload.latitude - 0.0001}, {payload.longitude + 0.0001} {payload.latitude + 0.0001})"
+    try:
+        req = urllib.request.Request(osrm_url)
+        with urllib.request.urlopen(req, timeout=3) as response:
+            route_data = json.loads(response.read().decode())
+            if "routes" in route_data and len(route_data["routes"]) > 0:
+                coords = route_data["routes"][0]["geometry"]["coordinates"]
+                road_corridor_wkt = "LINESTRING(" + ", ".join([f"{c[0]} {c[1]}" for c in coords]) + ")"
+    except Exception:
+        pass
+
+    # 1. Tạo một điểm đen ngập lụt ĐỘNG (Dynamic Hotspot)
+    dynamic_hotspot_code = f"FL-DYN-{uuid.uuid4().hex[:6].upper()}"
+    insert_hotspot_query = text("""
+        INSERT INTO flood_hotspots (
+            hotspot_code, street_name, ward_name, district_name,
+            location, road_corridor, elevation_meters, primary_cause,
+            threshold_tide_meters, threshold_rain_mm_per_hour,
+            historical_max_depth_cm, drainage_system_rating, is_active
+        ) VALUES (
+            :code, :street, NULL, 'Cộng đồng báo cáo',
+            ST_SetSRID(ST_MakePoint(:lng, :lat), 4326),
+            ST_SetSRID(ST_GeomFromText(:wkt), 4326),
+            1.0, 'RAINFALL', 0.0, 0.0, :depth, 1, TRUE
+        ) RETURNING hotspot_id;
+    """)
+    
+    result = await db.execute(insert_hotspot_query, {
+        "code": dynamic_hotspot_code,
+        "street": payload.address_description or "Đường chưa rõ tên",
+        "lng": payload.longitude,
+        "lat": payload.latitude,
+        "wkt": road_corridor_wkt,
+        "depth": payload.actual_depth_cm or 30.0
+    })
+    new_hotspot_id = result.scalar()
+
+    # 2. Lưu báo cáo cộng đồng
+    insert_report_query = text("""
         INSERT INTO flood_community_reports (
             report_id, hotspot_id, location, address_description,
             actual_depth_cm, severity_level, can_motorbike_pass,
@@ -198,9 +244,9 @@ async def submit_flood_report(
     """)
 
     report_id = uuid.uuid4()
-    await db.execute(insert_query, {
+    await db.execute(insert_report_query, {
         "report_id": report_id,
-        "hotspot_id": payload.hotspot_id,
+        "hotspot_id": new_hotspot_id,
         "lng": payload.longitude,
         "lat": payload.latitude,
         "address": payload.address_description,
