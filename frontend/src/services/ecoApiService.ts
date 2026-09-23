@@ -117,3 +117,28 @@ export async function fetchLiveWeatherAPI(): Promise<LiveWeatherResponse | null>
     return null;
   }
 }
+export async function reportFloodAPI(
+  lat: number,
+  lng: number,
+  depthCm: number = 30
+): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/v1/flood/report`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        latitude: lat,
+        longitude: lng,
+        actual_depth_cm: depthCm,
+        address_description: "Cộng đồng báo cáo ngập lụt",
+      }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn("Không thể báo cáo ngập:", err);
+    return false;
+  }
+}
+
