@@ -1,6 +1,7 @@
+
 import React, { useState, useMemo } from "react";
 
-export type WeatherOverlay =
+export type WindyOverlay =
   | "temp"
   | "wind"
   | "radar"
@@ -10,7 +11,7 @@ export type WeatherOverlay =
   | "satellite"
   | "pressure";
 
-export interface WeatherLocation {
+export interface WindyLocation {
   name: string;
   shortName: string;
   lat: number;
@@ -18,7 +19,7 @@ export interface WeatherLocation {
   zoom: number;
 }
 
-export const VIETNAM_LOCATIONS: WeatherLocation[] = [
+export const VIETNAM_LOCATIONS: WindyLocation[] = [
   { name: "Toàn cảnh Việt Nam", shortName: "🇻🇳 Toàn quốc", lat: 14.058, lon: 108.277, zoom: 6 },
   { name: "TP. Hồ Chí Minh", shortName: "🏙️ TP.HCM", lat: 10.776, lon: 106.7, zoom: 9 },
   { name: "Thủ đô Hà Nội", shortName: "🏛️ Hà Nội", lat: 21.028, lon: 105.854, zoom: 9 },
@@ -29,9 +30,9 @@ export const VIETNAM_LOCATIONS: WeatherLocation[] = [
   { name: "Quần đảo Hoàng Sa - Trường Sa", shortName: "🏝️ Biển Đông", lat: 13.0, lon: 113.5, zoom: 6 },
 ];
 
-export const WEATHER_OVERLAYS = [
+export const WINDY_OVERLAYS = [
   {
-    id: "temp" as WeatherOverlay,
+    id: "temp" as WindyOverlay,
     name: "Nhiệt độ",
     icon: "🌡️",
     unit: "°C",
@@ -49,7 +50,7 @@ export const WEATHER_OVERLAYS = [
     ],
   },
   {
-    id: "wind" as WeatherOverlay,
+    id: "wind" as WindyOverlay,
     name: "Gió & Dòng hạt",
     icon: "💨",
     unit: "km/h",
@@ -66,7 +67,7 @@ export const WEATHER_OVERLAYS = [
     ],
   },
   {
-    id: "radar" as WeatherOverlay,
+    id: "radar" as WindyOverlay,
     name: "Radar thời tiết",
     icon: "🛰️",
     unit: "dBZ",
@@ -82,7 +83,7 @@ export const WEATHER_OVERLAYS = [
     ],
   },
   {
-    id: "rain" as WeatherOverlay,
+    id: "rain" as WindyOverlay,
     name: "Mưa & Sét",
     icon: "🌧️",
     unit: "mm/h",
@@ -98,7 +99,7 @@ export const WEATHER_OVERLAYS = [
     ],
   },
   {
-    id: "clouds" as WeatherOverlay,
+    id: "clouds" as WindyOverlay,
     name: "Mây che phủ",
     icon: "☁️",
     unit: "%",
@@ -114,7 +115,7 @@ export const WEATHER_OVERLAYS = [
     ],
   },
   {
-    id: "waves" as WeatherOverlay,
+    id: "waves" as WindyOverlay,
     name: "Sóng biển",
     icon: "🌊",
     unit: "m",
@@ -129,7 +130,7 @@ export const WEATHER_OVERLAYS = [
     ],
   },
   {
-    id: "satellite" as WeatherOverlay,
+    id: "satellite" as WindyOverlay,
     name: "Ảnh vệ tinh",
     icon: "🌍",
     unit: "Quang phổ",
@@ -144,7 +145,7 @@ export const WEATHER_OVERLAYS = [
     ],
   },
   {
-    id: "pressure" as WeatherOverlay,
+    id: "pressure" as WindyOverlay,
     name: "Khí áp & Tâm bão",
     icon: "🌀",
     unit: "hPa",
@@ -160,84 +161,28 @@ export const WEATHER_OVERLAYS = [
   },
 ];
 
-interface LiveWeatherRadarMapProps {
+interface WindyWeatherMapProps {
   onClose: () => void;
-  initialOverlay?: WeatherOverlay;
-  userGps?: { lat: number; lng: number } | null;
+  initialOverlay?: WindyOverlay;
 }
 
-export const LiveWeatherRadarMap: React.FC<LiveWeatherRadarMapProps> = ({
+export const WindyWeatherMap: React.FC<WindyWeatherMapProps> = ({
   onClose,
   initialOverlay = "temp",
-  userGps = null,
 }) => {
-  const [activeOverlay, setActiveOverlay] = useState<WeatherOverlay>(initialOverlay);
-  const [currentLoc, setCurrentLoc] = useState<WeatherLocation>(VIETNAM_LOCATIONS[0]);
+  const [activeOverlay, setActiveOverlay] = useState<WindyOverlay>(initialOverlay);
+  const [currentLoc, setCurrentLoc] = useState<WindyLocation>(VIETNAM_LOCATIONS[0]);
   const [model, setModel] = useState<"ecmwf" | "gfs">("ecmwf");
   const [showRightMenu, setShowRightMenu] = useState<boolean>(true);
   const [isIframeLoading, setIsIframeLoading] = useState<boolean>(true);
-  const [hasMarker, setHasMarker] = useState<boolean>(false);
-  const [isGpsActive, setIsGpsActive] = useState<boolean>(false);
-  const [localGps, setLocalGps] = useState<{ lat: number; lng: number } | null>(userGps);
 
-  // Cập nhật khi prop userGps thay đổi từ hook định vị
-  React.useEffect(() => {
-    if (userGps) {
-      setLocalGps(userGps);
-    }
-  }, [userGps]);
-
-  // Nhảy ngay tới tọa độ GPS của người dùng
-  const handleJumpToGps = () => {
-    const activeGps = localGps || userGps;
-    if (activeGps) {
-      setIsIframeLoading(true);
-      setIsGpsActive(true);
-      setHasMarker(true);
-      setCurrentLoc({
-        name: `Vị trí GPS (${activeGps.lat.toFixed(4)}, ${activeGps.lng.toFixed(4)})`,
-        shortName: "🎯 Vị trí của tôi",
-        lat: activeGps.lat,
-        lon: activeGps.lng,
-        zoom: 10,
-      });
-    } else if (navigator.geolocation) {
-      setIsIframeLoading(true);
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-          setLocalGps({ lat, lng: lon });
-          setIsGpsActive(true);
-          setHasMarker(true);
-          setCurrentLoc({
-            name: `Vị trí GPS (${lat.toFixed(4)}, ${lon.toFixed(4)})`,
-            shortName: "🎯 Vị trí của tôi",
-            lat,
-            lon,
-            zoom: 10,
-          });
-        },
-        (err) => {
-          console.warn("Lỗi GPS:", err);
-          setIsIframeLoading(false);
-          alert("Không thể truy cập GPS trình duyệt. Vui lòng cho phép quyền truy cập vị trí.");
-        },
-        { enableHighAccuracy: true, timeout: 6000 }
-      );
-    } else {
-      alert("Thiết bị hoặc trình duyệt không hỗ trợ Geolocation API.");
-    }
-  };
-
-  // Xây dựng URL nhúng radar khí tượng với đầy đủ tùy chọn hiển thị & marker GPS
-  const radarEngineSrc = useMemo(() => {
-    const markerFlag = hasMarker ? "true" : "";
-    return `https://embed.windy.com/embed2.html?lat=${currentLoc.lat}&lon=${currentLoc.lon}&detailLat=${currentLoc.lat}&detailLon=${currentLoc.lon}&width=100%25&height=100%25&zoom=${currentLoc.zoom}&level=surface&overlay=${activeOverlay}&product=${model}&menu=&message=true&marker=${markerFlag}&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`;
-  }, [currentLoc, activeOverlay, model, hasMarker]);
+  // Xây dựng URL nhúng Windy chính thức với đầy đủ tùy chọn hiển thị
+  const windySrc = useMemo(() => {
+    return `https://embed.windy.com/embed2.html?lat=${currentLoc.lat}&lon=${currentLoc.lon}&detailLat=${currentLoc.lat}&detailLon=${currentLoc.lon}&width=100%25&height=100%25&zoom=${currentLoc.zoom}&level=surface&overlay=${activeOverlay}&product=${model}&menu=&message=true&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`;
+  }, [currentLoc, activeOverlay, model]);
 
   const currentOverlayMeta = useMemo(() => {
-    return WEATHER_OVERLAYS.find((o) => o.id === activeOverlay) || WEATHER_OVERLAYS[0];
+    return WINDY_OVERLAYS.find((o) => o.id === activeOverlay) || WINDY_OVERLAYS[0];
   }, [activeOverlay]);
 
   return (
@@ -315,7 +260,7 @@ export const LiveWeatherRadarMap: React.FC<LiveWeatherRadarMapProps> = ({
             <span>Trở về Bản đồ Sự cố</span>
           </button>
 
-          {/* Huy hiệu Radar Live */}
+          {/* Huy hiệu Windy Live */}
           <div
             style={{
               display: "flex",
@@ -342,7 +287,7 @@ export const LiveWeatherRadarMap: React.FC<LiveWeatherRadarMapProps> = ({
               }}
             />
             <span style={{ color: "#fff", fontWeight: 700, fontSize: 12.5 }}>
-              Radar Khí tượng & Luồng gió
+              Windy.com Radar Thời tiết & Gió
             </span>
             <span
               style={{
@@ -378,49 +323,13 @@ export const LiveWeatherRadarMap: React.FC<LiveWeatherRadarMapProps> = ({
             boxShadow: "0 8px 30px rgba(0, 0, 0, 0.4)",
           }}
         >
-          {/* Nút định vị GPS của người dùng */}
-          <button
-            onClick={handleJumpToGps}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              padding: "5px 12px",
-              borderRadius: 9999,
-              border: isGpsActive ? "1.5px solid #10b981" : "1px solid rgba(16, 185, 129, 0.4)",
-              background: isGpsActive
-                ? "linear-gradient(135deg, rgba(16, 185, 129, 0.4), rgba(5, 150, 105, 0.5))"
-                : "rgba(16, 185, 129, 0.15)",
-              color: isGpsActive ? "#34d399" : "#a7f3d0",
-              fontSize: 11.5,
-              fontWeight: 700,
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-              boxShadow: isGpsActive ? "0 0 14px rgba(16, 185, 129, 0.5)" : "none",
-              transition: "all 0.18s ease",
-            }}
-            title="Định vị ngay vị trí GPS của tôi trên bản đồ thời tiết"
-          >
-            <span style={{ fontSize: 13, animation: "pulse 1.5s infinite" }}>🎯</span>
-            <span>Vị trí GPS của tôi</span>
-            {localGps && (
-              <span style={{ fontSize: 9.5, opacity: 0.85, fontWeight: 500 }}>
-                ({localGps.lat.toFixed(2)}, {localGps.lng.toFixed(2)})
-              </span>
-            )}
-          </button>
-
-          <div style={{ width: 1, height: 16, backgroundColor: "rgba(255, 255, 255, 0.2)", margin: "0 3px" }} />
-
           {VIETNAM_LOCATIONS.map((loc) => {
-            const isSelected = !isGpsActive && currentLoc.name === loc.name;
+            const isSelected = currentLoc.name === loc.name;
             return (
               <button
                 key={loc.name}
                 onClick={() => {
                   setIsIframeLoading(true);
-                  setIsGpsActive(false);
-                  setHasMarker(false);
                   setCurrentLoc(loc);
                 }}
                 style={{
@@ -444,7 +353,7 @@ export const LiveWeatherRadarMap: React.FC<LiveWeatherRadarMapProps> = ({
           })}
         </div>
 
-        {/* Khối phải: Mô hình dự báo ECMWF/GFS + Nút làm mới */}
+        {/* Khối phải: Mô hình dự báo ECMWF/GFS + Nút Tab ngoài */}
         <div
           style={{
             display: "flex",
@@ -477,7 +386,7 @@ export const LiveWeatherRadarMap: React.FC<LiveWeatherRadarMapProps> = ({
                 fontWeight: 700,
                 cursor: "pointer",
               }}
-              title="Mô hình ECMWF (Độ phân giải 9km - Chuẩn xác cao nhất)"
+              title="Mô hình ECMWF Châu Âu (Độ phân giải 9km - Chuẩn xác cao nhất)"
             >
               ECMWF (9km)
             </button>
@@ -493,7 +402,7 @@ export const LiveWeatherRadarMap: React.FC<LiveWeatherRadarMapProps> = ({
                 fontWeight: 700,
                 cursor: "pointer",
               }}
-              title="Mô hình GFS (Độ phân giải 22km)"
+              title="Mô hình GFS Hoa Kỳ (Độ phân giải 22km)"
             >
               GFS (Mỹ)
             </button>
@@ -516,19 +425,17 @@ export const LiveWeatherRadarMap: React.FC<LiveWeatherRadarMapProps> = ({
               fontWeight: 700,
               cursor: "pointer",
             }}
-            title="Ẩn/hiện danh sách các lớp khí tượng"
+            title="Ẩn/hiện danh sách các lớp khí tượng Windy"
           >
             <span>☰</span>
             <span>Lớp</span>
           </button>
 
-          {/* Nút làm mới dữ liệu trạm quan trắc */}
-          <button
-            onClick={() => {
-              setIsIframeLoading(true);
-              const loc = currentLoc;
-              setCurrentLoc({ ...loc });
-            }}
+          {/* Mở tab windy.com trực tiếp */}
+          <a
+            href={`https://www.windy.com/vi/-${encodeURIComponent(currentOverlayMeta.name)}-${activeOverlay}?${activeOverlay},${currentLoc.lat},${currentLoc.lon},${currentLoc.zoom}`}
+            target="_blank"
+            rel="noopener noreferrer"
             style={{
               display: "flex",
               alignItems: "center",
@@ -538,21 +445,21 @@ export const LiveWeatherRadarMap: React.FC<LiveWeatherRadarMapProps> = ({
               backdropFilter: "blur(20px)",
               border: "1px solid rgba(255, 255, 255, 0.15)",
               borderRadius: 9999,
-              color: "#cbd5e1",
+              color: "#94a3b8",
               fontSize: 11.5,
-              cursor: "pointer",
+              textDecoration: "none",
               fontWeight: 600,
               boxShadow: "0 8px 25px rgba(0, 0, 0, 0.4)",
             }}
-            title="Làm mới tín hiệu radar"
+            title="Mở toàn màn hình trên trang chủ Windy.com"
           >
-            <span>🔄</span>
-            <span>Làm mới</span>
-          </button>
+            <span>↗</span>
+            <span>Windy.com</span>
+          </a>
         </div>
       </header>
 
-      {/* 2. THANH MENU BÊN PHẢI (RIGHT-HAND OVERLAY MENU) */}
+      {/* 2. THANH MENU BÊN PHẢI (RIGHT-HAND OVERLAY MENU - GIỐNG CHÍNH XÁC HÌNH USER CHỤP) */}
       {showRightMenu && (
         <aside
           style={{
@@ -574,74 +481,74 @@ export const LiveWeatherRadarMap: React.FC<LiveWeatherRadarMapProps> = ({
             overflowY: "auto",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "4px 8px 6px",
-              borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-              marginBottom: 2,
-            }}
-          >
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5 }}>
-              Lớp khí tượng
-            </span>
-            <span style={{ fontSize: 10, color: "#10b981", fontWeight: 700 }}>● LIVE</span>
-          </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "4px 8px 6px",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+            marginBottom: 2,
+          }}
+        >
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5 }}>
+            Lớp khí tượng
+          </span>
+          <span style={{ fontSize: 10, color: "#64748b" }}>Windy</span>
+        </div>
 
-          {WEATHER_OVERLAYS.map((overlay) => {
-            const isActive = activeOverlay === overlay.id;
-            return (
-              <button
-                key={overlay.id}
-                onClick={() => {
-                  setIsIframeLoading(true);
-                  setActiveOverlay(overlay.id);
-                }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "8px 12px",
-                  borderRadius: 10,
-                  border: isActive ? `1.5px solid ${overlay.activeColor}` : "1.5px solid transparent",
-                  background: isActive ? overlay.activeBg : "rgba(255, 255, 255, 0.03)",
-                  color: isActive ? "#ffffff" : "#cbd5e1",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  transition: "all 0.18s cubic-bezier(0.4, 0, 0.2, 1)",
-                  boxShadow: isActive ? `0 4px 20px ${overlay.activeColor}33` : "none",
-                  minWidth: 165,
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
-                    e.currentTarget.style.color = "#f8fafc";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
-                    e.currentTarget.style.color = "#cbd5e1";
-                  }
-                }}
-              >
-                <span style={{ fontSize: 18, filter: isActive ? "drop-shadow(0 0 8px currentColor)" : "none" }}>
-                  {overlay.icon}
+        {WINDY_OVERLAYS.map((overlay) => {
+          const isActive = activeOverlay === overlay.id;
+          return (
+            <button
+              key={overlay.id}
+              onClick={() => {
+                setIsIframeLoading(true);
+                setActiveOverlay(overlay.id);
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: isActive ? `1.5px solid ${overlay.activeColor}` : "1.5px solid transparent",
+                background: isActive ? overlay.activeBg : "rgba(255, 255, 255, 0.03)",
+                color: isActive ? "#ffffff" : "#cbd5e1",
+                cursor: "pointer",
+                textAlign: "left",
+                transition: "all 0.18s cubic-bezier(0.4, 0, 0.2, 1)",
+                boxShadow: isActive ? `0 4px 20px ${overlay.activeColor}33` : "none",
+                minWidth: 165,
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+                  e.currentTarget.style.color = "#f8fafc";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
+                  e.currentTarget.style.color = "#cbd5e1";
+                }
+              }}
+            >
+              <span style={{ fontSize: 18, filter: isActive ? "drop-shadow(0 0 8px currentColor)" : "none" }}>
+                {overlay.icon}
+              </span>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 600 }}>
+                  {overlay.name}
                 </span>
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 600 }}>
-                    {overlay.name}
-                  </span>
-                  <span style={{ fontSize: 10, color: isActive ? overlay.activeColor : "#64748b" }}>
-                    Đơn vị: {overlay.unit}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
-        </aside>
+                <span style={{ fontSize: 10, color: isActive ? overlay.activeColor : "#64748b" }}>
+                  Đơn vị: {overlay.unit}
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </aside>
       )}
 
       {/* 3. THANH CHÚ GIẢI THANG ĐO DƯỚI ĐÁY (LEGEND RIBBON) */}
@@ -707,12 +614,12 @@ export const LiveWeatherRadarMap: React.FC<LiveWeatherRadarMapProps> = ({
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
           <span style={{ fontSize: 10.5, color: "#64748b" }}>
-            💡 Nhấp chuột trực tiếp lên bản đồ để đo thông số vi khí hậu và gió tại tọa độ
+            💡 Nhấp chuột trực tiếp lên bản đồ để đo thông số thời tiết và gió tại tọa độ
           </span>
         </div>
       </footer>
 
-      {/* 4. IFRAME NHÚNG TRỰC TIẾP ENGINE (FULL VIEWPORT) */}
+      {/* 4. IFRAME NHÚNG TRỰC TIẾP WINDY ENGINE (FULL VIEWPORT) */}
       <div
         style={{
           width: "100%",
@@ -749,14 +656,14 @@ export const LiveWeatherRadarMap: React.FC<LiveWeatherRadarMapProps> = ({
               }}
             />
             <span style={{ color: "#f8fafc", fontSize: 14, fontWeight: 600 }}>
-              Đang kết nối trạm Radar Khí tượng ({currentLoc.name})...
+              Đang kết nối trạm Radar Khí tượng Windy ({currentLoc.name})...
             </span>
           </div>
         )}
 
         <iframe
-          src={radarEngineSrc}
-          title="Hệ thống Radar Khí tượng & Luồng gió Thời gian thực"
+          src={windySrc}
+          title="Windy.com Vietnam Live Meteorological Radar"
           width="100%"
           height="100%"
           style={{
@@ -783,4 +690,4 @@ export const LiveWeatherRadarMap: React.FC<LiveWeatherRadarMapProps> = ({
   );
 };
 
-export default LiveWeatherRadarMap;
+export default WindyWeatherMap;

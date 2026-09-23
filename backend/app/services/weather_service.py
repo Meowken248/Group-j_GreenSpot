@@ -81,7 +81,7 @@ def get_aqi_status(aqi: int) -> str:
 
 def _fetch_url_json(url: str) -> Any:
     req = urllib.request.Request(url, headers={"User-Agent": "EcoReport/1.0"})
-    with urllib.request.urlopen(req, timeout=4.5) as resp:
+    with urllib.request.urlopen(req, timeout=2.5) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
 

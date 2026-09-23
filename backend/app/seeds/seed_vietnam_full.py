@@ -166,6 +166,10 @@ async def seed_vietnam_full():
             (4, 'DRAINAGE_BLOCK', 'Điểm nghẽn cống ngập úng', 'Miệng hố ga bị rác bịt kín gây ngập cục bộ', 'HIGH', 18, '#06B6D4', 'cloud-rain'),
             (5, 'CONSTRUCTION_DEBRIS', 'Xà bần & Phế thải xây dựng', 'Gạch vữa phế thải lấn chiếm lòng lề đường', 'LOW', 72, '#78716C', 'truck')
             ON CONFLICT (category_id) DO NOTHING;
+
+            SELECT setval('administrative_units_unit_id_seq', COALESCE((SELECT MAX(unit_id) FROM administrative_units), 1));
+            SELECT setval('roles_role_id_seq', COALESCE((SELECT MAX(role_id) FROM roles), 1));
+            SELECT setval('waste_categories_category_id_seq', COALESCE((SELECT MAX(category_id) FROM waste_categories), 1));
         """)
 
         # 2. SEED 63 PROVINCES

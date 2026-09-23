@@ -28,6 +28,14 @@ import {
   type LiveWeatherResponse,
 } from "../services/ecoApiService";
 import {
+  fetchFloodHotspotsAPI,
+  fetchGloFASForecastAPI,
+  type FloodHotspotProperties,
+  type FloodGeoJSONResponse,
+  type GloFASForecastResponse,
+  type FloodRoadSegmentProperties,
+} from "../services/floodService";
+import {
   useFastGeolocation,
   DEFAULT_FALLBACK_LOCATION,
   calculateDistanceMeters,
@@ -207,6 +215,102 @@ export const MAP_STYLES = {
   },
 };
 
+export type BuildingColorTheme = "rainbow" | "eco" | "sunset" | "cyber" | "crystal";
+
+export const BUILDING_COLOR_THEMES: Record<
+  BuildingColorTheme,
+  {
+    name: string;
+    icon: string;
+    desc: string;
+    colors: string[];
+    expression: any;
+  }
+> = {
+  rainbow: {
+    name: "Cầu vồng đô thị",
+    icon: "🌈",
+    desc: "Đa sắc rực rỡ theo độ cao tầng",
+    colors: ["#34d399", "#38bdf8", "#6366f1", "#a855f7", "#ec4899", "#f97316", "#ef4444"],
+    expression: [
+      "interpolate",
+      ["linear"],
+      ["coalesce", ["get", "render_height"], 16],
+      0, "#34d399",    // 0-10m: Ngọc bích / Mint
+      12, "#38bdf8",   // 12-20m: Xanh Cyan
+      25, "#6366f1",   // 25-35m: Indigo hiện đại
+      45, "#a855f7",   // 45-60m: Tím thạch anh
+      70, "#ec4899",   // 70-90m: Hồng Magenta
+      100, "#f97316",  // 100-130m: Cam san hô
+      150, "#ef4444",  // 150m+: Đỏ cờ rực rỡ
+    ],
+  },
+  eco: {
+    name: "Xanh sinh thái Eco",
+    icon: "🌿",
+    desc: "Ngọc lục bảo & Cyan GreenSpot",
+    colors: ["#a7f3d0", "#34d399", "#10b981", "#06b6d4", "#0284c7"],
+    expression: [
+      "interpolate",
+      ["linear"],
+      ["coalesce", ["get", "render_height"], 16],
+      0, "#a7f3d0",
+      15, "#34d399",
+      35, "#10b981",
+      65, "#06b6d4",
+      110, "#0284c7",
+    ],
+  },
+  sunset: {
+    name: "Hoàng hôn rực rỡ",
+    icon: "🌆",
+    desc: "Vàng hổ phách, cam & tím hoàng hôn",
+    colors: ["#fde68a", "#fbbf24", "#f97316", "#e11d48", "#9333ea"],
+    expression: [
+      "interpolate",
+      ["linear"],
+      ["coalesce", ["get", "render_height"], 16],
+      0, "#fde68a",
+      15, "#fbbf24",
+      35, "#f97316",
+      65, "#e11d48",
+      110, "#9333ea",
+    ],
+  },
+  cyber: {
+    name: "Neon Cyberpunk",
+    icon: "⚡",
+    desc: "Đèn neon phát quang tương lai",
+    colors: ["#00f0ff", "#7000ff", "#ff007f", "#ffe600", "#ff003c"],
+    expression: [
+      "interpolate",
+      ["linear"],
+      ["coalesce", ["get", "render_height"], 16],
+      0, "#00f0ff",
+      20, "#7000ff",
+      50, "#ff007f",
+      90, "#ffe600",
+      140, "#ff003c",
+    ],
+  },
+  crystal: {
+    name: "Kính cao ốc Crystal",
+    icon: "💎",
+    desc: "Kính kiến trúc Sapphire hiện đại",
+    colors: ["#e0f2fe", "#7dd3fc", "#38bdf8", "#0284c7", "#1e3a8a"],
+    expression: [
+      "interpolate",
+      ["linear"],
+      ["coalesce", ["get", "render_height"], 16],
+      0, "#e0f2fe",
+      15, "#7dd3fc",
+      35, "#38bdf8",
+      65, "#0284c7",
+      110, "#1e3a8a",
+    ],
+  },
+};
+
 type StyleKey = keyof typeof MAP_STYLES;
 
 function EcoMap() {
@@ -252,6 +356,9 @@ function EcoMap() {
   // States bản đồ & bộ lọc (Mặc định dùng Google Maps Tile Cluster)
   const [activeStyle, setActiveStyle] = useState<StyleKey>("googleRoadmap");
   const [is3D, setIs3D] = useState<boolean>(true);
+  // Bảng màu sắc 3D cho các tòa nhà kiến trúc đô thị
+  const [building3DTheme, setBuilding3DTheme] = useState<BuildingColorTheme>("rainbow");
+  const [show3DColorMenu, setShow3DColorMenu] = useState<boolean>(false);
   const [showDistricts, setShowDistricts] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<EcoCategory | "all">("all");
 
@@ -264,6 +371,22 @@ function EcoMap() {
   // Live Weather Radar State (Mô phỏng trường gió động lực học & dải nhiệt vi khí hậu)
   const [showLiveRadar, setShowLiveRadar] = useState<boolean>(false);
   const [liveRadarOverlay, setLiveRadarOverlay] = useState<WeatherOverlay>("temp");
+
+  // Flood Watch States (Cảnh báo Ngập lụt Đô thị 3 Nguồn: TP.HCM OpenData, Open-Meteo GloFAS & Lượng mưa thông minh)
+  const [showFloodWatch, setShowFloodWatch] = useState<boolean>(true);
+  const [floodData, setFloodData] = useState<FloodGeoJSONResponse | null>(null);
+  const [selectedFloodSpot, setSelectedFloodSpot] = useState<FloodHotspotProperties | null>(null);
+  const [selectedGloFAS, setSelectedGloFAS] = useState<GloFASForecastResponse | null>(null);
+  const [loadingGloFAS, setLoadingGloFAS] = useState<boolean>(false);
+  const [simulatedRainfallMm, setSimulatedRainfallMm] = useState<number | null>(null);
+  const [showGloFASModal, setShowGloFASModal] = useState<boolean>(false);
+  const [gpsGloFAS, setGpsGloFAS] = useState<GloFASForecastResponse | null>(null);
+  const [loadingGpsGloFAS, setLoadingGpsGloFAS] = useState<boolean>(false);
+  // Đoạn đường ngập lụt đang được hover chuột
+  const [hoveredFloodSegment, setHoveredFloodSegment] = useState<{
+    properties: FloodRoadSegmentProperties;
+    lngLat: [number, number];
+  } | null>(null);
   
   // Selection States
   const [selectedLocation, setSelectedLocation] = useState<EcoLocation | null>(null);
@@ -362,6 +485,21 @@ function EcoMap() {
     return () => clearInterval(timer);
   }, []);
 
+  // 3. Tải dữ liệu ngập lụt đô thị 3 nguồn tích hợp (Cổng TP.HCM, GloFAS & Lượng mưa thông minh)
+  const loadFloodData = useCallback((rainMm?: number) => {
+    fetchFloodHotspotsAPI(rainMm).then((data) => {
+      if (data) setFloodData(data);
+    });
+  }, []);
+
+  useEffect(() => {
+    loadFloodData(simulatedRainfallMm ?? undefined);
+    const timer = setInterval(() => {
+      loadFloodData(simulatedRainfallMm ?? undefined);
+    }, 180000);
+    return () => clearInterval(timer);
+  }, [loadFloodData, simulatedRainfallMm]);
+
   // GeoJSON cho bản đồ nhiệt mật độ rủi ro sự cố môi trường
   const incidentRiskGeoJSON = useMemo<FeatureCollection>(() => {
     const features = ecoLocations
@@ -393,6 +531,17 @@ function EcoMap() {
       features,
     };
   }, [ecoLocations]);
+
+  // GeoJSON cho các đoạn đường ngập lụt được bôi màu sắc trực quan (Vector LineString)
+  const floodRoadSegmentsGeoJSON = useMemo<FeatureCollection | null>(() => {
+    if (!showFloodWatch || !floodData?.road_segments || floodData.road_segments.length === 0) {
+      return null;
+    }
+    return {
+      type: "FeatureCollection",
+      features: floodData.road_segments as any,
+    };
+  }, [showFloodWatch, floodData]);
 
   // Tự động gọi API tìm kiếm trực tiếp quán xá, số nhà toàn TP.HCM (Debounce 350ms)
   useEffect(() => {
@@ -455,8 +604,41 @@ function EcoMap() {
     }
   };
 
-  // 1. TÍNH NĂNG CLICK BẢN ĐỒ LẤY SỐ NHÀ (REVERSE GEOCODING)
+  // 1. TÍNH NĂNG CLICK BẢN ĐỒ LẤY SỐ NHÀ (REVERSE GEOCODING) & CHỌN ĐOẠN ĐƯỜNG NGẬP
   const handleMapClick = async (e: any) => {
+    // 1.0. Kiểm tra nếu click trúng một đoạn đường ngập lụt (Vector LineString)
+    if (showFloodWatch && floodData) {
+      let floodFeat: any = null;
+      if (e.features && e.features.length > 0) {
+        floodFeat = e.features.find(
+          (f: any) =>
+            f.layer?.id === "flood-segments-core" ||
+            f.layer?.id === "flood-segments-glow" ||
+            f.layer?.id === "flood-selected-segment-highlight"
+        );
+      }
+      if (!floodFeat && mapRef.current) {
+        const map = mapRef.current.getMap();
+        const bbox: [[number, number], [number, number]] = [
+          [e.point.x - 8, e.point.y - 8],
+          [e.point.x + 8, e.point.y + 8],
+        ];
+        const queried = map.queryRenderedFeatures(bbox, {
+          layers: ["flood-segments-core", "flood-segments-glow"],
+        });
+        if (queried && queried.length > 0) floodFeat = queried[0];
+      }
+
+      if (floodFeat && floodFeat.properties) {
+        const spotId = floodFeat.properties.spot_id;
+        const targetSpot = floodData.features.find((f) => f.id === spotId);
+        if (targetSpot) {
+          handleSelectFloodSpot(targetSpot.properties, [e.lngLat.lng, e.lngLat.lat]);
+          return;
+        }
+      }
+    }
+
     const { lng, lat } = e.lngLat;
     setLoadingReverse(true);
     setSelectedLocation(null);
@@ -586,6 +768,38 @@ function EcoMap() {
     }
 
     handleFlyToLocation(poi.longitude, poi.latitude, 17.5, 60, -20);
+  };
+
+  // Chọn điểm ngập lụt để xem chi tiết 3 Nguồn (Cổng TP.HCM, GloFAS, Lượng mưa thông minh)
+  const handleSelectFloodSpot = async (spot: FloodHotspotProperties, coords: [number, number]) => {
+    setSelectedLocation(null);
+    setSelectedPOI(null);
+    setClickedAddress(null);
+    setSelectedFloodSpot(spot);
+    setSelectedGloFAS(null);
+    handleFlyToLocation(coords[0], coords[1], 16.8, 55, -15);
+
+    setLoadingGloFAS(true);
+    try {
+      const glofas = await fetchGloFASForecastAPI(coords[1], coords[0]);
+      if (glofas) setSelectedGloFAS(glofas);
+    } finally {
+      setLoadingGloFAS(false);
+    }
+  };
+
+  // Tra cứu nguy cơ lũ lụt GloFAS tại vị trí GPS hiện tại
+  const handleInspectGpsGloFAS = async () => {
+    const lat = gpsCoords ? gpsCoords.lat : 10.7765;
+    const lng = gpsCoords ? gpsCoords.lng : 106.7009;
+    setLoadingGpsGloFAS(true);
+    setShowGloFASModal(true);
+    try {
+      const res = await fetchGloFASForecastAPI(lat, lng);
+      if (res) setGpsGloFAS(res);
+    } finally {
+      setLoadingGpsGloFAS(false);
+    }
   };
 
   // Chọn địa danh Quick Tour
@@ -998,8 +1212,8 @@ function EcoMap() {
           </div>
         )}
 
-        {/* Thẻ chi tiết Địa điểm / Quán xá / Vị trí click (Docked thanh lịch bên trái) */}
-        {(selectedLocation || selectedPOI || clickedAddress) && (
+        {/* Thẻ chi tiết Địa điểm / Quán xá / Vị trí click / Điểm ngập lụt 3 Nguồn (Docked thanh lịch bên trái) */}
+        {(selectedLocation || selectedPOI || clickedAddress || selectedFloodSpot) && (
           <div
             style={{
               background: "#ffffff",
@@ -1007,9 +1221,245 @@ function EcoMap() {
               boxShadow: "0 8px 30px rgba(0, 0, 0, 0.12)",
               border: "1px solid #e2e8f0",
               padding: "16px",
+              maxHeight: "calc(100vh - 120px)",
+              overflowY: "auto",
             }}
           >
-            {clickedAddress ? (
+            {selectedFloodSpot ? (
+              <div>
+                {/* Header Điểm Ngập Lụt */}
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 24 }}>
+                      {selectedFloodSpot.current_risk_level === "CRITICAL" ? "🚨" : selectedFloodSpot.current_risk_level === "WARNING" ? "🌊" : "💧"}
+                    </span>
+                    <div>
+                      <div style={{ fontSize: 10.5, fontWeight: 700, color: "#0284c7", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                        Điểm Đen Ngập Lụt Đô Thị (3 Nguồn)
+                      </div>
+                      <div style={{ fontSize: 14.5, fontWeight: 700, color: "#0f172a", lineHeight: 1.25 }}>
+                        {selectedFloodSpot.name}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedFloodSpot(null)}
+                    style={{
+                      border: "none",
+                      background: "#f1f5f9",
+                      borderRadius: "50%",
+                      width: 24,
+                      height: 24,
+                      cursor: "pointer",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: "#64748b",
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Huy hiệu Cảnh báo Thời gian thực */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "6px 10px",
+                    borderRadius: 8,
+                    marginBottom: 10,
+                    fontWeight: 700,
+                    fontSize: 11.5,
+                    background:
+                      selectedFloodSpot.current_risk_level === "CRITICAL"
+                        ? "#fee2e2"
+                        : selectedFloodSpot.current_risk_level === "WARNING"
+                        ? "#ffedd5"
+                        : selectedFloodSpot.current_risk_level === "ALERT"
+                        ? "#fef9c3"
+                        : "#e0f2fe",
+                    color:
+                      selectedFloodSpot.current_risk_level === "CRITICAL"
+                        ? "#b91c1c"
+                        : selectedFloodSpot.current_risk_level === "WARNING"
+                        ? "#c2410c"
+                        : selectedFloodSpot.current_risk_level === "ALERT"
+                        ? "#a16207"
+                        : "#0369a1",
+                    border:
+                      selectedFloodSpot.current_risk_level === "CRITICAL"
+                        ? "1px solid #fca5a5"
+                        : "1px solid rgba(0,0,0,0.06)",
+                  }}
+                >
+                  <span>{selectedFloodSpot.current_risk_label}</span>
+                </div>
+
+                {/* NGUỒN 1: CỔNG DỮ LIỆU MỞ TP.HCM (SỞ XÂY DỰNG & UDC) */}
+                <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px", marginBottom: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, color: "#1e293b", marginBottom: 6 }}>
+                    <span>🏛️</span>
+                    <span>1. CỔNG DỮ LIỆU MỞ TP.HCM (SỞ XÂY DỰNG)</span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, fontSize: 11, marginBottom: 6 }}>
+                    <div>
+                      <span style={{ color: "#64748b" }}>Độ sâu chuẩn: </span>
+                      <strong style={{ color: "#0f172a" }}>{selectedFloodSpot.historical_depth_cm} cm</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: "#64748b" }}>Chiều dài: </span>
+                      <strong style={{ color: "#0f172a" }}>{selectedFloodSpot.length_m} m</strong>
+                    </div>
+                    <div style={{ gridColumn: "span 2" }}>
+                      <span style={{ color: "#64748b" }}>Nguyên nhân: </span>
+                      <span style={{ fontWeight: 600, color: "#b91c1c" }}>{selectedFloodSpot.cause}</span>
+                    </div>
+                  </div>
+                  {selectedFloodSpot.pump_station && (
+                    <div style={{ fontSize: 10.5, color: "#475569", marginBottom: 4 }}>
+                      ⚙️ <strong>Tiêu thoát:</strong> {selectedFloodSpot.pump_station}
+                    </div>
+                  )}
+                  {selectedFloodSpot.detour_advice && (
+                    <div style={{ fontSize: 10.5, color: "#0369a1", background: "#f0f9ff", padding: "4px 8px", borderRadius: 6, marginTop: 4 }}>
+                      💡 <strong>Tránh ngập:</strong> {selectedFloodSpot.detour_advice}
+                    </div>
+                  )}
+                </div>
+
+                {/* NGUỒN 2: CẢNH BÁO THỜI TIẾT THÔNG MINH (RAINFALL TRIGGER) */}
+                <div style={{ background: "#fffbeb", border: "1px solid #fef3c7", borderRadius: 10, padding: "10px", marginBottom: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, color: "#92400e", marginBottom: 6 }}>
+                    <span>🌦️</span>
+                    <span>2. CẢNH BÁO MƯA THỜI GIAN THỰC (RAINFALL TRIGGER)</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+                    <span style={{ color: "#78350f" }}>Lượng mưa hiện tại:</span>
+                    <strong style={{ color: "#b45309" }}>{selectedFloodSpot.current_rainfall_mm} mm/h</strong>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 6 }}>
+                    <span style={{ color: "#78350f" }}>Mực nước ngập ước tính:</span>
+                    <strong style={{ color: selectedFloodSpot.estimated_depth_cm > 25 ? "#dc2626" : "#0284c7" }}>
+                      ~{selectedFloodSpot.estimated_depth_cm} cm
+                    </strong>
+                  </div>
+                  <div style={{ fontSize: 10.5, color: "#92400e", borderTop: "1px dashed #fde68a", paddingTop: 4 }}>
+                    {selectedFloodSpot.estimated_depth_cm >= 35
+                      ? "⚠️ Cực kỳ nguy hiểm: Xe máy ngập pô chết máy, ô tô nguy cơ thủy kích."
+                      : selectedFloodSpot.estimated_depth_cm >= 20
+                      ? "⚠️ Ngập nửa bánh xe máy, di chuyển rất khó khăn."
+                      : "✅ Mực nước thấp hoặc nước rút, phương tiện lưu thông bình thường."}
+                  </div>
+                </div>
+
+                {/* NGUỒN 3: OPEN-METEO GLOBAL FLOOD API (COPERNICUS GLOFAS) */}
+                <div style={{ background: "#f0fdf4", border: "1px solid #dcfce7", borderRadius: 10, padding: "10px", marginBottom: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, color: "#166534" }}>
+                      <span>🛰️</span>
+                      <span>3. OPEN-METEO GLOFAS (COPERNICUS)</span>
+                    </div>
+                    <span style={{ fontSize: 9.5, background: "#dcfce7", color: "#15803d", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>
+                      GloFAS Vệ tinh
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 6 }}>
+                    <span style={{ color: "#14532d" }}>Lưu lượng Sông Sài Gòn:</span>
+                    <strong style={{ color: "#15803d" }}>
+                      {selectedFloodSpot.glofas_discharge_m3s ? `${selectedFloodSpot.glofas_discharge_m3s.toLocaleString()} m³/s` : "2,343 m³/s"}
+                    </strong>
+                  </div>
+
+                  {/* Biểu đồ 7 ngày GloFAS nếu đã fetch */}
+                  {selectedGloFAS && selectedGloFAS.forecast_7d && (
+                    <div>
+                      <div style={{ fontSize: 10, fontWeight: 600, color: "#166534", marginBottom: 4 }}>
+                        Dự báo dòng chảy 7 ngày tới (m³/s):
+                      </div>
+                      <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 42, background: "rgba(255,255,255,0.7)", borderRadius: 6, padding: "4px 6px" }}>
+                        {selectedGloFAS.forecast_7d.map((day, idx) => {
+                          const maxVal = 5000;
+                          const barHeight = Math.min(32, Math.max(8, (day.discharge / maxVal) * 32));
+                          const isHigh = day.discharge > 3500;
+                          return (
+                            <div key={idx} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                              <div
+                                title={`${day.date}: ${day.discharge} m³/s`}
+                                style={{
+                                  width: "100%",
+                                  height: barHeight,
+                                  background: isHigh ? "#ef4444" : "#10b981",
+                                  borderRadius: "3px 3px 0 0",
+                                }}
+                              />
+                              <span style={{ fontSize: 8, color: "#64748b" }}>
+                                {day.date.split("-")[2]}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {loadingGloFAS && (
+                    <div style={{ fontSize: 10, color: "#15803d", textAlign: "center", padding: "4px 0" }}>
+                      Đang đồng bộ vệ tinh GloFAS...
+                    </div>
+                  )}
+                </div>
+
+                {/* Các nút hành động */}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => {
+                      if (floodData) {
+                        const feat = floodData.features.find((f) => f.id === selectedFloodSpot.id);
+                        if (feat) {
+                          handleCalculateRoute(feat.geometry.coordinates[0], feat.geometry.coordinates[1], selectedFloodSpot.name);
+                        }
+                      }
+                    }}
+                    disabled={calculatingRoute}
+                    style={{
+                      flex: 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      padding: "9px 12px",
+                      borderRadius: 10,
+                      background: "#0284c7",
+                      color: "#ffffff",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span>🧭</span> {calculatingRoute ? "Đang tính..." : "Chỉ đường tránh ngập"}
+                  </button>
+                  <button
+                    onClick={() => handleInspectGpsGloFAS()}
+                    style={{
+                      padding: "9px 12px",
+                      borderRadius: 10,
+                      border: "1px solid #e2e8f0",
+                      background: "#f8fafc",
+                      color: "#0f172a",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                    title="Xem chi tiết toàn bộ mô hình GloFAS"
+                  >
+                    📊 GloFAS
+                  </button>
+                </div>
+              </div>
+            ) : clickedAddress ? (
               <div>
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
                   <div>
@@ -1381,6 +1831,45 @@ function EcoMap() {
             </span>
           </button>
 
+          {/* NÚT MỞ BẬT/TẮT CẢNH BÁO NGẬP LỤT (3 NGUỒN TÍCH HỢP) */}
+          <button
+            onClick={() => setShowFloodWatch(!showFloodWatch)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "5px 12px",
+              borderRadius: 999,
+              border: showFloodWatch ? "1px solid #0284c7" : "1px solid rgba(2, 132, 199, 0.35)",
+              cursor: "pointer",
+              fontSize: 11.5,
+              fontWeight: showFloodWatch ? 700 : 500,
+              background: showFloodWatch ? "linear-gradient(135deg, #0284c7, #0369a1)" : "transparent",
+              color: showFloodWatch ? "#ffffff" : "#0284c7",
+              boxShadow: showFloodWatch ? "0 2px 10px rgba(2, 132, 199, 0.35)" : "none",
+              transition: "all 0.15s ease",
+              whiteSpace: "nowrap",
+            }}
+            title="Cảnh báo ngập lụt đô thị tích hợp 3 nguồn: Cổng dữ liệu TP.HCM, Open-Meteo GloFAS & Lượng mưa thông minh"
+          >
+            <span style={{ fontSize: 13 }}>🌊</span>
+            <span>Cảnh báo Ngập lụt</span>
+            {floodData && (
+              <span
+                style={{
+                  background: showFloodWatch ? "rgba(255, 255, 255, 0.25)" : "#e0f2fe",
+                  color: showFloodWatch ? "#ffffff" : "#0369a1",
+                  fontSize: 9.5,
+                  padding: "1px 5px",
+                  borderRadius: 4,
+                  fontWeight: 800,
+                }}
+              >
+                {floodData.total} điểm
+              </span>
+            )}
+          </button>
+
           {/* Nút Menu Bản đồ nhiệt thời tiết & môi trường */}
           <div style={{ position: "relative" }}>
             <button
@@ -1601,6 +2090,102 @@ function EcoMap() {
           >
             <span>{is3D ? "🏢 3D" : "📐 2D"}</span>
           </button>
+
+          {/* Bộ chọn màu sắc 3D khi đang bật 3D trên bản đồ hỗ trợ */}
+          {is3D && (activeStyle === "voyager" || activeStyle === "dark") && (
+            <div style={{ position: "relative" }}>
+              <button
+                onClick={() => setShow3DColorMenu(!show3DColorMenu)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
+                  padding: "5px 10px",
+                  borderRadius: 999,
+                  border: "1px solid #c084fc",
+                  cursor: "pointer",
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  background: "linear-gradient(135deg, #fdf4ff, #fae8ff)",
+                  color: "#9333ea",
+                  boxShadow: "0 2px 8px rgba(147, 51, 234, 0.15)",
+                  transition: "all 0.15s ease",
+                  whiteSpace: "nowrap",
+                }}
+                title="Đổi bảng màu sắc rực rỡ cho tòa nhà 3D"
+              >
+                <span>{BUILDING_COLOR_THEMES[building3DTheme].icon}</span>
+                <span>Màu 3D</span>
+                <span style={{ fontSize: 9 }}>▼</span>
+              </button>
+
+              {show3DColorMenu && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    right: 0,
+                    marginTop: 6,
+                    background: "rgba(255, 255, 255, 0.98)",
+                    backdropFilter: "blur(20px)",
+                    WebkitBackdropFilter: "blur(20px)",
+                    borderRadius: 14,
+                    boxShadow: "0 12px 30px rgba(0, 0, 0, 0.2)",
+                    border: "1px solid #e2e8f0",
+                    padding: 8,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 4,
+                    zIndex: 100,
+                    minWidth: 230,
+                  }}
+                >
+                  <div style={{ padding: "3px 6px", fontSize: 10.5, fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    Bảng màu tòa nhà 3D
+                  </div>
+                  {(Object.keys(BUILDING_COLOR_THEMES) as BuildingColorTheme[]).map((themeKey) => {
+                    const theme = BUILDING_COLOR_THEMES[themeKey];
+                    const isSelected = building3DTheme === themeKey;
+                    return (
+                      <button
+                        key={themeKey}
+                        onClick={() => {
+                          setBuilding3DTheme(themeKey);
+                          setShow3DColorMenu(false);
+                        }}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 3,
+                          padding: "7px 9px",
+                          borderRadius: 9,
+                          border: isSelected ? "1.5px solid #a855f7" : "1px solid transparent",
+                          background: isSelected ? "#fdf4ff" : "transparent",
+                          cursor: "pointer",
+                          textAlign: "left",
+                          transition: "all 0.15s ease",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <span style={{ fontSize: 12, fontWeight: isSelected ? 700 : 600, color: isSelected ? "#9333ea" : "#1e293b" }}>
+                            {theme.icon} {theme.name}
+                          </span>
+                          {isSelected && <span style={{ fontSize: 11, color: "#9333ea", fontWeight: 800 }}>✓</span>}
+                        </div>
+                        <span style={{ fontSize: 9.5, color: "#64748b" }}>{theme.desc}</span>
+                        {/* Dải màu preview */}
+                        <div style={{ display: "flex", height: 5, borderRadius: 3, overflow: "hidden", marginTop: 2 }}>
+                          {theme.colors.map((c, idx) => (
+                            <div key={idx} style={{ flex: 1, backgroundColor: c }} />
+                          ))}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Nút Định vị GPS */}
           <button
@@ -1825,6 +2410,7 @@ function EcoMap() {
           pitch: 50,
           bearing: -15,
         }}
+        interactiveLayerIds={showFloodWatch ? ["flood-segments-core", "flood-segments-glow"] : undefined}
         onClick={handleMapClick}
         onMove={(e) => {
           setCurrentZoom(e.viewState.zoom);
@@ -1844,30 +2430,50 @@ function EcoMap() {
         onMouseMove={(e) => {
           // Throttle state update to prevent massive re-rendering
           const now = Date.now();
-          if (now - lastMouseMoveRef.current > 100) {
+          if (now - lastMouseMoveRef.current > 75) {
             setMouseCoords({ lat: e.lngLat.lat, lng: e.lngLat.lng });
             lastMouseMoveRef.current = now;
+
+            if (showFloodWatch) {
+              let floodFeat: any = null;
+              if (e.features && e.features.length > 0) {
+                floodFeat = e.features.find(
+                  (f: any) =>
+                    f.layer?.id === "flood-segments-core" ||
+                    f.layer?.id === "flood-segments-glow"
+                );
+              }
+              if (floodFeat && floodFeat.properties) {
+                setHoveredFloodSegment({
+                  properties: floodFeat.properties,
+                  lngLat: [e.lngLat.lng, e.lngLat.lat],
+                });
+              } else if (hoveredFloodSegment) {
+                setHoveredFloodSegment(null);
+              }
+            }
           }
         }}
-        style={{ width: "100%", height: "100%", cursor: loadingReverse ? "wait" : "default" }}
+        style={{ width: "100%", height: "100%", cursor: loadingReverse ? "wait" : hoveredFloodSegment ? "pointer" : "default" }}
         mapStyle={MAP_STYLES[activeStyle].url as any}
       >
         <NavigationControl position="bottom-right" />
         <FullscreenControl position="bottom-right" />
 
-        {/* 1. LỚP TÒA NHÀ 3D */}
+        {/* 1. LỚP TÒA NHÀ 3D ĐA SẮC RỰC RỠ (3D COLORFUL ARCHITECTURAL EXTRUSIONS) */}
         {is3D && (activeStyle === "voyager" || activeStyle === "dark") && (
           <Layer
             id="3d-buildings-extrusion"
             source="carto"
             source-layer="building"
             type="fill-extrusion"
-            minzoom={14}
+            minzoom={13}
             paint={{
-              "fill-extrusion-color": activeStyle === "dark" ? "#1e293b" : "#e2e8f0",
-              "fill-extrusion-height": ["coalesce", ["get", "render_height"], 18],
+              "fill-extrusion-color": BUILDING_COLOR_THEMES[building3DTheme].expression,
+              "fill-extrusion-height": ["coalesce", ["get", "render_height"], 16],
               "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
-              "fill-extrusion-opacity": 0.85,
+              "fill-extrusion-opacity": activeStyle === "dark" ? 0.88 : 0.92,
+              "fill-extrusion-vertical-gradient": true,
             }}
           />
         )}
@@ -2086,6 +2692,85 @@ function EcoMap() {
                 "heatmap-opacity": 0.8,
               }}
             />
+          </Source>
+        )}
+
+        {/* 2.6. LỚP BÔI MÀU CÁC ĐOẠN ĐƯỜNG BỊ NGẬP LỤT (Vector LineString GeoJSON) */}
+        {showFloodWatch && floodRoadSegmentsGeoJSON && (
+          <Source id="flood-segments-source" type="geojson" data={floodRoadSegmentsGeoJSON}>
+            {/* Lớp hào quang phát sáng mờ phía dưới (Glow / Water Depth Halo) */}
+            <Layer
+              id="flood-segments-glow"
+              type="line"
+              layout={{
+                "line-join": "round",
+                "line-cap": "round",
+              }}
+              paint={{
+                "line-color": ["get", "glow_color"],
+                "line-width": [
+                  "interpolate",
+                  ["linear"],
+                  ["zoom"],
+                  10, 6,
+                  13, 12,
+                  15, 18,
+                  18, 26,
+                ],
+                "line-blur": 3,
+                "line-opacity": 0.85,
+              }}
+            />
+
+            {/* Lớp tim đường ngập chính rõ nét (Core Crispy Line) */}
+            <Layer
+              id="flood-segments-core"
+              type="line"
+              layout={{
+                "line-join": "round",
+                "line-cap": "round",
+              }}
+              paint={{
+                "line-color": ["get", "color"],
+                "line-width": [
+                  "interpolate",
+                  ["linear"],
+                  ["zoom"],
+                  10, 2.5,
+                  13, 5.5,
+                  15, 8,
+                  18, 12,
+                ],
+                "line-opacity": 0.95,
+              }}
+            />
+
+            {/* Lớp viền trắng nét đứt nổi bật khi đoạn đường được chọn */}
+            {selectedFloodSpot && (
+              <Layer
+                id="flood-selected-segment-highlight"
+                type="line"
+                filter={["==", ["get", "spot_id"], selectedFloodSpot.id]}
+                layout={{
+                  "line-join": "round",
+                  "line-cap": "round",
+                }}
+                paint={{
+                  "line-color": "#ffffff",
+                  "line-width": [
+                    "interpolate",
+                    ["linear"],
+                    ["zoom"],
+                    10, 3.5,
+                    13, 7,
+                    15, 10,
+                    18, 14,
+                  ],
+                  "line-opacity": 0.9,
+                  "line-dasharray": [2, 1.5],
+                }}
+              />
+            )}
           </Source>
         )}
 
@@ -2450,6 +3135,131 @@ function EcoMap() {
             );
           })}
 
+        {/* 6.5. HỆ THỐNG MARKER ĐIỂM ĐEN NGẬP LỤT ĐÔ THỊ (3 NGUỒN TÍCH HỢP) */}
+        {showFloodWatch &&
+          floodData &&
+          floodData.features.map((feat) => {
+            const [fLng, fLat] = feat.geometry.coordinates;
+            const p = feat.properties;
+            const isSelected = selectedFloodSpot?.id === p.id;
+            const isCritical = p.current_risk_level === "CRITICAL";
+            const isWarning = p.current_risk_level === "WARNING";
+            const isAlert = p.current_risk_level === "ALERT";
+
+            const pinColor = isCritical
+              ? "#ef4444"
+              : isWarning
+              ? "#f97316"
+              : isAlert
+              ? "#eab308"
+              : "#0284c7";
+
+            const pinBg = isCritical
+              ? "linear-gradient(135deg, #ef4444, #dc2626)"
+              : isWarning
+              ? "linear-gradient(135deg, #f97316, #ea580c)"
+              : isAlert
+              ? "linear-gradient(135deg, #facc15, #ca8a04)"
+              : "linear-gradient(135deg, #38bdf8, #0284c7)";
+
+            const iconSymbol = isCritical ? "🚨" : isWarning ? "🌊" : isAlert ? "⚠️" : "💧";
+
+            return (
+              <Marker
+                key={feat.id}
+                longitude={fLng}
+                latitude={fLat}
+                anchor="bottom"
+                onClick={(e) => {
+                  e.originalEvent.stopPropagation();
+                  handleSelectFloodSpot(p, [fLng, fLat]);
+                }}
+              >
+                <div
+                  style={{
+                    position: "relative",
+                    cursor: "pointer",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    transform: isSelected ? "scale(1.25)" : "scale(1)",
+                    transition: "all 0.25s ease",
+                    zIndex: isSelected ? 50 : isCritical ? 45 : 20,
+                  }}
+                  title={`${p.name} - ${p.current_risk_label}`}
+                >
+                  {/* Hiệu ứng sóng lan tỏa cảnh báo ngập nếu mức độ cao */}
+                  {(isCritical || isWarning) && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 2,
+                        width: 32,
+                        height: 32,
+                        borderRadius: "50%",
+                        background: isCritical ? "rgba(239, 68, 68, 0.4)" : "rgba(249, 115, 22, 0.35)",
+                        animation: "radarPing 1.8s infinite ease-out",
+                        pointerEvents: "none",
+                      }}
+                    />
+                  )}
+
+                  {/* Huy hiệu độ sâu nổi bật */}
+                  <div
+                    style={{
+                      background: pinBg,
+                      color: isAlert ? "#0f172a" : "#ffffff",
+                      padding: "3px 8px",
+                      borderRadius: 999,
+                      fontSize: 10.5,
+                      fontWeight: 800,
+                      boxShadow: isSelected
+                        ? `0 0 0 3px #ffffff, 0 4px 14px ${pinColor}`
+                        : "0 3px 8px rgba(0,0,0,0.25)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      border: "1.5px solid #ffffff",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <span>{iconSymbol}</span>
+                    <span>{p.estimated_depth_cm > 0 ? `${p.estimated_depth_cm}cm` : "An toàn"}</span>
+                  </div>
+
+                  {/* Chóp nhọn ghim bản đồ */}
+                  <div
+                    style={{
+                      width: 0,
+                      height: 0,
+                      borderLeft: "5px solid transparent",
+                      borderRight: "5px solid transparent",
+                      borderTop: `6px solid ${pinColor}`,
+                      marginTop: -1,
+                    }}
+                  />
+
+                  {/* Tên đường khi zoom gần */}
+                  {currentZoom >= 13.5 && (
+                    <span
+                      style={{
+                        marginTop: 2,
+                        fontSize: 9.5,
+                        fontWeight: 700,
+                        color: "#0f172a",
+                        textShadow: "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff",
+                        whiteSpace: "nowrap",
+                        pointerEvents: "none",
+                      }}
+                    >
+                      {p.street}
+                    </span>
+                  )}
+                </div>
+              </Marker>
+            );
+          })}
+
         {/* 7. MARKER ĐỊNH VỊ GPS THỜI GIAN THỰC (RADAR HALO & VÒNG BÁN KÍNH SAI SỐ) */}
         {gpsCoords && (
           <Marker longitude={gpsCoords.lng} latitude={gpsCoords.lat} anchor="center">
@@ -2546,6 +3356,48 @@ function EcoMap() {
               </div>
               <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 4 }}>
                 Bụi mịn PM2.5: {selectedHeatmapStation.properties.pm25} µg/m³
+              </div>
+            </div>
+          </Popup>
+        )}
+
+        {/* Popup hiển thị thông tin đoạn đường ngập khi di chuột qua (Hover Tooltip) */}
+        {showFloodWatch && hoveredFloodSegment && !selectedFloodSpot && (
+          <Popup
+            longitude={hoveredFloodSegment.lngLat[0]}
+            latitude={hoveredFloodSegment.lngLat[1]}
+            anchor="bottom"
+            closeButton={false}
+            closeOnClick={false}
+            offset={[0, -10]}
+          >
+            <div style={{ padding: "4px 6px", minWidth: 200, fontFamily: "sans-serif" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, marginBottom: 2 }}>
+                <span style={{ fontWeight: 800, fontSize: 13, color: hoveredFloodSegment.properties.color }}>
+                  🌊 {hoveredFloodSegment.properties.name}
+                </span>
+                <span
+                  style={{
+                    fontSize: 9.5,
+                    fontWeight: 700,
+                    padding: "1px 5px",
+                    borderRadius: 4,
+                    background: hoveredFloodSegment.properties.color,
+                    color: "#ffffff",
+                  }}
+                >
+                  {hoveredFloodSegment.properties.risk_level}
+                </span>
+              </div>
+              <div style={{ fontSize: 11, color: "#475569" }}>
+                {hoveredFloodSegment.properties.risk_label}
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#0f172a", marginTop: 4, display: "flex", justifyContent: "space-between" }}>
+                <span>Độ sâu: <strong style={{ color: hoveredFloodSegment.properties.color }}>{hoveredFloodSegment.properties.estimated_depth_cm} cm</strong></span>
+                <span>Dài: {hoveredFloodSegment.properties.length_m}m</span>
+              </div>
+              <div style={{ fontSize: 9.5, color: "#64748b", marginTop: 2, fontStyle: "italic" }}>
+                👉 Nhấp vào đường để mở chi tiết 3 nguồn & lộ trình tránh
               </div>
             </div>
           </Popup>
@@ -2650,6 +3502,396 @@ function EcoMap() {
         </div>
       )}
 
+      {/* 7.5. HUY HIỆU THANG ĐO CHIỀU CAO TÒA NHÀ 3D (GÓC DƯỚI BÊN PHẢI) */}
+      {is3D && (activeStyle === "voyager" || activeStyle === "dark") && activeHeatmap === "none" && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 24,
+            right: 58,
+            zIndex: 30,
+            background: "rgba(255, 255, 255, 0.95)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            borderRadius: 12,
+            padding: "8px 12px",
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 10px 25px rgba(0, 0, 0, 0.12)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 5,
+            fontSize: 11,
+            pointerEvents: "auto",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+            <span style={{ fontWeight: 700, color: "#1e293b" }}>
+              🏢 {BUILDING_COLOR_THEMES[building3DTheme].icon} {BUILDING_COLOR_THEMES[building3DTheme].name}
+            </span>
+            <span style={{ fontSize: 9.5, color: "#94a3b8" }}>3D Vector</span>
+          </div>
+          <div style={{ display: "flex", height: 6, borderRadius: 3, overflow: "hidden", marginTop: 1 }}>
+            {BUILDING_COLOR_THEMES[building3DTheme].colors.map((c, idx) => (
+              <div key={idx} style={{ flex: 1, backgroundColor: c }} />
+            ))}
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9.5, color: "#64748b", gap: 8 }}>
+            <span>Thấp (0-15m)</span>
+            <span>TB (30m)</span>
+            <span>Cao ốc (70m+)</span>
+            <span>Tháp (150m+)</span>
+          </div>
+        </div>
+      )}
+
+      {/* 7.6. WIDGET GIÁM SÁT NGẬP LỤT ĐÔ THỊ THỜI GIAN THỰC (3 NGUỒN TÍCH HỢP) */}
+      {showFloodWatch && floodData && activeHeatmap === "none" && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 24,
+            left: 16,
+            zIndex: 25,
+            background: "rgba(255, 255, 255, 0.96)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            borderRadius: 16,
+            padding: "12px 14px",
+            boxShadow: "0 8px 30px rgba(0, 0, 0, 0.12)",
+            border: "1px solid #e2e8f0",
+            maxWidth: 380,
+            width: "calc(100vw - 32px)",
+            pointerEvents: "auto",
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          }}
+        >
+          {/* Header Widget */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 16 }}>🌊</span>
+              <span style={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a" }}>
+                Giám Sát Ngập Lụt Đô Thị (3 Nguồn)
+              </span>
+            </div>
+            <button
+              onClick={() => setShowFloodWatch(false)}
+              style={{
+                border: "none",
+                background: "transparent",
+                color: "#94a3b8",
+                cursor: "pointer",
+                fontSize: 13,
+                padding: "2px 4px",
+              }}
+              title="Tạm ẩn lớp ngập lụt"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Dãy nhãn thống kê cấp độ rủi ro */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, textAlign: "center" }}>
+            <div style={{ background: "#fee2e2", padding: "4px 2px", borderRadius: 6, border: "1px solid #fca5a5" }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#dc2626" }}>{floodData.summary.criticalCount}</div>
+              <div style={{ fontSize: 9, fontWeight: 600, color: "#991b1b" }}>Nguy cấp</div>
+            </div>
+            <div style={{ background: "#ffedd5", padding: "4px 2px", borderRadius: 6, border: "1px solid #fdba74" }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#ea580c" }}>{floodData.summary.warningCount}</div>
+              <div style={{ fontSize: 9, fontWeight: 600, color: "#c2410c" }}>Cảnh báo</div>
+            </div>
+            <div style={{ background: "#fef9c3", padding: "4px 2px", borderRadius: 6, border: "1px solid #fde047" }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#ca8a04" }}>{floodData.summary.alertCount}</div>
+              <div style={{ fontSize: 9, fontWeight: 600, color: "#a16207" }}>Cảnh giác</div>
+            </div>
+            <div style={{ background: "#e0f2fe", padding: "4px 2px", borderRadius: 6, border: "1px solid #7dd3fc" }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#0284c7" }}>{floodData.summary.safeCount}</div>
+              <div style={{ fontSize: 9, fontWeight: 600, color: "#0369a1" }}>An toàn</div>
+            </div>
+          </div>
+
+          {/* Dữ liệu đo đạc thực tế */}
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#475569", background: "#f8fafc", padding: "6px 10px", borderRadius: 8 }}>
+            <span>🌧️ Mưa đo được: <strong style={{ color: "#0f172a" }}>{floodData.summary.currentRainfallMm} mm/h</strong></span>
+            <span>🌊 GloFAS: <strong style={{ color: "#0f172a" }}>{Math.round(floodData.summary.saigonRiverDischargeM3s).toLocaleString()} m³/s</strong></span>
+          </div>
+
+          {/* Thông tin dải màu đoạn đường ngập */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              fontSize: 10.5,
+              color: "#0369a1",
+              background: "rgba(2, 132, 199, 0.08)",
+              padding: "5px 8px",
+              borderRadius: 8,
+              border: "1px solid rgba(2, 132, 199, 0.15)",
+            }}
+          >
+            <span>🛣️ <strong>{floodData.road_segments?.length || 30} đoạn đường ngập</strong> được bôi màu</span>
+            <span style={{ fontSize: 9.5, color: "#64748b" }}>Nhấp để xem</span>
+          </div>
+
+          {/* Thanh kích hoạt kiểm thử mưa (Simulation Trigger) */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 10, color: "#64748b" }}>
+              <span>🧪 <strong>Thử nghiệm kích hoạt mưa:</strong></span>
+              {simulatedRainfallMm !== null && (
+                <button
+                  onClick={() => setSimulatedRainfallMm(null)}
+                  style={{
+                    border: "none",
+                    background: "none",
+                    color: "#0284c7",
+                    cursor: "pointer",
+                    fontSize: 10,
+                    fontWeight: 600,
+                    padding: 0,
+                  }}
+                >
+                  (Về thời gian thực)
+                </button>
+              )}
+            </div>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button
+                onClick={() => setSimulatedRainfallMm(0)}
+                style={{
+                  flex: 1,
+                  padding: "4px 2px",
+                  borderRadius: 6,
+                  border: simulatedRainfallMm === 0 ? "1px solid #0284c7" : "1px solid #e2e8f0",
+                  background: simulatedRainfallMm === 0 ? "#e0f2fe" : "#ffffff",
+                  color: simulatedRainfallMm === 0 ? "#0369a1" : "#475569",
+                  fontSize: 10,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                ☀️ 0mm (Tạnh)
+              </button>
+              <button
+                onClick={() => setSimulatedRainfallMm(25)}
+                style={{
+                  flex: 1,
+                  padding: "4px 2px",
+                  borderRadius: 6,
+                  border: simulatedRainfallMm === 25 ? "1px solid #f97316" : "1px solid #e2e8f0",
+                  background: simulatedRainfallMm === 25 ? "#ffedd5" : "#ffffff",
+                  color: simulatedRainfallMm === 25 ? "#c2410c" : "#475569",
+                  fontSize: 10,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                🌧️ 25mm (Vừa)
+              </button>
+              <button
+                onClick={() => setSimulatedRainfallMm(55)}
+                style={{
+                  flex: 1,
+                  padding: "4px 2px",
+                  borderRadius: 6,
+                  border: simulatedRainfallMm === 55 ? "1px solid #ef4444" : "1px solid #e2e8f0",
+                  background: simulatedRainfallMm === 55 ? "#fee2e2" : "#ffffff",
+                  color: simulatedRainfallMm === 55 ? "#b91c1c" : "#475569",
+                  fontSize: 10,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                ⛈️ 55mm (Ngập to)
+              </button>
+            </div>
+          </div>
+
+          {/* Nút Tra cứu GloFAS tại GPS */}
+          <button
+            onClick={() => handleInspectGpsGloFAS()}
+            disabled={loadingGpsGloFAS}
+            style={{
+              width: "100%",
+              padding: "7px",
+              borderRadius: 8,
+              border: "1px solid #0284c7",
+              background: "#f0f9ff",
+              color: "#0369a1",
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+            }}
+          >
+            <span>🎯</span>
+            <span>{loadingGpsGloFAS ? "Đang tra cứu vệ tinh..." : "Tra cứu rủi ro lũ GloFAS tại vị trí của tôi"}</span>
+          </button>
+        </div>
+      )}
+
+      {/* 7.7. MODAL XEM CHI TIẾT DỰ BÁO LŨ GLOFAS 7 NGÀY (OPEN-METEO FLOOD API) */}
+      {showGloFASModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100,
+            background: "rgba(15, 23, 42, 0.65)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+            pointerEvents: "auto",
+          }}
+          onClick={() => setShowGloFASModal(false)}
+        >
+          <div
+            style={{
+              background: "#ffffff",
+              borderRadius: 20,
+              maxWidth: 520,
+              width: "100%",
+              padding: 24,
+              boxShadow: "0 20px 50px rgba(0, 0, 0, 0.25)",
+              border: "1px solid #e2e8f0",
+              fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header Modal */}
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 20 }}>🛰️</span>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: "#0f172a" }}>
+                    Dự Báo Thủy Văn & Rủi Ro Lũ Lụt GloFAS
+                  </span>
+                </div>
+                <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
+                  Nguồn: Open-Meteo Global Flood API (Copernicus Emergency Management)
+                </div>
+              </div>
+              <button
+                onClick={() => setShowGloFASModal(false)}
+                style={{
+                  border: "none",
+                  background: "#f1f5f9",
+                  borderRadius: "50%",
+                  width: 28,
+                  height: 28,
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "#64748b",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {loadingGpsGloFAS ? (
+              <div style={{ textAlign: "center", padding: "30px 0", color: "#64748b" }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>🛰️</div>
+                <div>Đang kết nối Open-Meteo GloFAS toàn cầu...</div>
+              </div>
+            ) : gpsGloFAS ? (
+              <div>
+                {/* Banner trạng thái nguy cơ */}
+                <div
+                  style={{
+                    background:
+                      gpsGloFAS.flood_danger_level === "CRITICAL"
+                        ? "#fee2e2"
+                        : gpsGloFAS.flood_danger_level === "WARNING"
+                        ? "#ffedd5"
+                        : gpsGloFAS.flood_danger_level === "ALERT"
+                        ? "#fef9c3"
+                        : "#e0f2fe",
+                    color:
+                      gpsGloFAS.flood_danger_level === "CRITICAL"
+                        ? "#b91c1c"
+                        : gpsGloFAS.flood_danger_level === "WARNING"
+                        ? "#c2410c"
+                        : gpsGloFAS.flood_danger_level === "ALERT"
+                        ? "#a16207"
+                        : "#0369a1",
+                    padding: "10px 14px",
+                    borderRadius: 12,
+                    fontWeight: 700,
+                    fontSize: 13,
+                    marginBottom: 14,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <span>{gpsGloFAS.flood_danger_label}</span>
+                  <span style={{ fontSize: 12, fontWeight: 800 }}>
+                    {gpsGloFAS.current_discharge_m3s.toLocaleString()} m³/s
+                  </span>
+                </div>
+
+                {/* Thông tin lưu vực */}
+                <div style={{ background: "#f8fafc", padding: "10px 14px", borderRadius: 12, border: "1px solid #e2e8f0", marginBottom: 16 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#1e293b", marginBottom: 4 }}>
+                    🌊 <strong>Lưu vực:</strong> {gpsGloFAS.river_name}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#64748b" }}>
+                    📍 Tọa độ tra cứu: {gpsGloFAS.latitude.toFixed(4)}°N, {gpsGloFAS.longitude.toFixed(4)}°E
+                  </div>
+                </div>
+
+                {/* Bảng & Biểu đồ dự báo 7 ngày */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>
+                    Dự báo lưu lượng dòng chảy sông ngòi (7 Ngày tới):
+                  </div>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 110, background: "#f8fafc", borderRadius: 12, padding: "10px 12px", border: "1px solid #e2e8f0" }}>
+                    {gpsGloFAS.forecast_7d.map((d, i) => {
+                      const maxBar = 6000;
+                      const h = Math.min(80, Math.max(14, (d.discharge / maxBar) * 80));
+                      const isHigh = d.discharge > 3500;
+                      return (
+                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                          <span style={{ fontSize: 8.5, fontWeight: 700, color: isHigh ? "#dc2626" : "#0284c7" }}>
+                            {Math.round(d.discharge)}
+                          </span>
+                          <div
+                            style={{
+                              width: "100%",
+                              height: h,
+                              background: isHigh
+                                ? "linear-gradient(to top, #ef4444, #dc2626)"
+                                : "linear-gradient(to top, #38bdf8, #0284c7)",
+                              borderRadius: "4px 4px 0 0",
+                            }}
+                          />
+                          <span style={{ fontSize: 9.5, color: "#64748b", fontWeight: 600 }}>
+                            {d.date.split("-")[2]}/{d.date.split("-")[1]}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Chú giải khoa học */}
+                <div style={{ fontSize: 10.5, color: "#64748b", lineHeight: 1.4, background: "#f1f5f9", padding: "8px 12px", borderRadius: 8 }}>
+                  💡 <strong>GloFAS (Global Flood Awareness System):</strong> Hệ thống giám sát lũ lụt toàn cầu do Trung tâm Dự báo Hạn vừa Châu Âu (ECMWF) và Ủy ban Châu Âu phát triển, sử dụng vệ tinh viễn thám để mô phỏng lưu lượng dòng chảy và dự báo sớm nguy cơ ngập lụt trước 7-15 ngày.
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
+
       {/* Hiệu ứng Animation CSS */}
       <style>{`
         @keyframes radarPing {
@@ -2667,6 +3909,7 @@ function EcoMap() {
         <LiveWeatherRadarMap
           onClose={() => setShowLiveRadar(false)}
           initialOverlay={liveRadarOverlay}
+          userGps={gpsCoords}
         />
       )}
     </div>
