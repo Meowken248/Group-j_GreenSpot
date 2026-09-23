@@ -24,6 +24,7 @@ import {
   fetchDistrictBoundariesAPI,
   fetchLandmarksAPI,
   fetchLiveWeatherAPI,
+  reportFloodAPI,
   type LiveWeatherResponse,
 } from "../services/ecoApiService";
 import { useFastGeolocation } from "../hooks/useFastGeolocation";
@@ -274,8 +275,10 @@ function EcoMap() {
   const [districtBoundaries, setDistrictBoundaries] = useState<FeatureCollection | null>(null);
   const [liveWeather, setLiveWeather] = useState<LiveWeatherResponse | null>(null);
 
-  // Chế độ hiển thị ngập lụt (Mặc định bật mô phỏng triều đỉnh 1.68m để hiển thị rõ các đoạn đường ngập úng)
-  const [simulateFlood, setSimulateFlood] = useState<boolean>(true);
+  // Chế độ hiển thị ngập lụt (Mặc định tắt để sử dụng dữ liệu thực tế từ Weather API & Tide Engine)
+  const [simulateFlood, setSimulateFlood] = useState<boolean>(false);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
+  const [contextMenu, setContextMenu] = useState<{ lng: number; lat: number; x: number; y: number } | null>(null);
 
   // 1. Tải danh sách địa điểm môi trường từ Backend API (PostgreSQL/PostGIS)
   useEffect(() => {
@@ -296,7 +299,7 @@ function EcoMap() {
     return () => {
       isMounted = false;
     };
-  }, [selectedCategory, simulateFlood]);
+  }, [selectedCategory, simulateFlood, refreshTrigger]);
 
   // 2. Tải Ranh giới quận/huyện, Điểm Landmark Quick Tour, và Thời tiết thời gian thực
   useEffect(() => {
@@ -423,7 +426,8 @@ function EcoMap() {
   const floodCorridorsGeoJSON = useMemo<FeatureCollection>(() => {
     const features: any[] = [];
     ecoLocations.forEach((loc) => {
-      if (loc.category === "flood" && loc.roadCorridor) {
+      // CHỈ vẽ đường màu xanh nếu đường thực sự đang ngập (không phải SAFE)
+      if (loc.category === "flood" && loc.roadCorridor && loc.severityLevel !== "SAFE") {
         features.push({
           type: "Feature",
           id: loc.id,
@@ -509,6 +513,7 @@ function EcoMap() {
     setSelectedLocation(null);
     setSelectedPOI(null);
     setClickedAddress(null);
+    setContextMenu(null);
     handleFlyToLocation(loc.longitude, loc.latitude, loc.zoom, loc.pitch, loc.bearing);
   };
 
@@ -1580,7 +1585,19 @@ function EcoMap() {
           pitch: 50,
           bearing: -15,
         }}
-        onClick={handleMapClick}
+        onClick={(e) => {
+          setContextMenu(null);
+          handleMapClick(e);
+        }}
+        onContextMenu={(e) => {
+          e.originalEvent.preventDefault();
+          setContextMenu({
+            lng: e.lngLat.lng,
+            lat: e.lngLat.lat,
+            x: e.point.x,
+            y: e.point.y,
+          });
+        }}
         onMoveEnd={(e) => {
           setMapCenter({
             lat: e.viewState.latitude,
@@ -1591,7 +1608,7 @@ function EcoMap() {
           setMouseCoords({ lat: e.lngLat.lat, lng: e.lngLat.lng });
         }}
         style={{ width: "100%", height: "100%", cursor: loadingReverse ? "wait" : "default" }}
-        interactiveLayerIds={["flood-corridor-main", "flood-corridor-glow"]}
+        interactiveLayerIds={["eco-points", "flood-corridor-main", "flood-corridor-glow"]}
         mapStyle={MAP_STYLES[activeStyle].url as any}
       >
         <NavigationControl position="top-right" />
@@ -1931,6 +1948,40 @@ function EcoMap() {
           to { opacity: 1; transform: translateX(0); }
         }
       `}</style>
+
+      {/* 11. Context Menu (Right Click) Báo Cáo Ngập Lụt */}
+      {contextMenu && (
+        <div
+          style={{
+            position: "absolute",
+            left: contextMenu.x,
+            top: contextMenu.y,
+            backgroundColor: "#1e293b",
+            color: "white",
+            padding: "12px",
+            borderRadius: "8px",
+            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+            zIndex: 1000,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            border: "1px solid #38bdf8"
+          }}
+          onClick={async (e) => {
+            e.stopPropagation();
+            const success = await reportFloodAPI(contextMenu.lat, contextMenu.lng, 35);
+            setContextMenu(null);
+            if (success) {
+              alert("Báo cáo ngập lụt thành công! Hệ thống đang tải lại bản đồ...");
+              setRefreshTrigger((prev) => prev + 1); // Tải lại bản đồ
+            }
+          }}
+        >
+          <span className="material-symbols-outlined text-blue-400">flood</span>
+          <span className="font-semibold text-sm">Báo cáo đoạn đường này đang ngập</span>
+        </div>
+      )}
     </div>
   );
 }
