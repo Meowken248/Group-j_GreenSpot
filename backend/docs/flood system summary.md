@@ -1,13 +1,79 @@
-# Tổng Kết Mã Nguồn: Hệ Thống Báo Cáo Ngập Lụt Động (Dynamic Flood Crowdsourcing)
+# Tổng Kết Mã Nguồn: Hệ Thống Báo Cáo Ngập Lụt Động (Dynamic Flood Crowdsourcing) & Cấu Trúc OOP
 
-Tài liệu này tổng hợp lại toàn bộ các logic lõi (core logic) và những thay đổi quan trọng nhất để giúp hệ thống từ chỗ "hiển thị điểm ngập mẫu cố định" trở thành một **bản đồ thông minh biết tự động vẽ đường ngập theo thời gian thực** dựa trên dữ liệu báo cáo cộng đồng.
+Tài liệu này tổng hợp toàn bộ các logic lõi (core logic) và kiến trúc hệ thống hiện tại. Hệ thống đã được nâng cấp từ việc "hiển thị điểm ngập mẫu cố định" sang **bản đồ thông minh biết tự động vẽ đường ngập theo thời gian thực**, đồng thời tái cấu trúc hoàn toàn mã nguồn Backend theo tiêu chuẩn **Hướng Đối Tượng (OOP)** chuyên nghiệp với các Interface (Abstract Base Classes).
 
 ---
 
-## 1. Backend Core: Thuật toán Tự động vẽ đường bằng OSRM
+## PHẦN 1: TÁI CẤU TRÚC KIẾN TRÚC OOP (CLEAN ARCHITECTURE)
+
+Để đảm bảo hệ thống dễ bảo trì, có khả năng Test (Mocking) và mở rộng cao theo nguyên lý **Dependency Inversion (S.O.L.I.D)**, toàn bộ các Services được kết nối thông qua các Interface trừu tượng.
+
+### 1.1 Khai báo Abstract Base Classes (Interfaces)
+**File:** `BackEnd/app/interface/interfaces.py`
+
+Thay vì gắn chặt vào các class cụ thể, hệ thống dùng module `abc` của Python để tạo các bản hợp đồng giao tiếp (Contract).
+
+```python
+from abc import ABC, abstractmethod
+# ... (imports) ...
+
+class IWeatherService(ABC):
+    @abstractmethod
+    async def get_hcm_rainfall(self, force_refresh: bool = False) -> Dict[str, Any]:
+        pass
+
+class ITideEngine(ABC):
+    @classmethod
+    @abstractmethod
+    def calculate_water_level(cls, target_time: Optional[datetime] = None, station_code: str = "PHU_AN") -> float:
+        pass
+    # ... Các hàm khác của TideEngine ...
+
+class IFloodEngine(ABC):
+    @classmethod
+    @abstractmethod
+    async def evaluate_all_hotspots(cls, db: AsyncSession, ...) -> List[Dict[str, Any]]:
+        pass
+    # ... Các hàm khác của FloodEngine ...
+```
+
+### 1.2 Triển khai các Interface (Concrete Implementations)
+Các file Service cốt lõi được sửa đổi để bắt buộc kế thừa từ Interface tương ứng.
+- **`BackEnd/app/services/weather_service.py`**:
+  ```python
+  from app.interface.interfaces import IWeatherService
+  
+  class WeatherRainfallService(IWeatherService):
+      async def get_hcm_rainfall(self, force_refresh: bool = False) -> Dict[str, Any]:
+          # Triển khai logic gọi API thời tiết...
+  ```
+- **`BackEnd/app/services/tide_service.py`**:
+  ```python
+  from app.interface.interfaces import ITideEngine
+
+  class HarmonicTideEngine(ITideEngine):
+      @classmethod
+      def calculate_water_level(cls, target_time: Optional[datetime] = None, station_code: str = "PHU_AN") -> float:
+          # Triển khai Harmonic Analysis...
+  ```
+- **`BackEnd/app/services/flood_engine.py`**:
+  ```python
+  from app.interface.interfaces import IFloodEngine
+
+  class FloodRiskEngine(IFloodEngine):
+      @classmethod
+      async def evaluate_all_hotspots(cls, db: AsyncSession, ...) -> List[Dict[str, Any]]:
+          # Triển khai hệ thống đánh giá rủi ro...
+  ```
+
+---
+
+## PHẦN 2: HỆ THỐNG BÁO CÁO NGẬP ĐỘNG (CROWDSOURCING)
+
+### 2.1 Backend Core: Thuật toán Tự động vẽ đường ngập bằng OSRM
 **File:** `BackEnd/app/api/v1/flood.py`
 
-Thay vì nhận một tọa độ điểm (Point) và vẽ hình tròn tĩnh, hệ thống sử dụng thuật toán Bám đường (Snap-to-road) của OSRM để tự động "vẽ" ra một đoạn đường thực tế.
+Thay vì nhận một tọa độ điểm (Point) và vẽ hình tròn tĩnh, hệ thống sử dụng thuật toán Bám đường (Snap-to-road) của **OSRM** để tự động "vẽ" ra một đoạn đường ngập thực tế.
 
 ```python
 # 1. Thuật toán tạo "Bounding box" 100m để ép OSRM tìm đoạn đường 
@@ -23,20 +89,18 @@ try:
     with urllib.request.urlopen(req, timeout=3) as response:
         route_data = json.loads(response.read().decode())
         if "routes" in route_data and len(route_data["routes"]) > 0:
-            # Lấy mảng tọa độ uốn lượn theo đường thật
+            # Lấy mảng tọa độ uốn lượn bám sát theo đường thật
             coords = route_data["routes"][0]["geometry"]["coordinates"]
-            # Chuyển đổi sang định dạng WKT (Well-Known Text) của PostGIS
+            # Chuyển đổi sang định dạng WKT (Well-Known Text) chuẩn PostGIS
             road_corridor_wkt = "LINESTRING(" + ", ".join([f"{c[0]} {c[1]}" for c in coords]) + ")"
 except Exception:
-    pass # Fallback an toàn nếu OSRM lỗi mạng
+    pass # Fallback an toàn nếu OSRM lỗi mạng hoặc timeout
 ```
 
----
-
-## 2. Backend Core: Ghi nhận điểm ngập Động vào CSDL (PostGIS)
+### 2.2 Backend Core: Ghi nhận điểm ngập Động vào CSDL (PostGIS)
 **File:** `BackEnd/app/api/v1/flood.py`
 
-Thay vì chỉ lưu log báo cáo, hệ thống tự động sinh ra một `flood_hotspots` mới toanh (Dynamic Hotspot) với dạng hình học `LineString` chính xác mà OSRM vừa trả về. Điểm đen này sẽ tự động tham gia vào mạng lưới phân tích rủi ro của hệ thống.
+Hệ thống tự động sinh ra một `flood_hotspots` động với ID đặc biệt (`FL-DYN-...`) kèm theo hình học `LineString` chính xác mà OSRM vừa trả về. Điểm đen này lập tức tham gia vào mạng lưới phân tích rủi ro của `IFloodEngine`.
 
 ```sql
 # Mã tạo Hotspot tự động
@@ -57,12 +121,10 @@ insert_hotspot_query = text("""
 """)
 ```
 
----
-
-## 3. Frontend Core: Lắng nghe sự kiện "Bấm chuột phải" (Context Menu)
+### 2.3 Frontend Core: Lắng nghe sự kiện "Bấm chuột phải" (Context Menu)
 **File:** `frontend/src/components/EcoMap.tsx`
 
-Sử dụng thư viện `react-map-gl`, chặn sự kiện mặc định của trình duyệt để tạo ra bảng điểu khiển "Báo ngập" tại ngay con trỏ chuột.
+Trên bản đồ `react-map-gl`, hệ thống chặn sự kiện chuột phải của trình duyệt để tạo ra bảng điều khiển Báo Ngập tại đúng con trỏ chuột.
 
 ```tsx
 // State lưu trữ tọa độ click chuột
@@ -72,27 +134,25 @@ const [contextMenu, setContextMenu] = useState<{ lng: number; lat: number; x: nu
 <Map
   // ...
   onClick={(e) => {
-    setContextMenu(null); // Tắt menu khi bấm chuột trái
+    setContextMenu(null); // Tắt menu báo ngập khi bấm chuột trái ra ngoài
     handleMapClick(e);
   }}
   onContextMenu={(e) => {
-    e.originalEvent.preventDefault(); // Chặn menu của trình duyệt
+    e.originalEvent.preventDefault(); // Chặn menu mặc định của trình duyệt
     setContextMenu({
-      lng: e.lngLat.lng, // Tọa độ GPS để gửi lên Backend
+      lng: e.lngLat.lng, // Tọa độ GPS thực tế để gửi API
       lat: e.lngLat.lat,
-      x: e.point.x,      // Tọa độ màn hình để vẽ Giao diện (UI)
+      x: e.point.x,      // Tọa độ màn hình X,Y để render Popup
       y: e.point.y,
     });
   }}
 >
 ```
 
----
-
-## 4. Frontend Core: Giao diện Menu Báo cáo ngập và Reload tự động
+### 2.4 Frontend Core: Giao diện Báo cáo ngập và Tải lại động (Auto-Refresh)
 **File:** `frontend/src/components/EcoMap.tsx`
 
-Khi người dùng bấm vào Menu báo cáo, ứng dụng lập tức gọi API và ép vòng đời React `useEffect` gọi lại dữ liệu bản đồ bằng `refreshTrigger` để con đường màu xanh hiển thị ra lập tức.
+Khi người dùng bấm xác nhận Báo cáo, ứng dụng gọi Backend API và thay đổi `refreshTrigger` để ép `useEffect` của React lập tức tải lại dữ liệu điểm ngập (đường màu xanh sẽ hiện ra không cần F5 trình duyệt).
 
 ```tsx
 {/* Giao diện Popup Context Menu */}
@@ -103,15 +163,15 @@ Khi người dùng bấm vào Menu báo cáo, ứng dụng lập tức gọi API
       left: contextMenu.x,
       top: contextMenu.y,
       backgroundColor: "#1e293b",
-      /* (CSS Styling...) */
+      // ... (CSS Styling)
     }}
     onClick={async (e) => {
       e.stopPropagation();
       
-      // 1. Gọi API Backend (Kích hoạt OSRM Snap-to-road)
+      // 1. Gọi API Backend (Khởi động OSRM Snap-to-road và nạp PostGIS)
       const success = await reportFloodAPI(contextMenu.lat, contextMenu.lng, 35);
       
-      // 2. Tắt menu đi
+      // 2. Ẩn context menu
       setContextMenu(null); 
       
       if (success) {
@@ -127,12 +187,10 @@ Khi người dùng bấm vào Menu báo cáo, ứng dụng lập tức gọi API
 )}
 ```
 
----
-
-## 5. API Client Core
+### 2.5 API Client Integration
 **File:** `frontend/src/services/ecoApiService.ts`
 
-Hàm dịch vụ `fetch` đơn giản dùng để cầu nối giữa giao diện và hệ thống phân tích.
+Hàm dịch vụ `fetch` đơn giản dùng để cầu nối giữa giao diện Báo ngập và hệ thống phân tích.
 
 ```typescript
 export async function reportFloodAPI(
@@ -159,4 +217,4 @@ export async function reportFloodAPI(
 ```
 
 > [!NOTE]
-> Bằng 5 bước cốt lõi này, ứng dụng đã xóa bỏ hoàn toàn giới hạn "Dữ liệu mẫu", và trở thành một ứng dụng theo chuẩn thời gian thực (Realtime Crowdsourcing Map). Mọi tính năng này đều đã được code xong và đang chạy ổn định.
+> Bằng sự kết hợp giữa kiến trúc OOP ở Backend (để dễ dàng mở rộng thuật toán trong tương lai) và quy trình 5 bước OSRM Snap-to-road, hệ thống của bạn hiện là một ứng dụng Crowdsourcing thời gian thực chuyên nghiệp và hoàn thiện.
