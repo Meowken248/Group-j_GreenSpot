@@ -13,6 +13,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from app.models.flood import TideAlertLevel, TideState
+from app.interface.interfaces import ITideEngine
 
 # Mốc quy chiếu thiên văn chuẩn (Astronomical Reference Epoch): 2026-01-01 00:00:00 UTC
 EPOCH_REF = datetime(2026, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
@@ -50,7 +51,7 @@ DEFAULT_STATIONS_HARMONICS: Dict[str, Dict[str, Any]] = {
 }
 
 
-class HarmonicTideEngine:
+class HarmonicTideEngine(ITideEngine):
     """Động cơ tính toán giải tích sóng thủy triều thuần Python"""
 
     @staticmethod

@@ -12,8 +12,10 @@ import time
 import urllib.request
 from typing import Any, Dict, Optional
 
+from app.interface.interfaces import IWeatherService
 
-class WeatherRainfallService:
+
+class WeatherRainfallService(IWeatherService):
     """Service trích xuất lượng mưa và điều kiện thời tiết đô thị TP.HCM"""
 
     CACHE_TTL_SECONDS = 600  # 10 phút

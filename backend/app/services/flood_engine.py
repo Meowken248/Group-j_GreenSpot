@@ -22,9 +22,10 @@ from app.models.flood import (
 )
 from app.services.tide_service import tide_engine
 from app.services.weather_service import weather_service
+from app.interface.interfaces import IFloodEngine
 
 
-class FloodRiskEngine:
+class FloodRiskEngine(IFloodEngine):
     """Động cơ phân tích rủi ro ngập lụt và cảnh báo lộ trình"""
 
     @classmethod
