@@ -12,8 +12,7 @@ async def get_current_weather(
     lng: Optional[float] = Query(106.7009, description="Kinh độ (GPS)"),
 ):
     """
-    API cung cấp dữ liệu Thời tiết & Chỉ số AQI thời gian thực theo tọa độ GPS.
-    Đã chuẩn hóa: Gọi qua WeatherService.
+    API cung cấp dữ liệu Thời tiết, Thủy triều & Chỉ số AQI thời gian thực theo tọa độ GPS.
     """
     return await WeatherService.get_current_weather(lat=lat, lng=lng)
 

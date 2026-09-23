@@ -43,6 +43,6 @@ async def get_nearest_spots(
 @router.get("/landmarks", response_model=LandmarksResponse)
 async def get_landmarks():
     """
-    API trả về danh sách các điểm Quick Tour 3D tiêu biểu của TP.HCM.
+    API trả về danh sách các điểm Quick Tour 3D tiêu biểu của TP.HCM và toàn quốc.
     """
     return SpatialService.get_landmarks_service()

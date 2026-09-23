@@ -25,6 +25,7 @@ import {
   fetchLandmarksAPI,
   fetchLiveWeatherAPI,
   fetchWeatherHeatmapAPI,
+  reportFloodAPI,
   type LiveWeatherResponse,
 } from "../services/ecoApiService";
 import {
@@ -41,6 +42,20 @@ import {
   calculateDistanceMeters,
 } from "../hooks/useFastGeolocation";
 import LiveWeatherRadarMap, { type WeatherOverlay } from "./LiveWeatherRadarMap";
+
+// Cấu hình danh mục dự phòng an toàn (tránh lỗi undefined khi chưa kịp đồng bộ)
+export const DEFAULT_CATEGORY_CFG = {
+  name: "Địa điểm môi trường",
+  icon: "📍",
+  color: "#0284c7",
+  bgColor: "rgba(2, 132, 199, 0.12)",
+  borderColor: "#38bdf8",
+};
+
+export const getCategoryConfig = (category?: string) => {
+  if (!category) return DEFAULT_CATEGORY_CFG;
+  return (CATEGORY_CONFIG as any)[category] || DEFAULT_CATEGORY_CFG;
+};
 
 // Bộ sưu tập bản đồ nền Google Tile Cluster & OpenStreetMap phong phú
 export const MAP_STYLES = {
@@ -429,18 +444,28 @@ function EcoMap() {
     green_spot: number;
     recycling: number;
     sensor: number;
-  }>({ all: 0, incident: 0, green_spot: 0, recycling: 0, sensor: 0 });
+    flood: number;
+  }>({ all: 0, incident: 0, green_spot: 0, recycling: 0, sensor: 0, flood: 0 });
   const [loadingEco, setLoadingEco] = useState<boolean>(true);
 
   const [landmarks, setLandmarks] = useState<HCMLocation[]>([]);
   const [districtBoundaries, setDistrictBoundaries] = useState<FeatureCollection | null>(null);
   const [liveWeather, setLiveWeather] = useState<LiveWeatherResponse | null>(null);
 
+  // Chế độ hiển thị ngập lụt (Mặc định tắt để sử dụng dữ liệu thực tế từ Weather API & Tide Engine)
+  const [simulateFlood, setSimulateFlood] = useState<boolean>(false);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
+  const [contextMenu, setContextMenu] = useState<{ lng: number; lat: number; x: number; y: number } | null>(null);
+
   // 1. Tải danh sách địa điểm môi trường từ Backend API (PostgreSQL/PostGIS)
   useEffect(() => {
     let isMounted = true;
     setLoadingEco(true);
-    fetchEcoLocationsAPI(selectedCategory === "all" ? undefined : selectedCategory).then((res) => {
+    fetchEcoLocationsAPI(
+      selectedCategory === "all" ? undefined : selectedCategory,
+      simulateFlood ? 1.68 : undefined,
+      simulateFlood ? 30.0 : undefined
+    ).then((res) => {
       if (!isMounted) return;
       if (res && res.data) {
         setEcoLocations(res.data);
@@ -451,7 +476,7 @@ function EcoMap() {
     return () => {
       isMounted = false;
     };
-  }, [selectedCategory]);
+  }, [selectedCategory, simulateFlood, refreshTrigger]);
 
   // 2. Tải Ranh giới quận/huyện, Điểm Landmark Quick Tour, và Thời tiết thời gian thực
   useEffect(() => {
@@ -607,14 +632,16 @@ function EcoMap() {
   // 1. TÍNH NĂNG CLICK BẢN ĐỒ LẤY SỐ NHÀ (REVERSE GEOCODING) & CHỌN ĐOẠN ĐƯỜNG NGẬP
   const handleMapClick = async (e: any) => {
     // 1.0. Kiểm tra nếu click trúng một đoạn đường ngập lụt (Vector LineString)
-    if (showFloodWatch && floodData) {
+    if (showFloodWatch) {
       let floodFeat: any = null;
       if (e.features && e.features.length > 0) {
         floodFeat = e.features.find(
           (f: any) =>
             f.layer?.id === "flood-segments-core" ||
             f.layer?.id === "flood-segments-glow" ||
-            f.layer?.id === "flood-selected-segment-highlight"
+            f.layer?.id === "flood-selected-segment-highlight" ||
+            f.layer?.id === "flood-corridor-main" ||
+            f.layer?.id === "flood-corridor-glow"
         );
       }
       if (!floodFeat && mapRef.current) {
@@ -624,17 +651,26 @@ function EcoMap() {
           [e.point.x + 8, e.point.y + 8],
         ];
         const queried = map.queryRenderedFeatures(bbox, {
-          layers: ["flood-segments-core", "flood-segments-glow"],
+          layers: ["flood-segments-core", "flood-segments-glow", "flood-corridor-main", "flood-corridor-glow"],
         });
         if (queried && queried.length > 0) floodFeat = queried[0];
       }
 
       if (floodFeat && floodFeat.properties) {
-        const spotId = floodFeat.properties.spot_id;
-        const targetSpot = floodData.features.find((f) => f.id === spotId);
-        if (targetSpot) {
-          handleSelectFloodSpot(targetSpot.properties, [e.lngLat.lng, e.lngLat.lat]);
-          return;
+        if (floodFeat.properties.spot_id && floodData) {
+          const spotId = floodFeat.properties.spot_id;
+          const targetSpot = floodData.features.find((f) => f.id === spotId);
+          if (targetSpot) {
+            handleSelectFloodSpot(targetSpot.properties, [e.lngLat.lng, e.lngLat.lat]);
+            return;
+          }
+        }
+        if (floodFeat.properties.id) {
+          const found = ecoLocations.find((l) => l.id === floodFeat.properties.id);
+          if (found) {
+            handleSelectEcoLocation(found);
+            return;
+          }
         }
       }
     }
@@ -712,6 +748,35 @@ function EcoMap() {
     if (selectedCategory === "all") return ecoLocations;
     return ecoLocations.filter((loc) => loc.category === selectedCategory);
   }, [ecoLocations, selectedCategory]);
+
+  // GeoJSON các đoạn đường ngập úng (LineString / MultiLineString vẽ trực tiếp lên lòng đường)
+  const floodCorridorsGeoJSON = useMemo<FeatureCollection>(() => {
+    const features: any[] = [];
+    ecoLocations.forEach((loc) => {
+      // CHỈ vẽ đường màu xanh nếu đường thực sự đang ngập (không phải SAFE)
+      if (loc.category === "flood" && loc.roadCorridor && loc.severityLevel !== "SAFE") {
+        features.push({
+          type: "Feature",
+          id: loc.id,
+          properties: {
+            id: loc.id,
+            name: loc.name,
+            streetName: loc.name.replace("Điểm ngập ", ""),
+            severity: loc.severityLevel || "SAFE",
+            depth: loc.metricValue,
+            statusText: loc.statusText,
+            color: "#0284c7", // Màu xanh nước ngập như người dùng vẽ trong ảnh
+          },
+          geometry: loc.roadCorridor,
+        });
+      }
+    });
+
+    return {
+      type: "FeatureCollection",
+      features,
+    };
+  }, [ecoLocations]);
 
   // Lọc nội bộ từ dữ liệu đã tải qua API
   const localSearchResults = useMemo(() => {
@@ -807,6 +872,7 @@ function EcoMap() {
     setSelectedLocation(null);
     setSelectedPOI(null);
     setClickedAddress(null);
+    setContextMenu(null);
     setMapCenter({ lat: loc.latitude, lng: loc.longitude });
     setCurrentZoom(loc.zoom);
     handleFlyToLocation(loc.longitude, loc.latitude, loc.zoom, loc.pitch, loc.bearing);
@@ -1178,7 +1244,7 @@ function EcoMap() {
                   Địa điểm môi trường EcoReport:
                 </div>
                 {localSearchResults.ecoMatches.map((loc) => {
-                  const cat = CATEGORY_CONFIG[loc.category];
+                  const cat = getCategoryConfig(loc.category);
                   return (
                     <div
                       key={loc.id}
@@ -1870,6 +1936,32 @@ function EcoMap() {
             )}
           </button>
 
+          {/* Nút Chuyển Đổi Triều Cường Mô Phỏng để hiển thị rõ các đoạn đường ngập úng */}
+          <button
+            onClick={() => setSimulateFlood(!simulateFlood)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "5px 12px",
+              borderRadius: 999,
+              border: simulateFlood ? "1px solid #0284c7" : "1px solid rgba(2, 132, 199, 0.35)",
+              cursor: "pointer",
+              fontSize: 11.5,
+              fontWeight: simulateFlood ? 700 : 500,
+              background: simulateFlood
+                ? "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)"
+                : "transparent",
+              color: simulateFlood ? "#ffffff" : "#0284c7",
+              boxShadow: simulateFlood ? "0 2px 10px rgba(2, 132, 199, 0.35)" : "none",
+              transition: "all 0.2s ease",
+              whiteSpace: "nowrap",
+            }}
+            title="Bật/Tắt hiển thị các đoạn đường ngập lụt theo mô phỏng triều cường đỉnh 1.68m"
+          >
+            <span>{simulateFlood ? "🌊 Triều đỉnh 1.68m" : "🌤️ Triều thực tế"}</span>
+          </button>
+
           {/* Nút Menu Bản đồ nhiệt thời tiết & môi trường */}
           <div style={{ position: "relative" }}>
             <button
@@ -2410,8 +2502,20 @@ function EcoMap() {
           pitch: 50,
           bearing: -15,
         }}
-        interactiveLayerIds={showFloodWatch ? ["flood-segments-core", "flood-segments-glow"] : undefined}
-        onClick={handleMapClick}
+        interactiveLayerIds={showFloodWatch ? ["flood-segments-core", "flood-segments-glow", "flood-corridor-main", "flood-corridor-glow"] : ["flood-corridor-main", "flood-corridor-glow"]}
+        onClick={(e) => {
+          setContextMenu(null);
+          handleMapClick(e);
+        }}
+        onContextMenu={(e) => {
+          e.originalEvent.preventDefault();
+          setContextMenu({
+            lng: e.lngLat.lng,
+            lat: e.lngLat.lat,
+            x: e.point.x,
+            y: e.point.y,
+          });
+        }}
         onMove={(e) => {
           setCurrentZoom(e.viewState.zoom);
         }}
@@ -2501,7 +2605,48 @@ function EcoMap() {
           </Source>
         )}
 
-        {/* 2.5 LỚP BẢN ĐỒ NHIỆT THỜI TIẾT & MÔI TRƯỜNG (MapLibre Heatmap Layers) */}
+        {/* 2.5. LỚP ĐOẠN ĐƯỜNG NGẬP LỤT & TRIỀU CƯỜNG (FLOODED ROAD CORRIDORS - VẼ TRỰC TIẾP LÊN LÒNG ĐƯỜNG) */}
+        {floodCorridorsGeoJSON.features.length > 0 && (
+          <Source id="flood-corridors-source" type="geojson" data={floodCorridorsGeoJSON}>
+            {/* Lớp 1: Hào quang phát sáng tỏa rộng dưới mặt đường */}
+            <Layer
+              id="flood-corridor-glow"
+              type="line"
+              layout={{ "line-join": "round", "line-cap": "round" }}
+              paint={{
+                "line-color": "#38bdf8",
+                "line-width": 18,
+                "line-opacity": 0.45,
+                "line-blur": 3,
+              }}
+            />
+            {/* Lớp 2: Vệt nước ngập xanh cyan đậm đà chạy dọc lòng đường */}
+            <Layer
+              id="flood-corridor-main"
+              type="line"
+              layout={{ "line-join": "round", "line-cap": "round" }}
+              paint={{
+                "line-color": "#0284c7",
+                "line-width": 8.5,
+                "line-opacity": 0.92,
+              }}
+            />
+            {/* Lớp 3: Đường vân sóng nước màu trắng chuyển động */}
+            <Layer
+              id="flood-corridor-wave"
+              type="line"
+              layout={{ "line-join": "round", "line-cap": "round" }}
+              paint={{
+                "line-color": "#ffffff",
+                "line-width": 2,
+                "line-dasharray": [2, 3],
+                "line-opacity": 0.85,
+              }}
+            />
+          </Source>
+        )}
+
+        {/* 2.6 LỚP BẢN ĐỒ NHIỆT THỜI TIẾT & MÔI TRƯỜNG (MapLibre Heatmap Layers) */}
         {activeHeatmap === "temperature" && weatherHeatmapData && (
           <Source id="weather-temp-heatmap-source" type="geojson" data={weatherHeatmapData}>
             <Layer
@@ -2877,10 +3022,27 @@ function EcoMap() {
 
         {/* 5. HỆ THỐNG MARKER SINH THÁI TP.HCM (Điểm nổi bật thu nhỏ gọn như Google Maps) */}
         {filteredLocations.map((loc) => {
-          const cfg = CATEGORY_CONFIG[loc.category];
+          const cfg = getCategoryConfig(loc.category);
           const isSelected = selectedLocation?.id === loc.id;
           const isHovered = hoveredEcoId === loc.id;
-          const isWarning = loc.status === "pending" || loc.status === "warning";
+          
+          let markerColor = cfg.color;
+          let isWarning = loc.status === "pending" || loc.status === "warning";
+          
+          if (loc.category === "flood") {
+            if (loc.severityLevel === "IMPASSABLE" || loc.severityLevel === "SEVERE") {
+              markerColor = "#dc2626";
+              isWarning = true;
+            } else if (loc.severityLevel === "MODERATE") {
+              markerColor = "#ea580c";
+              isWarning = true;
+            } else if (loc.severityLevel === "MINOR") {
+              markerColor = "#f59e0b";
+              isWarning = true;
+            } else {
+              markerColor = "#0284c7";
+            }
+          }
 
           // Kích thước pin biến đổi theo mức zoom (nhỏ gọn như Google Maps)
           const pinSize = currentZoom < 13.5 ? 18 : currentZoom < 15.5 ? 22 : 26;
@@ -2922,8 +3084,8 @@ function EcoMap() {
                       width: pinSize + 12,
                       height: pinSize + 12,
                       borderRadius: "50%",
-                      backgroundColor: cfg.color,
-                      opacity: 0.35,
+                      backgroundColor: markerColor,
+                      opacity: 0.38,
                       animation: "radarPing 1.8s infinite",
                       pointerEvents: "none",
                     }}
@@ -2937,21 +3099,46 @@ function EcoMap() {
                     height: pinSize,
                     borderRadius: "50%",
                     backgroundColor: "#ffffff",
-                    border: `${pinSize >= 22 ? 2 : 1.5}px solid ${cfg.color}`,
+                    border: `2px solid ${markerColor}`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     boxShadow: isSelected
-                      ? `0 0 0 3px ${cfg.color}55, 0 4px 12px rgba(0,0,0,0.3)`
+                      ? `0 0 0 4px ${markerColor}44, 0 6px 16px rgba(0,0,0,0.3)`
                       : isHovered
                       ? `0 3px 10px rgba(0,0,0,0.25)`
                       : `0 2px 6px rgba(0,0,0,0.18)`,
                     fontSize: iconSize,
-                    color: cfg.color,
+                    color: markerColor,
                   }}
                 >
                   {cfg.icon}
                 </div>
+
+                {/* Đỉnh nhọn pin phía dưới */}
+                <div style={{ width: 0, height: 0, borderLeft: "4px solid transparent", borderRight: "4px solid transparent", borderTop: `5px solid ${markerColor}`, marginTop: -1 }} />
+
+                {/* Badge độ sâu ngập nếu có */}
+                {loc.category === "flood" && loc.metricValue && loc.severityLevel && loc.severityLevel !== "SAFE" && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: -8,
+                      right: -12,
+                      background: markerColor,
+                      color: "#ffffff",
+                      fontSize: 9,
+                      fontWeight: 800,
+                      padding: "1px 5px",
+                      borderRadius: 8,
+                      border: "1.5px solid #ffffff",
+                      boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {loc.metricValue.split(" ")[0]}cm
+                  </div>
+                )}
 
                 {/* Tooltip khi hover */}
                 {isHovered && !isSelected && (
@@ -2989,7 +3176,7 @@ function EcoMap() {
                       marginTop: 2,
                       fontSize: 10.5,
                       fontWeight: 700,
-                      color: cfg.color,
+                      color: markerColor,
                       textShadow: "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 1px 2px rgba(0,0,0,0.15)",
                       maxWidth: 85,
                       overflow: "hidden",
@@ -3911,6 +4098,40 @@ function EcoMap() {
           initialOverlay={liveRadarOverlay}
           userGps={gpsCoords}
         />
+      )}
+
+      {/* 9. Context Menu (Right Click) Báo Cáo Ngập Lụt */}
+      {contextMenu && (
+        <div
+          style={{
+            position: "absolute",
+            left: contextMenu.x,
+            top: contextMenu.y,
+            backgroundColor: "#1e293b",
+            color: "white",
+            padding: "12px",
+            borderRadius: "8px",
+            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+            zIndex: 1000,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            border: "1px solid #38bdf8",
+          }}
+          onClick={async (e) => {
+            e.stopPropagation();
+            const success = await reportFloodAPI(contextMenu.lat, contextMenu.lng, 35);
+            setContextMenu(null);
+            if (success) {
+              alert("Báo cáo ngập lụt thành công! Hệ thống đang tải lại bản đồ...");
+              setRefreshTrigger((prev) => prev + 1);
+            }
+          }}
+        >
+          <span className="material-symbols-outlined text-blue-400">flood</span>
+          <span className="font-semibold text-sm">Báo cáo đoạn đường này đang ngập</span>
+        </div>
       )}
     </div>
   );

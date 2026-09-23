@@ -1,8 +1,20 @@
-import time
-import json
+"""
+Weather & Air Quality Integration Service
+1. Cung cấp dữ liệu thời tiết & chỉ số AQI thời gian thực từ Open-Meteo.
+2. Bản đồ nhiệt (Weather & AQI Heatmap Layer) 28+ trạm trên toàn quốc.
+3. WeatherRainfallService: Trích xuất lượng mưa phục vụ Flood Risk Engine TP.HCM (kèm cache TTL 10 phút).
+"""
+
+from __future__ import annotations
+
 import asyncio
+import json
+import time
 import urllib.request
-from typing import Dict, Any, List
+from typing import Any, Dict, List, Optional
+
+from app.interface.interfaces import IWeatherService
+from app.services.tide_service import tide_engine
 
 # In-memory cache: 10 phút
 CACHE_TTL_SEC = 600
@@ -101,46 +113,56 @@ class WeatherService:
         aq_url = f"https://air-quality-api.open-meteo.com/v1/air-quality?latitude={lat}&longitude={lng}&current=us_aqi,pm2_5,pm10&timezone=Asia%2FHo_Chi_Minh"
 
         try:
-            w_data, aq_data = await asyncio.gather(
+            w_res, aq_res = await asyncio.gather(
                 asyncio.to_thread(_fetch_url_json, w_url),
                 asyncio.to_thread(_fetch_url_json, aq_url),
             )
 
-            curr_w = w_data.get("current", {})
-            curr_aq = aq_data.get("current", {})
+            cw = w_res.get("current", {})
+            caq = aq_res.get("current", {})
 
-            temp_c = round(curr_w.get("temperature_2m", 29.0))
-            w_code = curr_w.get("weather_code", 1)
-            humidity = round(curr_w.get("relative_humidity_2m", 70.0))
-            wind = round(curr_w.get("wind_speed_10m", 8.5), 1)
+            temp = round(cw.get("temperature_2m", 30.5))
+            w_code = cw.get("weather_code", 1)
+            humidity = round(cw.get("relative_humidity_2m", 72))
+            wind = round(cw.get("wind_speed_10m", 11.2), 1)
 
-            us_aqi = round(curr_aq.get("us_aqi", 42))
-            pm25 = round(curr_aq.get("pm2_5", 11.5), 1)
-            pm10 = round(curr_aq.get("pm10", 22.0), 1)
+            aqi = round(caq.get("us_aqi", 48))
+            pm25 = round(caq.get("pm2_5", 14.2), 1)
+            pm10 = round(caq.get("pm10", 28.5), 1)
+
+            tide_status = tide_engine.get_current_tide("PHU_AN")
 
             result = {
                 "success": True,
-                "city": "Việt Nam",
-                "temp": f"{temp_c}°C",
-                "temperature": temp_c,
+                "city": "TP. Hồ Chí Minh",
+                "temp": f"{temp}°C",
+                "temperature": temp,
                 "desc": map_wmo_weather_code(w_code),
                 "humidity": f"{humidity}%",
                 "wind": f"{wind} km/h",
-                "aqi": us_aqi,
-                "aqiStatus": get_aqi_status(us_aqi),
+                "aqi": aqi,
+                "aqiStatus": get_aqi_status(aqi),
                 "pm25": pm25,
                 "pm10": pm10,
-                "updatedAt": "Thời gian thực (Open-Meteo HQ)",
+                "tide": {
+                    "water_level_m": tide_status["water_level_m"],
+                    "state": tide_status["state"],
+                    "state_label": tide_status["state_label"],
+                    "alert_level": tide_status["alert_level"],
+                    "alert_label": tide_status["alert_label"],
+                    "is_flood_risk": tide_status["is_flood_risk"],
+                },
+                "updatedAt": "Thời gian thực (Open-Meteo & EcoReport)",
                 "_time": now,
             }
-
             _cached_weather[cache_key] = result
             return result
 
         except Exception as e:
+            tide_status = tide_engine.get_current_tide("PHU_AN")
             return {
                 "success": True,
-                "city": "Việt Nam",
+                "city": "TP. Hồ Chí Minh",
                 "temp": "31°C",
                 "temperature": 31,
                 "desc": "Nắng nhẹ nhiệt đới (Dữ liệu dự phòng)",
@@ -150,6 +172,14 @@ class WeatherService:
                 "aqiStatus": "Trung bình",
                 "pm25": 14.8,
                 "pm10": 26.5,
+                "tide": {
+                    "water_level_m": tide_status["water_level_m"],
+                    "state": tide_status["state"],
+                    "state_label": tide_status["state_label"],
+                    "alert_level": tide_status["alert_level"],
+                    "alert_label": tide_status["alert_label"],
+                    "is_flood_risk": tide_status["is_flood_risk"],
+                },
                 "updatedAt": "Dữ liệu ngoại tuyến",
                 "warning": str(e),
                 "_time": now,
@@ -170,7 +200,6 @@ class WeatherService:
 
         features: List[Dict[str, Any]] = []
 
-        # Tạo chuỗi query Open-Meteo batch cho tất cả các trạm
         lats_str = ",".join(str(s["lat"]) for s in WEATHER_STATIONS_VIETNAM)
         lngs_str = ",".join(str(s["lng"]) for s in WEATHER_STATIONS_VIETNAM)
 
@@ -188,12 +217,10 @@ class WeatherService:
             w_results = w_res if isinstance(w_res, list) else [w_res]
             aq_results = aq_res if isinstance(aq_res, list) else [aq_res]
         except Exception:
-            # Fallback to local default metrics
             w_results = []
             aq_results = []
 
         for i, s in enumerate(WEATHER_STATIONS_VIETNAM):
-            # Weather data
             if i < len(w_results) and "current" in w_results[i]:
                 cw = w_results[i]["current"]
                 temp = float(cw.get("temperature_2m", s["def_temp"]))
@@ -206,7 +233,6 @@ class WeatherService:
                 wind = 8.5
                 w_code = 1
 
-            # Air Quality data
             if i < len(aq_results) and "current" in aq_results[i]:
                 caq = aq_results[i]["current"]
                 aqi = int(caq.get("us_aqi", s["def_aqi"]))
@@ -251,3 +277,93 @@ class WeatherService:
         _cached_heatmap = result
         _last_heatmap_fetch_time = now
         return result
+
+
+class WeatherRainfallService(IWeatherService):
+    """Service trích xuất lượng mưa và điều kiện thời tiết đô thị TP.HCM phục vụ Flood Risk Engine"""
+
+    CACHE_TTL_SECONDS = 600  # 10 phút
+    HCM_LATITUDE = 10.7765
+    HCM_LONGITUDE = 106.7009
+
+    def __init__(self):
+        self._cached_rain_data: Optional[Dict[str, Any]] = None
+        self._last_fetch_time: float = 0.0
+
+    def _fetch_http_json(self, url: str, timeout: float = 2.5) -> Dict[str, Any]:
+        req = urllib.request.Request(url, headers={"User-Agent": "GreenSpot-FloodEngine/2.0"})
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            return json.loads(response.read().decode("utf-8"))
+
+    async def get_hcm_rainfall(self, force_refresh: bool = False) -> Dict[str, Any]:
+        """
+        Lấy lượng mưa hiện tại (mm/h) và dự báo mưa trong 1-3 giờ tới tại TP.HCM.
+        """
+        now = time.time()
+        if not force_refresh and self._cached_rain_data and (now - self._last_fetch_time < self.CACHE_TTL_SECONDS):
+            return self._cached_rain_data
+
+        url = (
+            f"https://api.open-meteo.com/v1/forecast?"
+            f"latitude={self.HCM_LATITUDE}&longitude={self.HCM_LONGITUDE}"
+            f"&current=temperature_2m,relative_humidity_2m,precipitation,rain,weather_code,wind_speed_10m"
+            f"&hourly=precipitation_probability,precipitation"
+            f"&forecast_hours=6&timezone=Asia%2FHo_Chi_Minh"
+        )
+
+        try:
+            raw_data = await asyncio.to_thread(self._fetch_http_json, url)
+            current = raw_data.get("current", {})
+            hourly = raw_data.get("hourly", {})
+
+            rain_current = float(current.get("rain", current.get("precipitation", 0.0)))
+            precip_probs = hourly.get("precipitation_probability", [0, 0, 0])
+            next_1h_prob = precip_probs[1] if len(precip_probs) > 1 else precip_probs[0] if precip_probs else 0
+
+            rain_category = "KHÔNG_MƯA"
+            if rain_current > 50.0:
+                rain_category = "MƯA_RẤT_TO"
+            elif rain_current > 25.0:
+                rain_category = "MƯA_TO"
+            elif rain_current > 10.0:
+                rain_category = "MƯA_VỪA"
+            elif rain_current > 0.2:
+                rain_category = "MƯA_NHỎ"
+
+            result = {
+                "success": True,
+                "rainfall_current_mmh": round(rain_current, 1),
+                "rainfall_category": rain_category,
+                "precipitation_prob_next_1h": next_1h_prob,
+                "temperature_c": round(current.get("temperature_2m", 30.0), 1),
+                "humidity_percent": round(current.get("relative_humidity_2m", 70.0)),
+                "weather_code": current.get("weather_code", 0),
+                "is_raining": rain_current >= 0.5,
+                "is_heavy_rain": rain_current >= 25.0,
+                "updated_at": time.strftime("%Y-%m-%dT%H:%M:%S+07:00", time.localtime()),
+            }
+
+            self._cached_rain_data = result
+            self._last_fetch_time = now
+            return result
+
+        except Exception as err:
+            if self._cached_rain_data:
+                return self._cached_rain_data
+
+            return {
+                "success": False,
+                "error": str(err),
+                "rainfall_current_mmh": 0.0,
+                "rainfall_category": "KHÔNG_MƯA",
+                "precipitation_prob_next_1h": 20,
+                "temperature_c": 29.5,
+                "humidity_percent": 72,
+                "weather_code": 1,
+                "is_raining": False,
+                "is_heavy_rain": False,
+                "updated_at": time.strftime("%Y-%m-%dT%H:%M:%S+07:00", time.localtime()),
+            }
+
+
+weather_service = WeatherRainfallService()

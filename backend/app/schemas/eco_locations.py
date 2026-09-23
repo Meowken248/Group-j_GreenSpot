@@ -16,6 +16,13 @@ class EcoLocationItem(BaseModel):
     metricValue: str
     distanceKm: Optional[float] = None
     severity: Optional[str] = None
+    severityLevel: Optional[str] = None
+    causeType: Optional[str] = None
+    causeDesc: Optional[str] = None
+    riskScore: Optional[float] = None
+    isImpassableBikes: Optional[bool] = None
+    isImpassableCars: Optional[bool] = None
+    roadCorridor: Optional[Any] = None
     description: Optional[str] = None
     trackingCode: Optional[str] = None
     upvotes: Optional[int] = None
@@ -35,6 +42,7 @@ class CategoryCounts(BaseModel):
     green_spot: int
     recycling: int
     sensor: int
+    flood: Optional[int] = 0
 
 
 class EcoLocationsResponse(BaseModel):

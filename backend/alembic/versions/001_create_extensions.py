@@ -1,8 +1,8 @@
 """create_extensions
 
 Revision ID: 001_extensions
-Revises:
-Create Date: 2026-09-15 21:00:00.000000
+Revises: None
+Create Date: 2026-09-21 14:00:00.000000
 
 """
 from typing import Sequence, Union
@@ -28,4 +28,3 @@ def downgrade() -> None:
     op.execute("DROP EXTENSION IF EXISTS pg_trgm;")
     op.execute('DROP EXTENSION IF EXISTS "uuid-ossp";')
     op.execute("DROP EXTENSION IF EXISTS postgis;")
-

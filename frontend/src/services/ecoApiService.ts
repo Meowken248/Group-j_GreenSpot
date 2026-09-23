@@ -14,6 +14,7 @@ export interface EcoLocationsApiResponse {
     green_spot: number;
     recycling: number;
     sensor: number;
+    flood: number;
   };
   data: EcoLocation[];
 }
@@ -30,17 +31,35 @@ export interface LiveWeatherResponse {
   aqiStatus: string;
   pm25: number;
   pm10: number;
+  tide?: {
+    water_level_m: number;
+    state: string;
+    state_label: string;
+    alert_level: string;
+    alert_label: string;
+    is_flood_risk: boolean;
+  };
   updatedAt: string;
 }
 
 /**
  * 1. Tải danh sách địa điểm môi trường trực tiếp từ Backend API (PostgreSQL/PostGIS)
  */
-export async function fetchEcoLocationsAPI(category?: string): Promise<EcoLocationsApiResponse | null> {
+export async function fetchEcoLocationsAPI(
+  category?: string,
+  simulateTide?: number,
+  simulateRain?: number
+): Promise<EcoLocationsApiResponse | null> {
   try {
     const url = new URL(`${API_BASE_URL}/api/v1/eco-locations`);
     if (category && category !== "all") {
       url.searchParams.set("category", category);
+    }
+    if (simulateTide !== undefined) {
+      url.searchParams.set("simulate_tide", simulateTide.toString());
+    }
+    if (simulateRain !== undefined) {
+      url.searchParams.set("simulate_rain", simulateRain.toString());
     }
     const res = await fetch(url.toString());
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -140,3 +159,30 @@ export async function fetchWeatherHeatmapAPI(): Promise<FeatureCollection | null
   }
 }
 
+/**
+ * 7. Báo cáo ngập lụt từ cộng đồng (Crowdsourcing Flood Report)
+ */
+export async function reportFloodAPI(
+  lat: number,
+  lng: number,
+  depthCm: number = 30
+): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/v1/flood/report`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        latitude: lat,
+        longitude: lng,
+        actual_depth_cm: depthCm,
+        address_description: "Cộng đồng báo cáo ngập lụt",
+      }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn("Không thể báo cáo ngập:", err);
+    return false;
+  }
+}
