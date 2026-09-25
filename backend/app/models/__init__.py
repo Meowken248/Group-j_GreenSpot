@@ -28,9 +28,10 @@ from app.models.incident import (
     IncidentMedia,
 )
 
-# 4. Trạm Quan trắc Cảm biến IoT
+# 4. Trạm Quan trắc Cảm biến IoT & Dữ liệu Khí tượng
 from app.models.iot import (
     IoTSensorStation,
+    AirQualityRecord,
 )
 
 # 5. Thủy triều, Điểm ngập lụt Đô thị & Lộ trình Né ngập (Flood & Tide Domain)

@@ -51,13 +51,48 @@ def list_provinces() -> List[Dict[str, Any]]:
 
 
 @router.get("/provinces/{province_slug}/latest")
-def get_latest_aqi(province_slug: str) -> Dict[str, Any]:
-    """Lấy dữ liệu AQI và chỉ số khí tượng thời gian thực mới nhất của một tỉnh/thành."""
+async def get_latest_aqi(province_slug: str) -> Dict[str, Any]:
+    """Lấy dữ liệu AQI và chỉ số khí tượng thời gian thực (Live Runtime) của một tỉnh/thành."""
     try:
         import pandas as pd
     except ImportError:
         raise HTTPException(status_code=500, detail="Pandas/PyArrow not installed")
 
+    # 1. Lấy tọa độ trạm quan trắc trung tâm của tỉnh/thành
+    loc_file = os.path.join(DATA_DIR, "location", f"{province_slug}.parquet")
+    lat, lon = None, None
+    if os.path.exists(loc_file):
+        try:
+            df_loc = pd.read_parquet(loc_file)
+            if not df_loc.empty:
+                # Tìm cột vĩ độ và kinh độ
+                lat_col = [c for c in df_loc.columns if "vĩ độ" in c.lower() or "lat" in c.lower()]
+                lon_col = [c for c in df_loc.columns if "kinh độ" in c.lower() or "lon" in c.lower()]
+                if lat_col and lon_col:
+                    lat = float(df_loc[lat_col[0]].iloc[0])
+                    lon = float(df_loc[lon_col[0]].iloc[0])
+        except Exception:
+            pass
+
+    # 2. Thử truy vấn Live Runtime từ Open-Meteo API
+    if lat is not None and lon is not None:
+        try:
+            from app.services.runtime_sync_service import get_live_environment_runtime
+            live_res = await get_live_environment_runtime(lat, lon)
+            if live_res and live_res.get("aqi") is not None:
+                aqi_val = float(live_res["aqi"])
+                live_res["province"] = province_slug.replace("_", " ").title()
+                live_res["pollution_level_info"] = get_aqi_level(aqi_val)
+                return {
+                    "province_slug": province_slug,
+                    "data": live_res,
+                    "status": "success",
+                    "mode": "live_realtime",
+                }
+        except Exception:
+            pass
+
+    # 3. Fallback đọc bản ghi quan trắc gần nhất từ Parquet
     province_aqi_path = os.path.join(DATA_DIR, "aqi", province_slug, "all.parquet")
     if not os.path.exists(province_aqi_path):
         raise HTTPException(
@@ -71,17 +106,18 @@ def get_latest_aqi(province_slug: str) -> Dict[str, Any]:
             raise HTTPException(status_code=404, detail="Dữ liệu rỗng")
 
         latest_row = df.iloc[-1].to_dict()
-        # Convert timestamp to isoformat
         if "timestamp" in latest_row and hasattr(latest_row["timestamp"], "isoformat"):
             latest_row["timestamp"] = latest_row["timestamp"].isoformat()
 
         aqi_val = float(latest_row.get("aqi", 0)) if latest_row.get("aqi") is not None else None
         latest_row["pollution_level_info"] = get_aqi_level(aqi_val)
+        latest_row["is_live_runtime"] = False
 
         return {
             "province_slug": province_slug,
             "data": latest_row,
             "status": "success",
+            "mode": "historical_fallback",
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi đọc dữ liệu: {str(e)}")

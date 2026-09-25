@@ -137,7 +137,7 @@ async def get_eco_locations(
     recycling_query = """
         SELECT 
             r.facility_id::text as id,
-            r.facility_name as name,
+            r.name as name,
             'recycling' as category,
             COALESCE(u.name, 'TP. Hồ Chí Minh') as district,
             r.address,
@@ -146,9 +146,8 @@ async def get_eco_locations(
             r.accepted_waste_types,
             r.operating_hours,
             r.contact_phone,
-            r.managing_organization
-        FROM recycling_facilities f_table
-        JOIN recycling_facilities r ON f_table.facility_id = r.facility_id
+            r.managing_org as managing_organization
+        FROM recycling_facilities r
         LEFT JOIN administrative_units u ON r.unit_id = u.unit_id
         ORDER BY r.facility_id ASC;
     """
