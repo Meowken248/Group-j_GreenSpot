@@ -713,8 +713,11 @@ def render(df):
             aqi_colorscale.append([v / aqi_cap, _mix_color(c1, c2, t)])
     aqi_colorscale.append([1.0, AQI_DEF[-1][3]])
 
+    ScatterMapCls = getattr(go, "Scattermapbox", None) or getattr(go, "Scattermap", None)
+    map_attr = "mapbox" if hasattr(go, "Scattermapbox") else "map"
+
     fig_map = go.Figure(
-        go.Scattermapbox(
+        ScatterMapCls(
             lat=city_geo["lat"],
             lon=city_geo["lon"],
             mode="markers",
@@ -751,15 +754,22 @@ def render(df):
             showlegend=False,
         )
     )
-    fig_map.update_layout(
-        mapbox=dict(
-            style="carto-positron",
-            center=dict(
-                lat=float(city_geo["lat"].mean()), lon=float(city_geo["lon"].mean())
-            ),
-            zoom=4.2,
+
+    map_cfg = dict(
+        style="carto-positron",
+        center=dict(
+            lat=float(city_geo["lat"].mean()), lon=float(city_geo["lon"].mean())
         ),
-        updatemenus=[
+        zoom=4.2,
+    )
+    relayout_dict = {
+        f"{map_attr}.center.lat": float(city_geo["lat"].mean()),
+        f"{map_attr}.center.lon": float(city_geo["lon"].mean()),
+        f"{map_attr}.zoom": 4.2,
+    }
+    layout_params = {
+        map_attr: map_cfg,
+        "updatemenus": [
             dict(
                 type="buttons",
                 direction="left",
@@ -776,23 +786,18 @@ def render(df):
                     dict(
                         label="↺",
                         method="relayout",
-                        args=[
-                            {
-                                "mapbox.center.lat": float(city_geo["lat"].mean()),
-                                "mapbox.center.lon": float(city_geo["lon"].mean()),
-                                "mapbox.zoom": 4.2,
-                            }
-                        ],
+                        args=[relayout_dict],
                     )
                 ],
             )
         ],
-        margin=dict(l=2, r=2, t=6, b=2),
-        height=430,
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Be Vietnam Pro", size=10, color="#334155"),
-    )
+        "margin": dict(l=2, r=2, t=6, b=2),
+        "height": 430,
+        "paper_bgcolor": "rgba(0,0,0,0)",
+        "plot_bgcolor": "rgba(0,0,0,0)",
+        "font": dict(family="Be Vietnam Pro", size=10, color="#334155"),
+    }
+    fig_map.update_layout(**layout_params)
     with map_col:
         st.markdown(
             '<div class="card"><div class="card-title"><span class="q-tag">Overview</span>Bản đồ AQI theo khu vực</div><div class="card-sub">Màu sắc biểu diễn AQI trung bình, kích thước điểm phản ánh PM2.5.</div>',
