@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import EcoMap from "./components/EcoMap";
+import AirQualityDashboard from "./components/AirQualityDashboard";
 import api from "./api/client";
 import "./App.css";
 
 function App() {
+  const [activeTab, setActiveTab] = useState<"map" | "dashboard">("map");
   const [backendStatus, setBackendStatus] = useState<string | null>(null);
   const [checkingBackend, setCheckingBackend] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -30,8 +32,34 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* BẢN ĐỒ MÔI TRƯỜNG HỢP NHẤT (ĐÃ TÍCH HỢP GOOGLE TILE CLUSTER & GPS) */}
-      <EcoMap />
+      {/* THANH ĐIỀU HƯỚNG CHUYỂN ĐỔI CHẾ ĐỘ VIEW (TOP CENTER) */}
+      <nav className="view-mode-switcher" aria-label="Chế độ hiển thị">
+        <button
+          type="button"
+          className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
+          onClick={() => setActiveTab("map")}
+          title="Bản đồ không gian xanh, ngập lụt & trạm IoT"
+        >
+          <span>🗺️</span>
+          <span>Bản đồ WebGIS</span>
+        </button>
+        <button
+          type="button"
+          className={`view-tab-btn ${activeTab === "dashboard" ? "active" : ""}`}
+          onClick={() => setActiveTab("dashboard")}
+          title="Bảng điều khiển phân tích chất lượng không khí & khí tượng toàn quốc"
+        >
+          <span>📊</span>
+          <span>Phân tích AQI & Khí hậu</span>
+        </button>
+      </nav>
+
+      {/* VIEW NỘI DUNG CHÍNH: MAP HOẶC DASHBOARD */}
+      {activeTab === "map" ? (
+        <EcoMap />
+      ) : (
+        <AirQualityDashboard onBackToMap={() => setActiveTab("map")} />
+      )}
 
       {/* NÚT KIỂM TRA MICROSERVICE BACKEND (GÓC TRÊN BÊN PHẢI) */}
       <div className="quick-status-badge">

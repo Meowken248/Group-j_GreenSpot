@@ -6,6 +6,51 @@
   background-color: #0f172a;
 }
 
+/* Main View Mode Switcher (Top Center) */
+.view-mode-switcher {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 4px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.45);
+}
+
+.view-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #94a3b8;
+  background: transparent;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.view-tab-btn:hover {
+  color: #f8fafc;
+}
+
+.view-tab-btn.active {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+}
+
 /* Quick Status Badge (Top Right) */
 .quick-status-badge {
   position: absolute;

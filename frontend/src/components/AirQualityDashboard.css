@@ -1,0 +1,214 @@
+/* AirQualityDashboard.css - Glassmorphic Modern Styling */
+
+.aq-dashboard-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #0f172a;
+  overflow: hidden;
+  position: relative;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.aq-dashboard-container.is-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 99999;
+}
+
+/* Header Styling */
+.aq-dashboard-header {
+  height: 60px;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  flex-shrink: 0;
+  z-index: 10;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.aq-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.aq-btn-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  color: #f1f5f9;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.aq-btn-back:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: #10b981;
+  color: #10b981;
+  transform: translateX(-2px);
+}
+
+.aq-header-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.aq-header-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.01em;
+}
+
+.aq-title-icon {
+  font-size: 16px;
+}
+
+.aq-header-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aq-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  letter-spacing: 0.02em;
+}
+
+.aq-badge.live {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  animation: pulse-live 2s infinite ease-in-out;
+}
+
+.aq-badge.info {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.aq-badge.stats {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Actions */
+.aq-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.aq-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #cbd5e1;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.aq-action-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.aq-action-btn.external {
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.aq-action-btn.external:hover {
+  background: rgba(56, 189, 248, 0.15);
+  color: #7dd3fc;
+  border-color: #38bdf8;
+}
+
+/* Iframe Wrapper */
+.aq-iframe-wrapper {
+  flex: 1;
+  width: 100%;
+  height: calc(100vh - 60px);
+  position: relative;
+  background: #ffffff;
+}
+
+.aq-dashboard-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* Loading Overlay */
+.aq-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #0f172a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 5;
+}
+
+.aq-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3.5px solid rgba(16, 185, 129, 0.2);
+  border-top-color: #10b981;
+  border-radius: 50%;
+  animation: spin-aq 0.85s linear infinite;
+}
+
+@keyframes spin-aq {
+  to { transform: rotate(360deg); }
+}
+
+.aq-loading-text {
+  color: #94a3b8;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
