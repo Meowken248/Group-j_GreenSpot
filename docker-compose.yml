@@ -33,6 +33,20 @@ services:
       db:
         condition: service_healthy
 
+  dashboard:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ecoreport_dashboard
+    restart: always
+    command: ["streamlit", "run", "air_quality/app.py", "--server.port", "8501", "--server.address", "0.0.0.0", "--server.headless", "true"]
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - backend
+
   frontend:
     build:
       context: ./frontend
