@@ -31,9 +31,9 @@ def render_header(state, logo_html):
 
     st.markdown(
         f"""<div class="{header_class}"><div class="hdr-left"><div class="hdr-logo">{logo_html}</div>"""
-        f"""<div><div class="hdr-school">ĐẠI HỌC KHOA HỌC TỰ NHIÊN, ĐHQG–HCM &nbsp;·&nbsp; KHOA CNTT &nbsp;·&nbsp; Trực quan hóa Dữ liệu</div>"""
+        f"""<div><div class="hdr-school"> &nbsp;·&nbsp;  &nbsp;·&nbsp; Trực quan hóa Dữ liệu</div>"""
         f"""<div class="hdr-title">Phân tích Chỉ số Chất lượng Không khí tại Việt Nam</div>"""
-        f"""<div class="hdr-sub">GVHD: Bùi Tiến Lên &nbsp;·&nbsp; Lớp CQ2023/24 &nbsp;·&nbsp; Nhóm 8 &nbsp;·&nbsp; TP.HCM – 2026</div>"""
+        f"""<div class="hdr-sub"> &nbsp;·&nbsp; &nbsp;·&nbsp; Nhóm 8 &nbsp;·&nbsp; </div>"""
         f"""</div></div><div class="hdr-right" style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">"""
         f"""<div style="display: flex; align-items: center; gap: 20px;">{refresh_badge}{colorblind_badge}</div>"""
         f"""</div></div>""",
