@@ -1,9 +1,15 @@
 import base64
+import os
 import pandas as pd
 
 
 def get_base64_image(image_path):
     try:
+        if not os.path.isabs(image_path) and not os.path.exists(image_path):
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            candidate = os.path.join(base_dir, image_path)
+            if os.path.exists(candidate):
+                image_path = candidate
         with open(image_path, "rb") as img_file:
             return base64.b64encode(img_file.read()).decode()
     except Exception:
