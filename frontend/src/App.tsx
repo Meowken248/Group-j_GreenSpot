@@ -103,9 +103,8 @@ function App() {
             </div>
             {backendStatus && (
               <div
-                className={`status-pill ${
-                  backendStatus.startsWith("Online") ? "success" : "warning"
-                }`}
+                className={`status-pill ${backendStatus.startsWith("Online") ? "success" : "warning"
+                  }`}
               >
                 {backendStatus}
               </div>

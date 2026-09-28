@@ -1,88 +1,97 @@
-"""FastAPI Air Quality Endpoints (Powered by Parquet Analytics Data)
+"""FastAPI Air Quality Analytics REST API
+Enterprise-Grade Architecture: 100% backend business logic & data aggregation
+serving typed JSON to the Native React Frontend.
 """
 
-import glob
-import os
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Query
 
+from app.services.air_quality_analytics_service import AirQualityAnalyticsService
+from app.services.runtime_sync_service import get_live_environment_runtime
+
 router = APIRouter(prefix="/air-quality", tags=["Air Quality Analytics"])
-
-BASE_AIR_QUALITY_DIR = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "..", "air_quality")
-)
-DATA_DIR = os.path.join(BASE_AIR_QUALITY_DIR, "data")
-
-
-def get_aqi_level(aqi: Optional[float]) -> Dict[str, str]:
-    if aqi is None:
-        return {"level": "Unknown", "color": "#9E9E9E", "label": "Chưa có dữ liệu"}
-    if aqi <= 50:
-        return {"level": "Good", "color": "#00E400", "label": "Tốt"}
-    if aqi <= 100:
-        return {"level": "Moderate", "color": "#FFFF00", "label": "Vừa phải"}
-    if aqi <= 150:
-        return {"level": "Unhealthy_Sensitive", "color": "#FF7E00", "label": "Kém (Nhạy cảm)"}
-    if aqi <= 200:
-        return {"level": "Unhealthy", "color": "#FF0000", "label": "Xấu"}
-    if aqi <= 300:
-        return {"level": "Very_Unhealthy", "color": "#8F3F97", "label": "Rất xấu"}
-    return {"level": "Hazardous", "color": "#7E0023", "label": "Nguy hại"}
 
 
 @router.get("/provinces")
 def list_provinces() -> List[Dict[str, Any]]:
-    """Danh sách 34 tỉnh/thành phố có dữ liệu trạm quan trắc & dự báo AQI."""
-    location_dir = os.path.join(DATA_DIR, "location")
-    if not os.path.exists(location_dir):
-        return []
+    """Danh sách 34 tỉnh/thành phố có dữ liệu trạm quan trắc & phân tích khí tượng."""
+    return AirQualityAnalyticsService.list_provinces()
 
-    provinces = []
-    for filepath in sorted(glob.glob(os.path.join(location_dir, "*.parquet"))):
-        slug = os.path.splitext(os.path.basename(filepath))[0]
-        name = slug.replace("_", " ").title()
-        provinces.append({
-            "slug": slug,
-            "name": name,
-            "has_hourly_data": os.path.exists(os.path.join(DATA_DIR, "aqi", slug)),
-            "has_forecast_data": os.path.exists(os.path.join(DATA_DIR, "forecast", slug)),
-        })
-    return provinces
+
+@router.get("/overview")
+def get_overview(
+    province_slug: Optional[str] = Query(None, description="Slug của tỉnh (vd: ho_chi_minh, ha_noi) hoặc để trống cho toàn quốc"),
+    time_range: str = Query("24h", description="Khung thời gian: 24h, 7d, 30d, 2025"),
+) -> Dict[str, Any]:
+    """Tổng quan chất lượng không khí: Thẻ KPI Hero, khuyến nghị sức khỏe, 6 chất ô nhiễm,
+    biểu đồ phân bổ mức độ AQI, và top 5 tỉnh sạch nhất / ô nhiễm nhất."""
+    return AirQualityAnalyticsService.get_overview(province_slug=province_slug, time_range=time_range)
+
+
+@router.get("/provinces/{province_slug}/trend")
+def get_trend(
+    province_slug: str,
+    time_range: str = Query("24h", description="Khung thời gian: 24h, 7d, 30d, 2025"),
+) -> Dict[str, Any]:
+    """Chuỗi thời gian diễn biến AQI, PM2.5, PM10, O3, NO2, SO2, CO, và các yếu tố khí tượng theo từng giờ."""
+    return AirQualityAnalyticsService.get_trend(province_slug=province_slug, time_range=time_range)
+
+
+@router.get("/provinces/{province_slug}/pollutants")
+def get_pollutant_details(
+    province_slug: str,
+    time_range: str = Query("24h", description="Khung thời gian: 24h, 7d, 30d, 2025"),
+    selected_pollutant: str = Query("pm2_5", description="Chất ô nhiễm cần so sánh (pm2_5, pm10, o3, no2, so2, co)"),
+) -> Dict[str, Any]:
+    """Phân tích chuyên sâu chất ô nhiễm: So sánh 34 tỉnh thành và ma trận tương quan nhiệt 6 chất."""
+    return AirQualityAnalyticsService.get_pollutant_details(
+        province_slug=province_slug,
+        time_range=time_range,
+        selected_pollutant=selected_pollutant,
+    )
+
+
+@router.get("/weather")
+def get_weather_analytics(
+    province_slug: Optional[str] = Query(None, description="Slug của tỉnh hoặc để trống cho toàn quốc"),
+    season: str = Query("Tất cả", description="Mùa hoặc tháng"),
+) -> Dict[str, Any]:
+    """Phân tích khí tượng học: Thẻ chỉ số nhiệt/ẩm/gió/mưa, xu hướng 12 tháng, và biểu đồ phân tán Nhiệt độ vs Lượng mưa."""
+    return AirQualityAnalyticsService.get_weather_analytics(province_slug=province_slug, season=season)
+
+
+@router.get("/interaction")
+def get_interaction_analytics(
+    province_slug: Optional[str] = Query(None, description="Slug của tỉnh hoặc để trống cho toàn quốc"),
+    region: str = Query("Tất cả", description="Vùng miền (Tất cả, Miền Bắc, Miền Trung, Miền Nam)"),
+) -> Dict[str, Any]:
+    """Tương tác Khí tượng - Ô nhiễm: Đường cong làm sạch của gió, đường cong rửa trôi của mưa, hệ số tương quan và tỉnh tự làm sạch tốt nhất."""
+    return AirQualityAnalyticsService.get_interaction_analytics(province_slug=province_slug, region=region)
+
+
+@router.get("/table")
+def get_provinces_summary_table() -> List[Dict[str, Any]]:
+    """Bảng dữ liệu tương tác đầy đủ 34 tỉnh/thành cho tìm kiếm, lọc và sắp xếp."""
+    return AirQualityAnalyticsService.get_provinces_summary_table()
 
 
 @router.get("/provinces/{province_slug}/latest")
 async def get_latest_aqi(province_slug: str) -> Dict[str, Any]:
     """Lấy dữ liệu AQI và chỉ số khí tượng thời gian thực (Live Runtime) của một tỉnh/thành."""
-    try:
-        import pandas as pd
-    except ImportError:
-        raise HTTPException(status_code=500, detail="Pandas/PyArrow not installed")
+    provinces = AirQualityAnalyticsService.list_provinces()
+    target = next((p for p in provinces if p["slug"] == province_slug), None)
 
-    # 1. Lấy tọa độ trạm quan trắc trung tâm của tỉnh/thành
-    loc_file = os.path.join(DATA_DIR, "location", f"{province_slug}.parquet")
-    lat, lon = None, None
-    if os.path.exists(loc_file):
-        try:
-            df_loc = pd.read_parquet(loc_file)
-            if not df_loc.empty:
-                # Tìm cột vĩ độ và kinh độ
-                lat_col = [c for c in df_loc.columns if "vĩ độ" in c.lower() or "lat" in c.lower()]
-                lon_col = [c for c in df_loc.columns if "kinh độ" in c.lower() or "lon" in c.lower()]
-                if lat_col and lon_col:
-                    lat = float(df_loc[lat_col[0]].iloc[0])
-                    lon = float(df_loc[lon_col[0]].iloc[0])
-        except Exception:
-            pass
+    lat = target["lat"] if target else None
+    lon = target["lon"] if target else None
 
-    # 2. Thử truy vấn Live Runtime từ Open-Meteo API
     if lat is not None and lon is not None:
         try:
-            from app.services.runtime_sync_service import get_live_environment_runtime
             live_res = await get_live_environment_runtime(lat, lon)
             if live_res and live_res.get("aqi") is not None:
+                from app.services.air_quality_analytics_service import get_aqi_meta
                 aqi_val = float(live_res["aqi"])
-                live_res["province"] = province_slug.replace("_", " ").title()
-                live_res["pollution_level_info"] = get_aqi_level(aqi_val)
+                live_res["province"] = target["name"] if target else province_slug
+                live_res["pollution_level_info"] = get_aqi_meta(aqi_val)
                 return {
                     "province_slug": province_slug,
                     "data": live_res,
@@ -92,47 +101,23 @@ async def get_latest_aqi(province_slug: str) -> Dict[str, Any]:
         except Exception:
             pass
 
-    # 3. Fallback đọc bản ghi quan trắc gần nhất từ Parquet
-    province_aqi_path = os.path.join(DATA_DIR, "aqi", province_slug, "all.parquet")
-    if not os.path.exists(province_aqi_path):
-        raise HTTPException(
-            status_code=404,
-            detail=f"Dữ liệu không tìm thấy cho tỉnh/thành '{province_slug}'"
-        )
+    # Fallback to latest Parquet row
+    df = AirQualityAnalyticsService._load_province_df(province_slug)
+    if df.empty:
+        raise HTTPException(status_code=404, detail=f"Dữ liệu không tìm thấy cho tỉnh '{province_slug}'")
 
-    try:
-        df = pd.read_parquet(province_aqi_path)
-        if df.empty:
-            raise HTTPException(status_code=404, detail="Dữ liệu rỗng")
+    from app.services.air_quality_analytics_service import get_aqi_meta
+    latest_row = df.iloc[-1].to_dict()
+    if "timestamp" in latest_row and hasattr(latest_row["timestamp"], "isoformat"):
+        latest_row["timestamp"] = latest_row["timestamp"].isoformat()
 
-        latest_row = df.iloc[-1].to_dict()
-        if "timestamp" in latest_row and hasattr(latest_row["timestamp"], "isoformat"):
-            latest_row["timestamp"] = latest_row["timestamp"].isoformat()
-
-        aqi_val = float(latest_row.get("aqi", 0)) if latest_row.get("aqi") is not None else None
-        latest_row["pollution_level_info"] = get_aqi_level(aqi_val)
-        latest_row["is_live_runtime"] = False
-
-        return {
-            "province_slug": province_slug,
-            "data": latest_row,
-            "status": "success",
-            "mode": "historical_fallback",
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi đọc dữ liệu: {str(e)}")
-
-
-@router.get("/summary")
-def get_national_summary() -> Dict[str, Any]:
-    """Tổng quan nhanh về chất lượng không khí toàn quốc."""
-    location_dir = os.path.join(DATA_DIR, "location")
-    total_provinces = len(glob.glob(os.path.join(location_dir, "*.parquet"))) if os.path.exists(location_dir) else 0
+    aqi_val = float(latest_row.get("aqi", 0)) if latest_row.get("aqi") is not None else None
+    latest_row["pollution_level_info"] = get_aqi_meta(aqi_val)
+    latest_row["is_live_runtime"] = False
 
     return {
-        "title": "Vietnam Air Quality & Meteorology Intelligence",
-        "total_monitored_provinces": total_provinces,
-        "engine": "Parquet + Open-Meteo Realtime Stream",
-        "status": "active",
-        "streamlit_dashboard_url": "http://localhost:8501",
+        "province_slug": province_slug,
+        "data": latest_row,
+        "status": "success",
+        "mode": "historical_fallback",
     }
