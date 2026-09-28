@@ -52,9 +52,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      network: host
     container_name: ecoreport_frontend
     restart: always
+    command: [ "sh", "-c", "pnpm install --prefer-offline --store-dir /root/.local/share/pnpm/store && pnpm dev --host 0.0.0.0" ]
     environment:
       VITE_API_URL: http://localhost:8000
     ports:
