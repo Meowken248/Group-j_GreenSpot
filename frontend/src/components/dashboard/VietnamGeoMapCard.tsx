@@ -144,27 +144,34 @@ export const VietnamGeoMapCard: React.FC<VietnamGeoMapCardProps> = ({
       const displayVal = activeMetric === "aqi" ? Math.round(prov.aqi) : prov.pm2_5.toFixed(1);
       const color = prov.meta.color || "#38bdf8";
 
-      // Create macOS Squircle Marker Element
-      const el = document.createElement("div");
-      el.className = `geo-aqi-marker ${isSelected ? "selected" : ""}`;
-      el.style.cssText = `
+      // Create Outer Wrapper for MapLibre positioning (NEVER touch container.style.transform!)
+      const container = document.createElement("div");
+      container.className = "geo-marker-wrapper";
+      container.style.cssText = `
+        cursor: pointer;
+        user-select: none;
+        z-index: ${isSelected ? "25" : "5"};
+      `;
+
+      // Create Inner macOS Squircle Pill for scaling & effects
+      const innerPill = document.createElement("div");
+      innerPill.className = `geo-aqi-pill ${isSelected ? "selected" : ""}`;
+      innerPill.style.cssText = `
         display: flex;
         align-items: center;
         gap: 4px;
-        padding: 3px 7px;
-        background: rgba(28, 28, 30, 0.88);
+        padding: 3px 8px;
+        background: rgba(28, 28, 30, 0.92);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
         border: 1px solid ${isSelected ? "#ffffff" : color};
         border-radius: 9999px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 10px ${color}55;
-        cursor: pointer;
-        transition: transform 150ms ease, box-shadow 150ms ease;
+        transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 160ms ease, border-color 160ms ease;
         transform: ${isSelected ? "scale(1.15)" : "scale(1)"};
-        z-index: ${isSelected ? "20" : "5"};
       `;
 
-      el.innerHTML = `
+      innerPill.innerHTML = `
         <span style="
           width: 7px;
           height: 7px;
@@ -182,31 +189,46 @@ export const VietnamGeoMapCard: React.FC<VietnamGeoMapCardProps> = ({
         ">${displayVal}</span>
       `;
 
-      el.addEventListener("mouseenter", () => {
-        el.style.transform = "scale(1.22)";
-        el.style.zIndex = "30";
+      container.appendChild(innerPill);
+
+      container.addEventListener("mouseenter", () => {
+        innerPill.style.transform = "scale(1.25)";
+        innerPill.style.boxShadow = `0 4px 14px rgba(0, 0, 0, 0.6), 0 0 14px ${color}`;
+        container.style.zIndex = "50";
         setHoveredProvince(prov);
       });
 
-      el.addEventListener("mouseleave", () => {
-        el.style.transform = isSelected ? "scale(1.15)" : "scale(1)";
-        el.style.zIndex = isSelected ? "20" : "5";
+      container.addEventListener("mouseleave", () => {
+        innerPill.style.transform = isSelected ? "scale(1.15)" : "scale(1)";
+        innerPill.style.boxShadow = `0 2px 8px rgba(0, 0, 0, 0.5), 0 0 10px ${color}55`;
+        container.style.zIndex = isSelected ? "25" : "5";
         setHoveredProvince(null);
       });
 
-      el.addEventListener("click", () => {
+      container.addEventListener("click", (e) => {
+        e.stopPropagation();
         if (onSelectProvince) {
           onSelectProvince(prov.slug);
         }
       });
 
-      const marker = new maplibregl.Marker({ element: el })
+      const marker = new maplibregl.Marker({ element: container })
         .setLngLat([prov.lon, prov.lat])
         .addTo(map);
 
       markersRef.current.push(marker);
     });
   }, [provinces, activeMetric, selectedProvince, onSelectProvince]);
+
+  const handleResetView = () => {
+    if (mapRef.current) {
+      mapRef.current.flyTo({
+        center: [108.0, 16.0],
+        zoom: 5.1,
+        speed: 1.2,
+      });
+    }
+  };
 
   // Fly to selected province
   useEffect(() => {
@@ -215,11 +237,12 @@ export const VietnamGeoMapCard: React.FC<VietnamGeoMapCardProps> = ({
     if (target && target.lat != null && target.lon != null) {
       mapRef.current.flyTo({
         center: [target.lon, target.lat],
-        zoom: 7.2,
+        zoom: 6.8,
         speed: 1.2,
       });
     }
   }, [selectedProvince, provinces]);
+
 
   return (
     <div
@@ -248,36 +271,65 @@ export const VietnamGeoMapCard: React.FC<VietnamGeoMapCardProps> = ({
           zIndex: 10,
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "6px 12px",
-            background: "rgba(28, 28, 30, 0.85)",
-            backdropFilter: "saturate(180%) blur(16px)",
-            WebkitBackdropFilter: "saturate(180%) blur(16px)",
-            borderRadius: "10px",
-            border: "0.5px solid rgba(255, 255, 255, 0.15)",
-            color: "#f8fafc",
-            fontSize: "12px",
-            fontWeight: 700,
-            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.3)",
-          }}
-        >
-          <span>🗺️</span>
-          <span>Bản Đồ Phân Bổ 34 Tỉnh Thành</span>
-          <span
+        {/* Title Badge & Reset View Button */}
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <div
             style={{
-              padding: "1px 6px",
-              borderRadius: "4px",
-              background: "rgba(10, 132, 255, 0.2)",
-              color: "#0a84ff",
-              fontSize: "10px",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "6px 12px",
+              background: "rgba(28, 28, 30, 0.85)",
+              backdropFilter: "saturate(180%) blur(16px)",
+              WebkitBackdropFilter: "saturate(180%) blur(16px)",
+              borderRadius: "10px",
+              border: "0.5px solid rgba(255, 255, 255, 0.15)",
+              color: "#f8fafc",
+              fontSize: "12px",
+              fontWeight: 700,
+              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.3)",
             }}
           >
-            {provinces.length} trạm
-          </span>
+            <span>🗺️</span>
+            <span>Bản Đồ Phân Bổ 34 Tỉnh Thành</span>
+            <span
+              style={{
+                padding: "1px 6px",
+                borderRadius: "4px",
+                background: "rgba(10, 132, 255, 0.2)",
+                color: "#0a84ff",
+                fontSize: "10px",
+              }}
+            >
+              {provinces.length} trạm
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleResetView}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+              padding: "6px 10px",
+              background: "rgba(28, 28, 30, 0.85)",
+              backdropFilter: "saturate(180%) blur(16px)",
+              WebkitBackdropFilter: "saturate(180%) blur(16px)",
+              borderRadius: "10px",
+              border: "0.5px solid rgba(255, 255, 255, 0.15)",
+              color: "#38bdf8",
+              fontSize: "11px",
+              fontWeight: 600,
+              cursor: "pointer",
+              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.3)",
+              transition: "all 150ms ease",
+            }}
+            title="Đưa góc nhìn về toàn cảnh Việt Nam"
+          >
+            <span>🇻🇳</span>
+            <span>Toàn Cảnh</span>
+          </button>
         </div>
 
         {/* Metric Segmented Control & Basemap Switcher */}
