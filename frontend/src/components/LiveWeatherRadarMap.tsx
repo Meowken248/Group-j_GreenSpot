@@ -175,7 +175,7 @@ export const LiveWeatherRadarMap: React.FC<LiveWeatherRadarMapProps> = ({
   const [activeOverlay, setActiveOverlay] = useState<WeatherOverlay>(initialOverlay);
   const [currentLoc, setCurrentLoc] = useState<WeatherLocation>(VIETNAM_LOCATIONS[0]);
   const [model, setModel] = useState<"ecmwf" | "gfs">("ecmwf");
-  const [showRightMenu, setShowRightMenu] = useState<boolean>(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isIframeLoading, setIsIframeLoading] = useState<boolean>(true);
   const [hasMarker, setHasMarker] = useState<boolean>(false);
   const [isGpsActive, setIsGpsActive] = useState<boolean>(false);
@@ -243,193 +243,261 @@ export const LiveWeatherRadarMap: React.FC<LiveWeatherRadarMapProps> = ({
 
   return (
     <div className="live-radar-root">
-      {/* 1. THANH ĐIỀU HƯỚNG ĐỈNH CAO (HEADER DOCK) */}
-      <header className="live-radar-header">
-        {/* Khối trái: Nút quay lại + Tên chế độ */}
-        <div className="live-radar-left-group">
-          <button onClick={onClose} className="live-radar-back-btn">
-            <span style={{ fontSize: 16 }}>←</span>
-            <span>Trở về Bản đồ WebGIS</span>
-          </button>
-
-          {/* Huy hiệu Radar Live */}
-          <div className="live-radar-status-badge">
-            <span className="live-radar-beacon-dot" />
-            <span className="live-radar-badge-title">
-              Radar Khí tượng & Luồng gió
-            </span>
-            <span
-              className="live-radar-badge-chip"
-              style={{
-                background: currentOverlayMeta.activeBg,
-                color: currentOverlayMeta.activeColor,
-                border: `1px solid ${currentOverlayMeta.activeColor}55`,
-              }}
-            >
-              {currentOverlayMeta.icon} {currentOverlayMeta.name}
-            </span>
-          </div>
-        </div>
-
-        {/* Khối giữa: Quick Jump Tọa độ Thành phố Việt Nam */}
-        <div className="live-radar-locations-dock">
-          {/* Nút định vị GPS của người dùng */}
+      {/* 1. NÚT NỔI MỞ SIDEBAR & QUAY LẠI KHI THU GỌN */}
+      {!isSidebarOpen && (
+        <>
           <button
-            onClick={handleJumpToGps}
-            className={`live-radar-gps-btn ${isGpsActive ? "active" : ""}`}
-            title="Định vị ngay vị trí GPS của tôi trên bản đồ thời tiết"
+            type="button"
+            onClick={() => setIsSidebarOpen(true)}
+            className="radar-sidebar-floating-toggle"
+            title="Mở menu điều khiển radar khí tượng"
           >
-            <span style={{ fontSize: 13 }}>🎯</span>
-            <span>Vị trí của tôi</span>
-            {localGps && (
-              <span style={{ fontSize: 10, opacity: 0.85, fontWeight: 600 }}>
-                ({localGps.lat.toFixed(2)}, {localGps.lng.toFixed(2)})
-              </span>
-            )}
+            <span style={{ fontSize: 16 }}>☰</span>
+            <span>Điều Khiển Radar</span>
           </button>
-
-          <div className="live-radar-dock-divider" />
-
-          {VIETNAM_LOCATIONS.map((loc) => {
-            const isSelected = !isGpsActive && currentLoc.name === loc.name;
-            return (
-              <button
-                key={loc.name}
-                onClick={() => {
-                  setIsIframeLoading(true);
-                  setIsGpsActive(false);
-                  setHasMarker(false);
-                  setCurrentLoc(loc);
-                }}
-                className={`live-radar-location-chip ${isSelected ? "active" : ""}`}
-              >
-                {loc.shortName}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Khối phải: Mô hình dự báo ECMWF/GFS + Nút chức năng */}
-        <div className="live-radar-right-group">
-          {/* Selector Mô hình ECMWF / GFS */}
-          <div className="live-radar-model-switcher">
-            <button
-              onClick={() => setModel("ecmwf")}
-              className={`live-radar-model-btn ${model === "ecmwf" ? "active" : ""}`}
-              title="Mô hình ECMWF (Độ phân giải 9km - Chuẩn xác cao nhất)"
-            >
-              ECMWF (9km)
-            </button>
-            <button
-              onClick={() => setModel("gfs")}
-              className={`live-radar-model-btn ${model === "gfs" ? "active" : ""}`}
-              title="Mô hình GFS (Độ phân giải 22km)"
-            >
-              GFS (Mỹ)
-            </button>
-          </div>
-
-          {/* Nút bật/tắt thanh Menu Lớp khí tượng */}
           <button
-            onClick={() => setShowRightMenu((prev) => !prev)}
-            className={`live-radar-action-btn ${showRightMenu ? "active" : ""}`}
-            title="Ẩn/hiện danh sách các lớp khí tượng"
+            type="button"
+            onClick={onClose}
+            className="radar-floating-back-btn"
+            title="Trở về Bản đồ WebGIS"
           >
-            <span>☰</span>
-            <span>Lớp</span>
+            <span>←</span>
+            <span>Bản đồ WebGIS</span>
           </button>
-
-          {/* Nút làm mới dữ liệu trạm quan trắc */}
-          <button
-            onClick={() => {
-              setIsIframeLoading(true);
-              const loc = currentLoc;
-              setCurrentLoc({ ...loc });
-            }}
-            className="live-radar-action-btn"
-            title="Làm mới tín hiệu radar"
-          >
-            <span>🔄</span>
-            <span>Làm mới</span>
-          </button>
-        </div>
-      </header>
-
-      {/* 2. THANH MENU BÊN PHẢI (RIGHT-HAND OVERLAY MENU) */}
-      {showRightMenu && (
-        <aside className="live-radar-overlay-panel">
-          <div className="live-radar-panel-header">
-            <span className="live-radar-panel-title">Lớp khí tượng</span>
-            <span className="live-radar-panel-live">● LIVE</span>
-          </div>
-
-          {WEATHER_OVERLAYS.map((overlay) => {
-            const isActive = activeOverlay === overlay.id;
-            return (
-              <button
-                key={overlay.id}
-                onClick={() => {
-                  setIsIframeLoading(true);
-                  setActiveOverlay(overlay.id);
-                }}
-                className={`live-radar-overlay-item ${isActive ? "active" : ""}`}
-                style={isActive ? { borderLeft: `3px solid ${overlay.activeColor}` } : undefined}
-              >
-                <span className="live-radar-overlay-item-icon">
-                  {overlay.icon}
-                </span>
-                <div className="live-radar-overlay-item-text">
-                  <span className="live-radar-overlay-name">
-                    {overlay.name}
-                  </span>
-                  <span className="live-radar-overlay-unit">
-                    Đơn vị: {overlay.unit}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
-        </aside>
+        </>
       )}
 
-      {/* 3. THANH CHÚ GIẢI THANG ĐO DƯỚI ĐÁY (LEGEND RIBBON) */}
-      <footer className="live-radar-legend-card">
-        <div className="live-radar-legend-header">
-          <div className="live-radar-legend-title-box">
-            <span style={{ fontSize: 14 }}>{currentOverlayMeta.icon}</span>
-            <span className="live-radar-legend-title">
-              Thang đo: {currentOverlayMeta.name} ({currentOverlayMeta.unit})
-            </span>
+      {/* 2. MASTER RADAR SIDEBAR (BÊN TRÁI) */}
+      <aside className={`radar-sidebar-container ${!isSidebarOpen ? "collapsed" : ""}`}>
+        {/* Header: Nút trở về & Nút thu gọn */}
+        <div className="radar-sidebar-header">
+          <button onClick={onClose} className="radar-back-btn" title="Trở về Bản đồ WebGIS">
+            <span>←</span>
+            <span>Trở về WebGIS</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen(false)}
+            className="radar-collapse-btn"
+            title="Thu gọn sidebar để xem toàn cảnh radar"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Mode Banner: Tiêu đề & Huy hiệu Live */}
+        <div className="radar-mode-banner">
+          <div className="radar-banner-brand">
+            <div className="radar-brand-icon">
+              <span>{currentOverlayMeta.icon}</span>
+            </div>
+            <div className="radar-banner-info">
+              <span className="radar-banner-title">Radar Khí Tượng</span>
+              <span className="radar-banner-desc">
+                <span className="radar-beacon-dot" />
+                <span>Trực tiếp</span>
+              </span>
+            </div>
           </div>
-          <span className="live-radar-legend-model-badge">
-            Mô hình: {model.toUpperCase()}
+          <span
+            className="radar-active-overlay-chip"
+            style={{
+              background: currentOverlayMeta.activeBg,
+              color: currentOverlayMeta.activeColor,
+              border: `1px solid ${currentOverlayMeta.activeColor}55`,
+            }}
+          >
+            {currentOverlayMeta.name} ({currentOverlayMeta.unit})
           </span>
         </div>
 
-        {/* Dải gradient dải màu thời tiết */}
-        <div className="live-radar-legend-bar">
-          {currentOverlayMeta.legend.map((item, idx) => (
-            <div key={idx} className="live-radar-legend-step">
-              <div
-                className="live-radar-legend-color"
-                style={{
-                  backgroundColor: item.color,
-                  borderRadius: idx === 0 ? "4px 0 0 4px" : idx === currentOverlayMeta.legend.length - 1 ? "0 4px 4px 0" : 0,
-                }}
-              />
-              <span className="live-radar-legend-label">
-                {item.label}
+        {/* Thân cuộn Sidebar */}
+        <div className="radar-sidebar-body">
+          {/* Section 1: Mô hình & Làm mới */}
+          <div className="radar-card-section">
+            <div className="radar-section-header">
+              <span className="radar-section-title">
+                <span>⚙️</span>
+                <span>Mô hình dự báo</span>
               </span>
+              <span className="radar-section-badge">{model.toUpperCase()}</span>
             </div>
-          ))}
+            <div className="radar-model-row">
+              <div className="radar-model-switcher">
+                <button
+                  type="button"
+                  onClick={() => setModel("ecmwf")}
+                  className={`radar-model-btn ${model === "ecmwf" ? "active" : ""}`}
+                  title="ECMWF: Độ phân giải 9km - Chuẩn xác cao nhất"
+                >
+                  ECMWF (9km)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModel("gfs")}
+                  className={`radar-model-btn ${model === "gfs" ? "active" : ""}`}
+                  title="GFS: Mô hình của NOAA Mỹ (22km)"
+                >
+                  GFS (Mỹ)
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsIframeLoading(true);
+                  const loc = currentLoc;
+                  setCurrentLoc({ ...loc });
+                }}
+                className="radar-refresh-btn"
+                title="Làm mới tín hiệu trạm quan trắc"
+              >
+                <span>🔄</span>
+                <span>Làm mới</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Section 2: Lớp khí tượng (8 Lớp) */}
+          <div className="radar-card-section">
+            <div className="radar-section-header">
+              <span className="radar-section-title">
+                <span>🛰️</span>
+                <span>Lớp khí tượng (8 Lớp)</span>
+              </span>
+              <span className="radar-section-badge">● LIVE</span>
+            </div>
+            <div className="radar-overlays-grid">
+              {WEATHER_OVERLAYS.map((overlay) => {
+                const isActive = activeOverlay === overlay.id;
+                return (
+                  <button
+                    key={overlay.id}
+                    type="button"
+                    onClick={() => {
+                      setIsIframeLoading(true);
+                      setActiveOverlay(overlay.id);
+                    }}
+                    className={`radar-overlay-btn ${isActive ? "active" : ""}`}
+                    style={isActive ? { borderLeft: `3px solid ${overlay.activeColor}` } : undefined}
+                  >
+                    <span className="radar-overlay-icon">{overlay.icon}</span>
+                    <div className="radar-overlay-info">
+                      <span className="radar-overlay-name">{overlay.name}</span>
+                      <span className="radar-overlay-unit">{overlay.unit}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Section 3: Thước đo & Chú giải thang màu */}
+          <div className="radar-card-section">
+            <div className="radar-section-header">
+              <span className="radar-section-title">
+                <span>📊</span>
+                <span>Thang đo {currentOverlayMeta.name}</span>
+              </span>
+              <span style={{ fontSize: 10, color: "#64748b" }}>{currentOverlayMeta.unit}</span>
+            </div>
+
+            <div className="radar-legend-container">
+              <div className="radar-legend-header-row">
+                <span className="radar-legend-title">
+                  {currentOverlayMeta.icon} {currentOverlayMeta.name}
+                </span>
+                <span className="radar-legend-desc">{currentOverlayMeta.desc}</span>
+              </div>
+
+              <div className="radar-legend-steps">
+                {currentOverlayMeta.legend.map((item, idx) => (
+                  <div key={idx} className="radar-legend-step-col">
+                    <div
+                      className="radar-legend-color-box"
+                      style={{
+                        backgroundColor: item.color,
+                        borderRadius:
+                          idx === 0
+                            ? "4px 0 0 4px"
+                            : idx === currentOverlayMeta.legend.length - 1
+                              ? "0 4px 4px 0"
+                              : 0,
+                      }}
+                    />
+                    <span className="radar-legend-label-text">{item.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="radar-legend-hint">
+                <span>💡 Nhấp chuột trực tiếp lên bản đồ để đo thông số vi khí hậu và gió tại điểm</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 4: Khu vực quan sát & GPS */}
+          <div className="radar-card-section">
+            <div className="radar-section-header">
+              <span className="radar-section-title">
+                <span>📍</span>
+                <span>Khu vực quan sát</span>
+              </span>
+              <span className="radar-section-badge">{currentLoc.shortName}</span>
+            </div>
+
+            {/* Nút định vị GPS */}
+            <button
+              type="button"
+              onClick={handleJumpToGps}
+              className={`radar-gps-full-btn ${isGpsActive ? "active" : ""}`}
+              title="Định vị ngay vị trí GPS của tôi trên bản đồ thời tiết"
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                <span style={{ fontSize: 14 }}>🎯</span>
+                <span>Vị trí GPS của tôi</span>
+              </div>
+              {localGps && (
+                <span style={{ fontSize: 10, opacity: 0.85 }}>
+                  ({localGps.lat.toFixed(2)}, {localGps.lng.toFixed(2)})
+                </span>
+              )}
+            </button>
+
+            {/* Lưới 8 điểm mốc khu vực */}
+            <div className="radar-locations-grid">
+              {VIETNAM_LOCATIONS.map((loc) => {
+                const isSelected = !isGpsActive && currentLoc.name === loc.name;
+                return (
+                  <button
+                    key={loc.name}
+                    type="button"
+                    onClick={() => {
+                      setIsIframeLoading(true);
+                      setIsGpsActive(false);
+                      setHasMarker(false);
+                      setCurrentLoc(loc);
+                    }}
+                    className={`radar-location-btn ${isSelected ? "active" : ""}`}
+                  >
+                    <span>{loc.shortName}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
-        <div className="live-radar-legend-hint">
-          <span>💡 Nhấp chuột trực tiếp lên bản đồ để đo thông số vi khí hậu và gió tại tọa độ</span>
+        {/* Footer Sidebar */}
+        <div className="radar-sidebar-footer">
+          <div className="radar-footer-source">
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981" }} />
+            <span>Trạm quan trắc Windy Live</span>
+          </div>
+          <span style={{ fontSize: 10, color: "#94a3b8" }}>Độ trễ: ~0s</span>
         </div>
-      </footer>
+      </aside>
 
-      {/* 4. IFRAME NHÚNG TRỰC TIẾP ENGINE (FULL VIEWPORT) */}
+      {/* 3. IFRAME NHÚNG TRỰC TIẾP ENGINE (FULL VIEWPORT) */}
       <div style={{ width: "100%", height: "100%", position: "relative", backgroundColor: "#0f172a" }}>
         {isIframeLoading && (
           <div className="live-radar-loading-overlay">
