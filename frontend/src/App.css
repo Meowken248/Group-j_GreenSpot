@@ -16,13 +16,13 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  background: rgba(15, 23, 42, 0.88);
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   padding: 4px;
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(15, 23, 42, 0.04);
 }
 
 .view-tab-btn {
@@ -35,20 +35,21 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  color: #94a3b8;
+  color: #64748b;
   background: transparent;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
 }
 
 .view-tab-btn:hover {
-  color: #f8fafc;
+  color: #0f172a;
+  background: rgba(241, 245, 249, 0.8);
 }
 
 .view-tab-btn.active {
-  background: #10b981;
+  background: #0f172a;
   color: #ffffff;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);
 }
 
 /* Quick Status Badge (Top Right) */
@@ -64,22 +65,22 @@
   align-items: center;
   gap: 8px;
   padding: 8px 14px;
-  background: rgba(15, 23, 42, 0.9);
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(226, 232, 240, 0.9);
   border-radius: 9999px;
-  color: #f8fafc;
+  color: #0f172a;
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
-  transition: all 0.2s ease;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(15, 23, 42, 0.04);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
 }
 
 .health-badge-btn:hover {
-  background: rgba(30, 41, 59, 0.95);
+  background: #ffffff;
   border-color: #10b981;
 }
 

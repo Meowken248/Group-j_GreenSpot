@@ -42,6 +42,7 @@ import {
   calculateDistanceMeters,
 } from "../hooks/useFastGeolocation";
 import LiveWeatherRadarMap, { type WeatherOverlay } from "./LiveWeatherRadarMap";
+import MapControlSidebar from "./MapControlSidebar";
 
 // Cấu hình danh mục dự phòng an toàn (tránh lỗi undefined khi chưa kịp đồng bộ)
 export const DEFAULT_CATEGORY_CFG = {
@@ -326,16 +327,30 @@ export const BUILDING_COLOR_THEMES: Record<
   },
 };
 
-type StyleKey = keyof typeof MAP_STYLES;
+export type StyleKey = keyof typeof MAP_STYLES;
 
 function EcoMap() {
   const mapRef = useRef<MapRef>(null);
+
+  // Trạng thái đóng/mở Sidebar điều hành WebGIS (thu gọn giải phóng 100% diện tích bản đồ)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Phím tắt Ctrl + B / Cmd + B để bật/tắt nhanh Sidebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        setIsSidebarOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Hook GPS siêu tốc & độ chính xác cao
   const {
     coords: gpsCoords,
     accuracy: gpsAccuracy,
-    accuracyLevel,
     isLocked,
     isLocating: isLocatingGps,
     source: gpsSource,
@@ -373,13 +388,11 @@ function EcoMap() {
   const [is3D, setIs3D] = useState<boolean>(true);
   // Bảng màu sắc 3D cho các tòa nhà kiến trúc đô thị
   const [building3DTheme, setBuilding3DTheme] = useState<BuildingColorTheme>("rainbow");
-  const [show3DColorMenu, setShow3DColorMenu] = useState<boolean>(false);
   const [showDistricts, setShowDistricts] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<EcoCategory | "all">("all");
 
   // Heatmap States (Bản đồ nhiệt: Nhiệt độ thời tiết, Chỉ số AQI, Mật độ rủi ro)
   const [activeHeatmap, setActiveHeatmap] = useState<"none" | "temperature" | "aqi" | "risk">("none");
-  const [showHeatmapMenu, setShowHeatmapMenu] = useState<boolean>(false);
   const [weatherHeatmapData, setWeatherHeatmapData] = useState<FeatureCollection | null>(null);
   const [selectedHeatmapStation, setSelectedHeatmapStation] = useState<any | null>(null);
 
@@ -682,6 +695,9 @@ function EcoMap() {
 
     const result = await reverseGeocodeOSM(lat, lng);
     setClickedAddress(result);
+    if (result) {
+      setIsSidebarOpen(true);
+    }
     setLoadingReverse(false);
   };
 
@@ -819,6 +835,7 @@ function EcoMap() {
     setSelectedPOI(null);
     setClickedAddress(null);
     setSelectedLocation(loc);
+    setIsSidebarOpen(true);
     handleFlyToLocation(loc.longitude, loc.latitude, 16.5, 55, -20);
   };
 
@@ -827,6 +844,7 @@ function EcoMap() {
     setSelectedLocation(null);
     setClickedAddress(null);
     setSelectedPOI(poi);
+    setIsSidebarOpen(true);
 
     if (!livePOIs.some((p) => p.id === poi.id)) {
       setLivePOIs((prev) => [poi, ...prev]);
@@ -842,6 +860,7 @@ function EcoMap() {
     setClickedAddress(null);
     setSelectedFloodSpot(spot);
     setSelectedGloFAS(null);
+    setIsSidebarOpen(true);
     handleFlyToLocation(coords[0], coords[1], 16.8, 55, -15);
 
     setLoadingGloFAS(true);
@@ -896,1448 +915,147 @@ function EcoMap() {
   return (
     <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden", userSelect: "none" }}>
       
-      {/* 1. KHỐI TÌM KIẾM & BỘ LỌC ĐỒNG BỘ GÓC TRÁI (Apple / Google Maps Style) */}
+      {/* 1. SIDEBAR ĐIỀU HÀNH WEBGIS ĐA NĂNG TOÀN DIỆN (Swiss / Linear Architecture) */}
+      <MapControlSidebar
+        isOpen={isSidebarOpen}
+        onToggleOpen={() => setIsSidebarOpen((prev) => !prev)}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        isSearchFocused={isSearchFocused}
+        setIsSearchFocused={setIsSearchFocused}
+        isSearchingLive={isSearchingLive}
+        liveSearchResults={liveSearchResults}
+        setLiveSearchResults={setLiveSearchResults}
+        localSearchResults={localSearchResults}
+        onSelectLivePOI={handleSelectLivePOI}
+        onSelectEcoLocation={handleSelectEcoLocation}
+        // Detail Inspection Cards
+        selectedLocation={selectedLocation}
+        setSelectedLocation={setSelectedLocation}
+        selectedPOI={selectedPOI}
+        setSelectedPOI={setSelectedPOI}
+        selectedFloodSpot={selectedFloodSpot}
+        setSelectedFloodSpot={setSelectedFloodSpot}
+        clickedAddress={clickedAddress}
+        setClickedAddress={setClickedAddress}
+        selectedGloFAS={selectedGloFAS}
+        loadingGloFAS={loadingGloFAS}
+        calculatingRoute={calculatingRoute}
+        onCalculateRoute={handleCalculateRoute}
+        // Category & POIs
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        categoryCounts={categoryCounts}
+        loadingEco={loadingEco}
+        poiType={poiType}
+        setPoiType={setPoiType}
+        onLoadNearbyPOIs={(type) => {
+          const center = mapRef.current ? mapRef.current.getCenter() : mapCenter;
+          handleLoadNearbyPOIs(center.lat, center.lng, type, true);
+        }}
+        autoFetchPOI={autoFetchPOI}
+        onToggleAutoFetch={handleToggleAutoFetch}
+        loadingPOIs={loadingPOIs}
+        poiCount={livePOIs.length}
+        activeStyle={activeStyle}
+        setActiveStyle={setActiveStyle}
+        is3D={is3D}
+        onToggle3D={toggle3DView}
+        building3DTheme={building3DTheme}
+        setBuilding3DTheme={setBuilding3DTheme}
+        showDistricts={showDistricts}
+        setShowDistricts={setShowDistricts}
+        onOpenRadar={(overlay) => {
+          setLiveRadarOverlay(overlay);
+          setShowLiveRadar(true);
+        }}
+        activeHeatmap={activeHeatmap}
+        setActiveHeatmap={setActiveHeatmap}
+        showFloodWatch={showFloodWatch}
+        setShowFloodWatch={setShowFloodWatch}
+        simulateFlood={simulateFlood}
+        setSimulateFlood={setSimulateFlood}
+        floodData={floodData}
+        simulatedRainfallMm={simulatedRainfallMm}
+        setSimulatedRainfallMm={setSimulatedRainfallMm}
+        onInspectGpsGloFAS={handleInspectGpsGloFAS}
+        loadingGpsGloFAS={loadingGpsGloFAS}
+        onFocusHotspotList={() => {
+          const firstSpot = floodData?.features?.[0];
+          if (firstSpot && mapRef.current) {
+            const coords = (firstSpot.geometry as any).coordinates;
+            mapRef.current.flyTo({ center: [coords[0], coords[1]], zoom: 15, duration: 1200 });
+          }
+        }}
+        landmarks={landmarks}
+        onSelectLandmark={handleSelectLandmark}
+        liveWeather={liveWeather}
+      />
+
+      {/* 2. THANH TRẠNG THÁI & ĐỊNH VỊ GPS TINH GỌN GÓC TRÊN BÊN PHẢI */}
       <div
         style={{
-          position: "absolute",
+          position: 'absolute',
           top: 16,
-          left: 16,
+          right: 140,
           zIndex: 25,
-          width: 380,
-          maxWidth: "calc(100vw - 32px)",
-          display: "flex",
-          flexDirection: "column",
+          display: 'flex',
+          alignItems: 'center',
           gap: 8,
-          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          pointerEvents: 'auto',
         }}
       >
-        {/* Khung tìm kiếm & Danh mục chính */}
-        <div
-          style={{
-            background: "#ffffff",
-            borderRadius: 16,
-            boxShadow: "0 4px 20px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04)",
-            border: "1px solid #e2e8f0",
-            padding: "8px 10px",
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-          }}
-        >
-          {/* Hàng ô tìm kiếm */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              padding: "7px 10px",
-              borderRadius: 10,
-              background: "#f8fafc",
-              border: "1px solid #e2e8f0",
-            }}
-          >
-            <span style={{ fontSize: 14, marginRight: 8, color: "#64748b", display: "flex", alignItems: "center" }}>
-              {isSearchingLive || loadingPOIs ? "⏳" : "🔍"}
-            </span>
-            <input
-              type="text"
-              placeholder="Tìm số nhà, hẻm, quán ăn, cafe khắp TP.HCM..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              style={{
-                flex: 1,
-                border: "none",
-                outline: "none",
-                background: "transparent",
-                fontSize: 13,
-                fontWeight: 500,
-                color: "#0f172a",
-              }}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => {
-                  setSearchQuery("");
-                  setLiveSearchResults([]);
-                  setIsSearchFocused(false);
-                }}
-                style={{
-                  border: "none",
-                  background: "#e2e8f0",
-                  color: "#64748b",
-                  borderRadius: "50%",
-                  width: 20,
-                  height: 20,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 10,
-                  fontWeight: 700,
-                }}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-
-          {/* Hàng nút lọc danh mục chính (Trượt ngang tinh tế) */}
-          <div
-            style={{
-              display: "flex",
-              gap: 6,
-              overflowX: "auto",
-              paddingBottom: 2,
-              scrollbarWidth: "none",
-            }}
-          >
-            <button
-              onClick={() => setSelectedCategory("all")}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                padding: "5px 10px",
-                borderRadius: 20,
-                border: selectedCategory === "all" ? "1px solid #0f172a" : "1px solid #e2e8f0",
-                background: selectedCategory === "all" ? "#0f172a" : "#ffffff",
-                color: selectedCategory === "all" ? "#ffffff" : "#475569",
-                fontSize: 11.5,
-                fontWeight: 600,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                transition: "all 0.15s ease",
-              }}
-            >
-              <span>Tất cả</span>
-              <span
-                style={{
-                  fontSize: 10,
-                  background: selectedCategory === "all" ? "rgba(255,255,255,0.2)" : "#f1f5f9",
-                  color: selectedCategory === "all" ? "#ffffff" : "#64748b",
-                  padding: "1px 5px",
-                  borderRadius: 10,
-                }}
-              >
-                {loadingEco ? "..." : categoryCounts.all}
-              </span>
-            </button>
-
-            {(Object.keys(CATEGORY_CONFIG) as EcoCategory[]).map((catKey) => {
-              const cfg = CATEGORY_CONFIG[catKey];
-              const isSelected = selectedCategory === catKey;
-              return (
-                <button
-                  key={catKey}
-                  onClick={() => setSelectedCategory(catKey)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                    padding: "5px 10px",
-                    borderRadius: 20,
-                    border: isSelected ? `1px solid ${cfg.color}` : "1px solid #e2e8f0",
-                    background: isSelected ? cfg.color : "#ffffff",
-                    color: isSelected ? "#ffffff" : "#475569",
-                    fontSize: 11.5,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                    transition: "all 0.15s ease",
-                  }}
-                >
-                  <span>{cfg.icon}</span>
-                  <span>{cfg.name}</span>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      background: isSelected ? "rgba(255,255,255,0.25)" : "#f1f5f9",
-                      color: isSelected ? "#ffffff" : "#64748b",
-                      padding: "1px 5px",
-                      borderRadius: 10,
-                    }}
-                  >
-                    {loadingEco ? "..." : categoryCounts[catKey]}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Thanh công cụ nạp Quán xá & Điểm dịch vụ (Hiện đại, tối giản) */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingTop: 6,
-              borderTop: "1px solid #f1f5f9",
-              gap: 4,
-            }}
-          >
-            {/* Phân loại quán */}
-            <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
-              {(
-                [
-                  { id: "all", label: "Tất cả", icon: "📍" },
-                  { id: "cafe", label: "Cafe", icon: "☕" },
-                  { id: "restaurant", label: "Ăn uống", icon: "🍜" },
-                  { id: "shop", label: "Cửa hàng", icon: "🛍️" },
-                ] as const
-              ).map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => {
-                    setPoiType(t.id);
-                    const center = mapRef.current ? mapRef.current.getCenter() : mapCenter;
-                    handleLoadNearbyPOIs(center.lat, center.lng, t.id, true);
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 2,
-                    padding: "3px 6px",
-                    borderRadius: 6,
-                    border: "none",
-                    cursor: "pointer",
-                    fontSize: 10.5,
-                    fontWeight: poiType === t.id ? 700 : 500,
-                    background: poiType === t.id ? "#0f172a" : "transparent",
-                    color: poiType === t.id ? "#ffffff" : "#64748b",
-                    transition: "all 0.15s ease",
-                  }}
-                >
-                  <span>{t.icon}</span>
-                  <span>{t.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Nút Tự nạp & Quét quanh đây */}
-            <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-              <button
-                onClick={handleToggleAutoFetch}
-                title={autoFetchPOI ? "Đang bật tự nạp POI khi di chuyển" : "Bật tự nạp POI khi di chuyển"}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  padding: "3px 8px",
-                  borderRadius: 6,
-                  border: autoFetchPOI ? "1px solid #10b981" : "1px solid #e2e8f0",
-                  background: autoFetchPOI ? "#ecfdf5" : "#ffffff",
-                  color: autoFetchPOI ? "#059669" : "#64748b",
-                  fontSize: 10.5,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                <span style={{ fontSize: 8 }}>{autoFetchPOI ? "🟢" : "⚪"}</span>
-                <span>Tự nạp</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  const center = mapRef.current ? mapRef.current.getCenter() : mapCenter;
-                  handleLoadNearbyPOIs(center.lat, center.lng, poiType, true);
-                }}
-                disabled={loadingPOIs}
-                title="Quét nạp quán quanh tâm bản đồ"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 3,
-                  padding: "3px 8px",
-                  borderRadius: 6,
-                  border: "1px solid #e2e8f0",
-                  background: "#f8fafc",
-                  color: "#0f172a",
-                  fontSize: 10.5,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                <span>{loadingPOIs ? "⏳" : "⚡"}</span>
-                <span>{loadingPOIs ? "Quét..." : "Quét"}</span>
-                {livePOIs.length > 0 && (
-                  <span style={{ fontSize: 9.5, color: "#64748b" }}>
-                    ({livePOIs.length})
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Kết quả tìm kiếm (Dropdown) */}
-        {isSearchFocused && (liveSearchResults.length > 0 || localSearchResults.ecoMatches.length > 0) && (
-          <div
-            style={{
-              background: "#ffffff",
-              borderRadius: 16,
-              boxShadow: "0 10px 30px rgba(0, 0, 0, 0.12)",
-              border: "1px solid #e2e8f0",
-              maxHeight: 360,
-              overflowY: "auto",
-              padding: "6px",
-            }}
-          >
-            {liveSearchResults.length > 0 && (
-              <div style={{ marginBottom: 6 }}>
-                <div style={{ fontSize: 10.5, fontWeight: 700, color: "#0f172a", padding: "4px 10px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                  Quán xá & Số nhà (OSM):
-                </div>
-                {liveSearchResults.map((poi) => (
-                  <div
-                    key={poi.id}
-                    onClick={() => {
-                      handleSelectLivePOI(poi);
-                      setIsSearchFocused(false);
-                      setSearchQuery(poi.name);
-                    }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      padding: "8px 10px",
-                      borderRadius: 8,
-                      cursor: "pointer",
-                      transition: "background 0.15s ease",
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                  >
-                    <span style={{ fontSize: 16 }}>{poi.icon}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12.5, fontWeight: 600, color: "#0f172a" }}>
-                        {poi.name}
-                      </div>
-                      <div style={{ fontSize: 11, color: "#64748b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {poi.fullAddress}
-                      </div>
-                    </div>
-                    {poi.houseNumber && (
-                      <span
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 600,
-                          color: "#475569",
-                          background: "#f1f5f9",
-                          padding: "2px 6px",
-                          borderRadius: 6,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        Số {poi.houseNumber}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {localSearchResults.ecoMatches.length > 0 && (
-              <div style={{ marginBottom: 6 }}>
-                <div style={{ fontSize: 10.5, fontWeight: 700, color: "#059669", padding: "4px 10px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                  Địa điểm môi trường EcoReport:
-                </div>
-                {localSearchResults.ecoMatches.map((loc) => {
-                  const cat = getCategoryConfig(loc.category);
-                  return (
-                    <div
-                      key={loc.id}
-                      onClick={() => {
-                        handleSelectEcoLocation(loc);
-                        setIsSearchFocused(false);
-                        setSearchQuery(loc.name);
-                      }}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        padding: "8px 10px",
-                        borderRadius: 8,
-                        cursor: "pointer",
-                        transition: "background 0.15s ease",
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                    >
-                      <span style={{ fontSize: 16 }}>{cat.icon}</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12.5, fontWeight: 600, color: "#0f172a" }}>{loc.name}</div>
-                        <div style={{ fontSize: 11, color: "#64748b" }}>{loc.district} • {loc.address}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Thẻ chi tiết Địa điểm / Quán xá / Vị trí click / Điểm ngập lụt 3 Nguồn (Docked thanh lịch bên trái) */}
-        {(selectedLocation || selectedPOI || clickedAddress || selectedFloodSpot) && (
-          <div
-            style={{
-              background: "#ffffff",
-              borderRadius: 16,
-              boxShadow: "0 8px 30px rgba(0, 0, 0, 0.12)",
-              border: "1px solid #e2e8f0",
-              padding: "16px",
-              maxHeight: "calc(100vh - 120px)",
-              overflowY: "auto",
-            }}
-          >
-            {selectedFloodSpot ? (
-              <div>
-                {/* Header Điểm Ngập Lụt */}
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 24 }}>
-                      {selectedFloodSpot.current_risk_level === "CRITICAL" ? "🚨" : selectedFloodSpot.current_risk_level === "WARNING" ? "🌊" : "💧"}
-                    </span>
-                    <div>
-                      <div style={{ fontSize: 10.5, fontWeight: 700, color: "#0284c7", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                        Điểm Đen Ngập Lụt Đô Thị (3 Nguồn)
-                      </div>
-                      <div style={{ fontSize: 14.5, fontWeight: 700, color: "#0f172a", lineHeight: 1.25 }}>
-                        {selectedFloodSpot.name}
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setSelectedFloodSpot(null)}
-                    style={{
-                      border: "none",
-                      background: "#f1f5f9",
-                      borderRadius: "50%",
-                      width: 24,
-                      height: 24,
-                      cursor: "pointer",
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: "#64748b",
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                {/* Huy hiệu Cảnh báo Thời gian thực */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "6px 10px",
-                    borderRadius: 8,
-                    marginBottom: 10,
-                    fontWeight: 700,
-                    fontSize: 11.5,
-                    background:
-                      selectedFloodSpot.current_risk_level === "CRITICAL"
-                        ? "#fee2e2"
-                        : selectedFloodSpot.current_risk_level === "WARNING"
-                        ? "#ffedd5"
-                        : selectedFloodSpot.current_risk_level === "ALERT"
-                        ? "#fef9c3"
-                        : "#e0f2fe",
-                    color:
-                      selectedFloodSpot.current_risk_level === "CRITICAL"
-                        ? "#b91c1c"
-                        : selectedFloodSpot.current_risk_level === "WARNING"
-                        ? "#c2410c"
-                        : selectedFloodSpot.current_risk_level === "ALERT"
-                        ? "#a16207"
-                        : "#0369a1",
-                    border:
-                      selectedFloodSpot.current_risk_level === "CRITICAL"
-                        ? "1px solid #fca5a5"
-                        : "1px solid rgba(0,0,0,0.06)",
-                  }}
-                >
-                  <span>{selectedFloodSpot.current_risk_label}</span>
-                </div>
-
-                {/* NGUỒN 1: CỔNG DỮ LIỆU MỞ TP.HCM (SỞ XÂY DỰNG & UDC) */}
-                <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px", marginBottom: 10 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, color: "#1e293b", marginBottom: 6 }}>
-                    <span>🏛️</span>
-                    <span>1. CỔNG DỮ LIỆU MỞ TP.HCM (SỞ XÂY DỰNG)</span>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, fontSize: 11, marginBottom: 6 }}>
-                    <div>
-                      <span style={{ color: "#64748b" }}>Độ sâu chuẩn: </span>
-                      <strong style={{ color: "#0f172a" }}>{selectedFloodSpot.historical_depth_cm} cm</strong>
-                    </div>
-                    <div>
-                      <span style={{ color: "#64748b" }}>Chiều dài: </span>
-                      <strong style={{ color: "#0f172a" }}>{selectedFloodSpot.length_m} m</strong>
-                    </div>
-                    <div style={{ gridColumn: "span 2" }}>
-                      <span style={{ color: "#64748b" }}>Nguyên nhân: </span>
-                      <span style={{ fontWeight: 600, color: "#b91c1c" }}>{selectedFloodSpot.cause}</span>
-                    </div>
-                  </div>
-                  {selectedFloodSpot.pump_station && (
-                    <div style={{ fontSize: 10.5, color: "#475569", marginBottom: 4 }}>
-                      ⚙️ <strong>Tiêu thoát:</strong> {selectedFloodSpot.pump_station}
-                    </div>
-                  )}
-                  {selectedFloodSpot.detour_advice && (
-                    <div style={{ fontSize: 10.5, color: "#0369a1", background: "#f0f9ff", padding: "4px 8px", borderRadius: 6, marginTop: 4 }}>
-                      💡 <strong>Tránh ngập:</strong> {selectedFloodSpot.detour_advice}
-                    </div>
-                  )}
-                </div>
-
-                {/* NGUỒN 2: CẢNH BÁO THỜI TIẾT THÔNG MINH (RAINFALL TRIGGER) */}
-                <div style={{ background: "#fffbeb", border: "1px solid #fef3c7", borderRadius: 10, padding: "10px", marginBottom: 10 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, color: "#92400e", marginBottom: 6 }}>
-                    <span>🌦️</span>
-                    <span>2. CẢNH BÁO MƯA THỜI GIAN THỰC (RAINFALL TRIGGER)</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
-                    <span style={{ color: "#78350f" }}>Lượng mưa hiện tại:</span>
-                    <strong style={{ color: "#b45309" }}>{selectedFloodSpot.current_rainfall_mm} mm/h</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 6 }}>
-                    <span style={{ color: "#78350f" }}>Mực nước ngập ước tính:</span>
-                    <strong style={{ color: selectedFloodSpot.estimated_depth_cm > 25 ? "#dc2626" : "#0284c7" }}>
-                      ~{selectedFloodSpot.estimated_depth_cm} cm
-                    </strong>
-                  </div>
-                  <div style={{ fontSize: 10.5, color: "#92400e", borderTop: "1px dashed #fde68a", paddingTop: 4 }}>
-                    {selectedFloodSpot.estimated_depth_cm >= 35
-                      ? "⚠️ Cực kỳ nguy hiểm: Xe máy ngập pô chết máy, ô tô nguy cơ thủy kích."
-                      : selectedFloodSpot.estimated_depth_cm >= 20
-                      ? "⚠️ Ngập nửa bánh xe máy, di chuyển rất khó khăn."
-                      : "✅ Mực nước thấp hoặc nước rút, phương tiện lưu thông bình thường."}
-                  </div>
-                </div>
-
-                {/* NGUỒN 3: OPEN-METEO GLOBAL FLOOD API (COPERNICUS GLOFAS) */}
-                <div style={{ background: "#f0fdf4", border: "1px solid #dcfce7", borderRadius: 10, padding: "10px", marginBottom: 12 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, color: "#166534" }}>
-                      <span>🛰️</span>
-                      <span>3. OPEN-METEO GLOFAS (COPERNICUS)</span>
-                    </div>
-                    <span style={{ fontSize: 9.5, background: "#dcfce7", color: "#15803d", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>
-                      GloFAS Vệ tinh
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 6 }}>
-                    <span style={{ color: "#14532d" }}>Lưu lượng Sông Sài Gòn:</span>
-                    <strong style={{ color: "#15803d" }}>
-                      {selectedFloodSpot.glofas_discharge_m3s ? `${selectedFloodSpot.glofas_discharge_m3s.toLocaleString()} m³/s` : "2,343 m³/s"}
-                    </strong>
-                  </div>
-
-                  {/* Biểu đồ 7 ngày GloFAS nếu đã fetch */}
-                  {selectedGloFAS && selectedGloFAS.forecast_7d && (
-                    <div>
-                      <div style={{ fontSize: 10, fontWeight: 600, color: "#166534", marginBottom: 4 }}>
-                        Dự báo dòng chảy 7 ngày tới (m³/s):
-                      </div>
-                      <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 42, background: "rgba(255,255,255,0.7)", borderRadius: 6, padding: "4px 6px" }}>
-                        {selectedGloFAS.forecast_7d.map((day, idx) => {
-                          const maxVal = 5000;
-                          const barHeight = Math.min(32, Math.max(8, (day.discharge / maxVal) * 32));
-                          const isHigh = day.discharge > 3500;
-                          return (
-                            <div key={idx} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                              <div
-                                title={`${day.date}: ${day.discharge} m³/s`}
-                                style={{
-                                  width: "100%",
-                                  height: barHeight,
-                                  background: isHigh ? "#ef4444" : "#10b981",
-                                  borderRadius: "3px 3px 0 0",
-                                }}
-                              />
-                              <span style={{ fontSize: 8, color: "#64748b" }}>
-                                {day.date.split("-")[2]}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {loadingGloFAS && (
-                    <div style={{ fontSize: 10, color: "#15803d", textAlign: "center", padding: "4px 0" }}>
-                      Đang đồng bộ vệ tinh GloFAS...
-                    </div>
-                  )}
-                </div>
-
-                {/* Các nút hành động */}
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    onClick={() => {
-                      if (floodData) {
-                        const feat = floodData.features.find((f) => f.id === selectedFloodSpot.id);
-                        if (feat) {
-                          handleCalculateRoute(feat.geometry.coordinates[0], feat.geometry.coordinates[1], selectedFloodSpot.name);
-                        }
-                      }
-                    }}
-                    disabled={calculatingRoute}
-                    style={{
-                      flex: 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 6,
-                      padding: "9px 12px",
-                      borderRadius: 10,
-                      background: "#0284c7",
-                      color: "#ffffff",
-                      fontSize: 12,
-                      fontWeight: 600,
-                      border: "none",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <span>🧭</span> {calculatingRoute ? "Đang tính..." : "Chỉ đường tránh ngập"}
-                  </button>
-                  <button
-                    onClick={() => handleInspectGpsGloFAS()}
-                    style={{
-                      padding: "9px 12px",
-                      borderRadius: 10,
-                      border: "1px solid #e2e8f0",
-                      background: "#f8fafc",
-                      color: "#0f172a",
-                      fontSize: 12,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
-                    }}
-                    title="Xem chi tiết toàn bộ mô hình GloFAS"
-                  >
-                    📊 GloFAS
-                  </button>
-                </div>
-              </div>
-            ) : clickedAddress ? (
-              <div>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
-                  <div>
-                    <div style={{ fontSize: 10.5, fontWeight: 700, color: "#2563eb", textTransform: "uppercase" }}>
-                      Vị trí đã chọn trên bản đồ
-                    </div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginTop: 2 }}>
-                      {clickedAddress.placeName}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setClickedAddress(null)}
-                    style={{
-                      border: "none",
-                      background: "#f1f5f9",
-                      borderRadius: "50%",
-                      width: 24,
-                      height: 24,
-                      cursor: "pointer",
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: "#64748b",
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "8px 10px", marginBottom: 12 }}>
-                  {clickedAddress.houseNumber && (
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", marginBottom: 2 }}>
-                      🏠 Số nhà: {clickedAddress.houseNumber}
-                    </div>
-                  )}
-                  <div style={{ fontSize: 11.5, color: "#475569" }}>
-                    📍 {clickedAddress.fullAddress}
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    onClick={() => handleCalculateRoute(clickedAddress.lng, clickedAddress.lat, clickedAddress.placeName || clickedAddress.fullAddress)}
-                    disabled={calculatingRoute}
-                    style={{
-                      flex: 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 6,
-                      padding: "9px 12px",
-                      borderRadius: 10,
-                      background: "#0f172a",
-                      color: "#ffffff",
-                      fontSize: 12,
-                      fontWeight: 600,
-                      border: "none",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <span>🧭</span> {calculatingRoute ? "Đang tính..." : "Chỉ đường từ vị trí của tôi"}
-                  </button>
-                  <button
-                    onClick={() => alert(`Đã ghi nhận tọa độ ${clickedAddress.lat.toFixed(5)}, ${clickedAddress.lng.toFixed(5)} để gửi báo cáo sự cố!`)}
-                    style={{
-                      padding: "9px 12px",
-                      borderRadius: 10,
-                      border: "1px solid #e2e8f0",
-                      background: "#f8fafc",
-                      color: "#0f172a",
-                      fontSize: 12,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Báo cáo
-                  </button>
-                </div>
-              </div>
-            ) : selectedPOI ? (
-              <div>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 22 }}>{selectedPOI.icon}</span>
-                    <div>
-                      <div style={{ fontSize: 10.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
-                        {selectedPOI.categoryName}
-                      </div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
-                        {selectedPOI.name}
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setSelectedPOI(null)}
-                    style={{
-                      border: "none",
-                      background: "#f1f5f9",
-                      borderRadius: "50%",
-                      width: 24,
-                      height: 24,
-                      cursor: "pointer",
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: "#64748b",
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "8px 10px", marginBottom: 12 }}>
-                  {selectedPOI.houseNumber && (
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", marginBottom: 2 }}>
-                      🏠 Số nhà: {selectedPOI.houseNumber}
-                    </div>
-                  )}
-                  <div style={{ fontSize: 11.5, color: "#475569" }}>
-                    📍 {selectedPOI.fullAddress}
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => handleCalculateRoute(selectedPOI.longitude, selectedPOI.latitude, selectedPOI.name)}
-                  disabled={calculatingRoute}
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
-                    padding: "9px 12px",
-                    borderRadius: 10,
-                    background: "#0f172a",
-                    color: "#ffffff",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  <span>🧭</span> {calculatingRoute ? "Đang tính..." : "Chỉ đường từ vị trí của tôi"}
-                </button>
-              </div>
-            ) : selectedLocation ? (
-              <div>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 22 }}>{CATEGORY_CONFIG[selectedLocation.category].icon}</span>
-                    <div>
-                      <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", color: CATEGORY_CONFIG[selectedLocation.category].color }}>
-                        {CATEGORY_CONFIG[selectedLocation.category].name}
-                      </div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
-                        {selectedLocation.name}
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setSelectedLocation(null)}
-                    style={{
-                      border: "none",
-                      background: "#f1f5f9",
-                      borderRadius: "50%",
-                      width: 24,
-                      height: 24,
-                      cursor: "pointer",
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: "#64748b",
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div style={{ marginBottom: 10 }}>
-                  <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 7px", borderRadius: 6, background: "#f1f5f9", fontSize: 11, fontWeight: 600, color: "#334155", marginBottom: 4 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: CATEGORY_CONFIG[selectedLocation.category].color }} />
-                    {selectedLocation.statusText}
-                  </div>
-                  <div style={{ fontSize: 11.5, color: "#64748b" }}>
-                    📍 {selectedLocation.address} ({selectedLocation.district})
-                  </div>
-                </div>
-
-                <div style={{ background: "#f8fafc", borderRadius: 10, padding: "8px 12px", marginBottom: 12, border: "1px solid #e2e8f0" }}>
-                  <div style={{ fontSize: 10.5, fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>
-                    {selectedLocation.metricLabel}
-                  </div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginTop: 2 }}>
-                    {selectedLocation.metricValue}
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => handleCalculateRoute(selectedLocation.longitude, selectedLocation.latitude, selectedLocation.name)}
-                  disabled={calculatingRoute}
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
-                    padding: "9px 12px",
-                    borderRadius: 10,
-                    background: "#0f172a",
-                    color: "#ffffff",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  <span>🧭</span> {calculatingRoute ? "Đang tính..." : "Chỉ đường từ vị trí của tôi"}
-                </button>
-              </div>
-            ) : null}
-          </div>
-        )}
-      </div>
-
-      {/* 2. THANH ĐIỀU KHIỂN BẢN ĐỒ & CÁC LỚP BẢN ĐỒ TRỰC TIẾP (Google Maps / Apple Maps Style) */}
-      <div
-        style={{
-          position: "absolute",
-          top: 16,
-          left: 412,
-          right: 16,
-          zIndex: 22,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 10,
-          pointerEvents: "none",
-          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-        }}
-      >
-        {/* Dãy nút chọn kiểu bản đồ trực quan */}
-        <div
-          style={{
-            pointerEvents: "auto",
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-            background: "rgba(255, 255, 255, 0.95)",
-            backdropFilter: "blur(16px)",
-            WebkitBackdropFilter: "blur(16px)",
-            borderRadius: 999,
-            padding: "4px 8px",
-            boxShadow: "0 4px 18px rgba(0, 0, 0, 0.08)",
-            border: "1px solid #e2e8f0",
-            overflowX: "auto",
-            scrollbarWidth: "none",
-            maxWidth: "calc(100% - 240px)",
-          }}
-        >
-          {/* Logo brand nhỏ tinh tế */}
-          <div style={{ display: "flex", alignItems: "center", gap: 5, paddingRight: 8, marginRight: 4, borderRight: "1px solid #e2e8f0" }}>
-            <span style={{ fontSize: 15 }}>🌱</span>
-            <span style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", whiteSpace: "nowrap" }}>EcoReport</span>
-          </div>
-
-          {(Object.keys(MAP_STYLES) as StyleKey[]).map((key) => {
-            const item = MAP_STYLES[key];
-            const isActive = activeStyle === key;
-            return (
-              <button
-                key={key}
-                onClick={() => setActiveStyle(key)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  padding: "5px 10px",
-                  borderRadius: 999,
-                  border: isActive ? "1px solid #0f172a" : "none",
-                  cursor: "pointer",
-                  fontSize: 11.5,
-                  fontWeight: isActive ? 700 : 500,
-                  background: isActive ? "#0f172a" : "transparent",
-                  color: isActive ? "#ffffff" : "#475569",
-                  transition: "all 0.15s ease",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                <span>{item.icon}</span>
-                <span>{item.name}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Cụm công cụ: Ranh giới quận + 3D + GPS */}
-        <div
-          style={{
-            pointerEvents: "auto",
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            background: "rgba(255, 255, 255, 0.95)",
-            backdropFilter: "blur(16px)",
-            WebkitBackdropFilter: "blur(16px)",
-            borderRadius: 999,
-            padding: "4px 8px",
-            boxShadow: "0 4px 18px rgba(0, 0, 0, 0.08)",
-            border: "1px solid #e2e8f0",
-          }}
-        >
-          {/* Nút bật/tắt Ranh giới khu vực / quận huyện */}
-          <button
-            onClick={() => setShowDistricts(!showDistricts)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              padding: "5px 10px",
-              borderRadius: 999,
-              border: showDistricts ? "1px solid #3b82f6" : "none",
-              cursor: "pointer",
-              fontSize: 11.5,
-              fontWeight: showDistricts ? 700 : 500,
-              background: showDistricts ? "#eff6ff" : "transparent",
-              color: showDistricts ? "#1d4ed8" : "#475569",
-              transition: "all 0.15s ease",
-              whiteSpace: "nowrap",
-            }}
-          >
-            <span>🗺️</span>
-            <span>{showDistricts ? "Ẩn ranh giới" : "Ranh giới khu vực"}</span>
-          </button>
-
-          {/* NÚT MỞ RADAR KHÍ TƯỢNG ĐỘNG LỰC HỌC (CHẾ ĐỘ MÔ PHỎNG GIÓ & DẢI NHIỆT VI KHÍ HẬU) */}
-          <button
-            onClick={() => {
-              setLiveRadarOverlay("temp");
-              setShowLiveRadar(true);
-            }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "5px 12px",
-              borderRadius: 999,
-              border: "1px solid rgba(249, 115, 22, 0.4)",
-              cursor: "pointer",
-              fontSize: 11.5,
-              fontWeight: 700,
-              background: "linear-gradient(135deg, #ea580c, #c2410c)",
-              color: "#ffffff",
-              boxShadow: "0 2px 10px rgba(234, 88, 12, 0.35)",
-              transition: "all 0.15s ease",
-              whiteSpace: "nowrap",
-            }}
-            title="Mở Radar Khí tượng & Luồng gió động lực học thời gian thực"
-          >
-            <span style={{ fontSize: 13 }}>🌪️</span>
-            <span>Radar Khí tượng</span>
-            <span
-              style={{
-                background: "rgba(255, 255, 255, 0.25)",
-                fontSize: 9,
-                padding: "1px 5px",
-                borderRadius: 4,
-                letterSpacing: 0.5,
-                fontWeight: 800,
-              }}
-            >
-              LIVE
-            </span>
-          </button>
-
-          {/* NÚT MỞ BẬT/TẮT CẢNH BÁO NGẬP LỤT (3 NGUỒN TÍCH HỢP) */}
-          <button
-            onClick={() => setShowFloodWatch(!showFloodWatch)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              padding: "5px 12px",
-              borderRadius: 999,
-              border: showFloodWatch ? "1px solid #0284c7" : "1px solid rgba(2, 132, 199, 0.35)",
-              cursor: "pointer",
-              fontSize: 11.5,
-              fontWeight: showFloodWatch ? 700 : 500,
-              background: showFloodWatch ? "linear-gradient(135deg, #0284c7, #0369a1)" : "transparent",
-              color: showFloodWatch ? "#ffffff" : "#0284c7",
-              boxShadow: showFloodWatch ? "0 2px 10px rgba(2, 132, 199, 0.35)" : "none",
-              transition: "all 0.15s ease",
-              whiteSpace: "nowrap",
-            }}
-            title="Cảnh báo ngập lụt đô thị tích hợp 3 nguồn: Cổng dữ liệu TP.HCM, Open-Meteo GloFAS & Lượng mưa thông minh"
-          >
-            <span style={{ fontSize: 13 }}>🌊</span>
-            <span>Cảnh báo Ngập lụt</span>
-            {floodData && (
-              <span
-                style={{
-                  background: showFloodWatch ? "rgba(255, 255, 255, 0.25)" : "#e0f2fe",
-                  color: showFloodWatch ? "#ffffff" : "#0369a1",
-                  fontSize: 9.5,
-                  padding: "1px 5px",
-                  borderRadius: 4,
-                  fontWeight: 800,
-                }}
-              >
-                {floodData.total} điểm
-              </span>
-            )}
-          </button>
-
-          {/* Nút Chuyển Đổi Triều Cường Mô Phỏng để hiển thị rõ các đoạn đường ngập úng */}
-          <button
-            onClick={() => setSimulateFlood(!simulateFlood)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              padding: "5px 12px",
-              borderRadius: 999,
-              border: simulateFlood ? "1px solid #0284c7" : "1px solid rgba(2, 132, 199, 0.35)",
-              cursor: "pointer",
-              fontSize: 11.5,
-              fontWeight: simulateFlood ? 700 : 500,
-              background: simulateFlood
-                ? "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)"
-                : "transparent",
-              color: simulateFlood ? "#ffffff" : "#0284c7",
-              boxShadow: simulateFlood ? "0 2px 10px rgba(2, 132, 199, 0.35)" : "none",
-              transition: "all 0.2s ease",
-              whiteSpace: "nowrap",
-            }}
-            title="Bật/Tắt hiển thị các đoạn đường ngập lụt theo mô phỏng triều cường đỉnh 1.68m"
-          >
-            <span>{simulateFlood ? "🌊 Triều đỉnh 1.68m" : "🌤️ Triều thực tế"}</span>
-          </button>
-
-          {/* Nút Menu Bản đồ nhiệt thời tiết & môi trường */}
-          <div style={{ position: "relative" }}>
-            <button
-              onClick={() => setShowHeatmapMenu(!showHeatmapMenu)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
-                padding: "5px 11px",
-                borderRadius: 999,
-                border: activeHeatmap !== "none" ? "1px solid #f97316" : "1px solid transparent",
-                cursor: "pointer",
-                fontSize: 11.5,
-                fontWeight: activeHeatmap !== "none" ? 700 : 500,
-                background: activeHeatmap !== "none" ? "linear-gradient(135deg, #fff7ed, #ffedd5)" : "transparent",
-                color: activeHeatmap !== "none" ? "#c2410c" : "#475569",
-                boxShadow: activeHeatmap !== "none" ? "0 2px 8px rgba(249, 115, 22, 0.2)" : "none",
-                transition: "all 0.15s ease",
-                whiteSpace: "nowrap",
-              }}
-            >
-              <span>{activeHeatmap === "temperature" ? "🌡️" : activeHeatmap === "aqi" ? "💨" : activeHeatmap === "risk" ? "🚨" : "🔥"}</span>
-              <span>
-                {activeHeatmap === "temperature"
-                  ? "Nhiệt độ (°C)"
-                  : activeHeatmap === "aqi"
-                  ? "Không khí (AQI)"
-                  : activeHeatmap === "risk"
-                  ? "Điểm nóng rủi ro"
-                  : "Bản đồ nhiệt"}
-              </span>
-              <span style={{ fontSize: 9 }}>▼</span>
-            </button>
-
-            {/* Dropdown Menu chọn chế độ Bản đồ nhiệt */}
-            {showHeatmapMenu && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "100%",
-                  left: 0,
-                  marginTop: 6,
-                  background: "rgba(255, 255, 255, 0.96)",
-                  backdropFilter: "blur(16px)",
-                  WebkitBackdropFilter: "blur(16px)",
-                  borderRadius: 12,
-                  boxShadow: "0 10px 25px rgba(0, 0, 0, 0.15)",
-                  border: "1px solid #e2e8f0",
-                  padding: 6,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 4,
-                  zIndex: 50,
-                  minWidth: 205,
-                }}
-              >
-                {/* Lựa chọn Radar Khí tượng trực tiếp trong menu */}
-                <button
-                  onClick={() => {
-                    setLiveRadarOverlay("temp");
-                    setShowLiveRadar(true);
-                    setShowHeatmapMenu(false);
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "7px 10px",
-                    borderRadius: 8,
-                    border: "1px solid #fdba74",
-                    background: "linear-gradient(135deg, #fff7ed, #ffedd5)",
-                    color: "#c2410c",
-                    fontWeight: 700,
-                    fontSize: 12,
-                    cursor: "pointer",
-                    textAlign: "left",
-                  }}
-                >
-                  <span style={{ fontSize: 16 }}>🌪️</span>
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <span>Radar Khí tượng & Luồng gió</span>
-                    <span style={{ fontSize: 10, color: "#ea580c", fontWeight: 500 }}>
-                      Mô phỏng trường gió & vi khí hậu trực tiếp
-                    </span>
-                  </div>
-                </button>
-
-                <div style={{ height: 1, backgroundColor: "#f1f5f9", margin: "2px 0" }} />
-
-                <button
-                  onClick={() => {
-                    setActiveHeatmap("temperature");
-                    setShowHeatmapMenu(false);
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "7px 10px",
-                    borderRadius: 8,
-                    border: "none",
-                    background: activeHeatmap === "temperature" ? "#fff7ed" : "transparent",
-                    color: activeHeatmap === "temperature" ? "#ea580c" : "#334155",
-                    fontWeight: activeHeatmap === "temperature" ? 700 : 500,
-                    fontSize: 12,
-                    cursor: "pointer",
-                    textAlign: "left",
-                  }}
-                >
-                  <span>🌡️</span>
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <span>Nhiệt độ thời tiết (°C)</span>
-                    <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 400 }}>Dải nhiệt vi khí hậu toàn quốc</span>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setActiveHeatmap("aqi");
-                    setShowHeatmapMenu(false);
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "7px 10px",
-                    borderRadius: 8,
-                    border: "none",
-                    background: activeHeatmap === "aqi" ? "#ecfdf5" : "transparent",
-                    color: activeHeatmap === "aqi" ? "#059669" : "#334155",
-                    fontWeight: activeHeatmap === "aqi" ? 700 : 500,
-                    fontSize: 12,
-                    cursor: "pointer",
-                    textAlign: "left",
-                  }}
-                >
-                  <span>💨</span>
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <span>Chất lượng không khí (AQI)</span>
-                    <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 400 }}>Bụi mịn PM2.5 & cảnh báo</span>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setActiveHeatmap("risk");
-                    setShowHeatmapMenu(false);
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "7px 10px",
-                    borderRadius: 8,
-                    border: "none",
-                    background: activeHeatmap === "risk" ? "#fef2f2" : "transparent",
-                    color: activeHeatmap === "risk" ? "#dc2626" : "#334155",
-                    fontWeight: activeHeatmap === "risk" ? 700 : 500,
-                    fontSize: 12,
-                    cursor: "pointer",
-                    textAlign: "left",
-                  }}
-                >
-                  <span>🚨</span>
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <span>Điểm nóng sự cố ô nhiễm</span>
-                    <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 400 }}>Mật độ bãi rác & ô nhiễm</span>
-                  </div>
-                </button>
-
-                {activeHeatmap !== "none" && (
-                  <button
-                    onClick={() => {
-                      setActiveHeatmap("none");
-                      setShowHeatmapMenu(false);
-                    }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      padding: "6px 10px",
-                      borderRadius: 8,
-                      border: "none",
-                      borderTop: "1px solid #f1f5f9",
-                      marginTop: 2,
-                      background: "transparent",
-                      color: "#64748b",
-                      fontSize: 11.5,
-                      cursor: "pointer",
-                    }}
-                  >
-                    <span>⏹️</span>
-                    <span>Tắt bản đồ nhiệt</span>
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Nút 3D / 2D */}
-          <button
-            onClick={toggle3DView}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              padding: "5px 10px",
-              borderRadius: 999,
-              border: is3D ? "1px solid #0f172a" : "none",
-              cursor: "pointer",
-              fontSize: 11.5,
-              fontWeight: is3D ? 700 : 500,
-              background: is3D ? "#0f172a" : "transparent",
-              color: is3D ? "#ffffff" : "#475569",
-              transition: "all 0.15s ease",
-              whiteSpace: "nowrap",
-            }}
-          >
-            <span>{is3D ? "🏢 3D" : "📐 2D"}</span>
-          </button>
-
-          {/* Bộ chọn màu sắc 3D khi đang bật 3D trên bản đồ hỗ trợ */}
-          {is3D && (activeStyle === "voyager" || activeStyle === "dark") && (
-            <div style={{ position: "relative" }}>
-              <button
-                onClick={() => setShow3DColorMenu(!show3DColorMenu)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 5,
-                  padding: "5px 10px",
-                  borderRadius: 999,
-                  border: "1px solid #c084fc",
-                  cursor: "pointer",
-                  fontSize: 11.5,
-                  fontWeight: 700,
-                  background: "linear-gradient(135deg, #fdf4ff, #fae8ff)",
-                  color: "#9333ea",
-                  boxShadow: "0 2px 8px rgba(147, 51, 234, 0.15)",
-                  transition: "all 0.15s ease",
-                  whiteSpace: "nowrap",
-                }}
-                title="Đổi bảng màu sắc rực rỡ cho tòa nhà 3D"
-              >
-                <span>{BUILDING_COLOR_THEMES[building3DTheme].icon}</span>
-                <span>Màu 3D</span>
-                <span style={{ fontSize: 9 }}>▼</span>
-              </button>
-
-              {show3DColorMenu && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    right: 0,
-                    marginTop: 6,
-                    background: "rgba(255, 255, 255, 0.98)",
-                    backdropFilter: "blur(20px)",
-                    WebkitBackdropFilter: "blur(20px)",
-                    borderRadius: 14,
-                    boxShadow: "0 12px 30px rgba(0, 0, 0, 0.2)",
-                    border: "1px solid #e2e8f0",
-                    padding: 8,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 4,
-                    zIndex: 100,
-                    minWidth: 230,
-                  }}
-                >
-                  <div style={{ padding: "3px 6px", fontSize: 10.5, fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                    Bảng màu tòa nhà 3D
-                  </div>
-                  {(Object.keys(BUILDING_COLOR_THEMES) as BuildingColorTheme[]).map((themeKey) => {
-                    const theme = BUILDING_COLOR_THEMES[themeKey];
-                    const isSelected = building3DTheme === themeKey;
-                    return (
-                      <button
-                        key={themeKey}
-                        onClick={() => {
-                          setBuilding3DTheme(themeKey);
-                          setShow3DColorMenu(false);
-                        }}
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 3,
-                          padding: "7px 9px",
-                          borderRadius: 9,
-                          border: isSelected ? "1.5px solid #a855f7" : "1px solid transparent",
-                          background: isSelected ? "#fdf4ff" : "transparent",
-                          cursor: "pointer",
-                          textAlign: "left",
-                          transition: "all 0.15s ease",
-                        }}
-                      >
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                          <span style={{ fontSize: 12, fontWeight: isSelected ? 700 : 600, color: isSelected ? "#9333ea" : "#1e293b" }}>
-                            {theme.icon} {theme.name}
-                          </span>
-                          {isSelected && <span style={{ fontSize: 11, color: "#9333ea", fontWeight: 800 }}>✓</span>}
-                        </div>
-                        <span style={{ fontSize: 9.5, color: "#64748b" }}>{theme.desc}</span>
-                        {/* Dải màu preview */}
-                        <div style={{ display: "flex", height: 5, borderRadius: 3, overflow: "hidden", marginTop: 2 }}>
-                          {theme.colors.map((c, idx) => (
-                            <div key={idx} style={{ flex: 1, backgroundColor: c }} />
-                          ))}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Nút Định vị GPS */}
-          <button
-            onClick={() => {
-              refreshGps(true);
-              if (gpsCoords && mapRef.current) {
-                mapRef.current.flyTo({
-                  center: [gpsCoords.lng, gpsCoords.lat],
-                  zoom: gpsSource === "gps" ? 16 : 14,
-                  pitch: is3D ? 58 : 0,
-                  duration: 1200,
-                });
-              }
-            }}
-            title={
-              gpsCoords
-                ? `Vị trí: ${gpsCoords.lat.toFixed(5)}, ${gpsCoords.lng.toFixed(5)}\nNguồn: ${
-                    gpsSource === "gps"
-                      ? "Vệ tinh GPS / Wi-Fi"
-                      : gpsSource === "network"
-                      ? "Ước tính theo IP mạng"
-                      : gpsSource === "cache"
-                      ? "Bộ nhớ đệm"
-                      : "Mặc định TP.HCM"
-                  } (Cấp độ: ${accuracyLevel}, Sai số: ±${gpsAccuracy || 15}m - ${
-                    isLocked ? "Đã khóa vệ tinh" : "Đang tinh chỉnh"
-                  })\nClick để làm mới và xóa cache.`
-                : gpsError || (isLocatingGps ? "Đang tìm kiếm tín hiệu GPS..." : "Chưa có GPS")
+        <button
+          type='button'
+          onClick={() => {
+            refreshGps(true);
+            if (gpsCoords && mapRef.current) {
+              mapRef.current.flyTo({
+                center: [gpsCoords.lng, gpsCoords.lat],
+                zoom: gpsSource === 'gps' ? 16 : 14,
+                pitch: is3D ? 58 : 0,
+                duration: 1200,
+              });
             }
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              padding: "5px 11px",
-              borderRadius: 999,
-              border: isLocked ? "1px solid #10b981" : "1px solid #e2e8f0",
-              cursor: "pointer",
-              fontSize: 11.5,
-              fontWeight: 700,
-              background: isLocked ? "#ecfdf5" : gpsCoords ? "#eff6ff" : "#f8fafc",
-              color: isLocked ? "#059669" : gpsCoords ? "#2563eb" : "#64748b",
-              transition: "all 0.15s ease",
-              whiteSpace: "nowrap",
-            }}
-          >
-            <span>
-              {!gpsCoords && isLocatingGps
-                ? "🛰️ Đang dò..."
-                : isLocked
-                ? `🎯 GPS (±${gpsAccuracy || 10}m)`
-                : gpsSource === "gps"
-                ? `🎯 GPS (±${gpsAccuracy || 25}m)`
-                : gpsSource === "network"
-                ? "📶 Ước lượng IP"
-                : gpsSource === "cache"
-                ? "💾 Cache GPS"
-                : "📍 Mặc định TP.HCM"}
-            </span>
-          </button>
-        </div>
+          }}
+          title={
+            gpsCoords
+              ? 'Vị trí: ' + gpsCoords.lat.toFixed(5) + ', ' + gpsCoords.lng.toFixed(5)
+              : gpsError || (isLocatingGps ? 'Đang tìm kiếm tín hiệu GPS...' : 'Chưa có GPS')
+          }
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '8px 14px',
+            borderRadius: 9999,
+            border: isLocked ? '1px solid #10b981' : '1px solid rgba(226, 232, 240, 0.9)',
+            background: 'rgba(255, 255, 255, 0.94)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            color: isLocked ? '#059669' : gpsCoords ? '#2563eb' : '#475569',
+            cursor: 'pointer',
+            fontSize: 12.5,
+            fontWeight: 700,
+            boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(15, 23, 42, 0.04)',
+            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <span>
+            {!gpsCoords && isLocatingGps
+              ? '🛰️ Đang dò...'
+              : isLocked
+              ? '🎯 GPS (±' + (gpsAccuracy || 10) + 'm)'
+              : gpsSource === 'gps'
+              ? '🎯 GPS (±' + (gpsAccuracy || 25) + 'm)'
+              : gpsSource === 'network'
+              ? '📶 Ước lượng IP'
+              : gpsSource === 'cache'
+              ? '💾 Cache GPS'
+              : '📍 Mặc định TP.HCM'}
+          </span>
+        </button>
       </div>
 
       {/* 3. BẢNG THÔNG BÁO LỘ TRÌNH OSRM ROUTING (Góc trên bên phải, hiển thị khi có lộ trình) */}
@@ -2392,105 +1110,47 @@ function EcoMap() {
         </div>
       )}
 
-      {/* 4. CHỈ SỐ THỜI TIẾT & AQI TINH GỌN GÓC DƯỚI BÊN TRÁI */}
-      <div
-        title={
-          liveWeather
-            ? `${liveWeather.desc} • PM2.5: ${liveWeather.pm25} µg/m³\n${
-                mouseCoords ? `Tọa độ chuột: ${mouseCoords.lat.toFixed(4)}°N, ${mouseCoords.lng.toFixed(4)}°E` : ""
-              }`
-            : mouseCoords
-            ? `Tọa độ: ${mouseCoords.lat.toFixed(4)}°N, ${mouseCoords.lng.toFixed(4)}°E`
-            : "Thời tiết & Không khí TP.HCM"
-        }
-        style={{
-          position: "absolute",
-          bottom: 20,
-          left: 16,
-          zIndex: 20,
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "7px 12px",
-          background: "rgba(255, 255, 255, 0.92)",
-          backdropFilter: "blur(12px)",
-          borderRadius: 24,
-          boxShadow: "0 2px 10px rgba(0, 0, 0, 0.08)",
-          border: "1px solid #e2e8f0",
-          fontFamily: "'Inter', sans-serif",
-          fontSize: 12,
-          fontWeight: 600,
-          color: "#0f172a",
-          cursor: "default",
-        }}
-      >
-        <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#10b981" }} />
-        <span>{liveWeather ? liveWeather.temp : "28°C"}</span>
-        <span style={{ color: "#cbd5e1" }}>•</span>
-        <span style={{ color: liveWeather && liveWeather.aqi > 100 ? "#ea580c" : "#059669" }}>
-          AQI {liveWeather ? liveWeather.aqi : 42} ({liveWeather ? liveWeather.aqiStatus : "Tốt"})
-        </span>
-      </div>
-
-      {/* 5. TOUR NHANH ĐỊA DANH GÓC DƯỚI Ở GIỮA */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 20,
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 20,
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          padding: "5px 8px",
-          background: "rgba(255, 255, 255, 0.92)",
-          backdropFilter: "blur(12px)",
-          borderRadius: 24,
-          boxShadow: "0 2px 10px rgba(0, 0, 0, 0.08)",
-          border: "1px solid #e2e8f0",
-          maxWidth: "85vw",
-          overflowX: "auto",
-          scrollbarWidth: "none",
-          fontFamily: "'Inter', sans-serif",
-        }}
-      >
-        <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", paddingLeft: 4, whiteSpace: "nowrap" }}>
-          Tour:
-        </span>
-        {landmarks.map((loc) => (
-          <button
-            key={loc.id}
-            onClick={() => handleSelectLandmark(loc)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              padding: "4px 9px",
-              borderRadius: 14,
-              border: "none",
-              cursor: "pointer",
-              fontSize: 11,
-              fontWeight: 600,
-              background: "#f8fafc",
-              color: "#334155",
-              whiteSpace: "nowrap",
-              transition: "all 0.15s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#0f172a";
-              e.currentTarget.style.color = "#ffffff";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "#f8fafc";
-              e.currentTarget.style.color = "#334155";
-            }}
-          >
-            <span>{loc.icon || "📍"}</span>
-            <span>{loc.name}</span>
-          </button>
-        ))}
-      </div>
+      {/* 4. CHỈ SỐ THỜI TIẾT & AQI TINH GỌN GÓC DƯỚI BÊN TRÁI (chỉ hiển thị khi Sidebar thu gọn để tránh đè UI) */}
+      {!isSidebarOpen && (
+        <div
+          title={
+            liveWeather
+              ? `${liveWeather.desc} • PM2.5: ${liveWeather.pm25} µg/m³\n${
+                  mouseCoords ? `Tọa độ chuột: ${mouseCoords.lat.toFixed(4)}°N, ${mouseCoords.lng.toFixed(4)}°E` : ""
+                }`
+              : mouseCoords
+              ? `Tọa độ: ${mouseCoords.lat.toFixed(4)}°N, ${mouseCoords.lng.toFixed(4)}°E`
+              : "Thời tiết & Không khí TP.HCM"
+          }
+          style={{
+            position: "absolute",
+            bottom: 20,
+            left: 16,
+            zIndex: 20,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "7px 12px",
+            background: "rgba(255, 255, 255, 0.92)",
+            backdropFilter: "blur(12px)",
+            borderRadius: 24,
+            boxShadow: "0 2px 10px rgba(0, 0, 0, 0.08)",
+            border: "1px solid #e2e8f0",
+            fontFamily: "'Inter', sans-serif",
+            fontSize: 12,
+            fontWeight: 600,
+            color: "#0f172a",
+            cursor: "default",
+          }}
+        >
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#10b981" }} />
+          <span>{liveWeather ? liveWeather.temp : "28°C"}</span>
+          <span style={{ color: "#cbd5e1" }}>•</span>
+          <span style={{ color: liveWeather && liveWeather.aqi > 100 ? "#ea580c" : "#059669" }}>
+            AQI {liveWeather ? liveWeather.aqi : 42} ({liveWeather ? liveWeather.aqiStatus : "Tốt"})
+          </span>
+        </div>
+      )}
 
       {/* BẢN ĐỒ MAPLIBRE CHÍNH */}
       <Map
@@ -3731,196 +2391,6 @@ function EcoMap() {
         </div>
       )}
 
-      {/* 7.6. WIDGET GIÁM SÁT NGẬP LỤT ĐÔ THỊ THỜI GIAN THỰC (3 NGUỒN TÍCH HỢP) */}
-      {showFloodWatch && floodData && activeHeatmap === "none" && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: 24,
-            left: 16,
-            zIndex: 25,
-            background: "rgba(255, 255, 255, 0.96)",
-            backdropFilter: "blur(16px)",
-            WebkitBackdropFilter: "blur(16px)",
-            borderRadius: 16,
-            padding: "12px 14px",
-            boxShadow: "0 8px 30px rgba(0, 0, 0, 0.12)",
-            border: "1px solid #e2e8f0",
-            maxWidth: 380,
-            width: "calc(100vw - 32px)",
-            pointerEvents: "auto",
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-          }}
-        >
-          {/* Header Widget */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 16 }}>🌊</span>
-              <span style={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a" }}>
-                Giám Sát Ngập Lụt Đô Thị (3 Nguồn)
-              </span>
-            </div>
-            <button
-              onClick={() => setShowFloodWatch(false)}
-              style={{
-                border: "none",
-                background: "transparent",
-                color: "#94a3b8",
-                cursor: "pointer",
-                fontSize: 13,
-                padding: "2px 4px",
-              }}
-              title="Tạm ẩn lớp ngập lụt"
-            >
-              ✕
-            </button>
-          </div>
-
-          {/* Dãy nhãn thống kê cấp độ rủi ro */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, textAlign: "center" }}>
-            <div style={{ background: "#fee2e2", padding: "4px 2px", borderRadius: 6, border: "1px solid #fca5a5" }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: "#dc2626" }}>{floodData.summary.criticalCount}</div>
-              <div style={{ fontSize: 9, fontWeight: 600, color: "#991b1b" }}>Nguy cấp</div>
-            </div>
-            <div style={{ background: "#ffedd5", padding: "4px 2px", borderRadius: 6, border: "1px solid #fdba74" }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: "#ea580c" }}>{floodData.summary.warningCount}</div>
-              <div style={{ fontSize: 9, fontWeight: 600, color: "#c2410c" }}>Cảnh báo</div>
-            </div>
-            <div style={{ background: "#fef9c3", padding: "4px 2px", borderRadius: 6, border: "1px solid #fde047" }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: "#ca8a04" }}>{floodData.summary.alertCount}</div>
-              <div style={{ fontSize: 9, fontWeight: 600, color: "#a16207" }}>Cảnh giác</div>
-            </div>
-            <div style={{ background: "#e0f2fe", padding: "4px 2px", borderRadius: 6, border: "1px solid #7dd3fc" }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: "#0284c7" }}>{floodData.summary.safeCount}</div>
-              <div style={{ fontSize: 9, fontWeight: 600, color: "#0369a1" }}>An toàn</div>
-            </div>
-          </div>
-
-          {/* Dữ liệu đo đạc thực tế */}
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#475569", background: "#f8fafc", padding: "6px 10px", borderRadius: 8 }}>
-            <span>🌧️ Mưa đo được: <strong style={{ color: "#0f172a" }}>{floodData.summary.currentRainfallMm} mm/h</strong></span>
-            <span>🌊 GloFAS: <strong style={{ color: "#0f172a" }}>{Math.round(floodData.summary.saigonRiverDischargeM3s).toLocaleString()} m³/s</strong></span>
-          </div>
-
-          {/* Thông tin dải màu đoạn đường ngập */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              fontSize: 10.5,
-              color: "#0369a1",
-              background: "rgba(2, 132, 199, 0.08)",
-              padding: "5px 8px",
-              borderRadius: 8,
-              border: "1px solid rgba(2, 132, 199, 0.15)",
-            }}
-          >
-            <span>🛣️ <strong>{floodData.road_segments?.length || 30} đoạn đường ngập</strong> được bôi màu</span>
-            <span style={{ fontSize: 9.5, color: "#64748b" }}>Nhấp để xem</span>
-          </div>
-
-          {/* Thanh kích hoạt kiểm thử mưa (Simulation Trigger) */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 10, color: "#64748b" }}>
-              <span>🧪 <strong>Thử nghiệm kích hoạt mưa:</strong></span>
-              {simulatedRainfallMm !== null && (
-                <button
-                  onClick={() => setSimulatedRainfallMm(null)}
-                  style={{
-                    border: "none",
-                    background: "none",
-                    color: "#0284c7",
-                    cursor: "pointer",
-                    fontSize: 10,
-                    fontWeight: 600,
-                    padding: 0,
-                  }}
-                >
-                  (Về thời gian thực)
-                </button>
-              )}
-            </div>
-            <div style={{ display: "flex", gap: 4 }}>
-              <button
-                onClick={() => setSimulatedRainfallMm(0)}
-                style={{
-                  flex: 1,
-                  padding: "4px 2px",
-                  borderRadius: 6,
-                  border: simulatedRainfallMm === 0 ? "1px solid #0284c7" : "1px solid #e2e8f0",
-                  background: simulatedRainfallMm === 0 ? "#e0f2fe" : "#ffffff",
-                  color: simulatedRainfallMm === 0 ? "#0369a1" : "#475569",
-                  fontSize: 10,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                ☀️ 0mm (Tạnh)
-              </button>
-              <button
-                onClick={() => setSimulatedRainfallMm(25)}
-                style={{
-                  flex: 1,
-                  padding: "4px 2px",
-                  borderRadius: 6,
-                  border: simulatedRainfallMm === 25 ? "1px solid #f97316" : "1px solid #e2e8f0",
-                  background: simulatedRainfallMm === 25 ? "#ffedd5" : "#ffffff",
-                  color: simulatedRainfallMm === 25 ? "#c2410c" : "#475569",
-                  fontSize: 10,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                🌧️ 25mm (Vừa)
-              </button>
-              <button
-                onClick={() => setSimulatedRainfallMm(55)}
-                style={{
-                  flex: 1,
-                  padding: "4px 2px",
-                  borderRadius: 6,
-                  border: simulatedRainfallMm === 55 ? "1px solid #ef4444" : "1px solid #e2e8f0",
-                  background: simulatedRainfallMm === 55 ? "#fee2e2" : "#ffffff",
-                  color: simulatedRainfallMm === 55 ? "#b91c1c" : "#475569",
-                  fontSize: 10,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                ⛈️ 55mm (Ngập to)
-              </button>
-            </div>
-          </div>
-
-          {/* Nút Tra cứu GloFAS tại GPS */}
-          <button
-            onClick={() => handleInspectGpsGloFAS()}
-            disabled={loadingGpsGloFAS}
-            style={{
-              width: "100%",
-              padding: "7px",
-              borderRadius: 8,
-              border: "1px solid #0284c7",
-              background: "#f0f9ff",
-              color: "#0369a1",
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-            }}
-          >
-            <span>🎯</span>
-            <span>{loadingGpsGloFAS ? "Đang tra cứu vệ tinh..." : "Tra cứu rủi ro lũ GloFAS tại vị trí của tôi"}</span>
-          </button>
-        </div>
-      )}
 
       {/* 7.7. MODAL XEM CHI TIẾT DỰ BÁO LŨ GLOFAS 7 NGÀY (OPEN-METEO FLOOD API) */}
       {showGloFASModal && (

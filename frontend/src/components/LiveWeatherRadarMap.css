@@ -1,0 +1,530 @@
+/* ==============================================================================
+   EcoReport WebGIS - Live Meteorological Radar & Wind Streamlines Styles
+   Swiss / Linear-Tier Precision: Frosted Glass, Restrained Palette, Tactile Feedback
+   ============================================================================== */
+
+.live-radar-root {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1100;
+  background-color: #0f172a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+/* 1. Header Navigation Dock */
+.live-radar-header {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.live-radar-left-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+/* Nút Trở về Bản đồ WebGIS */
+.live-radar-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 9999px;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.03);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.live-radar-back-btn:hover {
+  background: #ffffff;
+  border-color: #10b981;
+  color: #047857;
+  transform: translateX(-2px);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.16);
+}
+
+.live-radar-back-btn:active {
+  transform: scale(0.97);
+}
+
+/* Huy hiệu Radar Live */
+.live-radar-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 9999px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+}
+
+.live-radar-beacon-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+  display: inline-block;
+  animation: radar-pulse 1.6s infinite ease-in-out;
+}
+
+.live-radar-badge-title {
+  color: #0f172a;
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: -0.2px;
+}
+
+.live-radar-badge-chip {
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Khối Quick Jump Tọa độ Thành phố */
+.live-radar-locations-dock {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 4px 6px;
+  border-radius: 9999px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  pointer-events: auto;
+  max-width: 100%;
+  overflow-x: auto;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.live-radar-locations-dock::-webkit-scrollbar {
+  display: none;
+}
+
+.live-radar-gps-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.live-radar-gps-btn.active {
+  background: #10b981;
+  color: #ffffff;
+  border: 1px solid #059669;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+}
+
+.live-radar-gps-btn:not(.active) {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.live-radar-gps-btn:hover {
+  transform: translateY(-1px);
+}
+
+.live-radar-gps-btn:active {
+  transform: scale(0.97);
+}
+
+.live-radar-dock-divider {
+  width: 1px;
+  height: 18px;
+  background-color: #e2e8f0;
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+.live-radar-location-chip {
+  padding: 6px 11px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid transparent;
+}
+
+.live-radar-location-chip.active {
+  background: #0f172a;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+}
+
+.live-radar-location-chip:not(.active) {
+  background: transparent;
+  color: #475569;
+  font-weight: 600;
+}
+
+.live-radar-location-chip:not(.active):hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Khối phải: Mô hình dự báo ECMWF/GFS + Nút chức năng */
+.live-radar-right-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.live-radar-model-switcher {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 3px;
+  border-radius: 9999px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+}
+
+.live-radar-model-btn {
+  padding: 5px 11px;
+  border-radius: 9999px;
+  border: none;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.live-radar-model-btn.active {
+  background: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
+}
+
+.live-radar-model-btn:not(.active) {
+  background: transparent;
+  color: #64748b;
+}
+
+.live-radar-model-btn:not(.active):hover {
+  color: #0f172a;
+}
+
+/* Nút Lớp & Nút Làm Mới */
+.live-radar-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 9999px;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.live-radar-action-btn:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.live-radar-action-btn:active {
+  transform: scale(0.97);
+}
+
+.live-radar-action-btn.active {
+  background: #ecfdf5;
+  border-color: #10b981;
+  color: #047857;
+}
+
+/* 2. Menu Lớp khí tượng (Right-hand Overlay Panel) */
+.live-radar-overlay-panel {
+  position: absolute;
+  top: 72px;
+  right: 14px;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 16px;
+  padding: 8px;
+  box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(15, 23, 42, 0.04);
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+  width: 200px;
+  box-sizing: border-box;
+}
+
+.live-radar-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 6px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 2px;
+}
+
+.live-radar-panel-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.live-radar-panel-live {
+  font-size: 10px;
+  color: #10b981;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.live-radar-overlay-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.live-radar-overlay-item.active {
+  background: #f8fafc;
+  border: 1.5px solid #0f172a;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.live-radar-overlay-item:not(.active) {
+  background: transparent;
+  color: #334155;
+}
+
+.live-radar-overlay-item:not(.active):hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.live-radar-overlay-item-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.live-radar-overlay-item-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.live-radar-overlay-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.live-radar-overlay-unit {
+  font-size: 10px;
+  color: #64748b;
+}
+
+/* 3. Thanh Chú Giải Thang Đo Dưới Đáy (Bottom Legend Ribbon) */
+.live-radar-legend-card {
+  position: absolute;
+  bottom: 24px;
+  left: 16px;
+  z-index: 1200;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 14px;
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 15px 35px -5px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(15, 23, 42, 0.04);
+  max-width: 460px;
+  width: calc(100% - 32px);
+  box-sizing: border-box;
+}
+
+.live-radar-legend-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.live-radar-legend-title-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.live-radar-legend-title {
+  color: #0f172a;
+  font-weight: 700;
+  font-size: 12.5px;
+}
+
+.live-radar-legend-model-badge {
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.live-radar-legend-bar {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 2px;
+}
+
+.live-radar-legend-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.live-radar-legend-color {
+  width: 100%;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.live-radar-legend-label {
+  font-size: 9.5px;
+  color: #64748b;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.live-radar-legend-hint {
+  font-size: 10.5px;
+  color: #64748b;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 4. Loading Overlay */
+.live-radar-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 10;
+  gap: 14px;
+}
+
+.live-radar-spinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid rgba(16, 185, 129, 0.2);
+  border-top-color: #10b981;
+  animation: radar-spin 0.8s linear infinite;
+}
+
+.live-radar-loading-text {
+  color: #0f172a;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+/* Keyframe animations */
+@keyframes radar-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes radar-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.2);
+  }
+}
