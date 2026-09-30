@@ -1,12 +1,23 @@
+import React from "react";
 import type { OverviewData } from "./types";
 import { BarChart } from "./charts/BarChart";
 import type { BarItem } from "./charts/BarChart";
+import VietnamGeoMapCard from "./VietnamGeoMapCard";
 
 interface OverviewTabProps {
   data: OverviewData | null;
   loading: boolean;
   onSelectProvince?: (slug: string) => void;
 }
+
+const POLLUTANT_SVGS: Record<string, string> = {
+  pm2_5: "/pm25.svg",
+  pm10: "/pm10.svg",
+  o3: "/o3.svg",
+  no2: "/no2.svg",
+  so2: "/so2.svg",
+  co: "/co.svg",
+};
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({
   data,
@@ -15,9 +26,16 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
 }) => {
   if (loading || !data) {
     return (
-      <div style={{ padding: "40px", textAlign: "center", color: "#94a3b8" }}>
-        <div style={{ fontSize: "28px", marginBottom: "12px" }}>⏳</div>
-        <div>Đang phân tích tổng quan chất lượng không khí toàn quốc...</div>
+      <div style={{ padding: "60px 20px", textAlign: "center", color: "#a1a1a6" }}>
+        <div style={{ fontSize: "36px", marginBottom: "16px", animation: "pulse-live 1.5s infinite" }}>
+          ⏳
+        </div>
+        <div style={{ fontSize: "15px", fontWeight: 600, color: "#f5f5f7" }}>
+          Đang phân tích tổng quan dữ liệu không khí & bản đồ toàn quốc...
+        </div>
+        <div style={{ fontSize: "12px", color: "#6e6e73", marginTop: "6px" }}>
+          Tải luồng đồng bộ thời gian thực Open-Meteo & 7.1 triệu bản ghi Parquet
+        </div>
       </div>
     );
   }
@@ -28,10 +46,13 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     avg_aqi,
     aqi_meta,
     health_advice,
+    health_insights,
     peak_time_slot,
     pollutants,
     distribution,
     rankings,
+    geo_provinces = [],
+    target_slug,
   } = data;
 
   const distributionBarItems: BarItem[] = distribution.map((d) => ({
@@ -41,305 +62,310 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     subLabel: `${d.count} trạm (${d.range})`,
   }));
 
+  const cigEquiv = health_insights?.cigarettes_equiv ?? 1.1;
+  const whoMultiplier = health_insights?.who_multiplier ?? 5.0;
+  const exposureLabel = health_insights?.exposure_label ?? "24 giờ";
+  const rankImproving = health_insights?.rank_improving ?? [];
+  const rankWorsening = health_insights?.rank_worsening ?? [];
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      {/* SECTION 1: HERO METRIC & HEALTH ADVICE ROW */}
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      {/* SECTION 1: HERO METRIC & HEALTH ADVICE WITH CIGARETTE EQUIVALENT */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: "20px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
+          gap: "16px",
         }}
       >
         {/* HERO AQI CARD */}
-        <div
-          style={{
-            background: "linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%)",
-            border: `1px solid ${aqi_meta.color}40`,
-            borderRadius: "16px",
-            padding: "24px",
-            boxShadow: `0 12px 30px rgba(0,0,0,0.3), 0 0 20px ${aqi_meta.color}15`,
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div>
-              <span
-                style={{
-                  display: "inline-block",
-                  padding: "4px 10px",
-                  borderRadius: "20px",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  background: `${aqi_meta.color}25`,
-                  color: aqi_meta.color,
-                  border: `1px solid ${aqi_meta.color}50`,
-                }}
-              >
-                ● {aqi_meta.label}
-              </span>
-              <h2 style={{ fontSize: "18px", color: "#f8fafc", margin: "10px 0 2px 0" }}>
-                {scope_label}
-              </h2>
-              <div style={{ fontSize: "12px", color: "#94a3b8" }}>Chỉ số AQI tổng hợp thời gian thực</div>
+        <div className="macos-hero-aqi-card" style={{ borderLeft: `3px solid ${aqi_meta.color}` }}>
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <span
+                  className="macos-hero-pill-status"
+                  style={{
+                    background: `${aqi_meta.color}25`,
+                    color: aqi_meta.color,
+                    border: `0.5px solid ${aqi_meta.color}60`,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      background: aqi_meta.color,
+                      boxShadow: `0 0 6px ${aqi_meta.color}`,
+                    }}
+                  />
+                  {aqi_meta.label}
+                </span>
+
+                <h2 className="macos-hero-scope-name">{scope_label}</h2>
+                <div className="macos-hero-sublabel">Chỉ số AQI tổng hợp thời gian thực</div>
+              </div>
+
+              <div style={{ textAlign: "right" }}>
+                <div className="macos-hero-aqi-number" style={{ color: aqi_meta.color }}>
+                  {current_aqi}
+                </div>
+                <div style={{ fontSize: "11px", color: "var(--macos-text-secondary)", marginTop: "4px" }}>
+                  Trung bình thời kỳ: <strong style={{ color: "#ffffff" }}>{avg_aqi}</strong>
+                </div>
+              </div>
             </div>
-            <div style={{ textAlign: "right" }}>
+
+            {/* Rank Shifts quick pill row if available */}
+            {(rankImproving.length > 0 || rankWorsening.length > 0) && (
               <div
                 style={{
-                  fontSize: "48px",
-                  fontWeight: 800,
-                  color: aqi_meta.color,
-                  lineHeight: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginTop: "14px",
+                  flexWrap: "wrap",
+                  fontSize: "11px",
                 }}
               >
-                {current_aqi}
+                {rankImproving.length > 0 && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      padding: "2px 8px",
+                      borderRadius: "6px",
+                      background: "rgba(48, 209, 88, 0.15)",
+                      border: "0.5px solid rgba(48, 209, 88, 0.3)",
+                      color: "#30d158",
+                    }}
+                  >
+                    <span>🌱 Sạch nhất:</span>
+                    <strong>{rankImproving[0]?.name}</strong> ({rankImproving[0]?.aqi} AQI)
+                  </div>
+                )}
+                {rankWorsening.length > 0 && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      padding: "2px 8px",
+                      borderRadius: "6px",
+                      background: "rgba(255, 69, 58, 0.15)",
+                      border: "0.5px solid rgba(255, 69, 58, 0.3)",
+                      color: "#ff453a",
+                    }}
+                  >
+                    <span>⚠️ Ô nhiễm nhất:</span>
+                    <strong>{rankWorsening[0]?.name}</strong> ({rankWorsening[0]?.aqi} AQI)
+                  </div>
+                )}
               </div>
-              <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>
-                Trung bình: <strong>{avg_aqi}</strong>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Peak pollution time slot */}
-          <div
-            style={{
-              marginTop: "20px",
-              padding: "10px 14px",
-              background: "rgba(255, 255, 255, 0.04)",
-              borderRadius: "10px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              fontSize: "12px",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#cbd5e1" }}>
-              <span>⚠️</span>
-              <span>Khung giờ ô nhiễm đỉnh điểm:</span>
+          <div className="macos-hero-peak-box">
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--macos-text-secondary)" }}>
+              <span>⏱️</span>
+              <span>Khung giờ ô nhiễm đỉnh điểm trong ngày:</span>
             </div>
-            <strong style={{ color: "#f59e0b" }}>
-              {peak_time_slot.slot} (AQI: {peak_time_slot.aqi})
+            <strong style={{ color: "#ffd60a", fontWeight: 700 }}>
+              {peak_time_slot.slot} ({peak_time_slot.aqi} AQI)
             </strong>
           </div>
         </div>
 
-        {/* HEALTH GUIDANCE CARD */}
-        <div
-          style={{
-            background: "rgba(30, 41, 59, 0.6)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            borderRadius: "16px",
-            padding: "24px",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-          }}
-        >
+        {/* HEALTH GUIDANCE & CIGARETTE EXPOSURE CARD */}
+        <div className="macos-health-advice-card">
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
-              <span style={{ fontSize: "20px" }}>🩺</span>
-              <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#f8fafc", margin: 0 }}>
+            {/* Cigarette exposure & WHO multiplier banner */}
+            <div className="macos-cig-exposure-banner">
+              <div className="macos-cig-headline">
+                <span>🚬</span>
+                <span>
+                  Phơi nhiễm ({exposureLabel}): <strong>{cigEquiv} điếu thuốc lá</strong>
+                </span>
+              </div>
+              <span className="macos-who-multi-tag">
+                Gấp {whoMultiplier}x ngưỡng WHO
+              </span>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+              <span style={{ fontSize: "16px" }}>🩺</span>
+              <h3 style={{ fontSize: "13px", fontWeight: 700, color: "var(--macos-text-primary)", margin: 0, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                 Khuyến Nghị Sức Khỏe Cộng Đồng
               </h3>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px" }}>
-              <div style={{ color: "#e2e8f0" }}>
-                <strong>Dân cư chung:</strong> {health_advice.general}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "12.5px" }}>
+              <div style={{ color: "var(--macos-text-primary)" }}>
+                <strong style={{ color: "#0a84ff" }}>Dân cư chung:</strong> {health_advice.general}
               </div>
-              <div style={{ color: "#e2e8f0" }}>
-                <strong>Trẻ em & Người già:</strong> {health_advice.children_elderly}
+              <div style={{ color: "var(--macos-text-primary)" }}>
+                <strong style={{ color: "#ff9f0a" }}>Trẻ em & Người già:</strong> {health_advice.children_elderly}
               </div>
-              <div style={{ color: "#e2e8f0" }}>
-                <strong>Vận động ngoài trời:</strong> {health_advice.outdoor}
+              <div style={{ color: "var(--macos-text-primary)" }}>
+                <strong style={{ color: "#30d158" }}>Vận động ngoài trời:</strong> {health_advice.outdoor}
               </div>
             </div>
           </div>
-          <div style={{ marginTop: "14px", fontSize: "11px", color: "#64748b" }}>
-            *Căn cứ quy chuẩn kỹ thuật quốc gia QCVN 05:2023/BTNM & hướng dẫn Y tế WHO.
+
+          <div style={{ marginTop: "12px", fontSize: "10.5px", color: "var(--macos-text-tertiary)" }}>
+            *Mô hình quy đổi Berkeley Earth (22 µg/m³ PM2.5 = 1 điếu/ngày) & QCVN 05:2023/BTNM.
           </div>
         </div>
       </div>
 
-      {/* SECTION 2: 6 CORE POLLUTANTS METRIC CARDS */}
+      {/* SECTION 2: 6 CORE POLLUTANTS WITH OFFICIAL SVG ICONS */}
       <div>
-        <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#f8fafc", marginBottom: "16px" }}>
-          6 Chất Ô Nhiễm Không Khí Trọng Yếu
-        </h3>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: "14px",
-          }}
-        >
-          {Object.entries(pollutants).map(([key, item]) => (
-            <div
-              key={key}
-              style={{
-                background: "rgba(30, 41, 59, 0.5)",
-                border: "1px solid rgba(255, 255, 255, 0.06)",
-                borderRadius: "12px",
-                padding: "16px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-              }}
-            >
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: 700, fontSize: "16px", color: item.color }}>
-                    {item.label}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "10px",
-                      padding: "2px 6px",
-                      borderRadius: "6px",
-                      background: item.exceeds ? "rgba(239, 68, 68, 0.2)" : "rgba(34, 197, 94, 0.2)",
-                      color: item.exceeds ? "#ef4444" : "#22c55e",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {item.exceeds ? "Vượt chuẩn" : "An toàn"}
-                  </span>
-                </div>
-                <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px" }}>
-                  {item.desc}
-                </div>
-              </div>
+        <div className="macos-card-header" style={{ marginBottom: "10px" }}>
+          <div className="macos-card-title">
+            <span>🔬</span>
+            <span>6 Chất Ô Nhiễm Không Khí Trọng Yếu</span>
+          </div>
+          <span style={{ fontSize: "11px", color: "var(--macos-text-tertiary)" }}>
+            Theo dõi nồng độ vi hạt & khí độc thời gian thực
+          </span>
+        </div>
 
-              <div style={{ marginTop: "16px" }}>
-                <div style={{ fontSize: "24px", fontWeight: 800, color: "#f8fafc" }}>
-                  {item.current} <span style={{ fontSize: "12px", fontWeight: 400, color: "#94a3b8" }}>{item.unit}</span>
-                </div>
-                <div style={{ fontSize: "11px", color: "#cbd5e1", marginTop: "4px" }}>
-                  Ngưỡng WHO: <strong>{item.who_threshold} {item.unit}</strong>
+        <div className="macos-pollutants-grid">
+          {Object.entries(pollutants).map(([key, item]) => {
+            const svgPath = POLLUTANT_SVGS[key];
+            return (
+              <div key={key} className="macos-pollutant-card">
+                <div>
+                  <div className="macos-pollutant-card-top">
+                    <div className="macos-pollutant-icon-title">
+                      {svgPath ? (
+                        <img src={svgPath} alt={item.label} className="macos-pollutant-svg-icon" />
+                      ) : (
+                        <span style={{ fontSize: "18px" }}>🧪</span>
+                      )}
+                      <div>
+                        <div className="macos-pollutant-name">{item.label}</div>
+                        <div className="macos-pollutant-desc">{item.desc}</div>
+                      </div>
+                    </div>
+
+                    <span
+                      className="macos-pollutant-status-pill"
+                      style={{
+                        background: item.exceeds ? "rgba(255, 69, 58, 0.2)" : "rgba(48, 209, 88, 0.2)",
+                        color: item.exceeds ? "#ff453a" : "#30d158",
+                      }}
+                    >
+                      {item.exceeds ? "Vượt chuẩn" : "An toàn"}
+                    </span>
+                  </div>
+
+                  <div className="macos-pollutant-val">
+                    {item.current} <span className="macos-pollutant-unit">{item.unit}</span>
+                  </div>
+                  <div className="macos-pollutant-who-limit">
+                    Ngưỡng WHO: <strong>{item.who_threshold} {item.unit}</strong>
+                  </div>
                 </div>
 
-                {/* Progress bar ratio vs WHO limit */}
-                <div
-                  style={{
-                    height: "4px",
-                    background: "rgba(255, 255, 255, 0.08)",
-                    borderRadius: "2px",
-                    marginTop: "8px",
-                    overflow: "hidden",
-                  }}
-                >
+                {/* Progress bar vs WHO limit */}
+                <div className="macos-pollutant-ratio-bar">
                   <div
+                    className="macos-pollutant-ratio-fill"
                     style={{
                       width: `${Math.min(100, item.who_ratio_pct)}%`,
-                      height: "100%",
-                      background: item.exceeds ? "#ef4444" : item.color,
+                      background: item.exceeds ? "#ff453a" : item.color,
                     }}
                   />
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
-      {/* SECTION 3: AQI DISTRIBUTION & RANKINGS ROW */}
+      {/* SECTION 3: INTERACTIVE VIETNAM MAP (34 PROVINCES) & AQI DISTRIBUTION */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
-          gap: "24px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))",
+          gap: "16px",
         }}
       >
-        {/* AQI DISTRIBUTION BAR CHART */}
-        <div
-          style={{
-            background: "rgba(30, 41, 59, 0.5)",
-            border: "1px solid rgba(255, 255, 255, 0.06)",
-            borderRadius: "16px",
-            padding: "20px",
-          }}
-        >
-          <BarChart
-            items={distributionBarItems}
-            unit="%"
-            height={260}
-            orientation="vertical"
-            title="Tỷ Lệ Phân Bổ Mức Độ Chất Lượng Không Khí"
-          />
-        </div>
+        {/* INTERACTIVE VIETNAM GEO MAP */}
+        <VietnamGeoMapCard
+          provinces={geo_provinces}
+          selectedProvince={target_slug || undefined}
+          onSelectProvince={onSelectProvince}
+          height={420}
+        />
 
-        {/* TOP 5 CLEANEST & MOST POLLUTED */}
-        <div
-          style={{
-            background: "rgba(30, 41, 59, 0.5)",
-            border: "1px solid rgba(255, 255, 255, 0.06)",
-            borderRadius: "16px",
-            padding: "20px",
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "16px",
-          }}
-        >
-          {/* CLEANEST */}
-          <div>
-            <div style={{ fontSize: "13px", fontWeight: 700, color: "#22c55e", marginBottom: "10px" }}>
-              🌱 Top 5 Trong Lành Nhất
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {rankings.cleanest.map((p, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "6px 8px",
-                    background: "rgba(255, 255, 255, 0.03)",
-                    borderRadius: "6px",
-                    fontSize: "12px",
-                    cursor: onSelectProvince ? "pointer" : "default",
-                  }}
-                  onClick={() => onSelectProvince && onSelectProvince(p.slug)}
-                >
-                  <span style={{ color: "#e2e8f0" }}>
-                    <strong>{idx + 1}.</strong> {p.name}
-                  </span>
-                  <span style={{ color: p.meta.color, fontWeight: 700 }}>
-                    {p.aqi}
-                  </span>
-                </div>
-              ))}
-            </div>
+        {/* AQI DISTRIBUTION & RANKINGS COLUMN */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {/* AQI DISTRIBUTION BAR CHART */}
+          <div className="macos-glass-card" style={{ flex: 1, padding: "16px 18px" }}>
+            <BarChart
+              items={distributionBarItems}
+              unit="%"
+              height={170}
+              orientation="vertical"
+              title="Phân Bổ Tỷ Lệ Mức Độ Chất Lượng Không Khí"
+            />
           </div>
 
-          {/* MOST POLLUTED */}
-          <div>
-            <div style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444", marginBottom: "10px" }}>
-              ⚠️ Top 5 Cần Lưu Ý
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {rankings.polluted.map((p, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "6px 8px",
-                    background: "rgba(255, 255, 255, 0.03)",
-                    borderRadius: "6px",
-                    fontSize: "12px",
-                    cursor: onSelectProvince ? "pointer" : "default",
-                  }}
-                  onClick={() => onSelectProvince && onSelectProvince(p.slug)}
-                >
-                  <span style={{ color: "#e2e8f0" }}>
-                    <strong>{idx + 1}.</strong> {p.name}
-                  </span>
-                  <span style={{ color: p.meta.color, fontWeight: 700 }}>
-                    {p.aqi}
-                  </span>
+          {/* TOP 5 CLEANEST & MOST POLLUTED */}
+          <div className="macos-glass-card" style={{ padding: "16px 18px" }}>
+            <div className="macos-rankings-2col">
+              {/* CLEANEST */}
+              <div>
+                <div style={{ fontSize: "12px", fontWeight: 700, color: "#30d158", marginBottom: "8px", display: "flex", alignItems: "center", gap: "5px" }}>
+                  <span>🌱</span> Top 5 Trong Lành Nhất
                 </div>
-              ))}
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {rankings.cleanest.map((p, idx) => (
+                    <div
+                      key={idx}
+                      className="macos-ranking-item"
+                      onClick={() => onSelectProvince && onSelectProvince(p.slug)}
+                      title={`Bấm để xem dữ liệu chi tiết ${p.name}`}
+                    >
+                      <span style={{ color: "var(--macos-text-primary)", fontWeight: 500 }}>
+                        <strong style={{ color: "var(--macos-text-secondary)" }}>{idx + 1}.</strong> {p.name}
+                      </span>
+                      <span style={{ color: p.meta.color, fontWeight: 700 }}>
+                        {Math.round(p.aqi)} AQI
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* MOST POLLUTED */}
+              <div>
+                <div style={{ fontSize: "12px", fontWeight: 700, color: "#ff453a", marginBottom: "8px", display: "flex", alignItems: "center", gap: "5px" }}>
+                  <span>⚠️</span> Top 5 Cần Lưu Ý
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {rankings.polluted.map((p, idx) => (
+                    <div
+                      key={idx}
+                      className="macos-ranking-item"
+                      onClick={() => onSelectProvince && onSelectProvince(p.slug)}
+                      title={`Bấm để xem dữ liệu chi tiết ${p.name}`}
+                    >
+                      <span style={{ color: "var(--macos-text-primary)", fontWeight: 500 }}>
+                        <strong style={{ color: "var(--macos-text-secondary)" }}>{idx + 1}.</strong> {p.name}
+                      </span>
+                      <span style={{ color: p.meta.color, fontWeight: 700 }}>
+                        {Math.round(p.aqi)} AQI
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -347,4 +373,5 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     </div>
   );
 };
+
 export default OverviewTab;

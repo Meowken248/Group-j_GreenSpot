@@ -15,6 +15,7 @@ import PollutantsTab from "./dashboard/PollutantsTab";
 import WeatherTab from "./dashboard/WeatherTab";
 import InteractionTab from "./dashboard/InteractionTab";
 import DataTableTab from "./dashboard/DataTableTab";
+import "./dashboard/dashboard.css";
 
 interface AirQualityDashboardProps {
   onBackToMap?: () => void;
@@ -147,6 +148,36 @@ export const AirQualityDashboard: React.FC<AirQualityDashboardProps> = ({ onBack
     fetchTable();
   };
 
+  // Keyboard Shortcuts: Esc to return to map, Cmd+R to refresh, Cmd+1..5 to switch tabs
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onBackToMap?.();
+      } else if ((e.metaKey || e.ctrlKey) && (e.key === "r" || e.key === "R")) {
+        e.preventDefault();
+        handleRefreshAll();
+      } else if ((e.metaKey || e.ctrlKey) && e.key === "1") {
+        e.preventDefault();
+        setActiveTab("overview");
+      } else if ((e.metaKey || e.ctrlKey) && e.key === "2") {
+        e.preventDefault();
+        setActiveTab("pollutants");
+      } else if ((e.metaKey || e.ctrlKey) && e.key === "3") {
+        e.preventDefault();
+        setActiveTab("weather");
+      } else if ((e.metaKey || e.ctrlKey) && e.key === "4") {
+        e.preventDefault();
+        setActiveTab("interaction");
+      } else if ((e.metaKey || e.ctrlKey) && e.key === "5") {
+        e.preventDefault();
+        setActiveTab("table");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onBackToMap, handleRefreshAll]);
+
   const handleSelectProvinceFromAnywhere = (slug: string) => {
     setScopeMode("province");
     setSelectedProvince(slug);
@@ -160,187 +191,127 @@ export const AirQualityDashboard: React.FC<AirQualityDashboardProps> = ({ onBack
     { key: "2025", label: "Năm 2025" },
   ];
 
+  const tabsConfig = [
+    { key: "overview", label: "Tổng Quan AQI", desc: "KPI & Bản đồ 34 Tỉnh", icon: "📊", kbd: "⌘1" },
+    { key: "pollutants", label: "Bụi Mịn & Khí Độc", desc: "6 Chất & Giờ cao điểm", icon: "📈", kbd: "⌘2" },
+    { key: "weather", label: "Khí Tượng Học", desc: "Nhiệt, ẩm & vi khí hậu", icon: "🌦️", kbd: "⌘3" },
+    { key: "interaction", label: "Tương Tác Khí Hậu", desc: "Làm sạch gió & mưa", icon: "🌪️", kbd: "⌘4" },
+    { key: "table", label: "Bảng Tra Cứu 34 Tỉnh", desc: "Tìm kiếm & lọc số liệu", icon: "📋", kbd: "⌘5" },
+  ];
+
   return (
-    <div
-      style={{
-        height: "100vh",
-        overflowY: "auto",
-        background: "linear-gradient(180deg, #0b1120 0%, #0f172a 100%)",
-        color: "#f8fafc",
-        padding: "24px",
-        paddingTop: "75px",
-        paddingBottom: "50px",
-        boxSizing: "border-box",
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-      }}
-    >
-      <div style={{ maxWidth: "1400px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "20px" }}>
-        {/* HEADER BAR */}
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "16px",
-            borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-            paddingBottom: "16px",
-          }}
-        >
-          {/* TITLE & LIVE BADGE */}
-          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+    <div className="macos-dashboard-root">
+      <div className="macos-dashboard-content">
+        {/* =========================================================================
+            1. UNIFIED macOS TITLEBAR (Window Header, Traffic Lights & Live Status)
+            ========================================================================= */}
+        <header className="macos-titlebar-container">
+          <div className="macos-titlebar-left">
+            {/* macOS Traffic Lights */}
+            <div className="macos-traffic-lights" title="Điều khiển cửa sổ">
+              <button
+                type="button"
+                className="macos-traffic-light close"
+                onClick={onBackToMap}
+                title="Đóng bảng phân tích (Về WebGIS) - Phím Esc"
+              >
+                <span className="macos-traffic-light-glyph">✕</span>
+              </button>
+              <button
+                type="button"
+                className="macos-traffic-light minimize"
+                onClick={() => window.scrollTo({ top: 320, behavior: "smooth" })}
+                title="Cuộn nhanh xuống dữ liệu"
+              >
+                <span className="macos-traffic-light-glyph">−</span>
+              </button>
+              <button
+                type="button"
+                className="macos-traffic-light zoom"
+                onClick={() => {
+                  if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                  } else {
+                    document.exitFullscreen().catch(() => {});
+                  }
+                }}
+                title="Bật/Tắt toàn màn hình"
+              >
+                <span className="macos-traffic-light-glyph">+</span>
+              </button>
+            </div>
+
             {onBackToMap && (
               <button
                 type="button"
+                className="macos-titlebar-back-btn"
                 onClick={onBackToMap}
-                style={{
-                  padding: "8px 14px",
-                  borderRadius: "8px",
-                  border: "1px solid rgba(255, 255, 255, 0.15)",
-                  background: "rgba(255, 255, 255, 0.05)",
-                  color: "#cbd5e1",
-                  fontSize: "13px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
+                title="Quay lại Bản đồ không gian xanh & Ngập lụt (Esc)"
               >
                 <span>←</span>
-                <span>Về Bản Đồ WebGIS</span>
+                <span>Bản Đồ WebGIS</span>
+                <kbd className="macos-kbd">Esc</kbd>
               </button>
             )}
-
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <h1 style={{ fontSize: "20px", fontWeight: 800, margin: 0, color: "#f8fafc" }}>
-                  HỆ THỐNG QUAN TRẮC CHẤT LƯỢNG KHÔNG KHÍ & KHÍ TƯỢNG VIỆT NAM
-                </h1>
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    padding: "3px 10px",
-                    borderRadius: "12px",
-                    background: "rgba(34, 197, 94, 0.15)",
-                    border: "1px solid rgba(34, 197, 94, 0.3)",
-                    color: "#4ade80",
-                    fontSize: "11px",
-                    fontWeight: 700,
-                  }}
-                >
-                  <span
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      background: "#22c55e",
-                      boxShadow: "0 0 8px #22c55e",
-                    }}
-                  />
-                  LIVE RUNTIME
-                </span>
-              </div>
-              <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "4px" }}>
-                Tích hợp 7.1 triệu bản ghi Parquet & Luồng đồng bộ thời gian thực Open-Meteo
-              </div>
-            </div>
           </div>
 
-          {/* REFRESH & TIMESTAMP */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{ fontSize: "12px", color: "#64748b" }}>Cập nhật: {lastRefreshed}</span>
+          {/* Title & Live Runtime Badge */}
+          <div className="macos-titlebar-center">
+            <span className="macos-titlebar-title">
+              HỆ THỐNG QUAN TRẮC CHẤT LƯỢNG KHÔNG KHÍ & KHÍ TƯỢNG
+            </span>
+            <span className="macos-live-badge">
+              <span className="macos-live-dot" />
+              LIVE RUNTIME
+            </span>
+          </div>
+
+          {/* Right Action: Timestamp & Refresh */}
+          <div className="macos-titlebar-right">
+            <span className="macos-last-refresh-text">Cập nhật: {lastRefreshed}</span>
             <button
               type="button"
+              className="macos-titlebar-refresh-btn"
               onClick={handleRefreshAll}
-              style={{
-                padding: "8px 14px",
-                borderRadius: "8px",
-                border: "1px solid rgba(56, 189, 248, 0.3)",
-                background: "rgba(56, 189, 248, 0.1)",
-                color: "#38bdf8",
-                fontSize: "12px",
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-              }}
+              title="Cập nhật lại toàn bộ các luồng quan trắc (⌘R)"
             >
               <span>🔄</span>
               <span>Làm Mới</span>
+              <kbd className="macos-kbd">⌘R</kbd>
             </button>
           </div>
-        </div>
+        </header>
 
-        {/* SUBHEADER: FILTERS TOOLBAR */}
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "14px",
-            background: "rgba(30, 41, 59, 0.4)",
-            padding: "12px 18px",
-            borderRadius: "14px",
-            border: "1px solid rgba(255, 255, 255, 0.06)",
-          }}
-        >
-          {/* SCOPE & PROVINCE PICKER */}
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px" }}>
-            <span style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 600 }}>Phạm vi:</span>
-            <div style={{ display: "flex", background: "rgba(15, 23, 42, 0.8)", borderRadius: "8px", padding: "2px" }}>
+        {/* =========================================================================
+            2. FILTER TOOLBAR (macOS Inset Trench & Segmented Control)
+            ========================================================================= */}
+        <section className="macos-filter-toolbar">
+          {/* Scope Selection (Nation vs Province) */}
+          <div className="macos-filter-group">
+            <span className="macos-filter-label">Phạm vi quan sát:</span>
+            <div className="macos-segmented-trench">
               <button
                 type="button"
+                className={`macos-segmented-btn ${scopeMode === "nation" ? "active" : ""}`}
                 onClick={() => setScopeMode("nation")}
-                style={{
-                  padding: "6px 12px",
-                  borderRadius: "6px",
-                  border: "none",
-                  background: scopeMode === "nation" ? "#38bdf8" : "transparent",
-                  color: scopeMode === "nation" ? "#0f172a" : "#cbd5e1",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
               >
-                Toàn Quốc
+                🇻🇳 Toàn Quốc (34 Tỉnh)
               </button>
               <button
                 type="button"
+                className={`macos-segmented-btn ${scopeMode === "province" ? "active" : ""}`}
                 onClick={() => setScopeMode("province")}
-                style={{
-                  padding: "6px 12px",
-                  borderRadius: "6px",
-                  border: "none",
-                  background: scopeMode === "province" ? "#38bdf8" : "transparent",
-                  color: scopeMode === "province" ? "#0f172a" : "#cbd5e1",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
               >
-                Theo Tỉnh Thành
+                📍 Theo Tỉnh Thành
               </button>
             </div>
 
-            {/* Province Select */}
             {scopeMode === "province" && (
               <select
+                className="macos-select-dropdown"
                 value={selectedProvince}
                 onChange={(e) => setSelectedProvince(e.target.value)}
-                style={{
-                  padding: "6px 12px",
-                  borderRadius: "8px",
-                  border: "1px solid rgba(255, 255, 255, 0.15)",
-                  background: "rgba(15, 23, 42, 0.9)",
-                  color: "#f8fafc",
-                  fontSize: "12px",
-                  outline: "none",
-                  cursor: "pointer",
-                }}
+                aria-label="Chọn tỉnh thành theo dõi"
               >
                 {provinces.map((p) => (
                   <option key={p.slug} value={p.slug}>
@@ -351,82 +322,49 @@ export const AirQualityDashboard: React.FC<AirQualityDashboardProps> = ({ onBack
             )}
           </div>
 
-          {/* TIMEFRAME SELECTOR */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "12px", color: "#94a3b8", fontWeight: 600 }}>Thời gian:</span>
-            <div style={{ display: "flex", background: "rgba(15, 23, 42, 0.8)", borderRadius: "8px", padding: "2px" }}>
+          {/* Timeframe Selection */}
+          <div className="macos-filter-group">
+            <span className="macos-filter-label">Chu kỳ phân tích:</span>
+            <div className="macos-segmented-trench">
               {timeOptions.map((opt) => (
                 <button
                   key={opt.key}
                   type="button"
+                  className={`macos-segmented-btn ${timeRange === opt.key ? "active" : ""}`}
                   onClick={() => setTimeRange(opt.key)}
-                  style={{
-                    padding: "6px 12px",
-                    borderRadius: "6px",
-                    border: "none",
-                    background: timeRange === opt.key ? "#38bdf8" : "transparent",
-                    color: timeRange === opt.key ? "#0f172a" : "#cbd5e1",
-                    fontSize: "12px",
-                    fontWeight: timeRange === opt.key ? 700 : 500,
-                    cursor: "pointer",
-                  }}
                 >
                   {opt.label}
                 </button>
               ))}
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* TABS NAVIGATION */}
-        <div
-          style={{
-            display: "flex",
-            gap: "8px",
-            borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-            paddingBottom: "2px",
-            overflowX: "auto",
-          }}
-        >
-          {[
-            { key: "overview", label: "📊 Tổng Quan", desc: "Chỉ số KPI & Xếp hạng" },
-            { key: "pollutants", label: "📈 AQI & Bụi Mịn", desc: "Chuỗi thời gian & Tương quan chất" },
-            { key: "weather", label: "🌦️ Khí Tượng", desc: "Nhiệt độ, ẩm & lượng mưa" },
-            { key: "interaction", label: "🌪️ Tương Tác Khí Hậu", desc: "Đường cong làm sạch của gió/mưa" },
-            { key: "table", label: "📋 Bảng Dữ Liệu 34 Tỉnh", desc: "Tìm kiếm & Tra cứu chi tiết" },
-          ].map((tab) => {
+        {/* =========================================================================
+            3. TABS NAVIGATION STRIP (macOS Glass Trench with Keyboard Shortcuts)
+            ========================================================================= */}
+        <nav className="macos-tabs-strip" aria-label="Các mô-đun quan trắc">
+          {tabsConfig.map((tab) => {
             const isActive = activeTab === tab.key;
             return (
               <button
                 key={tab.key}
                 type="button"
+                className={`macos-tab-item-btn ${isActive ? "active" : ""}`}
                 onClick={() => setActiveTab(tab.key as TabType)}
-                style={{
-                  padding: "10px 18px",
-                  borderRadius: "10px 10px 0 0",
-                  border: "none",
-                  borderBottom: isActive ? "3px solid #38bdf8" : "3px solid transparent",
-                  background: isActive ? "rgba(30, 41, 59, 0.6)" : "transparent",
-                  color: isActive ? "#38bdf8" : "#94a3b8",
-                  fontSize: "13px",
-                  fontWeight: isActive ? 700 : 500,
-                  cursor: "pointer",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  gap: "2px",
-                  whiteSpace: "nowrap",
-                  transition: "all 0.15s ease",
-                }}
+                title={`${tab.label} (${tab.kbd})`}
               >
-                <span>{tab.label}</span>
-                <span style={{ fontSize: "10px", color: isActive ? "#7dd3fc" : "#64748b", fontWeight: 400 }}>
-                  {tab.desc}
-                </span>
+                <div className="macos-tab-item-title">
+                  <span>{tab.icon}</span>
+                  <span>{tab.label}</span>
+                  <kbd className="macos-kbd">{tab.kbd}</kbd>
+                </div>
+                <span className="macos-tab-item-subtitle">{tab.desc}</span>
               </button>
             );
           })}
-        </div>
+        </nav>
+
 
         {/* TAB CONTENTS */}
         <div style={{ marginTop: "8px" }}>

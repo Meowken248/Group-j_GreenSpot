@@ -33,7 +33,7 @@ function App() {
   return (
     <div className="app-container">
       {/* THANH ĐIỀU HƯỚNG CHUYỂN ĐỔI CHẾ ĐỘ VIEW (TOP CENTER) */}
-      <nav className="view-mode-switcher" aria-label="Chế độ hiển thị">
+      <nav className={`view-mode-switcher ${activeTab === "dashboard" ? "dark-mode" : ""}`} aria-label="Chế độ hiển thị">
         <button
           type="button"
           className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
@@ -65,7 +65,7 @@ function App() {
       <div className="quick-status-badge">
         <button
           type="button"
-          className="health-badge-btn"
+          className={`health-badge-btn ${activeTab === "dashboard" ? "dark-mode" : ""}`}
           onClick={() => {
             setShowDrawer((prev) => !prev);
             if (!backendStatus) checkHealth();
@@ -77,7 +77,7 @@ function App() {
         </button>
 
         {showDrawer && (
-          <div className="health-popover">
+          <div className={`health-popover ${activeTab === "dashboard" ? "dark-mode" : ""}`}>
             <div className="popover-header">
               <strong>Backend Diagnostic</strong>
               <button

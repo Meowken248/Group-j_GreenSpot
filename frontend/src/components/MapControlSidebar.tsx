@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { HCMLocation } from "../data/hcmLocations";
 import {
   CATEGORY_CONFIG,
@@ -167,6 +167,65 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
 
   const [activeTab, setActiveTab] = useState<SidebarTab>("explore");
   const [showColorThemeSubmenu, setShowColorThemeSubmenu] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Global Keyboard Shortcuts (macOS standard: ⌘F search, Esc dismiss/collapse, ⌘1-5 tabs)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // ⌘F or Ctrl+F -> Focus Search
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        if (!isOpen) onToggleOpen();
+        setTimeout(() => searchInputRef.current?.focus(), 60);
+        return;
+      }
+      // Esc -> Dismiss search / Clear selection / Collapse
+      if (e.key === "Escape") {
+        if (isSearchFocused || searchQuery) {
+          setIsSearchFocused(false);
+          setSearchQuery("");
+        } else if (selectedLocation || selectedPOI || selectedFloodSpot || clickedAddress) {
+          setSelectedLocation(null);
+          setSelectedPOI(null);
+          setSelectedFloodSpot(null);
+          setClickedAddress(null);
+        } else if (isOpen) {
+          onToggleOpen();
+        }
+        return;
+      }
+      // ⌘1 - ⌘5 -> Switch tabs
+      if ((e.metaKey || e.ctrlKey) && ["1", "2", "3", "4", "5"].includes(e.key)) {
+        e.preventDefault();
+        const tabMap: Record<string, SidebarTab> = {
+          "1": "explore",
+          "2": "basemap",
+          "3": "flood",
+          "4": "weather",
+          "5": "tour",
+        };
+        if (tabMap[e.key]) setActiveTab(tabMap[e.key]);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    isOpen,
+    onToggleOpen,
+    isSearchFocused,
+    searchQuery,
+    selectedLocation,
+    selectedPOI,
+    selectedFloodSpot,
+    clickedAddress,
+    setIsSearchFocused,
+    setSearchQuery,
+    setSelectedLocation,
+    setSelectedPOI,
+    setSelectedFloodSpot,
+    setClickedAddress,
+  ]);
 
   return (
     <>
@@ -176,11 +235,11 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
           type="button"
           className="webgis-sidebar-floating-toggle"
           onClick={onToggleOpen}
-          title="Mở Bảng điều khiển WebGIS (Ctrl + B)"
+          title="Mở Bảng điều khiển WebGIS (⌘F hoặc Esc)"
         >
           <span style={{ fontSize: 15 }}>🌱</span>
           <span>Bộ điều khiển WebGIS</span>
-          <span style={{ fontSize: 11, color: "#64748b" }}>☰</span>
+          <kbd className="kbd" style={{ marginLeft: 4 }}>⌘F</kbd>
         </button>
       )}
 
@@ -189,14 +248,52 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
         className={`webgis-sidebar-container ${isOpen ? "" : "collapsed"}`}
         aria-label="Bảng điều khiển WebGIS"
       >
-        {/* 1. Header & Brand Bar */}
+        {/* 1. Header & macOS Traffic Lights Window Bar */}
         <div className="sidebar-header">
-          <div className="sidebar-brand-group">
-            <div className="sidebar-brand-icon">🌱</div>
-            <div>
-              <div className="sidebar-brand-text">EcoReport WebGIS</div>
-              <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
-                <span className="sidebar-brand-badge">Hệ sinh thái thông minh</span>
+          <div className="macos-header-brand-wrap">
+            <div className="macos-traffic-lights" title="Điều khiển cửa sổ">
+              <button
+                type="button"
+                className="traffic-light close"
+                onClick={onToggleOpen}
+                title="Đóng / Thu gọn sidebar (Esc)"
+              >
+                <span className="traffic-light-glyph">×</span>
+              </button>
+              <button
+                type="button"
+                className="traffic-light minimize"
+                onClick={() => {
+                  setSelectedLocation(null);
+                  setSelectedPOI(null);
+                  setSelectedFloodSpot(null);
+                  setClickedAddress(null);
+                }}
+                title="Bỏ chọn điểm / Thu nhỏ chi tiết"
+              >
+                <span className="traffic-light-glyph">−</span>
+              </button>
+              <button
+                type="button"
+                className="traffic-light zoom"
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    window.dispatchEvent(new CustomEvent("ecoreport:reset-view"));
+                  }
+                }}
+                title="Căn giữa bản đồ"
+              >
+                <span className="traffic-light-glyph">+</span>
+              </button>
+            </div>
+
+            <div className="sidebar-brand-group">
+              <div className="sidebar-brand-icon">🌱</div>
+              <div>
+                <div className="sidebar-brand-text">EcoReport WebGIS</div>
+                <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+                  <span className="sidebar-brand-badge">VN</span>
+                </div>
               </div>
             </div>
           </div>
@@ -204,9 +301,10 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
             type="button"
             className="sidebar-close-btn"
             onClick={onToggleOpen}
-            title="Thu gọn bảng điều khiển (Ctrl + B)"
+            title="Thu gọn bảng điều khiển (Esc)"
           >
-            ✕
+            <span style={{ fontSize: 13, transform: "scaleX(-1)", display: "inline-block" }}>◧</span>
+            <kbd className="kbd" style={{ fontSize: 9, padding: "0 3px", opacity: 0.65 }}>Esc</kbd>
           </button>
         </div>
 
@@ -215,6 +313,7 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
           <div className="sidebar-search-input-wrapper">
             <span className="sidebar-search-icon">🔍</span>
             <input
+              ref={searchInputRef}
               type="text"
               className="sidebar-search-input"
               placeholder="Tìm số nhà, hẻm, quán ăn, cafe..."
@@ -227,6 +326,11 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
                 ⏳
               </span>
             )}
+            {!searchQuery && !isSearchingLive && (
+              <span className="search-shortcut-hint">
+                <kbd className="kbd">⌘F</kbd>
+              </span>
+            )}
             {searchQuery && (
               <button
                 type="button"
@@ -236,7 +340,7 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
                   setLiveSearchResults([]);
                   setIsSearchFocused(false);
                 }}
-                title="Xóa tìm kiếm"
+                title="Xóa tìm kiếm (Esc)"
               >
                 ✕
               </button>
@@ -511,8 +615,8 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
                   {selectedFloodSpot.estimated_depth_cm >= 35
                     ? "⚠️ Cực kỳ nguy hiểm: Xe máy ngập pô chết máy, ô tô nguy cơ thủy kích."
                     : selectedFloodSpot.estimated_depth_cm >= 20
-                    ? "⚠️ Ngập nửa bánh xe máy, di chuyển rất khó khăn."
-                    : "✅ Mực nước thấp hoặc nước rút, phương tiện lưu thông bình thường."}
+                      ? "⚠️ Ngập nửa bánh xe máy, di chuyển rất khó khăn."
+                      : "✅ Mực nước thấp hoặc nước rút, phương tiện lưu thông bình thường."}
                 </div>
               </div>
 
@@ -837,9 +941,8 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
                 <div className="category-filter-list">
                   <button
                     type="button"
-                    className={`category-filter-item ${
-                      selectedCategory === "all" ? "active" : ""
-                    }`}
+                    className={`category-filter-item ${selectedCategory === "all" ? "active" : ""
+                      }`}
                     style={{
                       background:
                         selectedCategory === "all" ? "#0f172a" : undefined,
@@ -863,9 +966,8 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
                         <button
                           key={catKey}
                           type="button"
-                          className={`category-filter-item ${
-                            isSelected ? "active" : ""
-                          }`}
+                          className={`category-filter-item ${isSelected ? "active" : ""
+                            }`}
                           style={{
                             background: isSelected ? cfg.color : undefined,
                           }}
@@ -926,34 +1028,57 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
                   ))}
                 </div>
 
-                {/* Hàng 2: Nút Tự nạp & Quét quanh đây */}
+                {/* Hàng 2: macOS Switch Tự nạp & Nút Quét quanh đây */}
                 <div className="poi-actions-row">
-                  <button
-                    type="button"
-                    className={`poi-action-btn ${autoFetchPOI ? "active" : ""}`}
+                  <div
+                    className="macos-setting-row"
                     onClick={onToggleAutoFetch}
+                    style={{
+                      flex: 1,
+                      padding: "5px 10px",
+                      background: "rgba(255, 255, 255, 0.75)",
+                      border: "0.5px solid rgba(0, 0, 0, 0.1)",
+                      borderRadius: 11,
+                    }}
                     title={
                       autoFetchPOI
                         ? "Đang bật tự nạp POI khi di chuyển"
                         : "Bật tự nạp POI khi di chuyển"
                     }
                   >
-                    <span>{autoFetchPOI ? "🟢" : "⚪"}</span>
-                    <span>{autoFetchPOI ? "Tự nạp: BẬT" : "Tự nạp: TẮT"}</span>
-                  </button>
+                    <div className="macos-setting-label-group">
+                      <span style={{ fontSize: 13 }}>⚡</span>
+                      <div className="macos-setting-text">
+                        <span className="macos-setting-title" style={{ fontSize: 11.5 }}>
+                          Tự nạp POI
+                        </span>
+                      </div>
+                    </div>
+                    <div className={`macos-switch ${autoFetchPOI ? "checked" : ""}`}>
+                      <div className="macos-switch-thumb" />
+                    </div>
+                  </div>
 
                   <button
                     type="button"
-                    className="poi-action-btn"
+                    className="poi-action-btn primary"
                     onClick={() => onLoadNearbyPOIs(poiType)}
                     disabled={loadingPOIs}
                     title="Quét nạp quán quanh tâm bản đồ"
                   >
-                    <span>{loadingPOIs ? "⏳" : "⚡"}</span>
+                    <span>{loadingPOIs ? "⏳" : "📡"}</span>
                     <span>{loadingPOIs ? "Đang quét..." : "Quét quanh đây"}</span>
                     {poiCount > 0 && (
-                      <span className="poi-badge-count">
-                        ({poiCount})
+                      <span
+                        className="poi-badge-count"
+                        style={{
+                          color: "#ffffff",
+                          background: "rgba(255, 255, 255, 0.25)",
+                          padding: "1px 5px",
+                          borderRadius: 4,
+                        }}
+                      >
+                        {poiCount}
                       </span>
                     )}
                   </button>
@@ -1013,25 +1138,36 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
                   </div>
                 </div>
 
-                <div className="tools-toggle-row">
-                  {/* Nút 3D / 2D */}
-                  <button
-                    type="button"
-                    className={`tool-toggle-btn ${is3D ? "active" : ""}`}
-                    onClick={onToggle3D}
-                  >
-                    <span>{is3D ? "🏢 3D Không gian" : "📐 2D Mặt phẳng"}</span>
-                  </button>
+                <div className="macos-settings-group">
+                  <div className="macos-setting-row" onClick={onToggle3D}>
+                    <div className="macos-setting-label-group">
+                      <span className="macos-setting-icon">🏢</span>
+                      <div className="macos-setting-text">
+                        <span className="macos-setting-title">Tòa nhà 3D Extrusion</span>
+                        <span className="macos-setting-sublabel">
+                          {is3D ? "Đang bật chiều cao thực tế 3D" : "2D mặt phẳng tiêu chuẩn"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className={`macos-switch ${is3D ? "checked" : ""}`}>
+                      <div className="macos-switch-thumb" />
+                    </div>
+                  </div>
 
-                  {/* Nút Ranh giới quận huyện */}
-                  <button
-                    type="button"
-                    className={`tool-toggle-btn ${showDistricts ? "active-blue" : ""}`}
-                    onClick={() => setShowDistricts(!showDistricts)}
-                  >
-                    <span>🗺️</span>
-                    <span>{showDistricts ? "Ẩn ranh giới" : "Hiện ranh giới"}</span>
-                  </button>
+                  <div className="macos-setting-row" onClick={() => setShowDistricts(!showDistricts)}>
+                    <div className="macos-setting-label-group">
+                      <span className="macos-setting-icon">🗺️</span>
+                      <div className="macos-setting-text">
+                        <span className="macos-setting-title">Ranh giới 24 Quận / Huyện</span>
+                        <span className="macos-setting-sublabel">
+                          {showDistricts ? "Đang hiển thị ranh giới hành chính" : "Đã ẩn ranh giới"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className={`macos-switch ${showDistricts ? "checked" : ""}`}>
+                      <div className="macos-switch-thumb" />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Bộ chọn màu sắc tòa nhà 3D (khi đang bật 3D) */}
@@ -1084,9 +1220,8 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
                           <button
                             key={themeKey}
                             type="button"
-                            className={`color-3d-swatch-btn ${
-                              isSelected ? "active" : ""
-                            }`}
+                            className={`color-3d-swatch-btn ${isSelected ? "active" : ""
+                              }`}
                             onClick={() => setBuilding3DTheme(themeKey)}
                             title={theme.desc}
                           >
@@ -1115,40 +1250,46 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
                   <span className="sidebar-module-subtitle">Tích hợp 3 nguồn</span>
                 </div>
 
-                <div className="flood-toggles-row">
-                  <button
-                    type="button"
-                    className={`tool-toggle-btn ${
-                      showFloodWatch ? "active-blue" : ""
-                    }`}
-                    onClick={() => setShowFloodWatch(!showFloodWatch)}
-                  >
-                    <span>🌊 Lớp điểm ngập</span>
-                    <span
-                      style={{
-                        fontSize: 9.5,
-                        background: showFloodWatch ? "#dbeafe" : "#f1f5f9",
-                        color: showFloodWatch ? "#1d4ed8" : "#64748b",
-                        padding: "1px 5px",
-                        borderRadius: 4,
-                        fontWeight: 800,
-                      }}
+                <div className="macos-settings-group" style={{ marginBottom: 12 }}>
+                  <div className="macos-setting-row">
+                    <div className="macos-setting-info">
+                      <div className="macos-setting-label">🌊 Lớp Điểm Ngập Lụt Đô Thị</div>
+                      <div className="macos-setting-sub">
+                        Cảnh báo thời gian thực &bull; {floodData ? `${floodData.total} điểm` : "30 điểm quan trắc"}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={showFloodWatch}
+                      className={`macos-switch ${showFloodWatch ? "active" : ""}`}
+                      onClick={() => setShowFloodWatch(!showFloodWatch)}
+                      title="Bật/tắt lớp điểm ngập lụt đô thị"
                     >
-                      {floodData ? `${floodData.total} điểm` : "30 điểm"}
-                    </span>
-                  </button>
+                      <div className="macos-switch-thumb" />
+                    </button>
+                  </div>
 
-                  <button
-                    type="button"
-                    className={`tool-toggle-btn ${
-                      simulateFlood ? "active-blue" : ""
-                    }`}
-                    onClick={() => setSimulateFlood(!simulateFlood)}
-                  >
-                    <span>
-                      {simulateFlood ? "🌊 Triều đỉnh 1.68m" : "🌤️ Triều thực tế"}
-                    </span>
-                  </button>
+                  <div className="macos-setting-row">
+                    <div className="macos-setting-info">
+                      <div className="macos-setting-label">
+                        {simulateFlood ? "🌊 Mô Phỏng Triều Cường Đỉnh (1.68m)" : "🌤️ Thủy Triều Thực Tế"}
+                      </div>
+                      <div className="macos-setting-sub">
+                        {simulateFlood ? "Kịch bản đỉnh triều kết hợp mưa lớn" : "Dữ liệu mực nước trạm Phú An"}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={simulateFlood}
+                      className={`macos-switch ${simulateFlood ? "active" : ""}`}
+                      onClick={() => setSimulateFlood(!simulateFlood)}
+                      title="Bật/tắt mô phỏng đỉnh triều cường"
+                    >
+                      <div className="macos-switch-thumb" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Bảng thống kê cấp độ rủi ro & GloFAS */}
@@ -1206,7 +1347,7 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
                         color: "#475569",
                         background: "#f8fafc",
                         padding: "6px 10px",
-                        borderRadius: 8,
+                        borderRadius: 10,
                       }}
                     >
                       <div>
@@ -1264,27 +1405,24 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
                       <div className="flood-scenario-row">
                         <button
                           type="button"
-                          className={`flood-scenario-btn ${
-                            simulatedRainfallMm === 0 ? "active" : ""
-                          }`}
+                          className={`flood-scenario-btn ${simulatedRainfallMm === 0 ? "active" : ""
+                            }`}
                           onClick={() => setSimulatedRainfallMm(0)}
                         >
                           ☀️ 0mm (Tạnh)
                         </button>
                         <button
                           type="button"
-                          className={`flood-scenario-btn ${
-                            simulatedRainfallMm === 25 ? "active" : ""
-                          }`}
+                          className={`flood-scenario-btn ${simulatedRainfallMm === 25 ? "active" : ""
+                            }`}
                           onClick={() => setSimulatedRainfallMm(25)}
                         >
                           🌧️ 25mm (Vừa)
                         </button>
                         <button
                           type="button"
-                          className={`flood-scenario-btn ${
-                            simulatedRainfallMm === 55 ? "active" : ""
-                          }`}
+                          className={`flood-scenario-btn ${simulatedRainfallMm === 55 ? "active" : ""
+                            }`}
                           onClick={() => setSimulatedRainfallMm(55)}
                         >
                           ⛈️ 55mm (Ngập to)
@@ -1373,9 +1511,8 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
                 <div className="heatmap-selector-grid">
                   <button
                     type="button"
-                    className={`heatmap-mode-btn ${
-                      activeHeatmap === "none" ? "active" : ""
-                    }`}
+                    className={`heatmap-mode-btn ${activeHeatmap === "none" ? "active" : ""
+                      }`}
                     onClick={() => setActiveHeatmap("none")}
                   >
                     <span>⏹️</span>
@@ -1384,9 +1521,8 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
 
                   <button
                     type="button"
-                    className={`heatmap-mode-btn ${
-                      activeHeatmap === "temperature" ? "active" : ""
-                    }`}
+                    className={`heatmap-mode-btn ${activeHeatmap === "temperature" ? "active" : ""
+                      }`}
                     onClick={() => setActiveHeatmap("temperature")}
                   >
                     <span>🌡️</span>
@@ -1395,9 +1531,8 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
 
                   <button
                     type="button"
-                    className={`heatmap-mode-btn ${
-                      activeHeatmap === "aqi" ? "active" : ""
-                    }`}
+                    className={`heatmap-mode-btn ${activeHeatmap === "aqi" ? "active" : ""
+                      }`}
                     onClick={() => setActiveHeatmap("aqi")}
                   >
                     <span>💨</span>
@@ -1406,9 +1541,8 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
 
                   <button
                     type="button"
-                    className={`heatmap-mode-btn ${
-                      activeHeatmap === "risk" ? "active" : ""
-                    }`}
+                    className={`heatmap-mode-btn ${activeHeatmap === "risk" ? "active" : ""
+                      }`}
                     onClick={() => setActiveHeatmap("risk")}
                   >
                     <span>🚨</span>

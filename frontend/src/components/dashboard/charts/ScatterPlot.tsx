@@ -33,11 +33,15 @@ export const ScatterPlot: React.FC<ScatterPlotProps> = ({ provinces, height = 34
   const temps = provinces.map((p) => p.temp);
   const rains = provinces.map((p) => p.rain);
 
-  const minTemp = Math.floor(Math.min(...temps) * 0.9);
-  const maxTemp = Math.ceil(Math.max(...temps) * 1.1);
+  const rawMinTemp = Math.min(...temps);
+  const rawMaxTemp = Math.max(...temps);
+  const minTemp = Math.floor(rawMinTemp - 1);
+  const maxTemp = Math.ceil(rawMaxTemp + 1);
 
+  const rawMaxRain = Math.max(...rains);
   const minRain = 0;
-  const maxRain = Math.max(10, Math.ceil(Math.max(...rains) * 1.2));
+  // Adaptive domain so points comfortably occupy 70-85% of height instead of clustering at bottom
+  const maxRain = Math.max(4, Math.ceil(rawMaxRain * 1.35));
 
   const getX = (t: number) => paddingLeft + ((t - minTemp) / (maxTemp - minTemp || 1)) * innerW;
   const getY = (r: number) => paddingTop + innerH - ((r - minRain) / (maxRain - minRain || 1)) * innerH;
@@ -54,7 +58,15 @@ export const ScatterPlot: React.FC<ScatterPlotProps> = ({ provinces, height = 34
         ))}
       </div>
 
-      <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} style={{ width: "100%", height: "100%", overflow: "visible" }}>
+      <svg
+        viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+        style={{
+          width: "100%",
+          height: "100%",
+          overflow: "visible",
+          fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, sans-serif",
+        }}
+      >
         {/* Axes */}
         <line
           x1={paddingLeft}
@@ -71,60 +83,82 @@ export const ScatterPlot: React.FC<ScatterPlotProps> = ({ provinces, height = 34
           stroke="rgba(255,255,255,0.2)"
         />
 
-        {/* X Axis Labels (Temperature) */}
-        {Array.from({ length: 5 }).map((_, i) => {
-          const t = Math.round(minTemp + (i / 4) * (maxTemp - minTemp));
-          return (
-            <text
-              key={i}
-              x={getX(t)}
-              y={chartHeight - 12}
-              fill="#94a3b8"
-              fontSize="11"
-              textAnchor="middle"
-            >
-              {t}°C
-            </text>
-          );
-        })}
+        {/* Horizontal Y-axis title above the axis - eliminates vertical rotation font bugs */}
         <text
-          x={paddingLeft + innerW / 2}
-          y={chartHeight - 0}
-          fill="#cbd5e1"
+          x={paddingLeft}
+          y={paddingTop - 10}
+          fill="#94a3b8"
           fontSize="11"
-          textAnchor="middle"
           fontWeight="600"
         >
-          Nhiệt độ trung bình (°C)
+          Lượng mưa (mm/ngày) ↑
         </text>
 
-        {/* Y Axis Labels (Rainfall) */}
-        {Array.from({ length: 4 }).map((_, i) => {
-          const r = Math.round(minRain + (i / 3) * (maxRain - minRain));
+        {/* Y Axis Grid Lines & Labels (Rainfall) */}
+        {Array.from({ length: 5 }).map((_, i) => {
+          const r = Math.round((i / 4) * maxRain * 10) / 10;
+          const yPos = getY(r);
           return (
-            <text
-              key={i}
-              x={paddingLeft - 8}
-              y={getY(r) + 4}
-              fill="#94a3b8"
-              fontSize="11"
-              textAnchor="end"
-            >
-              {r}mm
-            </text>
+            <g key={i}>
+              <line
+                x1={paddingLeft}
+                y1={yPos}
+                x2={chartWidth - paddingRight}
+                y2={yPos}
+                stroke="rgba(255,255,255,0.06)"
+                strokeDasharray="4 4"
+              />
+              <text
+                x={paddingLeft - 8}
+                y={yPos + 4}
+                fill="#94a3b8"
+                fontSize="11"
+                textAnchor="end"
+              >
+                {r}mm
+              </text>
+            </g>
           );
         })}
+
+        {/* X Axis Grid Lines & Labels (Temperature) */}
+        {Array.from({ length: 5 }).map((_, i) => {
+          const t = Math.round(minTemp + (i / 4) * (maxTemp - minTemp));
+          const xPos = getX(t);
+          return (
+            <g key={i}>
+              <line
+                x1={xPos}
+                y1={paddingTop}
+                x2={xPos}
+                y2={paddingTop + innerH}
+                stroke="rgba(255,255,255,0.04)"
+                strokeDasharray="3 3"
+              />
+              <text
+                x={xPos}
+                y={chartHeight - 16}
+                fill="#94a3b8"
+                fontSize="11"
+                textAnchor="middle"
+              >
+                {t}°C
+              </text>
+            </g>
+          );
+        })}
+
         <text
-          x={15}
-          y={paddingTop + innerH / 2}
+          x={paddingLeft + innerW / 2}
+          y={chartHeight - 2}
           fill="#cbd5e1"
           fontSize="11"
           textAnchor="middle"
           fontWeight="600"
-          transform={`rotate(-90 15 ${paddingTop + innerH / 2})`}
         >
-          Lượng mưa (mm/ngày)
+          Nhiệt độ trung bình (°C) →
         </text>
+
 
         {/* Points */}
         {provinces.map((p, idx) => {

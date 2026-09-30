@@ -241,6 +241,24 @@ export const LiveWeatherRadarMap: React.FC<LiveWeatherRadarMapProps> = ({
     return WEATHER_OVERLAYS.find((o) => o.id === activeOverlay) || WEATHER_OVERLAYS[0];
   }, [activeOverlay]);
 
+  // Global Keyboard Shortcuts (macOS standard: Esc / ⌘W to close radar, ⌘M to collapse)
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "w")) {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "m") {
+        e.preventDefault();
+        setIsSidebarOpen((prev) => !prev);
+        return;
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   return (
     <div className="live-radar-root">
       {/* 1. NÚT NỔI MỞ SIDEBAR & QUAY LẠI KHI THU GỌN */}
@@ -269,19 +287,42 @@ export const LiveWeatherRadarMap: React.FC<LiveWeatherRadarMapProps> = ({
 
       {/* 2. MASTER RADAR SIDEBAR (BÊN TRÁI) */}
       <aside className={`radar-sidebar-container ${!isSidebarOpen ? "collapsed" : ""}`}>
-        {/* Header: Nút trở về & Nút thu gọn */}
+        {/* Header: macOS Traffic Lights & Nút trở về */}
         <div className="radar-sidebar-header">
-          <button onClick={onClose} className="radar-back-btn" title="Trở về Bản đồ WebGIS">
+          <div className="macos-traffic-lights">
+            <button
+              type="button"
+              className="traffic-light close"
+              onClick={onClose}
+              title="Đóng / Trở về Bản đồ WebGIS (⌘W)"
+            >
+              <span className="traffic-light-glyph">✕</span>
+            </button>
+            <button
+              type="button"
+              className="traffic-light minimize"
+              onClick={() => setIsSidebarOpen(false)}
+              title="Thu nhỏ thanh điều khiển radar"
+            >
+              <span className="traffic-light-glyph">−</span>
+            </button>
+            <button
+              type="button"
+              className="traffic-light maximize"
+              onClick={() => {
+                setIsIframeLoading(true);
+                setCurrentLoc({ ...currentLoc });
+              }}
+              title="Làm mới góc nhìn radar"
+            >
+              <span className="traffic-light-glyph">+</span>
+            </button>
+          </div>
+
+          <button onClick={onClose} className="radar-back-btn" title="Trở về Bản đồ WebGIS (Esc hoặc ⌘W)">
             <span>←</span>
             <span>Trở về WebGIS</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsSidebarOpen(false)}
-            className="radar-collapse-btn"
-            title="Thu gọn sidebar để xem toàn cảnh radar"
-          >
-            ✕
+            <kbd className="kbd" style={{ marginLeft: 4 }}>Esc</kbd>
           </button>
         </div>
 

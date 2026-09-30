@@ -53,6 +53,33 @@ export interface RankingItem {
   meta: AQIMeta;
 }
 
+export interface GeoProvinceItem {
+  slug: string;
+  name: string;
+  region: string;
+  lat: number | null;
+  lon: number | null;
+  aqi: number;
+  pm2_5: number;
+  meta: AQIMeta;
+}
+
+export interface RankShiftItem {
+  name: string;
+  aqi: number;
+  status: string;
+}
+
+export interface HealthInsights {
+  cigarettes_equiv: number;
+  who_multiplier: number;
+  avg_pm25: number;
+  days: number;
+  exposure_label: string;
+  rank_improving: RankShiftItem[];
+  rank_worsening: RankShiftItem[];
+}
+
 export interface OverviewData {
   scope_label: string;
   target_slug: string | null;
@@ -61,12 +88,14 @@ export interface OverviewData {
   avg_aqi: number;
   aqi_meta: AQIMeta;
   health_advice: HealthAdvice;
+  health_insights?: HealthInsights;
   peak_time_slot: {
     slot: string;
     aqi: number;
   };
   pollutants: Record<string, PollutantDetail>;
   distribution: AQIDistributionItem[];
+  geo_provinces?: GeoProvinceItem[];
   rankings: {
     cleanest: RankingItem[];
     polluted: RankingItem[];

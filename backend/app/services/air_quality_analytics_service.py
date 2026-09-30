@@ -307,7 +307,7 @@ class AirQualityAnalyticsService:
                 "percentage": pct,
             })
 
-        # 4. Cleanest & Most Polluted Rankings across provinces
+        # 4. Cleanest & Most Polluted Rankings across provinces + Geo coordinates
         prov_means = []
         for p in provinces:
             p_df = cls._load_province_df(p["slug"])
@@ -319,6 +319,8 @@ class AirQualityAnalyticsService:
                     "slug": p["slug"],
                     "name": p["name"],
                     "region": p["macro_region"],
+                    "lat": p.get("lat"),
+                    "lon": p.get("lon"),
                     "aqi": round(p_avg_aqi, 1),
                     "pm2_5": round(p_pm25, 1),
                     "meta": get_aqi_meta(p_avg_aqi),
@@ -326,6 +328,29 @@ class AirQualityAnalyticsService:
 
         sorted_cleanest = sorted(prov_means, key=lambda x: x["aqi"])[:5]
         sorted_polluted = sorted(prov_means, key=lambda x: x["aqi"], reverse=True)[:5]
+
+        # 5. Health & Exposure Insights (Berkeley Earth & WHO models)
+        scope_pm25 = float(df["pm2_5"].mean()) if "pm2_5" in df.columns and not df["pm2_5"].isna().all() else 0.0
+        days_map = {"24h": 1.0, "7d": 7.0, "30d": 30.0, "2025": 365.0}
+        days_count = days_map.get(time_range, 1.0)
+        cig_equiv = round((scope_pm25 / 22.0) * days_count, 1)
+        who_mult = round(max(scope_pm25, 0.1) / 5.0, 1)
+
+        health_insights = {
+            "cigarettes_equiv": cig_equiv,
+            "who_multiplier": who_mult,
+            "avg_pm25": round(scope_pm25, 1),
+            "days": days_count,
+            "exposure_label": f"{int(days_count)} ngày" if days_count > 1 else "24 giờ",
+            "rank_improving": [
+                {"name": item["name"], "aqi": item["aqi"], "status": item["meta"]["label"]}
+                for item in sorted_cleanest[:3]
+            ],
+            "rank_worsening": [
+                {"name": item["name"], "aqi": item["aqi"], "status": item["meta"]["label"]}
+                for item in sorted_polluted[:3]
+            ],
+        }
 
         return {
             "scope_label": scope_label,
@@ -335,12 +360,14 @@ class AirQualityAnalyticsService:
             "avg_aqi": round(avg_aqi, 1),
             "aqi_meta": get_aqi_meta(current_aqi),
             "health_advice": get_health_advice(current_aqi),
+            "health_insights": health_insights,
             "peak_time_slot": {
                 "slot": peak_slot_name,
                 "aqi": round(peak_slot_aqi, 1),
             },
             "pollutants": pollutants_result,
             "distribution": distribution,
+            "geo_provinces": prov_means,
             "rankings": {
                 "cleanest": sorted_cleanest,
                 "polluted": sorted_polluted,

@@ -20,7 +20,7 @@
 }
 
 /* ==============================================================================
-   1. Master Radar Sidebar Container (Left Aligned, Swiss Frosted Glass)
+   1. Master Radar Sidebar Container (macOS Vibrancy Acrylic & Specular Rim)
    ============================================================================== */
 .radar-sidebar-container {
   position: absolute;
@@ -32,16 +32,21 @@
   z-index: 1200;
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  border-radius: 20px;
-  box-shadow: 0 20px 50px -12px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(15, 23, 42, 0.04);
-  color: #0f172a;
+  background: rgba(246, 246, 246, 0.82);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border: 0.5px solid rgba(255, 255, 255, 0.65);
+  border-radius: 26px;
+  box-shadow: 
+    0 0 0 0.5px rgba(0, 0, 0, 0.15),
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    0 12px 36px rgba(0, 0, 0, 0.14),
+    0 24px 60px rgba(0, 0, 0, 0.12);
+  color: #1d1d1f;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
   overflow: hidden;
   box-sizing: border-box;
-  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+  transition: transform 280ms cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 200ms ease;
   pointer-events: auto;
 }
 
@@ -60,26 +65,26 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 232, 240, 0.9);
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border: 0.5px solid rgba(0, 0, 0, 0.15);
   border-radius: 9999px;
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(15, 23, 42, 0.04);
+  box-shadow: 
+    0 0 0 0.5px rgba(0, 0, 0, 0.08),
+    0 4px 16px rgba(0, 0, 0, 0.1);
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 700;
-  color: #0f172a;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1d1d1f;
+  transition: all 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .radar-sidebar-floating-toggle:hover {
   background: #ffffff;
-  border-color: #10b981;
-  color: #047857;
-  transform: translateY(-1px);
-  box-shadow: 0 12px 28px -5px rgba(16, 185, 129, 0.22);
+  color: #007aff;
+  box-shadow: 0 6px 20px rgba(0, 122, 255, 0.15);
 }
 
 .radar-sidebar-floating-toggle:active {
@@ -95,60 +100,135 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 232, 240, 0.9);
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border: 0.5px solid rgba(0, 0, 0, 0.15);
   border-radius: 9999px;
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.15);
+  box-shadow: 
+    0 0 0 0.5px rgba(0, 0, 0, 0.08),
+    0 4px 16px rgba(0, 0, 0, 0.1);
   cursor: pointer;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #475569;
-  transition: all 0.2s ease;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6e6e73;
+  transition: all 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .radar-floating-back-btn:hover {
   background: #ffffff;
-  color: #0f172a;
-  border-color: #cbd5e1;
+  color: #1d1d1f;
+}
+
+.radar-floating-back-btn:active {
+  transform: scale(0.97);
+}
+
+/* Keyboard Shortcut Hint Tag (<kbd>) */
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  font-weight: 600;
+  background: rgba(128, 128, 128, 0.14);
+  border-radius: 4px;
+  border: 0.5px solid rgba(128, 128, 128, 0.22);
+  color: #6e6e73;
+  line-height: 1.2;
 }
 
 /* ==============================================================================
-   2. Sidebar Header & Navigation Actions
+   2. Sidebar Header & Navigation Actions (macOS Titlebar ~48px)
    ============================================================================== */
 .radar-sidebar-header {
-  padding: 12px 14px;
-  border-bottom: 1px solid #f1f5f9;
+  height: 48px;
+  padding: 0 12px;
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(248, 250, 252, 0.7);
+  background: rgba(255, 255, 255, 0.45);
   flex-shrink: 0;
+  user-select: none;
+}
+
+/* --- macOS Window Controls (Traffic Lights: #FF5F57, #FEBC2E, #28C840) --- */
+.macos-traffic-lights {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+
+.traffic-light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 0.5px solid rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+  transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), filter 0.15s ease;
+}
+
+.traffic-light.close {
+  background: #ff5f57;
+}
+
+.traffic-light.minimize {
+  background: #febc2e;
+}
+
+.traffic-light.maximize,
+.traffic-light.zoom {
+  background: #28c840;
+}
+
+.traffic-light-glyph {
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.65);
+  opacity: 0;
+  transition: opacity 120ms ease;
+  pointer-events: none;
+}
+
+.macos-traffic-lights:hover .traffic-light-glyph {
+  opacity: 1;
+}
+
+.traffic-light:active {
+  transform: scale(0.92);
+  filter: brightness(0.85);
 }
 
 .radar-back-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 9999px;
-  color: #0f172a;
+  padding: 4px 10px;
+  height: 28px;
+  background: rgba(0, 0, 0, 0.04);
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  color: #1d1d1f;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .radar-back-btn:hover {
-  border-color: #10b981;
-  color: #047857;
-  background: #f0fdf4;
-  transform: translateX(-2px);
+  background: rgba(0, 0, 0, 0.08);
+  color: #007aff;
 }
 
 .radar-back-btn:active {
@@ -158,7 +238,7 @@
 .radar-collapse-btn {
   width: 28px;
   height: 28px;
-  border-radius: 8px;
+  border-radius: 9px;
   border: 1px solid #e2e8f0;
   background: #ffffff;
   color: #64748b;
@@ -196,7 +276,7 @@
 .radar-brand-icon {
   width: 32px;
   height: 32px;
-  border-radius: 9px;
+  border-radius: 11px;
   background: linear-gradient(135deg, #0ea5e9, #2563eb);
   color: #ffffff;
   display: flex;
@@ -272,16 +352,16 @@
   border-radius: 4px;
 }
 
-/* Sidebar Module Card */
+/* Sidebar Module Card (macOS Inset Group Panel) */
 .radar-card-section {
-  background: #ffffff;
-  border-radius: 14px;
-  border: 1px solid rgba(226, 232, 240, 0.95);
-  padding: 12px 12px;
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 16px;
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .radar-section-header {
@@ -292,10 +372,10 @@
 
 .radar-section-title {
   font-size: 11px;
-  font-weight: 800;
-  color: #475569;
+  font-weight: 600;
+  color: #6e6e73;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.04em;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -303,14 +383,14 @@
 
 .radar-section-badge {
   font-size: 10px;
-  font-weight: 700;
-  color: #0284c7;
-  background: #e0f2fe;
-  padding: 2px 6px;
-  border-radius: 6px;
+  font-weight: 600;
+  color: #007aff;
+  background: rgba(0, 122, 255, 0.1);
+  padding: 1px 6px;
+  border-radius: 4px;
 }
 
-/* 3.1 Model Switcher Row */
+/* 3.1 Model Switcher Row (macOS Segmented Control) */
 .radar-model-row {
   display: flex;
   align-items: center;
@@ -320,37 +400,43 @@
 .radar-model-switcher {
   flex: 1;
   display: flex;
-  background: #f1f5f9;
-  padding: 3px;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
+  background: rgba(118, 118, 128, 0.12);
+  padding: 2px;
+  border-radius: 12px;
+  border: 0.5px solid rgba(0, 0, 0, 0.04);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .radar-model-btn {
   flex: 1;
-  padding: 6px 8px;
-  border-radius: 8px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 9px;
   border: none;
   font-size: 11.5px;
-  font-weight: 700;
+  font-weight: 500;
+  color: #6e6e73;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 180ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .radar-model-btn.active {
-  background: #0f172a;
-  color: #ffffff;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
-}
-
-.radar-model-btn:not(.active) {
-  background: transparent;
-  color: #64748b;
+  background: #ffffff;
+  color: #1d1d1f;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 0.5px 1px rgba(0, 0, 0, 0.06);
+  font-weight: 600;
 }
 
 .radar-model-btn:not(.active):hover {
-  color: #0f172a;
+  color: #1d1d1f;
+}
+
+.radar-model-btn:active {
+  transform: scale(0.97);
 }
 
 .radar-refresh-btn {
@@ -358,25 +444,29 @@
   align-items: center;
   justify-content: center;
   gap: 5px;
-  padding: 7px 11px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  color: #0f172a;
+  height: 28px;
+  padding: 0 10px;
+  background: rgba(0, 0, 0, 0.04);
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  border-radius: 9px;
+  color: #1d1d1f;
   font-size: 11.5px;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
   white-space: nowrap;
 }
 
 .radar-refresh-btn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  transform: translateY(-1px);
+  background: rgba(0, 0, 0, 0.08);
+  color: #007aff;
 }
 
-/* 3.2 Weather Overlays 8 Items Grid */
+.radar-refresh-btn:active {
+  transform: scale(0.97);
+}
+
+/* 3.2 Weather Overlays 8 Items Grid (macOS Grid Cards) */
 .radar-overlays-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -387,36 +477,39 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 9px;
+  padding: 6px 8px;
   border-radius: 10px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.75);
   cursor: pointer;
   text-align: left;
-  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
   box-sizing: border-box;
 }
 
 .radar-overlay-btn.active {
-  background: #0f172a;
+  background: #007aff;
   color: #ffffff;
-  border-color: #0f172a;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18);
+  border-color: #0066d6;
+  box-shadow: 0 2px 6px rgba(0, 122, 255, 0.3);
 }
 
 .radar-overlay-btn:not(.active) {
-  color: #334155;
+  color: #1d1d1f;
 }
 
 .radar-overlay-btn:not(.active):hover {
   background: #ffffff;
-  border-color: #cbd5e1;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+  border-color: rgba(0, 0, 0, 0.16);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.radar-overlay-btn:active {
+  transform: scale(0.97);
 }
 
 .radar-overlay-icon {
-  font-size: 16px;
+  font-size: 15px;
   flex-shrink: 0;
 }
 
@@ -428,7 +521,7 @@
 
 .radar-overlay-name {
   font-size: 11.5px;
-  font-weight: 700;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -437,16 +530,17 @@
 
 .radar-overlay-btn.active .radar-overlay-name {
   color: #ffffff;
+  font-weight: 600;
 }
 
 .radar-overlay-unit {
   font-size: 9.5px;
-  color: #64748b;
+  color: #6e6e73;
   margin-top: 1px;
 }
 
 .radar-overlay-btn.active .radar-overlay-unit {
-  color: #94a3b8;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 /* 3.3 Active Layer Measurement Legend */
@@ -454,9 +548,9 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
   padding: 8px 10px;
 }
 
@@ -468,13 +562,13 @@
 
 .radar-legend-title {
   font-size: 11.5px;
-  font-weight: 700;
-  color: #0f172a;
+  font-weight: 600;
+  color: #1d1d1f;
 }
 
 .radar-legend-desc {
   font-size: 10px;
-  color: #64748b;
+  color: #6e6e73;
 }
 
 .radar-legend-steps {
@@ -500,14 +594,14 @@
 
 .radar-legend-label-text {
   font-size: 9px;
-  color: #64748b;
-  font-weight: 600;
+  color: #6e6e73;
+  font-weight: 500;
   white-space: nowrap;
 }
 
 .radar-legend-hint {
   font-size: 10px;
-  color: #64748b;
+  color: #6e6e73;
   line-height: 1.3;
 }
 
@@ -516,31 +610,35 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
-  border-radius: 10px;
+  padding: 6px 10px;
+  height: 30px;
+  border-radius: 9px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.16s ease;
-  border: 1px solid transparent;
+  transition: all 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border: 0.5px solid transparent;
 }
 
 .radar-gps-full-btn.active {
-  background: #10b981;
+  background: #34c759;
   color: #ffffff;
-  border-color: #059669;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+  border-color: #2da84e;
+  box-shadow: 0 2px 6px rgba(52, 199, 89, 0.3);
 }
 
 .radar-gps-full-btn:not(.active) {
-  background: #ecfdf5;
-  color: #047857;
-  border-color: #a7f3d0;
+  background: rgba(52, 199, 89, 0.12);
+  color: #1b8a3b;
+  border-color: rgba(52, 199, 89, 0.25);
 }
 
 .radar-gps-full-btn:not(.active):hover {
-  background: #d1fae5;
-  transform: translateY(-1px);
+  background: rgba(52, 199, 89, 0.2);
+}
+
+.radar-gps-full-btn:active {
+  transform: scale(0.97);
 }
 
 .radar-locations-grid {
@@ -553,31 +651,33 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 6px 9px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
-  color: #334155;
+  padding: 6px 8px;
+  border-radius: 9px;
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.75);
+  color: #1d1d1f;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
   text-align: left;
 }
 
 .radar-location-btn.active {
-  background: #0f172a;
+  background: #007aff;
   color: #ffffff;
-  border-color: #0f172a;
-  font-weight: 700;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
+  border-color: #0066d6;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0, 122, 255, 0.3);
 }
 
 .radar-location-btn:not(.active):hover {
   background: #ffffff;
-  border-color: #cbd5e1;
-  color: #0f172a;
-  transform: translateY(-1px);
+  border-color: rgba(0, 0, 0, 0.16);
+}
+
+.radar-location-btn:active {
+  transform: scale(0.97);
 }
 
 /* ==============================================================================
