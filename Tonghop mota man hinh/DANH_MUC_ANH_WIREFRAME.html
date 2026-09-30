@@ -1,1180 +1,885 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BẢNG ĐIỀU KHIỂN TỔNG HỢP 48 CHỨC NĂNG - GREENSPOT / ECOREPORT WEBGIS</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <title>BỘ SƯU TẬP ẢNH PHÁC THẢO GIAO DIỆN (WIREFRAMES) - GREENSPOT / ECOREPORT</title>
   <style>
-    :root {
-      --bg-main: #0b0f19;
-      --bg-sidebar: #111827;
-      --bg-card: #1f2937;
-      --border-color: #374151;
-      --text-main: #f9fafb;
-      --text-muted: #9ca3af;
-      --accent-color: #3b82f6;
-      --accent-hover: #2563eb;
-      --success-color: #10b981;
-      --sidebar-width: 380px;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-    body { background: var(--bg-main); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
-
-    /* SIDEBAR */
-    .sidebar {
-      width: var(--sidebar-width);
-      background: var(--bg-sidebar);
-      border-right: 1px solid var(--border-color);
-      display: flex;
-      flex-direction: column;
-      flex-shrink: 0;
-      height: 100vh;
-      z-index: 20;
-    }
-
-    .sidebar-header {
-      padding: 18px 20px;
-      border-bottom: 1px solid var(--border-color);
-      background: #0d131f;
-    }
-
-    .brand-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .brand-title {
-      font-size: 16px;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      letter-spacing: -0.3px;
-    }
-
-    .brand-badge {
-      background: #1e3a8a;
-      color: #93c5fd;
-      font-size: 10px;
-      font-weight: 800;
-      padding: 3px 8px;
-      border-radius: 6px;
-      border: 1px solid #2563eb;
-    }
-
-    .search-box {
-      position: relative;
-    }
-
-    .search-input {
-      width: 100%;
-      background: #1f2937;
-      border: 1px solid #4b5563;
-      border-radius: 8px;
-      padding: 9px 12px 9px 34px;
-      color: #fff;
-      font-size: 13px;
-      outline: none;
-      transition: all 0.2s;
-    }
-
-    .search-input:focus {
-      border-color: var(--accent-color);
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-    }
-
-    .search-icon {
-      position: absolute;
-      left: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #9ca3af;
-      font-size: 14px;
-    }
-
-    .sidebar-stats {
-      padding: 10px 20px;
-      font-size: 11px;
-      color: var(--text-muted);
-      border-bottom: 1px solid var(--border-color);
-      background: #0f172a;
-      display: flex;
-      justify-content: space-between;
-      font-weight: 600;
-    }
-
-    .sidebar-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 12px;
-    }
-
-    .sidebar-content::-webkit-scrollbar { width: 6px; }
-    .sidebar-content::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
-
-    /* Module Accordion */
-    .module-group {
-      margin-bottom: 14px;
-      border: 1px solid var(--border-color);
-      border-radius: 10px;
-      background: rgba(31, 41, 55, 0.4);
-      overflow: hidden;
-    }
-
-    .module-header {
-      padding: 12px 14px;
-      background: #1a2234;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      user-select: none;
-      border-bottom: 1px solid transparent;
-      transition: background 0.2s;
-    }
-
-    .module-header:hover { background: #222d44; }
-    .module-header.open { border-bottom-color: var(--border-color); }
-
-    .module-title-box { display: flex; align-items: center; gap: 10px; }
-    .module-icon { font-size: 18px; }
-    .module-name { font-size: 13px; font-weight: 800; color: #fff; }
-    .module-sub { font-size: 11px; color: #9ca3af; margin-top: 2px; }
-    .chevron-icon { font-size: 12px; transition: transform 0.2s; color: #9ca3af; }
-    .module-header.open .chevron-icon { transform: rotate(180deg); }
-
-    .screen-list {
-      display: none;
-      padding: 6px;
-      background: #111827;
-    }
-
-    .screen-list.open { display: block; }
-
-    .screen-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      margin-bottom: 4px;
-      transition: all 0.15s;
-    }
-
-    .screen-item:hover {
-      background: #1f2937;
-    }
-
-    .screen-item.active {
-      background: #2563eb;
-      color: #fff;
-    }
-
-    .screen-badge {
-      font-size: 10px;
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
-      background: #374151;
-      color: #e5e7eb;
-      flex-shrink: 0;
-    }
-
-    .screen-item.active .screen-badge {
-      background: #1e3a8a;
-      color: #bfdbfe;
-    }
-
-    .screen-text {
-      font-size: 12px;
-      font-weight: 600;
-      line-height: 1.3;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* MAIN VIEW */
-    .main-view {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      overflow: hidden;
-      background: #0f172a;
-    }
-
-    /* Header Nav */
-    .top-navbar {
-      height: 64px;
-      background: #1e293b;
-      border-bottom: 1px solid var(--border-color);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 24px;
-      flex-shrink: 0;
-    }
-
-    .breadcrumbs {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #cbd5e1;
-    }
-
-    .breadcrumb-active {
-      color: #60a5fa;
-      font-weight: 800;
-    }
-
-    .nav-controls {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .btn-nav {
-      padding: 7px 14px;
-      border-radius: 7px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      border: 1px solid #475569;
-      background: #334155;
-      color: #fff;
-      transition: all 0.2s;
-      text-decoration: none;
-    }
-
-    .btn-nav:hover { background: #475569; border-color: #64748b; }
-    .btn-nav-primary { background: #2563eb; border-color: #1d4ed8; }
-    .btn-nav-primary:hover { background: #1d4ed8; }
-
-    /* CONTENT BODY */
-    .content-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .content-body::-webkit-scrollbar { width: 8px; }
-    .content-body::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-
-    /* DISPLAY HERO CARD */
-    .wireframe-display-card {
-      background: #1e293b;
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    }
-
-    .image-preview-wrapper {
-      width: 100%;
-      max-width: 1050px;
-      background: #f1f5f9;
-      border-radius: 10px;
-      padding: 16px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      box-shadow: inset 0 2px 8px rgba(0,0,0,0.06);
-      cursor: zoom-in;
-    }
-
-    .image-preview-wrapper img {
-      max-width: 100%;
-      height: auto;
-      border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-      transition: transform 0.2s;
-    }
-
-    .image-preview-wrapper img:hover {
-      transform: scale(1.01);
-    }
-
-    /* METADATA BAR */
-    .meta-box {
-      width: 100%;
-      max-width: 1050px;
-      margin-top: 16px;
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 10px;
-      padding: 16px 20px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-    }
-
-    .meta-item { display: flex; flex-direction: column; gap: 4px; }
-    .meta-label { font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px; }
-    .meta-val { font-size: 13px; font-weight: 700; color: #f8fafc; }
-
-    /* MODAL LIGHTBOX */
-    .lightbox-modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.92);
-      z-index: 999;
-      justify-content: center;
-      align-items: center;
-      padding: 30px;
-      cursor: zoom-out;
-    }
-
-    .lightbox-modal img {
-      max-width: 95vw;
-      max-height: 92vh;
-      border-radius: 8px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-    }
-
-    .lightbox-modal.active { display: flex; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: #f8fafc; color: #1e293b; padding: 24px; }
+    .header-banner { background: #0f172a; color: #fff; padding: 28px; border-radius: 12px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+    .title { font-size: 22px; font-weight: 800; }
+    .subtitle { font-size: 13px; color: #94a3b8; margin-top: 6px; }
+    .filter-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .tab-btn { padding: 8px 16px; border-radius: 8px; border: 1.5px solid #cbd5e1; background: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .tab-btn.active { background: #0f172a; color: #fff; border-color: #0f172a; }
+    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); gap: 20px; }
+    .gallery-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: transform 0.2s; }
+    .gallery-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+    .img-box { width: 100%; height: 310px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; overflow: hidden; border-bottom: 1.5px solid #e2e8f0; }
+    .img-box img { width: 100%; height: 100%; object-fit: contain; }
+    .card-info { padding: 14px 16px; }
+    .card-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .badge-num { background: #0f172a; color: #fff; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 4px; }
+    .badge-member { font-size: 11px; font-weight: 700; color: #475569; background: #e2e8f0; padding: 2px 8px; border-radius: 4px; }
+    .card-title { font-size: 14px; font-weight: 700; color: #0f172a; line-height: 1.4; }
   </style>
 </head>
 <body>
-
-  <!-- LEFT SIDEBAR -->
-  <div class="sidebar">
-    <div class="sidebar-header">
-      <div class="brand-row">
-        <div class="brand-title">
-          <span>🌿</span> GREENSPOT
-        </div>
-        <div class="brand-badge">DASHBOARD 48 CN</div>
-      </div>
-      <div class="search-box">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="searchInput" class="search-input" placeholder="Tìm theo số ảnh (01, 14.2) hoặc tên chức năng..." onkeyup="searchScreens()">
-      </div>
+  <div class="header-banner">
+    <div>
+      <div class="title">BỘ SƯU TẬP ẢNH PHÁC THẢO GIAO DIỆN (WIREFRAMES) 48 CHỨC NĂNG</div>
+      <div class="subtitle">Đồ án: GreenSpot / EcoReport WebGIS • Phân công 4 thành viên • Độ phân giải cao Retina (2x)</div>
     </div>
-
-    <div class="sidebar-stats">
-      <span>TỔNG SỐ: 48 CHỨC NĂNG</span>
-      <span style="color: #60a5fa;">61 BẢN VẼ WIREFRAME</span>
-    </div>
-
-    <div class="sidebar-content" id="sidebarContent">
-      
-        <div class="module-group" data-group="Nguyễn Thành Đạt">
-          <div class="module-header open" onclick="toggleGroup(this)">
-            <div class="module-title-box">
-              <span class="module-icon">🗺️</span>
-              <div>
-                <div class="module-name">Nguyễn Thành Đạt</div>
-                <div class="module-sub">WebGIS Công Dân & Báo Cáo Hiện Trường</div>
-              </div>
-            </div>
-            <div class="chevron-icon">▼</div>
-          </div>
-          <div class="screen-list open">
-            
-              <div class="screen-item active" 
-                   id="item-Anh_01_1" 
-                   onclick="selectScreen('Anh_01_1')"
-                   data-title="báo cáo điểm ô nhiễm - định vị gps tự động trên bản đồ"
-                   data-num="ảnh 01.1">
-                <span class="screen-badge">Ảnh 01.1</span>
-                <span class="screen-text">Báo cáo điểm ô nhiễm - Định vị GPS tự động trên bản đồ</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_01_2" 
-                   onclick="selectScreen('Anh_01_2')"
-                   data-title="báo cáo điểm ô nhiễm - ghim vị trí thủ công & modal xác nhận"
-                   data-num="ảnh 01.2">
-                <span class="screen-badge">Ảnh 01.2</span>
-                <span class="screen-text">Báo cáo điểm ô nhiễm - Ghim vị trí thủ công & Modal xác nhận</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_02_1" 
-                   onclick="selectScreen('Anh_02_1')"
-                   data-title="thu thập & nén ảnh/video hiện trường kèm đóng dấu thời gian"
-                   data-num="ảnh 02.1">
-                <span class="screen-badge">Ảnh 02.1</span>
-                <span class="screen-text">Thu thập & Nén ảnh/video hiện trường kèm đóng dấu thời gian</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_02_2" 
-                   onclick="selectScreen('Anh_02_2')"
-                   data-title="xem chi tiết ảnh phóng to & trích xuất metadata exif"
-                   data-num="ảnh 02.2">
-                <span class="screen-badge">Ảnh 02.2</span>
-                <span class="screen-text">Xem chi tiết ảnh phóng to & Trích xuất Metadata EXIF</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_03_1" 
-                   onclick="selectScreen('Anh_03_1')"
-                   data-title="phân loại loại hình ô nhiễm đa danh mục"
-                   data-num="ảnh 03.1">
-                <span class="screen-badge">Ảnh 03.1</span>
-                <span class="screen-text">Phân loại loại hình ô nhiễm đa danh mục</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_04_1" 
-                   onclick="selectScreen('Anh_04_1')"
-                   data-title="thang điểm mức độ nghiêm trọng & khẩn cấp"
-                   data-num="ảnh 04.1">
-                <span class="screen-badge">Ảnh 04.1</span>
-                <span class="screen-text">Thang điểm mức độ nghiêm trọng & Khẩn cấp</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_05_1" 
-                   onclick="selectScreen('Anh_05_1')"
-                   data-title="quản lý đa lớp bản đồ nền đô thị"
-                   data-num="ảnh 05.1">
-                <span class="screen-badge">Ảnh 05.1</span>
-                <span class="screen-text">Quản lý đa lớp bản đồ nền đô thị</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_06_1" 
-                   onclick="selectScreen('Anh_06_1')"
-                   data-title="kết xuất kiến trúc tòa nhà 3d extrusion đô thị"
-                   data-num="ảnh 06.1">
-                <span class="screen-badge">Ảnh 06.1</span>
-                <span class="screen-text">Kết xuất kiến trúc tòa nhà 3D Extrusion đô thị</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_06_2" 
-                   onclick="selectScreen('Anh_06_2')"
-                   data-title="bộ chọn chủ đề màu sắc tòa nhà 3d (color palettes)"
-                   data-num="ảnh 06.2">
-                <span class="screen-badge">Ảnh 06.2</span>
-                <span class="screen-text">Bộ chọn chủ đề màu sắc tòa nhà 3D (Color Palettes)</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_07_1" 
-                   onclick="selectScreen('Anh_07_1')"
-                   data-title="tùy chọn gửi ẩn danh & bảo vệ riêng tư (spatial jitter 50m)"
-                   data-num="ảnh 07.1">
-                <span class="screen-badge">Ảnh 07.1</span>
-                <span class="screen-text">Tùy chọn gửi ẩn danh & Bảo vệ riêng tư (Spatial Jitter 50m)</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_08_1" 
-                   onclick="selectScreen('Anh_08_1')"
-                   data-title="hiển thị lớp ranh giới hành chính 22 quận/huyện tp.hcm"
-                   data-num="ảnh 08.1">
-                <span class="screen-badge">Ảnh 08.1</span>
-                <span class="screen-text">Hiển thị lớp ranh giới hành chính 22 quận/huyện TP.HCM</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_09_1" 
-                   onclick="selectScreen('Anh_09_1')"
-                   data-title="mạng lưới điểm xanh & trạm tái chế rác công cộng"
-                   data-num="ảnh 09.1">
-                <span class="screen-badge">Ảnh 09.1</span>
-                <span class="screen-text">Mạng lưới điểm xanh & Trạm tái chế rác công cộng</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_09_2" 
-                   onclick="selectScreen('Anh_09_2')"
-                   data-title="popup chi tiết thông tin trạm tái chế & tiếp nhận vật liệu"
-                   data-num="ảnh 09.2">
-                <span class="screen-badge">Ảnh 09.2</span>
-                <span class="screen-text">Popup chi tiết thông tin trạm tái chế & Tiếp nhận vật liệu</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_10_1" 
-                   onclick="selectScreen('Anh_10_1')"
-                   data-title="hỗ trợ dịch đa ngôn ngữ tự động (song ngữ việt - anh)"
-                   data-num="ảnh 10.1">
-                <span class="screen-badge">Ảnh 10.1</span>
-                <span class="screen-text">Hỗ trợ dịch đa ngôn ngữ tự động (Song ngữ Việt - Anh)</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_11_1" 
-                   onclick="selectScreen('Anh_11_1')"
-                   data-title="tra cứu quy định pháp lý & khung mức phạt (nghị định 45/2022/nđ-cp)"
-                   data-num="ảnh 11.1">
-                <span class="screen-badge">Ảnh 11.1</span>
-                <span class="screen-text">Tra cứu quy định pháp lý & Khung mức phạt (Nghị định 45/2022/NĐ-CP)</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_12_1" 
-                   onclick="selectScreen('Anh_12_1')"
-                   data-title="chế độ giao diện đơn giản cho người cao tuổi (accessible ui)"
-                   data-num="ảnh 12.1">
-                <span class="screen-badge">Ảnh 12.1</span>
-                <span class="screen-text">Chế độ giao diện đơn giản cho người cao tuổi (Accessible UI)</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_12_2" 
-                   onclick="selectScreen('Anh_12_2')"
-                   data-title="hướng dẫn sử dụng tương tác quick tour 3d"
-                   data-num="ảnh 12.2">
-                <span class="screen-badge">Ảnh 12.2</span>
-                <span class="screen-text">Hướng dẫn sử dụng tương tác Quick Tour 3D</span>
-              </div>
-            
-          </div>
-        </div>
-      
-        <div class="module-group" data-group="Huỳnh Anh Tú">
-          <div class="module-header " onclick="toggleGroup(this)">
-            <div class="module-title-box">
-              <span class="module-icon">🌦️</span>
-              <div>
-                <div class="module-name">Huỳnh Anh Tú</div>
-                <div class="module-sub">Khí Tượng, Radar & Gamification Điểm Xanh</div>
-              </div>
-            </div>
-            <div class="chevron-icon">▼</div>
-          </div>
-          <div class="screen-list ">
-            
-              <div class="screen-item " 
-                   id="item-Anh_13_1" 
-                   onclick="selectScreen('Anh_13_1')"
-                   data-title="cơ chế tích lũy điểm thưởng công dân xanh (ecopoints)"
-                   data-num="ảnh 13.1">
-                <span class="screen-badge">Ảnh 13.1</span>
-                <span class="screen-text">Cơ chế tích lũy Điểm thưởng Công dân Xanh (EcoPoints)</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_14_1" 
-                   onclick="selectScreen('Anh_14_1')"
-                   data-title="quản lý ví điểm thưởng cá nhân & thẻ ecopoints"
-                   data-num="ảnh 14.1">
-                <span class="screen-badge">Ảnh 14.1</span>
-                <span class="screen-text">Quản lý ví điểm thưởng cá nhân & Thẻ EcoPoints</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_14_2" 
-                   onclick="selectScreen('Anh_14_2')"
-                   data-title="lịch sử biến động điểm xanh (point transactions log)"
-                   data-num="ảnh 14.2">
-                <span class="screen-badge">Ảnh 14.2</span>
-                <span class="screen-text">Lịch sử biến động điểm xanh (Point Transactions Log)</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_15_1" 
-                   onclick="selectScreen('Anh_15_1')"
-                   data-title="danh mục quà tặng xanh & vật phẩm quy đổi (gian hàng)"
-                   data-num="ảnh 15.1">
-                <span class="screen-badge">Ảnh 15.1</span>
-                <span class="screen-text">Danh mục quà tặng xanh & Vật phẩm quy đổi (Gian hàng)</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_16_1" 
-                   onclick="selectScreen('Anh_16_1')"
-                   data-title="thực hiện đổi điểm lấy quà tặng / voucher (modal xác nhận)"
-                   data-num="ảnh 16.1">
-                <span class="screen-badge">Ảnh 16.1</span>
-                <span class="screen-text">Thực hiện đổi điểm lấy quà tặng / Voucher (Modal xác nhận)</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_16_2" 
-                   onclick="selectScreen('Anh_16_2')"
-                   data-title="thẻ mã qr voucher ưu đãi được cấp để sử dụng tại quầy"
-                   data-num="ảnh 16.2">
-                <span class="screen-badge">Ảnh 16.2</span>
-                <span class="screen-text">Thẻ mã QR Voucher ưu đãi được cấp để sử dụng tại quầy</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_17_1" 
-                   onclick="selectScreen('Anh_17_1')"
-                   data-title="kho quản lý quà tặng & voucher cá nhân đã đổi"
-                   data-num="ảnh 17.1">
-                <span class="screen-badge">Ảnh 17.1</span>
-                <span class="screen-text">Kho quản lý quà tặng & Voucher cá nhân đã đổi</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_18_1" 
-                   onclick="selectScreen('Anh_18_1')"
-                   data-title="bảng xếp hạng vinh danh top công dân xanh (leaderboard)"
-                   data-num="ảnh 18.1">
-                <span class="screen-badge">Ảnh 18.1</span>
-                <span class="screen-text">Bảng xếp hạng vinh danh Top Công dân Xanh (Leaderboard)</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_19_1" 
-                   onclick="selectScreen('Anh_19_1')"
-                   data-title="giám sát mây mưa rainviewer radar & thanh phát lại thời gian thực"
-                   data-num="ảnh 19.1">
-                <span class="screen-badge">Ảnh 19.1</span>
-                <span class="screen-text">Giám sát mây mưa RainViewer Radar & Thanh phát lại thời gian thực</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_20_1" 
-                   onclick="selectScreen('Anh_20_1')"
-                   data-title="mô phỏng động lực học luồng gió (wind streamlines)"
-                   data-num="ảnh 20.1">
-                <span class="screen-badge">Ảnh 20.1</span>
-                <span class="screen-text">Mô phỏng động lực học luồng gió (Wind Streamlines)</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_21_1" 
-                   onclick="selectScreen('Anh_21_1')"
-                   data-title="bộ lớp phủ khí tượng đa thông số (8 lớp phủ chuyên sâu)"
-                   data-num="ảnh 21.1">
-                <span class="screen-badge">Ảnh 21.1</span>
-                <span class="screen-text">Bộ lớp phủ khí tượng đa thông số (8 lớp phủ chuyên sâu)</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_22_1" 
-                   onclick="selectScreen('Anh_22_1')"
-                   data-title="đánh giá mức độ hài lòng (1-5 sao) sau khi dọn sạch"
-                   data-num="ảnh 22.1">
-                <span class="screen-badge">Ảnh 22.1</span>
-                <span class="screen-text">Đánh giá mức độ hài lòng (1-5 sao) sau khi dọn sạch</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_23_1" 
-                   onclick="selectScreen('Anh_23_1')"
-                   data-title="bản đồ nhiệt môi trường nội suy không gian (heatmap)"
-                   data-num="ảnh 23.1">
-                <span class="screen-badge">Ảnh 23.1</span>
-                <span class="screen-text">Bản đồ nhiệt môi trường nội suy không gian (Heatmap)</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_24_1" 
-                   onclick="selectScreen('Anh_24_1')"
-                   data-title="cẩm nang hướng dẫn phân loại rác thải tại nguồn"
-                   data-num="ảnh 24.1">
-                <span class="screen-badge">Ảnh 24.1</span>
-                <span class="screen-text">Cẩm nang hướng dẫn phân loại rác thải tại nguồn</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_24_2" 
-                   onclick="selectScreen('Anh_24_2')"
-                   data-title="trợ lý ai rag tư vấn sống xanh & xử lý rác trực tuyến"
-                   data-num="ảnh 24.2">
-                <span class="screen-badge">Ảnh 24.2</span>
-                <span class="screen-text">Trợ lý AI RAG tư vấn Sống xanh & Xử lý rác trực tuyến</span>
-              </div>
-            
-          </div>
-        </div>
-      
-        <div class="module-group" data-group="Bùi Nguyễn Minh Quân">
-          <div class="module-header " onclick="toggleGroup(this)">
-            <div class="module-title-box">
-              <span class="module-icon">🛡️</span>
-              <div>
-                <div class="module-name">Bùi Nguyễn Minh Quân</div>
-                <div class="module-sub">Quản Trị Trung Tâm, RBAC & Đội Xe Thu Gom</div>
-              </div>
-            </div>
-            <div class="chevron-icon">▼</div>
-          </div>
-          <div class="screen-list ">
-            
-              <div class="screen-item " 
-                   id="item-Anh_25_1" 
-                   onclick="selectScreen('Anh_25_1')"
-                   data-title="cổng xác thực tập trung - màn hình đăng nhập & jwt"
-                   data-num="ảnh 25.1">
-                <span class="screen-badge">Ảnh 25.1</span>
-                <span class="screen-text">Cổng xác thực tập trung - Màn hình Đăng nhập & JWT</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_25_2" 
-                   onclick="selectScreen('Anh_25_2')"
-                   data-title="cổng xác thực tập trung - màn hình đăng ký tài khoản công dân"
-                   data-num="ảnh 25.2">
-                <span class="screen-badge">Ảnh 25.2</span>
-                <span class="screen-text">Cổng xác thực tập trung - Màn hình Đăng ký tài khoản công dân</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_26_1" 
-                   onclick="selectScreen('Anh_26_1')"
-                   data-title="quản trị người dùng & ma trận phân quyền động rbac"
-                   data-num="ảnh 26.1">
-                <span class="screen-badge">Ảnh 26.1</span>
-                <span class="screen-text">Quản trị người dùng & Ma trận phân quyền động RBAC</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_27_1" 
-                   onclick="selectScreen('Anh_27_1')"
-                   data-title="quản lý năng lực đội xe thu gom rác & tài xế hiện trường"
-                   data-num="ảnh 27.1">
-                <span class="screen-badge">Ảnh 27.1</span>
-                <span class="screen-text">Quản lý năng lực đội xe thu gom rác & Tài xế hiện trường</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_28_1" 
-                   onclick="selectScreen('Anh_28_1')"
-                   data-title="nhật ký kiểm toán an ninh audit log và truy vết dữ liệu"
-                   data-num="ảnh 28.1">
-                <span class="screen-badge">Ảnh 28.1</span>
-                <span class="screen-text">Nhật ký kiểm toán an ninh Audit Log và truy vết dữ liệu</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_29_1" 
-                   onclick="selectScreen('Anh_29_1')"
-                   data-title="trung tâm điều phối tác nghiệp & danh sách sự cố tồn đọng"
-                   data-num="ảnh 29.1">
-                <span class="screen-badge">Ảnh 29.1</span>
-                <span class="screen-text">Trung tâm điều phối tác nghiệp & Danh sách sự cố tồn đọng</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_29_2" 
-                   onclick="selectScreen('Anh_29_2')"
-                   data-title="modal phân công lệnh xử lý hiện trường cho tài xế"
-                   data-num="ảnh 29.2">
-                <span class="screen-badge">Ảnh 29.2</span>
-                <span class="screen-text">Modal phân công lệnh xử lý hiện trường cho tài xế</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_30_1" 
-                   onclick="selectScreen('Anh_30_1')"
-                   data-title="thẩm định chất lượng xử lý & nghiệm thu trước/sau (before/after)"
-                   data-num="ảnh 30.1">
-                <span class="screen-badge">Ảnh 30.1</span>
-                <span class="screen-text">Thẩm định chất lượng xử lý & Nghiệm thu Trước/Sau (Before/After)</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_31_1" 
-                   onclick="selectScreen('Anh_31_1')"
-                   data-title="phân cấp quản lý 3 cấp & chuyển tiếp hồ sơ thẩm quyền"
-                   data-num="ảnh 31.1">
-                <span class="screen-badge">Ảnh 31.1</span>
-                <span class="screen-text">Phân cấp quản lý 3 cấp & Chuyển tiếp hồ sơ thẩm quyền</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_32_1" 
-                   onclick="selectScreen('Anh_32_1')"
-                   data-title="giám sát hạn mức sla thời gian thực & cảnh báo trễ hạn"
-                   data-num="ảnh 32.1">
-                <span class="screen-badge">Ảnh 32.1</span>
-                <span class="screen-text">Giám sát hạn mức SLA thời gian thực & Cảnh báo trễ hạn</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_33_1" 
-                   onclick="selectScreen('Anh_33_1')"
-                   data-title="giám sát mạng lưới trạm cảm biến viễn trắc iot đô thị"
-                   data-num="ảnh 33.1">
-                <span class="screen-badge">Ảnh 33.1</span>
-                <span class="screen-text">Giám sát mạng lưới trạm cảm biến viễn trắc IoT đô thị</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_34_1" 
-                   onclick="selectScreen('Anh_34_1')"
-                   data-title="tự động hóa kết xuất báo cáo thống kê định kỳ pdf/excel"
-                   data-num="ảnh 34.1">
-                <span class="screen-badge">Ảnh 34.1</span>
-                <span class="screen-text">Tự động hóa kết xuất báo cáo thống kê định kỳ PDF/Excel</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_35_1" 
-                   onclick="selectScreen('Anh_35_1')"
-                   data-title="quản lý tuyến lộ trình xe gom rác cố định và trạm dừng checkpoints"
-                   data-num="ảnh 35.1">
-                <span class="screen-badge">Ảnh 35.1</span>
-                <span class="screen-text">Quản lý tuyến lộ trình xe gom rác cố định và trạm dừng checkpoints</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_36_1" 
-                   onclick="selectScreen('Anh_36_1')"
-                   data-title="bảng điều khiển tác nghiệp tổng quan quản lý (admin dashboard)"
-                   data-num="ảnh 36.1">
-                <span class="screen-badge">Ảnh 36.1</span>
-                <span class="screen-text">Bảng điều khiển tác nghiệp tổng quan Quản lý (Admin Dashboard)</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_36_2" 
-                   onclick="selectScreen('Anh_36_2')"
-                   data-title="trung tâm chẩn đoán sức khỏe hệ thống & giám sát api health check"
-                   data-num="ảnh 36.2">
-                <span class="screen-badge">Ảnh 36.2</span>
-                <span class="screen-text">Trung tâm chẩn đoán sức khỏe hệ thống & Giám sát API Health Check</span>
-              </div>
-            
-          </div>
-        </div>
-      
-        <div class="module-group" data-group="Lê Anh Tuấn">
-          <div class="module-header " onclick="toggleGroup(this)">
-            <div class="module-title-box">
-              <span class="module-icon">🌊</span>
-              <div>
-                <div class="module-name">Lê Anh Tuấn</div>
-                <div class="module-sub">Mô Hình Thủy Triều, Ngập Lụt & PostGIS</div>
-              </div>
-            </div>
-            <div class="chevron-icon">▼</div>
-          </div>
-          <div class="screen-list ">
-            
-              <div class="screen-item " 
-                   id="item-Anh_37_1" 
-                   onclick="selectScreen('Anh_37_1')"
-                   data-title="cơ chế tính điểm rủi ro risk score (0-100) cho từng sự cố"
-                   data-num="ảnh 37.1">
-                <span class="screen-badge">Ảnh 37.1</span>
-                <span class="screen-text">Cơ chế tính điểm rủi ro Risk Score (0-100) cho từng sự cố</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_38_1" 
-                   onclick="selectScreen('Anh_38_1')"
-                   data-title="tự động phân loại mức độ nguy hiểm: thấp, trung bình, cao, khẩn cấp"
-                   data-num="ảnh 38.1">
-                <span class="screen-badge">Ảnh 38.1</span>
-                <span class="screen-text">Tự động phân loại mức độ nguy hiểm: Thấp, Trung bình, Cao, Khẩn cấp</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_39_1" 
-                   onclick="selectScreen('Anh_39_1')"
-                   data-title="phát hiện và gom cụm các báo cáo theo tọa độ (dbscan clustered markers)"
-                   data-num="ảnh 39.1">
-                <span class="screen-badge">Ảnh 39.1</span>
-                <span class="screen-text">Phát hiện và gom cụm các báo cáo theo tọa độ (DBSCAN Clustered Markers)</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_40_1" 
-                   onclick="selectScreen('Anh_40_1')"
-                   data-title="phân tích không gian vùng đệm (buffer 500m) tìm cơ sở thiết yếu"
-                   data-num="ảnh 40.1">
-                <span class="screen-badge">Ảnh 40.1</span>
-                <span class="screen-text">Phân tích không gian vùng đệm (Buffer 500m) tìm cơ sở thiết yếu</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_41_1" 
-                   onclick="selectScreen('Anh_41_1')"
-                   data-title="động cơ giải tích sóng triều bán nhật triều harmonic tide engine"
-                   data-num="ảnh 41.1">
-                <span class="screen-badge">Ảnh 41.1</span>
-                <span class="screen-text">Động cơ giải tích sóng triều bán nhật triều Harmonic Tide Engine</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_42_1" 
-                   onclick="selectScreen('Anh_42_1')"
-                   data-title="dự báo đỉnh triều cực trị & bản đồ vệt đường ngập 3 lớp"
-                   data-num="ảnh 42.1">
-                <span class="screen-badge">Ảnh 42.1</span>
-                <span class="screen-text">Dự báo đỉnh triều cực trị & Bản đồ vệt đường ngập 3 lớp</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_43_1" 
-                   onclick="selectScreen('Anh_43_1')"
-                   data-title="tìm tuyến đường an toàn né khu vực ngập (postgis st_dwithin)"
-                   data-num="ảnh 43.1">
-                <span class="screen-badge">Ảnh 43.1</span>
-                <span class="screen-text">Tìm tuyến đường an toàn né khu vực ngập (PostGIS ST_DWithin)</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_44_1" 
-                   onclick="selectScreen('Anh_44_1')"
-                   data-title="so sánh tuyến đường nhanh nhất vs tuyến an toàn tránh thủy kích"
-                   data-num="ảnh 44.1">
-                <span class="screen-badge">Ảnh 44.1</span>
-                <span class="screen-text">So sánh tuyến đường nhanh nhất vs tuyến an toàn tránh thủy kích</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_45_1" 
-                   onclick="selectScreen('Anh_45_1')"
-                   data-title="báo cáo điểm ngập lụt 1-chạm qua menu chuột phải trên bản đồ"
-                   data-num="ảnh 45.1">
-                <span class="screen-badge">Ảnh 45.1</span>
-                <span class="screen-text">Báo cáo điểm ngập lụt 1-chạm qua menu chuột phải trên bản đồ</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_45_2" 
-                   onclick="selectScreen('Anh_45_2')"
-                   data-title="modal nhập mực nước ngập lụt & thuật toán bám đường osrm"
-                   data-num="ảnh 45.2">
-                <span class="screen-badge">Ảnh 45.2</span>
-                <span class="screen-text">Modal nhập mực nước ngập lụt & Thuật toán bám đường OSRM</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_46_1" 
-                   onclick="selectScreen('Anh_46_1')"
-                   data-title="dự báo lũ lụt toàn cầu copernicus glofas 7 ngày"
-                   data-num="ảnh 46.1">
-                <span class="screen-badge">Ảnh 46.1</span>
-                <span class="screen-text">Dự báo lũ lụt toàn cầu Copernicus GloFAS 7 ngày</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_47_1" 
-                   onclick="selectScreen('Anh_47_1')"
-                   data-title="tích hợp đa nguồn dữ liệu ngập lụt đô thị & mô phỏng thiên tai"
-                   data-num="ảnh 47.1">
-                <span class="screen-badge">Ảnh 47.1</span>
-                <span class="screen-text">Tích hợp đa nguồn dữ liệu ngập lụt đô thị & Mô phỏng thiên tai</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_48_1" 
-                   onclick="selectScreen('Anh_48_1')"
-                   data-title="dashboard phân tích dữ liệu lớn aqi 34 tỉnh thành & biểu đồ chuỗi giờ"
-                   data-num="ảnh 48.1">
-                <span class="screen-badge">Ảnh 48.1</span>
-                <span class="screen-text">Dashboard phân tích dữ liệu lớn AQI 34 tỉnh thành & Biểu đồ chuỗi giờ</span>
-              </div>
-            
-              <div class="screen-item " 
-                   id="item-Anh_48_2" 
-                   onclick="selectScreen('Anh_48_2')"
-                   data-title="ma trận nhiệt tương quan 6 chất ô nhiễm không khí (correlation heatmap)"
-                   data-num="ảnh 48.2">
-                <span class="screen-badge">Ảnh 48.2</span>
-                <span class="screen-text">Ma trận nhiệt tương quan 6 chất ô nhiễm không khí (Correlation Heatmap)</span>
-              </div>
-            
-          </div>
-        </div>
-      
+    <div style="background: rgba(255,255,255,0.1); padding: 10px 18px; border-radius: 8px; text-align: right;">
+      <div style="font-size: 20px; font-weight: 900;">56 MÀN HÌNH</div>
+      <div style="font-size: 11px; color: #cbd5e1;">Đã xuất định dạng PNG</div>
     </div>
   </div>
 
-  <!-- MAIN VIEW -->
-  <div class="main-view">
-    <!-- Top Navbar -->
-    <div class="top-navbar">
-      <div class="breadcrumbs">
-        <span>Dashboard</span>
-        <span>/</span>
-        <span id="bcMember">Nguyễn Thành Đạt</span>
-        <span>/</span>
-        <span id="bcBadge" class="breadcrumb-active">Ảnh 01.1</span>
-      </div>
-
-      <div class="nav-controls">
-        <button class="btn-nav" onclick="prevScreen()">◀ Trước</button>
-        <button class="btn-nav" onclick="nextScreen()">Sau ▶</button>
-        <button class="btn-nav" onclick="openLightbox()">🔍 Phóng to</button>
-        <a id="btnDownload" href="./wireframes/Anh_01_1.png" download class="btn-nav btn-nav-primary">📥 Tải PNG</a>
-      </div>
-    </div>
-
-    <!-- Content Body -->
-    <div class="content-body">
-      <div class="wireframe-display-card">
-        <div style="width: 100%; max-width: 1050px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <div>
-            <h2 id="viewTitle" style="font-size: 18px; font-weight: 800; color: #fff;">Báo cáo điểm ô nhiễm - Định vị GPS tự động trên bản đồ</h2>
-            <div id="viewSubtitle" style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Phân hệ: Báo cáo rác • Phụ trách: Nguyễn Thành Đạt</div>
-          </div>
-          <span id="viewTag" style="background: #2563eb; color: #fff; font-size: 12px; font-weight: 800; padding: 4px 12px; border-radius: 6px;">Ảnh 01.1</span>
+  <div class="gallery-grid">
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_01_1.png" target="_blank">
+            <img src="./wireframes/Anh_01_1.png" alt="Ảnh 01.1">
+          </a>
         </div>
-
-        <div class="image-preview-wrapper" onclick="openLightbox()">
-          <img id="viewImage" src="./wireframes/Anh_01_1.png" alt="Wireframe Preview">
-        </div>
-
-        <!-- Metadata Bar -->
-        <div class="meta-box">
-          <div class="meta-item">
-            <span class="meta-label">Thành viên đảm nhiệm</span>
-            <span class="meta-val" id="metaMember">Nguyễn Thành Đạt</span>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 01.1</span>
+            <span class="badge-member">Nguyễn Thành Đạt</span>
           </div>
-          <div class="meta-item">
-            <span class="meta-label">Vai trò giao diện</span>
-            <span class="meta-val" id="metaRole">Công dân (Citizen)</span>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">Tab Sidebar tương ứng</span>
-            <span class="meta-val" id="metaNav">Báo cáo rác</span>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">Tên tệp hình ảnh</span>
-            <span class="meta-val" id="metaFile" style="font-family: monospace;">Anh_01_1.png</span>
-          </div>
+          <div class="card-title">Đăng ký tài khoản người dân (Citizen Registration)</div>
         </div>
       </div>
-    </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_01_2.png" target="_blank">
+            <img src="./wireframes/Anh_01_2.png" alt="Ảnh 01.2">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 01.2</span>
+            <span class="badge-member">Nguyễn Thành Đạt</span>
+          </div>
+          <div class="card-title">Xác thực kích hoạt tài khoản OTP (Email / SMS Verification)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_02_1.png" target="_blank">
+            <img src="./wireframes/Anh_02_1.png" alt="Ảnh 02.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 02.1</span>
+            <span class="badge-member">Nguyễn Thành Đạt</span>
+          </div>
+          <div class="card-title">Đăng nhập & Xác thực bảo mật phiên làm việc (JWT Secure Login)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_02_2.png" target="_blank">
+            <img src="./wireframes/Anh_02_2.png" alt="Ảnh 02.2">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 02.2</span>
+            <span class="badge-member">Nguyễn Thành Đạt</span>
+          </div>
+          <div class="card-title">Modal đăng nhập nhanh trên WebGIS khi gửi báo cáo sự cố</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_03_1.png" target="_blank">
+            <img src="./wireframes/Anh_03_1.png" alt="Ảnh 03.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 03.1</span>
+            <span class="badge-member">Nguyễn Thành Đạt</span>
+          </div>
+          <div class="card-title">Quản lý hồ sơ người dùng & Lịch sử đóng góp</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_04_1.png" target="_blank">
+            <img src="./wireframes/Anh_04_1.png" alt="Ảnh 04.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 04.1</span>
+            <span class="badge-member">Nguyễn Thành Đạt</span>
+          </div>
+          <div class="card-title">Phân quyền vai trò RBAC (Admin, Manager, Citizen, Responder)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_05_1.png" target="_blank">
+            <img src="./wireframes/Anh_05_1.png" alt="Ảnh 05.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 05.1</span>
+            <span class="badge-member">Nguyễn Thành Đạt</span>
+          </div>
+          <div class="card-title">Quản lý trạng thái tài khoản & Chặn báo cáo giả mạo</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_06_1.png" target="_blank">
+            <img src="./wireframes/Anh_06_1.png" alt="Ảnh 06.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 06.1</span>
+            <span class="badge-member">Nguyễn Thành Đạt</span>
+          </div>
+          <div class="card-title">Popover chẩn đoán kết nối Microservice Backend (/health) - Vị trí nút</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_06_2.png" target="_blank">
+            <img src="./wireframes/Anh_06_2.png" alt="Ảnh 06.2">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 06.2</span>
+            <span class="badge-member">Nguyễn Thành Đạt</span>
+          </div>
+          <div class="card-title">Popover chi tiết chẩn đoán Microservice Backend (/health)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_07_1.png" target="_blank">
+            <img src="./wireframes/Anh_07_1.png" alt="Ảnh 07.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 07.1</span>
+            <span class="badge-member">Nguyễn Thành Đạt</span>
+          </div>
+          <div class="card-title">Báo cáo sự cố môi trường kèm tọa độ GPS trực tiếp - Bắt GPS vệ tinh</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_07_2.png" target="_blank">
+            <img src="./wireframes/Anh_07_2.png" alt="Ảnh 07.2">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 07.2</span>
+            <span class="badge-member">Nguyễn Thành Đạt</span>
+          </div>
+          <div class="card-title">Form nhập thông tin chi tiết sự cố hiện trường kèm tọa độ</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_08_1.png" target="_blank">
+            <img src="./wireframes/Anh_08_1.png" alt="Ảnh 08.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 08.1</span>
+            <span class="badge-member">Nguyễn Thành Đạt</span>
+          </div>
+          <div class="card-title">Đính kèm hình ảnh/video minh chứng hiện trường sự cố</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_09_1.png" target="_blank">
+            <img src="./wireframes/Anh_09_1.png" alt="Ảnh 09.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 09.1</span>
+            <span class="badge-member">Nguyễn Thành Đạt</span>
+          </div>
+          <div class="card-title">Định danh mã theo dõi sự cố công khai (Tracking Code)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_10_1.png" target="_blank">
+            <img src="./wireframes/Anh_10_1.png" alt="Ảnh 10.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 10.1</span>
+            <span class="badge-member">Nguyễn Thành Đạt</span>
+          </div>
+          <div class="card-title">Tương tác cộng đồng: Xác nhận (Upvotes) sự cố</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_11_1.png" target="_blank">
+            <img src="./wireframes/Anh_11_1.png" alt="Ảnh 11.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 11.1</span>
+            <span class="badge-member">Nguyễn Thành Đạt</span>
+          </div>
+          <div class="card-title">Phân loại sự cố theo danh mục rác thải đô thị</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_12_1.png" target="_blank">
+            <img src="./wireframes/Anh_12_1.png" alt="Ảnh 12.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 12.1</span>
+            <span class="badge-member">Nguyễn Thành Đạt</span>
+          </div>
+          <div class="card-title">Theo dõi vòng đời xử lý sự cố (Pending, Progress, Resolved)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_13_1.png" target="_blank">
+            <img src="./wireframes/Anh_13_1.png" alt="Ảnh 13.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 13.1</span>
+            <span class="badge-member">Huỳnh Anh Tú</span>
+          </div>
+          <div class="card-title">Phân công điều phối đội phản ứng nhanh theo địa bàn quận</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_14_1.png" target="_blank">
+            <img src="./wireframes/Anh_14_1.png" alt="Ảnh 14.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 14.1</span>
+            <span class="badge-member">Huỳnh Anh Tú</span>
+          </div>
+          <div class="card-title">Báo cáo tóm tắt tổng lượng sự cố môi trường toàn thành phố</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_15_1.png" target="_blank">
+            <img src="./wireframes/Anh_15_1.png" alt="Ảnh 15.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 15.1</span>
+            <span class="badge-member">Huỳnh Anh Tú</span>
+          </div>
+          <div class="card-title">Chuyển đổi 7 chế độ bản đồ nền (Google Maps Cluster, OSM, Dark)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_16_1.png" target="_blank">
+            <img src="./wireframes/Anh_16_1.png" alt="Ảnh 16.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 16.1</span>
+            <span class="badge-member">Huỳnh Anh Tú</span>
+          </div>
+          <div class="card-title">Góc nhìn không gian 3D đùn khối công trình đô thị</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_16_2.png" target="_blank">
+            <img src="./wireframes/Anh_16_2.png" alt="Ảnh 16.2">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 16.2</span>
+            <span class="badge-member">Huỳnh Anh Tú</span>
+          </div>
+          <div class="card-title">Bộ chọn 5 chủ đề màu sắc tòa nhà 3D (Building Color Palettes)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_17_1.png" target="_blank">
+            <img src="./wireframes/Anh_17_1.png" alt="Ảnh 17.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 17.1</span>
+            <span class="badge-member">Huỳnh Anh Tú</span>
+          </div>
+          <div class="card-title">Phân vùng ranh giới 22 quận/huyện TP.HCM & TP. Thủ Đức kèm FlyTo</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_18_1.png" target="_blank">
+            <img src="./wireframes/Anh_18_1.png" alt="Ảnh 18.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 18.1</span>
+            <span class="badge-member">Huỳnh Anh Tú</span>
+          </div>
+          <div class="card-title">Tra cứu công viên sinh thái, mảng xanh đô thị (Green Spots)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_19_1.png" target="_blank">
+            <img src="./wireframes/Anh_19_1.png" alt="Ảnh 19.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 19.1</span>
+            <span class="badge-member">Huỳnh Anh Tú</span>
+          </div>
+          <div class="card-title">Tra cứu mạng lưới trạm thu gom rác tái chế & pin cũ (Recycling)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_20_1.png" target="_blank">
+            <img src="./wireframes/Anh_20_1.png" alt="Ảnh 20.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 20.1</span>
+            <span class="badge-member">Huỳnh Anh Tú</span>
+          </div>
+          <div class="card-title">Tự động tải tiện ích xung quanh theo mức zoom (LOD POIs)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_21_1.png" target="_blank">
+            <img src="./wireframes/Anh_21_1.png" alt="Ảnh 21.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 21.1</span>
+            <span class="badge-member">Huỳnh Anh Tú</span>
+          </div>
+          <div class="card-title">Ô tìm kiếm thông minh địa điểm, số nhà, ngõ hẻm toàn thành phố</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_22_1.png" target="_blank">
+            <img src="./wireframes/Anh_22_1.png" alt="Ảnh 22.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 22.1</span>
+            <span class="badge-member">Huỳnh Anh Tú</span>
+          </div>
+          <div class="card-title">Định vị GPS vệ tinh siêu tốc & Vòng tròn bán kính sai số</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_23_1.png" target="_blank">
+            <img src="./wireframes/Anh_23_1.png" alt="Ảnh 23.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 23.1</span>
+            <span class="badge-member">Huỳnh Anh Tú</span>
+          </div>
+          <div class="card-title">Thả ghim giải mã tọa độ ngược thành số nhà (OSM Reverse Geocoding)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_24_1.png" target="_blank">
+            <img src="./wireframes/Anh_24_1.png" alt="Ảnh 24.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 24.1</span>
+            <span class="badge-member">Huỳnh Anh Tú</span>
+          </div>
+          <div class="card-title">Quick Tour 3D khám phá danh thắng tiêu biểu Việt Nam</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_25_1.png" target="_blank">
+            <img src="./wireframes/Anh_25_1.png" alt="Ảnh 25.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 25.1</span>
+            <span class="badge-member">Bùi Nguyễn Minh Quân</span>
+          </div>
+          <div class="card-title">Quản lý mạng lưới trạm cảm biến viễn trắc IoT môi trường</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_26_1.png" target="_blank">
+            <img src="./wireframes/Anh_26_1.png" alt="Ảnh 26.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 26.1</span>
+            <span class="badge-member">Bùi Nguyễn Minh Quân</span>
+          </div>
+          <div class="card-title">Nhật ký lưu trữ chuỗi thời gian số liệu quan trắc viễn trắc</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_27_1.png" target="_blank">
+            <img src="./wireframes/Anh_27_1.png" alt="Ảnh 27.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 27.1</span>
+            <span class="badge-member">Bùi Nguyễn Minh Quân</span>
+          </div>
+          <div class="card-title">Bản đồ nhiệt nhiệt độ khí quyển (°C) toàn quốc</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_28_1.png" target="_blank">
+            <img src="./wireframes/Anh_28_1.png" alt="Ảnh 28.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 28.1</span>
+            <span class="badge-member">Bùi Nguyễn Minh Quân</span>
+          </div>
+          <div class="card-title">Bản đồ nhiệt chất lượng không khí (AQI Heatmap Layer)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_29_1.png" target="_blank">
+            <img src="./wireframes/Anh_29_1.png" alt="Ảnh 29.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 29.1</span>
+            <span class="badge-member">Bùi Nguyễn Minh Quân</span>
+          </div>
+          <div class="card-title">Bản đồ nhiệt mật độ rủi ro ô nhiễm đô thị</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_30_1.png" target="_blank">
+            <img src="./wireframes/Anh_30_1.png" alt="Ảnh 30.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 30.1</span>
+            <span class="badge-member">Bùi Nguyễn Minh Quân</span>
+          </div>
+          <div class="card-title">Live Weather Radar Map: 8 lớp phủ khí quyển động học</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_31_1.png" target="_blank">
+            <img src="./wireframes/Anh_31_1.png" alt="Ảnh 31.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 31.1</span>
+            <span class="badge-member">Bùi Nguyễn Minh Quân</span>
+          </div>
+          <div class="card-title">Động cơ giải tích sóng thủy triều thuần Python (Harmonic Tide)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_32_1.png" target="_blank">
+            <img src="./wireframes/Anh_32_1.png" alt="Ảnh 32.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 32.1</span>
+            <span class="badge-member">Bùi Nguyễn Minh Quân</span>
+          </div>
+          <div class="card-title">Quan trắc & dự báo mực nước triều trạm Phú An và Nhà Bè</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_33_1.png" target="_blank">
+            <img src="./wireframes/Anh_33_1.png" alt="Ảnh 33.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 33.1</span>
+            <span class="badge-member">Bùi Nguyễn Minh Quân</span>
+          </div>
+          <div class="card-title">Tự động dò đỉnh triều (High Tide), chân triều và báo động BĐ3</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_34_1.png" target="_blank">
+            <img src="./wireframes/Anh_34_1.png" alt="Ảnh 34.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 34.1</span>
+            <span class="badge-member">Bùi Nguyễn Minh Quân</span>
+          </div>
+          <div class="card-title">Động cơ phân tích rủi ro ngập lụt đa nhân tố (Flood Risk Engine)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_35_1.png" target="_blank">
+            <img src="./wireframes/Anh_35_1.png" alt="Ảnh 35.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 35.1</span>
+            <span class="badge-member">Bùi Nguyễn Minh Quân</span>
+          </div>
+          <div class="card-title">Thanh trượt mô phỏng kịch bản ngập lụt tương tác (0 - 100 mm/h)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_36_1.png" target="_blank">
+            <img src="./wireframes/Anh_36_1.png" alt="Ảnh 36.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 36.1</span>
+            <span class="badge-member">Bùi Nguyễn Minh Quân</span>
+          </div>
+          <div class="card-title">Tích hợp dự báo nguy cơ lũ lụt Copernicus GloFAS toàn cầu 7 ngày</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_37_1.png" target="_blank">
+            <img src="./wireframes/Anh_37_1.png" alt="Ảnh 37.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 37.1</span>
+            <span class="badge-member">Lê Anh Tuấn</span>
+          </div>
+          <div class="card-title">Cơ chế tính điểm rủi ro Risk Score (0-100) cho từng sự cố</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_38_1.png" target="_blank">
+            <img src="./wireframes/Anh_38_1.png" alt="Ảnh 38.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 38.1</span>
+            <span class="badge-member">Lê Anh Tuấn</span>
+          </div>
+          <div class="card-title">Tự động phân loại mức độ nguy hiểm: thấp, trung bình, cao, khẩn cấp</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_39_1.png" target="_blank">
+            <img src="./wireframes/Anh_39_1.png" alt="Ảnh 39.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 39.1</span>
+            <span class="badge-member">Lê Anh Tuấn</span>
+          </div>
+          <div class="card-title">Phát hiện và gom cụm các báo cáo gần nhau theo tọa độ (DBSCAN)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_40_1.png" target="_blank">
+            <img src="./wireframes/Anh_40_1.png" alt="Ảnh 40.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 40.1</span>
+            <span class="badge-member">Lê Anh Tuấn</span>
+          </div>
+          <div class="card-title">Phân tích và xác định điểm nóng sự cố theo không gian và thời gian</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_41_1.png" target="_blank">
+            <img src="./wireframes/Anh_41_1.png" alt="Ảnh 41.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 41.1</span>
+            <span class="badge-member">Lê Anh Tuấn</span>
+          </div>
+          <div class="card-title">Báo cáo điểm ngập lụt cộng đồng 1 chạm qua menu chuột phải</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_41_2.png" target="_blank">
+            <img src="./wireframes/Anh_41_2.png" alt="Ảnh 41.2">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 41.2</span>
+            <span class="badge-member">Lê Anh Tuấn</span>
+          </div>
+          <div class="card-title">Modal nhập mực nước ngập lụt & Thuật toán bám đường OSRM</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_42_1.png" target="_blank">
+            <img src="./wireframes/Anh_42_1.png" alt="Ảnh 42.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 42.1</span>
+            <span class="badge-member">Lê Anh Tuấn</span>
+          </div>
+          <div class="card-title">Xây dựng bản đồ nguy cơ ngập động theo từng khu vực (Vẽ đường 3 lớp)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_43_1.png" target="_blank">
+            <img src="./wireframes/Anh_43_1.png" alt="Ảnh 43.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 43.1</span>
+            <span class="badge-member">Lê Anh Tuấn</span>
+          </div>
+          <div class="card-title">Tìm tuyến đường an toàn tránh khu vực đang ngập (PostGIS ST_DWithin)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_44_1.png" target="_blank">
+            <img src="./wireframes/Anh_44_1.png" alt="Ảnh 44.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 44.1</span>
+            <span class="badge-member">Lê Anh Tuấn</span>
+          </div>
+          <div class="card-title">So sánh tuyến đường nhanh nhất và tuyến đường an toàn nhất</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_45_1.png" target="_blank">
+            <img src="./wireframes/Anh_45_1.png" alt="Ảnh 45.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 45.1</span>
+            <span class="badge-member">Lê Anh Tuấn</span>
+          </div>
+          <div class="card-title">Tìm cơ sở thiết yếu gần sự cố (Bệnh viện, trường học vùng đệm 1km)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_45_2.png" target="_blank">
+            <img src="./wireframes/Anh_45_2.png" alt="Ảnh 45.2">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 45.2</span>
+            <span class="badge-member">Lê Anh Tuấn</span>
+          </div>
+          <div class="card-title">Drawer danh sách cơ sở thiết yếu bị ảnh hưởng trong bán kính 1km</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_46_1.png" target="_blank">
+            <img src="./wireframes/Anh_46_1.png" alt="Ảnh 46.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 46.1</span>
+            <span class="badge-member">Lê Anh Tuấn</span>
+          </div>
+          <div class="card-title">Hệ thống đa ngôn ngữ tập trung Python Backend (python-i18n)</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_47_1.png" target="_blank">
+            <img src="./wireframes/Anh_47_1.png" alt="Ảnh 47.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 47.1</span>
+            <span class="badge-member">Lê Anh Tuấn</span>
+          </div>
+          <div class="card-title">Bộ điều hợp đồng bộ dữ liệu thời gian thực Live Runtime Synchronizer</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_48_1.png" target="_blank">
+            <img src="./wireframes/Anh_48_1.png" alt="Ảnh 48.1">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 48.1</span>
+            <span class="badge-member">Lê Anh Tuấn</span>
+          </div>
+          <div class="card-title">Dashboard phân tích rủi ro đô thị (AQI & Khí hậu 34 tỉnh thành) - 5 Tabs</div>
+        </div>
+      </div>
+    
+      <div class="gallery-card">
+        <div class="img-box">
+          <a href="./wireframes/Anh_48_2.png" target="_blank">
+            <img src="./wireframes/Anh_48_2.png" alt="Ảnh 48.2">
+          </a>
+        </div>
+        <div class="card-info">
+          <div class="card-meta">
+            <span class="badge-num">Ảnh 48.2</span>
+            <span class="badge-member">Lê Anh Tuấn</span>
+          </div>
+          <div class="card-title">Ma trận nhiệt tương quan Pearson giữa 6 chất ô nhiễm và khí hậu (Tab 4 & 5)</div>
+        </div>
+      </div>
+    
   </div>
-
-  <!-- LIGHTBOX MODAL -->
-  <div class="lightbox-modal" id="lightboxModal" onclick="closeLightbox()">
-    <img id="lightboxImg" src="./wireframes/Anh_01_1.png" alt="Zoomed Wireframe">
-  </div>
-
-  <script>
-    const allScreens = [{"id":"Anh_01_1","numBadge":"Ảnh 01.1","title":"Báo cáo điểm ô nhiễm - Định vị GPS tự động trên bản đồ","member":"Nguyễn Thành Đạt","role":"Công dân (Citizen)","activeNav":"Báo cáo rác","fileName":"Anh_01_1.png"},{"id":"Anh_01_2","numBadge":"Ảnh 01.2","title":"Báo cáo điểm ô nhiễm - Ghim vị trí thủ công & Modal xác nhận","member":"Nguyễn Thành Đạt","role":"Công dân (Citizen)","activeNav":"Báo cáo rác","fileName":"Anh_01_2.png"},{"id":"Anh_02_1","numBadge":"Ảnh 02.1","title":"Thu thập & Nén ảnh/video hiện trường kèm đóng dấu thời gian","member":"Nguyễn Thành Đạt","role":"Công dân (Citizen)","activeNav":"Báo cáo rác","fileName":"Anh_02_1.png"},{"id":"Anh_02_2","numBadge":"Ảnh 02.2","title":"Xem chi tiết ảnh phóng to & Trích xuất Metadata EXIF","member":"Nguyễn Thành Đạt","role":"Công dân (Citizen)","activeNav":"Báo cáo rác","fileName":"Anh_02_2.png"},{"id":"Anh_03_1","numBadge":"Ảnh 03.1","title":"Phân loại loại hình ô nhiễm đa danh mục","member":"Nguyễn Thành Đạt","role":"Công dân (Citizen)","activeNav":"Báo cáo rác","fileName":"Anh_03_1.png"},{"id":"Anh_04_1","numBadge":"Ảnh 04.1","title":"Thang điểm mức độ nghiêm trọng & Khẩn cấp","member":"Nguyễn Thành Đạt","role":"Công dân (Citizen)","activeNav":"Báo cáo rác","fileName":"Anh_04_1.png"},{"id":"Anh_05_1","numBadge":"Ảnh 05.1","title":"Quản lý đa lớp bản đồ nền đô thị","member":"Nguyễn Thành Đạt","role":"Công dân / Quản trị viên","activeNav":"Bản đồ ô nhiễm","fileName":"Anh_05_1.png"},{"id":"Anh_06_1","numBadge":"Ảnh 06.1","title":"Kết xuất kiến trúc tòa nhà 3D Extrusion đô thị","member":"Nguyễn Thành Đạt","role":"Công dân / Quản trị viên","activeNav":"Bản đồ ô nhiễm","fileName":"Anh_06_1.png"},{"id":"Anh_06_2","numBadge":"Ảnh 06.2","title":"Bộ chọn chủ đề màu sắc tòa nhà 3D (Color Palettes)","member":"Nguyễn Thành Đạt","role":"Công dân / Quản trị viên","activeNav":"Bản đồ ô nhiễm","fileName":"Anh_06_2.png"},{"id":"Anh_07_1","numBadge":"Ảnh 07.1","title":"Tùy chọn gửi ẩn danh & Bảo vệ riêng tư (Spatial Jitter 50m)","member":"Nguyễn Thành Đạt","role":"Công dân (Citizen)","activeNav":"Báo cáo rác","fileName":"Anh_07_1.png"},{"id":"Anh_08_1","numBadge":"Ảnh 08.1","title":"Hiển thị lớp ranh giới hành chính 22 quận/huyện TP.HCM","member":"Nguyễn Thành Đạt","role":"Quản trị viên / Công dân","activeNav":"Bản đồ ô nhiễm","fileName":"Anh_08_1.png"},{"id":"Anh_09_1","numBadge":"Ảnh 09.1","title":"Mạng lưới điểm xanh & Trạm tái chế rác công cộng","member":"Nguyễn Thành Đạt","role":"Công dân (Citizen)","activeNav":"Điểm xanh","fileName":"Anh_09_1.png"},{"id":"Anh_09_2","numBadge":"Ảnh 09.2","title":"Popup chi tiết thông tin trạm tái chế & Tiếp nhận vật liệu","member":"Nguyễn Thành Đạt","role":"Công dân (Citizen)","activeNav":"Điểm xanh","fileName":"Anh_09_2.png"},{"id":"Anh_10_1","numBadge":"Ảnh 10.1","title":"Hỗ trợ dịch đa ngôn ngữ tự động (Song ngữ Việt - Anh)","member":"Nguyễn Thành Đạt","role":"Mọi người dùng","activeNav":"Dashboard","fileName":"Anh_10_1.png"},{"id":"Anh_11_1","numBadge":"Ảnh 11.1","title":"Tra cứu quy định pháp lý & Khung mức phạt (Nghị định 45/2022/NĐ-CP)","member":"Nguyễn Thành Đạt","role":"Công dân (Citizen)","activeNav":"Dashboard","fileName":"Anh_11_1.png"},{"id":"Anh_12_1","numBadge":"Ảnh 12.1","title":"Chế độ giao diện đơn giản cho người cao tuổi (Accessible UI)","member":"Nguyễn Thành Đạt","role":"Người cao tuổi / Công dân","activeNav":"Báo cáo rác","fileName":"Anh_12_1.png"},{"id":"Anh_12_2","numBadge":"Ảnh 12.2","title":"Hướng dẫn sử dụng tương tác Quick Tour 3D","member":"Nguyễn Thành Đạt","role":"Người dùng mới","activeNav":"Dashboard","fileName":"Anh_12_2.png"},{"id":"Anh_13_1","numBadge":"Ảnh 13.1","title":"Cơ chế tích lũy Điểm thưởng Công dân Xanh (EcoPoints)","member":"Huỳnh Anh Tú","role":"Công dân (Citizen)","activeNav":"Dashboard","fileName":"Anh_13_1.png"},{"id":"Anh_14_1","numBadge":"Ảnh 14.1","title":"Quản lý ví điểm thưởng cá nhân & Thẻ EcoPoints","member":"Huỳnh Anh Tú","role":"Công dân (Citizen)","activeNav":"Dashboard","fileName":"Anh_14_1.png"},{"id":"Anh_14_2","numBadge":"Ảnh 14.2","title":"Lịch sử biến động điểm xanh (Point Transactions Log)","member":"Huỳnh Anh Tú","role":"Công dân (Citizen)","activeNav":"Dashboard","fileName":"Anh_14_2.png"},{"id":"Anh_15_1","numBadge":"Ảnh 15.1","title":"Danh mục quà tặng xanh & Vật phẩm quy đổi (Gian hàng)","member":"Huỳnh Anh Tú","role":"Công dân (Citizen)","activeNav":"Dashboard","fileName":"Anh_15_1.png"},{"id":"Anh_16_1","numBadge":"Ảnh 16.1","title":"Thực hiện đổi điểm lấy quà tặng / Voucher (Modal xác nhận)","member":"Huỳnh Anh Tú","role":"Công dân (Citizen)","activeNav":"Dashboard","fileName":"Anh_16_1.png"},{"id":"Anh_16_2","numBadge":"Ảnh 16.2","title":"Thẻ mã QR Voucher ưu đãi được cấp để sử dụng tại quầy","member":"Huỳnh Anh Tú","role":"Công dân (Citizen)","activeNav":"Dashboard","fileName":"Anh_16_2.png"},{"id":"Anh_17_1","numBadge":"Ảnh 17.1","title":"Kho quản lý quà tặng & Voucher cá nhân đã đổi","member":"Huỳnh Anh Tú","role":"Công dân (Citizen)","activeNav":"Dashboard","fileName":"Anh_17_1.png"},{"id":"Anh_18_1","numBadge":"Ảnh 18.1","title":"Bảng xếp hạng vinh danh Top Công dân Xanh (Leaderboard)","member":"Huỳnh Anh Tú","role":"Toàn bộ công dân","activeNav":"Dashboard","fileName":"Anh_18_1.png"},{"id":"Anh_19_1","numBadge":"Ảnh 19.1","title":"Giám sát mây mưa RainViewer Radar & Thanh phát lại thời gian thực","member":"Huỳnh Anh Tú","role":"Công dân / Điều hành","activeNav":"Bản đồ ô nhiễm","fileName":"Anh_19_1.png"},{"id":"Anh_20_1","numBadge":"Ảnh 20.1","title":"Mô phỏng động lực học luồng gió (Wind Streamlines)","member":"Huỳnh Anh Tú","role":"Chuyên gia / Quản lý","activeNav":"Bản đồ ô nhiễm","fileName":"Anh_20_1.png"},{"id":"Anh_21_1","numBadge":"Ảnh 21.1","title":"Bộ lớp phủ khí tượng đa thông số (8 lớp phủ chuyên sâu)","member":"Huỳnh Anh Tú","role":"Chuyên gia / Điều hành","activeNav":"Bản đồ ô nhiễm","fileName":"Anh_21_1.png"},{"id":"Anh_22_1","numBadge":"Ảnh 22.1","title":"Đánh giá mức độ hài lòng (1-5 sao) sau khi dọn sạch","member":"Huỳnh Anh Tú","role":"Công dân (Citizen)","activeNav":"Dashboard","fileName":"Anh_22_1.png"},{"id":"Anh_23_1","numBadge":"Ảnh 23.1","title":"Bản đồ nhiệt môi trường nội suy không gian (Heatmap)","member":"Huỳnh Anh Tú","role":"Quản trị / Công dân","activeNav":"Bản đồ ô nhiễm","fileName":"Anh_23_1.png"},{"id":"Anh_24_1","numBadge":"Ảnh 24.1","title":"Cẩm nang hướng dẫn phân loại rác thải tại nguồn","member":"Huỳnh Anh Tú","role":"Công dân (Citizen)","activeNav":"Dashboard","fileName":"Anh_24_1.png"},{"id":"Anh_24_2","numBadge":"Ảnh 24.2","title":"Trợ lý AI RAG tư vấn Sống xanh & Xử lý rác trực tuyến","member":"Huỳnh Anh Tú","role":"Công dân (Citizen)","activeNav":"Dashboard","fileName":"Anh_24_2.png"},{"id":"Anh_25_1","numBadge":"Ảnh 25.1","title":"Cổng xác thực tập trung - Màn hình Đăng nhập & JWT","member":"Bùi Nguyễn Minh Quân","role":"Quản trị / Mọi đối tượng","activeNav":"Xác thực","fileName":"Anh_25_1.png"},{"id":"Anh_25_2","numBadge":"Ảnh 25.2","title":"Cổng xác thực tập trung - Màn hình Đăng ký tài khoản công dân","member":"Bùi Nguyễn Minh Quân","role":"Công dân mới","activeNav":"Xác thực","fileName":"Anh_25_2.png"},{"id":"Anh_26_1","numBadge":"Ảnh 26.1","title":"Quản trị người dùng & Ma trận phân quyền động RBAC","member":"Bùi Nguyễn Minh Quân","role":"Quản trị viên cấp cao (Admin)","activeNav":"Quản trị hệ thống","fileName":"Anh_26_1.png"},{"id":"Anh_27_1","numBadge":"Ảnh 27.1","title":"Quản lý năng lực đội xe thu gom rác & Tài xế hiện trường","member":"Bùi Nguyễn Minh Quân","role":"Điều hành tác nghiệp","activeNav":"Đội xe thu gom","fileName":"Anh_27_1.png"},{"id":"Anh_28_1","numBadge":"Ảnh 28.1","title":"Nhật ký kiểm toán an ninh Audit Log và truy vết dữ liệu","member":"Bùi Nguyễn Minh Quân","role":"Quản trị viên (Admin)","activeNav":"Quản trị hệ thống","fileName":"Anh_28_1.png"},{"id":"Anh_29_1","numBadge":"Ảnh 29.1","title":"Trung tâm điều phối tác nghiệp & Danh sách sự cố tồn đọng","member":"Bùi Nguyễn Minh Quân","role":"Điều hành tác nghiệp","activeNav":"Điều phối tác nghiệp","fileName":"Anh_29_1.png"},{"id":"Anh_29_2","numBadge":"Ảnh 29.2","title":"Modal phân công lệnh xử lý hiện trường cho tài xế","member":"Bùi Nguyễn Minh Quân","role":"Điều hành tác nghiệp","activeNav":"Điều phối tác nghiệp","fileName":"Anh_29_2.png"},{"id":"Anh_30_1","numBadge":"Ảnh 30.1","title":"Thẩm định chất lượng xử lý & Nghiệm thu Trước/Sau (Before/After)","member":"Bùi Nguyễn Minh Quân","role":"Cán bộ thẩm định / Officer","activeNav":"Nghiệm thu","fileName":"Anh_30_1.png"},{"id":"Anh_31_1","numBadge":"Ảnh 31.1","title":"Phân cấp quản lý 3 cấp & Chuyển tiếp hồ sơ thẩm quyền","member":"Bùi Nguyễn Minh Quân","role":"Cán bộ quản lý","activeNav":"Điều phối tác nghiệp","fileName":"Anh_31_1.png"},{"id":"Anh_32_1","numBadge":"Ảnh 32.1","title":"Giám sát hạn mức SLA thời gian thực & Cảnh báo trễ hạn","member":"Bùi Nguyễn Minh Quân","role":"Giám sát viên","activeNav":"Điều phối tác nghiệp","fileName":"Anh_32_1.png"},{"id":"Anh_33_1","numBadge":"Ảnh 33.1","title":"Giám sát mạng lưới trạm cảm biến viễn trắc IoT đô thị","member":"Bùi Nguyễn Minh Quân","role":"Kỹ sư vận hành","activeNav":"Mạng lưới IoT","fileName":"Anh_33_1.png"},{"id":"Anh_34_1","numBadge":"Ảnh 34.1","title":"Tự động hóa kết xuất báo cáo thống kê định kỳ PDF/Excel","member":"Bùi Nguyễn Minh Quân","role":"Quản trị / Báo cáo","activeNav":"Báo cáo thống kê","fileName":"Anh_34_1.png"},{"id":"Anh_35_1","numBadge":"Ảnh 35.1","title":"Quản lý tuyến lộ trình xe gom rác cố định và trạm dừng checkpoints","member":"Bùi Nguyễn Minh Quân","role":"Điều hành đội xe","activeNav":"Đội xe thu gom","fileName":"Anh_35_1.png"},{"id":"Anh_36_1","numBadge":"Ảnh 36.1","title":"Bảng điều khiển tác nghiệp tổng quan Quản lý (Admin Dashboard)","member":"Bùi Nguyễn Minh Quân","role":"Quản trị viên / Lãnh đạo","activeNav":"Dashboard","fileName":"Anh_36_1.png"},{"id":"Anh_36_2","numBadge":"Ảnh 36.2","title":"Trung tâm chẩn đoán sức khỏe hệ thống & Giám sát API Health Check","member":"Bùi Nguyễn Minh Quân","role":"Quản trị viên hạ tầng","activeNav":"Quản trị hệ thống","fileName":"Anh_36_2.png"},{"id":"Anh_37_1","numBadge":"Ảnh 37.1","title":"Cơ chế tính điểm rủi ro Risk Score (0-100) cho từng sự cố","member":"Lê Anh Tuấn","role":"Chuyên gia GIS / Phân tích","activeNav":"Phân tích không gian","fileName":"Anh_37_1.png"},{"id":"Anh_38_1","numBadge":"Ảnh 38.1","title":"Tự động phân loại mức độ nguy hiểm: Thấp, Trung bình, Cao, Khẩn cấp","member":"Lê Anh Tuấn","role":"Chuyên gia GIS / Phân tích","activeNav":"Phân tích không gian","fileName":"Anh_38_1.png"},{"id":"Anh_39_1","numBadge":"Ảnh 39.1","title":"Phát hiện và gom cụm các báo cáo theo tọa độ (DBSCAN Clustered Markers)","member":"Lê Anh Tuấn","role":"Chuyên gia GIS / Phân tích","activeNav":"Phân tích không gian","fileName":"Anh_39_1.png"},{"id":"Anh_40_1","numBadge":"Ảnh 40.1","title":"Phân tích không gian vùng đệm (Buffer 500m) tìm cơ sở thiết yếu","member":"Lê Anh Tuấn","role":"Chuyên gia GIS / Phân tích","activeNav":"Phân tích không gian","fileName":"Anh_40_1.png"},{"id":"Anh_41_1","numBadge":"Ảnh 41.1","title":"Động cơ giải tích sóng triều bán nhật triều Harmonic Tide Engine","member":"Lê Anh Tuấn","role":"Chuyên gia Thủy văn","activeNav":"Bản đồ ngập lụt","fileName":"Anh_41_1.png"},{"id":"Anh_42_1","numBadge":"Ảnh 42.1","title":"Dự báo đỉnh triều cực trị & Bản đồ vệt đường ngập 3 lớp","member":"Lê Anh Tuấn","role":"Chuyên gia Thủy văn","activeNav":"Bản đồ ngập lụt","fileName":"Anh_42_1.png"},{"id":"Anh_43_1","numBadge":"Ảnh 43.1","title":"Tìm tuyến đường an toàn né khu vực ngập (PostGIS ST_DWithin)","member":"Lê Anh Tuấn","role":"Công dân / Lái xe","activeNav":"Tìm đường né ngập","fileName":"Anh_43_1.png"},{"id":"Anh_44_1","numBadge":"Ảnh 44.1","title":"So sánh tuyến đường nhanh nhất vs tuyến an toàn tránh thủy kích","member":"Lê Anh Tuấn","role":"Công dân / Lái xe","activeNav":"Tìm đường né ngập","fileName":"Anh_44_1.png"},{"id":"Anh_45_1","numBadge":"Ảnh 45.1","title":"Báo cáo điểm ngập lụt 1-chạm qua menu chuột phải trên bản đồ","member":"Lê Anh Tuấn","role":"Công dân (Citizen)","activeNav":"Bản đồ ngập lụt","fileName":"Anh_45_1.png"},{"id":"Anh_45_2","numBadge":"Ảnh 45.2","title":"Modal nhập mực nước ngập lụt & Thuật toán bám đường OSRM","member":"Lê Anh Tuấn","role":"Công dân (Citizen)","activeNav":"Bản đồ ngập lụt","fileName":"Anh_45_2.png"},{"id":"Anh_46_1","numBadge":"Ảnh 46.1","title":"Dự báo lũ lụt toàn cầu Copernicus GloFAS 7 ngày","member":"Lê Anh Tuấn","role":"Chuyên gia Thủy văn","activeNav":"Bản đồ ngập lụt","fileName":"Anh_46_1.png"},{"id":"Anh_47_1","numBadge":"Ảnh 47.1","title":"Tích hợp đa nguồn dữ liệu ngập lụt đô thị & Mô phỏng thiên tai","member":"Lê Anh Tuấn","role":"Chuyên gia GIS / Phân tích","activeNav":"Bản đồ ngập lụt","fileName":"Anh_47_1.png"},{"id":"Anh_48_1","numBadge":"Ảnh 48.1","title":"Dashboard phân tích dữ liệu lớn AQI 34 tỉnh thành & Biểu đồ chuỗi giờ","member":"Lê Anh Tuấn","role":"Chuyên gia Môi trường","activeNav":"Chất lượng không khí","fileName":"Anh_48_1.png"},{"id":"Anh_48_2","numBadge":"Ảnh 48.2","title":"Ma trận nhiệt tương quan 6 chất ô nhiễm không khí (Correlation Heatmap)","member":"Lê Anh Tuấn","role":"Chuyên gia Môi trường","activeNav":"Chất lượng không khí","fileName":"Anh_48_2.png"}];
-    let currentIndex = 0;
-
-    function selectScreen(id) {
-      const idx = allScreens.findIndex(s => s.id === id);
-      if (idx !== -1) {
-        currentIndex = idx;
-        renderActiveScreen();
-      }
-    }
-
-    function renderActiveScreen() {
-      const screen = allScreens[currentIndex];
-
-      // Update sidebar active item
-      document.querySelectorAll('.screen-item').forEach(el => el.classList.remove('active'));
-      const activeEl = document.getElementById('item-' + screen.id);
-      if (activeEl) {
-        activeEl.classList.add('active');
-        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        
-        // Ensure parent accordion is open
-        const parentList = activeEl.closest('.screen-list');
-        if (parentList) {
-          parentList.classList.add('open');
-          parentList.previousElementSibling.classList.add('open');
-        }
-      }
-
-      // Update Header & Breadcrumbs
-      document.getElementById('bcMember').innerText = screen.member;
-      document.getElementById('bcBadge').innerText = screen.numBadge;
-      document.getElementById('viewTitle').innerText = screen.title;
-      document.getElementById('viewSubtitle').innerText = 'Phân hệ: ' + screen.activeNav + ' • Phụ trách: ' + screen.member;
-      document.getElementById('viewTag').innerText = screen.numBadge;
-
-      // Update Image
-      const imgPath = './wireframes/' + screen.fileName;
-      document.getElementById('viewImage').src = imgPath;
-      document.getElementById('lightboxImg').src = imgPath;
-      document.getElementById('btnDownload').href = imgPath;
-
-      // Update Metadata
-      document.getElementById('metaMember').innerText = screen.member;
-      document.getElementById('metaRole').innerText = screen.role || 'Cán bộ';
-      document.getElementById('metaNav').innerText = screen.activeNav;
-      document.getElementById('metaFile').innerText = screen.fileName;
-    }
-
-    function nextScreen() {
-      if (currentIndex < allScreens.length - 1) {
-        currentIndex++;
-        renderActiveScreen();
-      }
-    }
-
-    function prevScreen() {
-      if (currentIndex > 0) {
-        currentIndex--;
-        renderActiveScreen();
-      }
-    }
-
-    // Keyboard arrow navigation
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextScreen();
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevScreen();
-      if (e.key === 'Escape') closeLightbox();
-    });
-
-    function toggleGroup(headerEl) {
-      headerEl.classList.toggle('open');
-      const list = headerEl.nextElementSibling;
-      list.classList.toggle('open');
-    }
-
-    function searchScreens() {
-      const q = document.getElementById('searchInput').value.toLowerCase().trim();
-      const items = document.querySelectorAll('.screen-item');
-      const groups = document.querySelectorAll('.module-group');
-
-      if (!q) {
-        items.forEach(it => it.style.display = 'flex');
-        return;
-      }
-
-      groups.forEach(group => {
-        let hasMatch = false;
-        const groupItems = group.querySelectorAll('.screen-item');
-        groupItems.forEach(it => {
-          const title = it.getAttribute('data-title');
-          const num = it.getAttribute('data-num');
-          if (title.includes(q) || num.includes(q)) {
-            it.style.display = 'flex';
-            hasMatch = true;
-          } else {
-            it.style.display = 'none';
-          }
-        });
-
-        const list = group.querySelector('.screen-list');
-        const header = group.querySelector('.module-header');
-        if (hasMatch) {
-          list.classList.add('open');
-          header.classList.add('open');
-        }
-      });
-    }
-
-    function openLightbox() {
-      document.getElementById('lightboxModal').classList.add('active');
-    }
-
-    function closeLightbox() {
-      document.getElementById('lightboxModal').classList.remove('active');
-    }
-  </script>
 </body>
 </html>
+  

@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const puppeteer = require('../frontend/node_modules/puppeteer-core');
+const puppeteer = require('../../frontend/node_modules/puppeteer-core');
 
 const commonCss = require('./common_css.cjs');
 const screensDat = require('./screens_dat.cjs');

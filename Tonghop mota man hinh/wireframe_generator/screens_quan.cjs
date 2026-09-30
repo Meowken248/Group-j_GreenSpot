@@ -1,156 +1,89 @@
-// screens_quan.js - Wireframe screens for Bùi Nguyễn Minh Quân (Chức năng 25 - 36)
+// screens_quan.cjs - Wireframe screens for Bùi Nguyễn Minh Quân (STT 25 - STT 36)
+// Phân hệ: Trạm Quan Trắc IoT Viễn Trắc, Bản Đồ Nhiệt Đa Dải & Giám Sát Ngập Lụt Thủy Văn
 
 module.exports = [
   {
     id: "Anh_25_1",
     numBadge: "Ảnh 25.1",
-    title: "Cổng xác thực tập trung - Màn hình Đăng nhập & JWT",
+    title: "Quản lý mạng lưới trạm cảm biến viễn trắc IoT môi trường",
     member: "Bùi Nguyễn Minh Quân",
-    role: "Quản trị / Mọi đối tượng",
-    activeNav: "Xác thực",
+    role: "Kỹ sư IoT / Quản trị viên",
+    activeNav: "Mạng lưới IoT",
     badges: [
-      { text: "CỔNG XÁC THỰC", top: "-12px", right: "20px" },
-      { text: "JWT SECURE LOGIN", top: "70px", right: "30px" }
+      { text: "STT 25: TRẠM CẢM BIẾN IoT", top: "-12px", right: "20px" },
+      { text: "TELEMETRY STATIONS", top: "50px", right: "20px" }
     ],
     contentHtml: `
       <div class="page-header">
         <div>
-          <div class="page-title">Cổng Đăng Nhập Hệ Thống Quản Trị Môi Trường</div>
-          <div class="page-subtitle">Chức năng 25 (Ảnh 25.1) • Phụ trách: Bùi Nguyễn Minh Quân</div>
+          <div class="page-title">Quản Lý Danh Sách & Bản Đồ Mạng Lưới Trạm Viễn Trắc IoT</div>
+          <div class="page-subtitle">STT 25 (Ảnh 25.1) • Phân hệ: Trạm Quan trắc IoT • Phụ trách: Bùi Nguyễn Minh Quân</div>
+        </div>
+        <button class="btn btn-black">+ Đăng ký trạm IoT mới</button>
+      </div>
+
+      <div class="grid-3" style="margin-bottom: 12px;">
+        <div class="card-box" style="text-align: center;">
+          <div style="font-size: 24px; font-weight: 900;">28 Trạm</div>
+          <div style="font-size: 11px; color: #6b7280;">Trạm Không Khí AQI (Online: 27/28)</div>
+        </div>
+        <div class="card-box" style="text-align: center;">
+          <div style="font-size: 24px; font-weight: 900;">14 Cảm biến</div>
+          <div style="font-size: 11px; color: #6b7280;">Cảm biến đo ngập siêu âm lòng đường</div>
+        </div>
+        <div class="card-box" style="text-align: center;">
+          <div style="font-size: 24px; font-weight: 900;">2 Trạm</div>
+          <div style="font-size: 11px; color: #6b7280;">Trạm Thủy Văn Tự Động (Phú An, Nhà Bè)</div>
         </div>
       </div>
 
-      <div class="card-box" style="width: 440px; margin: 0 auto; padding: 24px; border-radius: 12px;">
-        <div style="text-align: center; margin-bottom: 20px;">
-          <div class="logo-box" style="display: inline-block; font-size: 16px; margin-bottom: 8px;">ECOREPORT</div>
-          <div style="font-size: 13px; color: #4b5563;">Đăng nhập để truy cập phân hệ tác nghiệp WebGIS</div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Tên đăng nhập hoặc Email cán bộ:</label>
-          <input type="text" class="form-input" value="quan.officer@tphcm.gov.vn">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Mật khẩu:</label>
-          <input type="password" class="form-input" value="••••••••••••">
-        </div>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin: 12px 0 16px 0; font-size: 12px;">
-          <label><input type="checkbox" checked> Ghi nhớ phiên đăng nhập (JWT Refresh)</label>
-          <a href="#" style="color: #111; font-weight: 700;">Quên mật khẩu?</a>
-        </div>
-
-        <button class="btn btn-black" style="width: 100%; padding: 10px;">ĐĂNG NHẬP VÀO HỆ THỐNG</button>
-      </div>
-    `
-  },
-  {
-    id: "Anh_25_2",
-    numBadge: "Ảnh 25.2",
-    title: "Cổng xác thực tập trung - Màn hình Đăng ký tài khoản công dân",
-    member: "Bùi Nguyễn Minh Quân",
-    role: "Công dân mới",
-    activeNav: "Xác thực",
-    badges: [
-      { text: "ĐĂNG KÝ TÀI KHOẢN", top: "-12px", right: "20px" },
-      { text: "OTP VERIFICATION", top: "70px", right: "30px" }
-    ],
-    contentHtml: `
-      <div class="page-header">
-        <div>
-          <div class="page-title">Đăng Ký Tài Khoản Công Dân Xanh</div>
-          <div class="page-subtitle">Chức năng 25 (Ảnh 25.2) • Phụ trách: Bùi Nguyễn Minh Quân</div>
-        </div>
-      </div>
-
-      <div class="card-box" style="width: 440px; margin: 0 auto; padding: 20px;">
-        <div class="form-group">
-          <label class="form-label">Họ và tên công dân:</label>
-          <input type="text" class="form-input" value="Nguyễn Văn A">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Số điện thoại tiếp nhận OTP:</label>
-          <input type="text" class="form-input" value="0908 123 456">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Khu vực sinh sống:</label>
-          <select class="form-select" style="width: 100%;">
-            <option>P. Linh Chiểu, TP. Thủ Đức</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Mật khẩu:</label>
-          <input type="password" class="form-input" value="••••••••">
-        </div>
-        <button class="btn btn-black" style="width: 100%; padding: 10px; margin-top: 10px;">TIẾP TỤC & NHẬN MÃ OTP</button>
+      <div class="card-box">
+        <table class="wire-table">
+          <tr><th>Mã Trạm</th><th>Tên Trạm Quan Trắc</th><th>Loại Thiết Bị</th><th>Tọa độ GPS</th><th>Mức Pin</th><th>Chu kỳ gửi</th><th>Trạng thái</th></tr>
+          <tr><td><b>IOT-AQI-01</b></td><td>Trạm Công Viên Tao Đàn, Q.1</td><td>Sensor CAMS/AQI đa chỉ số</td><td>10.7745, 106.6923</td><td>98%</td><td>15 phút</td><td><span class="tag tag-dark">HOẠT ĐỘNG</span></td></tr>
+          <tr><td><b>IOT-AQI-04</b></td><td>Trạm ĐH Bách Khoa, Q.10</td><td>Sensor PM2.5 / PM10 laser</td><td>10.7721, 106.6578</td><td>92%</td><td>15 phút</td><td><span class="tag tag-dark">HOẠT ĐỘNG</span></td></tr>
+          <tr><td><b>IOT-FLD-02</b></td><td>Cảm biến ngập Nguyễn Hữu Cảnh</td><td>Cảm biến sóng siêu âm đo mức nước</td><td>10.7912, 106.7145</td><td>85%</td><td>5 phút</td><td><span class="tag tag-dark">HOẠT ĐỘNG</span></td></tr>
+          <tr><td><b>IOT-THV-01</b></td><td>Trạm Thủy Văn Phú An (Sông Sài Gòn)</td><td>Thước đo triều tự động áp suất</td><td>10.7936, 106.7198</td><td>Nguồn điện lưới</td><td>Realtime</td><td><span class="tag tag-dark">HOẠT ĐỘNG</span></td></tr>
+        </table>
       </div>
     `
   },
   {
     id: "Anh_26_1",
     numBadge: "Ảnh 26.1",
-    title: "Quản trị người dùng & Ma trận phân quyền động RBAC",
+    title: "Nhật ký lưu trữ chuỗi thời gian số liệu quan trắc viễn trắc",
     member: "Bùi Nguyễn Minh Quân",
-    role: "Quản trị viên cấp cao (Admin)",
-    activeNav: "Quản trị hệ thống",
+    role: "Chuyên viên phân tích số liệu",
+    activeNav: "Mạng lưới IoT",
     badges: [
-      { text: "RBAC MATRIX", top: "-12px", right: "20px" },
-      { text: "4 CẤP VAI TRÒ", top: "50px", right: "20px" }
+      { text: "STT 26: TIME-SERIES LOGS", top: "-12px", right: "20px" },
+      { text: "CHỈ SỐ THEO GIỜ", top: "50px", right: "20px" }
     ],
     contentHtml: `
       <div class="page-header">
         <div>
-          <div class="page-title">Ma Trận Phân Quyền Vai Trò Người Dùng (RBAC)</div>
-          <div class="page-subtitle">Chức năng 26 (Ảnh 26.1) • Phụ trách: Bùi Nguyễn Minh Quân</div>
+          <div class="page-title">Nhật Ký Dữ Liệu Viễn Trắc Chuỗi Thời Gian (Time-Series Records)</div>
+          <div class="page-subtitle">STT 26 (Ảnh 26.1) • Phân hệ: Trạm Quan trắc IoT • Phụ trách: Bùi Nguyễn Minh Quân</div>
         </div>
-        <button class="btn btn-black btn-sm">+ Thêm vai trò mới</button>
+        <div style="display: flex; gap: 8px;">
+          <select class="form-select" style="width: 200px;">
+            <option>Trạm IOT-AQI-01 (Tao Đàn)</option>
+            <option>Trạm IOT-AQI-04 (Bách Khoa)</option>
+          </select>
+          <button class="btn btn-black">Xuất file CSV</button>
+        </div>
       </div>
 
       <div class="card-box">
+        <div class="card-title">Chuỗi bản ghi 24 giờ gần nhất của Trạm IOT-AQI-01:</div>
         <table class="wire-table">
-          <tr>
-            <th>Module Chức Năng</th>
-            <th>Citizen (Công dân)</th>
-            <th>Operator (Điều hành)</th>
-            <th>Officer (Cán bộ quận)</th>
-            <th>Admin (Toàn quyền)</th>
-          </tr>
-          <tr>
-            <td>Gửi báo cáo sự cố & Ảnh EXIF</td>
-            <td><b>✓ Đầy đủ</b></td>
-            <td><b>✓ Đầy đủ</b></td>
-            <td><b>✓ Đầy đủ</b></td>
-            <td><b>✓ Đầy đủ</b></td>
-          </tr>
-          <tr>
-            <td>Phân công đội xe thu gom</td>
-            <td>— Không có</td>
-            <td><b>✓ Đầy đủ</b></td>
-            <td><b>✓ Đầy đủ</b></td>
-            <td><b>✓ Đầy đủ</b></td>
-          </tr>
-          <tr>
-            <td>Nghiệm thu Before / After</td>
-            <td>— Không có</td>
-            <td><b>✓ Đầy đủ</b></td>
-            <td><b>✓ Đầy đủ</b></td>
-            <td><b>✓ Đầy đủ</b></td>
-          </tr>
-          <tr>
-            <td>Chuyển cấp thẩm quyền Sở TN&MT</td>
-            <td>— Không có</td>
-            <td>— Chỉ xem</td>
-            <td><b>✓ Đầy đủ</b></td>
-            <td><b>✓ Đầy đủ</b></td>
-          </tr>
-          <tr>
-            <td>Cấu hình tham số & Xem Audit Log</td>
-            <td>— Không có</td>
-            <td>— Không có</td>
-            <td>— Không có</td>
-            <td><b>✓ Đầy đủ</b></td>
-          </tr>
+          <tr><th>Mốc thời gian</th><th>AQI</th><th>PM2.5 (µg/m³)</th><th>PM10 (µg/m³)</th><th>NO2 (µg/m³)</th><th>O3 (µg/m³)</th><th>Nhiệt độ</th><th>Độ ẩm</th></tr>
+          <tr><td>28/09/2026 - 12:00</td><td><b>42</b></td><td>10.4</td><td>22.1</td><td>18.5</td><td>45.2</td><td>32.5 °C</td><td>76%</td></tr>
+          <tr><td>28/09/2026 - 11:00</td><td><b>45</b></td><td>11.2</td><td>24.3</td><td>20.1</td><td>48.0</td><td>32.0 °C</td><td>78%</td></tr>
+          <tr><td>28/09/2026 - 10:00</td><td><b>58</b></td><td>15.8</td><td>32.0</td><td>25.4</td><td>52.3</td><td>31.0 °C</td><td>80%</td></tr>
+          <tr><td>28/09/2026 - 09:00</td><td><b>68</b></td><td>20.5</td><td>41.2</td><td>32.0</td><td>40.1</td><td>29.5 °C</td><td>83%</td></tr>
+          <tr><td>28/09/2026 - 08:00</td><td><b>78</b></td><td>25.6</td><td>52.8</td><td>42.5</td><td>30.5</td><td>28.2 °C</td><td>87%</td></tr>
+          <tr><td>28/09/2026 - 07:00</td><td><b>85</b></td><td>29.4</td><td>58.9</td><td>48.2</td><td>22.1</td><td>27.0 °C</td><td>90%</td></tr>
         </table>
       </div>
     `
@@ -158,189 +91,128 @@ module.exports = [
   {
     id: "Anh_27_1",
     numBadge: "Ảnh 27.1",
-    title: "Quản lý năng lực đội xe thu gom rác & Tài xế hiện trường",
+    title: "Bản đồ nhiệt nhiệt độ khí quyển (°C) toàn quốc",
     member: "Bùi Nguyễn Minh Quân",
-    role: "Điều hành tác nghiệp",
-    activeNav: "Đội xe thu gom",
+    role: "Toàn bộ người dùng",
+    activeNav: "Bản đồ ô nhiễm",
     badges: [
-      { text: "QUẢN LÝ ĐỘI XE", top: "-12px", right: "20px" },
-      { text: "FLEET CAPACITY", top: "50px", right: "20px" }
+      { text: "STT 27: HEATMAP NHIỆT ĐỘ", top: "-12px", right: "20px" },
+      { text: "28 TRẠM KHÍ TƯỢNG", top: "50px", right: "20px" }
     ],
     contentHtml: `
       <div class="page-header">
         <div>
-          <div class="page-title">Đội Ngũ Xe Thu Gom & Năng Lực Tác Nghiệp Hiện Trường</div>
-          <div class="page-subtitle">Chức năng 27 (Ảnh 27.1) • Phụ trách: Bùi Nguyễn Minh Quân</div>
+          <div class="page-title">Bản Đồ Nhiệt Nội Suy Nhiệt Độ Khí Quyển (°C) Toàn Quốc</div>
+          <div class="page-subtitle">STT 27 (Ảnh 27.1) • Phân hệ: Bản đồ Nhiệt Đa dải • Phụ trách: Bùi Nguyễn Minh Quân</div>
         </div>
-        <button class="btn btn-black btn-sm">+ Thêm phương tiện</button>
       </div>
 
       <div class="card-box">
-        <table class="wire-table">
-          <tr><th>Biển số xe</th><th>Loại xe & Tải trọng</th><th>Tài xế phụ trách</th><th>Trạng thái</th><th>Vị trí GPS hiện tại</th><th>Thao tác</th></tr>
-          <tr>
-            <td>51D-892.11</td>
-            <td>Xe ép rác 5 tấn</td>
-            <td>Trần Văn Hùng (0912...)</td>
-            <td><span class="tag tag-dark">Đang thu gom</span></td>
-            <td>10.8521° N, 106.7732° E</td>
-            <td><button class="btn btn-white btn-sm">Điều phối</button></td>
-          </tr>
-          <tr>
-            <td>51D-451.90</td>
-            <td>Xe cẩu xà bần 8 tấn</td>
-            <td>Lê Minh Tuấn (0988...)</td>
-            <td><span class="tag">Chờ lệnh</span></td>
-            <td>Bãi xe Trung tâm Thủ Đức</td>
-            <td><button class="btn btn-black btn-sm">Giao việc</button></td>
-          </tr>
-          <tr>
-            <td>50M-120.33</td>
-            <td>Xe ba gác điện ngõ hẹp</td>
-            <td>Phạm Quốc Bảo (0903...)</td>
-            <td><span class="tag tag-dark">Đang thu gom</span></td>
-            <td>Hẻm 48 Võ Văn Ngân</td>
-            <td><button class="btn btn-white btn-sm">Điều phối</button></td>
-          </tr>
-        </table>
+        <div class="map-box" style="height: 320px; position: relative;">
+          <!-- Heatmap gradient zones mockup -->
+          <div style="position: absolute; top: 30px; left: 180px; width: 220px; height: 160px; border-radius: 50%; background: radial-gradient(circle, rgba(239, 68, 68, 0.4) 0%, rgba(245, 158, 11, 0.25) 50%, transparent 80%);"></div>
+          <div style="position: absolute; top: 110px; left: 340px; width: 260px; height: 180px; border-radius: 50%; background: radial-gradient(circle, rgba(220, 38, 38, 0.5) 0%, rgba(234, 88, 12, 0.3) 60%, transparent 85%);"></div>
+
+          <!-- Weather Station Points -->
+          <div style="position: absolute; top: 90px; left: 240px; background: #fff; border: 1.5px solid #222; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: bold;">
+            Hà Nội: 30.5 °C
+          </div>
+          <div style="position: absolute; top: 160px; left: 310px; background: #fff; border: 1.5px solid #222; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: bold;">
+            Đà Nẵng: 31.8 °C
+          </div>
+          <div style="position: absolute; top: 220px; left: 420px; background: #fff; border: 1.5px solid #222; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: bold;">
+            TP.HCM: 34.2 °C (Nắng nóng)
+          </div>
+
+          <!-- Color Scale Legend -->
+          <div style="position: absolute; bottom: 14px; left: 14px; background: #fff; border: 2px solid #222; border-radius: 6px; padding: 8px 12px; width: 280px;">
+            <div style="font-size: 10px; font-weight: 800; margin-bottom: 4px;">THANG NHIỆT ĐỘ KHÍ QUYỂN (°C):</div>
+            <div style="height: 12px; background: linear-gradient(to right, #3b82f6, #10b981, #f59e0b, #ef4444, #7f1d1d); border-radius: 3px; border: 1px solid #222;"></div>
+            <div style="display: flex; justify-content: space-between; font-size: 9px; font-weight: bold; margin-top: 2px;">
+              <span>18°C (Mát)</span><span>25°C</span><span>30°C</span><span>35°C (Gắt)</span>
+            </div>
+          </div>
+        </div>
       </div>
     `
   },
   {
     id: "Anh_28_1",
     numBadge: "Ảnh 28.1",
-    title: "Nhật ký kiểm toán an ninh Audit Log và truy vết dữ liệu",
+    title: "Bản đồ nhiệt chất lượng không khí (AQI Heatmap Layer)",
     member: "Bùi Nguyễn Minh Quân",
-    role: "Quản trị viên (Admin)",
-    activeNav: "Quản trị hệ thống",
+    role: "Toàn bộ người dùng",
+    activeNav: "Bản đồ ô nhiễm",
     badges: [
-      { text: "AUDIT LOG", top: "-12px", right: "20px" },
-      { text: "SECURITY TRAIL", top: "50px", right: "20px" }
+      { text: "STT 28: AQI HEATMAP", top: "-12px", right: "20px" },
+      { text: "CHUẨN US EPA / QCVN", top: "50px", right: "20px" }
     ],
     contentHtml: `
       <div class="page-header">
         <div>
-          <div class="page-title">Nhật Ký Kiểm Toán Hoạt Động Hệ Thống (Audit Trail)</div>
-          <div class="page-subtitle">Chức năng 28 (Ảnh 28.1) • Phụ trách: Bùi Nguyễn Minh Quân</div>
+          <div class="page-title">Bản Đồ Nhiệt Chỉ Số Chất Lượng Không Khí AQI (US EPA Standards)</div>
+          <div class="page-subtitle">STT 28 (Ảnh 28.1) • Phân hệ: Bản đồ Nhiệt Đa dải • Phụ trách: Bùi Nguyễn Minh Quân</div>
         </div>
-        <button class="btn btn-white btn-sm">Xuất file CSV log</button>
       </div>
 
       <div class="card-box">
-        <table class="wire-table">
-          <tr><th>Mốc thời gian</th><th>Người thực hiện</th><th>Vai trò</th><th>Hành động (Action)</th><th>Bản ghi tác động</th><th>IP Client</th></tr>
-          <tr>
-            <td>29/09/2026 11:05:12</td>
-            <td>quan.admin</td>
-            <td>Admin</td>
-            <td><span class="tag tag-dark">APPROVE</span></td>
-            <td>Nghiệm thu sự cố #RPT-8921 (Sạch)</td>
-            <td>115.78.220.12</td>
-          </tr>
-          <tr>
-            <td>29/09/2026 10:45:00</td>
-            <td>tuan.operator</td>
-            <td>Operator</td>
-            <td><span class="tag">DISPATCH</span></td>
-            <td>Giao xe 51D-892.11 dọn bãi rác #RPT-8921</td>
-            <td>14.161.35.80</td>
-          </tr>
-          <tr>
-            <td>29/09/2026 10:15:32</td>
-            <td>nguyenvana</td>
-            <td>Citizen</td>
-            <td><span class="tag tag-gray">CREATE</span></td>
-            <td>Tạo báo cáo bãi rác 53 Võ Văn Ngân</td>
-            <td>27.72.105.14</td>
-          </tr>
-        </table>
+        <div class="map-box" style="height: 320px; position: relative;">
+          <!-- AQI Legend Bar -->
+          <div style="position: absolute; top: 12px; right: 12px; background: #fff; border: 2px solid #222; border-radius: 8px; padding: 8px 12px; width: 220px; z-index: 30;">
+            <div style="font-size: 11px; font-weight: 800; margin-bottom: 6px;">DẢI PHÂN LOẠI US EPA:</div>
+            <div style="font-size: 10px; display: flex; flex-direction: column; gap: 3px;">
+              <div>🟢 <b>0 - 50:</b> Tốt (Good)</div>
+              <div>🟡 <b>51 - 100:</b> Trung bình (Moderate)</div>
+              <div>🟠 <b>101 - 150:</b> Kém nhạy cảm (Unhealthy for Sensitive)</div>
+              <div>🔴 <b>151 - 200:</b> Xấu (Unhealthy)</div>
+              <div>🟣 <b>201 - 300:</b> Rất xấu (Very Unhealthy)</div>
+              <div>🟤 <b>> 300:</b> Nguy hại (Hazardous)</div>
+            </div>
+          </div>
+
+          <!-- Heatmap Blobs -->
+          <div style="position: absolute; top: 80px; left: 160px; width: 180px; height: 140px; border-radius: 50%; background: radial-gradient(circle, rgba(34, 197, 94, 0.4) 0%, transparent 70%);"></div>
+          <div style="position: absolute; top: 120px; left: 320px; width: 220px; height: 160px; border-radius: 50%; background: radial-gradient(circle, rgba(249, 115, 22, 0.5) 0%, rgba(234, 179, 8, 0.3) 50%, transparent 80%);"></div>
+
+          <div style="position: absolute; bottom: 14px; left: 14px; background: #fff; border: 1.5px solid #222; padding: 6px 12px; border-radius: 6px; font-size: 11px;">
+            WebGL Shader nội suy không gian thời gian thực từ 28 trạm quan trắc
+          </div>
+        </div>
       </div>
     `
   },
   {
     id: "Anh_29_1",
     numBadge: "Ảnh 29.1",
-    title: "Trung tâm điều phối tác nghiệp & Danh sách sự cố tồn đọng",
+    title: "Bản đồ nhiệt mật độ rủi ro ô nhiễm đô thị",
     member: "Bùi Nguyễn Minh Quân",
-    role: "Điều hành tác nghiệp",
-    activeNav: "Điều phối tác nghiệp",
+    role: "Toàn bộ người dùng",
+    activeNav: "Bản đồ ô nhiễm",
     badges: [
-      { text: "TRUNG TÂM ĐIỀU PHỐI", top: "-12px", right: "20px" },
-      { text: "SỰ CỐ TỒN ĐỌNG", top: "50px", right: "20px" }
+      { text: "STT 29: RỦI RO Ô NHIỄM", top: "-12px", right: "20px" },
+      { text: "TRỌNG SỐ SỰ CỐ THỰC TẾ", top: "50px", right: "20px" }
     ],
     contentHtml: `
       <div class="page-header">
         <div>
-          <div class="page-title">Trung Tâm Điều Phối & Phân Công Lệnh Xử Lý Hiện Trường</div>
-          <div class="page-subtitle">Chức năng 29 (Ảnh 29.1) • Phụ trách: Bùi Nguyễn Minh Quân</div>
+          <div class="page-title">Bản Đồ Nhiệt Mật Độ Rủi Ro Ô Nhiễm Đô Thị (Pollution Density)</div>
+          <div class="page-subtitle">STT 29 (Ảnh 29.1) • Phân hệ: Bản đồ Nhiệt Đa dải • Phụ trách: Bùi Nguyễn Minh Quân</div>
         </div>
       </div>
 
       <div class="card-box">
-        <table class="wire-table">
-          <tr><th>Mã phản ánh</th><th>Địa điểm</th><th>Loại rác</th><th>Mức khẩn cấp</th><th>Thời gian báo</th><th>Tác vụ</th></tr>
-          <tr>
-            <td><b>#RPT-8921</b></td>
-            <td>53 Võ Văn Ngân, Thủ Đức</td>
-            <td>Rác sinh hoạt bốc mùi</td>
-            <td><span class="tag tag-dark">Cấp 3 - Cao</span></td>
-            <td>10:15 (25 phút trước)</td>
-            <td><button class="btn btn-black btn-sm">Điều phối xe ngay</button></td>
-          </tr>
-          <tr>
-            <td><b>#RPT-8920</b></td>
-            <td>120 Lê Văn Chí, Linh Trung</td>
-            <td>Đổ trộm xà bần xây dựng</td>
-            <td><span class="tag">Cấp 2 - Vừa</span></td>
-            <td>09:30 (1 giờ trước)</td>
-            <td><button class="btn btn-white btn-sm">Giao việc</button></td>
-          </tr>
-        </table>
-      </div>
-    `
-  },
-  {
-    id: "Anh_29_2",
-    numBadge: "Ảnh 29.2",
-    title: "Modal phân công lệnh xử lý hiện trường cho tài xế",
-    member: "Bùi Nguyễn Minh Quân",
-    role: "Điều hành tác nghiệp",
-    activeNav: "Điều phối tác nghiệp",
-    badges: [
-      { text: "LỆNH ĐIỀU PHỐI", top: "-12px", right: "20px" },
-      { text: "MODAL GIAO VIỆC", top: "80px", left: "420px" }
-    ],
-    contentHtml: `
-      <div class="page-header">
-        <div>
-          <div class="page-title">Lập Lệnh Điều Động Đội Xe Hiện Trường</div>
-          <div class="page-subtitle">Chức năng 29 (Ảnh 29.2) • Phụ trách: Bùi Nguyễn Minh Quân</div>
-        </div>
-      </div>
-
-      <div class="card-box" style="position: relative;">
-        <div class="modal-overlay" style="width: 480px;">
-          <div class="modal-title">GIAO VIỆC XỬ LÝ SỰ CỐ #RPT-8921</div>
-          <div style="text-align: left; font-size: 12px; margin-bottom: 12px;">
-            <div class="form-group">
-              <label class="form-label">Chọn phương tiện & Đội xử lý:</label>
-              <select class="form-select" style="width: 100%;">
-                <option>Xe 51D-892.11 (Xe ép rác 5T - Tài xế: Trần Văn Hùng)</option>
-                <option>Xe 50M-120.33 (Xe ba gác điện - Tài xế: Phạm Quốc Bảo)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Thời hạn hoàn tất cam kết (SLA Deadline):</label>
-              <input type="text" class="form-input" value="14:00 ngày 29/09/2026 (Trong 3.5 giờ)">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Chỉ đạo nghiệp vụ đặc biệt:</label>
-              <input type="text" class="form-input" value="Khu vực hẹp, cho xe ba gác vào gom trước, xịt khử khuẩn sau gom.">
-            </div>
+        <div class="map-box" style="height: 320px; position: relative;">
+          <!-- Dense risk spots -->
+          <div style="position: absolute; top: 60px; left: 280px; width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle, rgba(17, 17, 17, 0.6) 0%, rgba(75, 85, 99, 0.3) 60%, transparent 80%);"></div>
+          <div style="position: absolute; top: 120px; left: 260px; background: #111; color: #fff; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 800;">
+            🔥 Điểm nóng rác: Chợ Thủ Đức
           </div>
-          <div class="modal-actions">
-            <button class="btn btn-black">Phát lệnh điều động xe</button>
-            <button class="btn btn-white">Hủy</button>
+
+          <div style="position: absolute; bottom: 14px; left: 14px; background: #fff; border: 2px solid #222; padding: 8px 12px; border-radius: 6px; width: 320px;">
+            <div style="font-weight: 800; font-size: 11px;">CƠ CHẾ NỘI SUY TRỌNG SỐ RỦI RO:</div>
+            <div style="font-size: 10px; color: #4b5563; margin-top: 2px;">
+              Mỗi điểm sự cố mang trọng số rủi ro (Risk Score) kết hợp thời gian tồn đọng chưa dọn dẹp để tạo vùng nhiệt cảnh báo chính quyền đô thị.
+            </div>
           </div>
         </div>
       </div>
@@ -349,38 +221,50 @@ module.exports = [
   {
     id: "Anh_30_1",
     numBadge: "Ảnh 30.1",
-    title: "Thẩm định chất lượng xử lý & Nghiệm thu Trước/Sau (Before/After)",
+    title: "Live Weather Radar Map: 8 lớp phủ khí quyển động học",
     member: "Bùi Nguyễn Minh Quân",
-    role: "Cán bộ thẩm định / Officer",
-    activeNav: "Nghiệm thu",
+    role: "Toàn bộ người dùng",
+    activeNav: "Bản đồ ô nhiễm",
     badges: [
-      { text: "BEFORE / AFTER", top: "-12px", right: "20px" },
-      { text: "NGHIỆM THU HIỆN TRƯỜNG", top: "50px", right: "20px" }
+      { text: "STT 30: LIVE WEATHER RADAR", top: "-12px", right: "20px" },
+      { text: "WIND PARTICLES & RAIN", top: "50px", right: "20px" }
     ],
     contentHtml: `
       <div class="page-header">
         <div>
-          <div class="page-title">Thẩm Định Chất Lượng & Phê Duyệt Nghiệm Thu Hoàn Thành</div>
-          <div class="page-subtitle">Chức năng 30 (Ảnh 30.1) • Phụ trách: Bùi Nguyễn Minh Quân</div>
+          <div class="page-title">Live Weather Radar: 8 Lớp Phủ Khí Quyển Động Lực Học (RainViewer & Wind)</div>
+          <div class="page-subtitle">STT 30 (Ảnh 30.1) • Phân hệ: Bản đồ Nhiệt Đa dải • Phụ trách: Bùi Nguyễn Minh Quân</div>
         </div>
-        <div style="display: flex; gap: 8px;">
-          <button class="btn btn-black">✓ PHÊ DUYỆT NGHIỆM THU</button>
-          <button class="btn btn-white">✕ YÊU CẦU DỌN LẠI</button>
+        <div style="display: flex; gap: 6px;">
+          <button class="btn btn-black btn-sm">▶ Phát chuyển động (Play)</button>
+          <button class="btn btn-white btn-sm">Lớp Gió</button>
+          <button class="btn btn-white btn-sm">Lớp Mưa</button>
         </div>
       </div>
 
-      <div class="grid-2">
-        <div class="card-box" style="text-align: center;">
-          <div style="font-weight: 800; font-size: 13px; margin-bottom: 8px; color: #dc2626;">[ẢNH TRƯỚC DỌN - 10:15]</div>
-          <div style="height: 180px; background: #e5e7eb; border: 1.5px solid #222; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px;">
-            Ảnh hiện trường ngập rác sinh hoạt, bốc mùi hôi
-          </div>
-        </div>
+      <div class="card-box">
+        <div class="map-box" style="height: 320px; position: relative;">
+          <!-- Wind streamlines dynamic particles simulation -->
+          <svg style="width: 100%; height: 100%;">
+            <path d="M 50,80 Q 150,60 250,90 T 450,80 T 650,110" stroke="#0284c7" stroke-width="2" stroke-dasharray="8 6" fill="none"/>
+            <path d="M 80,140 Q 200,120 320,150 T 520,140 T 720,160" stroke="#0284c7" stroke-width="2" stroke-dasharray="10 8" fill="none"/>
+            <path d="M 40,210 Q 160,190 280,220 T 480,210 T 680,230" stroke="#0284c7" stroke-width="2.5" stroke-dasharray="12 6" fill="none"/>
+          </svg>
 
-        <div class="card-box" style="text-align: center;">
-          <div style="font-weight: 800; font-size: 13px; margin-bottom: 8px; color: #16a34a;">[ẢNH SAU DỌN SẠCH - 11:30]</div>
-          <div style="height: 180px; background: #f3f4f6; border: 2px solid #16a34a; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;">
-            Vỉa hè đã quét sạch bóng, đặt biển cấm xả rác
+          <!-- Radar Cloud Patch -->
+          <div style="position: absolute; top: 60px; right: 140px; width: 180px; height: 130px; background: rgba(59, 130, 246, 0.25); border-radius: 40px; filter: blur(8px);"></div>
+          <div style="position: absolute; top: 100px; right: 180px; font-size: 11px; font-weight: 800; color: #1e3a8a;">
+            ⛈️ Mây đối lưu gây mưa rào (35mm/h)
+          </div>
+
+          <!-- Bottom Time Player -->
+          <div style="position: absolute; bottom: 12px; left: 20px; right: 20px; background: #fff; border: 2px solid #222; border-radius: 8px; padding: 8px 14px; display: flex; align-items: center; gap: 14px;">
+            <button class="btn btn-black btn-sm">⏸ Tạm dừng</button>
+            <div style="flex: 1; height: 6px; background: #e5e7eb; border-radius: 3px; position: relative;">
+              <div style="width: 65%; height: 100%; background: #111; border-radius: 3px;"></div>
+              <div style="position: absolute; top: -5px; left: 65%; width: 16px; height: 16px; border-radius: 50%; background: #111; border: 2px solid #fff;"></div>
+            </div>
+            <span style="font-size: 11px; font-weight: 800;">11:45 (+45 phút trước)</span>
           </div>
         </div>
       </div>
@@ -389,46 +273,51 @@ module.exports = [
   {
     id: "Anh_31_1",
     numBadge: "Ảnh 31.1",
-    title: "Phân cấp quản lý 3 cấp & Chuyển tiếp hồ sơ thẩm quyền",
+    title: "Động cơ giải tích sóng thủy triều thuần Python (Harmonic Tide)",
     member: "Bùi Nguyễn Minh Quân",
-    role: "Cán bộ quản lý",
-    activeNav: "Điều phối tác nghiệp",
+    role: "Chuyên gia Thủy văn",
+    activeNav: "Bản đồ ngập lụt",
     badges: [
-      { text: "PHÂN CẤP 3 CẤP", top: "-12px", right: "20px" },
-      { text: "CHUYỂN HỒ SƠ", top: "50px", right: "20px" }
+      { text: "STT 31: HARMONIC TIDE", top: "-12px", right: "20px" },
+      { text: "M2, S2, K1, O1", top: "50px", right: "20px" }
     ],
     contentHtml: `
       <div class="page-header">
         <div>
-          <div class="page-title">Quy Trình Chuyển Cấp Thẩm Quyền Xử Lý Sự Cố 3 Cấp</div>
-          <div class="page-subtitle">Chức năng 31 (Ảnh 31.1) • Phụ trách: Bùi Nguyễn Minh Quân</div>
+          <div class="page-title">Động Cơ Giải Tích Điều Hòa Sóng Triều (Harmonic Tide Engine)</div>
+          <div class="page-subtitle">STT 31 (Ảnh 31.1) • Phân hệ: Giám sát Ngập lụt • Phụ trách: Bùi Nguyễn Minh Quân</div>
+        </div>
+      </div>
+
+      <div class="card-box" style="margin-bottom: 12px;">
+        <div class="card-title">Phương trình điều hòa 4 thành phần sóng thiên văn:</div>
+        <div style="font-size: 14px; font-weight: 800; background: #f3f4f6; border: 1.5px solid #222; padding: 10px; border-radius: 6px; text-align: center;">
+          H(t) = H₀ + A_M2·cos(ω_M2·t - g_M2) + A_S2·cos(ω_S2·t - g_S2) + A_K1·cos(ω_K1·t - g_K1) + A_O1·cos(ω_O1·t - g_O1)
+        </div>
+        <div style="font-size: 11px; color: #6b7280; margin-top: 6px; text-align: center;">
+          Tính toán thuần Python không phụ thuộc thư viện ngoài, tốc độ xử lý vi giây, chạy offline 100%.
         </div>
       </div>
 
       <div class="card-box">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-          <div style="text-align: center; flex: 1;">
-            <div style="font-weight: 800; font-size: 13px;">CẤP 1: PHƯỜNG / XÃ</div>
-            <span class="tag tag-gray">Xử lý rác vặt</span>
-          </div>
-          <div style="font-size: 20px;">➔</div>
-          <div style="text-align: center; flex: 1;">
-            <div style="font-weight: 800; font-size: 13px; color: #2563eb;">CẤP 2: TP. THỦ ĐỨC (HIỆN TẠI)</div>
-            <span class="tag tag-dark">Quy mô lớn</span>
-          </div>
-          <div style="font-size: 20px;">➔</div>
-          <div style="text-align: center; flex: 1;">
-            <div style="font-weight: 800; font-size: 13px;">CẤP 3: SỞ TÀI NGUYÊN & MÔI TRƯỜNG</div>
-            <span class="tag tag-gray">Sự cố khẩn cấp cấp TP</span>
-          </div>
-        </div>
+        <div class="card-title">Đường cong mô phỏng dao động bán nhật triều Sông Sài Gòn (48 giờ):</div>
+        <div style="height: 180px; position: relative;">
+          <svg style="width: 100%; height: 100%;">
+            <!-- Grid lines -->
+            <line x1="40" y1="30" x2="720" y2="30" stroke="#e5e7eb" stroke-width="1"/>
+            <line x1="40" y1="80" x2="720" y2="80" stroke="#fca5a5" stroke-width="1.5" stroke-dasharray="4 4"/>
+            <line x1="40" y1="130" x2="720" y2="130" stroke="#e5e7eb" stroke-width="1"/>
 
-        <div style="border-top: 1px solid #e5e7eb; padding-top: 12px;">
-          <div class="form-group">
-            <label class="form-label">Lý do chuyển tiếp lên Sở TN&MT TP.HCM:</label>
-            <input type="text" class="form-input" value="Phát hiện chất thải lỏng có dấu hiệu chứa kim loại nặng độc hại, vượt thẩm quyền quận.">
-          </div>
-          <button class="btn btn-black">Ký số & Chuyển tiếp hồ sơ lên cấp Thành phố</button>
+            <!-- Warning line label -->
+            <text x="45" y="75" font-size="10" font-weight="bold" fill="#dc2626">BÁO ĐỘNG III (1.60m)</text>
+
+            <!-- Sine curve -->
+            <path d="M 40,110 Q 120,20 210,105 T 380,100 T 550,110 T 720,95" stroke="#111" stroke-width="3" fill="none"/>
+
+            <!-- High tide marker -->
+            <circle cx="120" cy="35" r="5" fill="#dc2626"/>
+            <text x="130" y="32" font-size="10" font-weight="bold">Đỉnh triều: 1.68m (17:30)</text>
+          </svg>
         </div>
       </div>
     `
@@ -436,159 +325,135 @@ module.exports = [
   {
     id: "Anh_32_1",
     numBadge: "Ảnh 32.1",
-    title: "Giám sát hạn mức SLA thời gian thực & Cảnh báo trễ hạn",
+    title: "Quan trắc & dự báo mực nước triều trạm Phú An và Nhà Bè",
     member: "Bùi Nguyễn Minh Quân",
-    role: "Giám sát viên",
-    activeNav: "Điều phối tác nghiệp",
+    role: "Toàn bộ người dùng",
+    activeNav: "Bản đồ ngập lụt",
     badges: [
-      { text: "SLA MONITORING", top: "-12px", right: "20px" },
-      { text: "OVERDUE ALERT", top: "50px", right: "20px" }
+      { text: "STT 32: TRẠM PHÚ AN & NHÀ BÈ", top: "-12px", right: "20px" },
+      { text: "MỰC NƯỚC SÔNG SÀI GÒN", top: "50px", right: "20px" }
     ],
     contentHtml: `
       <div class="page-header">
         <div>
-          <div class="page-title">Giám Sát Thời Gian Cam Kết Xử Lý (SLA Real-time Dashboard)</div>
-          <div class="page-subtitle">Chức năng 32 (Ảnh 32.1) • Phụ trách: Bùi Nguyễn Minh Quân</div>
+          <div class="page-title">Mực Nước Triều Thực Tế & Dự Báo 2 Trạm Phú An và Nhà Bè</div>
+          <div class="page-subtitle">STT 32 (Ảnh 32.1) • Phân hệ: Giám sát Ngập lụt • Phụ trách: Bùi Nguyễn Minh Quân</div>
         </div>
       </div>
 
-      <div class="card-box">
-        <table class="wire-table">
-          <tr><th>Mã hồ sơ</th><th>Mức độ</th><th>Thời hạn quy định</th><th>Thời gian còn lại</th><th>Tiến độ SLA</th><th>Cảnh báo</th></tr>
-          <tr>
-            <td>#RPT-8921</td>
-            <td>Cấp 3 - Cao</td>
-            <td>12 giờ</td>
-            <td><b>còn 02h:15m</b></td>
-            <td>
-              <div style="width: 100px; height: 10px; background: #e5e7eb; border-radius: 5px; overflow: hidden;">
-                <div style="width: 75%; height: 100%; background: #111;"></div>
-              </div>
-            </td>
-            <td><span class="tag">Trong hạn</span></td>
-          </tr>
-          <tr>
-            <td>#RPT-8890</td>
-            <td>Cấp 4 - Khẩn cấp</td>
-            <td>02 giờ</td>
-            <td><b style="color: #dc2626;">Quá hạn 45 phút</b></td>
-            <td>
-              <div style="width: 100px; height: 10px; background: #dc2626; border-radius: 5px;"></div>
-            </td>
-            <td><span class="tag tag-dark" style="background: #dc2626;">🚨 VI PHẠM SLA</span></td>
-          </tr>
-        </table>
+      <div class="grid-2">
+        <div class="card-box" style="border: 2px solid #222;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #222; padding-bottom: 8px; margin-bottom: 10px;">
+            <div style="font-weight: 800; font-size: 15px;">TRẠM PHÚ AN (SÔNG SÀI GÒN)</div>
+            <span class="tag tag-dark">CẢNH BÁO CAO</span>
+          </div>
+          <div style="font-size: 32px; font-weight: 900; color: #dc2626;">+ 1.68 mét</div>
+          <div style="font-size: 12px; color: #4b5563; margin: 4px 0 10px 0;">• Xu hướng: <b>Đang dâng nhanh (+6 cm/giờ)</b></div>
+          <div style="font-size: 11px; line-height: 1.5;">
+            <div>• Ngưỡng Báo Động I: <b>1.40 m</b> (Đã vượt)</div>
+            <div>• Ngưỡng Báo Động II: <b>1.50 m</b> (Đã vượt)</div>
+            <div>• Ngưỡng Báo Động III: <b>1.60 m</b> (<span style="color:#dc2626;font-weight:bold;">VƯỢT +0.08m</span>)</div>
+          </div>
+        </div>
+
+        <div class="card-box" style="border: 2px solid #222;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #222; padding-bottom: 8px; margin-bottom: 10px;">
+            <div style="font-weight: 800; font-size: 15px;">TRẠM NHÀ BÈ (SÔNG ĐỒNG ĐIỀN)</div>
+            <span class="tag tag-dark">BÁO ĐỘNG III</span>
+          </div>
+          <div style="font-size: 32px; font-weight: 900; color: #ea580c;">+ 1.64 mét</div>
+          <div style="font-size: 12px; color: #4b5563; margin: 4px 0 10px 0;">• Xu hướng: <b>Đạt đỉnh trong 30 phút tới</b></div>
+          <div style="font-size: 11px; line-height: 1.5;">
+            <div>• Ngưỡng Báo Động I: <b>1.35 m</b> (Đã vượt)</div>
+            <div>• Ngưỡng Báo Động II: <b>1.45 m</b> (Đã vượt)</div>
+            <div>• Ngưỡng Báo Động III: <b>1.55 m</b> (<span style="color:#ea580c;font-weight:bold;">VƯỢT +0.09m</span>)</div>
+          </div>
+        </div>
       </div>
     `
   },
   {
     id: "Anh_33_1",
     numBadge: "Ảnh 33.1",
-    title: "Giám sát mạng lưới trạm cảm biến viễn trắc IoT đô thị",
+    title: "Tự động dò đỉnh triều (High Tide), chân triều và báo động BĐ3",
     member: "Bùi Nguyễn Minh Quân",
-    role: "Kỹ sư vận hành",
-    activeNav: "Mạng lưới IoT",
+    role: "Chuyên viên khí tượng thủy văn",
+    activeNav: "Bản đồ ngập lụt",
     badges: [
-      { text: "MẠNG LƯỚI IOT", top: "-12px", right: "20px" },
-      { text: "TELEMETRY SENSORS", top: "50px", right: "20px" }
+      { text: "STT 33: DÒ ĐỈNH TRIỀU CỰC TRỊ", top: "-12px", right: "20px" },
+      { text: "ĐẠO HÀM dH/dt = 0", top: "50px", right: "20px" }
     ],
     contentHtml: `
       <div class="page-header">
         <div>
-          <div class="page-title">Mạng Lưới Trạm Cảm Biến Môi Trường Viễn Trắc IoT</div>
-          <div class="page-subtitle">Chức năng 33 (Ảnh 33.1) • Phụ trách: Bùi Nguyễn Minh Quân</div>
+          <div class="page-title">Tự Động Dò Cực Trị Thủy Triều & Báo Động Vượt Cấp BĐ3</div>
+          <div class="page-subtitle">STT 33 (Ảnh 33.1) • Phân hệ: Giám sát Ngập lụt • Phụ trách: Bùi Nguyễn Minh Quân</div>
         </div>
       </div>
 
-      <div class="grid-3">
-        <div class="card-box">
-          <div style="display: flex; justify-content: space-between;">
-            <b>📡 Trạm Cảm Biến IoT #01</b>
-            <span class="tag tag-dark">ONLINE</span>
-          </div>
-          <div style="font-size: 11px; color: #6b7280; margin: 4px 0;">Vị trí: Cống Rạch Ngang, Linh Trung</div>
-          <div style="margin: 8px 0; font-size: 12px; line-height: 1.6;">
-            <div>• Mực nước: <b>+1.42 m</b> (Dưới ngưỡng)</div>
-            <div>• Pin năng lượng: <b>92%</b> 🔋</div>
-            <div>• Tín hiệu 4G/LTE: <b>Mạnh (-65 dBm)</b></div>
+      <div class="card-box" style="border: 2px solid #dc2626; background: #fef2f2; margin-bottom: 12px;">
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <div style="font-size: 28px;">🚨</div>
+          <div>
+            <div style="font-weight: 800; font-size: 14px; color: #dc2626;">CẢNH BÁO THỦY TRIỀU VƯỢT MỨC BÁO ĐỘNG III</div>
+            <div style="font-size: 12px; color: #991b1b;">
+              Thuật toán đạo hàm dH/dt xác định đỉnh triều sẽ xuất hiện lúc <b>17:45 chiều nay</b> với mực nước dự kiến <b>1.72m</b>. Nguy cơ ngập sâu các tuyến đường ven sông!
+            </div>
           </div>
         </div>
+      </div>
 
-        <div class="card-box">
-          <div style="display: flex; justify-content: space-between;">
-            <b>📡 Trạm Cảm Biến IoT #02</b>
-            <span class="tag tag-dark">ONLINE</span>
-          </div>
-          <div style="font-size: 11px; color: #6b7280; margin: 4px 0;">Vị trí: Ngã 4 Bình Thái</div>
-          <div style="margin: 8px 0; font-size: 12px; line-height: 1.6;">
-            <div>• Mực nước: <b>+1.65 m</b> (Cảnh giác)</div>
-            <div>• Pin năng lượng: <b>85%</b> 🔋</div>
-            <div>• Tín hiệu 4G/LTE: <b>Mạnh (-70 dBm)</b></div>
-          </div>
-        </div>
-
-        <div class="card-box">
-          <div style="display: flex; justify-content: space-between;">
-            <b>📡 Trạm Cảm Biến IoT #03</b>
-            <span class="tag tag-gray">OFFLINE</span>
-          </div>
-          <div style="font-size: 11px; color: #6b7280; margin: 4px 0;">Vị trí: Kênh Ba Bò</div>
-          <div style="margin: 8px 0; font-size: 12px; line-height: 1.6;">
-            <div>• Mực nước: <i>Mất tín hiệu</i></div>
-            <div>• Pin năng lượng: <b>12% (Yếu)</b></div>
-            <div>• Cảnh báo: Cần bảo trì acquy</div>
-          </div>
-        </div>
+      <div class="card-box">
+        <div class="card-title">Bảng phân tích các mốc cực trị trong 24 giờ tới:</div>
+        <table class="wire-table">
+          <tr><th>Mốc sự kiện cực trị</th><th>Thời điểm dự báo</th><th>Mực nước (m)</th><th>Vận tốc biến thiên dH/dt</th><th>Mức độ cảnh báo</th></tr>
+          <tr><td><b>ĐỈNH TRIỀU 1 (High Tide)</b></td><td>17:45 (Hôm nay)</td><td><b>+ 1.72 m</b></td><td>0.00 cm/h (Đạt đỉnh)</td><td><span class="tag tag-gray" style="color:#dc2626;border-color:#dc2626;font-weight:bold;">NGUY HIỂM > BĐ3</span></td></tr>
+          <tr><td><b>CHÂN TRIỀU 1 (Low Tide)</b></td><td>23:15 (Hôm nay)</td><td><b>- 0.45 m</b></td><td>0.00 cm/h (Nước cạn)</td><td><span class="tag tag-dark">BÌNH THƯỜNG</span></td></tr>
+          <tr><td><b>ĐỈNH TRIỀU 2 (High Tide)</b></td><td>06:20 (Sáng mai)</td><td><b>+ 1.58 m</b></td><td>0.00 cm/h (Đạt đỉnh)</td><td><span class="tag tag-gray">BÁO ĐỘNG II</span></td></tr>
+        </table>
       </div>
     `
   },
   {
     id: "Anh_34_1",
     numBadge: "Ảnh 34.1",
-    title: "Tự động hóa kết xuất báo cáo thống kê định kỳ PDF/Excel",
+    title: "Động cơ phân tích rủi ro ngập lụt đa nhân tố (Flood Risk Engine)",
     member: "Bùi Nguyễn Minh Quân",
-    role: "Quản trị / Báo cáo",
-    activeNav: "Báo cáo thống kê",
+    role: "Chuyên gia GIS / Phân tích",
+    activeNav: "Bản đồ ngập lụt",
     badges: [
-      { text: "XUẤT BÁO CÁO", top: "-12px", right: "20px" },
-      { text: "EXPORT PDF / EXCEL", top: "70px", right: "30px" }
+      { text: "STT 34: FLOOD RISK ENGINE", top: "-12px", right: "20px" },
+      { text: "ĐA NHÂN TỐ KẾT HỢP", top: "50px", right: "20px" }
     ],
     contentHtml: `
       <div class="page-header">
         <div>
-          <div class="page-title">Kết Xuất Báo Cáo Định Kỳ Hiện Trạng Môi Trường</div>
-          <div class="page-subtitle">Chức năng 34 (Ảnh 34.1) • Phụ trách: Bùi Nguyễn Minh Quân</div>
+          <div class="page-title">Động Cơ Phân Tích Rủi Ro Ngập Lụt Đa Nhân Tố (Multi-Factor Engine)</div>
+          <div class="page-subtitle">STT 34 (Ảnh 34.1) • Phân hệ: Giám sát Ngập lụt • Phụ trách: Bùi Nguyễn Minh Quân</div>
         </div>
       </div>
 
-      <div class="card-box" style="width: 480px; margin: 0 auto; padding: 20px;">
-        <div class="form-group">
-          <label class="form-label">Kỳ báo cáo:</label>
-          <select class="form-select" style="width: 100%;">
-            <option>Tháng 09/2026 (Từ 01/09 đến 30/09/2026)</option>
-            <option>Quý III / 2026</option>
-          </select>
+      <div class="card-box" style="margin-bottom: 12px;">
+        <div class="card-title">Mô hình tính toán chiều sâu ngập mặt đường thực tế:</div>
+        <table class="wire-table">
+          <tr><th>Nhân tố đầu vào</th><th>Nguồn dữ liệu</th><th>Giá trị đo lường</th><th>Hệ số tác động</th></tr>
+          <tr><td><b>1. Mực nước triều cường</b></td><td>Harmonic Tide Model</td><td>1.68m (Vượt BĐ3)</td><td>Trọng số 40%</td></tr>
+          <tr><td><b>2. Cường độ mưa lớn</b></td><td>RainViewer Radar API</td><td>55 mm/giờ</td><td>Trọng số 35%</td></tr>
+          <tr><td><b>3. Cao độ địa hình & Cống</b></td><td>DEM & Hạ tầng thoát nước</td><td>Vùng trũng 0.8m, cống nghẹt 30%</td><td>Trọng số 25%</td></tr>
+        </table>
+      </div>
+
+      <div class="grid-2">
+        <div class="card-box" style="text-align: center;">
+          <div style="font-size: 11px; color: #6b7280; font-weight: 700;">ĐỘ SÂU NGẬP ƯỚC TÍNH</div>
+          <div style="font-size: 34px; font-weight: 900; margin: 4px 0; color: #dc2626;">38 cm</div>
+          <div style="font-size: 12px; font-weight: bold;">(Ngập nửa bánh xe máy)</div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Phạm vi địa bàn:</label>
-          <select class="form-select" style="width: 100%;">
-            <option>Toàn địa bàn TP. Thủ Đức (34 Phường)</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Dữ liệu cần xuất:</label>
-          <div style="font-size: 12px; line-height: 1.6;">
-            <label><input type="checkbox" checked> Danh sách 128 điểm rác đã dọn sạch</label><br>
-            <label><input type="checkbox" checked> Biểu đồ tỷ lệ tuân thủ cam kết SLA</label><br>
-            <label><input type="checkbox" checked> Thống kê số lượng EcoPoints đã cấp</label>
-          </div>
-        </div>
-
-        <div style="display: flex; gap: 10px; margin-top: 14px;">
-          <button class="btn btn-black" style="flex: 1;">📄 Xuất file PDF Báo cáo</button>
-          <button class="btn btn-white" style="flex: 1;">📊 Xuất file Excel (XLSX)</button>
+        <div class="card-box" style="text-align: center;">
+          <div style="font-size: 11px; color: #6b7280; font-weight: 700;">PHÂN CẤP KHẢ NĂNG THÔNG XE</div>
+          <div style="font-size: 24px; font-weight: 900; margin: 8px 0; color: #dc2626;">SEVERE (NGHIÊM TRỌNG)</div>
+          <div style="font-size: 11px; color: #dc2626;">Xe máy nguy cơ chết máy cao. Ô tô gầm thấp không thể qua!</div>
         </div>
       </div>
     `
@@ -596,42 +461,56 @@ module.exports = [
   {
     id: "Anh_35_1",
     numBadge: "Ảnh 35.1",
-    title: "Quản lý tuyến lộ trình xe gom rác cố định và trạm dừng checkpoints",
+    title: "Thanh trượt mô phỏng kịch bản ngập lụt tương tác (0 - 100 mm/h)",
     member: "Bùi Nguyễn Minh Quân",
-    role: "Điều hành đội xe",
-    activeNav: "Đội xe thu gom",
+    role: "Toàn bộ người dùng",
+    activeNav: "Bản đồ ngập lụt",
     badges: [
-      { text: "LỘ TRÌNH THU GOM", top: "-12px", right: "20px" },
-      { text: "CHECKPOINTS", top: "50px", right: "20px" }
+      { text: "STT 35: RAIN SLIDER SIMULATION", top: "-12px", right: "20px" },
+      { text: "0 - 100 MM/H TƯƠNG TÁC", top: "50px", right: "20px" }
     ],
     contentHtml: `
       <div class="page-header">
         <div>
-          <div class="page-title">Quản Lý Tuyến Lộ Trình Xe Gom Rác Cố Định</div>
-          <div class="page-subtitle">Chức năng 35 (Ảnh 35.1) • Phụ trách: Bùi Nguyễn Minh Quân</div>
+          <div class="page-title">Thanh Trượt Mô Phỏng Kịch Bản Mưa Lớn & Rủi Ro Ngập Lụt</div>
+          <div class="page-subtitle">STT 35 (Ảnh 35.1) • Phân hệ: Giám sát Ngập lụt • Phụ trách: Bùi Nguyễn Minh Quân</div>
+        </div>
+      </div>
+
+      <div class="card-box" style="margin-bottom: 12px; background: #fafafa;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div>
+            <b>Kịch bản giả định lượng mưa:</b>
+            <span style="font-size: 18px; font-weight: 900; margin-left: 8px;">65 mm/giờ</span> (Mưa rất to)
+          </div>
+          <span class="tag tag-dark">CẬP NHẬT TỨC THỜI</span>
+        </div>
+
+        <!-- Rain Intensity Interactive Slider Mockup -->
+        <div style="position: relative; padding: 10px 0;">
+          <div style="height: 10px; background: #e5e7eb; border-radius: 5px; border: 1.5px solid #222;">
+            <div style="width: 65%; height: 100%; background: #2563eb; border-radius: 4px;"></div>
+          </div>
+          <div style="position: absolute; top: 3px; left: 65%; width: 22px; height: 22px; border-radius: 50%; background: #111; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); transform: translateX(-50%);"></div>
+          <div style="display: flex; justify-content: space-between; font-size: 10px; font-weight: bold; margin-top: 8px; color: #4b5563;">
+            <span>0 mm/h (Tạnh ráo)</span>
+            <span>25 mm/h (Mưa vừa)</span>
+            <span>50 mm/h (Mưa to)</span>
+            <span>75 mm/h (Mưa rất to)</span>
+            <span>100 mm/h (Mưa lịch sử)</span>
+          </div>
         </div>
       </div>
 
       <div class="card-box">
-        <div class="map-box" style="height: 250px; position: relative;">
-          <!-- SVG Route Line with checkpoints -->
+        <div class="map-box" style="height: 230px; position: relative;">
+          <!-- Flooded Roads Highlighted -->
           <svg style="width: 100%; height: 100%;">
-            <path d="M 100 180 L 250 80 L 480 120 L 720 70" stroke="#111" stroke-width="4" stroke-dasharray="4 2" fill="none"/>
-            <!-- Checkpoint 1 -->
-            <circle cx="100" cy="180" r="10" fill="#111"/>
-            <text x="100" y="210" font-size="11" font-weight="bold" text-anchor="middle">Điểm 1 (05:00)</text>
-            <!-- Checkpoint 2 -->
-            <circle cx="250" cy="80" r="10" fill="#111"/>
-            <text x="250" y="60" font-size="11" font-weight="bold" text-anchor="middle">Điểm 2 (05:45)</text>
-            <!-- Checkpoint 3 -->
-            <circle cx="480" cy="120" r="10" fill="#111"/>
-            <text x="480" y="150" font-size="11" font-weight="bold" text-anchor="middle">Điểm 3 (06:30)</text>
-            <!-- Checkpoint 4 (Bãi chôn lấp) -->
-            <rect x="710" y="60" width="20" height="20" fill="#22c55e"/>
-            <text x="720" y="100" font-size="11" font-weight="bold" text-anchor="middle">Trạm Ép Rác</text>
+            <line x1="80" y1="120" x2="680" y2="120" stroke="#dc2626" stroke-width="12"/>
+            <line x1="340" y1="30" x2="340" y2="200" stroke="#f59e0b" stroke-width="8"/>
           </svg>
-          <div style="position: absolute; bottom: 12px; left: 16px; background: rgba(0,0,0,0.75); color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 11px;">
-            Tuyến số 04: Võ Văn Ngân ➔ Kha Vạn Cân ➔ Trạm trung chuyển Đa Phước
+          <div style="position: absolute; top: 95px; left: 240px; background: #dc2626; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 900;">
+            Đường Nguyễn Hữu Cảnh: Ngập 45cm
           </div>
         </div>
       </div>
@@ -640,97 +519,57 @@ module.exports = [
   {
     id: "Anh_36_1",
     numBadge: "Ảnh 36.1",
-    title: "Bảng điều khiển tác nghiệp tổng quan Quản lý (Admin Dashboard)",
+    title: "Tích hợp dự báo nguy cơ lũ lụt Copernicus GloFAS toàn cầu 7 ngày",
     member: "Bùi Nguyễn Minh Quân",
-    role: "Quản trị viên / Lãnh đạo",
-    activeNav: "Dashboard",
+    role: "Toàn bộ người dùng",
+    activeNav: "Bản đồ ngập lụt",
     badges: [
-      { text: "ADMIN DASHBOARD", top: "-12px", right: "20px" },
-      { text: "CHỈ SỐ KPI", top: "50px", right: "20px" }
+      { text: "STT 36: COPERNICUS GloFAS", top: "-12px", right: "20px" },
+      { text: "DỰ BÁO LƯU LƯỢNG 7 NGÀY", top: "50px", right: "20px" }
     ],
     contentHtml: `
       <div class="page-header">
         <div>
-          <div class="page-title">Bảng Điều Khiển Quản Trị Tác Nghiệp Tổng Thể</div>
-          <div class="page-subtitle">Chức năng 36 (Ảnh 36.1) • Phụ trách: Bùi Nguyễn Minh Quân</div>
+          <div class="page-title">Dự Báo Lưu Lượng Dòng Chảy Sông Ngòi 7 Ngày (Copernicus GloFAS)</div>
+          <div class="page-subtitle">STT 36 (Ảnh 36.1) • Phân hệ: Giám sát Ngập lụt • Phụ trách: Bùi Nguyễn Minh Quân</div>
         </div>
       </div>
 
-      <div class="grid-4" style="margin-bottom: 12px;">
-        <div class="card-box" style="text-align: center;">
-          <div style="font-size: 11px; color: #6b7280;">Báo cáo hôm nay</div>
-          <div style="font-size: 24px; font-weight: 900;">42</div>
-          <div style="font-size: 10px; color: #16a34a;">↑ +12% so với hôm qua</div>
-        </div>
-        <div class="card-box" style="text-align: center;">
-          <div style="font-size: 11px; color: #6b7280;">Đang xử lý</div>
-          <div style="font-size: 24px; font-weight: 900;">15</div>
-          <div style="font-size: 10px; color: #4b5563;">3 xe đang làm nhiệm vụ</div>
-        </div>
-        <div class="card-box" style="text-align: center;">
-          <div style="font-size: 11px; color: #6b7280;">Đã dọn sạch</div>
-          <div style="font-size: 24px; font-weight: 900;">27</div>
-          <div style="font-size: 10px; color: #16a34a;">Tỷ lệ: 64.2%</div>
-        </div>
-        <div class="card-box" style="text-align: center;">
-          <div style="font-size: 11px; color: #6b7280;">Tuân thủ SLA</div>
-          <div style="font-size: 24px; font-weight: 900;">94.8%</div>
-          <div style="font-size: 10px; color: #16a34a;">Đạt chỉ tiêu xanh</div>
-        </div>
-      </div>
-    `
-  },
-  {
-    id: "Anh_36_2",
-    numBadge: "Ảnh 36.2",
-    title: "Trung tâm chẩn đoán sức khỏe hệ thống & Giám sát API Health Check",
-    member: "Bùi Nguyễn Minh Quân",
-    role: "Quản trị viên hạ tầng",
-    activeNav: "Quản trị hệ thống",
-    badges: [
-      { text: "API HEALTH CHECK", top: "-12px", right: "20px" },
-      { text: "SYSTEM DIAGNOSTICS", top: "50px", right: "20px" }
-    ],
-    contentHtml: `
-      <div class="page-header">
-        <div>
-          <div class="page-title">Trung Tâm Chẩn Đoán & Giám Sát Sức Khỏe Microservices</div>
-          <div class="page-subtitle">Chức năng 36 (Ảnh 36.2) • Phụ trách: Bùi Nguyễn Minh Quân</div>
-        </div>
-      </div>
+      <div class="card-box" style="position: relative; height: 380px;">
+        <div class="modal-overlay" style="width: 580px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #222; padding-bottom: 8px; margin-bottom: 12px;">
+            <div style="font-weight: 800; font-size: 14px;">🌊 DỰ BÁO LŨ LỤT SÔNG SÀI GÒN (GloFAS ECMWF)</div>
+            <span class="tag tag-dark">7 NGÀY TỚI</span>
+          </div>
 
-      <div class="card-box">
-        <table class="wire-table">
-          <tr><th>Service / Cụm máy chủ</th><th>Endpoint kiểm tra</th><th>Thời gian phản hồi (Latency)</th><th>Trạng thái</th><th>Uptime 30 ngày</th></tr>
-          <tr>
-            <td>PostgreSQL 16 + PostGIS 3.4</td>
-            <td>tcp://localhost:5432</td>
-            <td>1.2 ms</td>
-            <td><span class="tag tag-dark">HEALTHY</span></td>
-            <td>99.99%</td>
-          </tr>
-          <tr>
-            <td>FastAPI Backend API</td>
-            <td>https://api.greenspot.vn/health</td>
-            <td>14 ms</td>
-            <td><span class="tag tag-dark">HEALTHY</span></td>
-            <td>99.95%</td>
-          </tr>
-          <tr>
-            <td>OSRM Routing Engine</td>
-            <td>http://router.project-osrm.org</td>
-            <td>45 ms</td>
-            <td><span class="tag tag-dark">HEALTHY</span></td>
-            <td>99.80%</td>
-          </tr>
-          <tr>
-            <td>RainViewer Radar API</td>
-            <td>https://api.rainviewer.com/v2</td>
-            <td>120 ms</td>
-            <td><span class="tag tag-dark">HEALTHY</span></td>
-            <td>99.50%</td>
-          </tr>
-        </table>
+          <div style="font-size: 11px; text-align: left; margin-bottom: 10px;">
+            Tọa độ quan sát: <b>10.7936° N, 106.7198° E</b> • Lưu vực: <b>Hạ lưu Sông Sài Gòn</b>
+          </div>
+
+          <!-- GloFAS Discharge Chart Mockup -->
+          <div style="height: 180px; border: 1.5px solid #222; background: #fafafa; border-radius: 6px; padding: 10px; position: relative;">
+            <svg style="width: 100%; height: 100%;">
+              <!-- Return period thresholds -->
+              <line x1="30" y1="40" x2="520" y2="40" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4 2"/>
+              <text x="35" y="35" font-size="9" fill="#dc2626" font-weight="bold">Ngưỡng lũ chu kỳ 5 năm (820 m³/s)</text>
+
+              <line x1="30" y1="80" x2="520" y2="80" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 2"/>
+              <text x="35" y="75" font-size="9" fill="#d97706" font-weight="bold">Ngưỡng lũ chu kỳ 2 năm (650 m³/s)</text>
+
+              <!-- Forecast Discharge Curve -->
+              <path d="M 30,140 Q 110,120 180,95 T 320,60 T 450,110 T 520,130" stroke="#2563eb" stroke-width="3" fill="none"/>
+              <circle cx="320" cy="60" r="5" fill="#dc2626"/>
+            </svg>
+            <div style="position: absolute; top: 46px; left: 330px; font-size: 10px; font-weight: bold; background: #fff; border: 1px solid #222; padding: 1px 4px; border-radius: 3px;">
+              Đỉnh lũ: 760 m³/s (Ngày 3)
+            </div>
+          </div>
+
+          <div class="modal-actions" style="margin-top: 14px;">
+            <button class="btn btn-black btn-sm">Tải dữ liệu GeoJSON</button>
+            <button class="btn btn-white btn-sm">Đóng cửa sổ</button>
+          </div>
+        </div>
       </div>
     `
   }
