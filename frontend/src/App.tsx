@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
 import EcoMap from "./components/EcoMap";
 import AirQualityDashboard from "./components/AirQualityDashboard";
+import { LanguageProvider, useTranslation } from "./context/LanguageContext";
+import { LanguageSwitcher } from "./components/LanguageSwitcher";
 import api from "./api/client";
 import "./App.css";
 
-function App() {
+function AppContent() {
   const [activeTab, setActiveTab] = useState<"map" | "dashboard">("map");
   const [backendStatus, setBackendStatus] = useState<string | null>(null);
   const [checkingBackend, setCheckingBackend] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
+  const { t } = useTranslation();
 
   const checkHealth = async () => {
     setCheckingBackend(true);
@@ -38,19 +41,19 @@ function App() {
           type="button"
           className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
           onClick={() => setActiveTab("map")}
-          title="Bản đồ không gian xanh, ngập lụt & trạm IoT"
+          title={t("map.title", "Bản đồ không gian xanh, ngập lụt & trạm IoT")}
         >
           <span>🗺️</span>
-          <span>Bản đồ WebGIS</span>
+          <span>{t("app.nav_map", "Bản đồ WebGIS")}</span>
         </button>
         <button
           type="button"
           className={`view-tab-btn ${activeTab === "dashboard" ? "active" : ""}`}
           onClick={() => setActiveTab("dashboard")}
-          title="Bảng điều khiển phân tích chất lượng không khí & khí tượng toàn quốc"
+          title={t("dashboard.title", "Bảng điều khiển phân tích chất lượng không khí & khí tượng toàn quốc")}
         >
           <span>📊</span>
-          <span>Phân tích AQI & Khí hậu</span>
+          <span>{t("app.nav_dashboard", "Phân tích AQI & Khí hậu")}</span>
         </button>
       </nav>
 
@@ -61,59 +64,82 @@ function App() {
         <AirQualityDashboard onBackToMap={() => setActiveTab("map")} />
       )}
 
-      {/* NÚT KIỂM TRA MICROSERVICE BACKEND (GÓC TRÊN BÊN PHẢI) */}
-      <div className="quick-status-badge">
-        <button
-          type="button"
-          className="health-badge-btn"
-          onClick={() => {
-            setShowDrawer((prev) => !prev);
-            if (!backendStatus) checkHealth();
-          }}
-          title="Kiểm tra trạng thái Backend FastAPI"
-        >
-          <span className={`dot ${backendStatus?.startsWith("Online") ? "online" : "offline"}`} />
-          <span>API Service</span>
-        </button>
+      {/* CỤM ĐIỀU KHIỂN GÓC TRÊN BÊN PHẢI: LANGUAGE SWITCHER + HEALTH BADGE */}
+      <div
+        style={{
+          position: "absolute",
+          top: 16,
+          right: 16,
+          zIndex: 1000,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+        }}
+      >
+        {/* NÚT CHUYỂN ĐỔI NGÔN NGỮ (GỌI PYTHON BACKEND i18n) */}
+        <LanguageSwitcher />
 
-        {showDrawer && (
-          <div className="health-popover">
-            <div className="popover-header">
-              <strong>Backend Diagnostic</strong>
-              <button
-                type="button"
-                className="close-btn"
-                onClick={() => setShowDrawer(false)}
-              >
-                ×
-              </button>
-            </div>
-            <p className="popover-desc">
-              Kiểm tra kết nối microservice FastAPI backend qua axios client.
-            </p>
-            <div className="popover-actions">
-              <button
-                type="button"
-                className="btn-action"
-                onClick={checkHealth}
-                disabled={checkingBackend}
-              >
-                {checkingBackend ? "Đang ping..." : "Ping /health"}
-              </button>
-            </div>
-            {backendStatus && (
-              <div
-                className={`status-pill ${backendStatus.startsWith("Online") ? "success" : "warning"
-                  }`}
-              >
-                {backendStatus}
+        {/* NÚT KIỂM TRA MICROSERVICE BACKEND */}
+        <div className="quick-status-badge" style={{ position: "relative", top: 0, right: 0 }}>
+          <button
+            type="button"
+            className="health-badge-btn"
+            onClick={() => {
+              setShowDrawer((prev) => !prev);
+              if (!backendStatus) checkHealth();
+            }}
+            title="Kiểm tra trạng thái Backend FastAPI"
+          >
+            <span className={`dot ${backendStatus?.startsWith("Online") ? "online" : "offline"}`} />
+            <span>API Service</span>
+          </button>
+
+          {showDrawer && (
+            <div className="health-popover">
+              <div className="popover-header">
+                <strong>{t("app.btn_check_backend", "Backend Diagnostic")}</strong>
+                <button
+                  type="button"
+                  className="close-btn"
+                  onClick={() => setShowDrawer(false)}
+                >
+                  ×
+                </button>
               </div>
-            )}
-          </div>
-        )}
+              <p className="popover-desc">
+                {t("app.subtitle", "Kiểm tra kết nối microservice FastAPI backend qua axios client.")}
+              </p>
+              <div className="popover-actions">
+                <button
+                  type="button"
+                  className="btn-action"
+                  onClick={checkHealth}
+                  disabled={checkingBackend}
+                >
+                  {checkingBackend ? t("app.loading", "Đang ping...") : "Ping /health"}
+                </button>
+              </div>
+              {backendStatus && (
+                <div
+                  className={`status-pill ${
+                    backendStatus.startsWith("Online") ? "success" : "warning"
+                  }`}
+                >
+                  {backendStatus}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
+  );
+}

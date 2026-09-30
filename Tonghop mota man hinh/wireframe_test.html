@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  body { background: #f0f2f5; padding: 30px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+  .screen-card { width: 900px; background: #fff; border: 2px solid #222; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); position: relative; }
+  .badge-tag { position: absolute; background: #e5e7eb; border: 1.5px solid #374151; color: #111827; font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 6px; letter-spacing: 0.5px; z-index: 10; }
+  
+  /* Header */
+  .header { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; border-bottom: 2px solid #222; position: relative; }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo-box { border: 2px solid #222; border-radius: 6px; font-weight: 800; font-size: 13px; padding: 4px 8px; }
+  .header-title { font-size: 16px; font-weight: 700; color: #111; }
+  .header-user { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #222; }
+  
+  /* Body */
+  .layout-body { display: flex; min-height: 500px; }
+  .sidebar { width: 200px; border-right: 2px solid #222; padding: 16px 0; background: #fafafa; position: relative; }
+  .nav-item { padding: 10px 20px; font-size: 14px; font-weight: 600; color: #333; cursor: pointer; }
+  .nav-item.active { background: #e5e7eb; border-left: 4px solid #111; font-weight: 700; }
+  
+  .content { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: #fff; }
+  .page-title { font-size: 18px; font-weight: 800; color: #111; margin-bottom: 4px; }
+  
+  .card-box { border: 2px solid #222; border-radius: 8px; padding: 16px; position: relative; background: #fff; }
+  .info-list { font-size: 14px; line-height: 1.6; color: #222; font-weight: 500; }
+  
+  /* Map Wireframe */
+  .map-container { border: 2px solid #222; border-radius: 8px; height: 260px; position: relative; background: #fafafa; overflow: hidden; margin-top: 12px; }
+  .road { position: absolute; stroke: #cbd5e1; stroke-width: 14; stroke-linecap: round; }
+  .road-sub { position: absolute; stroke: #e2e8f0; stroke-width: 8; stroke-linecap: round; }
+  
+  .pin-marker { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; }
+  .pin-circle { width: 90px; height: 90px; border-radius: 50%; background: rgba(0,0,0,0.06); border: 2px dashed #4b5563; display: flex; align-items: center; justify-content: center; }
+  .pin-icon { width: 28px; height: 38px; }
+  
+  /* Modal */
+  .modal-overlay { position: absolute; top: 30px; left: 50%; transform: translateX(-50%); width: 360px; background: #fff; border: 2px solid #222; border-radius: 8px; padding: 18px 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 20; text-align: center; }
+  .modal-text { font-size: 14px; font-weight: 600; color: #111; line-height: 1.5; margin-bottom: 16px; }
+  .modal-actions { display: flex; justify-content: center; gap: 12px; }
+  .btn { padding: 8px 18px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .btn-black { background: #111; color: #fff; border: 2px solid #111; }
+  .btn-white { background: #fff; color: #111; border: 2px solid #222; }
+</style>
+</head>
+<body>
+
+<div class="screen-card">
+  <!-- Header Tag -->
+  <div class="badge-tag" style="top: -12px; left: 540px;">HEADER</div>
+  
+  <div class="header">
+    <div class="header-left">
+      <div class="logo-box">LOGO</div>
+      <div class="header-title">Hệ thống Báo cáo & Theo dõi Điểm rác thải / Ô nhiễm</div>
+    </div>
+    <div class="header-user">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/></svg>
+      Nguyễn Văn A ⌄
+    </div>
+  </div>
+
+  <div class="layout-body">
+    <!-- Navbar Tag -->
+    <div class="badge-tag" style="top: 50px; left: -10px;">NAVBAR</div>
+    
+    <div class="sidebar">
+      <div class="nav-item">Dashboard</div>
+      <div class="nav-item active">Báo cáo rác</div>
+      <div class="nav-item">Bản đồ ô nhiễm</div>
+      <div class="nav-item">Điểm xanh</div>
+    </div>
+
+    <div class="content">
+      <div class="page-title">Báo cáo điểm ô nhiễm - Định vị GPS tự động & Ghim thủ công</div>
+      
+      <div class="card-box">
+        <!-- GPS Auto Tag -->
+        <div class="badge-tag" style="top: -12px; left: 320px;">GPS AUTO</div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div class="info-list">
+            <div>• <b>Tọa độ:</b> 10.8505° N, 106.7719° E</div>
+            <div>• <b>Độ chính xác:</b> 5m</div>
+            <div>• <b>Địa chỉ:</b> 53 Võ Văn Ngân, TP. Thủ Đức</div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-white">Lấy lại GPS</button>
+            <button class="btn btn-white">Khóa vị trí</button>
+          </div>
+        </div>
+
+        <div class="map-container">
+          <svg style="width: 100%; height: 100%; position: absolute; top:0; left:0;">
+            <path d="M-20 60 Q 200 80 400 30 T 700 80" stroke="#cbd5e1" stroke-width="16" fill="none" />
+            <path d="M 50 -20 Q 120 150 180 300" stroke="#cbd5e1" stroke-width="12" fill="none" />
+            <path d="M 280 -20 L 350 290" stroke="#cbd5e1" stroke-width="14" fill="none" />
+            <path d="M 100 220 Q 300 180 650 240" stroke="#cbd5e1" stroke-width="10" fill="none" />
+            <path d="M 450 -20 Q 420 150 520 290" stroke="#94a3b8" stroke-width="18" fill="none" />
+          </svg>
+
+          <div class="pin-marker">
+            <div class="pin-circle">
+              <svg width="34" height="42" viewBox="0 0 24 24" fill="#fff" stroke="#111" stroke-width="2">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+                <circle cx="12" cy="9" r="3" fill="#111"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Modal Confirm Tag -->
+          <div class="badge-tag" style="top: 18px; left: 340px; z-index: 25;">MODAL XÁC NHẬN</div>
+          <div class="modal-overlay">
+            <div class="modal-text">Bạn có chắc chắn muốn xác nhận vị trí điểm rác này để tiếp tục gửi báo cáo?</div>
+            <div class="modal-actions">
+              <button class="btn btn-black">Xác nhận</button>
+              <button class="btn btn-white">Hủy</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

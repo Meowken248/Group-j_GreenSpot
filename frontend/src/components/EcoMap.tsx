@@ -42,6 +42,10 @@ import {
   calculateDistanceMeters,
 } from "../hooks/useFastGeolocation";
 import LiveWeatherRadarMap, { type WeatherOverlay } from "./LiveWeatherRadarMap";
+import {
+  HCM_FULL_DISTRICT_BOUNDARIES,
+  type DistrictProperties,
+} from "../data/hcmFullDistrictBoundaries";
 
 // Cấu hình danh mục dự phòng an toàn (tránh lỗi undefined khi chưa kịp đồng bộ)
 export const DEFAULT_CATEGORY_CFG = {
@@ -374,7 +378,9 @@ function EcoMap() {
   // Bảng màu sắc 3D cho các tòa nhà kiến trúc đô thị
   const [building3DTheme, setBuilding3DTheme] = useState<BuildingColorTheme>("rainbow");
   const [show3DColorMenu, setShow3DColorMenu] = useState<boolean>(false);
-  const [showDistricts, setShowDistricts] = useState<boolean>(false);
+  const [showDistricts, setShowDistricts] = useState<boolean>(true);
+  const [selectedDistrict, setSelectedDistrict] = useState<DistrictProperties | null>(null);
+  const [showDistrictDropdown, setShowDistrictDropdown] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<EcoCategory | "all">("all");
 
   // Heatmap States (Bản đồ nhiệt: Nhiệt độ thời tiết, Chỉ số AQI, Mật độ rủi ro)
@@ -449,8 +455,22 @@ function EcoMap() {
   const [loadingEco, setLoadingEco] = useState<boolean>(true);
 
   const [landmarks, setLandmarks] = useState<HCMLocation[]>([]);
-  const [districtBoundaries, setDistrictBoundaries] = useState<FeatureCollection | null>(null);
+  const [districtBoundaries, setDistrictBoundaries] = useState<FeatureCollection>(HCM_FULL_DISTRICT_BOUNDARIES);
   const [liveWeather, setLiveWeather] = useState<LiveWeatherResponse | null>(null);
+
+  // Hàm chuyển bản đồ bay tới quận/huyện được chọn
+  const handleFlyToDistrict = useCallback((dist: DistrictProperties) => {
+    setSelectedDistrict(dist);
+    setShowDistrictDropdown(false);
+    if (mapRef.current) {
+      mapRef.current.flyTo({
+        center: [dist.center[0], dist.center[1]],
+        zoom: 12.8,
+        duration: 1200,
+        essential: true,
+      });
+    }
+  }, []);
 
   // Chế độ hiển thị ngập lụt (Mặc định tắt để sử dụng dữ liệu thực tế từ Weather API & Tide Engine)
   const [simulateFlood, setSimulateFlood] = useState<boolean>(false);
@@ -672,6 +692,14 @@ function EcoMap() {
             return;
           }
         }
+      }
+    }
+
+    // 1.0b. Kiểm tra nếu click trúng một phân vùng quận/huyện hành chính
+    if (showDistricts && e.features && e.features.length > 0) {
+      const distFeat = e.features.find((f: any) => f.layer?.id === "districts-fill");
+      if (distFeat && distFeat.properties) {
+        setSelectedDistrict(distFeat.properties as DistrictProperties);
       }
     }
 
@@ -1023,6 +1051,43 @@ function EcoMap() {
               </span>
             </button>
 
+            {/* Nút Bật/Tắt Khoanh Vùng Ranh Giới 22 Quận/Huyện TP.HCM (Chuẩn MF-03) */}
+            <button
+              onClick={() => setShowDistricts(!showDistricts)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "5px 11px",
+                borderRadius: 20,
+                border: showDistricts ? "1.5px solid #2563eb" : "1px solid #cbd5e1",
+                background: showDistricts ? "linear-gradient(135deg, #2563eb, #1d4ed8)" : "#ffffff",
+                color: showDistricts ? "#ffffff" : "#334155",
+                fontSize: 11.5,
+                fontWeight: 700,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                boxShadow: showDistricts ? "0 2px 8px rgba(37, 99, 235, 0.35)" : "none",
+                transition: "all 0.15s ease",
+              }}
+              title="Bật/Tắt hiển thị lớp ranh giới hành chính 22 quận/huyện và TP. Thủ Đức"
+            >
+              <span>🗺️</span>
+              <span>22 Quận TP.HCM</span>
+              <span
+                style={{
+                  fontSize: 10,
+                  background: showDistricts ? "rgba(255,255,255,0.25)" : "#f1f5f9",
+                  color: showDistricts ? "#ffffff" : "#64748b",
+                  padding: "1px 6px",
+                  borderRadius: 10,
+                  fontWeight: 800,
+                }}
+              >
+                22
+              </span>
+            </button>
+
             {(Object.keys(CATEGORY_CONFIG) as EcoCategory[]).map((catKey) => {
               const cfg = CATEGORY_CONFIG[catKey];
               const isSelected = selectedCategory === catKey;
@@ -1278,8 +1343,8 @@ function EcoMap() {
           </div>
         )}
 
-        {/* Thẻ chi tiết Địa điểm / Quán xá / Vị trí click / Điểm ngập lụt 3 Nguồn (Docked thanh lịch bên trái) */}
-        {(selectedLocation || selectedPOI || clickedAddress || selectedFloodSpot) && (
+        {/* Thẻ chi tiết Địa điểm / Quán xá / Vị trí click / Điểm ngập lụt / Ranh giới quận (Docked thanh lịch bên trái) */}
+        {(selectedLocation || selectedPOI || clickedAddress || selectedFloodSpot || selectedDistrict) && (
           <div
             style={{
               background: "#ffffff",
@@ -1742,24 +1807,130 @@ function EcoMap() {
                   <span>🧭</span> {calculatingRoute ? "Đang tính..." : "Chỉ đường từ vị trí của tôi"}
                 </button>
               </div>
+            ) : selectedDistrict ? (
+              <div>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        width: 14,
+                        height: 14,
+                        borderRadius: 4,
+                        background: selectedDistrict.color,
+                        boxShadow: `0 0 8px ${selectedDistrict.color}`,
+                      }}
+                    />
+                    <div>
+                      <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", color: selectedDistrict.color, letterSpacing: "0.5px" }}>
+                        Ranh giới Hành chính (MF-03)
+                      </div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a" }}>
+                        {selectedDistrict.name}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedDistrict(null)}
+                    style={{
+                      border: "none",
+                      background: "#f1f5f9",
+                      borderRadius: "50%",
+                      width: 24,
+                      height: 24,
+                      cursor: "pointer",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: "#64748b",
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div style={{ background: "#f8fafc", borderRadius: 10, padding: "10px 12px", marginBottom: 12, border: "1px solid #e2e8f0" }}>
+                  <div style={{ fontSize: 11, color: "#475569", lineHeight: 1.5, marginBottom: 8 }}>
+                    📌 <strong>Định hướng:</strong> {selectedDistrict.role}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, fontSize: 11 }}>
+                    <div style={{ background: "#ffffff", padding: "6px 8px", borderRadius: 6, border: "1px solid #e2e8f0" }}>
+                      <div style={{ color: "#64748b", fontSize: 10 }}>📐 Diện tích</div>
+                      <strong style={{ color: "#0f172a" }}>{selectedDistrict.areaKm2} km²</strong>
+                    </div>
+                    <div style={{ background: "#ffffff", padding: "6px 8px", borderRadius: 6, border: "1px solid #e2e8f0" }}>
+                      <div style={{ color: "#64748b", fontSize: 10 }}>👥 Dân số</div>
+                      <strong style={{ color: "#0f172a" }}>{selectedDistrict.population.toLocaleString()}</strong>
+                    </div>
+                    <div style={{ background: "#ffffff", padding: "6px 8px", borderRadius: 6, border: "1px solid #e2e8f0" }}>
+                      <div style={{ color: "#64748b", fontSize: 10 }}>🌳 Mảng xanh</div>
+                      <strong style={{ color: "#16a34a" }}>{selectedDistrict.greenIndex}</strong>
+                    </div>
+                    <div style={{ background: "#ffffff", padding: "6px 8px", borderRadius: 6, border: "1px solid #e2e8f0" }}>
+                      <div style={{ color: "#64748b", fontSize: 10 }}>⚠️ Sự cố ghi nhận</div>
+                      <strong style={{ color: "#dc2626" }}>{selectedDistrict.incidents} điểm</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button
+                    onClick={() => {
+                      if (mapRef.current) {
+                        mapRef.current.flyTo({
+                          center: [selectedDistrict.center[0], selectedDistrict.center[1]],
+                          zoom: 13.2,
+                          duration: 1000,
+                        });
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      background: selectedDistrict.color,
+                      color: "#ffffff",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      border: "none",
+                      cursor: "pointer",
+                      boxShadow: `0 2px 8px ${selectedDistrict.color}66`,
+                    }}
+                  >
+                    🔍 Phóng to toàn cảnh
+                  </button>
+                  <button
+                    onClick={() => setSelectedDistrict(null)}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      border: "1px solid #e2e8f0",
+                      background: "#ffffff",
+                      color: "#475569",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Đóng
+                  </button>
+                </div>
+              </div>
             ) : null}
           </div>
         )}
       </div>
 
-      {/* 2. THANH ĐIỀU KHIỂN BẢN ĐỒ & CÁC LỚP BẢN ĐỒ TRỰC TIẾP (Google Maps / Apple Maps Style) */}
+      {/* 2A. THANH CHỌN KIỂU BẢN ĐỒ (TOP LEFT - CẠNH SIDEBAR, KHÔNG BỊ TRÀN HAY VA CHẠM) */}
       <div
         style={{
           position: "absolute",
           top: 16,
           left: 412,
-          right: 16,
-          zIndex: 22,
+          zIndex: 30,
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
-          gap: 10,
-          pointerEvents: "none",
+          gap: 6,
+          pointerEvents: "auto",
           fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         }}
       >
@@ -1779,7 +1950,6 @@ function EcoMap() {
             border: "1px solid #e2e8f0",
             overflowX: "auto",
             scrollbarWidth: "none",
-            maxWidth: "calc(100% - 240px)",
           }}
         >
           {/* Logo brand nhỏ tinh tế */}
@@ -1817,45 +1987,167 @@ function EcoMap() {
             );
           })}
         </div>
+      </div>
 
-        {/* Cụm công cụ: Ranh giới quận + 3D + GPS */}
+      {/* 2B. CỤM CÔNG CỤ CHUYÊN DỤNG WEBGIS & LỚP DỮ LIỆU (TOP RIGHT - DƯỚI THANH NGÔN NGỮ, KHÔNG BỊ CHE KHUẤT) */}
+      <div
+        style={{
+          position: "absolute",
+          top: 68,
+          right: 16,
+          maxWidth: "calc(100vw - 428px)",
+          zIndex: 85,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          pointerEvents: "auto",
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          flexWrap: "nowrap",
+          overflowX: "auto",
+          scrollbarWidth: "none",
+          justifyContent: "flex-end",
+        }}
+      >
         <div
           style={{
-            pointerEvents: "auto",
             display: "flex",
             alignItems: "center",
             gap: 6,
-            background: "rgba(255, 255, 255, 0.95)",
-            backdropFilter: "blur(16px)",
-            WebkitBackdropFilter: "blur(16px)",
+            background: "rgba(255, 255, 255, 0.96)",
+            backdropFilter: "blur(18px)",
+            WebkitBackdropFilter: "blur(18px)",
             borderRadius: 999,
             padding: "4px 8px",
-            boxShadow: "0 4px 18px rgba(0, 0, 0, 0.08)",
-            border: "1px solid #e2e8f0",
+            boxShadow: "0 6px 22px rgba(0, 0, 0, 0.12)",
+            border: "1px solid #cbd5e1",
           }}
         >
-          {/* Nút bật/tắt Ranh giới khu vực / quận huyện */}
+          {/* Nút bật/tắt Ranh giới khu vực / 22 quận huyện (MF-03) */}
           <button
             onClick={() => setShowDistricts(!showDistricts)}
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 4,
-              padding: "5px 10px",
+              gap: 5,
+              padding: "5px 12px",
               borderRadius: 999,
-              border: showDistricts ? "1px solid #3b82f6" : "none",
+              border: showDistricts ? "1.5px solid #2563eb" : "1px solid transparent",
               cursor: "pointer",
               fontSize: 11.5,
-              fontWeight: showDistricts ? 700 : 500,
-              background: showDistricts ? "#eff6ff" : "transparent",
-              color: showDistricts ? "#1d4ed8" : "#475569",
-              transition: "all 0.15s ease",
+              fontWeight: showDistricts ? 800 : 600,
+              background: showDistricts ? "linear-gradient(135deg, #2563eb, #1d4ed8)" : "transparent",
+              color: showDistricts ? "#ffffff" : "#1e293b",
+              boxShadow: showDistricts ? "0 2px 10px rgba(37, 99, 235, 0.35)" : "none",
+              transition: "all 0.18s ease",
               whiteSpace: "nowrap",
             }}
+            title="Bật/Tắt hiển thị khoanh vùng ranh giới 22 quận/huyện và TP. Thủ Đức"
           >
-            <span>🗺️</span>
-            <span>{showDistricts ? "Ẩn ranh giới" : "Ranh giới khu vực"}</span>
+            <span style={{ fontSize: 13 }}>🗺️</span>
+            <span>{showDistricts ? "Ranh giới: BẬT" : "Ranh giới 22 quận"}</span>
+            <span
+              style={{
+                background: showDistricts ? "rgba(255, 255, 255, 0.25)" : "#e2e8f0",
+                color: showDistricts ? "#ffffff" : "#475569",
+                fontSize: 10,
+                padding: "1px 6px",
+                borderRadius: 10,
+                fontWeight: 800,
+              }}
+            >
+              22
+            </span>
           </button>
+
+          {/* Nút Mở Danh Sách 22 Quận để chọn nhanh và bay tới */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => setShowDistrictDropdown(!showDistrictDropdown)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                padding: "5px 10px",
+                borderRadius: 999,
+                border: "1px solid #e2e8f0",
+                cursor: "pointer",
+                fontSize: 11.5,
+                fontWeight: 600,
+                background: showDistrictDropdown ? "#f1f5f9" : "#ffffff",
+                color: "#334155",
+                transition: "all 0.15s ease",
+                whiteSpace: "nowrap",
+              }}
+              title="Xem danh sách và bay tới 22 quận/huyện TP.HCM"
+            >
+              <span>📍</span>
+              <span>{selectedDistrict ? selectedDistrict.name : "Chọn quận..."}</span>
+              <span style={{ fontSize: 9 }}>▼</span>
+            </button>
+
+            {/* Dropdown danh sách 22 quận */}
+            {showDistrictDropdown && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  right: 0,
+                  marginTop: 6,
+                  background: "rgba(255, 255, 255, 0.98)",
+                  backdropFilter: "blur(16px)",
+                  WebkitBackdropFilter: "blur(16px)",
+                  borderRadius: 14,
+                  boxShadow: "0 12px 30px rgba(0, 0, 0, 0.18)",
+                  border: "1px solid #cbd5e1",
+                  padding: 8,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 3,
+                  zIndex: 100,
+                  width: 260,
+                  maxHeight: 340,
+                  overflowY: "auto",
+                }}
+              >
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", padding: "4px 8px", textTransform: "uppercase" }}>
+                  Danh sách 22 Quận/Huyện TP.HCM
+                </div>
+                {districtBoundaries.features.map((feat: any) => {
+                  const p = feat.properties as DistrictProperties;
+                  const isCur = selectedDistrict?.id === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => handleFlyToDistrict(p)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "7px 10px",
+                        borderRadius: 8,
+                        border: isCur ? `1px solid ${p.color}` : "1px solid transparent",
+                        background: isCur ? `${p.color}15` : "transparent",
+                        cursor: "pointer",
+                        fontSize: 12,
+                        fontWeight: isCur ? 700 : 500,
+                        color: "#0f172a",
+                        textAlign: "left",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f5f9")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = isCur ? `${p.color}15` : "transparent")}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ width: 10, height: 10, borderRadius: "50%", background: p.color }} />
+                        <span>{p.name}</span>
+                      </div>
+                      <span style={{ fontSize: 10, color: "#64748b" }}>{p.areaKm2} km²</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           {/* NÚT MỞ RADAR KHÍ TƯỢNG ĐỘNG LỰC HỌC (CHẾ ĐỘ MÔ PHỎNG GIÓ & DẢI NHIỆT VI KHÍ HẬU) */}
           <button
@@ -2502,7 +2794,15 @@ function EcoMap() {
           pitch: 50,
           bearing: -15,
         }}
-        interactiveLayerIds={showFloodWatch ? ["flood-segments-core", "flood-segments-glow", "flood-corridor-main", "flood-corridor-glow"] : ["flood-corridor-main", "flood-corridor-glow"]}
+        interactiveLayerIds={
+          showDistricts
+            ? (showFloodWatch
+                ? ["flood-segments-core", "flood-segments-glow", "flood-corridor-main", "flood-corridor-glow", "districts-fill"]
+                : ["flood-corridor-main", "flood-corridor-glow", "districts-fill"])
+            : (showFloodWatch
+                ? ["flood-segments-core", "flood-segments-glow", "flood-corridor-main", "flood-corridor-glow"]
+                : ["flood-corridor-main", "flood-corridor-glow"])
+        }
         onClick={(e) => {
           setContextMenu(null);
           handleMapClick(e);
@@ -2582,7 +2882,7 @@ function EcoMap() {
           />
         )}
 
-        {/* 2. LỚP RANH GIỚI CÁC QUẬN / HUYỆN TP.HCM (GeoJSON Polygons từ API) */}
+        {/* 2. LỚP RANH GIỚI CÁC QUẬN / HUYỆN TP.HCM (GeoJSON Polygons từ API - Chuẩn MF-03) */}
         {showDistricts && districtBoundaries && (
           <Source id="hcm-districts" type="geojson" data={districtBoundaries}>
             <Layer
@@ -2590,7 +2890,7 @@ function EcoMap() {
               type="fill"
               paint={{
                 "fill-color": ["get", "color"],
-                "fill-opacity": 0.15,
+                "fill-opacity": 0.22,
               }}
             />
             <Layer
@@ -2598,12 +2898,68 @@ function EcoMap() {
               type="line"
               paint={{
                 "line-color": ["get", "color"],
-                "line-width": 2.5,
-                "line-dasharray": [3, 1],
+                "line-width": 2.8,
+                "line-dasharray": [4, 1.5],
               }}
             />
           </Source>
         )}
+
+        {/* 2.1. HỆ THỐNG NHÃN TÊN 22 QUẬN/HUYỆN & TP. THỦ ĐỨC (Hiển thị nhãn tâm phân vùng) */}
+        {showDistricts &&
+          districtBoundaries &&
+          districtBoundaries.features.map((feat: any) => {
+            const p = feat.properties as DistrictProperties;
+            if (!p || !p.center) return null;
+            const isSelected = selectedDistrict?.id === p.id;
+            return (
+              <Marker
+                key={`district-badge-${p.id}`}
+                longitude={p.center[0]}
+                latitude={p.center[1]}
+                anchor="center"
+                onClick={(e) => {
+                  e.originalEvent.stopPropagation();
+                  handleFlyToDistrict(p);
+                }}
+              >
+                <div
+                  style={{
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 5,
+                    padding: "3px 9px",
+                    borderRadius: 999,
+                    background: isSelected ? p.color : "rgba(255, 255, 255, 0.94)",
+                    color: isSelected ? "#ffffff" : "#0f172a",
+                    border: `1.5px solid ${p.color}`,
+                    boxShadow: isSelected
+                      ? `0 0 0 3px rgba(255,255,255,0.9), 0 6px 18px ${p.color}88`
+                      : "0 2px 8px rgba(0,0,0,0.18)",
+                    fontSize: currentZoom < 12 ? 10.5 : 12,
+                    fontWeight: 800,
+                    whiteSpace: "nowrap",
+                    transform: isSelected ? "scale(1.18)" : "scale(1)",
+                    transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                    pointerEvents: "auto",
+                    backdropFilter: "blur(8px)",
+                  }}
+                  title={`Bấm để xem thông tin quy hoạch ${p.name}`}
+                >
+                  <span
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: "50%",
+                      background: isSelected ? "#ffffff" : p.color,
+                    }}
+                  />
+                  <span>{p.name}</span>
+                </div>
+              </Marker>
+            );
+          })}
 
         {/* 2.5. LỚP ĐOẠN ĐƯỜNG NGẬP LỤT & TRIỀU CƯỜNG (FLOODED ROAD CORRIDORS - VẼ TRỰC TIẾP LÊN LÒNG ĐƯỜNG) */}
         {floodCorridorsGeoJSON.features.length > 0 && (
@@ -3586,6 +3942,110 @@ function EcoMap() {
               <div style={{ fontSize: 9.5, color: "#64748b", marginTop: 2, fontStyle: "italic" }}>
                 👉 Nhấp vào đường để mở chi tiết 3 nguồn & lộ trình tránh
               </div>
+            </div>
+          </Popup>
+        )}
+
+        {/* Popup chi tiết Quận/Huyện khi click vào khoanh vùng hoặc chọn quận (Chuẩn MF-03) */}
+        {showDistricts && selectedDistrict && (
+          <Popup
+            longitude={selectedDistrict.center[0]}
+            latitude={selectedDistrict.center[1]}
+            anchor="bottom"
+            onClose={() => setSelectedDistrict(null)}
+            closeOnClick={false}
+            offset={[0, -10]}
+          >
+            <div style={{ padding: "6px 8px", minWidth: 230, fontFamily: "sans-serif" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span
+                    style={{
+                      width: 12,
+                      height: 12,
+                      borderRadius: 3,
+                      background: selectedDistrict.color,
+                    }}
+                  />
+                  <span style={{ fontWeight: 800, fontSize: 14, color: "#0f172a" }}>
+                    {selectedDistrict.name}
+                  </span>
+                </div>
+                <span
+                  style={{
+                    fontSize: 9.5,
+                    fontWeight: 700,
+                    padding: "2px 6px",
+                    borderRadius: 4,
+                    background: `${selectedDistrict.color}22`,
+                    color: selectedDistrict.color,
+                  }}
+                >
+                  MF-03
+                </span>
+              </div>
+
+              <div style={{ fontSize: 11, color: "#475569", lineHeight: 1.4, marginBottom: 8 }}>
+                📌 {selectedDistrict.role}
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 6,
+                  background: "#f8fafc",
+                  padding: "6px 8px",
+                  borderRadius: 8,
+                  border: "1px solid #e2e8f0",
+                  fontSize: 11,
+                  marginBottom: 8,
+                }}
+              >
+                <div>
+                  <span style={{ color: "#64748b", fontSize: 10 }}>📐 Diện tích</span>
+                  <div style={{ fontWeight: 700, color: "#0f172a" }}>{selectedDistrict.areaKm2} km²</div>
+                </div>
+                <div>
+                  <span style={{ color: "#64748b", fontSize: 10 }}>👥 Dân số</span>
+                  <div style={{ fontWeight: 700, color: "#0f172a" }}>
+                    {selectedDistrict.population.toLocaleString()}
+                  </div>
+                </div>
+                <div>
+                  <span style={{ color: "#64748b", fontSize: 10 }}>🌳 Mảng xanh</span>
+                  <div style={{ fontWeight: 700, color: "#16a34a" }}>{selectedDistrict.greenIndex}</div>
+                </div>
+                <div>
+                  <span style={{ color: "#64748b", fontSize: 10 }}>⚠️ Sự cố</span>
+                  <div style={{ fontWeight: 700, color: "#dc2626" }}>{selectedDistrict.incidents} điểm</div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  if (mapRef.current) {
+                    mapRef.current.flyTo({
+                      center: [selectedDistrict.center[0], selectedDistrict.center[1]],
+                      zoom: 13.5,
+                      duration: 1000,
+                    });
+                  }
+                }}
+                style={{
+                  width: "100%",
+                  padding: "6px 10px",
+                  borderRadius: 6,
+                  border: "none",
+                  background: selectedDistrict.color,
+                  color: "#ffffff",
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                🔍 Phóng to toàn cảnh quận
+              </button>
             </div>
           </Popup>
         )}

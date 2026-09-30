@@ -1,0 +1,42 @@
+{
+  "app": {
+    "title": "GreenSpot WebGIS & Quan Trắc Môi Trường",
+    "subtitle": "Nền tảng giám sát không gian xanh, ngập lụt & chất lượng không khí",
+    "nav_map": "Bản đồ WebGIS",
+    "nav_dashboard": "Phân tích AQI & Khí hậu",
+    "btn_check_backend": "Kiểm tra Backend",
+    "status_online": "Hệ thống đang hoạt động",
+    "status_offline": "Mất kết nối máy chủ",
+    "loading": "Đang tải dữ liệu...",
+    "backend_i18n_connected": "Đã nạp bộ dịch từ Python Backend (python-i18n)"
+  },
+  "map": {
+    "title": "Bản đồ sinh thái thông minh",
+    "search_placeholder": "Tìm kiếm công viên, trạm quan trắc...",
+    "layer_parks": "Công viên & Không gian xanh",
+    "layer_floods": "Điểm ngập úng đô thị",
+    "layer_aqi": "Trạm cảm biến chất lượng không khí",
+    "legend": "Chú giải bản đồ",
+    "refresh": "Làm mới dữ liệu",
+    "details": "Xem chi tiết"
+  },
+  "dashboard": {
+    "title": "Bảng điều khiển khí hậu & ô nhiễm không khí",
+    "aqi_summary": "Tổng quan chỉ số AQI",
+    "weather": "Khí tượng & Nhiệt độ",
+    "hazardous_warning": "Cảnh báo ô nhiễm nghiêm trọng",
+    "safe_level": "Chỉ số an toàn cho sức khỏe",
+    "pm25": "Bụi mịn PM2.5",
+    "pm10": "Bụi PM10",
+    "temperature": "Nhiệt độ",
+    "humidity": "Độ ẩm"
+  },
+  "common": {
+    "vietnamese": "Tiếng Việt",
+    "english": "English",
+    "language": "Ngôn ngữ",
+    "switch_success": "Đã chuyển đổi sang Tiếng Việt",
+    "powered_by": "Xử lý bởi Backend Python (python-i18n)",
+    "error_loading": "Không thể nạp bản dịch từ backend"
+  }
+}

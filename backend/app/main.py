@@ -4,13 +4,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1 import api_v1_router
+from app.core.i18n import setup_i18n
 from app.services.runtime_sync_service import run_periodic_runtime_worker
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Khởi tạo thư viện python-i18n
+    setup_i18n()
     # Khởi động tiến trình background runtime đồng bộ số liệu IoT và cảnh báo
     worker_task = asyncio.create_task(run_periodic_runtime_worker())
+
     yield
     worker_task.cancel()
     try:

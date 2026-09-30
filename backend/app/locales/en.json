@@ -1,0 +1,42 @@
+{
+  "app": {
+    "title": "GreenSpot WebGIS & Environmental Monitoring",
+    "subtitle": "Smart platform for green spaces, urban flooding & air quality surveillance",
+    "nav_map": "WebGIS Map",
+    "nav_dashboard": "AQI & Climate Analytics",
+    "btn_check_backend": "Check Backend",
+    "status_online": "System is online",
+    "status_offline": "Server disconnected",
+    "loading": "Loading data...",
+    "backend_i18n_connected": "Loaded translations from Python Backend (python-i18n)"
+  },
+  "map": {
+    "title": "Smart Ecological Map",
+    "search_placeholder": "Search parks, monitoring stations...",
+    "layer_parks": "Parks & Urban Green Spaces",
+    "layer_floods": "Urban Flood Inundation Points",
+    "layer_aqi": "Air Quality Sensor Stations",
+    "legend": "Map Legend",
+    "refresh": "Refresh Data",
+    "details": "View Details"
+  },
+  "dashboard": {
+    "title": "Climate & Air Pollution Analytics Dashboard",
+    "aqi_summary": "AQI Index Overview",
+    "weather": "Meteorology & Temperature",
+    "hazardous_warning": "Critical Pollution Warning",
+    "safe_level": "Safe level for health",
+    "pm25": "Fine Dust PM2.5",
+    "pm10": "Inhalable Particles PM10",
+    "temperature": "Temperature",
+    "humidity": "Humidity"
+  },
+  "common": {
+    "vietnamese": "Tiếng Việt",
+    "english": "English",
+    "language": "Language",
+    "switch_success": "Switched to English",
+    "powered_by": "Powered by Python Backend (python-i18n)",
+    "error_loading": "Failed to load translations from backend"
+  }
+}

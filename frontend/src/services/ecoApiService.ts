@@ -1,6 +1,7 @@
 import type { EcoLocation } from "../data/hcmEcoLocations";
 import type { HCMLocation } from "../data/hcmLocations";
 import type { FeatureCollection } from "geojson";
+import { HCM_FULL_DISTRICT_BOUNDARIES } from "../data/hcmFullDistrictBoundaries";
 
 // API Base URL từ biến môi trường Vite hoặc localhost mặc định
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -73,16 +74,22 @@ export async function fetchEcoLocationsAPI(
 
 /**
  * 2. Tải GeoJSON Ranh giới các quận/huyện TP.HCM từ Backend API (PostGIS MultiPolygon)
+ * Tự động fallback về bộ 22 quận/huyện đầy đủ nếu API offline
  */
-export async function fetchDistrictBoundariesAPI(): Promise<FeatureCollection | null> {
+export async function fetchDistrictBoundariesAPI(): Promise<FeatureCollection> {
   try {
     const res = await fetch(`${API_BASE_URL}/api/v1/spatial/districts`);
-    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-    const data: FeatureCollection = await res.json();
-    return data;
+    if (res.ok) {
+      const data: FeatureCollection = await res.json();
+      if (data && data.features && data.features.length >= 20) {
+        return data;
+      }
+    }
+    // Fallback về 22 quận/huyện chuẩn nếu backend chưa nạp đủ
+    return HCM_FULL_DISTRICT_BOUNDARIES;
   } catch (err) {
-    console.warn("Không thể kết nối API /api/v1/spatial/districts:", err);
-    return null;
+    console.warn("Dùng dữ liệu cục bộ 22 quận/huyện TP.HCM (Backend API offline):", err);
+    return HCM_FULL_DISTRICT_BOUNDARIES;
   }
 }
 
