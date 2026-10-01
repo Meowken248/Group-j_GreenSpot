@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import EcoMap from "./components/EcoMap";
 import AirQualityDashboard from "./components/AirQualityDashboard";
+import SocialSimulation from "./components/SocialSimulation";
 import api from "./api/client";
 import "./App.css";
 
 function App() {
-  const [activeTab, setActiveTab] = useState<"map" | "dashboard">("map");
+  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "social">("map");
   const [backendStatus, setBackendStatus] = useState<string | null>(null);
   const [checkingBackend, setCheckingBackend] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -33,7 +34,7 @@ function App() {
   return (
     <div className="app-container">
       {/* THANH ĐIỀU HƯỚNG CHUYỂN ĐỔI CHẾ ĐỘ VIEW (TOP CENTER) */}
-      <nav className={`view-mode-switcher ${activeTab === "dashboard" ? "dark-mode" : ""}`} aria-label="Chế độ hiển thị">
+      <nav className={`view-mode-switcher ${activeTab !== "map" ? "dark-mode" : ""}`} aria-label="Chế độ hiển thị">
         <button
           type="button"
           className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
@@ -52,13 +53,24 @@ function App() {
           <span>📊</span>
           <span>Phân tích AQI & Khí hậu</span>
         </button>
+        <button
+          type="button"
+          className={`view-tab-btn ${activeTab === "social" ? "active" : ""}`}
+          onClick={() => setActiveTab("social")}
+          title="Mạng xã hội sinh thái, chụp ảnh hiện trường & điều phối sự cố"
+        >
+          <span>🌱</span>
+          <span>Mạng Xã Hội Xanh & Hiện Trường</span>
+        </button>
       </nav>
 
-      {/* VIEW NỘI DUNG CHÍNH: MAP HOẶC DASHBOARD */}
+      {/* VIEW NỘI DUNG CHÍNH: MAP, DASHBOARD HOẶC SOCIAL */}
       {activeTab === "map" ? (
         <EcoMap />
-      ) : (
+      ) : activeTab === "dashboard" ? (
         <AirQualityDashboard onBackToMap={() => setActiveTab("map")} />
+      ) : (
+        <SocialSimulation onBackToMap={() => setActiveTab("map")} />
       )}
 
       {/* NÚT KIỂM TRA MICROSERVICE BACKEND (GÓC TRÊN BÊN PHẢI) */}

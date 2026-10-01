@@ -1,0 +1,3984 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GreenSpot - Hệ Thống 48 Chức Năng Chủ Chốt: Mạng Xã Hội Xanh, WebGIS Đa Tầng, Viễn Trắc IoT & AI Điều Phối</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans & Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* ==========================================================================
+       1. DESIGN TOKENS & RESET (Vanguard Dark Emerald / Obsidian Cyber Aesthetic)
+       ========================================================================== */
+    :root {
+      --bg-deep: #050807;
+      --bg-surface: #0a110e;
+      --bg-card: rgba(16, 25, 21, 0.78);
+      --bg-card-hover: rgba(22, 36, 30, 0.88);
+      --bg-glass: rgba(10, 17, 14, 0.75);
+      
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(16, 185, 129, 0.35);
+      --border-highlight: rgba(255, 255, 255, 0.16);
+      
+      --primary: #10b981;
+      --primary-light: #34d399;
+      --primary-glow: rgba(16, 185, 129, 0.45);
+      --primary-dark: #047857;
+      
+      --accent-cyan: #06b6d4;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-purple: #8b5cf6;
+      --accent-blue: #3b82f6;
+      
+      --text-main: #f0fdf4;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'Space Grotesk', monospace;
+      
+      --radius-outer: 1.75rem;
+      --radius-inner: calc(1.75rem - 0.375rem);
+      --radius-pill: 9999px;
+      
+      --ease-fluid: cubic-bezier(0.32, 0.72, 0, 1);
+      --shadow-ambient: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+      --shadow-glow: 0 0 35px -5px rgba(16, 185, 129, 0.3);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg-deep);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.5;
+      background-image: 
+        radial-gradient(ellipse at 15% 10%, rgba(16, 185, 129, 0.12) 0%, transparent 45%),
+        radial-gradient(ellipse at 85% 65%, rgba(6, 182, 212, 0.08) 0%, transparent 40%),
+        radial-gradient(ellipse at 50% 90%, rgba(244, 63, 94, 0.06) 0%, transparent 40%);
+      background-attachment: fixed;
+    }
+
+    /* Subtle Film Grain Pseudo */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-deep);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-pill);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--primary);
+    }
+
+    /* ==========================================================================
+       2. DOUBLE-BEZEL (DOPPELRAND) HARDWARE ARCHITECTURE
+       ========================================================================== */
+    .double-bezel {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-outer);
+      padding: 0.375rem;
+      box-shadow: var(--shadow-ambient);
+      backdrop-filter: blur(20px);
+      transition: transform 0.4s var(--ease-fluid), border-color 0.4s var(--ease-fluid), box-shadow 0.4s var(--ease-fluid);
+    }
+
+    .double-bezel:hover {
+      border-color: rgba(255, 255, 255, 0.14);
+    }
+
+    .bezel-core {
+      background: var(--bg-card);
+      border-radius: var(--radius-inner);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Island Buttons & Button-in-Button Architecture */
+    .btn-island {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.55rem 1.15rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.825rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      border: 1px solid transparent;
+      transition: all 0.3s var(--ease-fluid);
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .btn-island:active {
+      transform: scale(0.97);
+    }
+
+    .btn-island .btn-icon-bubble {
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.15);
+      font-size: 0.85rem;
+      transition: transform 0.3s var(--ease-fluid);
+    }
+
+    .btn-island:hover .btn-icon-bubble {
+      transform: translateX(2px) scale(1.08);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 18px -2px rgba(16, 185, 129, 0.45);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 6px 24px 0 rgba(16, 185, 129, 0.6);
+      transform: translateY(-1px);
+    }
+
+    .btn-sos {
+      background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+      color: #ffffff;
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.55);
+      animation: pulse-danger 2s infinite;
+    }
+
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      border-color: var(--border-subtle);
+    }
+    .btn-ghost:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-accent {
+      background: rgba(6, 182, 212, 0.15);
+      color: #67e8f9;
+      border-color: rgba(6, 182, 212, 0.35);
+    }
+    .btn-accent:hover {
+      background: rgba(6, 182, 212, 0.25);
+    }
+
+    @keyframes pulse-danger {
+      0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+      50% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.85); }
+    }
+
+    /* Eyebrow Micro Badges */
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.65rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--primary-light);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .eyebrow-red {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .eyebrow-amber {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fcd34d;
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .eyebrow-blue {
+      background: rgba(6, 182, 212, 0.15);
+      color: #67e8f9;
+      border-color: rgba(6, 182, 212, 0.3);
+    }
+
+    .eyebrow-purple {
+      background: rgba(139, 92, 246, 0.15);
+      color: #c084fc;
+      border-color: rgba(139, 92, 246, 0.3);
+    }
+
+    /* ==========================================================================
+       3. TOP NAVIGATION & 6 MAIN VIEW SWITCHERS (COVERING ALL 48 FEATURES)
+       ========================================================================== */
+    .navbar-container {
+      position: sticky;
+      top: 0.75rem;
+      z-index: 1000;
+      padding: 0 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .nav-floating-pill {
+      max-width: 1480px;
+      margin: 0 auto;
+      background: rgba(8, 14, 11, 0.88);
+      backdrop-filter: blur(24px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-pill);
+      padding: 0.45rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.85rem;
+      box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.8);
+      flex-wrap: wrap;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .brand-logo-mark {
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10b981 0%, #064e3b 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+
+    .brand-text h1 {
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .brand-text p {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* 6 Comprehensive Major View Modes (Spanning STT 01 to STT 48) */
+    .role-switcher-pill {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-pill);
+      padding: 0.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+      overflow-x: auto;
+    }
+
+    .role-tab {
+      padding: 0.4rem 0.85rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.25s var(--ease-fluid);
+      white-space: nowrap;
+    }
+
+    .role-tab:hover {
+      color: var(--text-main);
+    }
+
+    .role-tab.active {
+      background: rgba(16, 185, 129, 0.22);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      box-shadow: 0 2px 10px rgba(16, 185, 129, 0.2);
+    }
+
+    .role-tab.active.webgis {
+      background: rgba(6, 182, 212, 0.22);
+      color: #67e8f9;
+      border-color: rgba(6, 182, 212, 0.4);
+    }
+
+    .role-tab.active.admin {
+      background: rgba(245, 158, 11, 0.22);
+      color: #fbbf24;
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+
+    .role-tab.active.iot {
+      background: rgba(59, 130, 246, 0.22);
+      color: #93c5fd;
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+
+    .role-tab.active.ai {
+      background: rgba(239, 68, 68, 0.22);
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    .role-tab.active.bigdata {
+      background: rgba(139, 92, 246, 0.22);
+      color: #c084fc;
+      border-color: rgba(139, 92, 246, 0.4);
+    }
+
+    .role-tab.active.split {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Top Right Utility Bar */
+    .top-utility-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .badge-rbac-selector {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-pill);
+      padding: 0.25rem 0.65rem;
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      color: #38bdf8;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    /* User Mini Passport Pill */
+    .user-passport-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.3rem 0.75rem 0.3rem 0.35rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: all 0.3s var(--ease-fluid);
+    }
+
+    .user-passport-pill:hover {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .user-avatar-mini {
+      width: 1.85rem;
+      height: 1.85rem;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #10b981);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.75rem;
+      border: 1.5px solid #10b981;
+    }
+
+    .user-meta-info {
+      text-align: left;
+      line-height: 1.2;
+    }
+
+    .user-meta-name {
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .user-meta-rank {
+      font-size: 0.62rem;
+      color: var(--primary-light);
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    /* ==========================================================================
+       4. MAIN APP VIEWPORT & TICKER
+       ========================================================================== */
+    .app-viewport {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 0 1.25rem 4rem 1.25rem;
+    }
+
+    /* Realtime Ticker */
+    .dispatch-live-ticker {
+      margin-bottom: 1.25rem;
+      padding: 0.55rem 1.15rem;
+      border-radius: var(--radius-pill);
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      font-size: 0.8rem;
+    }
+
+    .ticker-content {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .pulse-dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 10px var(--primary);
+      animation: pulse-dot 1.5s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    /* Section Headers */
+    .section-title-bar {
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .section-title-bar h2 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .section-title-bar p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* Layout Grids */
+    .citizen-layout-grid {
+      display: grid;
+      grid-template-columns: 310px 1fr 340px;
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .admin-layout-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .split-layout-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    /* ==========================================================================
+       5. CITIZEN VIEW: PASSPORT & SOCIAL FEED (STT 01 ➔ 12)
+       ========================================================================== */
+    .sidebar-card {
+      padding: 1.15rem;
+    }
+
+    .passport-badge-card {
+      background: linear-gradient(145deg, rgba(16, 185, 129, 0.12) 0%, rgba(6, 182, 212, 0.06) 100%);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: var(--radius-inner);
+      padding: 1.15rem;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+
+    .passport-header {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .passport-avatar-lg {
+      width: 3.2rem;
+      height: 3.2rem;
+      border-radius: 1.1rem;
+      background: linear-gradient(135deg, #10b981, #047857);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      border: 2px solid rgba(52, 211, 153, 0.5);
+      box-shadow: 0 8px 16px -4px rgba(16, 185, 129, 0.35);
+    }
+
+    .passport-title h3 {
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .passport-rank-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.7rem;
+      color: #34d399;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.18);
+      padding: 0.15rem 0.45rem;
+      border-radius: var(--radius-pill);
+    }
+
+    .passport-stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.55rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .stat-mini-box {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border-subtle);
+      border-radius: 0.75rem;
+      padding: 0.55rem 0.65rem;
+    }
+
+    .stat-mini-val {
+      font-size: 1.05rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: #ffffff;
+    }
+
+    .stat-mini-val.accent {
+      color: #34d399;
+    }
+
+    .stat-mini-label {
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .rank-progress-container {
+      margin-bottom: 0.75rem;
+    }
+
+    .rank-progress-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-bottom: 0.3rem;
+    }
+
+    .rank-progress-bar {
+      height: 6px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+    }
+
+    .rank-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #06b6d4);
+      border-radius: var(--radius-pill);
+      width: 72.5%;
+      box-shadow: 0 0 10px #10b981;
+    }
+
+    .nav-menu-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      list-style: none;
+    }
+
+    .nav-item-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.65rem 0.85rem;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 0.85rem;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s var(--ease-fluid);
+      text-align: left;
+    }
+
+    .nav-item-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      transform: translateX(3px);
+    }
+
+    .nav-item-btn.active {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+
+    .nav-item-icon-title {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .nav-item-pill-count {
+      font-size: 0.68rem;
+      padding: 0.1rem 0.45rem;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.08);
+      font-family: var(--font-mono);
+    }
+
+    .nav-item-pill-count.alert {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+    }
+
+    /* Composer */
+    .feed-composer-card {
+      margin-bottom: 1.25rem;
+      padding: 1.15rem;
+    }
+
+    .composer-user-prompt {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .composer-input-fake {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-pill);
+      padding: 0.65rem 1.15rem;
+      font-size: 0.825rem;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.25s var(--ease-fluid);
+    }
+
+    .composer-input-fake:hover {
+      background: rgba(0, 0, 0, 0.6);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: var(--text-muted);
+    }
+
+    .composer-quick-actions {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr;
+      gap: 0.65rem;
+      padding-top: 0.85rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .composer-action-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      padding: 0.55rem 0.75rem;
+      border-radius: 0.85rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s var(--ease-fluid);
+    }
+
+    .composer-action-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .composer-action-btn.camera-trigger {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #6ee7b7;
+    }
+
+    .composer-action-btn.sos-trigger {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
+    }
+
+    .composer-action-btn.flood-trigger {
+      background: rgba(6, 182, 212, 0.12);
+      border-color: rgba(6, 182, 212, 0.3);
+      color: #67e8f9;
+    }
+
+    /* Filters */
+    .feed-filter-bar {
+      margin-bottom: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .filter-row {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      overflow-x: auto;
+      padding-bottom: 0.2rem;
+    }
+
+    .filter-pill {
+      padding: 0.35rem 0.8rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s var(--ease-fluid);
+    }
+
+    .filter-pill:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+    }
+
+    .filter-pill.active {
+      background: var(--primary);
+      color: #050807;
+      border-color: var(--primary);
+      font-weight: 700;
+    }
+
+    /* Post Cards */
+    .feed-stream {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .post-card {
+      padding: 1.25rem;
+    }
+
+    .post-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .post-author-block {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .author-avatar {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10b981, #06b6d4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1rem;
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      flex-shrink: 0;
+    }
+
+    .author-info h4 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .author-sub {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .status-badge {
+      padding: 0.3rem 0.75rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.68rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .status-badge.pending {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+
+    .status-badge.in_progress {
+      background: rgba(6, 182, 212, 0.15);
+      color: #67e8f9;
+      border: 1px solid rgba(6, 182, 212, 0.35);
+    }
+
+    .status-badge.resolved {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+
+    .post-title {
+      font-size: 1.02rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      color: #ffffff;
+    }
+
+    .post-text {
+      font-size: 0.85rem;
+      color: #cbd5e1;
+      margin-bottom: 0.85rem;
+      line-height: 1.55;
+    }
+
+    .post-hashtags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .hashtag {
+      font-size: 0.7rem;
+      font-family: var(--font-mono);
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.09);
+      padding: 0.12rem 0.5rem;
+      border-radius: var(--radius-pill);
+    }
+
+    .post-geotag-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.65rem;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border-subtle);
+      border-radius: 0.85rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.72rem;
+      margin-bottom: 0.95rem;
+    }
+
+    .geotag-left {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--text-muted);
+    }
+
+    .geotag-coords {
+      font-family: var(--font-mono);
+      color: #38bdf8;
+    }
+
+    .sla-pill {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      padding: 0.12rem 0.45rem;
+      border-radius: var(--radius-pill);
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .post-media-container {
+      border-radius: 1rem;
+      overflow: hidden;
+      margin-bottom: 1rem;
+      position: relative;
+      background: #000;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .post-image-main {
+      width: 100%;
+      height: 290px;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.5s var(--ease-fluid);
+    }
+
+    /* Before-After Split Comparison Card */
+    .before-after-wrapper {
+      position: relative;
+      height: 290px;
+      overflow: hidden;
+      border-radius: 1rem;
+      user-select: none;
+    }
+
+    .ba-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .ba-after-layer {
+      position: absolute;
+      inset: 0;
+      width: 50%;
+      overflow: hidden;
+      border-right: 2px solid #10b981;
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+      transition: width 0.1s linear;
+    }
+
+    .ba-badge {
+      position: absolute;
+      top: 0.65rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.65rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      backdrop-filter: blur(8px);
+      z-index: 5;
+    }
+    .ba-badge.before {
+      right: 0.65rem;
+      background: rgba(239, 68, 68, 0.75);
+      color: #fff;
+    }
+    .ba-badge.after {
+      left: 0.65rem;
+      background: rgba(16, 185, 129, 0.85);
+      color: #fff;
+    }
+
+    .ba-slider-handle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 50%;
+      background: #10b981;
+      color: #050807;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
+      cursor: ew-resize;
+      font-size: 0.8rem;
+      z-index: 10;
+    }
+
+    /* 4 Eco-Reactions */
+    .eco-reaction-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.45rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .reaction-group {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-eco-react {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.4rem 0.65rem;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s var(--ease-fluid);
+    }
+
+    .btn-eco-react:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: scale(1.05);
+      color: var(--text-main);
+    }
+
+    .btn-eco-react.reacted-love {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: rgba(16, 185, 129, 0.45);
+      color: #34d399;
+    }
+
+    /* Right Sidebar Widgets */
+    .telemetry-widget-card {
+      padding: 1.15rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .telemetry-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.85rem;
+    }
+
+    .telemetry-metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+    }
+
+    .tele-metric-box {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border-subtle);
+      border-radius: 0.85rem;
+      padding: 0.65rem;
+    }
+
+    .tele-val {
+      font-size: 1.15rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: #fff;
+    }
+
+    .tele-sub {
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* District Chat */
+    .district-chat-card {
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      height: 440px;
+    }
+
+    .district-chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 0.75rem;
+    }
+
+    .district-select-styled {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--border-subtle);
+      color: #34d399;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border-radius: var(--radius-pill);
+      padding: 0.3rem 0.65rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .chat-messages-scroll {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      padding-right: 0.2rem;
+    }
+
+    .chat-msg {
+      max-width: 85%;
+      padding: 0.45rem 0.75rem;
+      border-radius: 0.85rem;
+      font-size: 0.75rem;
+      line-height: 1.35;
+    }
+
+    .chat-msg.incoming {
+      align-self: flex-start;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-subtle);
+      border-bottom-left-radius: 0.15rem;
+    }
+
+    .chat-msg.outgoing {
+      align-self: flex-end;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(4, 120, 87, 0.4));
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #fff;
+      border-bottom-right-radius: 0.15rem;
+    }
+
+    /* Leaderboard */
+    .leaderboard-widget {
+      margin-top: 1.25rem;
+      padding: 1.15rem;
+    }
+
+    .rank-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      margin-top: 0.75rem;
+    }
+
+    .rank-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.4rem 0.55rem;
+      border-radius: 0.75rem;
+      background: rgba(255, 255, 255, 0.03);
+      font-size: 0.75rem;
+    }
+
+    .rank-row.current-user {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    /* ==========================================================================
+       6. WEBGIS MULTI-LAYER & 3D BUILDINGS (STT 17 ➔ 21 & STT 44)
+       ========================================================================== */
+    .webgis-container-card {
+      padding: 1.25rem;
+    }
+
+    .map-canvas-mock {
+      width: 100%;
+      height: 520px;
+      border-radius: 1.15rem;
+      position: relative;
+      overflow: hidden;
+      background: #09130e;
+      border: 1px solid var(--border-subtle);
+      box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.8);
+    }
+
+    .map-canvas-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.75;
+      transition: filter 0.5s ease, opacity 0.5s ease;
+    }
+
+    /* Map Controls Float Island */
+    .map-controls-float {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      z-index: 10;
+    }
+
+    .map-tool-island {
+      background: rgba(10, 17, 14, 0.9);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 1rem;
+      padding: 0.65rem 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    .map-select-styled {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid var(--border-subtle);
+      color: #38bdf8;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border-radius: var(--radius-pill);
+      padding: 0.3rem 0.65rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .map-floating-pins-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .map-marker-pin {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      pointer-events: auto;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.25s var(--ease-fluid);
+    }
+
+    .map-marker-pin:hover {
+      transform: translate(-50%, -50%) scale(1.15);
+      z-index: 20;
+    }
+
+    .pin-icon-bubble {
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+      border: 2px solid #fff;
+    }
+
+    .pin-label {
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-pill);
+      padding: 0.15rem 0.55rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      white-space: nowrap;
+      margin-top: 0.25rem;
+    }
+
+    /* 3D Flowing Flood Vector Line (STT 44) */
+    .svg-flow-layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .flood-vector-line {
+      stroke: #38bdf8;
+      stroke-width: 6;
+      stroke-linecap: round;
+      fill: none;
+      stroke-dasharray: 12 8;
+      animation: dash-flow 1.5s linear infinite;
+    }
+
+    .flood-vector-glow {
+      stroke: rgba(6, 182, 212, 0.4);
+      stroke-width: 14;
+      stroke-linecap: round;
+      fill: none;
+    }
+
+    @keyframes dash-flow {
+      from { stroke-dashoffset: 40; }
+      to { stroke-dashoffset: 0; }
+    }
+
+    /* ==========================================================================
+       7. ADMIN DISPATCH, CRUD & SLA ESCALATION (STT 14 ➔ 16, 22 ➔ 26, 35)
+       ========================================================================== */
+    .admin-stats-overview {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .admin-kpi-card {
+      padding: 1rem 1.15rem;
+    }
+
+    .kpi-num {
+      font-size: 1.65rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      margin-bottom: 0.15rem;
+    }
+
+    .kpi-label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+    }
+
+    .table-dispatch {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 0.45rem;
+      font-size: 0.8rem;
+    }
+
+    .table-dispatch th {
+      padding: 0.65rem 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-align: left;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .table-dispatch tr.dispatch-row {
+      background: rgba(255, 255, 255, 0.03);
+      transition: all 0.25s var(--ease-fluid);
+      cursor: pointer;
+    }
+
+    .table-dispatch tr.dispatch-row:hover {
+      background: rgba(255, 255, 255, 0.07);
+      transform: translateY(-1px);
+    }
+
+    .table-dispatch td {
+      padding: 0.75rem 0.85rem;
+      vertical-align: middle;
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .table-dispatch td:first-child {
+      border-left: 1px solid var(--border-subtle);
+      border-top-left-radius: 0.85rem;
+      border-bottom-left-radius: 0.85rem;
+    }
+
+    .table-dispatch td:last-child {
+      border-right: 1px solid var(--border-subtle);
+      border-top-right-radius: 0.85rem;
+      border-bottom-right-radius: 0.85rem;
+    }
+
+    /* Risk Score Badges (STT 39) */
+    .risk-score-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-pill);
+      font-weight: 800;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+    }
+
+    .risk-score-badge.high {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+
+    .risk-score-badge.medium {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .risk-score-badge.low {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    /* CRUD Portals Grid */
+    .crud-grid-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 1.25rem;
+    }
+
+    .crud-box {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border-subtle);
+      border-radius: 1rem;
+      padding: 1rem;
+      transition: all 0.25s var(--ease-fluid);
+    }
+
+    .crud-box:hover {
+      border-color: rgba(16, 185, 129, 0.35);
+      background: rgba(0, 0, 0, 0.55);
+    }
+
+    /* ==========================================================================
+       8. IOT & HARMONIC TIDE HYDROLOGY ENGINE (STT 25 ➔ 36)
+       ========================================================================== */
+    .tide-curve-canvas {
+      width: 100%;
+      height: 220px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 0.85rem;
+      border: 1px solid var(--border-subtle);
+      display: block;
+      margin-top: 0.75rem;
+    }
+
+    .radar-layers-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.65rem;
+      margin-top: 0.85rem;
+    }
+
+    .radar-toggle-btn {
+      padding: 0.55rem;
+      border-radius: 0.75rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s var(--ease-fluid);
+    }
+
+    .radar-toggle-btn.active {
+      background: rgba(6, 182, 212, 0.2);
+      border-color: rgba(6, 182, 212, 0.4);
+      color: #67e8f9;
+      font-weight: 700;
+    }
+
+    /* ==========================================================================
+       9. AI SPATIAL, ROUTING & BIG DATA ANALYTICS (STT 37 ➔ 48)
+       ========================================================================== */
+    .route-comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .route-card {
+      border-radius: 1rem;
+      padding: 1rem;
+      position: relative;
+    }
+
+    .route-card.fastest-danger {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+    }
+
+    .route-card.safest-avoid {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+
+    /* Parquet Big Data Grid */
+    .parquet-stats-summary {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Modals Engine */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(16px);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal-box {
+      max-width: 680px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .modal-box-lg {
+      max-width: 960px;
+    }
+
+    .modal-header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.15rem 1.35rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .modal-header-bar h3 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-close-modal {
+      width: 1.85rem;
+      height: 1.85rem;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-subtle);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s var(--ease-fluid);
+    }
+
+    .btn-close-modal:hover {
+      background: rgba(239, 68, 68, 0.25);
+      color: #fca5a5;
+    }
+
+    .modal-body {
+      padding: 1.35rem;
+    }
+
+    /* Camera Viewfinder HUD */
+    .camera-viewfinder-hud {
+      position: relative;
+      width: 100%;
+      height: 350px;
+      background: #000;
+      border-radius: 1.15rem;
+      overflow: hidden;
+      margin-bottom: 1.15rem;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    #cameraSampleOverlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .camera-grid-lines {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: 1fr 1fr 1fr;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .grid-cell {
+      border: 0.5px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .camera-hud-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 3.5rem;
+      height: 3.5rem;
+      border: 1.5px solid rgba(52, 211, 153, 0.7);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .camera-watermark {
+      position: absolute;
+      bottom: 0.85rem;
+      left: 0.85rem;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 0.7rem;
+      padding: 0.45rem 0.75rem;
+      font-size: 0.68rem;
+      font-family: var(--font-mono);
+      color: #38bdf8;
+      line-height: 1.35;
+      pointer-events: none;
+    }
+
+    .shutter-btn {
+      width: 3.6rem;
+      height: 3.6rem;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 4px solid rgba(16, 185, 129, 0.6);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 25px rgba(255, 255, 255, 0.4);
+      transition: all 0.2s var(--ease-fluid);
+    }
+
+    .shutter-btn:active {
+      transform: scale(0.92);
+      background: #10b981;
+    }
+
+    .shutter-inner {
+      width: 2.6rem;
+      height: 2.6rem;
+      border-radius: 50%;
+      border: 2px solid #000;
+    }
+
+    /* Form Fields */
+    .form-group {
+      margin-bottom: 0.85rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-subtle);
+      border-radius: 0.75rem;
+      padding: 0.55rem 0.85rem;
+      font-size: 0.825rem;
+      color: #fff;
+      font-family: var(--font-sans);
+      outline: none;
+      transition: border-color 0.2s var(--ease-fluid);
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--primary);
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      pointer-events: none;
+    }
+
+    .toast-card {
+      pointer-events: auto;
+      min-width: 310px;
+      max-width: 420px;
+      padding: 0.75rem 1.15rem;
+      border-radius: 1rem;
+      background: rgba(10, 17, 14, 0.94);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-accent);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      animation: slide-in 0.35s var(--ease-fluid);
+    }
+
+    @keyframes slide-in {
+      from { transform: translateX(100%) scale(0.9); opacity: 0; }
+      to { transform: translateX(0) scale(1); opacity: 1; }
+    }
+
+    .toast-icon {
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+
+    .toast-title {
+      font-size: 0.825rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.1rem;
+    }
+
+    .toast-desc {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .citizen-layout-grid {
+        grid-template-columns: 280px 1fr;
+      }
+      .telemetry-col {
+        grid-column: span 2;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem;
+      }
+      .crud-grid-container {
+        grid-template-columns: 1fr 1fr;
+      }
+      .split-layout-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .citizen-layout-grid, .admin-layout-grid {
+        grid-template-columns: 1fr;
+      }
+      .crud-grid-container {
+        grid-template-columns: 1fr;
+      }
+      .admin-stats-overview {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==========================================================================
+       TOP FLOATING NAV: BRAND + 6 COMPREHENSIVE VIEW TABS (48 FUNCTIONS)
+       ========================================================================== -->
+  <header class="navbar-container">
+    <div class="nav-floating-pill">
+      
+      <!-- Brand Logo -->
+      <a href="#" class="brand-section" onclick="switchView('citizen')">
+        <div class="brand-logo-mark">🌿</div>
+        <div class="brand-text">
+          <h1>GREENSPOT <span class="eyebrow">48 MAJOR FEATURES</span></h1>
+          <p>NỀN TẢNG WEBGIS SINH THÁI, GIÁM SÁT NGẬP LỤT & MẠNG XÃ HỘI ĐÔ THỊ</p>
+        </div>
+      </a>
+
+      <!-- 6 Major Switcher Tabs Covering STT 01 ➔ STT 48 -->
+      <div class="role-switcher-pill">
+        <button class="role-tab active" id="tabCitizen" onclick="switchView('citizen')">
+          <span>🧑‍🤝‍🧑</span>
+          <span>1. Mạng Xã Hội Xanh (STT 01-12)</span>
+        </button>
+        <button class="role-tab webgis" id="tabWebgis" onclick="switchView('webgis')">
+          <span>🗺️</span>
+          <span>2. WebGIS 3D & Mảng Xanh (STT 17-21)</span>
+        </button>
+        <button class="role-tab admin" id="tabAdmin" onclick="switchView('admin')">
+          <span>🛡️</span>
+          <span>3. Điều Phối & CRUD SLA (STT 13-16, 22-24)</span>
+        </button>
+        <button class="role-tab iot" id="tabIot" onclick="switchView('iot')">
+          <span>🌊</span>
+          <span>4. IoT Khí Tượng & Sóng Triều (STT 25-36)</span>
+        </button>
+        <button class="role-tab ai" id="tabAi" onclick="switchView('ai')">
+          <span>🤖</span>
+          <span>5. AI Không Gian, SOS & Né Ngập (STT 37-47)</span>
+        </button>
+        <button class="role-tab bigdata" id="tabBigdata" onclick="switchView('bigdata')">
+          <span>📊</span>
+          <span>6. Big Data 7.1M & i18n (STT 48)</span>
+        </button>
+        <button class="role-tab split" id="tabSplit" onclick="switchView('split')">
+          <span>⚡</span>
+          <span>Song Song (Bridge)</span>
+        </button>
+      </div>
+
+      <!-- Top Right Utility Actions: RBAC, i18n, Green Passport Mini -->
+      <div class="top-utility-bar">
+        <!-- RBAC Switcher (STT 03) -->
+        <div class="badge-rbac-selector" onclick="openRbacModal()" title="Chuyển vai trò phân quyền RBAC (STT 03)">
+          <span>🛡️ RBAC:</span>
+          <strong id="currentRoleLabel">CITIZEN</strong>
+        </div>
+
+        <!-- i18n Switcher (STT 48) -->
+        <button class="btn-island btn-ghost" style="padding: 0.25rem 0.55rem; font-size: 0.72rem;" onclick="toggleLanguage()" title="Chuyển đổi ngôn ngữ Việt - Anh (STT 48)">
+          <span id="currentLangLabel">🌐 VI</span>
+        </button>
+
+        <!-- Green Passport Pill (STT 04 & STT 11) -->
+        <div class="user-passport-pill" onclick="openPassportModal()">
+          <div class="user-avatar-mini">Đ</div>
+          <div class="user-meta-info">
+            <div class="user-meta-name">Thành Đạt</div>
+            <div class="user-meta-rank">
+              <span id="userTotalPointsBadge" style="font-family:var(--font-mono)">1,450 pts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ==========================================================================
+       MAIN APP VIEWPORT
+       ========================================================================== -->
+  <main class="app-viewport">
+    
+    <!-- Realtime Live Dispatch Notification Ticker -->
+    <div class="dispatch-live-ticker">
+      <div class="ticker-content">
+        <span class="pulse-dot"></span>
+        <strong style="color: #34d399">TRỰC BAN ĐÔ THỊ THỜI GIAN THỰC:</strong>
+        <span id="liveTickerText">Đội phản ứng nhanh Q.Bình Thạnh vừa tiếp nhận xử lý bãi rác kênh Nhiêu Lộc (#INC-2026-0891) • SLA cam kết: 4 giờ</span>
+      </div>
+      <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim);">
+        <span id="clockDisplay">14:32:08</span> | TP. HỒ CHÍ MINH
+      </div>
+    </div>
+
+    <!-- ==========================================================================
+         VIEW 1: MẠNG XÃ HỘI XANH, AUTH & GAMIFICATION (STT 01 ➔ 12)
+         ========================================================================== -->
+    <div id="viewCitizen" class="view-mode-container">
+      <div class="section-title-bar">
+        <div>
+          <h2><span>🧑‍🤝‍🧑</span> <span>PHẦN 1: QUẢN TRỊ RBAC, XÁC THỰC AUTH & MẠNG XÃ HỘI XANH</span></h2>
+          <p>Phụ trách: <strong>Nguyễn Thành Đạt</strong> (STT 01 ➔ STT 12: OTP Mail, OAuth2 JWT, RBAC, Green Passport, Rate-limit, Geo-Feed, Eco-Reactions, Chủ Nhật Xanh, Geofencing 100m, Gamification, Chat Quận)</p>
+        </div>
+        <div style="display: flex; gap: 0.45rem;">
+          <button class="btn-island btn-ghost" onclick="openAuthModal('login')">🔑 Đăng nhập JWT (STT 02)</button>
+          <button class="btn-island btn-ghost" onclick="openAuthModal('register')">✉️ Đăng ký OTP (STT 01)</button>
+          <button class="btn-island btn-accent" onclick="openRateLimitModal()">🛡️ Anti-Spam (STT 05)</button>
+        </div>
+      </div>
+
+      <div class="citizen-layout-grid">
+        
+        <!-- LEFT SIDEBAR: Green Passport & Navigation -->
+        <aside class="sidebar-col">
+          <div class="double-bezel">
+            <div class="bezel-core sidebar-card">
+              
+              <!-- Green Passport Card (STT 04) -->
+              <div class="passport-badge-card">
+                <div class="passport-header">
+                  <div class="passport-avatar-lg">🌱</div>
+                  <div class="passport-title">
+                    <h3>Nguyễn Thành Đạt</h3>
+                    <div class="passport-rank-badge">
+                      <span>🌳 Rừng Xanh Hộ Vệ (Rank 3/4)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="rank-progress-container">
+                  <div class="rank-progress-labels">
+                    <span>Tiến độ lên Hiệp Sĩ Sinh Thái</span>
+                    <strong style="color: #34d399">1,450 / 2,000 pts</strong>
+                  </div>
+                  <div class="rank-progress-bar">
+                    <div class="rank-progress-fill"></div>
+                  </div>
+                </div>
+
+                <div class="passport-stats-grid">
+                  <div class="stat-mini-box">
+                    <div class="stat-mini-val accent" id="sidebarStatIncidents">18</div>
+                    <div class="stat-mini-label">Sự cố đã báo</div>
+                  </div>
+                  <div class="stat-mini-box">
+                    <div class="stat-mini-val" id="sidebarStatResolved">16</div>
+                    <div class="stat-mini-label">Đã xử lý sạch</div>
+                  </div>
+                  <div class="stat-mini-box">
+                    <div class="stat-mini-val accent">85.4 kg</div>
+                    <div class="stat-mini-label">Rác đã thu gom</div>
+                  </div>
+                  <div class="stat-mini-box">
+                    <div class="stat-mini-val">4 Huy hiệu</div>
+                    <div class="stat-mini-label">Danh hiệu xanh</div>
+                  </div>
+                </div>
+
+                <button class="btn-island btn-primary" style="width: 100%; justify-content: center;" onclick="openPassportModal()">
+                  <span>Mở Hộ Chiếu Xanh Điện Tử (STT 04)</span>
+                  <div class="btn-icon-bubble">💳</div>
+                </button>
+              </div>
+
+              <!-- Menu Actions (STT 06 ➔ 12) -->
+              <ul class="nav-menu-list">
+                <li>
+                  <button class="nav-item-btn active" onclick="filterFeedByRadius('all')">
+                    <div class="nav-item-icon-title">
+                      <span>📰</span>
+                      <span>Bảng Tin Sinh Thái Đô Thị (STT 06)</span>
+                    </div>
+                    <span class="nav-item-pill-count" id="badgePostCount">5 bài</span>
+                  </button>
+                </li>
+                <li>
+                  <button class="nav-item-btn" onclick="openCameraModal()">
+                    <div class="nav-item-icon-title">
+                      <span>📸</span>
+                      <span>Chụp Ảnh Hiện Trường GPS (STT 07 & 13)</span>
+                    </div>
+                    <span class="nav-item-pill-count alert">EXIF</span>
+                  </button>
+                </li>
+                <li>
+                  <button class="nav-item-btn" onclick="openSosModal()">
+                    <div class="nav-item-icon-title">
+                      <span>🆘</span>
+                      <span>Cứu Hộ Ngập Lụt SOS 2km (STT 37)</span>
+                    </div>
+                    <span class="nav-item-pill-count alert">Cấp cứu</span>
+                  </button>
+                </li>
+                <li>
+                  <button class="nav-item-btn" onclick="openFloodOneTapModal()">
+                    <div class="nav-item-icon-title">
+                      <span>🌊</span>
+                      <span>Báo Ngập 1 Chạm Snap OSRM (STT 43)</span>
+                    </div>
+                    <span class="nav-item-pill-count">+30 pts</span>
+                  </button>
+                </li>
+                <li>
+                  <button class="nav-item-btn" onclick="openCleanupModal()">
+                    <div class="nav-item-icon-title">
+                      <span>🧹</span>
+                      <span>Chiến Dịch Chủ Nhật Xanh (STT 09)</span>
+                    </div>
+                    <span class="nav-item-pill-count" style="color:#34d399">RSVP</span>
+                  </button>
+                </li>
+                <li>
+                  <button class="nav-item-btn" onclick="openTrackingModal()">
+                    <div class="nav-item-icon-title">
+                      <span>🔍</span>
+                      <span>Tra Cứu Mã Sự Cố (STT 14)</span>
+                    </div>
+                    <span class="nav-item-pill-count">INC-2026</span>
+                  </button>
+                </li>
+                <li>
+                  <button class="nav-item-btn" onclick="openEcoWalletModal()">
+                    <div class="nav-item-icon-title">
+                      <span>🎁</span>
+                      <span>Ví Điểm Đổi Quà Xanh (STT 11)</span>
+                    </div>
+                    <span class="nav-item-pill-count" style="color:#fbbf24">Eco-Wallet</span>
+                  </button>
+                </li>
+              </ul>
+
+            </div>
+          </div>
+        </aside>
+
+        <!-- CENTER FEED: Composer & Social Posts Stream -->
+        <section class="feed-col">
+          
+          <!-- Post Composer Card (STT 07) -->
+          <div class="double-bezel feed-composer-card">
+            <div class="bezel-core" style="padding: 1.15rem;">
+              
+              <div class="composer-user-prompt">
+                <div class="author-avatar" style="width: 2.2rem; height: 2.2rem; font-size: 0.9rem;">Đ</div>
+                <div class="composer-input-fake" onclick="openCameraModal()">
+                  Đạt ơi, bạn phát hiện bãi rác xả trộm, cây ngã hay đoạn đường ngập úng nào quanh đây?
+                </div>
+              </div>
+
+              <!-- 3 Trigger Buttons -->
+              <div class="composer-quick-actions">
+                <button class="composer-action-btn camera-trigger" onclick="openCameraModal()">
+                  <span>📸</span>
+                  <span>Chụp Ảnh Báo Sự Cố (STT 07/13)</span>
+                </button>
+                <button class="composer-action-btn sos-trigger" onclick="openSosModal()">
+                  <span>🆘</span>
+                  <span>Cứu Hộ SOS 2km (STT 37)</span>
+                </button>
+                <button class="composer-action-btn flood-trigger" onclick="openFloodOneTapModal()">
+                  <span>🌊</span>
+                  <span>Báo Đường Ngập (STT 43)</span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Hyperlocal Geo-Feed Radius Filter Bar (STT 06) -->
+          <div class="feed-filter-bar">
+            <div class="filter-row">
+              <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; margin-right: 0.25rem;">BÁN KÍNH GPS (STT 06):</span>
+              <button class="filter-pill active" onclick="setRadiusFilter('all', this)">Toàn Thành Phố</button>
+              <button class="filter-pill" onclick="setRadiusFilter('1km', this)">📍 Gần tôi (&lt; 1km)</button>
+              <button class="filter-pill" onclick="setRadiusFilter('3km', this)">Trong 3km</button>
+              <button class="filter-pill" onclick="setRadiusFilter('5km', this)">Khu vực 5km</button>
+            </div>
+            
+            <div class="filter-row">
+              <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; margin-right: 0.25rem;">CHUYÊN MỤC:</span>
+              <button class="filter-pill active" onclick="setHashtagFilter('all', this)">Tất cả</button>
+              <button class="filter-pill" onclick="setHashtagFilter('#ZeroWaste', this)">#ZeroWaste (Rác thải)</button>
+              <button class="filter-pill" onclick="setHashtagFilter('#FloodWarning', this)">#FloodWarning (Ngập lụt)</button>
+              <button class="filter-pill" onclick="setHashtagFilter('#CleanUp', this)">#CleanUp (Dọn vệ sinh)</button>
+              <button class="filter-pill" onclick="setHashtagFilter('#SOSKhancap', this)">#SOSKhancap</button>
+            </div>
+          </div>
+
+          <!-- Feed Posts Dynamic Stream (STT 06, 08, 09, 10, 14) -->
+          <div class="feed-stream" id="feedStreamContainer"></div>
+
+        </section>
+
+        <!-- RIGHT SIDEBAR: Telemetry & District Live Chat (STT 12, 27, 28, 38) -->
+        <aside class="telemetry-col">
+          
+          <!-- Environmental Telemetry Widget (STT 27, 28, 32) -->
+          <div class="double-bezel telemetry-widget-card">
+            <div class="bezel-core" style="padding: 1.15rem;">
+              <div class="telemetry-header">
+                <div>
+                  <h4 style="font-size: 0.82rem; font-weight: 700;">📡 VI TRẠM KHÍ TƯỢNG & TRIỀU</h4>
+                  <p style="font-size: 0.65rem; color: var(--text-muted)">Trạm Phú An & CAMS Air Quality</p>
+                </div>
+                <span class="eyebrow eyebrow-red">ĐỈNH TRIỀU BĐ3</span>
+              </div>
+
+              <div class="telemetry-metrics-grid">
+                <div class="tele-metric-box">
+                  <div class="tele-val" style="color: #ef4444">1.68 m</div>
+                  <div class="tele-sub">Mực nước Phú An (STT 32)</div>
+                </div>
+                <div class="tele-metric-box">
+                  <div class="tele-val" style="color: #f59e0b">AQI 118</div>
+                  <div class="tele-sub">Bụi mịn US EPA (STT 28)</div>
+                </div>
+                <div class="tele-metric-box">
+                  <div class="tele-val" style="color: #38bdf8">28.4 °C</div>
+                  <div class="tele-sub">Nhiệt độ mặt đất (STT 27)</div>
+                </div>
+                <div class="tele-metric-box">
+                  <div class="tele-val" style="color: #34d399">12.5 mm</div>
+                  <div class="tele-sub">Vũ lượng mưa 1h</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- District Live Chat Room (STT 12) -->
+          <div class="double-bezel">
+            <div class="bezel-core district-chat-card">
+              
+              <div class="district-chat-header">
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                  <span class="pulse-dot"></span>
+                  <span style="font-size: 0.8rem; font-weight: 700;">CHAT QUẬN (STT 12)</span>
+                </div>
+                <select class="district-select-styled" id="districtSelect" onchange="switchDistrictChat(this.value)">
+                  <option value="q1">Quận 1</option>
+                  <option value="binhthanh" selected>Quận Bình Thạnh</option>
+                  <option value="thuduc">TP. Thủ Đức</option>
+                  <option value="q7">Quận 7</option>
+                </select>
+              </div>
+
+              <!-- Message History Scroll -->
+              <div class="chat-messages-scroll" id="districtChatMessages"></div>
+
+              <!-- Chat Input Bar -->
+              <form class="chat-input-bar" onsubmit="sendDistrictChatMessage(event)">
+                <input type="text" class="input-chat-text" id="inputChatMessage" placeholder="Nhắn tin về tình hình ngập, kẹt xe..." autocomplete="off">
+                <button type="submit" class="btn-island btn-primary" style="padding: 0.4rem 0.75rem; font-size: 0.75rem;">
+                  <span>Gửi</span>
+                </button>
+              </form>
+
+            </div>
+          </div>
+
+          <!-- Monthly Leaderboard (STT 38) -->
+          <div class="double-bezel leaderboard-widget">
+            <div class="bezel-core" style="padding: 1.15rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <h4 style="font-size: 0.82rem; font-weight: 700;">🏆 VINH DANH XANH (STT 38)</h4>
+                <span class="eyebrow">TOP 10 THÁNG</span>
+              </div>
+
+              <div class="rank-list">
+                <div class="rank-row">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🥇</span>
+                    <strong>Lê Bảo Trâm</strong>
+                  </div>
+                  <span style="font-family: var(--font-mono); color: #fbbf24">2,850 pts</span>
+                </div>
+                <div class="rank-row current-user">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🥈</span>
+                    <strong>Nguyễn Thành Đạt (Bạn)</strong>
+                  </div>
+                  <span style="font-family: var(--font-mono); color: #34d399">1,450 pts</span>
+                </div>
+                <div class="rank-row">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🥉</span>
+                    <strong>Huỳnh Anh Tú</strong>
+                  </div>
+                  <span style="font-family: var(--font-mono); color: #94a3b8">1,220 pts</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </aside>
+
+      </div>
+    </div>
+
+    <!-- ==========================================================================
+         VIEW 2: WEBGIS ĐA TẦNG, 3D NHÀ CỬA & MẢNG XANH (STT 17 ➔ 21 & STT 44)
+         ========================================================================== -->
+    <div id="viewWebgis" class="view-mode-container" style="display: none;">
+      <div class="section-title-bar">
+        <div>
+          <h2><span>🗺️</span> <span>PHẦN 2A: NỀN TẢNG BẢN ĐỒ SỐ WEBGIS ĐA TẦNG, 3D NHÀ CỬA & MẢNG XANH</span></h2>
+          <p>Phụ trách: <strong>Huỳnh Anh Tú</strong> (STT 17 ➔ STT 21, STT 44: 7 Chế độ nền & Live Traffic, Đùn khối 3D 5 Theme màu, Ranh giới 22 Quận, Green Spots, Điểm Tái Chế E-waste, Tuyến ngập 3 lớp vector)</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn-island btn-primary" onclick="simulateFlyToDistrict()">🚀 Bay camera flyTo Quận 1 (STT 19)</button>
+          <button class="btn-island btn-ghost" onclick="toggle3DTheme()">🏢 Đổi 5 Theme màu 3D (STT 18)</button>
+        </div>
+      </div>
+
+      <div class="double-bezel webgis-container-card">
+        <div class="bezel-core" style="padding: 1.25rem;">
+          
+          <!-- Map Canvas Mockup with Interactive Layers -->
+          <div class="map-canvas-mock" id="mockWebgisMap">
+            <img class="map-canvas-bg" id="mapTileBg" src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1600&q=80" alt="Map View">
+
+            <!-- Map Floating Controls (STT 17, 18, 19) -->
+            <div class="map-controls-float">
+              
+              <!-- Basemap Switcher (STT 17: 7 Modes) -->
+              <div class="map-tool-island">
+                <span style="font-size: 0.72rem; font-weight: 700;">🗺️ BẢN ĐỒ NỀN (STT 17):</span>
+                <select class="map-select-styled" id="basemapSelect" onchange="changeBasemapMode(this.value)">
+                  <option value="roadmap">1. Google Roadmap</option>
+                  <option value="hybrid" selected>2. Vệ Tinh Hybrid</option>
+                  <option value="traffic">3. Google Live Traffic (Giao thông)</option>
+                  <option value="osm">4. OpenStreetMap Standard</option>
+                  <option value="topo">5. OpenTopoMap Địa Hình</option>
+                  <option value="voyager">6. Carto Voyager</option>
+                  <option value="dark">7. Carto Dark Ban Đêm</option>
+                </select>
+              </div>
+
+              <!-- 3D Extrusion Theme (STT 18: 5 Themes) -->
+              <div class="map-tool-island">
+                <span style="font-size: 0.72rem; font-weight: 700;">🏢 3D BUILDINGS (STT 18):</span>
+                <select class="map-select-styled" id="theme3DSelect" onchange="change3DTheme(this.value)">
+                  <option value="cyberpunk">Theme 1: Cyberpunk Neon</option>
+                  <option value="eco" selected>Theme 2: Sinh Thái Xanh</option>
+                  <option value="sunset">Theme 3: Hoàng Hôn Rực Rỡ</option>
+                  <option value="rainbow">Theme 4: Cầu Vồng Đô Thị</option>
+                  <option value="crystal">Theme 5: Tinh Thể Pha Lê</option>
+                </select>
+              </div>
+
+              <!-- District Boundary Navigation (STT 19: 22 Districts) -->
+              <div class="map-tool-island">
+                <span style="font-size: 0.72rem; font-weight: 700;">📍 RANH GIỚI 22 QUẬN (STT 19):</span>
+                <select class="map-select-styled" id="districtFlySelect" onchange="flyToSelectedDistrict(this.value)">
+                  <option value="q1">Quận 1 (Trung tâm)</option>
+                  <option value="binhthanh">Quận Bình Thạnh</option>
+                  <option value="thuduc">TP. Thủ Đức</option>
+                  <option value="q7">Quận 7 (Khu Nam)</option>
+                  <option value="q5">Quận 5 (Chợ Lớn)</option>
+                  <option value="cangio">Huyện Cần Giờ (Rừng Sác)</option>
+                </select>
+              </div>
+
+            </div>
+
+            <!-- SVG 3-Layer Flowing Flood Corridor (STT 44) -->
+            <svg class="svg-flow-layer" viewBox="0 0 1000 600">
+              <!-- Layer 1: Gray OSRM road base -->
+              <path d="M 120 480 Q 400 320 650 350 T 920 200" stroke="#334155" stroke-width="16" fill="none" stroke-linecap="round"/>
+              <!-- Layer 2: Glowing Warning border -->
+              <path class="flood-vector-glow" d="M 120 480 Q 400 320 650 350 T 920 200"/>
+              <!-- Layer 3: Dynamic line-dasharray water flow -->
+              <path class="flood-vector-line" d="M 120 480 Q 400 320 650 350 T 920 200"/>
+            </svg>
+
+            <!-- Floating Interactive Pins (STT 20 Green Spots, STT 21 Recycling Hubs, STT 13 Incidents) -->
+            <div class="map-floating-pins-layer">
+              <!-- Green Spot: Tao Dan Park (STT 20) -->
+              <div class="map-marker-pin" style="top: 45%; left: 32%;" onclick="openGreenSpotDetail()">
+                <div class="pin-icon-bubble" style="background: #10b981;">🌳</div>
+                <div class="pin-label">Công viên Tao Đàn (Lá phổi xanh 10ha - STT 20)</div>
+              </div>
+
+              <!-- Recycling Hub: Pin cũ & E-waste (STT 21) -->
+              <div class="map-marker-pin" style="top: 60%; left: 55%;" onclick="openRecyclingHubDetail()">
+                <div class="pin-icon-bubble" style="background: #06b6d4;">🔋</div>
+                <div class="pin-label">Trạm Thu Pin Cũ & E-Waste Q.1 (STT 21)</div>
+              </div>
+
+              <!-- Flood Hotspot Line Node (STT 25) -->
+              <div class="map-marker-pin" style="top: 38%; left: 65%;" onclick="openFloodHotspotDetail()">
+                <div class="pin-icon-bubble" style="background: #ef4444;">🌊</div>
+                <div class="pin-label">Điểm Đen Ngập: Nguyễn Hữu Cảnh (STT 25)</div>
+              </div>
+            </div>
+
+            <!-- Map Bottom Legend -->
+            <div style="position: absolute; bottom: 1rem; left: 1rem; right: 1rem; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); border-radius: 0.85rem; padding: 0.65rem 1rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-subtle); font-size: 0.72rem;">
+              <div style="display: flex; gap: 1rem; align-items: center;">
+                <span style="display: flex; align-items: center; gap: 0.35rem;"><span style="color:#10b981">●</span> <strong>Green Spots (STT 20):</strong> Mảng xanh đô thị</span>
+                <span style="display: flex; align-items: center; gap: 0.35rem;"><span style="color:#06b6d4">●</span> <strong>Recycling Hub (STT 21):</strong> Trạm thu gom vỏ pin & E-Waste</span>
+                <span style="display: flex; align-items: center; gap: 0.35rem;"><span style="color:#ef4444">●</span> <strong>Tuyến ngập 3 lớp (STT 44):</strong> Hoạt ảnh dòng chảy cuồn cuộn</span>
+              </div>
+              <div style="font-family: var(--font-mono); color: #38bdf8;">
+                WebGL Shaders: Active • OpenMapTiles 3D Buildings Loaded
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================================================
+         VIEW 3: BAN QUẢN TRỊ, ĐIỀU PHỐI & CRUD QUẢN LÝ (STT 13-16, 22-24, 35)
+         ========================================================================== -->
+    <div id="viewAdmin" class="view-mode-container" style="display: none;">
+      <div class="section-title-bar">
+        <div>
+          <h2><span>🛡️</span> <span>PHẦN 2B: TIẾP NHẬN SỰ CỐ, ĐIỀU PHỐI ĐỘI CÔNG ÍCH & CRUD QUẢN LÝ SLA</span></h2>
+          <p>Phụ trách: <strong>Huỳnh Anh Tú</strong> (STT 13 ➔ STT 16, STT 22 ➔ STT 24, STT 35: Tiếp nhận GPS, State Machine, Điều phối 22 Quận, KPI SLA, CRUD Rác, CRUD Trạm Tái Chế, CRUD Cơ Sở Thiết Yếu, CRUD Đơn Vị Hành Chính)</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn-island btn-ghost" onclick="renderAdminTable()">🔄 Làm mới</button>
+          <button class="btn-island btn-primary" onclick="simulateCitizenQuickPost()">+ Báo Cáo Mới (Demo Test)</button>
+        </div>
+      </div>
+
+      <!-- Top Operational Metrics (STT 16) -->
+      <div class="admin-stats-overview">
+        <div class="double-bezel">
+          <div class="bezel-core admin-kpi-card">
+            <div class="kpi-num" style="color: #fbbf24;" id="adminStatPending">3</div>
+            <div class="kpi-label">Sự cố chờ tiếp nhận (STT 14)</div>
+          </div>
+        </div>
+        <div class="double-bezel">
+          <div class="bezel-core admin-kpi-card">
+            <div class="kpi-num" style="color: #38bdf8;" id="adminStatInProgress">4</div>
+            <div class="kpi-label">Đang cử đội xử lý (STT 15)</div>
+          </div>
+        </div>
+        <div class="double-bezel">
+          <div class="bezel-core admin-kpi-card">
+            <div class="kpi-num" style="color: #34d399;" id="adminStatResolved">42</div>
+            <div class="kpi-label">Đã nghiệm thu sạch (STT 14)</div>
+          </div>
+        </div>
+        <div class="double-bezel">
+          <div class="bezel-core admin-kpi-card">
+            <div class="kpi-num" style="color: #ef4444;">96.8%</div>
+            <div class="kpi-label">Tỷ lệ hoàn thành SLA (STT 16)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Dispatch Queue Table (STT 14 & STT 15) -->
+      <div class="double-bezel" style="margin-bottom: 1.5rem;">
+        <div class="bezel-core" style="padding: 1.25rem;">
+          <h3 style="font-size: 1rem; font-weight: 800; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
+            <span>⚡ HÀNG ĐỢI ĐIỀU PHỐI ĐỘI PHẢN ỨNG NHANH CẤP QUẬN (STT 14 & 15)</span>
+            <span class="eyebrow eyebrow-red">REALTIME DISPATCH</span>
+          </h3>
+
+          <div class="table-responsive">
+            <table class="table-dispatch">
+              <thead>
+                <tr>
+                  <th>MÃ SỰ CỐ</th>
+                  <th>HÌNH ẢNH</th>
+                  <th>LOẠI SỰ CỐ & TIÊU ĐỀ</th>
+                  <th>ĐỊA BÀN PHÂN CÔNG (STT 15)</th>
+                  <th>ĐIỂM RỦI RO (STT 39)</th>
+                  <th>THỜI HẠN SLA (STT 40)</th>
+                  <th>TRẠNG THÁI</th>
+                  <th>HÀNH ĐỘNG ĐIỀU PHỐI</th>
+                </tr>
+              </thead>
+              <tbody id="adminDispatchTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 CRUD Management Portals (STT 22, 23, 24, 35) -->
+      <div class="double-bezel">
+        <div class="bezel-core" style="padding: 1.25rem;">
+          <h3 style="font-size: 1rem; font-weight: 800; margin-bottom: 0.5rem;">
+            ⚙️ MODULE QUẢN TRỊ DANH MỤC TẬP TRUNG (CRUD PORTALS)
+          </h3>
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Quản trị cơ sở dữ liệu nền tảng PostGIS: Danh mục rác thải SLA, Trạm tái chế E-waste, Cơ sở thiết yếu & Đơn vị hành chính 22 Quận.
+          </p>
+
+          <div class="crud-grid-container">
+            
+            <!-- CRUD Waste Categories (STT 22) -->
+            <div class="crud-box">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                <h4 style="font-size: 0.85rem; font-weight: 700; color: #34d399;">1. CRUD Danh Mục Rác Thải (STT 22)</h4>
+                <span class="eyebrow">SLA RULES</span>
+              </div>
+              <p style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                Cấu hình mã loại rác, nhãn màu hex, icon đại diện, mức độ nghiêm trọng mặc định và thời hạn cam kết SLA (2h, 8h, 24h, 48h).
+              </p>
+              <button class="btn-island btn-ghost" style="width: 100%; justify-content: center; font-size: 0.75rem;" onclick="openCrudModal('waste')">
+                <span>Quản Lý Danh Mục Rác Thải</span>
+              </button>
+            </div>
+
+            <!-- CRUD Recycling Facilities (STT 23) -->
+            <div class="crud-box">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                <h4 style="font-size: 0.85rem; font-weight: 700; color: #06b6d4;">2. CRUD Trạm Tái Chế E-Waste (STT 23)</h4>
+                <span class="eyebrow eyebrow-blue">RECYCLING</span>
+              </div>
+              <p style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                Thêm mới/cập nhật điểm thu gom vỏ pin cũ, rác điện tử, nhấp chọn tọa độ Point trên WebGIS, giờ mở cửa và tổ chức phụ trách.
+              </p>
+              <button class="btn-island btn-ghost" style="width: 100%; justify-content: center; font-size: 0.75rem;" onclick="openCrudModal('recycling')">
+                <span>Quản Lý Trạm Tái Chế</span>
+              </button>
+            </div>
+
+            <!-- CRUD Essential Facilities (STT 24) -->
+            <div class="crud-box">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                <h4 style="font-size: 0.85rem; font-weight: 700; color: #fbbf24;">3. CRUD Cơ Sở Thiết Yếu (STT 24)</h4>
+                <span class="eyebrow eyebrow-amber">VULNERABILITY</span>
+              </div>
+              <p style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                Quản trị bệnh viện, trường mầm non, viện dưỡng lão phục vụ phòng chống thiên tai; đánh giá độ dễ tổn thương để quét vùng đệm 1000m.
+              </p>
+              <button class="btn-island btn-ghost" style="width: 100%; justify-content: center; font-size: 0.75rem;" onclick="openCrudModal('facilities')">
+                <span>Quản Lý Cơ Sở Thiết Yếu</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ==========================================================================
+         VIEW 4: VIỄN TRẮC IOT, KHÍ TƯỢNG & SÓNG TRIỀU (STT 25 ➔ 36)
+         ========================================================================== -->
+    <div id="viewIot" class="view-mode-container" style="display: none;">
+      <div class="section-title-bar">
+        <div>
+          <h2><span>🌊</span> <span>PHẦN 3: VIỄN TRẮC IOT, KHÍ TƯỢNG ĐỘNG HỌC & GIÁM SÁT NGẬP LỤT</span></h2>
+          <p>Phụ trách: <strong>Bùi Nguyễn Minh Quân</strong> (STT 25 ➔ STT 36: CRUD Điểm Đen Ngập, CRUD Trạm Thủy Văn, Heatmap Nhiệt Độ, Heatmap Bụi AQI, Heatmap Mật Độ Rủi Ro, Live Weather Radar, Sóng Triều Thuần Python, Dự Báo Phú An & Nhà Bè, Thuật Toán Dò Đỉnh Triều dH/dt, Flood Risk Engine, CRUD 22 Quận Đa Giác, GloFAS 7 Ngày)</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn-island btn-primary" onclick="runTideDerivativeSolver()">⚡ Dò Đỉnh Triều dH/dt (STT 33)</button>
+          <button class="btn-island btn-accent" onclick="openGlofasModal()">🛰️ Vệ Tinh GloFAS 7 Ngày (STT 36)</button>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+        
+        <!-- Sóng Triều Phú An & Nhà Bè (STT 31, 32, 33) -->
+        <div class="double-bezel">
+          <div class="bezel-core" style="padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #38bdf8;">ĐỒ THỊ DỰ BÁO TRIỀU SÔNG SÀI GÒN 24H (STT 32)</h4>
+                <p style="font-size: 0.7rem; color: var(--text-muted)">Giải tích 4 sóng điều hòa thiên văn (M2, S2, K1, O1) thuần Python (STT 31)</p>
+              </div>
+              <span class="eyebrow eyebrow-red">BÁO ĐỘNG 3 (&gt;1.60m)</span>
+            </div>
+
+            <!-- Simulated Tide Graph Canvas -->
+            <canvas class="tide-curve-canvas" id="tideGraphCanvas" width="600" height="220"></canvas>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 0.75rem; font-size: 0.72rem; color: var(--text-muted);">
+              <div>📍 Trạm Phú An: <strong>1.68m (Đỉnh lúc 17:30)</strong></div>
+              <div>📍 Trạm Nhà Bè: <strong>1.64m (Đỉnh lúc 18:15)</strong></div>
+              <div style="color: #ef4444; font-weight: 700;">dH/dt = 0 (Cực đại)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8-Layer Live Weather Radar (STT 30) -->
+        <div class="double-bezel">
+          <div class="bezel-core" style="padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #67e8f9;">BẢN ĐỒ RADAR KHÍ TƯỢNG 8 LỚP PHỦ (STT 30)</h4>
+                <p style="font-size: 0.7rem; color: var(--text-muted)">RainViewer Doppler & Dòng Hạt Gió Động Windy</p>
+              </div>
+              <span class="eyebrow eyebrow-blue">LIVE 8 LAYERS</span>
+            </div>
+
+            <div style="height: 190px; border-radius: 0.85rem; overflow: hidden; position: relative; margin-top: 0.75rem; background: #000;">
+              <img id="radarPreviewImg" src="https://images.unsplash.com/photo-1534088568595-a066f410bcda?auto=format&fit=crop&w=800&q=80" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.6;" alt="Radar">
+              <div style="position: absolute; bottom: 0.75rem; left: 0.75rem; background: rgba(0,0,0,0.8); padding: 0.35rem 0.65rem; border-radius: 0.5rem; font-size: 0.68rem; font-family: var(--font-mono); color: #67e8f9;">
+                Tốc độ gió bề mặt: 18.5 km/h • Hướng gió: Tây Nam (SW)
+              </div>
+            </div>
+
+            <!-- Radar Layer Toggle Buttons -->
+            <div class="radar-layers-grid">
+              <button class="radar-toggle-btn active" onclick="toggleRadarLayer(this, 'wind')">1. Dòng Hạt Gió</button>
+              <button class="radar-toggle-btn active" onclick="toggleRadarLayer(this, 'rain')">2. Mây Mưa Doppler</button>
+              <button class="radar-toggle-btn" onclick="toggleRadarLayer(this, 'temp')">3. Nhiệt Độ (STT 27)</button>
+              <button class="radar-toggle-btn" onclick="toggleRadarLayer(this, 'aqi')">4. Bụi AQI (STT 28)</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Flood Risk Engine & Hotspots (STT 25, 26, 34) -->
+      <div class="double-bezel">
+        <div class="bezel-core" style="padding: 1.25rem;">
+          <h3 style="font-size: 1rem; font-weight: 800; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
+            <span>ĐỘNG CƠ PHÂN TÍCH RỦI RO NGẬP LỤT ĐA NHÂN TỐ (STT 34)</span>
+            <span class="eyebrow eyebrow-amber">MULTI-FACTOR ENGINE</span>
+          </h3>
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.85rem;">
+            Tổ hợp 3 thông số: Mực nước đỉnh triều sông Sài Gòn ($1.68m$) + Vũ lượng mưa ($12.5mm/h$) + Cao độ mặt đường và khả năng thoát nước.
+          </p>
+
+          <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.65rem; text-align: center; font-size: 0.75rem;">
+            <div style="padding: 0.65rem; border-radius: 0.75rem; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #34d399;">
+              <strong>CẤP 1: AN TOÀN</strong><br><span style="font-size:0.65rem;">&lt; 5cm nước</span>
+            </div>
+            <div style="padding: 0.65rem; border-radius: 0.75rem; background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd;">
+              <strong>CẤP 2: NGẬP NHẸ</strong><br><span style="font-size:0.65rem;">5cm - 15cm</span>
+            </div>
+            <div style="padding: 0.65rem; border-radius: 0.75rem; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #fbbf24;">
+              <strong>CẤP 3: TRUNG BÌNH</strong><br><span style="font-size:0.65rem;">15cm - 30cm</span>
+            </div>
+            <div style="padding: 0.65rem; border-radius: 0.75rem; background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.4); color: #f87171;">
+              <strong>CẤP 4: NGUY HIỂM</strong><br><span style="font-size:0.65rem;">30cm - 50cm (Chết máy)</span>
+            </div>
+            <div style="padding: 0.65rem; border-radius: 0.75rem; background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); color: #c084fc;">
+              <strong>CẤP 5: BẤT KHẢ KHÁNG</strong><br><span style="font-size:0.65rem;">&gt; 50cm (Ngập lụt sâu)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================================================
+         VIEW 5: AI KHÔNG GIAN, SOS & ĐỊNH TUYẾN NÉ NGẬP (STT 37 ➔ 47)
+         ========================================================================== -->
+    <div id="viewAi" class="view-mode-container" style="display: none;">
+      <div class="section-title-bar">
+        <div>
+          <h2><span>🤖</span> <span>PHẦN 4A: AI KHÔNG GIAN, CỨU HỘ SOS & ĐỊNH TUYẾN NÉ NGẬP THÔNG MINH</span></h2>
+          <p>Phụ trách: <strong>Lê Anh Tuấn</strong> (STT 37 ➔ STT 47: Flood SOS 2km, Leaderboard, Dynamic Risk Engine, SLA Escalation, DBSCAN Clustering, KDE Hotspots, Snap OSRM, Tuyến Ngập 3 Lớp, Vùng Đệm 1000m, Tuyến Né Ngập 150m, So Sánh Tuyến Nhanh vs An Toàn)</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn-island btn-sos" onclick="openSosModal()">🆘 Phát Cứu Hộ SOS 2km (STT 37)</button>
+          <button class="btn-island btn-primary" onclick="runDbscanClustering()">🔬 Chạy AI DBSCAN Gom Cụm (STT 41)</button>
+        </div>
+      </div>
+
+      <!-- Smart Routing Comparison: Fast vs Safe (STT 46 & STT 47) -->
+      <div class="double-bezel" style="margin-bottom: 1.25rem;">
+        <div class="bezel-core" style="padding: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h3 style="font-size: 1rem; font-weight: 800; color: #38bdf8;">
+                SO SÁNH SONG SONG: LỘ TRÌNH NHANH NHẤT VS AN TOÀN NHẤT NÉ NGẬP (STT 46 & 47)
+              </h3>
+              <p style="font-size: 0.75rem; color: var(--text-muted)">
+                Điểm xuất phát: <strong>Hồ Con Rùa (Quận 3)</strong> ➔ Đích đến: <strong>Landmark 81 (Bình Thạnh)</strong>
+              </p>
+            </div>
+            <span class="eyebrow eyebrow-blue">OSRM ROUTING ENGINE</span>
+          </div>
+
+          <div class="route-comparison-grid">
+            
+            <!-- Route 1: Fastest but Dangerous -->
+            <div class="route-card fastest-danger">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span class="eyebrow eyebrow-red">TUYẾN 1: NHANH NHẤT (NGUY HIỂM)</span>
+                <strong style="color: #f87171; font-family: var(--font-mono);">14 phút • 4.8 km</strong>
+              </div>
+              <p style="font-size: 0.75rem; color: #cbd5e1; margin-bottom: 0.5rem;">
+                Lộ trình qua đường Nguyễn Hữu Cảnh. Đi qua <strong>1 điểm đen ngập sâu 38cm</strong>.
+              </p>
+              <div style="background: rgba(239, 68, 68, 0.2); border-radius: 0.5rem; padding: 0.4rem 0.65rem; font-size: 0.72rem; color: #fca5a5;">
+                ⚠️ <strong>Cảnh báo:</strong> 85% xe máy bị chết máy do nước tràn vào bugi & ống xả!
+              </div>
+            </div>
+
+            <!-- Route 2: Safest Avoid Flood -->
+            <div class="route-card safest-avoid">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span class="eyebrow">TUYẾN 2: AN TOÀN NÉ NGẬP (KHUYÊN DÙNG)</span>
+                <strong style="color: #34d399; font-family: var(--font-mono);">19 phút • 5.9 km</strong>
+              </div>
+              <p style="font-size: 0.75rem; color: #cbd5e1; margin-bottom: 0.5rem;">
+                Lộ trình vòng qua Điện Biên Phủ ➔ Cầu Sài Gòn. <strong>Hoàn toàn khô ráo, không ngập nước</strong>.
+              </p>
+              <div style="background: rgba(16, 185, 129, 0.2); border-radius: 0.5rem; padding: 0.4rem 0.65rem; font-size: 0.72rem; color: #6ee7b7;">
+                ✓ <strong>Đề xuất:</strong> Chậm hơn 5 phút nhưng đảm bảo an toàn tuyệt đối cho phương tiện!
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- AI DBSCAN & KDE Hotspots (STT 41, 42, 45) -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+        
+        <!-- DBSCAN (STT 41) -->
+        <div class="double-bezel">
+          <div class="bezel-core" style="padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <h4 style="font-size: 0.9rem; font-weight: 700; color: #c084fc;">AI DBSCAN GOM CỤM BÁO CÁO (STT 41)</h4>
+              <span class="eyebrow eyebrow-purple">SCIKIT-LEARN</span>
+            </div>
+            <p style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+              Giải thuật khoảng cách Haversine mặt cầu Trái Đất (eps=50m, min_samples=2) tự động gộp 8 báo cáo của người dân quanh chân cầu Thị Nghè thành 1 Master Incident duy nhất.
+            </p>
+            <div style="background: rgba(0,0,0,0.4); border-radius: 0.75rem; padding: 0.65rem; font-size: 0.72rem; font-family: var(--font-mono); color: #34d399;">
+              ✓ Đã gom cụm thành công: 8 Báo cáo ➔ 1 Master Incident (ID: CLUSTER-04)<br>
+              ✓ Tổng lượt xác nhận upvotes: 42 upvotes<br>
+              ✓ Tránh điều phối trùng lặp 2 xe chở rác cùng lúc!
+            </div>
+          </div>
+        </div>
+
+        <!-- Spatial Buffer Scanner 1000m (STT 45) -->
+        <div class="double-bezel">
+          <div class="bezel-core" style="padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <h4 style="font-size: 0.9rem; font-weight: 700; color: #fbbf24;">QUÉT VÙNG ĐỆM 1000M POSTGIS (STT 45)</h4>
+              <span class="eyebrow eyebrow-amber">ST_DWithin</span>
+            </div>
+            <p style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+              Tự động phân tích các cơ sở thiết yếu (bệnh viện, trường học) nằm trong vùng ảnh hưởng nguy hiểm khi xảy ra sự cố ngập úng hoặc tràn dầu.
+            </p>
+            <button class="btn-island btn-primary" style="width: 100%; justify-content: center; font-size: 0.75rem;" onclick="scanSpatialBuffer('post-1')">
+              <span>Chạy Thuật Toán Quét Vùng Đệm 1000m</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==========================================================================
+         VIEW 6: BIG DATA ANALYTICS 7.1M PARQUET & i18n (STT 48)
+         ========================================================================== -->
+    <div id="viewBigdata" class="view-mode-container" style="display: none;">
+      <div class="section-title-bar">
+        <div>
+          <h2><span>📊</span> <span>PHẦN 4B: NỀN TẢNG BIG DATA ANALYTICS 7.1 TRIỆU BẢN GHI PARQUET & i18n</span></h2>
+          <p>Phụ trách: <strong>Lê Anh Tuấn</strong> (STT 48: Kho dữ liệu Parquet vi khí hậu 34 tỉnh thành, DuckDB OLAP, 5 Tab Dashboard chuyên sâu, Tương quan Pearson r, Rửa trôi khí quyển, Xuất CSV & Đa ngôn ngữ Việt - Anh)</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn-island btn-primary" onclick="exportParquetCsv()">📥 Xuất Báo Cáo CSV (STT 48.5)</button>
+        </div>
+      </div>
+
+      <div class="double-bezel" style="margin-bottom: 1.25rem;">
+        <div class="bezel-core" style="padding: 1.25rem;">
+          
+          <!-- Parquet Summary Metrics -->
+          <div class="parquet-stats-summary">
+            <div class="stat-mini-box">
+              <div class="stat-mini-val" style="color: #38bdf8;">7,142,880</div>
+              <div class="stat-mini-label">Tổng dòng dữ liệu</div>
+            </div>
+            <div class="stat-mini-box">
+              <div class="stat-mini-val" style="color: #34d399;">34 Tỉnh</div>
+              <div class="stat-mini-label">Bao phủ không gian</div>
+            </div>
+            <div class="stat-mini-box">
+              <div class="stat-mini-val" style="color: #fbbf24;">7 Chất</div>
+              <div class="stat-mini-label">PM2.5, PM10, CO, NO2...</div>
+            </div>
+            <div class="stat-mini-box">
+              <div class="stat-mini-val" style="color: #f87171;">r = -0.68</div>
+              <div class="stat-mini-label">Tương quan Mưa - Bụi</div>
+            </div>
+            <div class="stat-mini-box">
+              <div class="stat-mini-val" style="color: #c084fc;">12 ms</div>
+              <div class="stat-mini-label">Tốc độ DuckDB OLAP</div>
+            </div>
+          </div>
+
+          <!-- 5 Tabs of Big Data -->
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.5rem;">
+            <button class="filter-pill active" onclick="switchBigdataTab('tab1', this)">Tab 1: Tổng Quan AQI & Bản Đồ 34 Tỉnh</button>
+            <button class="filter-pill" onclick="switchBigdataTab('tab2', this)">Tab 2: Chuỗi Thời Gian 7 Chất & Giờ Cao Điểm</button>
+            <button class="filter-pill" onclick="switchBigdataTab('tab3', this)">Tab 3: Tương Quan Khí Tượng Học</button>
+            <button class="filter-pill" onclick="switchBigdataTab('tab4', this)">Tab 4: Ma Trận Pearson & Hiệu Ứng Rửa Trôi Mưa</button>
+            <button class="filter-pill" onclick="switchBigdataTab('tab5', this)">Tab 5: Data Grid Tra Cứu & Xuất CSV</button>
+          </div>
+
+          <div id="bigdataTabContent" style="background: rgba(0,0,0,0.35); border-radius: 0.85rem; padding: 1rem; font-size: 0.8rem; line-height: 1.6;">
+            <!-- Tab content will be updated via JS -->
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================================================
+         VIEW 7: CHẾ ĐỘ XEM SONG SONG (LIVE BRIDGE MODE)
+         ========================================================================== -->
+    <div id="viewSplit" class="view-mode-container" style="display: none;">
+      <div style="margin-bottom: 1rem; text-align: center;">
+        <span class="eyebrow eyebrow-blue">CHẾ ĐỘ TƯƠNG TÁC HAI CHIỀU THỜI GIAN THỰC (LIVE DUAL BRIDGE)</span>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem;">
+          Bên trái là Cổng Công Dân gửi bài & chụp ảnh ➔ Bên phải là Ban Quản Trị nhận lệnh và điều phối Đội Phản Ứng Nhanh tức thời.
+        </p>
+      </div>
+
+      <div class="split-layout-grid">
+        <!-- Split Citizen Column -->
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          <div class="double-bezel">
+            <div class="bezel-core" style="padding: 0.85rem 1rem; display: flex; align-items: center; justify-content: space-between;">
+              <h3 style="font-size: 0.9rem; font-weight: 800; color: #34d399;">🧑‍🤝‍🧑 PHÍA CÔNG DÂN (CITIZEN FEED & CAMERA)</h3>
+              <button class="btn-island btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.72rem;" onclick="openCameraModal()">
+                <span>📸 Báo Cáo Ngay</span>
+              </button>
+            </div>
+          </div>
+          <div id="splitCitizenFeed"></div>
+        </div>
+
+        <!-- Split Admin Column -->
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          <div class="double-bezel">
+            <div class="bezel-core" style="padding: 0.85rem 1rem; display: flex; align-items: center; justify-content: space-between;">
+              <h3 style="font-size: 0.9rem; font-weight: 800; color: #fbbf24;">🛡️ PHÍA BAN QUẢN TRỊ (DISPATCH QUEUE)</h3>
+              <span class="eyebrow eyebrow-amber">ĐIỀU PHỐI TỨC THÌ</span>
+            </div>
+          </div>
+          <div id="splitAdminCards" style="display: flex; flex-direction: column; gap: 0.85rem;"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ==========================================================================
+       MODALS: COVERING ALL SPECIALIZED 48 FEATURES
+       ========================================================================== -->
+
+  <!-- MODAL: CAMERA HUD & REPORT (STT 07 & STT 13) -->
+  <div class="modal-backdrop" id="modalCamera">
+    <div class="double-bezel modal-box modal-box-lg">
+      <div class="bezel-core">
+        <div class="modal-header-bar">
+          <h3><span>📸</span> <span>CHỤP ẢNH HIỆN TRƯỜNG KHẨN CẤP & BÁO CÁO SỰ CỐ (STT 07 & STT 13)</span></h3>
+          <button class="btn-close-modal" onclick="closeModal('modalCamera')">✕</button>
+        </div>
+        <div class="modal-body">
+          <div style="margin-bottom: 0.65rem; font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">
+            CHỌN ẢNH MẪU HIỆN TRƯỜNG THỰC TẾ (HOẶC CHỤP QUA CAMERA):
+          </div>
+          <div style="display: flex; gap: 0.5rem; overflow-x: auto; margin-bottom: 0.85rem;">
+            <button class="filter-pill active" onclick="selectSampleScene('trash_canal', this)">1. Bãi rác kênh Thị Nghè</button>
+            <button class="filter-pill" onclick="selectSampleScene('flood_road', this)">2. Ngập 45cm Nguyễn Hữu Cảnh</button>
+            <button class="filter-pill" onclick="selectSampleScene('rubble_pavement', this)">3. Xà bần tràn vỉa hè Q.1</button>
+            <button class="filter-pill" onclick="selectSampleScene('fallen_tree', this)">4. Cây ngã chắn đường Trần Não</button>
+          </div>
+
+          <div class="camera-viewfinder-hud">
+            <img id="cameraSampleOverlay" src="https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&fit=crop&w=900&q=80" alt="Camera">
+            <div class="camera-grid-lines">
+              <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div>
+              <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div>
+              <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div>
+            </div>
+            <div class="camera-hud-center"></div>
+            <div class="camera-watermark">
+              <div>📍 <strong id="hudCoords">10.7932° N, 106.6914° E</strong></div>
+              <div>🏠 <span id="hudAddress">Hẻm 128 Hoàng Hoa Thám, P.6, Q.Bình Thạnh</span></div>
+              <div>⏱️ <span id="hudTimestamp">2026-10-01 09:30:00 GMT+7</span></div>
+              <div>🛰️ W3C GPS Accuracy: &plusmn;3.2m • EXIF Certified</div>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1rem;">
+            <div class="eyebrow">⚡ Nén Client-side: 3.8 MB ➔ 385 KB (-90%)</div>
+            <button class="shutter-btn" onclick="triggerShutterCapture()" title="Bấm chụp ảnh"><div class="shutter-inner"></div></button>
+            <span style="font-size: 0.72rem; color: var(--text-muted)">Bấm chụp hiện trường</span>
+          </div>
+
+          <form id="incidentReportForm" onsubmit="submitIncidentReport(event)">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+              <div class="form-group">
+                <label class="form-label">Loại Sự Cố Môi Trường (STT 13)</label>
+                <select class="form-select" id="reportCategory" onchange="calculateEstimatedRisk()">
+                  <option value="RAC_SINH_HOAT">Rác thải sinh hoạt bừa bãi</option>
+                  <option value="XA_BAN">Xà bần / Phế thải xây dựng</option>
+                  <option value="RAC_NGUY_HAI">Rác thải nguy hại / Vỏ pin cũ</option>
+                  <option value="NGAP_LUT">Điểm ngập úng mặt đường</option>
+                  <option value="CAY_NGA">Cây xanh gãy đổ nguy hiểm</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Mức Độ Nghiêm Trọng / SLA (STT 22 & 40)</label>
+                <select class="form-select" id="reportSeverity" onchange="calculateEstimatedRisk()">
+                  <option value="MEDIUM">Trung bình (SLA 24h)</option>
+                  <option value="HIGH">Cao (SLA 8h)</option>
+                  <option value="CRITICAL">Khẩn cấp nguy hiểm (SLA 2h)</option>
+                  <option value="LOW">Thấp (SLA 48h)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Tiêu Đề Báo Cáo</label>
+              <input type="text" class="form-input" id="reportTitle" value="Bãi rác tự phát lớn tràn ra lòng đường kênh Thị Nghè" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Mô Tả Hiện Trường</label>
+              <textarea class="form-textarea" id="reportDesc" rows="2" required>Bãi rác tồn đọng bốc mùi hôi thối, nhiều bao tải rác sinh hoạt và chai nhựa tràn xuống mép kênh, gây tắc nghẽn dòng chảy.</textarea>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+              <div style="display: flex; align-items: center; gap: 0.45rem;">
+                <span class="risk-score-badge high" id="calculatedRiskBadge">RiskScore: 78.5 / 100</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted)">(Động cơ AI tính rủi ro - STT 39)</span>
+              </div>
+              <div style="display: flex; gap: 0.5rem;">
+                <button type="button" class="btn-island btn-ghost" onclick="closeModal('modalCamera')">Hủy</button>
+                <button type="submit" class="btn-island btn-primary"><span>ĐĂNG BÀI & GỬI ĐIỀU PHỐI</span></button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: FLOOD SOS RESCUE (STT 37) -->
+    <div class="modal-backdrop" id="modalSos">
+      <div class="double-bezel modal-box">
+        <div class="bezel-core">
+          <div class="modal-header-bar" style="background: rgba(239, 68, 68, 0.15);">
+            <h3 style="color: #f87171;"><span>🚨</span> <span>PHÁT TÍN HIỆU CỨU HỘ NGẬP LỤT SOS 2KM (STT 37)</span></h3>
+            <button class="btn-close-modal" onclick="closeModal('modalSos')">✕</button>
+          </div>
+          <div class="modal-body">
+            <p style="font-size: 0.8rem; color: #fca5a5; margin-bottom: 1rem; line-height: 1.45;">
+              Hệ thống sẽ ngay lập tức ghim cờ đỏ SOS nhấp nháy phát sóng trong bán kính 2km, thông báo cho các Đội phản ứng nhanh, Gara sửa xe và tình nguyện viên gần nhất đến hỗ trợ bạn!
+            </p>
+            <form onsubmit="submitFloodSos(event)">
+              <div class="form-group">
+                <label class="form-label">Tình Trạng Nguy Cấp</label>
+                <select class="form-select" id="sosEmergencyType">
+                  <option value="XE_CHET_MAY">Xe máy chết máy do ngập nước sâu, không dắt được</option>
+                  <option value="MAC_KET_NGAP">Bị mắc kẹt trên đường ngập ngang yên xe (&gt;50cm)</option>
+                  <option value="HO_TRO_NGUOI_GIA">Cần hỗ trợ đưa người già / trẻ em qua đoạn nước xiết</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Số Điện Thoại Cứu Hộ</label>
+                <input type="tel" class="form-input" id="sosPhone" value="0918.452.xxx" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Vị Trí Mắc Kẹt Hiện Tại</label>
+                <input type="text" class="form-input" id="sosLocationText" value="Giao lộ Ung Văn Khiêm - Xô Viết Nghệ Tĩnh, Q.Bình Thạnh" required>
+              </div>
+              <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.25rem;">
+                <button type="button" class="btn-island btn-ghost" onclick="closeModal('modalSos')">Đóng</button>
+                <button type="submit" class="btn-island btn-sos"><span>PHÁT TÍN HIỆU CỨU HỘ SOS</span></button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: GREEN PASSPORT DIGITAL ID (STT 04) -->
+    <div class="modal-backdrop" id="modalPassport">
+      <div class="double-bezel modal-box">
+        <div class="bezel-core">
+          <div class="modal-header-bar">
+            <h3><span>💳</span> <span>HỘ CHIẾU XANH ĐÔ THỊ ĐIỆN TỬ (STT 04)</span></h3>
+            <button class="btn-close-modal" onclick="closeModal('modalPassport')">✕</button>
+          </div>
+          <div class="modal-body" style="text-align: center;">
+            <div style="background: linear-gradient(135deg, #064e3b, #022c22); border: 1.5px solid rgba(52, 211, 153, 0.4); border-radius: 1.25rem; padding: 1.5rem; margin-bottom: 1.25rem; box-shadow: 0 15px 35px rgba(0,0,0,0.6);">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                <div style="text-align: left;">
+                  <div style="font-size: 0.65rem; font-family: var(--font-mono); color: #6ee7b7; letter-spacing: 0.15em;">GREENSPOT CITIZEN PASSPORT</div>
+                  <h2 style="font-size: 1.2rem; font-weight: 800; color: #fff;">Nguyễn Thành Đạt</h2>
+                  <div style="font-size: 0.72rem; color: #a7f3d0;">ID: CITIZEN-VN-2026-7782</div>
+                </div>
+                <div style="width: 3rem; height: 3rem; border-radius: 50%; background: #10b981; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">🌱</div>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; text-align: left; background: rgba(0,0,0,0.3); border-radius: 0.85rem; padding: 0.75rem; margin-bottom: 1rem;">
+                <div><div style="font-size: 0.6rem; color: #94a3b8;">HẠNG DANH HIỆU</div><strong style="color: #34d399; font-size: 0.8rem;">RỪNG XANH HỘ VỆ</strong></div>
+                <div><div style="font-size: 0.6rem; color: #94a3b8;">VÍ ECO-POINTS</div><strong style="color: #fbbf24; font-size: 0.8rem; font-family: var(--font-mono);">1,450 pts</strong></div>
+                <div><div style="font-size: 0.6rem; color: #94a3b8;">DẤU CHÂN XANH</div><strong style="color: #38bdf8; font-size: 0.8rem;">85.4 kg rác</strong></div>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.65rem; color: #94a3b8;">
+                <span>Xác thực bởi GreenSpot PostGIS & Smart City Portal</span>
+                <span style="font-size: 1.4rem;">🏁</span>
+              </div>
+            </div>
+            <button class="btn-island btn-primary" onclick="showToast('Đã Xuất File', 'Hộ Chiếu Xanh điện tử định dạng PDF đã được lưu trữ an toàn.')">
+              <span>Xuất Thẻ PDF / Chia Sẻ</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: AUTH & OTP EMAIL (STT 01 & STT 02) -->
+    <div class="modal-backdrop" id="modalAuth">
+      <div class="double-bezel modal-box">
+        <div class="bezel-core">
+          <div class="modal-header-bar">
+            <h3 id="authModalTitle"><span>🔑</span> <span>XÁC THỰC DANH TÍNH & OTP EMAIL (STT 01 & 02)</span></h3>
+            <button class="btn-close-modal" onclick="closeModal('modalAuth')">✕</button>
+          </div>
+          <div class="modal-body">
+            <div id="authModalContent"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: RBAC ROLE SELECTOR (STT 03) -->
+    <div class="modal-backdrop" id="modalRbac">
+      <div class="double-bezel modal-box">
+        <div class="bezel-core">
+          <div class="modal-header-bar">
+            <h3><span>🛡️</span> <span>PHÂN HỆ PHÂN QUYỀN VAI TRÒ ĐA CẤP RBAC (STT 03)</span></h3>
+            <button class="btn-close-modal" onclick="closeModal('modalRbac')">✕</button>
+          </div>
+          <div class="modal-body">
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1rem;">
+              Hệ thống ma trận kiểm soát truy cập dựa trên 4 cấp bậc vai trò chuẩn mực. Chọn vai trò để chuyển đổi quyền hạn tác nghiệp:
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+              <div class="crud-box" style="cursor: pointer;" onclick="selectRbacRole('CITIZEN', 'Công Dân Đô Thị')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <strong style="color: #34d399;">1. CITIZEN (Công Dân Xanh)</strong>
+                  <span class="eyebrow">MẶC ĐỊNH</span>
+                </div>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Quyền: Đăng bài, chụp ảnh hiện trường, phát SOS, check-in sự kiện, đổi quà ví điểm.</div>
+              </div>
+              <div class="crud-box" style="cursor: pointer;" onclick="selectRbacRole('FIELD_RESPONDER', 'Đội Phản Ứng Nhanh')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <strong style="color: #38bdf8;">2. FIELD_RESPONDER (Đội Phản Ứng Nhanh)</strong>
+                  <span class="eyebrow eyebrow-blue">HIỆN TRƯỜNG</span>
+                </div>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Quyền: Tiếp nhận lệnh điều phối tại hiện trường, tải ảnh sau khi dọn sạch (AFTER), đóng sự cố.</div>
+              </div>
+              <div class="crud-box" style="cursor: pointer;" onclick="selectRbacRole('DISTRICT_MANAGER', 'Lãnh Đạo Điều Phối Quận')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <strong style="color: #fbbf24;">3. DISTRICT_MANAGER (Lãnh Đạo Điều Phối Quận)</strong>
+                  <span class="eyebrow eyebrow-amber">ĐIỀU PHỐI</span>
+                </div>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Quyền: Phân công đơn vị phụ trách 22 quận/huyện, giám sát SLA leo thang, quét vùng đệm 1000m.</div>
+              </div>
+              <div class="crud-box" style="cursor: pointer;" onclick="selectRbacRole('SUPER_ADMIN', 'Quản Trị Toàn Quyền')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <strong style="color: #f87171;">4. SUPER_ADMIN (Quản Trị Hệ Thống Toàn Quyền)</strong>
+                  <span class="eyebrow eyebrow-red">FULL ACCESS</span>
+                </div>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Quyền: Toàn quyền CRUD rác thải, trạm thủy văn, điểm đen ngập, ranh giới đa giác và phân quyền người dùng.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: ANTI-SPAM & RATE LIMIT (STT 05) -->
+    <div class="modal-backdrop" id="modalRateLimit">
+      <div class="double-bezel modal-box">
+        <div class="bezel-core">
+          <div class="modal-header-bar">
+            <h3><span>🛡️</span> <span>KIỂM DUYỆT NỘI DUNG & CHỐNG SPAM BÁO CÁO (STT 05)</span></h3>
+            <button class="btn-close-modal" onclick="closeModal('modalRateLimit')">✕</button>
+          </div>
+          <div class="modal-body">
+            <div style="background: rgba(0,0,0,0.4); border-radius: 0.85rem; padding: 1rem; font-size: 0.78rem; line-height: 1.6; margin-bottom: 1rem;">
+              <div>⚡ <strong>Thuật toán:</strong> Leaky Bucket (Giới hạn tối đa 5 báo cáo / 10 phút từ một địa chỉ IP).</div>
+              <div>🚫 <strong>Bộ lọc từ khóa (Regex Content Filter):</strong> Chặn từ ngữ thù địch, spam quảng cáo và thông tin sai sự thật.</div>
+              <div>🔒 <strong>Trạng thái IP hiện tại:</strong> <span style="color:#34d399; font-weight:700;">HỢP LỆ (0/5 vi phạm)</span></div>
+            </div>
+            <button class="btn-island btn-primary" onclick="testSpamFilter()"><span>Thử Nghiệm Bắn 6 Báo Cáo Liên Tiếp (Trigger Rate-Limit)</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: ECO-WALLET & VOUCHERS (STT 11) -->
+    <div class="modal-backdrop" id="modalEcoWallet">
+      <div class="double-bezel modal-box">
+        <div class="bezel-core">
+          <div class="modal-header-bar">
+            <h3><span>🎁</span> <span>CỬA HÀNG ĐỔI QUÀ SINH THÁI (ECO-WALLET - STT 11)</span></h3>
+            <button class="btn-close-modal" onclick="closeModal('modalEcoWallet')">✕</button>
+          </div>
+          <div class="modal-body">
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 0.85rem; padding: 0.85rem 1rem; margin-bottom: 1.25rem;">
+              <div>
+                <div style="font-size: 0.68rem; color: var(--text-muted)">SỐ DƯ ĐIỂM ECO-POINTS HIỆN TẠI</div>
+                <div style="font-size: 1.4rem; font-weight: 800; font-family: var(--font-mono); color: #34d399;" id="walletBalanceNum">1,450 pts</div>
+              </div>
+              <span class="eyebrow">ĐỦ ĐỔI 3 PHẦN QUÀ</span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-subtle); border-radius: 0.85rem; padding: 0.75rem 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  <span style="font-size: 1.5rem;">🚌</span>
+                  <div>
+                    <h4 style="font-size: 0.82rem; font-weight: 700;">Voucher VinBus 50,000đ (Xe buýt điện xanh)</h4>
+                    <div style="font-size: 0.7rem; color: #fbbf24; font-family: var(--font-mono);">300 Eco-points</div>
+                  </div>
+                </div>
+                <button class="btn-island btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.72rem;" onclick="redeemVoucher('VinBus 50k', 300)">Đổi Quà</button>
+              </div>
+
+              <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-subtle); border-radius: 0.85rem; padding: 0.75rem 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  <span style="font-size: 1.5rem;">🪴</span>
+                  <div>
+                    <h4 style="font-size: 0.82rem; font-weight: 700;">Cây Sen Đá Phong Thủy Lọc Không Khí</h4>
+                    <div style="font-size: 0.7rem; color: #fbbf24; font-family: var(--font-mono);">500 Eco-points</div>
+                  </div>
+                </div>
+                <button class="btn-island btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.72rem;" onclick="redeemVoucher('Sen Đá Phong Thủy', 500)">Đổi Quà</button>
+              </div>
+
+              <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-subtle); border-radius: 0.85rem; padding: 0.75rem 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  <span style="font-size: 1.5rem;">☕</span>
+                  <div>
+                    <h4 style="font-size: 0.82rem; font-weight: 700;">Ly Giữ Nhiệt Tre Sinh Thái In Tên Riêng</h4>
+                    <div style="font-size: 0.7rem; color: #fbbf24; font-family: var(--font-mono);">800 Eco-points</div>
+                  </div>
+                </div>
+                <button class="btn-island btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.72rem;" onclick="redeemVoucher('Ly Tre Giữ Nhiệt', 800)">Đổi Quà</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: TRACKING INCIDENT (STT 14) -->
+    <div class="modal-backdrop" id="modalTracking">
+      <div class="double-bezel modal-box">
+        <div class="bezel-core">
+          <div class="modal-header-bar">
+            <h3><span>🔍</span> <span>TRA CỨU TIẾN ĐỘ SỰ CỐ CÔNG KHAI (STT 14)</span></h3>
+            <button class="btn-close-modal" onclick="closeModal('modalTracking')">✕</button>
+          </div>
+          <div class="modal-body">
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem;">
+              <input type="text" class="form-input" id="trackingInputCode" placeholder="Nhập mã sự cố, ví dụ: INC-2026-0891" value="INC-2026-0891">
+              <button class="btn-island btn-primary" onclick="lookupTrackingCode()">Tra Cứu</button>
+            </div>
+            <div id="trackingResultContainer"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: GLOFAS FORECAST (STT 36) -->
+    <div class="modal-backdrop" id="modalGlofas">
+      <div class="double-bezel modal-box">
+        <div class="bezel-core">
+          <div class="modal-header-bar">
+            <h3><span>🛰️</span> <span>DỰ BÁO LƯU LƯỢNG SÔNG COPERNICUS GLOFAS 7 NGÀY (STT 36)</span></h3>
+            <button class="btn-close-modal" onclick="closeModal('modalGlofas')">✕</button>
+          </div>
+          <div class="modal-body">
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;">
+              Dữ liệu viễn thám vệ tinh châu Âu kết nối qua Open-Meteo Flood API, dự báo lưu lượng dòng chảy ($m^3/s$) thượng nguồn Sông Sài Gòn & Sông Đồng Nai:
+            </p>
+            <div style="background: rgba(0,0,0,0.4); border-radius: 0.85rem; padding: 1rem; font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.6;">
+              <div>🌊 <strong>Sông Sài Gòn (Thượng nguồn Dầu Tiếng):</strong> 342.5 m³/s (Bình thường)</div>
+              <div>🌊 <strong>Sông Đồng Nai (Thượng nguồn Trị An):</strong> 1,120.0 m³/s (Cảnh báo nhẹ)</div>
+              <div>📅 <strong>Dự báo đỉnh lũ 7 ngày tới:</strong> Thứ Bảy (04/10) lưu lượng tăng +22% do mưa thượng nguồn</div>
+              <div style="color: #34d399; margin-top: 0.5rem;">✓ Kết nối API: https://flood-api.open-meteo.com/v1/flood (0đ bản quyền)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ==========================================================================
+       JAVASCRIPT LOGIC ENGINE (48 FEATURES DYNAMIC SIMULATION)
+       ========================================================================== -->
+  <script>
+    /* Audio Synthesizer */
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq = 600, duration = 0.08, type = 'sine') {
+      try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function playSuccessChime() {
+      playBeep(523.25, 0.1, 'triangle');
+      setTimeout(() => playBeep(659.25, 0.1, 'triangle'), 100);
+      setTimeout(() => playBeep(783.99, 0.2, 'triangle'), 200);
+    }
+
+    function playEmergencySiren() {
+      playBeep(880, 0.2, 'sawtooth');
+      setTimeout(() => playBeep(660, 0.2, 'sawtooth'), 220);
+      setTimeout(() => playBeep(880, 0.3, 'sawtooth'), 450);
+    }
+
+    /* State Store */
+    let currentView = 'citizen';
+    let currentRole = 'CITIZEN';
+    let currentLang = 'VI';
+    let userEcoPoints = 1450;
+    let userIncidentsCount = 18;
+    let userResolvedCount = 16;
+    let currentRadius = 'all';
+    let currentHashtag = 'all';
+
+    // Sample Scenes for Emergency Camera (STT 07 & 13)
+    const sampleScenes = {
+      trash_canal: {
+        img: 'https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&fit=crop&w=900&q=80',
+        title: 'Bãi rác tự phát lớn tràn ra lòng đường kênh Thị Nghè',
+        desc: 'Bãi rác tồn đọng bốc mùi hôi thối, nhiều bao tải rác sinh hoạt và chai nhựa tràn xuống mép kênh.',
+        category: 'RAC_SINH_HOAT',
+        severity: 'HIGH',
+        volume: 2.5,
+        address: 'Hẻm 128 Hoàng Hoa Thám, P.6, Q.Bình Thạnh',
+        coords: { lat: 10.7932, lng: 106.6914 }
+      },
+      flood_road: {
+        img: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=900&q=80',
+        title: 'Điểm ngập sâu 45cm trước tòa nhà The Manor',
+        desc: 'Nước triều cường kết hợp mưa lớn làm ngập sâu qua trục bánh xe máy, hàng chục xe chết máy.',
+        category: 'NGAP_LUT',
+        severity: 'CRITICAL',
+        volume: 12.0,
+        address: '91 Nguyễn Hữu Cảnh, P.22, Q.Bình Thạnh',
+        coords: { lat: 10.7915, lng: 106.7175 }
+      },
+      rubble_pavement: {
+        img: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=900&q=80',
+        title: 'Xà bần gạch vỡ xây dựng đổ trộm chắn hết vỉa hè',
+        desc: 'Đống xà bần phế thải công trình chiếm trọn lối đi bộ của người dân.',
+        category: 'XA_BAN',
+        severity: 'MEDIUM',
+        volume: 4.2,
+        address: 'Đại lộ Võ Văn Kiệt, P. Cầu Kho, Quận 1',
+        coords: { lat: 10.7612, lng: 106.6923 }
+      },
+      fallen_tree: {
+        img: 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?auto=format&fit=crop&w=900&q=80',
+        title: 'Cây xà cừ gãy cành to vướng dây điện nguy hiểm',
+        desc: 'Nhánh cây lớn đường kính 30cm gãy đè lên đường dây cáp viễn thông sau cơn giông lốc.',
+        category: 'CAY_NGA',
+        severity: 'HIGH',
+        volume: 1.8,
+        address: 'Đường Trần Não, P. An Khánh, TP. Thủ Đức',
+        coords: { lat: 10.7978, lng: 106.7321 }
+      }
+    };
+    let activeSampleSceneKey = 'trash_canal';
+
+    // Mock Posts Collection (STT 06, 08, 09, 10, 14)
+    let posts = [
+      {
+        id: 'post-1',
+        trackingCode: 'INC-2026-0891',
+        author: { name: 'Nguyễn Thành Đạt', avatar: 'Đ', rank: 'Rừng Xanh Hộ Vệ', isCurrentUser: true },
+        category: 'RAC_SINH_HOAT',
+        severity: 'HIGH',
+        title: 'Bãi rác tự phát lớn tràn ra lòng đường kênh Thị Nghè',
+        description: 'Bãi rác tồn đọng bốc mùi hôi thối, nhiều bao tải rác sinh hoạt và chai nhựa tràn xuống mép kênh. Cần Đội công ích hỗ trợ xe ép rác chuyên dụng!',
+        address: 'Hẻm 128 Hoàng Hoa Thám, P.6, Q.Bình Thạnh',
+        coords: { lat: 10.7932, lng: 106.6914 },
+        distanceKm: 0.4,
+        imageBefore: 'https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&fit=crop&w=900&q=80',
+        status: 'IN_PROGRESS',
+        assignedUnit: 'Đội Vệ Sinh Môi Trường Đô Thị Q. Bình Thạnh',
+        riskScore: 78.5,
+        slaHours: 8,
+        slaRemainingMinutes: 195,
+        hashtags: ['#ZeroWaste', '#CleanUp', '#BinhThanh'],
+        reactions: { love: 14, thanks: 8, warning: 12, recycle: 21 },
+        userReaction: 'love',
+        comments: [
+          { author: 'Trần Văn Long (Trưởng KP 3)', text: 'Tôi đã báo lên UBND Phường, đội môi trường đang điều xe qua dọn nhé bà con!' }
+        ]
+      },
+      {
+        id: 'post-2',
+        trackingCode: 'INC-2026-0892',
+        author: { name: 'Lê Anh Tuấn', avatar: 'T', rank: 'Hiệp Sĩ Sinh Thái', isCurrentUser: false },
+        category: 'NGAP_LUT',
+        severity: 'CRITICAL',
+        title: 'CẢNH BÁO: Đường Nguyễn Hữu Cảnh ngập sâu 45cm',
+        description: 'Đoạn chân cầu vượt Nguyễn Hữu Cảnh ngập nặng dài hơn 200m. Xe máy tuyệt đối không nên cố qua, rất dễ chết máy!',
+        address: '91 Nguyễn Hữu Cảnh, P.22, Q.Bình Thạnh',
+        coords: { lat: 10.7915, lng: 106.7175 },
+        distanceKm: 1.8,
+        imageBefore: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=900&q=80',
+        status: 'PENDING',
+        assignedUnit: 'Trung tâm Quản lý Hạ tầng Kỹ thuật TP.HCM',
+        riskScore: 92.0,
+        slaHours: 2,
+        slaRemainingMinutes: 45,
+        hashtags: ['#FloodWarning', '#SOSKhancap', '#NguyenHuuCanh'],
+        reactions: { love: 4, thanks: 42, warning: 68, recycle: 0 },
+        userReaction: 'warning',
+        comments: []
+      },
+      {
+        id: 'post-3',
+        trackingCode: 'INC-2026-0888',
+        author: { name: 'Huỳnh Anh Tú', avatar: 'T', rank: 'Cây Non Đô Thị', isCurrentUser: false },
+        category: 'XA_BAN',
+        severity: 'MEDIUM',
+        title: 'ĐÃ NGHIỆM THU: Dọn sạch 5 tấn xà bần đại lộ Võ Văn Kiệt',
+        description: 'Sau 6 tiếng phản ánh, Đội phản ứng nhanh Quận 1 đã dọn dẹp sạch sẽ toàn bộ phế thải xây dựng, trả lại vỉa hè thông thoáng!',
+        address: 'Đại lộ Võ Văn Kiệt, P. Cầu Kho, Quận 1',
+        coords: { lat: 10.7612, lng: 106.6923 },
+        distanceKm: 3.2,
+        imageBefore: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=900&q=80',
+        imageAfter: 'https://images.unsplash.com/photo-1519817650390-64a93db51149?auto=format&fit=crop&w=900&q=80',
+        isComparison: true,
+        status: 'RESOLVED',
+        assignedUnit: 'Đội Quản Lý Trật Tự Đô Thị Quận 1',
+        riskScore: 20.0,
+        slaHours: 24,
+        slaRemainingMinutes: 0,
+        hashtags: ['#CleanUp', '#ZeroWaste', '#Quan1'],
+        reactions: { love: 56, thanks: 48, warning: 1, recycle: 35 },
+        userReaction: 'thanks',
+        comments: [
+          { author: 'Chủ tịch UBND Phường Cầu Kho', text: 'Cảm ơn bà con đã kịp thời phản ánh qua GreenSpot!' }
+        ]
+      },
+      {
+        id: 'post-4',
+        trackingCode: 'INC-2026-0880',
+        author: { name: 'Đoàn Thanh Niên Phường Bến Nghé', avatar: 'Đ', rank: 'Tổ Chức Cộng Đồng', isCurrentUser: false },
+        category: 'RAC_SINH_HOAT',
+        severity: 'LOW',
+        title: 'RA QUÂN: Chiến dịch "Chủ Nhật Xanh" tuần này tại Công viên Tao Đàn',
+        description: 'Kêu gọi 50 tình nguyện viên cùng chung tay nhặt rác tái chế. Check-in GPS <100m để nhận ngay 100 Eco-Points và cây kiểng!',
+        address: 'Cổng Trương Định, Công viên Tao Đàn, Quận 1',
+        coords: { lat: 10.7743, lng: 106.6925 },
+        distanceKm: 0.8,
+        imageBefore: 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=900&q=80',
+        status: 'RESOLVED',
+        isEvent: true,
+        eventDate: 'Chủ Nhật, 05/10/2026 - 07:30 AM',
+        eventParticipants: 38,
+        maxParticipants: 50,
+        hashtags: ['#CleanUp', '#ChuNhatXanh', '#TaoDan'],
+        reactions: { love: 89, thanks: 41, warning: 0, recycle: 64 },
+        userReaction: 'recycle',
+        comments: []
+      }
+    ];
+
+    // District Chat History (STT 12)
+    const districtChatData = {
+      binhthanh: [
+        { sender: 'Bác Ba (Bình Lợi)', text: 'Đường Nơ Trang Long đoạn chợ Cây Quéo đang rút nước bớt rồi, xe qua được nhé!', time: '14:15', isMe: false },
+        { sender: 'Nguyễn Thành Đạt', text: 'Nguyễn Xí đoạn gầm cầu ngập sâu nhé chị, nên đi vòng Đinh Bộ Lĩnh!', time: '14:22', isMe: true },
+        { sender: 'Đội SOS Q.Bình Thạnh', text: 'Tình nguyện viên đang túc trực hỗ trợ đẩy xe ngập nước tại ngã tư Ung Văn Khiêm.', time: '14:28', isMe: false }
+      ],
+      q1: [
+        { sender: 'Huy Hoàng', text: 'Trần Hưng Đạo thông thoáng không ngập nhé!', time: '13:50', isMe: false }
+      ],
+      thuduc: [
+        { sender: 'Minh Quân', text: 'Đường Quốc Hương Thảo Điền lại biến thành sông rồi, triều cường lên nhanh quá.', time: '14:02', isMe: false }
+      ],
+      q7: [
+        { sender: 'Lê Tuấn', text: 'Đường Trần Xuân Soạn ngập tràn bờ kè, các gara đang hỗ trợ kích xe.', time: '14:18', isMe: false }
+      ]
+    };
+
+    /* Switch Main View (Covers 6 Comprehensive Views) */
+    function switchView(viewName) {
+      currentView = viewName;
+      playBeep(500, 0.05);
+
+      const views = ['citizen', 'webgis', 'admin', 'iot', 'ai', 'bigdata', 'split'];
+      views.forEach(v => {
+        const tabEl = document.getElementById(`tab${v.charAt(0).toUpperCase() + v.slice(1)}`);
+        const viewEl = document.getElementById(`view${v.charAt(0).toUpperCase() + v.slice(1)}`);
+        if (tabEl) tabEl.classList.toggle('active', v === viewName);
+        if (viewEl) viewEl.style.display = v === viewName ? 'block' : 'none';
+      });
+
+      if (viewName === 'admin') renderAdminTable();
+      else if (viewName === 'split') renderSplitMode();
+      else if (viewName === 'citizen') renderFeedStream();
+      else if (viewName === 'iot') drawTideGraph();
+      else if (viewName === 'bigdata') switchBigdataTab('tab1');
+    }
+
+    /* Feed Render */
+    function setRadiusFilter(r, btn) {
+      currentRadius = r;
+      playBeep(500, 0.04);
+      btn.parentElement.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderFeedStream();
+      showToast('Bộ Lọc Không Gian (STT 06)', `Quét bài viết trong phạm vi: ${btn.innerText}`);
+    }
+
+    function setHashtagFilter(tag, btn) {
+      currentHashtag = tag;
+      playBeep(500, 0.04);
+      btn.parentElement.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderFeedStream();
+    }
+
+    function renderFeedStream() {
+      const container = document.getElementById('feedStreamContainer');
+      const filtered = posts.filter(p => {
+        if (currentRadius === '1km' && p.distanceKm > 1.0) return false;
+        if (currentRadius === '3km' && p.distanceKm > 3.0) return false;
+        if (currentRadius === '5km' && p.distanceKm > 5.0) return false;
+        if (currentHashtag !== 'all' && !p.hashtags.includes(currentHashtag)) return false;
+        return true;
+      });
+
+      document.getElementById('badgePostCount').innerText = `${filtered.length} bài`;
+
+      container.innerHTML = filtered.map(post => {
+        let statusBadge = post.status === 'PENDING' ? `<span class="status-badge pending">⏳ CHỜ TIẾP NHẬN (${post.trackingCode})</span>` :
+                          post.status === 'IN_PROGRESS' ? `<span class="status-badge in_progress">⚡ ĐANG XỬ LÝ (${post.trackingCode})</span>` :
+                          `<span class="status-badge resolved">✅ ĐÃ NGHIỆM THU (${post.trackingCode})</span>`;
+
+        let mediaHTML = post.isComparison && post.imageAfter ? `
+          <div class="before-after-wrapper" id="slider_${post.id}" onmousemove="handleBeforeAfterMove(event, '${post.id}')">
+            <span class="ba-badge before">BEFORE (STT 14)</span>
+            <span class="ba-badge after">AFTER (STT 14)</span>
+            <img class="ba-img" src="${post.imageBefore}" alt="Before">
+            <div class="ba-after-layer" id="afterLayer_${post.id}" style="width: 50%;">
+              <img class="ba-img" src="${post.imageAfter}" alt="After">
+            </div>
+            <div class="ba-slider-handle" id="sliderHandle_${post.id}" style="left: 50%;">⇄</div>
+          </div>
+        ` : `
+          <div class="post-media-container"><img class="post-image-main" src="${post.imageBefore}" alt="${post.title}"></div>
+        `;
+
+        let eventBanner = post.isEvent ? `
+          <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 0.85rem; padding: 0.75rem 0.85rem; margin-bottom: 0.85rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <div style="font-size: 0.68rem; color: #34d399; font-weight: 700;">📅 LỊCH RA QUÂN: ${post.eventDate} (STT 09)</div>
+              <div style="font-size: 0.75rem; color: #fff;">Đã có <strong>${post.eventParticipants}/${post.maxParticipants}</strong> tình nguyện viên tham gia</div>
+            </div>
+            <div style="display: flex; gap: 0.4rem;">
+              <button class="btn-island btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.72rem;" onclick="rsvpEvent('${post.id}')">RSVP (+20 pts)</button>
+              <button class="btn-island btn-accent" style="padding: 0.35rem 0.75rem; font-size: 0.72rem;" onclick="geofenceCheckin('${post.id}')">📍 Check-in GPS 100m (STT 10)</button>
+            </div>
+          </div>
+        ` : '';
+
+        return `
+          <article class="double-bezel">
+            <div class="bezel-core post-card">
+              <div class="post-header">
+                <div class="post-author-block">
+                  <div class="author-avatar">${post.author.avatar}</div>
+                  <div class="author-info">
+                    <h4><span>${post.author.name}</span></h4>
+                    <div class="author-sub"><span>${post.author.rank}</span><span>•</span><span>Cách bạn ${post.distanceKm} km</span></div>
+                  </div>
+                </div>
+                <div>${statusBadge}</div>
+              </div>
+              <h3 class="post-title">${post.title}</h3>
+              <p class="post-text">${post.description}</p>
+              <div class="post-hashtags">${post.hashtags.map(h => `<span class="hashtag">${h}</span>`).join('')}</div>
+              <div class="post-geotag-bar">
+                <div class="geotag-left"><span>📍</span><span>${post.address}</span><span class="geotag-coords">(${post.coords.lat.toFixed(4)}, ${post.coords.lng.toFixed(4)})</span></div>
+                <div style="display:flex; align-items:center; gap:0.4rem;">
+                  <span class="sla-pill">⏱️ SLA: còn ${post.slaRemainingMinutes > 0 ? Math.floor(post.slaRemainingMinutes/60) + 'h' + (post.slaRemainingMinutes%60) + 'm' : 'Xong'}</span>
+                  <span class="risk-score-badge ${post.riskScore > 80 ? 'high' : 'medium'}">Risk: ${post.riskScore}</span>
+                </div>
+              </div>
+              ${eventBanner}
+              ${mediaHTML}
+              <div class="eco-reaction-bar">
+                <div class="reaction-group">
+                  <button class="btn-eco-react ${post.userReaction === 'love' ? 'reacted-love' : ''}" onclick="reactPost('${post.id}', 'love')">💚 Yêu MT (${post.reactions.love})</button>
+                  <button class="btn-eco-react" onclick="reactPost('${post.id}', 'thanks')">👏 Cảm ơn (${post.reactions.thanks})</button>
+                  <button class="btn-eco-react" onclick="reactPost('${post.id}', 'warning')">⚠️ Cảnh báo (${post.reactions.warning})</button>
+                  <button class="btn-eco-react" onclick="reactPost('${post.id}', 'recycle')">♻️ Tái chế (${post.reactions.recycle})</button>
+                </div>
+                <button class="btn-island btn-ghost" style="padding: 0.35rem 0.65rem; font-size: 0.72rem;" onclick="sharePost('${post.trackingCode}')">Chia sẻ ↗</button>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function handleBeforeAfterMove(e, postId) {
+      const container = document.getElementById(`slider_${postId}`);
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+      const percentage = (x / rect.width) * 100;
+      document.getElementById(`afterLayer_${postId}`).style.width = `${percentage}%`;
+      document.getElementById(`sliderHandle_${postId}`).style.left = `${percentage}%`;
+    }
+
+    function reactPost(postId, type) {
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+      playBeep(700, 0.05);
+      post.reactions[type]++;
+      userEcoPoints += 2;
+      updatePointsDisplay();
+      showToast('Eco-Reactions (+2 Eco-Points - STT 08)', `Bạn đã gửi cảm xúc ${type} cho sự cố ${post.trackingCode}`);
+      renderFeedStream();
+    }
+
+    function rsvpEvent(postId) {
+      playSuccessChime();
+      userEcoPoints += 20;
+      updatePointsDisplay();
+      showToast('Đăng Ký Tham Gia (+20 Eco-Points - STT 09)', 'Đã RSVP thành công chiến dịch Chủ Nhật Xanh!');
+    }
+
+    function geofenceCheckin(postId) {
+      playSuccessChime();
+      userEcoPoints += 100;
+      updatePointsDisplay();
+      showToast('Xác Thực Geofencing GPS <100m (+100 Eco-Points - STT 10)', 'Hệ thống PostGIS ST_Distance xác thực bạn đang có mặt tại hiện trường Công viên Tao Đàn!');
+    }
+
+    /* Camera Modal & Incident Report (STT 07 & 13) */
+    function openCameraModal() {
+      playBeep(600, 0.05);
+      document.getElementById('modalCamera').classList.add('active');
+      calculateEstimatedRisk();
+    }
+
+    function selectSampleScene(key, btn) {
+      activeSampleSceneKey = key;
+      playBeep(550, 0.04);
+      btn.parentElement.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const scene = sampleScenes[key];
+      if (!scene) return;
+      document.getElementById('cameraSampleOverlay').src = scene.img;
+      document.getElementById('hudCoords').innerText = `${scene.coords.lat.toFixed(4)}° N, ${scene.coords.lng.toFixed(4)}° E`;
+      document.getElementById('hudAddress').innerText = scene.address;
+      document.getElementById('reportTitle').value = scene.title;
+      document.getElementById('reportDesc').value = scene.desc;
+      document.getElementById('reportCategory').value = scene.category;
+      document.getElementById('reportSeverity').value = scene.severity;
+      calculateEstimatedRisk();
+    }
+
+    function triggerShutterCapture() {
+      playBeep(1200, 0.04, 'square');
+      showToast('Đã Chụp & Nén Ảnh (STT 13)', 'Ảnh hiện trường nén còn 385KB (-90%) sẵn sàng gửi 4G.');
+    }
+
+    function calculateEstimatedRisk() {
+      const cat = document.getElementById('reportCategory').value;
+      const sev = document.getElementById('reportSeverity').value;
+      let wType = cat === 'RAC_NGUY_HAI' ? 2.5 : cat === 'NGAP_LUT' ? 2.2 : 1.4;
+      let score = Math.min(100, Math.round(wType * 25 + (sev === 'CRITICAL' ? 35 : 15)));
+      const badge = document.getElementById('calculatedRiskBadge');
+      badge.innerText = `RiskScore: ${score} / 100`;
+    }
+
+    function submitIncidentReport(e) {
+      e.preventDefault();
+      playSuccessChime();
+      const code = `INC-2026-${Math.floor(1000 + Math.random()*9000)}`;
+      const title = document.getElementById('reportTitle').value;
+      const desc = document.getElementById('reportDesc').value;
+      const scene = sampleScenes[activeSampleSceneKey];
+
+      const newPost = {
+        id: `post-${Date.now()}`,
+        trackingCode: code,
+        author: { name: 'Nguyễn Thành Đạt', avatar: 'Đ', rank: 'Rừng Xanh Hộ Vệ', isCurrentUser: true },
+        category: document.getElementById('reportCategory').value,
+        severity: document.getElementById('reportSeverity').value,
+        title: title,
+        description: desc,
+        address: scene ? scene.address : 'Q. Bình Thạnh',
+        coords: scene ? scene.coords : { lat: 10.7932, lng: 106.6914 },
+        distanceKm: 0.2,
+        imageBefore: scene ? scene.img : 'https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&fit=crop&w=900&q=80',
+        status: 'PENDING',
+        assignedUnit: 'Chờ phân công đội quận (STT 15)',
+        riskScore: 78.5,
+        slaHours: 8,
+        slaRemainingMinutes: 480,
+        hashtags: ['#CleanUp', '#BaoCaoMoi'],
+        reactions: { love: 1, thanks: 0, warning: 1, recycle: 0 },
+        userReaction: null,
+        comments: []
+      };
+
+      posts.unshift(newPost);
+      userEcoPoints += 50;
+      userIncidentsCount++;
+      updatePointsDisplay();
+      closeModal('modalCamera');
+      renderFeedStream();
+      renderAdminTable();
+      showToast('Báo Cáo Thành Công (+50 Eco-Points - STT 07/13)', `Hồ sơ ${code} đã truyền về Trung tâm điều phối.`);
+    }
+
+    /* Flood SOS 2km (STT 37) */
+    function openSosModal() {
+      playEmergencySiren();
+      document.getElementById('modalSos').classList.add('active');
+    }
+
+    function submitFloodSos(e) {
+      e.preventDefault();
+      playSuccessChime();
+      closeModal('modalSos');
+      showToast('🚨 TÍN HIỆU SOS ĐÃ PHÁT ĐỘNG (STT 37)', 'Ghim cờ đỏ nhấp nháy phát sóng trong bán kính 2km.');
+    }
+
+    function openFloodOneTapModal() {
+      playBeep(600, 0.05);
+      const depth = prompt('Nhập chiều sâu ngập mặt đường (STT 43: Snap OSRM):', '35cm');
+      if (depth) {
+        userEcoPoints += 30;
+        updatePointsDisplay();
+        playSuccessChime();
+        showToast('Báo Ngập 1 Chạm (+30 Eco-Points - STT 43)', `Đã bám dính tim đường OSRM, ghi nhận ngập sâu ${depth}.`);
+      }
+    }
+
+    /* Admin Table (STT 14, 15, 16, 39, 40) */
+    function renderAdminTable() {
+      const tbody = document.getElementById('adminDispatchTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = posts.map(p => `
+        <tr class="dispatch-row">
+          <td style="font-family: var(--font-mono); font-weight:700; color:#38bdf8;">${p.trackingCode}</td>
+          <td><img src="${p.imageBefore}" style="width:40px; height:40px; border-radius:0.5rem; object-fit:cover;"></td>
+          <td><div style="font-weight:700;">${p.title}</div><div style="font-size:0.68rem; color:#94a3b8;">${p.address}</div></td>
+          <td><span style="color:#34d399; font-weight:600;">${p.assignedUnit}</span></td>
+          <td><span class="risk-score-badge ${p.riskScore > 80 ? 'high' : 'medium'}">${p.riskScore}</span></td>
+          <td><span style="font-family:var(--font-mono); color:#fbbf24;">${p.slaRemainingMinutes}m còn lại</span></td>
+          <td><span class="status-badge ${p.status.toLowerCase()}">${p.status}</span></td>
+          <td>
+            ${p.status === 'PENDING' ? `<button class="btn-island btn-primary" style="padding:0.3rem 0.65rem; font-size:0.7rem;" onclick="assignPost('${p.id}')">Điều Phối (STT 15)</button>` :
+              p.status === 'IN_PROGRESS' ? `<button class="btn-island btn-accent" style="padding:0.3rem 0.65rem; font-size:0.7rem;" onclick="resolvePost('${p.id}')">Nghiệm Thu (STT 14)</button>` :
+              `<span style="color:#34d399; font-weight:700;">✓ Hoàn tất</span>`}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function assignPost(id) {
+      const p = posts.find(x => x.id === id);
+      if (!p) return;
+      playSuccessChime();
+      p.status = 'IN_PROGRESS';
+      p.assignedUnit = 'Đội Vệ Sinh Môi Trường Đô Thị Q. Bình Thạnh (Tổ 1)';
+      renderAdminTable();
+      renderFeedStream();
+      showToast('Đã Điều Phối (STT 15)', `Gán sự cố ${p.trackingCode} cho Đội Môi trường Bình Thạnh.`);
+    }
+
+    function resolvePost(id) {
+      const p = posts.find(x => x.id === id);
+      if (!p) return;
+      playSuccessChime();
+      p.status = 'RESOLVED';
+      p.imageAfter = 'https://images.unsplash.com/photo-1519817650390-64a93db51149?auto=format&fit=crop&w=900&q=80';
+      p.isComparison = true;
+      userEcoPoints += 50;
+      updatePointsDisplay();
+      renderAdminTable();
+      renderFeedStream();
+      showToast('🎉 Đã Nghiệm Thu Sạch (STT 14)', `Xuất bản ảnh Before/After và thưởng +50 Eco-Points cho công dân.`);
+    }
+
+    /* WebGIS 3D & Layers (STT 17, 18, 19, 20, 21) */
+    function changeBasemapMode(mode) {
+      playBeep(600, 0.05);
+      showToast('Chuyển Bản Đồ Nền (STT 17)', `Kích hoạt chế độ: ${mode.toUpperCase()}`);
+    }
+
+    function change3DTheme(theme) {
+      playBeep(650, 0.05);
+      showToast('Theme 3D Buildings (STT 18)', `Áp dụng Shader màu WebGL: ${theme.toUpperCase()}`);
+    }
+
+    function flyToSelectedDistrict(d) {
+      playBeep(700, 0.05);
+      showToast('FlyTo Ranh Giới Quận (STT 19)', `Camera bay tới đơn vị hành chính: ${d.toUpperCase()}`);
+    }
+
+    function openGreenSpotDetail() {
+      playBeep(800, 0.05);
+      alert('🌳 MẢNG XANH ĐÔ THỊ GREEN SPOTS (STT 20):\n\nCông viên Tao Đàn (Quận 1)\n- Diện tích: 10 Hecta\n- Đánh giá: 4.8 / 5.0 ⭐\n- Chỉ số vi khí hậu bóng mát: 96% trong lành');
+    }
+
+    function openRecyclingHubDetail() {
+      playBeep(800, 0.05);
+      alert('🔋 TRẠM TIẾP NHẬN PHÂN LOẠI RÁC TÁI CHẾ & E-WASTE (STT 21):\n\nTrạm Thu Gom Phường Bến Nghé\n- Tiếp nhận: Vỏ pin cũ, rác điện tử, chai nhựa PET\n- Giờ mở cửa: 07:30 - 17:00 Hàng ngày');
+    }
+
+    function openFloodHotspotDetail() {
+      playBeep(800, 0.05);
+      alert('🌊 ĐIỂM ĐEN NGẬP LỤT ĐÔ THỊ (STT 25):\n\nĐường Nguyễn Hữu Cảnh (Bình Thạnh)\n- Cao độ mặt đường: 1.25m\n- Ngưỡng tràn triều cường: 1.55m\n- Trạng thái: CẢNH BÁO ĐỎ khi triều sông Sài Gòn vượt BĐ3');
+    }
+
+    /* Tide Graph Canvas (STT 31, 32, 33) */
+    function drawTideGraph() {
+      const canvas = document.getElementById('tideGraphCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw safe threshold line (1.60m)
+      ctx.strokeStyle = '#ef4444';
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.moveTo(40, 70);
+      ctx.lineTo(580, 70);
+      ctx.stroke();
+
+      ctx.fillStyle = '#f87171';
+      ctx.font = '10px Space Grotesk';
+      ctx.fillText('Ngưỡng Báo Động 3 (1.60m)', 450, 65);
+
+      // Draw Tide curve H(t)
+      ctx.strokeStyle = '#38bdf8';
+      ctx.setLineDash([]);
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      for (let x = 40; x <= 580; x++) {
+        let t = (x - 40) / 540 * Math.PI * 2;
+        let y = 120 - Math.sin(t) * 60 - Math.sin(t * 2) * 20;
+        if (x === 40) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    function runTideDerivativeSolver() {
+      playSuccessChime();
+      alert('⚡ THUẬT TOÁN ĐẠO HÀM DÒ ĐỈNH TRIỀU dH/dt = 0 (STT 33):\n\n✓ Thời điểm Đỉnh triều cực đại (High Tide): 17:35 hôm nay (Cao độ 1.68m)\n✓ Thời điểm Chân triều rút (Low Tide): 23:45 hôm nay (Cao độ 0.42m)\n✓ Cảnh báo: Tự động kích hoạt cờ Báo Động 3 do mực nước > 1.60m!');
+    }
+
+    function runDbscanClustering() {
+      playSuccessChime();
+      alert('🔬 AI MACHINE LEARNING DBSCAN CLUSTERING (STT 41):\n\n✓ Thuật toán: DBSCAN (eps=50m, min_samples=2, metric=haversine)\n✓ Kết quả: Đã quét 14 báo cáo đơn lẻ quanh bán kính 50m\n✓ Gom thành: 2 Master Incidents (Gộp upvotes, tránh cử 2 đội công ích trùng lặp)!');
+    }
+
+    function scanSpatialBuffer(postId) {
+      playBeep(800, 0.08);
+      alert('🔍 QUÉT VÙNG ĐỆM 1000M POSTGIS ST_DWithin (STT 45):\n\n1. Trường Mầm Non 6 (cách 320m) - Đã gửi cảnh báo sơ tán né ngập\n2. Bệnh Viện Bình Thạnh (cách 680m) - Thoát nước an toàn\n3. Trạm Y Tế Phường 6 (cách 450m) - Đã kích hoạt phương án máy bơm');
+    }
+
+    /* Big Data 7.1M Parquet (STT 48) */
+    function switchBigdataTab(tabKey, btn) {
+      if (btn) {
+        btn.parentElement.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      }
+      const box = document.getElementById('bigdataTabContent');
+      if (tabKey === 'tab1') {
+        box.innerHTML = `
+          <strong>STT 48.1 (Tab 1): Bảng Điều Khiển Tổng Quan KPI AQI & Bản Đồ Không Gian 34 Tỉnh Thành</strong><br>
+          • Chỉ số AQI trung bình toàn quốc: <strong>84 (Trung bình)</strong><br>
+          • Tỷ lệ tỉnh đạt chuẩn không khí sạch: <strong>68.5%</strong><br>
+          • Tỉnh có mức độ ô nhiễm cao nhất: <strong>Hà Nội (AQI 162 - Xấu)</strong>; TP.HCM (AQI 118 - Cam)
+        `;
+      } else if (tabKey === 'tab2') {
+        box.innerHTML = `
+          <strong>STT 48.2 (Tab 2): Chuỗi Thời Gian 7 Chất Ô Nhiễm & Giờ Cao Điểm</strong><br>
+          • Giám sát 7 chất độc hại: PM2.5, PM10, NO2, SO2, CO, O3 và Bụi lơ lửng Dust.<br>
+          • Tự động nhận diện khung giờ cao điểm ô nhiễm: <strong>07:30 - 09:00 sáng</strong> và <strong>17:30 - 19:00 chiều</strong> (tan tầm).
+        `;
+      } else if (tabKey === 'tab3') {
+        box.innerHTML = `
+          <strong>STT 48.3 (Tab 3): Tương Quan Khí Tượng Học Đa Biến</strong><br>
+          • Khai phá mối tương quan giữa Nhiệt độ, Độ ẩm, Áp suất, Tốc độ gió với mức độ tích tụ bụi mịn.<br>
+          • Phát hiện hiện tượng nghịch nhiệt mùa đông làm bụi mịn ứ đọng không thể khuếch tán.
+        `;
+      } else if (tabKey === 'tab4') {
+        box.innerHTML = `
+          <strong>STT 48.4 (Tab 4): Ma Trận Pearson & Hiệu Ứng Rửa Trôi Mưa (Rain Washout)</strong><br>
+          • Hệ số tương quan Pearson giữa Vũ lượng mưa và nồng độ PM2.5: <strong>r = -0.68</strong> (Tương quan nghịch mạnh).<br>
+          • Sau cơn mưa lớn &gt;20mm, nồng độ bụi mịn trong không khí giảm tức thì <strong>54%</strong>.
+        `;
+      } else {
+        box.innerHTML = `
+          <strong>STT 48.5 (Tab 5): Data Grid Tra Cứu 34 Tỉnh & Xuất CSV</strong><br>
+          • Tra cứu 7.1 triệu bản ghi Parquet với tốc độ phản hồi <strong>12 mili-giây</strong> qua DuckDB OLAP.<br>
+          • Hỗ trợ tải toàn bộ báo cáo CSV về máy phục vụ nghiên cứu khoa học.
+        `;
+      }
+    }
+
+    function exportParquetCsv() {
+      playSuccessChime();
+      showToast('Xuất File CSV Thành Công (STT 48.5)', 'Báo cáo vi khí hậu 34 tỉnh thành đã xuất bản định dạng .csv.');
+    }
+
+    /* RBAC & Language Switcher (STT 03 & 48) */
+    function openRbacModal() {
+      playBeep(600, 0.05);
+      document.getElementById('modalRbac').classList.add('active');
+    }
+
+    function selectRbacRole(roleCode, roleName) {
+      currentRole = roleCode;
+      document.getElementById('currentRoleLabel').innerText = roleCode;
+      closeModal('modalRbac');
+      playSuccessChime();
+      showToast('Chuyển Đổi RBAC (STT 03)', `Đã gán vai trò: ${roleName} (${roleCode})`);
+    }
+
+    function toggleLanguage() {
+      currentLang = currentLang === 'VI' ? 'EN' : 'VI';
+      document.getElementById('currentLangLabel').innerText = `🌐 ${currentLang}`;
+      playBeep(600, 0.05);
+      showToast('Đa Ngôn Ngữ i18n (STT 48)', `Switched language to: ${currentLang === 'VI' ? 'Tiếng Việt' : 'English'}`);
+    }
+
+    function openAuthModal(mode) {
+      playBeep(600, 0.05);
+      const title = document.getElementById('authModalTitle');
+      const content = document.getElementById('authModalContent');
+      if (mode === 'register') {
+        title.innerHTML = '<span>✉️</span> <span>ĐĂNG KÝ & XÁC THỰC OTP EMAIL (STT 01)</span>';
+        content.innerHTML = `
+          <div class="form-group"><label class="form-label">Email Công Dân</label><input type="email" class="form-input" value="citizen@greenspot.vn"></div>
+          <div class="form-group"><label class="form-label">Mã OTP 6 Chữ Số (Gmail SMTP 0đ)</label><input type="text" class="form-input" value="849201" style="font-family:var(--font-mono); letter-spacing:0.2em;"></div>
+          <button class="btn-island btn-primary" style="width:100%; justify-content:center;" onclick="closeModal('modalAuth'); showToast('Xác Thực OTP Thành Công', 'Tài khoản công dân đã kích hoạt.');">Xác Thực & Kích Hoạt Tài Khoản</button>
+        `;
+      } else {
+        title.innerHTML = '<span>🔑</span> <span>ĐĂNG NHẬP OAUTH2 JWT BEARER (STT 02)</span>';
+        content.innerHTML = `
+          <div class="form-group"><label class="form-label">Tên Đăng Nhập</label><input type="text" class="form-input" value="dat.nguyen@greenspot.vn"></div>
+          <div class="form-group"><label class="form-label">Mật Khẩu (Bcrypt Hash)</label><input type="password" class="form-input" value="••••••••••••"></div>
+          <button class="btn-island btn-primary" style="width:100%; justify-content:center;" onclick="closeModal('modalAuth'); showToast('Đăng Nhập Thành Công', 'Đã ký phát JWT Bearer Token (24h).');">Đăng Nhập OAuth2 JWT</button>
+        `;
+      }
+      document.getElementById('modalAuth').classList.add('active');
+    }
+
+    function openRateLimitModal() {
+      playBeep(600, 0.05);
+      document.getElementById('modalRateLimit').classList.add('active');
+    }
+
+    function testSpamFilter() {
+      playEmergencySiren();
+      alert('🛡️ PHÁT HIỆN HÀNH VI SPAM BÁO CÁO (STT 05):\n\nThuật toán Leaky Bucket đã kích hoạt! Bạn đã gửi quá 5 báo cáo trong 10 phút. Hệ thống tạm khóa quyền gửi báo cáo trong 300 giây để chống DDoS và bảo vệ dữ liệu.');
+    }
+
+    function openGlofasModal() {
+      playBeep(600, 0.05);
+      document.getElementById('modalGlofas').classList.add('active');
+    }
+
+    function openPassportModal() {
+      playBeep(600, 0.05);
+      document.getElementById('modalPassport').classList.add('active');
+    }
+
+    function openTrackingModal() {
+      playBeep(600, 0.05);
+      document.getElementById('modalTracking').classList.add('active');
+      lookupTrackingCode();
+    }
+
+    function lookupTrackingCode() {
+      const code = document.getElementById('trackingInputCode').value.trim();
+      const p = posts.find(x => x.trackingCode.toUpperCase() === code.toUpperCase()) || posts[0];
+      document.getElementById('trackingResultContainer').innerHTML = `
+        <div style="background:rgba(0,0,0,0.4); border-radius:0.85rem; padding:1rem; border:1px solid var(--border-subtle);">
+          <div style="font-weight:700; color:#38bdf8;">${p.trackingCode} - ${p.title}</div>
+          <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:0.4rem; text-align:center; font-size:0.7rem; margin:0.85rem 0;">
+            <div style="padding:0.4rem; background:rgba(16,185,129,0.2); color:#34d399; font-weight:700; border-radius:0.4rem;">✓ Tiếp Nhận</div>
+            <div style="padding:0.4rem; background:rgba(16,185,129,0.2); color:#34d399; font-weight:700; border-radius:0.4rem;">✓ Điều Phối</div>
+            <div style="padding:0.4rem; background:rgba(16,185,129,0.2); color:#34d399; font-weight:700; border-radius:0.4rem;">✓ Hiện Trường</div>
+            <div style="padding:0.4rem; background:${p.status === 'RESOLVED' ? 'rgba(16,185,129,0.3); color:#34d399;' : 'rgba(255,255,255,0.05); color:#64748b;'} border-radius:0.4rem;">Nghiệm Thu</div>
+          </div>
+          <div style="font-size:0.75rem; color:#94a3b8;">Đơn vị: ${p.assignedUnit} • SLA: còn ${p.slaRemainingMinutes} phút</div>
+        </div>
+      `;
+    }
+
+    function openEcoWalletModal() {
+      playBeep(600, 0.05);
+      document.getElementById('walletBalanceNum').innerText = `${userEcoPoints} pts`;
+      document.getElementById('modalEcoWallet').classList.add('active');
+    }
+
+    function redeemVoucher(name, cost) {
+      if (userEcoPoints < cost) {
+        alert('Không đủ điểm Eco-points!');
+        return;
+      }
+      playSuccessChime();
+      userEcoPoints -= cost;
+      updatePointsDisplay();
+      document.getElementById('walletBalanceNum').innerText = `${userEcoPoints} pts`;
+      showToast('Đổi Quà Thành Công (STT 11)', `Mã voucher đổi ${name} đã được cấp.`);
+    }
+
+    function updatePointsDisplay() {
+      document.getElementById('userTotalPointsBadge').innerText = `${userEcoPoints} pts`;
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    function showToast(title, desc) {
+      const c = document.getElementById('toastContainer');
+      const t = document.createElement('div');
+      t.className = 'toast-card';
+      t.innerHTML = `<div class="toast-icon">🌿</div><div><div class="toast-title">${title}</div><div class="toast-desc">${desc}</div></div>`;
+      c.appendChild(t);
+      setTimeout(() => {
+        t.style.opacity = '0';
+        t.style.transform = 'translateX(100%)';
+        setTimeout(() => t.remove(), 300);
+      }, 4000);
+    }
+
+    function sharePost(code) {
+      playBeep(600, 0.05);
+      navigator.clipboard?.writeText(window.location.href + '#' + code);
+      showToast('Đã Sao Chép', `Mã sự cố ${code} đã lưu vào bộ nhớ tạm.`);
+    }
+
+    /* Split Mode (Bridge) */
+    function renderSplitMode() {
+      document.getElementById('splitCitizenFeed').innerHTML = posts.slice(0, 2).map(p => `
+        <div class="double-bezel"><div class="bezel-core" style="padding:0.85rem;">
+          <strong style="color:#34d399;">${p.trackingCode}</strong>: ${p.title}
+          <div style="font-size:0.75rem; color:#94a3b8; margin-top:0.35rem;">Trạng thái: ${p.status}</div>
+        </div></div>
+      `).join('');
+
+      document.getElementById('splitAdminCards').innerHTML = posts.slice(0, 2).map(p => `
+        <div class="double-bezel"><div class="bezel-core" style="padding:0.85rem;">
+          <div style="display:flex; justify-content:space-between;">
+            <strong style="color:#38bdf8;">${p.trackingCode}</strong>
+            <span class="risk-score-badge high">Risk: ${p.riskScore}</span>
+          </div>
+          <div style="font-size:0.75rem; margin-top:0.35rem;">Đơn vị: ${p.assignedUnit}</div>
+          <div style="margin-top:0.5rem;">${p.status === 'PENDING' ? `<button class="btn-island btn-primary" style="padding:0.25rem 0.55rem; font-size:0.7rem;" onclick="assignPost('${p.id}')">Duyệt & Điều Phối</button>` : `<span style="color:#34d399; font-size:0.75rem;">✓ Đang xử lý</span>`}</div>
+        </div></div>
+      `).join('');
+    }
+
+    function switchDistrictChat(code) {
+      const c = document.getElementById('districtChatMessages');
+      const msgs = districtChatData[code] || [];
+      c.innerHTML = msgs.map(m => `
+        <div class="chat-msg ${m.isMe ? 'outgoing' : 'incoming'}">
+          ${!m.isMe ? `<div style="font-size:0.65rem; font-weight:700; color:#38bdf8;">${m.sender}</div>` : ''}
+          <div>${m.text}</div>
+          <div style="font-size:0.6rem; color:#64748b; text-align:right;">${m.time}</div>
+        </div>
+      `).join('');
+      c.scrollTop = c.scrollHeight;
+    }
+
+    function sendDistrictChatMessage(e) {
+      e.preventDefault();
+      const input = document.getElementById('inputChatMessage');
+      const text = input.value.trim();
+      if (!text) return;
+      playBeep(650, 0.05);
+      const code = document.getElementById('districtSelect').value;
+      districtChatData[code].push({ sender: 'Thành Đạt (Bạn)', text: text, time: '14:35', isMe: true });
+      input.value = '';
+      switchDistrictChat(code);
+    }
+
+    setInterval(() => {
+      const now = new Date();
+      const el = document.getElementById('clockDisplay');
+      if (el) el.innerText = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    }, 1000);
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderFeedStream();
+      switchDistrictChat('binhthanh');
+    });
+  </script>
+
+</body>
+</html>
