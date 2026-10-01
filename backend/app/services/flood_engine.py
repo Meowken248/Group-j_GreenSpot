@@ -44,35 +44,40 @@ class FloodRiskEngine(IFloodEngine):
         drainage_rating = int(hotspot.drainage_system_rating or 3)
         max_depth_hist = float(hotspot.historical_max_depth_cm or 40.0)
 
-        # 1. Thành phần triều cường (Tidal Component)
-        tide_delta = tide_water_level_m - tide_threshold
-        tide_score = 0.0
-        tide_depth_cm = 0.0
+        # Nếu là điểm do cộng đồng báo cáo (dynamic hotspot), sử dụng trực tiếp độ sâu báo cáo thực tế
+        if hotspot.hotspot_code and str(hotspot.hotspot_code).startswith("FL-DYN-"):
+            total_depth_cm = max_depth_hist
+            risk_score = min(10.0, max(5.0, (total_depth_cm / 50.0) * 10.0)) # Mapping depth to risk score
+        else:
+            # 1. Thành phần triều cường (Tidal Component)
+            tide_delta = tide_water_level_m - tide_threshold
+            tide_score = 0.0
+            tide_depth_cm = 0.0
 
-        if tide_delta > 0:
-            # Nước triều bắt đầu tràn mặt đường (Cứ mỗi 10cm triều vượt ngưỡng tương ứng ~ 10-15cm nước ngập)
-            tide_score = min(5.5, (tide_delta / 0.10) * 1.5)
-            tide_depth_cm = tide_delta * 100.0  # chuyển đổi sang cm
+            if tide_delta > 0:
+                # Nước triều bắt đầu tràn mặt đường (Cứ mỗi 10cm triều vượt ngưỡng tương ứng ~ 10-15cm nước ngập)
+                tide_score = min(5.5, (tide_delta / 0.10) * 1.5)
+                tide_depth_cm = tide_delta * 100.0  # chuyển đổi sang cm
 
-        # 2. Thành phần mưa (Rainfall Component)
-        rain_ratio = rainfall_mmh / rain_threshold
-        rain_score = 0.0
-        rain_depth_cm = 0.0
+            # 2. Thành phần mưa (Rainfall Component)
+            rain_ratio = rainfall_mmh / rain_threshold
+            rain_score = 0.0
+            rain_depth_cm = 0.0
 
-        if rain_ratio > 0.5:
-            rain_score = min(4.5, (rain_ratio - 0.5) * 2.5)
-            rain_depth_cm = (rainfall_mmh - (rain_threshold * 0.5)) * 0.8
+            if rain_ratio > 0.5:
+                rain_score = min(4.5, (rain_ratio - 0.5) * 2.5)
+                rain_depth_cm = (rainfall_mmh - (rain_threshold * 0.5)) * 0.8
 
-        # 3. Hệ số suy giảm thoát nước (Hạ tầng kém cống rác nghẹt làm ngập nặng hơn)
-        # drainage_rating từ 1 (Kém) đến 5 (Tốt)
-        drainage_factor = 1.0 + (3 - drainage_rating) * 0.15
+            # 3. Hệ số suy giảm thoát nước (Hạ tầng kém cống rác nghẹt làm ngập nặng hơn)
+            # drainage_rating từ 1 (Kém) đến 5 (Tốt)
+            drainage_factor = 1.0 + (3 - drainage_rating) * 0.15
 
-        # 4. Tính toán rủi ro tổng hợp (Combined Risk Score 0.0 - 10.0)
-        raw_risk = (tide_score + rain_score) * drainage_factor
-        risk_score = round(max(0.0, min(10.0, raw_risk)), 2)
+            # 4. Tính toán rủi ro tổng hợp (Combined Risk Score 0.0 - 10.0)
+            raw_risk = (tide_score + rain_score) * drainage_factor
+            risk_score = round(max(0.0, min(10.0, raw_risk)), 2)
 
-        # 5. Ước tính độ sâu ngập mặt đường (cm)
-        total_depth_cm = round(max(0.0, min(max_depth_hist, (tide_depth_cm + rain_depth_cm) * drainage_factor)), 1)
+            # 5. Ước tính độ sâu ngập mặt đường (cm)
+            total_depth_cm = round(max(0.0, min(max_depth_hist, (tide_depth_cm + rain_depth_cm) * drainage_factor)), 1)
 
         # 6. Phân cấp mức độ ngập lụt
         severity = FloodSeverityLevel.SAFE
