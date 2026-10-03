@@ -48,6 +48,8 @@ class VoiceNluService(IVoiceNluService):
             r"\btân bình\b": "Tân Bình",
             r"\blê lợi\b": "Lê Lợi",
             r"\bnguyễn huệ\b": "Nguyễn Huệ",
+            r"\bbến nghé\b": "Bến Nghé",
+            r"\bbến thành\b": "Bến Thành",
             r"\bđiện biên phủ\b": "Điện Biên Phủ",
             r"\bhai bà trưng\b": "Hai Bà Trưng",
             r"\bphú nhuận\b": "Phú Nhuận",
@@ -129,18 +131,29 @@ class VoiceNluService(IVoiceNluService):
 
     def _extract_location_slot(self, text: str) -> Optional[str]:
         """Trích xuất địa điểm từ câu lệnh (ví dụ: 'ngã tư Lê Lợi', 'Quận 1')"""
-        patterns = [
-            r"(?:ngã tư|ngã ba|đường|phố|phường|quận|khu vực|gần)\s+([A-Za-z0-9À-ỹ\s]+?)(?:\.|\?|$)",
-            r"(?:tại|ở)\s+([A-Za-z0-9À-ỹ\s]+?)(?:\.|\?|$)",
-        ]
-        for p in patterns:
-            match = re.search(p, text, re.IGNORECASE)
-            if match:
-                loc = match.group(1).strip()
-                if len(loc) >= 2 and loc.lower() not in ["gần đây", "này", "đó"]:
-                    return loc
+        if not text:
+            return None
         if "gần đây" in text.lower():
             return "Vị trí hiện tại của bạn"
+
+        # Tách bỏ phần từ hỏi hoặc thời gian ở cuối câu nếu có
+        cleaned = re.sub(
+            r"(?:[\s,\.]+(?:hôm nay|bây giờ|thế nào|nhỉ|không|chưa|nhé|cho tôi))+[\s\.\?]*$",
+            "",
+            text,
+            flags=re.IGNORECASE,
+        ).strip()
+
+        patterns = [
+            r"((?:ngã tư|ngã ba|đường|phố|phường|quận|khu vực)\s+[A-Za-z0-9À-ỹ\s]+?)(?:\.|\?|$)",
+            r"(?:tại|ở|gần)\s+([A-Za-z0-9À-ỹ\s]+?)(?:\.|\?|$)",
+        ]
+        for p in patterns:
+            match = re.search(p, cleaned, re.IGNORECASE)
+            if match:
+                loc = match.group(1).strip()
+                if len(loc) >= 2 and loc.lower() not in ["gần đây", "này", "đó", "đây"]:
+                    return loc
         return None
 
     def match_intent(
