@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import EcoMap from "./components/EcoMap";
 import AirQualityDashboard from "./components/AirQualityDashboard";
+import { AuthContainer } from "./features/auth";
 import api from "./api/client";
 import "./App.css";
 
 function App() {
-  const [activeTab, setActiveTab] = useState<"map" | "dashboard">("map");
+  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth">("auth");
   const [backendStatus, setBackendStatus] = useState<string | null>(null);
   const [checkingBackend, setCheckingBackend] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -36,6 +37,15 @@ function App() {
       <nav className={`view-mode-switcher ${activeTab === "dashboard" ? "dark-mode" : ""}`} aria-label="Chế độ hiển thị">
         <button
           type="button"
+          className={`view-tab-btn ${activeTab === "auth" ? "active" : ""}`}
+          onClick={() => setActiveTab("auth")}
+          title="Đăng ký tài khoản công dân số & Xác thực OTP"
+        >
+          <span>🌱</span>
+          <span>Đăng ký công dân</span>
+        </button>
+        <button
+          type="button"
           className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
           onClick={() => setActiveTab("map")}
           title="Bản đồ không gian xanh, ngập lụt & trạm IoT"
@@ -54,8 +64,12 @@ function App() {
         </button>
       </nav>
 
-      {/* VIEW NỘI DUNG CHÍNH: MAP HOẶC DASHBOARD */}
-      {activeTab === "map" ? (
+      {/* VIEW NỘI DUNG CHÍNH: AUTH, MAP HOẶC DASHBOARD */}
+      {activeTab === "auth" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <AuthContainer onExitAuth={() => setActiveTab("map")} />
+        </div>
+      ) : activeTab === "map" ? (
         <EcoMap />
       ) : (
         <AirQualityDashboard onBackToMap={() => setActiveTab("map")} />
