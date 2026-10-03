@@ -41,7 +41,8 @@ class VoiceCategory(str, enum.Enum):
     """Phân loại nhóm câu lệnh trợ lý"""
     INCIDENT = "INCIDENT"        # Báo cáo sự cố môi trường / rác thải
     FLOOD = "FLOOD"              # Tra cứu ngập lụt & tuyến đường an toàn
-    AIR_QUALITY = "AIR_QUALITY"  # Tra cứu chất lượng không khí & thời tiết
+    AIR_QUALITY = "AIR_QUALITY"  # Tra cứu chất lượng không khí
+    WEATHER = "WEATHER"          # Tra cứu thời tiết, nhiệt độ & mưa
     REWARD = "REWARD"            # Ví điểm xanh & đổi quà
     GENERAL = "GENERAL"          # Lệnh điều hướng hệ thống chung
 

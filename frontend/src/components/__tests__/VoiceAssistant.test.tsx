@@ -245,6 +245,86 @@ describe('VoiceAssistant Component - 100% Flow & Branch Coverage (Hình 4.37)', 
     expect(window.speechSynthesis.speak).toHaveBeenCalled();
   });
 
+  it('Màn 3: Hiển thị Thẻ thông tin thời tiết thời gian thực (CHECK_WEATHER) tại Thủ Đức - Grounded Data', async () => {
+    vi.spyOn(voiceService, 'fetchVoiceSuggestions').mockResolvedValue(voiceService.DEFAULT_SUGGESTIONS);
+    vi.spyOn(voiceService, 'processVoiceCommand').mockResolvedValue({
+      log_id: 'weather-uuid-1',
+      raw_transcript: 'Thời tiết hôm nay tại Thủ Đức.',
+      normalized_text: 'Thời tiết hôm nay tại Thủ Đức.',
+      detected_intent: 'CHECK_WEATHER',
+      confidence_score: 0.95,
+      action_type: 'LOOKUP',
+      action_target: 'dashboard_aqi',
+      action_payload: {
+        location: 'Thủ Đức',
+        temperature: 31.5,
+        temp_str: '31.5°C',
+        desc: 'Nắng râm nhiệt đới',
+        humidity: '68%',
+        wind: '12.5 km/h',
+        aqi: 45,
+        aqi_status: 'Tốt',
+      },
+      response_text: 'Trợ lý: Thời tiết tại Thủ Đức hiện tại 31.5°C, Nắng râm nhiệt đới, độ ẩm 68%, sức gió 12.5 km/h.',
+      is_success: true,
+      processing_time_ms: 18,
+    });
+
+    render(<VoiceAssistant />);
+
+    const chip = await screen.findByText(/Xem số dư ví điểm/i);
+    fireEvent.click(chip);
+
+    // Kiểm tra render Thẻ thời tiết thời gian thực
+    await waitFor(() => {
+      const card = screen.getByTestId('weather-preview-card');
+      expect(card).toBeInTheDocument();
+      expect(card).toHaveTextContent('31.5°C');
+      expect(card).toHaveTextContent('Nắng râm nhiệt đới');
+      expect(card).toHaveTextContent('68%');
+      expect(card).toHaveTextContent('12.5 km/h');
+      expect(card).toHaveTextContent('45');
+      expect(card).toHaveTextContent('Tốt');
+    });
+  });
+
+  it('Màn 3: Hiển thị Thẻ thông tin triều cường thực tế trạm Phú An (CHECK_TIDE_LEVEL)', async () => {
+    vi.spyOn(voiceService, 'fetchVoiceSuggestions').mockResolvedValue(voiceService.DEFAULT_SUGGESTIONS);
+    vi.spyOn(voiceService, 'processVoiceCommand').mockResolvedValue({
+      log_id: 'tide-uuid-1',
+      raw_transcript: 'Mực nước triều cường',
+      normalized_text: 'Mực nước triều cường.',
+      detected_intent: 'CHECK_TIDE_LEVEL',
+      confidence_score: 0.95,
+      action_type: 'LOOKUP',
+      action_target: 'map_flood',
+      action_payload: {
+        station_name: 'Trạm Thủy văn Phú An',
+        water_level_m: 1.48,
+        state_label: 'Triều đang lên',
+        alert_label: 'Báo động 1',
+        is_flood_risk: false,
+      },
+      response_text: 'Trợ lý: Mực nước trạm thủy văn Phú An hiện là 1.48m, Triều đang lên ở mức Báo động 1.',
+      is_success: true,
+      processing_time_ms: 12,
+    });
+
+    render(<VoiceAssistant />);
+
+    const chip = await screen.findByText(/Xem số dư ví điểm/i);
+    fireEvent.click(chip);
+
+    await waitFor(() => {
+      const card = screen.getByTestId('tide-preview-card');
+      expect(card).toBeInTheDocument();
+      expect(card).toHaveTextContent('1.48m');
+      expect(card).toHaveTextContent('Triều đang lên');
+      expect(card).toHaveTextContent('Báo động 1');
+      expect(card).toHaveTextContent('Trạm Thủy văn Phú An');
+    });
+  });
+
   // -------------------------------------------------------------
   // MÀN 3: KỊCH BẢN KHÔNG HIỂU Ý ĐỊNH (FALLBACK)
   // -------------------------------------------------------------

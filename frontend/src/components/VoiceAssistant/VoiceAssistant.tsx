@@ -607,6 +607,57 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                               <p>• Tránh được: {resultData.action_payload.hazard_avoided} điểm ngập</p>
                             </div>
                           )}
+
+                          {resultData.detected_intent === "CHECK_WEATHER" && (
+                            <div className="weather-preview" data-testid="weather-preview-card">
+                              <div className="weather-header-row">
+                                <span className="weather-temp-badge">
+                                  🌡️ {resultData.action_payload.temp_str || `${resultData.action_payload.temperature}°C`}
+                                </span>
+                                <span className="weather-desc-pill">{resultData.action_payload.desc}</span>
+                              </div>
+                              <div className="weather-stats-grid">
+                                <span>💧 Độ ẩm: {resultData.action_payload.humidity}</span>
+                                <span>💨 Gió: {resultData.action_payload.wind}</span>
+                                <span className="weather-aqi-tag">🍃 AQI: {resultData.action_payload.aqi} ({resultData.action_payload.aqi_status})</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {resultData.detected_intent === "CHECK_TIDE_LEVEL" && (
+                            <div className="tide-preview" data-testid="tide-preview-card">
+                              <div className="tide-header-row">
+                                <span className="tide-level-badge">
+                                  🌊 {resultData.action_payload.water_level_m}m
+                                </span>
+                                <span className={`tide-alert-pill ${resultData.action_payload.is_flood_risk ? "risk" : "safe"}`}>
+                                  {resultData.action_payload.state_label} • {resultData.action_payload.alert_label}
+                                </span>
+                              </div>
+                              <p className="tide-station-text">📍 {resultData.action_payload.station_name}</p>
+                            </div>
+                          )}
+
+                          {resultData.detected_intent === "CHECK_PARKS_GREEN_SPACES" && (
+                            <div className="parks-preview">
+                              <span className="parks-badge">🌳 {resultData.action_payload.feature || "Không gian xanh đô thị"}</span>
+                              <p>• Quy mô quản lý: {resultData.action_payload.total_area_ha} ha tại {resultData.action_payload.city}</p>
+                            </div>
+                          )}
+
+                          {resultData.detected_intent === "PROJECT_OVERVIEW" && (
+                            <div className="overview-preview">
+                              <strong>🌐 {resultData.action_payload.project_name || "GreenSpot Smart Urban WebGIS"}</strong>
+                              <p>Module: {Array.isArray(resultData.action_payload.modules) ? resultData.action_payload.modules.join(" • ") : "Thời tiết, Ngập lụt, Không khí, Cây xanh, Ví điểm"}</p>
+                            </div>
+                          )}
+
+                          {resultData.detected_intent === "REPORT_FLOOD" && (
+                            <div className="flood-report-preview">
+                              <span className="flood-badge">⚠️ Phản ánh điểm ngập nước</span>
+                              <p>Đang chuyển tiếp tới bản đồ và form tiếp nhận ngập lụt...</p>
+                            </div>
+                          )}
                         </div>
                       )}
 

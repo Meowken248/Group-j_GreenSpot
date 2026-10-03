@@ -737,6 +737,116 @@
   color: #fff;
 }
 
+/* THẺ THỜI TIẾT THỜI GIAN THỰC */
+.weather-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weather-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.weather-temp-badge {
+  font-size: 22px;
+  font-weight: 800;
+  color: #38bdf8;
+}
+
+.weather-desc-pill {
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(56, 189, 248, 0.15);
+  color: #7dd3fc;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.weather-stats-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: #94a3b8;
+  padding-top: 4px;
+}
+
+.weather-aqi-tag {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+/* THẺ TRIỀU CƯỜNG THỰC TẾ */
+.tide-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tide-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tide-level-badge {
+  font-size: 20px;
+  font-weight: 800;
+  color: #60a5fa;
+}
+
+.tide-alert-pill {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.tide-alert-pill.safe {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.tide-alert-pill.risk {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.tide-station-text {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* THẺ CÔNG VIÊN & MẢNG XANH */
+.parks-preview, .overview-preview, .flood-report-preview {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.parks-badge, .flood-badge {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: #34d399;
+}
+
+.flood-badge {
+  color: #fbbf24;
+}
+
 .btn-open-target-feature {
   display: flex;
   align-items: center;

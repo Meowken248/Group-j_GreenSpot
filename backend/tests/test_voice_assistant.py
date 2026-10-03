@@ -11,8 +11,14 @@ Bao phủ 100% luồng nghiệp vụ (100% Flow & Branch Coverage):
 """
 
 import asyncio
+import os
+import sys
 from unittest.mock import AsyncMock, MagicMock
 import uuid
+
+# Đảm bảo đường dẫn import cho app
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from fastapi.testclient import TestClient
 
 from app.database import get_db
@@ -211,12 +217,33 @@ def test_intent_matching_all_tiers_and_branches():
     assert intent == "REPORT_FLOOD"
     assert tgt == "/report-flood"
 
+    # Tầng 2: Semantic Pattern CHECK_WEATHER (Thời tiết hôm nay tại Thủ Đức)
+    intent, conf, act, tgt, resp = service.match_intent("Thời tiết hôm nay tại Thủ Đức.", commands)
+    assert intent == "CHECK_WEATHER"
+    assert "Thủ Đức" in resp
+    assert act == "LOOKUP"
+
+    # Tầng 2: Semantic Pattern CHECK_TIDE_LEVEL
+    intent, conf, act, tgt, resp = service.match_intent("Tình hình triều cường hôm nay thế nào?", commands)
+    assert intent == "CHECK_TIDE_LEVEL"
+    assert act == "LOOKUP"
+
+    # Tầng 2: Semantic Pattern CHECK_PARKS_GREEN_SPACES
+    intent, conf, act, tgt, resp = service.match_intent("Các công viên và mảng xanh của thành phố?", commands)
+    assert intent == "CHECK_PARKS_GREEN_SPACES"
+    assert act == "NAVIGATION"
+
+    # Tầng 2: Semantic Pattern PROJECT_OVERVIEW
+    intent, conf, act, tgt, resp = service.match_intent("Dự án GreenSpot có những tính năng gì?", commands)
+    assert intent == "PROJECT_OVERVIEW"
+    assert act == "LOOKUP"
+
     # Tầng 3: Fuzzy Jaccard Match (ví dụ: 'báo cáo rác ở gần đây')
     intent, conf, act, tgt, resp = service.match_intent("Báo cáo rác ở gần đây.", commands)
     assert intent == "REPORT_INCIDENT"
     assert conf >= 0.40
 
-    # Tầng 4: Graceful Fallback
+    # Tầng 4: Graceful Fallback (Không bịa đặt thông tin nằm ngoài phạm vi GreenSpot)
     intent, conf, act, tgt, resp = service.match_intent("Hôm nay ăn gì ngon bổ rẻ ở Quận 1?", commands)
     assert intent is None
     assert conf == 0.0
@@ -229,7 +256,7 @@ def test_intent_matching_all_tiers_and_branches():
 # =====================================================================
 
 async def test_process_voice_command_all_action_payloads():
-    """Kiểm tra sinh Action Payload cho tất cả các loại ý định nghiệp vụ"""
+    """Kiểm tra sinh Action Payload cho tất cả các loại ý định nghiệp vụ (100% Zero-Fabrication)"""
     mock_repo = MagicMock()
     mock_repo.get_all_sample_commands = AsyncMock(return_value=[
         VoiceSampleCommand(
@@ -267,12 +294,13 @@ async def test_process_voice_command_all_action_payloads():
     assert res2.action_payload["balance"] == 350
     assert res2.action_payload["currency"] == "GreenPoints"
 
-    # 3. Payload CHECK_CURRENT_AQI
+    # 3. Payload CHECK_CURRENT_AQI (Dữ liệu quan trắc AQI thực tế từ WeatherService)
     req3 = VoiceProcessRequest(transcript="chất lượng không khí hôm nay", session_source="VOICE")
     res3 = await service.process_voice_command(mock_db, req3)
     assert res3.detected_intent == "CHECK_CURRENT_AQI"
-    assert res3.action_payload["aqi"] == 42
-    assert res3.action_payload["category"] == "TỐT"
+    assert isinstance(res3.action_payload["aqi"], (int, float))
+    assert res3.action_payload["aqi"] > 0
+    assert "category" in res3.action_payload
 
     # 4. Payload CHECK_SAFE_ROUTE
     req4 = VoiceProcessRequest(transcript="đường nào an toàn không bị ngập nước", session_source="VOICE")
@@ -280,9 +308,43 @@ async def test_process_voice_command_all_action_payloads():
     assert res4.detected_intent == "CHECK_SAFE_ROUTE"
     assert res4.action_payload["hazard_avoided"] == 3
 
+    # 5. Payload CHECK_WEATHER (Dữ liệu thời tiết thực tế tại Thủ Đức - Grounded API)
+    req5 = VoiceProcessRequest(transcript="Thời tiết hôm nay tại Thủ Đức.", session_source="VOICE")
+    res5 = await service.process_voice_command(mock_db, req5)
+    assert res5.detected_intent == "CHECK_WEATHER"
+    assert res5.is_success is True
+    assert res5.action_payload["location"] == "Thủ Đức"
+    assert "temperature" in res5.action_payload
+    assert "humidity" in res5.action_payload
+    assert "wind" in res5.action_payload
+    assert "aqi" in res5.action_payload
+    assert "Thủ Đức" in res5.response_text
+
+    # 6. Payload CHECK_TIDE_LEVEL (Dữ liệu triều cường trắc quan thực tế)
+    req6 = VoiceProcessRequest(transcript="Mực nước triều cường trạm Phú An hiện nay thế nào?", session_source="VOICE")
+    res6 = await service.process_voice_command(mock_db, req6)
+    assert res6.detected_intent == "CHECK_TIDE_LEVEL"
+    assert res6.is_success is True
+    assert "water_level_m" in res6.action_payload
+    assert "Phú An" in res6.action_payload["station_name"]
+
+    # 7. Payload CHECK_PARKS_GREEN_SPACES (Không gian xanh đô thị)
+    req7 = VoiceProcessRequest(transcript="Xem bản đồ công viên cây xanh", session_source="VOICE")
+    res7 = await service.process_voice_command(mock_db, req7)
+    assert res7.detected_intent == "CHECK_PARKS_GREEN_SPACES"
+    assert res7.is_success is True
+    assert res7.action_payload["total_area_ha"] == 450
+
+    # 8. Payload PROJECT_OVERVIEW (Tổng quan toàn diện dự án GreenSpot)
+    req8 = VoiceProcessRequest(transcript="Hệ thống GreenSpot có những gì?", session_source="VOICE")
+    res8 = await service.process_voice_command(mock_db, req8)
+    assert res8.detected_intent == "PROJECT_OVERVIEW"
+    assert res8.is_success is True
+    assert len(res8.action_payload["modules"]) >= 5
+
 
 async def test_process_voice_command_error_and_fallback_resilience():
-    """Kiểm tra khả năng phục hồi lỗi DB và gợi ý Fallback"""
+    """Kiểm tra khả năng phục hồi lỗi DB và gợi ý Fallback (không bịa thông tin ngoài dự án)"""
     mock_repo = MagicMock()
     # Giả lập lỗi DB khi truy vấn sample commands
     mock_repo.get_all_sample_commands = AsyncMock(side_effect=Exception("Database connection timeout"))
@@ -292,8 +354,8 @@ async def test_process_voice_command_error_and_fallback_resilience():
 
     service = VoiceNluService(mock_repo)
 
-    # Câu lệnh Fallback khi không có sample commands trong bộ nhớ
-    req = VoiceProcessRequest(transcript="thời tiết ngày mai có mưa không em", session_source="VOICE")
+    # Câu lệnh nằm ngoài hệ thống GreenSpot -> Rơi vào Graceful Fallback
+    req = VoiceProcessRequest(transcript="giá vàng hôm nay tăng hay giảm bao nhiêu", session_source="VOICE")
     res = await service.process_voice_command(mock_db, req)
 
     assert res.is_success is False
