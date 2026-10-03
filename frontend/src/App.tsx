@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import EcoMap from "./components/EcoMap";
 import AirQualityDashboard from "./components/AirQualityDashboard";
+import { VoiceAssistant } from "./components/VoiceAssistant/VoiceAssistant";
 import api from "./api/client";
 import "./App.css";
 
 function App() {
-  const [activeTab, setActiveTab] = useState<"map" | "dashboard">("map");
+  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "voice">("map");
   const [backendStatus, setBackendStatus] = useState<string | null>(null);
   const [checkingBackend, setCheckingBackend] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -33,7 +34,7 @@ function App() {
   return (
     <div className="app-container">
       {/* THANH ĐIỀU HƯỚNG CHUYỂN ĐỔI CHẾ ĐỘ VIEW (TOP CENTER) */}
-      <nav className={`view-mode-switcher ${activeTab === "dashboard" ? "dark-mode" : ""}`} aria-label="Chế độ hiển thị">
+      <nav className={`view-mode-switcher ${activeTab === "dashboard" || activeTab === "voice" ? "dark-mode" : ""}`} aria-label="Chế độ hiển thị">
         <button
           type="button"
           className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
@@ -52,13 +53,47 @@ function App() {
           <span>📊</span>
           <span>Phân tích AQI & Khí hậu</span>
         </button>
+        <button
+          type="button"
+          className={`view-tab-btn ${activeTab === "voice" ? "active" : ""}`}
+          onClick={() => setActiveTab("voice")}
+          title="Trợ lý giọng nói rảnh tay (Hands-free Voice Assistant)"
+        >
+          <span>🎙️</span>
+          <span>Trợ lý Giọng nói</span>
+        </button>
       </nav>
 
-      {/* VIEW NỘI DUNG CHÍNH: MAP HOẶC DASHBOARD */}
-      {activeTab === "map" ? (
-        <EcoMap />
-      ) : (
+      {/* VIEW NỘI DUNG CHÍNH: MAP, DASHBOARD HOẶC VOICE ASSISTANT */}
+      {activeTab === "map" && <EcoMap />}
+      {activeTab === "dashboard" && (
         <AirQualityDashboard onBackToMap={() => setActiveTab("map")} />
+      )}
+      {activeTab === "voice" && (
+        <VoiceAssistant
+          onClose={() => setActiveTab("map")}
+          onNavigateToFeature={(target) => {
+            if (target === "dashboard_aqi") {
+              setActiveTab("dashboard");
+            } else {
+              setActiveTab("map");
+            }
+          }}
+        />
+      )}
+
+      {/* NÚT TRỢ LÝ GIỌNG NÓI NHANH NỔI (FLOATING QUICK ACTION KHI Ở MAP HOẶC DASHBOARD) */}
+      {activeTab !== "voice" && (
+        <button
+          type="button"
+          className="floating-voice-quick-btn"
+          onClick={() => setActiveTab("voice")}
+          title="Bật Trợ lý giọng nói rảnh tay"
+          aria-label="Trợ lý giọng nói"
+        >
+          <span className="floating-mic-icon">🎙️</span>
+          <span className="floating-mic-label">Trợ lý ảo</span>
+        </button>
       )}
 
       {/* NÚT KIỂM TRA MICROSERVICE BACKEND (GÓC TRÊN BÊN PHẢI) */}

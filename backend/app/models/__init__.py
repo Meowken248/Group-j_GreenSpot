@@ -50,6 +50,14 @@ from app.models.flood import (
     RouteSafetyStatus,
 )
 
+# 6. Trợ lý giọng nói rảnh tay (Hands-free Voice Assistant)
+from app.models.voice import (
+    VoiceSampleCommand,
+    VoiceInteractionLog,
+    VoiceActionType,
+    VoiceCategory,
+)
+
 __all__ = [
     "Base",
     "TimestampMixin",
@@ -82,4 +90,9 @@ __all__ = [
     "FloodCauseType",
     "FloodSeverityLevel",
     "RouteSafetyStatus",
+    # Voice Assistant
+    "VoiceSampleCommand",
+    "VoiceInteractionLog",
+    "VoiceActionType",
+    "VoiceCategory",
 ]
