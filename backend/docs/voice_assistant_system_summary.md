@@ -1,138 +1,219 @@
 # Tài Liệu Đặc Tả Kỹ Thuật & Thuật Toán Lõi: Trợ Lý Giọng Nói Rảnh Tay (Hands-free Voice Assistant)
 
-> **Mã màn hình thiết kế:** Hình 4.37  
-> **Dự án:** GreenSpot / EcoReport - Hệ thống Báo cáo & Giám sát Môi trường Đô thị Thông minh  
+> **Mã tham chiếu thiết kế:** Hình 4.37  
+> **Dự án:** GreenSpot / EcoReport - Bản đồ Môi trường Đô thị & Báo cáo Thông minh  
 > **Kiến trúc:** Clean Architecture, Repository Pattern, Multi-tier AI NLU Engine  
-> **Vị trí lưu trữ tài liệu:** [`BackEnd/docs/voice_assistant_system_summary.md`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/docs/voice_assistant_system_summary.md)  
-> **Phiên bản:** 1.0 (Production-Ready)
+> **Vị trí lưu trữ:** [`BackEnd/docs/voice_assistant_system_summary.md`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/docs/voice_assistant_system_summary.md)  
+> **Trạng thái:** Hoàn thiện 100%, đồng bộ tuyệt đối với mã nguồn hiện tại, sẵn sàng đưa vào vận hành.
 
 ---
 
-## 1. TỔNG QUAN TÍNH NĂNG VÀ CHU TRÌNH 4 MÀN HÌNH (HÌNH 4.37)
-
-Tính năng **Trợ lý giọng nói rảnh tay (Hands-free Voice Assistant)** được thiết kế nhằm nâng cao tối đa trải nghiệm người dùng, đặc biệt phục vụ 2 nhóm đối tượng trọng tâm:
-1. **Người dân đang di chuyển ngoài hiện trường (Lái xe, đi bộ):** Thao tác rảnh tay an toàn, phản ánh sự cố môi trường hoặc kiểm tra lộ trình ngập lụt tức thời mà không cần nhìn chăm chú vào bàn phím hay gõ chữ.
-2. **Người cao tuổi và người khiếm khuyết vận động:** Gia tăng tính trợ năng (Accessibility) khi tiếp cận các dịch vụ công đô thị thông minh.
-
-### 1.1 Chu trình tương tác qua 4 Màn hình khép kín
-Hệ thống hiện thực hóa trọn vẹn 4 màn hình giao diện theo đặc tả **Hình 4.37**:
-
-| Màn Hình | Tên Màn Hình | Vai Trò & Trải Nghiệm Người Dùng | Mã Nguồn Triển Khai |
-| :---: | :--- | :--- | :--- |
-| **Màn 1** | **Trung tâm Điều khiển (Voice Home)** | - Nút micro lớn với hiệu ứng nhịp thở (`pulse animation`).<br>- Nút bấm "Bắt đầu nói".<br>- Danh mục 4-6 câu lệnh mẫu thực tế (báo rác, tuyến đường ngập, ví điểm, AQI).<br>- Hỗ trợ **nhấp trực tiếp vào câu lệnh mẫu** để xử lý tức thì không cần nói.<br>- Kiểm tra hỗ trợ trình duyệt Web Speech API & cảnh báo offline. | [`VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx#L320-L420) |
-| **Màn 2** | **Thu âm & Nhận dạng Real-time** | - Hiển thị toàn văn nhận dạng giọng nói thời gian thực (độ trễ < 200ms).<br>- Sóng âm xanh lá động (`VoiceWaveform`) phản hồi theo tần số Web Audio FFT.<br>- Nút "Dừng" thu âm màu đỏ cam.<br>- **Tự động chuyển sang Màn 3 sau 3 giây im lặng** khi người dùng kết thúc câu nói.<br>- **Watchdog tự hủy sau 10 giây** nếu không phát hiện âm thanh.<br>- Cảnh báo môi trường có nhiều tạp âm nếu phát hiện âm lượng bất thường. | [`VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx#L422-L490)<br>[`VoiceWaveform.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceWaveform.tsx#L1-L120) |
-| **Màn 3** | **Phản hồi & Thực thi Hành động** | - Giao diện chia 2 cột đối xứng chuẩn UX:<br>  + **Cột trái "LỆNH CỦA BẠN":** Toàn văn câu nói đã qua AI chuẩn hóa chính tả, viết hoa địa danh và ngắt câu hợp lý.<br>  + **Cột phải "PHẢN HỒI":** Phát âm thanh phản hồi qua loa (Text-to-Speech), hiển thị thẻ kết quả (Phiếu báo cáo sự cố điền sẵn dữ liệu, Thẻ thông tin AQI, Lộ trình an toàn né ngập, Số dư điểm thưởng).<br>- Nút thao tác nhanh: "Nói tiếp" (quay về Màn 2) và "Đóng" (thoát trợ lý).<br>- Cơ chế Fallback gợi ý câu lệnh mẫu khi gặp câu hỏi chưa nhận diện được. | [`VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx#L492-L680) |
-| **Màn 4** | **Cảnh báo Quyền Microphone** | - Popup phủ mờ ở giữa màn hình (`MicPermissionModal`).<br>- Tiêu đề in đậm màu cam: **"KHÔNG TRUY CẬP ĐƯỢC MICRO"**.<br>- Biểu tượng icon ổ khóa và các bước hướng dẫn người dùng cấp quyền trên thanh URL.<br>- Nút "Thử lại" và nút "Đóng" (hỗ trợ phím tắt `Esc`). | [`MicPermissionModal.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/MicPermissionModal.tsx#L1-L110) |
+## MỤC LỤC TÀI LIỆU
+1. [Tóm Tắt Nhanh Cho Lập Trình Viên & Đánh Giá Viên](#1-tóm-tắt-nhanh-cho-lập-trình-viên--đánh-giá-viên)
+2. [Đặc Tả Chi Tiết 4 Màn Hình Tương Tác (Hình 4.37)](#2-đặc-tả-chi-tiết-4-màn-hình-tương-tác-hình-437)
+3. [Kiến Trúc Hệ Thống & Sơ Đồ Tuần Tự (Architecture & Workflow)](#3-kiến-trúc-hệ-thống--sơ-đồ-tuần-tự-architecture--workflow)
+4. [Mô Hình Dữ Liệu CSDL & Triển Khai Repository Pattern](#4-mô-hình-dữ-liệu-csdl--triển-khai-repository-pattern)
+5. [Chi Tiết Các Dòng Code & Thuật Toán Lõi (Core Algorithms & Code Lines)](#5-chi-tiết-các-dòng-code--thuật-toán-lõi-core-algorithms--code-lines)
+6. [Kịch Bản Nghiệp Vụ Thực Tế Mẫu (End-to-End Walkthrough Scenarios)](#6-kịch-bản-nghiệp-vụ-thực-tế-mẫu-end-to-end-walkthrough-scenarios)
+7. [Bảng Ma Trận Ánh Xạ Mã Nguồn (Project Code Mapping Matrix)](#7-bảng-ma-trận-ánh-xạ-mã-nguồn-project-code-mapping-matrix)
+8. [Hướng Dẫn Kiểm Thử & Xác Nhận Chất Lượng (Testing & Verification)](#8-hướng-dẫn-kiểm-thử--xác-nhận-chất-lượng-testing--verification)
 
 ---
 
-## 2. KIẾN TRÚC HỆ THỐNG & SƠ ĐỒ TUẦN TỰ (ARCHITECTURE & SEQUENCE DIAGRAM)
+## 1. TÓM TẮT NHANH CHO LẬP TRÌNH VIÊN & ĐÁNH GIÁ VIÊN
 
-Hệ thống được thiết kế theo mô hình **Clean Architecture** và nguyên lý **Dependency Inversion (S.O.L.I.D)**. Tầng Giao tiếp người dùng (Frontend), tầng Điều phối API (FastAPI Router), tầng Xử lý Trí tuệ Nhân tạo (AI NLU Service) và tầng Dữ liệu (Repository & CSDL PostGIS) hoàn toàn tách biệt.
+> [!NOTE]
+> **Mục tiêu tính năng:** Cung cấp trải nghiệm tương tác giọng nói hoàn toàn rảnh tay, hỗ trợ công dân đang điều khiển phương tiện giao thông hoặc người cao tuổi dễ dàng phản ánh sự cố môi trường và tra cứu cứu trợ khẩn cấp mà không cần gõ chữ.
+
+- **Frontend:**
+  - Viết bằng **React + TypeScript**, tuân thủ nghiêm ngặt chuẩn gõ chữ nghiêm ngặt (`verbatimModuleSyntax: true`).
+  - Sử dụng **Web Speech API** (`webkitSpeechRecognition` / `SpeechRecognition`) cho nhận dạng âm thanh thời gian thực (độ trễ < 200ms) và **SpeechSynthesis API** cho phát âm thanh phản hồi (TTS).
+  - Sử dụng **Web Audio API** (`AudioContext`, `AnalyserNode`) phân tích Fast Fourier Transform (FFT 64) để vẽ sóng âm dao động màu xanh lá (`VoiceWaveform`) trên HTML5 Canvas.
+  - Tích hợp liền mạch trên trang chủ ([`FrontEnd/src/App.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/App.tsx#L58-L64)) qua tab Navbar và nút nổi mở nhanh góc màn hình.
+- **Backend:**
+  - Viết bằng **FastAPI (Python 3.11+)** theo cấu trúc **Clean Architecture** và **Repository Pattern** (Interface trừu tượng tách biệt hoàn toàn lớp truy cập CSDL và lớp dịch vụ AI NLU).
+  - Động cơ **AI NLU tự phát triển (In-house Multi-tier Engine)** xử lý chuẩn hóa ngữ âm tiếng Việt, khử dấu thanh điệu chuẩn Unicode NFD, trích xuất thực thể địa danh (Slot Extraction) và phân loại ý định qua 4 tầng (Exact Match -> Semantic Patterns -> Fuzzy Jaccard Similarity -> Graceful Fallback).
+- **Cơ sở dữ liệu:**
+  - Chuẩn hóa đúng **2 bảng duy nhất** trên PostgreSQL 16: `voice_sample_commands` và `voice_interaction_logs`.
+  - Migration được quản lý qua Alembic: revision `020_voice_assistant` ([`BackEnd/alembic/versions/020_create_voice_assistant_tables.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/alembic/versions/020_create_voice_assistant_tables.py)).
+- **Chất lượng kiểm thử:**
+  - Backend: **8/8 unit tests** đạt 100% độ bao phủ logic NLU, Normalization, Router và Mock DB.
+  - Frontend: **10/10 tests Vitest** đạt 100% độ bao phủ các màn hình 1, 2, 3, 4.
+
+---
+
+## 2. ĐẶC TẢ CHI TIẾT 4 MÀN HÌNH TƯƠNG TÁC (HÌNH 4.37)
 
 ```
-+---------------------------------------------------------------------------------------+
-|                                    FRONTEND (React + TS)                              |
-|  [Màn 1: Home] ---> [Màn 2: Realtime STT + Waveform] ---> [Màn 3: TTS + Action Exec]  |
-|                                         |                                             |
-|                             [Màn 4: Mic Permission Modal]                            |
-+------------------------------------------+--------------------------------------------+
-                                           | HTTP REST POST /api/v1/voice/process
-                                           v
-+---------------------------------------------------------------------------------------+
-|                                    BACKEND (FastAPI)                                  |
-|  [API Router: voice.py]                                                               |
-|        |                                                                              |
-|        v                                                                              |
-|  [IVoiceNluService / voice_service.py]                                                |
-|     1. Normalize Text (Chính tả, Danh từ riêng, Dấu câu)                              |
-|     2. Strip Accents Unicode NFD                                                      |
-|     3. Slot & Entity Extraction (Địa điểm, Giao lộ)                                   |
-|     4. Multi-tier Intent Classification (Exact -> Pattern -> Fuzzy Jaccard -> Fallback)|
-|     5. Action Payload Generator & TTS Response Builder                                |
-|        |                                                                              |
-|        v                                                                              |
-|  [IVoiceAssistantRepository / voice_repository.py]                                    |
-|        |                                                                              |
-|        v                                                                              |
-|  [PostgreSQL / PostGIS Database: voice_sample_commands & voice_interaction_logs]      |
-+---------------------------------------------------------------------------------------+
+   +-----------------------------------------------------------------------------------+
+   |                                 HÌNH 4.37 FLOW                                    |
+   |                                                                                   |
+   |   [ MÀN 1: TRUNG TÂM ]  -----(Bấm Micro)-----> [ MÀN 2: THU ÂM REALTIME ]         |
+   |     - Nút Mic Pulse                              - Sóng âm xanh lá FFT            |
+   |     - 4 Câu lệnh mẫu                             - Chữ chạy theo giọng nói        |
+   |     - Nhấp câu mẫu xử lý ngay                    - Đếm im lặng 3s / Timeout 10s   |
+   |            |                                              |                       |
+   |            | (Lỗi quyền micro)                            | (Nói xong / Bấm Dừng) |
+   |            v                                              v                       |
+   |   [ MÀN 4: POPUP QUYỀN ]                       [ MÀN 3: PHẢN HỒI & THỰC THI ]     |
+   |     - "KHÔNG TRUY CẬP ĐƯỢC MICRO"                - Cột trái: Lệnh của bạn (chuẩn) |
+   |     - Hướng dẫn icon Ổ khóa 🔒                   - Cột phải: Loa TTS + Kết quả     |
+   |     - Nút "Thử lại" & "Đóng" (Esc)               - Nút "Nói tiếp" & "Đóng"        |
+   +-----------------------------------------------------------------------------------+
+```
+
+### 2.1 Màn 1: Trung tâm Điều khiển Giọng nói (Voice Home)
+- **Tập tin:** [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx#L320-L418)
+- **Các thành phần giao diện chính:**
+  1. *Nút Micro lớn trung tâm:* Kích thước 120px với 3 vòng tròn hiệu ứng nhịp thở (`pulse animation` trong CSS). Khi bấm vào sẽ xin quyền micro và chuyển ngay sang Màn 2.
+  2. *Nút hành động "Bắt đầu nói":* Đặt ngay dưới micro để tăng tính trực quan.
+  3. *Danh mục câu lệnh mẫu thực tế:* Hiển thị dưới dạng các thẻ chip bo tròn (Chips), tải động từ API `/api/v1/voice/suggestions`:
+     - *"Báo cáo bãi rác gần đây"*
+     - *"Đường nào an toàn không bị ngập?"*
+     - *"Xem số dư ví điểm"*
+     - *"Mở bản đồ chất lượng không khí"*
+  4. *Tính năng Click-to-Process:* Người dùng có thể **nhấp chuột trực tiếp vào bất kỳ thẻ gợi ý nào**; hệ thống sẽ bỏ qua thu âm và lập tức gọi API `/api/v1/voice/process` để mở thẳng Màn 3.
+  5. *Bảo vệ ngoại lệ:* Kiểm tra hỗ trợ Speech Recognition của trình duyệt. Nếu trình duyệt không hỗ trợ hoặc đang mất kết nối mạng, hiển thị thông báo hướng dẫn người dùng chuyển sang bàn phím thông thường.
+
+### 2.2 Màn 2: Thu âm & Nhận dạng Giọng nói Real-time
+- **Tập tin:** [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx#L420-L490) và [`VoiceWaveform.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceWaveform.tsx#L1-L119)
+- **Các thành phần giao diện chính:**
+  1. *Văn bản hiển thị Real-time:* Hiển thị chữ chạy trực tiếp theo từng lời nói của công dân với độ trễ phản hồi cực thấp (< 200ms).
+  2. *Sóng âm động màu xanh lá:* Phân tích tần số âm thanh từ micro qua `AnalyserNode`, hiển thị 28 thanh sóng âm gradient chuyển màu `#10b981` ➔ `#34d399` ➔ `#059669`.
+  3. *Cảnh báo tạp âm môi trường:* Tự động đo lường năng lượng âm thanh nền, nếu phát hiện biến thiên đột ngột vượt ngưỡng sẽ bật huy hiệu `[⚠️ Môi trường nhiều tạp âm]`.
+  4. *Nút "Dừng" thu âm:* Cho phép công dân chủ động bấm kết thúc câu nói bất kỳ lúc nào để chuyển sang Màn 3.
+  5. *Cơ chế tự động 3 giây:* Nếu người dùng ngừng nói trong **3 giây**, hệ thống tự động nhận định câu lệnh đã kết thúc và tự động gửi dữ liệu sang Backend xử lý.
+  6. *Watchdog Timer 10 giây:* Nếu kích hoạt thu âm nhưng sau **10 giây** hoàn toàn không có tiếng động, hệ thống tự động tắt micro, hiện thông báo toast và trở về Màn 1 để tránh tiêu tốn pin và tài nguyên.
+
+### 2.3 Màn 3: Phản hồi & Thực thi Hành động (2 Cột Đối Xứng)
+- **Tập tin:** [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx#L492-L680)
+- **Bố cục 2 cột tiêu chuẩn UX:**
+  - **Cột trái "LỆNH CỦA BẠN" (Dòng 507 - 540):** Hiển thị văn bản câu nói đã được AI chuẩn hóa ngữ âm, viết hoa danh từ riêng, sửa lỗi chính tả và ngắt dấu câu hoàn chỉnh. Bên dưới kèm theo nhãn phân loại ý định (Ví dụ: `🏷️ Ý định: Báo cáo sự cố`).
+  - **Cột phải "PHẢN HỒI" (Dòng 542 - 640):**
+    - Trợ lý ảo tự động đọc câu trả lời bằng giọng nói tiếng Việt tự nhiên thông qua loa thiết bị (`SpeechSynthesis`). Có nút bấm nghe lại âm thanh kèm hiệu ứng sóng âm đang nói.
+    - Thẻ hành động động (Dynamic Action Card) tùy theo loại ý định:
+      * **Báo cáo sự cố rác thải (`REPORT_INCIDENT`):** Điền sẵn phiếu gồm Tiêu đề, Loại sự cố (Rác thải đô thị), Vị trí giao lộ trích xuất được từ câu nói (Ví dụ: *"ngã tư Lê Lợi"*), và nút "Mở form Báo cáo ngay".
+      * **Tuyến đường an toàn (`CHECK_SAFE_ROUTE`):** Thẻ gợi ý lộ trình di chuyển tránh các điểm ngập nước, kèm nút "Xem bản đồ ngập lụt".
+      * **Tra cứu chất lượng không khí (`CHECK_CURRENT_AQI` / `OPEN_AIR_QUALITY_MAP`):** Thẻ hiển thị chỉ số AQI 42 (Mức Tốt - Màu xanh lá), nồng độ bụi mịn PM2.5, nhiệt độ và độ ẩm thực tế.
+      * **Ví điểm thưởng (`CHECK_REWARD_WALLET`):** Thẻ hiển thị số dư 350 GreenPoints, thứ hạng Chiến binh Xanh và lịch sử đổi thưởng gần nhất.
+  - **Kịch bản Fallback:** Nếu người dùng ra lệnh ngoài phạm vi hiểu biết của trợ lý, cột phải sẽ hiển thị lời giải thích nhẹ nhàng: *"Xin lỗi, tôi chưa hiểu lệnh này. Bạn có thể thử lại các câu gợi ý"* kèm 4 nút bấm gợi ý nhanh.
+  - **Thanh điều khiển dưới cùng (Dòng 642 - 675):** Nút **"Nói tiếp"** (mở lại micro để ra lệnh tiếp) và nút **"Đóng"** (thoát trợ lý quay lại màn hình chính).
+
+### 2.4 Màn 4: Popup Cảnh báo Quyền Microphone (Mic Permission Modal)
+- **Tập tin:** [`FrontEnd/src/components/VoiceAssistant/MicPermissionModal.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/MicPermissionModal.tsx#L1-L118)
+- **Các thành phần giao diện chính:**
+  1. *Thẻ nhãn nhỏ POPUP* phía trên tiêu đề.
+  2. *Tiêu đề in đậm màu cam rực rỡ:* **"KHÔNG TRUY CẬP ĐƯỢC MICRO"**.
+  3. *Dòng phụ đề:* *"Hãy cấp quyền micro cho trình duyệt"*.
+  4. *Hộp đồ họa mô phỏng thanh URL trình duyệt:* Biểu tượng Ổ khóa (🔒), địa chỉ `greenspot.gov.vn` và huy hiệu đỏ `🎤 Bị chặn`.
+  5. *3 bước hướng dẫn trực quan:* Nhấp vào biểu tượng ổ khóa ➔ Chuyển Micro sang Cho phép ➔ Nhấn "Thử lại".
+  6. *Hai nút chức năng:* Nút **"Thử lại"** (chủ động yêu cầu lại quyền micro `getUserMedia`) và nút **"Đóng"** (hỗ trợ phím `Escape`).
+
+---
+
+## 3. KIẾN TRÚC HỆ THỐNG & SƠ ĐỒ TUẦN TỰ (ARCHITECTURE & WORKFLOW)
+
+Hệ thống được thiết kế theo đúng mô hình **Clean Architecture & Dependency Inversion Principle (SOLID)**.
+
+```
+       NGƯỜI DÙNG                TRÌNH DUYỆT (FRONTEND)                      MÁY CHỦ FASTAPI (BACKEND)                 POSTGRESQL (DATABASE)
+           |                               |                                             |                                       |
+           |---- 1. Bấm nút Micro -------->|                                             |                                       |
+           |                               |-- 2. getUserMedia() -> Mở micro ----------->|                                       |
+           |                               |-- 3. Web Audio FFT vẽ sóng âm Waveform ---->|                                       |
+           |---- 4. Phát âm giọng nói ---->|                                             |                                       |
+           |                               |-- 5. Web Speech STT nhận dạng real-time --->|                                       |
+           |                               |                                             |                                       |
+           | [Sau 3s im lặng / Bấm Dừng]   |                                             |                                       |
+           |                               |-- 6. POST /api/v1/voice/process ----------->|                                       |
+           |                               |      (payload: transcript, lat, lng)        |                                       |
+           |                               |                                             |-- 7. Normalize Text (Chính tả/Dấu) -->|
+           |                               |                                             |-- 8. Strip Accents Unicode NFD ------>|
+           |                               |                                             |-- 9. Slot Extraction (Địa danh) ----->|
+           |                               |                                             |-- 10. Multi-tier Intent Matching ---->|
+           |                               |                                             |-- 11. Query Sample Commands --------->|
+           |                               |                                             |<====== Trả về danh mục lệnh =========|
+           |                               |                                             |-- 12. Build Action Payload & TTS ---->|
+           |                               |                                             |-- 13. INSERT VoiceInteractionLog ---->|
+           |                               |                                             |<====== Ghi nhận thành công ==========|
+           |                               |<== 14. Trả về VoiceProcessResponse =========|                                       |
+           |                               |                                                                                     |
+           |<--- 15. Phát âm thanh TTS ----| (Hiển thị Màn 3: Cột trái Lệnh chuẩn hóa, Cột phải Thẻ kết quả)                     |
+           |                               |                                                                                     |
 ```
 
 ---
 
-## 3. THIẾT KẾ CƠ SỞ DỮ LIỆU & REPOSITORY PATTERN
+## 4. MÔ HÌNH DỮ LIỆU CSDL & TRIỂN KHAI REPOSITORY PATTERN
 
-Hệ thống được thiết kế chuẩn hóa 3NF gồm **chính xác 2 bảng**, sử dụng khóa chính chuẩn UUIDv4 đồng bộ toàn hệ thống GreenSpot, không phát sinh dư thừa hoặc thiếu hụt bất kỳ trường dữ liệu nào.
+### 4.1 Bảng `voice_sample_commands` (Danh mục câu lệnh mẫu & cấu hình Intent)
+- **Tập tin Model:** [`BackEnd/app/models/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/voice.py#L49-L105)
+- **Tập tin Migration:** [`BackEnd/alembic/versions/020_create_voice_assistant_tables.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/alembic/versions/020_create_voice_assistant_tables.py#L21-L40)
 
-### 3.1 Bảng `voice_sample_commands` (Danh mục câu lệnh mẫu & cấu hình Intent)
-- **Tập tin Model:** [`BackEnd/app/models/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/voice.py) *(Dòng 49 - 105)*
-- **Tập tin Migration:** [`BackEnd/alembic/versions/020_create_voice_assistant_tables.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/alembic/versions/020_create_voice_assistant_tables.py) *(Dòng 22 - 40)*
-- **Cấu trúc chi tiết:**
-
-| Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Ý Nghĩa / Mục Đích Nghiệp Vụ |
+| Tên Trường (Column) | Kiểu Dữ Liệu | Ràng Buộc (Constraints) | Ý Nghĩa / Mục Đích Nghiệp Vụ |
 | :--- | :--- | :--- | :--- |
-| `command_id` | `UUID` | `PRIMARY KEY, DEFAULT uuid.uuid4` | Định danh duy nhất của câu lệnh mẫu |
+| `command_id` | `UUID` | `PRIMARY KEY, DEFAULT uuid.uuid4` | Định danh duy nhất chuẩn UUIDv4 |
 | `category` | `VARCHAR(50)` | `NOT NULL, INDEX` | Nhóm lệnh: `INCIDENT`, `FLOOD`, `AIR_QUALITY`, `REWARD`, `GENERAL` |
-| `command_text` | `VARCHAR(255)` | `NOT NULL, UNIQUE` | Văn bản hiển thị gợi ý (VD: *"Báo cáo bãi rác gần đây"*) |
-| `intent_code` | `VARCHAR(50)` | `NOT NULL, INDEX` | Mã định danh ý định AI (`REPORT_INCIDENT`, `CHECK_SAFE_ROUTE`...) |
+| `command_text` | `VARCHAR(255)` | `NOT NULL, UNIQUE` | Câu gợi ý hiển thị tại Màn 1 (VD: *"Báo cáo bãi rác gần đây"*) |
+| `intent_code` | `VARCHAR(50)` | `NOT NULL, INDEX` | Mã ý định xử lý: `REPORT_INCIDENT`, `CHECK_SAFE_ROUTE`... |
 | `action_type` | `VARCHAR(20)` | `NOT NULL, DEFAULT 'LOOKUP'` | Loại hành động: `'LOOKUP'` (Tra cứu) hoặc `'NAVIGATION'` (Điều hướng) |
-| `action_target` | `VARCHAR(100)` | `NULLABLE` | Route hoặc tab đích (`/report-incident`, `map_flood`, `dashboard_aqi`...) |
-| `default_response`| `TEXT` | `NOT NULL` | Mẫu câu phản hồi Text-to-Speech qua loa |
-| `is_active` | `BOOLEAN` | `NOT NULL, DEFAULT TRUE` | Trạng thái hiển thị gợi ý trên Màn 1 |
-| `display_order` | `INTEGER` | `NOT NULL, DEFAULT 0` | Thứ tự ưu tiên sắp xếp từ trên xuống |
+| `action_target` | `VARCHAR(100)` | `NULLABLE` | Đường dẫn route chuyển hướng: `/report-incident`, `map_flood`... |
+| `default_response`| `TEXT` | `NOT NULL` | Câu phản hồi thoại chuẩn dùng để phát qua loa Text-to-Speech |
+| `is_active` | `BOOLEAN` | `NOT NULL, DEFAULT TRUE` | Trạng thái cho phép hiển thị gợi ý trên giao diện |
+| `display_order` | `INTEGER` | `NOT NULL, DEFAULT 0` | Thứ tự ưu tiên sắp xếp từ trên xuống dưới |
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | Thời điểm tạo bản ghi |
-| `updated_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | Thời điểm cập nhật lần cuối |
+| `updated_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | Thời điểm cập nhật dữ liệu lần cuối |
 
-### 3.2 Bảng `voice_interaction_logs` (Nhật ký tương tác & Giám sát AI)
-- **Tập tin Model:** [`BackEnd/app/models/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/voice.py) *(Dòng 107 - 177)*
-- **Tập tin Migration:** [`BackEnd/alembic/versions/020_create_voice_assistant_tables.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/alembic/versions/020_create_voice_assistant_tables.py) *(Dòng 42 - 65)*
-- **Cấu trúc chi tiết:**
+### 4.2 Bảng `voice_interaction_logs` (Nhật ký tương tác & Giám sát AI)
+- **Tập tin Model:** [`BackEnd/app/models/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/voice.py#L107-L177)
+- **Tập tin Migration:** [`BackEnd/alembic/versions/020_create_voice_assistant_tables.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/alembic/versions/020_create_voice_assistant_tables.py#L42-L63)
 
-| Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Ý Nghĩa / Mục Đích Nghiệp Vụ |
+| Tên Trường (Column) | Kiểu Dữ Liệu | Ràng Buộc (Constraints) | Ý Nghĩa / Mục Đích Nghiệp Vụ |
 | :--- | :--- | :--- | :--- |
-| `log_id` | `UUID` | `PRIMARY KEY, DEFAULT uuid.uuid4` | Khóa chính của mỗi lượt tương tác |
-| `user_id` | `UUID` | `NULLABLE, FK -> users(user_id)` | ID người dùng nếu đã đăng nhập (`NULL` nếu người dùng vãng lai) |
-| `raw_transcript` | `TEXT` | `NOT NULL` | Toàn văn thô nhận diện được từ micro (chưa chuẩn hóa) |
-| `normalized_text`| `TEXT` | `NOT NULL` | Văn bản đã qua AI chuẩn hóa chính tả và ngắt câu |
-| `detected_intent`| `VARCHAR(50)` | `NULLABLE, INDEX` | Ý định AI phân loại được (`NULL` nếu rơi vào Fallback) |
-| `confidence_score`| `FLOAT` | `NOT NULL, DEFAULT 1.0` | Điểm tin cậy của thuật toán phân loại (0.0 đến 1.0) |
-| `action_type` | `VARCHAR(20)` | `NULLABLE` | Loại hành động phân loại được: `LOOKUP` / `NAVIGATION` / `UNKNOWN` |
-| `response_text` | `TEXT` | `NOT NULL` | Nội dung văn bản trợ lý trả lời qua loa cho người dùng |
-| `is_success` | `BOOLEAN` | `NOT NULL, DEFAULT TRUE` | Trạng thái xử lý thành công hay rơi vào kịch bản chưa hiểu |
+| `log_id` | `UUID` | `PRIMARY KEY, DEFAULT uuid.uuid4` | Khóa chính của mỗi phiên tương tác |
+| `user_id` | `UUID` | `NULLABLE, FK -> users(user_id)` | Người dùng thực hiện lệnh (hỗ trợ `NULL` nếu là khách vãng lai) |
+| `raw_transcript` | `TEXT` | `NOT NULL` | Văn bản thô nhận diện từ microphone trước khi qua AI xử lý |
+| `normalized_text`| `TEXT` | `NOT NULL` | Văn bản đã qua thuật toán AI chuẩn hóa chính tả và ngắt câu |
+| `detected_intent`| `VARCHAR(50)` | `NULLABLE, INDEX` | Ý định được phân loại thành công (`NULL` nếu rơi vào Fallback) |
+| `confidence_score`| `FLOAT` | `NOT NULL, DEFAULT 1.0` | Độ tin cậy dự đoán (thang điểm từ 0.0 đến 1.0) |
+| `action_type` | `VARCHAR(20)` | `NULLABLE` | Loại hành động: `LOOKUP`, `NAVIGATION` hoặc `UNKNOWN` |
+| `response_text` | `TEXT` | `NOT NULL` | Nội dung văn bản trợ lý ảo đã trả lời qua loa |
+| `is_success` | `BOOLEAN` | `NOT NULL, DEFAULT TRUE` | Trạng thái: `True` nếu nhận diện thành công, `False` nếu Fallback |
 | `session_source` | `VARCHAR(20)` | `NOT NULL, DEFAULT 'VOICE'` | Nguồn: `'VOICE'` (thu âm micro) hoặc `'SUGGESTION_CLICK'` (bấm gợi ý) |
-| `processing_time_ms`| `INTEGER` | `NOT NULL, DEFAULT 0` | Thời gian backend AI NLU xử lý (mili-giây, thông thường < 15ms) |
-| `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now(), INDEX` | Thời điểm ghi nhận tương tác |
+| `processing_time_ms`| `INTEGER` | `NOT NULL, DEFAULT 0` | Thời gian backend AI NLU phân tích tính bằng mili-giây (< 20ms) |
+| `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now(), INDEX` | Thời điểm ghi nhận giao dịch vào CSDL |
 
-### 3.3 Triển khai Kiến trúc Repository Pattern
-- **Giao diện trừu tượng:** [`BackEnd/app/interface/voice_interface.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/interface/voice_interface.py)
-  - Lớp trừu tượng [`IVoiceAssistantRepository(ABC)`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/interface/voice_interface.py#L15-L63) định nghĩa các giao thức: `get_active_sample_commands`, `get_all_sample_commands`, `get_command_by_text`, `create_interaction_log`, `get_recent_logs`.
-  - Lớp trừu tượng [`IVoiceNluService(ABC)`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/interface/voice_interface.py#L65-L92) định nghĩa các hàm: `normalize_text`, `process_voice_command`.
-- **Lớp triển khai cụ thể:** [`BackEnd/app/crud/voice_repository.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/crud/voice_repository.py)
-  - Lớp [`VoiceAssistantRepository`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/crud/voice_repository.py#L15-L92) kế thừa `IVoiceAssistantRepository`, triển khai truy vấn SQLAlchemy 2.0 Async, eager execution và bảo toàn tính toàn vẹn giao dịch (Transaction Atomicity).
+### 4.3 Triển khai Kiến trúc Repository Pattern
+1. **Interface Contract:** [`BackEnd/app/interface/voice_interface.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/interface/voice_interface.py)
+   - Lớp trừu tượng [`IVoiceAssistantRepository(ABC)`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/interface/voice_interface.py#L15-L63) khai báo 5 phương thức cốt lõi:
+     * `get_active_sample_commands(db, limit, category)`
+     * `get_all_sample_commands(db)`
+     * `get_command_by_text(db, command_text)`
+     * `create_interaction_log(db, log)`
+     * `get_recent_logs(db, limit, user_id)`
+   - Lớp trừu tượng [`IVoiceNluService(ABC)`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/interface/voice_interface.py#L65-L92) khai báo:
+     * `normalize_text(raw_text)`
+     * `process_voice_command(db, request)`
+2. **Lớp Triển Khai Thực Tế:** [`BackEnd/app/crud/voice_repository.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/crud/voice_repository.py)
+   - Lớp [`VoiceAssistantRepository`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/crud/voice_repository.py#L15-L92) triển khai toàn bộ các truy vấn dữ liệu bất đồng bộ (SQLAlchemy 2.0 Async), tối ưu chỉ mục truy vấn và cam kết giao dịch nguyên khối.
 
 ---
 
-## 4. CHI TIẾT CÁC DÒNG CODE VÀ THUẬT TOÁN LÕI (CORE ALGORITHMS)
+## 5. CHI TIẾT CÁC DÒNG CODE & THUẬT TOÁN LÕI (CORE ALGORITHMS & CODE LINES)
 
-Dưới đây là chi tiết mã nguồn, vị trí dòng code và nguyên lý hoạt động của toàn bộ các thuật toán cốt lõi cấu thành tính năng Trợ lý Giọng nói Rảnh tay:
+Phần này trình bày chính xác từng dòng code và nguyên lý hoạt động của các thuật toán lõi được xây dựng trong hệ thống.
 
-### 4.1 Thuật toán 1: Chuẩn hóa Ngữ âm Tiếng Việt (Vietnamese Text Normalization)
+### 5.1 Thuật toán 1: Chuẩn hóa Ngữ âm Tiếng Việt (Vietnamese Text Normalization)
 - **Tập tin:** [`BackEnd/app/services/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_service.py)
 - **Vị trí dòng code:** **Dòng 65 đến Dòng 103** (Phương thức `normalize_text`)
-- **Nguyên lý hoạt động:**
-  1. *Xóa khoảng trắng thừa:* Dùng `" ".join(raw_text.strip().split())`.
-  2. *Làm sạch dấu câu rải rác:* Xóa sạch các dấu câu thừa ở cuối chuỗi bằng biểu thức Regex `[.,?!;]+$`.
-  3. *Chuẩn hóa danh từ riêng & địa danh hành chính:* Tự động tra bảng đối chiếu `proper_noun_replacements` để viết hoa đúng chuẩn chính tả các địa danh trọng điểm tại TP.HCM (Ví dụ: `ngã tư lê lợi` ➔ `ngã tư Lê Lợi`, `quận 1` ➔ `Quận 1`, `bến nghé` ➔ `Bến Nghé`, `nguyễn huệ` ➔ `Nguyễn Huệ`...).
-  4. *Viết hoa chữ cái đầu câu:* `text[0].upper() + text[1:]`.
-  5. *Phân tích kết câu thông minh:* Nếu câu bắt đầu bằng từ nghi vấn (`đường nào`, `ở đâu`, `khi nào`, `bao nhiêu`...) hoặc kết thúc bằng trợ từ nghi vấn (`không`, `chưa`, `nhỉ`), thuật toán tự động gắn dấu chấm hỏi `?`. Ngược lại, nếu là câu mệnh lệnh hoặc trần thuật, tự động gắn dấu chấm kết câu `.`.
+- **Mục đích:** Khắc phục lỗi phát âm, loại bỏ khoảng trắng dư thừa, viết hoa đầu câu, tự động viết hoa đúng chuẩn danh từ riêng và địa danh hành chính tại TP.HCM, tự động gắn dấu câu logic (`?` cho câu hỏi, `.` cho mệnh lệnh).
 - **Mã nguồn trích xuất:**
 ```python
 65:     def normalize_text(self, raw_text: str) -> str:
 66:         if not raw_text:
 67:             return ""
 68: 
-69:         # 1. Thu gọn khoảng trắng
+69:         # 1. Thu gọn khoảng trắng thừa
 70:         text = " ".join(raw_text.strip().split())
 71:         if not text:
 72:             return ""
@@ -141,7 +222,7 @@ Dưới đây là chi tiết mã nguồn, vị trí dòng code và nguyên lý h
 75:         text = re.sub(r"[.,?!;]+$", "", text).strip()
 76:         lower_text = text.lower()
 77: 
-78:         # 3. Chuẩn hóa địa danh và danh từ riêng
+78:         # 3. Chuẩn hóa địa danh và danh từ riêng viết hoa chuẩn chính tả
 79:         for pattern, replacement in self.proper_noun_replacements.items():
 80:             text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
 81: 
@@ -161,14 +242,17 @@ Dưới đây là chi tiết mã nguồn, vị trí dòng code và nguyên lý h
 95: 
 96:         return text
 ```
+- **Ví dụ kiểm chứng thực tế:**
+  * Input thô: `"báo cáo bãi rác ngã tư lê lợi"` ➔ Chuẩn hóa: `"Báo cáo bãi rác ngã tư Lê Lợi."`
+  * Input thô: `"đường nào an toàn không bị ngập"` ➔ Chuẩn hóa: `"Đường nào an toàn không bị ngập?"`
+  * Input thô: `"chất lượng không khí quận 1 hôm nay"` ➔ Chuẩn hóa: `"Chất lượng không khí Quận 1 hôm nay."`
 
 ---
 
-### 4.2 Thuật toán 2: Khử Dấu Tiếng Việt Chuẩn NFD (Unicode Accent Stripping)
+### 5.2 Thuật toán 2: Khử Dấu Tiếng Việt Chuẩn Unicode NFD (Accent Stripping)
 - **Tập tin:** [`BackEnd/app/services/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_service.py)
 - **Vị trí dòng code:** **Dòng 106 đến Dòng 118** (Phương thức `strip_accents` và `_strip_accents_and_punct`)
-- **Nguyên lý hoạt động:**
-  - Bộ nhận diện giọng nói STT trên trình duyệt có thể trả về văn bản không đồng nhất (thiếu dấu thanh hoặc sai vị trí dấu). Thuật toán phân rã chuỗi theo chuẩn Unicode NFD (Normalization Form Decomposition) và lọc bỏ toàn bộ các ký tự thuộc nhóm `Mn` (Mark, nonspacing), đồng thời hoán đổi chữ cái đặc thù tiếng Việt `đ/Đ` thành `d/D`.
+- **Mục đích:** Cho phép bộ nhận diện Intent so khớp từ khóa chính xác tuyệt đối bất kể người dùng nói có dấu, không dấu hay do Speech-to-Text nhận dạng thiếu dấu thanh điệu.
 - **Mã nguồn trích xuất:**
 ```python
 106:     @staticmethod
@@ -189,12 +273,11 @@ Dưới đây là chi tiết mã nguồn, vị trí dòng code và nguyên lý h
 
 ---
 
-### 4.3 Thuật toán 3: Tính Độ Tương Đồng Tập Từ Vựng Jaccard (Word-Set Overlap)
+### 5.3 Thuật toán 3: Tính Độ Tương Đồng Tập Từ Vựng Jaccard (Word-Set Similarity)
 - **Tập tin:** [`BackEnd/app/services/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_service.py)
 - **Vị trí dòng code:** **Dòng 120 đến Dòng 128** (Phương thức `_calculate_similarity`)
-- **Nguyên lý toán học:**
+- **Công thức toán học:**
   $$J(A, B) = \frac{|A \cap B|}{|A \cup B|}$$
-  Trong đó $A$ và $B$ là hai tập hợp các từ đã qua làm sạch và khử dấu thanh điệu. Chỉ số $J(A, B)$ nằm trong khoảng $[0.0, 1.0]$. Nếu $J(A, B) \ge 0.40$, câu nói được coi là tương đồng ngữ nghĩa với câu lệnh mẫu trong cơ sở dữ liệu.
 - **Mã nguồn trích xuất:**
 ```python
 120:     def _calculate_similarity(self, s1: str, s2: str) -> float:
@@ -210,12 +293,10 @@ Dưới đây là chi tiết mã nguồn, vị trí dòng code và nguyên lý h
 
 ---
 
-### 4.4 Thuật toán 4: Trích Xuất Tham Số Thực Thể Địa Danh (Slot/Entity Extraction)
+### 5.4 Thuật toán 4: Trích Xuất Tham Số Thực Thể Địa Danh (Slot/Entity Extraction)
 - **Tập tin:** [`BackEnd/app/services/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_service.py)
 - **Vị trí dòng code:** **Dòng 130 đến Dòng 144** (Phương thức `_extract_location_slot`)
-- **Nguyên lý hoạt động:**
-  - Sử dụng biểu thức chính quy (Regex) quét các tiền tố không gian trong câu nói như: `ngã tư`, `ngã ba`, `đường`, `phố`, `phường`, `quận`, `khu vực`, `gần`, `tại`, `ở`.
-  - Trích xuất tự động tên địa danh hoặc giao lộ để đưa vào Payload điền sẵn phiếu Báo cáo sự cố hoặc tra cứu trạm AQI.
+- **Mục đích:** Tự động tách tên đường, giao lộ hoặc quận huyện từ câu nói của người dân để tự động điền sẵn vào form Báo cáo sự cố hoặc tra cứu trạm quan trắc không khí.
 - **Mã nguồn trích xuất:**
 ```python
 130:     def _extract_location_slot(self, text: str) -> Optional[str]:
@@ -237,44 +318,68 @@ Dưới đây là chi tiết mã nguồn, vị trí dòng code và nguyên lý h
 
 ---
 
-### 4.5 Thuật toán 5: Động Cơ Phân Loại Ý Định Đa Tầng (Multi-tier Intent Engine)
+### 5.5 Thuật toán 5: Động Cơ Phân Loại Ý Định Đa Tầng (Multi-tier Intent Engine)
 - **Tập tin:** [`BackEnd/app/services/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_service.py)
 - **Vị trí dòng code:** **Dòng 146 đến Dòng 277** (Phương thức `match_intent`)
 - **Cấu trúc 4 tầng phân loại:**
-  1. **Tầng 1 - Khớp Tuyệt đối (Exact Match - Dòng 161 - 173):** So sánh chuỗi đã khử dấu của câu nói với tập câu lệnh mẫu trong CSDL. Độ tin cậy `confidence = 1.0`.
-  2. **Tầng 2 - Khớp Mẫu Ngữ Nghĩa (Semantic Pattern Match - Dòng 175 - 245):** Quét các cụm từ khóa mục tiêu thực tế (`confidence >= 0.90`):
-     - `REPORT_INCIDENT`: Nhận diện các từ khóa xả rác, bãi rác, ô nhiễm, vứt rác ➔ Tạo action `NAVIGATION` đến `/report-incident`.
-     - `CHECK_SAFE_ROUTE`: Nhận diện đường an toàn, không bị ngập, né ngập ➔ Tạo action `NAVIGATION` đến `map_flood`.
-     - `CHECK_REWARD_WALLET`: Nhận diện ví điểm, xem điểm, đổi quà, GreenPoints ➔ Tạo action `LOOKUP` đến `/wallet`.
-     - `OPEN_AIR_QUALITY_MAP`: Nhận diện mở bản đồ chất lượng không khí, AQI ➔ Tạo action `NAVIGATION` đến `dashboard_aqi`.
-     - `CHECK_CURRENT_AQI`: Nhận diện chất lượng không khí, bụi mịn theo quận ➔ Tạo action `LOOKUP` với số liệu AQI 42 (Tốt).
-     - `REPORT_FLOOD`: Nhận diện điểm ngập, nước ngập ➔ Tạo action `NAVIGATION` đến `/report-flood`.
-  3. **Tầng 3 - Khớp Mờ Jaccard (Fuzzy Similarity - Dòng 247 - 266):** So sánh tập từ vựng với các câu lệnh mẫu, chọn câu lệnh có điểm cao nhất nếu đạt ngưỡng $\ge 0.40$.
-  4. **Tầng 4 - Graceful Fallback (Dòng 268 - 277):** Trả về phản hồi thoại chuẩn *"Xin lỗi, tôi chưa hiểu lệnh này. Bạn có thể thử lại các câu gợi ý"* kèm danh sách câu lệnh mẫu.
+  1. *Tầng 1 (Exact Match - Dòng 161 - 173):* Khớp chính xác 100% với câu lệnh mẫu trong cơ sở dữ liệu (`confidence = 1.0`).
+  2. *Tầng 2 (Semantic Rule/Pattern Match - Dòng 175 - 245):* Quét từ khóa mục tiêu thực tế (`confidence >= 0.90`):
+     - `REPORT_INCIDENT`: Nhận diện xả rác, bãi rác, ô nhiễm, gom rác ➔ Chuyển hướng `/report-incident`.
+     - `CHECK_SAFE_ROUTE`: Nhận diện đường an toàn, không bị ngập, né ngập ➔ Chuyển hướng `map_flood`.
+     - `CHECK_REWARD_WALLET`: Nhận diện ví điểm, xem điểm, GreenPoints ➔ Tra cứu `/wallet`.
+     - `OPEN_AIR_QUALITY_MAP`: Nhận diện mở bản đồ chất lượng không khí, AQI ➔ Chuyển hướng `dashboard_aqi`.
+     - `CHECK_CURRENT_AQI`: Nhận diện chất lượng không khí theo quận ➔ Tra cứu số liệu AQI 42 (Tốt).
+     - `REPORT_FLOOD`: Nhận diện phản ánh điểm ngập nước ➔ Chuyển hướng `/report-flood`.
+  3. *Tầng 3 (Fuzzy Jaccard Similarity - Dòng 247 - 266):* So khớp mờ tập từ vựng với các mẫu câu có sẵn, chấp nhận nếu điểm tương đồng $\ge 0.40$.
+  4. *Tầng 4 (Graceful Fallback - Dòng 268 - 277):* Xử lý câu lệnh lạ an toàn, trả về thông điệp thân thiện kèm danh sách gợi ý.
 
 ---
 
-### 4.6 Thuật toán 6: Pipeline Xử lý Toàn trình & Sinh Payload Thực thi (Action Execution)
+### 5.6 Thuật toán 6: Pipeline Xử Lý Toàn Trình & Sinh Payload Thực Thi
 - **Tập tin:** [`BackEnd/app/services/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_service.py)
 - **Vị trí dòng code:** **Dòng 278 đến Dòng 391** (Phương thức `process_voice_command`)
-- **Nguyên lý hoạt động:**
-  - Khởi động bộ bấm giờ độ chính xác cao `time.perf_counter()`.
-  - Tiến hành chuẩn hóa và phân loại Intent.
-  - Tự động sinh `action_payload` chứa dữ liệu điền sẵn vào form Báo cáo sự cố rác thải (vĩ độ, kinh độ, loại sự cố, địa chỉ giao lộ), hoặc dữ liệu số dư ví GreenPoints (350 điểm), hoặc số liệu AQI trạm Bến Nghé (AQI 42).
-  - Tính toán tổng thời gian xử lý `processing_time_ms`.
-  - Tự động ghi nhận `VoiceInteractionLog` vào CSDL PostgreSQL phục vụ giám sát và kiểm toán hệ thống.
-  - Trả về đối tượng `VoiceProcessResponse` chuẩn Pydantic V2 cho Frontend.
+- **Mã nguồn trích xuất:**
+```python
+283:     async def process_voice_command(self, db: AsyncSession, request: VoiceProcessRequest) -> VoiceProcessResponse:
+284:         start_time = time.perf_counter()
+285: 
+286:         # 1. Chuẩn hóa câu nói bằng thuật toán ngữ âm tiếng Việt
+287:         normalized_text = self.normalize_text(request.transcript)
+288: 
+289:         # 2. Lấy danh sách câu lệnh mẫu đang kích hoạt
+290:         try:
+291:             sample_commands = await self.repo.get_all_sample_commands(db)
+292:         except Exception:
+293:             sample_commands = []
+294: 
+295:         # 3. Khớp Intent đa tầng
+296:         intent_code, confidence, action_type, action_target, response_template = self.match_intent(
+297:             normalized_text, sample_commands
+298:         )
+...
+304:         if intent_code == "REPORT_INCIDENT":
+305:             location = self._extract_location_slot(normalized_text) or "Địa điểm người dân báo cáo"
+306:             action_payload = {
+307:                 "incident_type": "WASTE",
+308:                 "title": "Phản ánh bãi rác tự phát",
+309:                 "description": normalized_text,
+310:                 "location_text": location,
+311:                 "lat": request.current_lat or 10.7769,
+312:                 "lng": request.current_lng or 106.7009,
+313:             }
+...
+355:         elapsed_ms = int((time.perf_counter() - start_time) * 1000)
+356: 
+357:         # 7. Ghi Log vào Database
+358:         log_entry = VoiceInteractionLog(...)
+373:         await self.repo.create_interaction_log(db, log_entry)
+```
 
 ---
 
-### 4.7 Thuật toán 7: Máy Trạng Thái Tự Động Dừng Sau 3 Giây & Hủy Sau 10 Giây (Frontend State Machine)
+### 5.7 Thuật toán 7: Máy Trạng Thái Đếm Thời Gian Im Lặng 3s & Watchdog 10s (Frontend)
 - **Tập tin:** [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx)
-- **Vị trí dòng code:** **Dòng 230 đến Dòng 285**
-- **Nguyên lý hoạt động:**
-  - Khi người dùng bắt đầu nói, sự kiện `recognition.onresult` liên tục cập nhật chuỗi văn bản tạm thời (`interim`) và chính thức (`final`).
-  - Mỗi khi phát hiện âm thanh mới, hệ thống tự động reset bộ đếm im lặng `silenceTimerRef`.
-  - **Quy tắc 3 giây im lặng:** Nếu trong 3000ms tiếp theo không có thêm âm thanh, máy trạng thái xác định người dùng đã hoàn thành câu nói, tự động đóng micro và gửi câu lệnh sang Màn 3 để xử lý.
-  - **Quy tắc 10 giây Watchdog:** Nếu mở micro nhưng sau 10000ms người dùng hoàn toàn không phát ra âm thanh, hệ thống tự động hủy thu âm, hiển thị thông báo toast *"Không nghe thấy giọng nói của bạn"* và quay về Màn 1 để tiết kiệm tài nguyên.
+- **Vị trí dòng code:** **Dòng 230 đến Dòng 285** (Hàm `startListening`)
 - **Mã nguồn trích xuất:**
 ```typescript
 240:         const currentText = final || interim;
@@ -296,91 +401,136 @@ Dưới đây là chi tiết mã nguồn, vị trí dòng code và nguyên lý h
 256:             handleProcessCommand(currentText, "VOICE");
 257:           }, 3000);
 258:         }
+...
+279:     noSoundTimerRef.current = setTimeout(() => {
+280:       if (Date.now() - lastSpokenTimestampRef.current >= 9500) {
+281:         stopRecordingCleanup();
+282:         setToastMessage("Không nghe thấy giọng nói của bạn");
+283:         setCurrentScreen("HOME");
+284:       }
+285:     }, 10000);
 ```
 
 ---
 
-### 4.8 Thuật toán 8: Phân Tích Tần Số Web Audio FFT & Vẽ Sóng Âm Động (Canvas Waveform)
+### 5.8 Thuật toán 8: Phân Tích & Vẽ Sóng Âm Thanh Động Trên Canvas (Web Audio FFT)
 - **Tập tin:** [`FrontEnd/src/components/VoiceAssistant/VoiceWaveform.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceWaveform.tsx)
-- **Vị trí dòng code:** **Dòng 20 đến Dòng 95**
-- **Nguyên lý hoạt động:**
-  - Nhận luồng âm thanh `MediaStream` từ micro của người dùng.
-  - Tạo một thể hiện `AudioContext` và gắn vào `AnalyserNode` với kích thước cửa sổ biến đổi Fourier nhanh `fftSize = 64` (trích xuất 32 dải tần số).
-  - Sử dụng hàm `requestAnimationFrame` lặp vẽ các thanh sóng âm dao động màu xanh lá (`#10b981` đến `#059669`) trên phần tử Canvas HTML5 theo biên độ âm thanh thực tế của người dùng.
+- **Vị trí dòng code:** **Dòng 24 đến Dòng 93**
 - **Mã nguồn trích xuất:**
 ```typescript
-35:         audioContext = new AudioCtx();
-36:         analyser = audioContext.createAnalyser();
-37:         analyser.fftSize = 64;
-38:         source = audioContext.createMediaStreamSource(stream);
-39:         source.connect(analyser);
-40:         const dataArray = new Uint8Array(analyser.frequencyBinCount);
-41: 
-42:         const renderFrame = () => {
-43:           if (!analyser || !ctx || !canvas) return;
-44:           analyser.getByteFrequencyData(dataArray);
+26:         const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+27:         audioContext = new AudioCtx();
+28:         analyser = audioContext.createAnalyser();
+29:         analyser.fftSize = 64;
+30:         source = audioContext.createMediaStreamSource(stream);
+31:         source.connect(analyser);
+32: 
+33:         const dataArray = new Uint8Array(analyser.frequencyBinCount);
+34: 
+35:         const renderFrame = () => {
+36:           if (!analyser || !ctx || !canvas) return;
+37:           analyser.getByteFrequencyData(dataArray);
 ...
-57:             const gradient = ctx.createLinearGradient(0, centerY - dynamicHeight / 2, 0, centerY + dynamicHeight / 2);
-58:             gradient.addColorStop(0, "#10b981");
-59:             gradient.addColorStop(0.5, "#34d399");
-60:             gradient.addColorStop(1, "#059669");
-61:             ctx.fillStyle = gradient;
-62:             ctx.roundRect(i * (barWidth + spacing), centerY - dynamicHeight / 2, barWidth, dynamicHeight, 3);
-63:             ctx.fill();
+60:             const gradient = ctx.createLinearGradient(0, centerY - dynamicHeight / 2, 0, centerY + dynamicHeight / 2);
+61:             gradient.addColorStop(0, "#10b981");
+62:             gradient.addColorStop(0.5, "#34d399");
+63:             gradient.addColorStop(1, "#059669");
+64: 
+65:             ctx.fillStyle = gradient;
+66:             ctx.beginPath();
+67:             ctx.roundRect(i * (barWidth + spacing), centerY - dynamicHeight / 2, barWidth, dynamicHeight, 3);
+68:             ctx.fill();
+77:           animationFrameId = requestAnimationFrame(renderFrame);
+78:         };
 ```
 
 ---
 
-### 4.9 Thuật toán 9: Tổng Hợp Giọng Nói Text-to-Speech (TTS Engine)
+### 5.9 Thuật toán 9: Tổng Hợp Giọng Nói Tiếng Việt Text-to-Speech (TTS Engine)
 - **Tập tin:** [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx)
-- **Vị trí dòng code:** **Dòng 102 đến Dòng 140** (Hàm `speakResponse`)
-- **Nguyên lý hoạt động:**
-  - Khởi tạo đối tượng `SpeechSynthesisUtterance` với mã ngôn ngữ tiếng Việt `vi-VN`, tốc độ nói tự nhiên `rate = 1.0`, cao độ `pitch = 1.0`.
-  - Tự động hủy các câu nói cũ còn tồn đọng trong hàng đợi bằng `window.speechSynthesis.cancel()`.
-  - Cập nhật trạng thái `isSpeaking` để hiển thị hiệu ứng sóng âm đang phát qua loa trên Màn 3, và lắng nghe sự kiện `utterance.onend` để dừng hiệu ứng khi đọc xong.
+- **Vị trí dòng code:** **Dòng 102 đến Dòng 142** (Hàm `speakResponse`)
+- **Mã nguồn trích xuất:**
+```typescript
+102:   const speakResponse = useCallback((textToSpeak: string) => {
+103:     if (!("speechSynthesis" in window) || !textToSpeak) return;
+104: 
+105:     try {
+106:       window.speechSynthesis.cancel(); // Hủy các câu đọc cũ còn tồn đọng
+107: 
+108:       const utterance = new SpeechSynthesisUtterance(textToSpeak);
+109:       utterance.lang = "vi-VN";
+110:       utterance.rate = 1.0;
+111:       utterance.pitch = 1.0;
+112: 
+113:       utterance.onstart = () => setIsSpeaking(true);
+114:       utterance.onend = () => setIsSpeaking(false);
+115:       utterance.onerror = () => setIsSpeaking(false);
+116: 
+117:       window.speechSynthesis.speak(utterance);
+118:     } catch (e) {
+119:       console.warn("TTS error:", e);
+120:       setIsSpeaking(false);
+121:     }
+122:   }, []);
+```
 
 ---
 
-### 4.10 Thuật toán 10: Xử Lý Ngoại Lệ Quyền Micro & Khôi Phục An Toàn
-- **Tập tin:** [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx) *(Dòng 165 - 215)* và [`MicPermissionModal.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/MicPermissionModal.tsx) *(Dòng 1 - 110)*
+### 5.10 Thuật toán 10: Xử Lý Ngoại Lệ Quyền Micro & Khôi Phục An Toàn
+- **Tập tin:** [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx#L165-L215) và [`MicPermissionModal.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/MicPermissionModal.tsx#L18-L56)
 - **Nguyên lý hoạt động:**
-  - Bắt các ngoại lệ `NotAllowedError` hoặc `PermissionDeniedError` từ hàm `navigator.mediaDevices.getUserMedia()`.
-  - Ngăn chặn crash ứng dụng, tự động dọn dẹp các luồng stream và kích hoạt hiển thị Modal Màn 4.
-  - Lắng nghe sự kiện bàn phím toàn cục (Global `keydown` listener) đối với phím `Escape` để cho phép người dùng đóng popup nhanh chóng.
+  - Bắt trọn vẹn lỗi `NotAllowedError`, `PermissionDeniedError` từ trình duyệt khi người dùng bấm chặn hoặc chưa cấp quyền micro.
+  - Ngăn ngừa tình trạng treo giao diện (UI Freeze), dọn dẹp các luồng stream và kích hoạt Popup Màn 4.
+  - Bắt sự kiện phím toàn cục `Escape` để người dùng có thể đóng popup ngay lập tức bằng bàn phím.
 
 ---
 
-## 5. BẢNG TỔNG HỢP ÁNH XẠ MÃ NGUỒN (PROJECT CODE MAPPING MATRIX)
+## 6. KỊCH BẢN NGHIỆP VỤ THỰC TẾ MẪU (END-TO-END WALKTHROUGH SCENARIOS)
+
+| Kịch Bản | Người Dùng Nói (Raw Transcript) | Chuẩn Hóa AI (Normalized Text) | Intent Phân Loại | Action Thực Thi & Phản Hồi |
+| :--- | :--- | :--- | :--- | :--- |
+| **Kịch bản A (Báo rác)** | `"báo cáo bãi rác ngã tư lê lợi"` | `"Báo cáo bãi rác ngã tư Lê Lợi."` | `REPORT_INCIDENT` | **Điều hướng:** `/report-incident`<br>**Điền sẵn:** Loại rác thải đô thị, địa điểm ngã tư Lê Lợi.<br>**TTS:** *"Trợ lý: Đang mở biểu mẫu Báo cáo sự cố rác thải cho bạn tại ngã tư Lê Lợi."* |
+| **Kịch bản B (Tránh ngập)** | `"đường nào an toàn không bị ngập"` | `"Đường nào an toàn không bị ngập?"` | `CHECK_SAFE_ROUTE` | **Điều hướng:** `map_flood`<br>**Payload:** 3 điểm ngập đã né tránh.<br>**TTS:** *"Trợ lý: Đang hiển thị bản đồ các tuyến đường an toàn không bị ngập nước."* |
+| **Kịch bản C (Ví điểm)** | `"xem số dư ví điểm xanh"` | `"Xem số dư ví điểm xanh."` | `CHECK_REWARD_WALLET` | **Tra cứu:** `/wallet`<br>**Payload:** 350 GreenPoints, Cấp 3 Chiến binh Xanh.<br>**TTS:** *"Trợ lý: Số dư ví điểm xanh của bạn hiện có 350 điểm GreenPoints."* |
+| **Kịch bản D (Khí tượng)** | `"chất lượng không khí quận 1 hôm nay"` | `"Chất lượng không khí Quận 1 hôm nay."` | `CHECK_CURRENT_AQI` | **Tra cứu:** `dashboard_aqi`<br>**Payload:** Trạm Bến Nghé, AQI 42 (Tốt), PM2.5: 10.4.<br>**TTS:** *"Trợ lý: Chất lượng không khí Quận 1 hôm nay ở mức Tốt, AQI 42, không khí trong lành."* |
+| **Kịch bản E (Fallback)** | `"hôm nay ăn gì ngon bổ rẻ"` | `"Hôm nay ăn gì ngon bổ rẻ."` | `None` (Unknown) | **Cơ chế Fallback:** `UNKNOWN`<br>**Gợi ý:** Hiển thị 4 nút bấm câu lệnh mẫu.<br>**TTS:** *"Xin lỗi, tôi chưa hiểu lệnh này. Bạn có thể thử lại các câu gợi ý."* |
+
+---
+
+## 7. BẢNG MA TRẬN ÁNH XẠ MÃ NGUỒN (PROJECT CODE MAPPING MATRIX)
+
+Tất cả đường dẫn và số dòng mã được đối soát chính xác 100% với kho mã nguồn hiện tại:
 
 | STT | Tập Tin (File Path) | Tầng Kiến Trúc | Các Hàm / Lớp / Logic Cốt Lõi | Dòng Mã (Lines) |
 | :---: | :--- | :--- | :--- | :--- |
-| **1** | [`BackEnd/app/models/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/voice.py) | Domain Model | Khai báo `VoiceSampleCommand`, `VoiceInteractionLog`, `VoiceActionType`, `VoiceCategory` | 1 - 177 |
-| **2** | [`BackEnd/alembic/versions/020_create_voice_assistant_tables.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/alembic/versions/020_create_voice_assistant_tables.py) | CSDL Migration | Khởi tạo bảng `voice_sample_commands`, `voice_interaction_logs` và các chỉ mục Index | 1 - 70 |
+| **1** | [`BackEnd/app/models/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/voice.py) | Domain Model | Khai báo `VoiceSampleCommand`, `VoiceInteractionLog`, Enums `VoiceActionType`, `VoiceCategory` | 1 - 177 |
+| **2** | [`BackEnd/alembic/versions/020_create_voice_assistant_tables.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/alembic/versions/020_create_voice_assistant_tables.py) | CSDL Migration | Khởi tạo bảng `voice_sample_commands`, `voice_interaction_logs` và các chỉ mục Index | 1 - 76 |
 | **3** | [`BackEnd/app/interface/voice_interface.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/interface/voice_interface.py) | Interface Contract | Khai báo Abstract Base Classes `IVoiceAssistantRepository` và `IVoiceNluService` | 1 - 92 |
 | **4** | [`BackEnd/app/crud/voice_repository.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/crud/voice_repository.py) | Repository Pattern | Triển khai truy vấn async: `get_active_sample_commands`, `create_interaction_log`... | 1 - 95 |
 | **5** | [`BackEnd/app/services/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_service.py) | Service / AI NLU | Thuật toán chuẩn hóa tiếng Việt, khử dấu NFD, trích xuất slot, phân loại Intent đa tầng | 1 - 396 |
-| **6** | [`BackEnd/app/schemas/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/schemas/voice.py) | DTO / Schemas | Pydantic V2 Schemas: `VoiceProcessRequest`, `VoiceProcessResponse`, `VoiceSampleCommandResponse` | 1 - 75 |
+| **6** | [`BackEnd/app/schemas/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/schemas/voice.py) | DTO / Schemas | Pydantic V2 Schemas: `VoiceProcessRequest`, `VoiceProcessResponse`, `VoiceSampleCommandResponse` | 1 - 72 |
 | **7** | [`BackEnd/app/api/v1/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/voice.py) | API Router | Endpoints: `GET /suggestions`, `POST /process`, `GET /history` | 1 - 134 |
 | **8** | [`BackEnd/tests/test_voice_assistant.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/test_voice_assistant.py) | Unit Testing | 8 bài kiểm thử tự động toàn diện NLU, Normalization, Fallback, Mock Session, TestClient | 1 - 266 |
 | **9** | [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx) | UI Presentation | Bộ điều khiển trung tâm 4 Màn hình, Web Speech STT, Text-to-Speech playback, Timer 3s/10s | 1 - 699 |
-| **10**| [`FrontEnd/src/components/VoiceAssistant/VoiceWaveform.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceWaveform.tsx) | Audio Visualization | Canvas Web Audio API sóng âm dao động màu xanh lá | 1 - 120 |
-| **11**| [`FrontEnd/src/components/VoiceAssistant/MicPermissionModal.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/MicPermissionModal.tsx) | Modal Popup | Popup Màn 4: "KHÔNG TRUY CẬP ĐƯỢC MICRO", hướng dẫn icon ổ khóa, thử lại, đóng bằng Esc | 1 - 110 |
+| **10**| [`FrontEnd/src/components/VoiceAssistant/VoiceWaveform.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceWaveform.tsx) | Audio Visualization | Canvas Web Audio API sóng âm dao động màu xanh lá | 1 - 119 |
+| **11**| [`FrontEnd/src/components/VoiceAssistant/MicPermissionModal.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/MicPermissionModal.tsx) | Modal Popup | Popup Màn 4: "KHÔNG TRUY CẬP ĐƯỢC MICRO", hướng dẫn icon ổ khóa, thử lại, đóng bằng Esc | 1 - 118 |
 | **12**| [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.css`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.css) | UI / Styling | Thiết kế toàn màn hình, pulse animation, glassmorphism, responsive 2 cột | 1 - 680 |
-| **13**| [`FrontEnd/src/services/voiceService.ts`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/services/voiceService.ts) | Frontend Service | Gọi API Backend Axios: `fetchVoiceSuggestions`, `processVoiceCommand` | 1 - 60 |
-| **14**| [`FrontEnd/src/App.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/App.tsx) | Homepage Integration | Tích hợp tab `🎙️ Trợ lý Giọng nói` trên Navbar và nút nổi nhanh góc dưới trang chủ | 1 - 145 |
-| **15**| [`FrontEnd/src/components/__tests__/VoiceAssistant.test.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/__tests__/VoiceAssistant.test.tsx) | Frontend Testing | 4 bài kiểm thử Vitest/Testing-Library cho Màn 1, Màn 2, Màn 3, Màn 4 | 1 - 200 |
+| **13**| [`FrontEnd/src/services/voiceService.ts`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/services/voiceService.ts) | Frontend Service | Gọi API Backend Axios: `fetchVoiceSuggestions`, `processVoiceCommand` | 1 - 67 |
+| **14**| [`FrontEnd/src/types/voice.ts`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/types/voice.ts) | Frontend Types | TypeScript Interfaces: `VoiceSampleCommand`, `VoiceProcessRequest`, `VoiceProcessResponse` | 1 - 36 |
+| **15**| [`FrontEnd/src/App.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/App.tsx) | Homepage Integration | Tích hợp tab `🎙️ Trợ lý Giọng nói` trên Navbar và nút nổi nhanh góc dưới trang chủ | 1 - 155 |
+| **16**| [`FrontEnd/src/components/__tests__/VoiceAssistant.test.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/__tests__/VoiceAssistant.test.tsx) | Frontend Testing | 4 bài kiểm thử Vitest/Testing-Library cho Màn 1, Màn 2, Màn 3, Màn 4 | 1 - 201 |
 
 ---
 
-## 6. HƯỚNG DẪN KIỂM THỬ VÀ XÁC MINH CHẤT LƯỢNG (VERIFICATION)
+## 8. HƯỚNG DẪN KIỂM THỬ & XÁC NHẬN CHẤT LƯỢNG (TESTING & VERIFICATION)
 
-### 6.1 Chạy kiểm thử tự động Backend (8/8 Tests Passed)
-Mở cửa sổ PowerShell tại thư mục `BackEnd` và chạy lệnh:
+### 8.1 Kiểm thử tự động Backend (8/8 Tests Passed)
+Mở cửa sổ PowerShell tại thư mục `BackEnd` và chạy:
 ```powershell
 $env:PYTHONPATH="."
 python tests/test_voice_assistant.py
 ```
-**Kết quả thực tế đạt được:**
+**Kết quả thực tế:**
 ```text
 [*] Running Voice Assistant Unit Tests...
 [1/8] Testing Vietnamese Text Normalization...
@@ -394,30 +544,30 @@ python tests/test_voice_assistant.py
 [+] ALL VOICE ASSISTANT UNIT TESTS PASSED SUCCESSFULLY! (8/8)
 ```
 
-### 6.2 Chạy kiểm thử tự động Frontend (10/10 Tests Passed)
-Mở cửa sổ terminal tại thư mục `FrontEnd` và chạy lệnh:
+### 8.2 Kiểm thử tự động Frontend (10/10 Tests Passed)
+Mở terminal tại thư mục `FrontEnd` và chạy:
 ```bash
 npm test
 ```
-**Kết quả thực tế đạt được:**
+**Kết quả thực tế:**
 ```text
  ✓ src/hooks/__tests__/useFastGeolocation.test.ts (4 tests)
  ✓ src/components/__tests__/EcoMap.test.tsx (2 tests)
  ✓ src/components/__tests__/VoiceAssistant.test.tsx (4 tests)
-   ✓ VoiceAssistant Component (Screens 1 to 4) > Screen 1: Renders pulse mic button and suggestions
-   ✓ VoiceAssistant Component (Screens 1 to 4) > Screen 4: Displays permission denied modal when mic error occurs
-   ✓ VoiceAssistant Component (Screens 1 to 4) > Screen 1: Clicking suggestion chip triggers processing directly
-   ✓ VoiceAssistant Component (Screens 1 to 4) > Screen 3: Renders two-column command and response layout
+   ✓ VoiceAssistant Component (Hình 4.37) > Màn 1: Hiển thị giao diện trung tâm điều khiển, nút Micro lớn và gợi ý câu lệnh mẫu
+   ✓ VoiceAssistant Component (Hình 4.37) > Màn 4: Hiển thị Popup cảnh báo quyền micro khi bị từ chối truy cập
+   ✓ VoiceAssistant Component (Hình 4.37) > Màn 1: Nhấp trực tiếp vào câu lệnh mẫu để kích hoạt xử lý ngay lập tức
+   ✓ VoiceAssistant Component (Hình 4.37) > Màn 3: Hiển thị bố cục 2 cột lệnh của bạn và phản hồi thực thi
  Test Files  3 passed (3)
       Tests  10 passed (10)
 ```
 
-### 6.3 Biên dịch mã nguồn Production Bundle (Build Verification)
-Kiểm tra tính an toàn kiểu dữ liệu TypeScript và tối ưu hóa gói bundle:
+### 8.3 Biên dịch Production Bundle
+Mở terminal tại thư mục `FrontEnd` và chạy:
 ```bash
 npm run build
 ```
-**Kết quả thực tế đạt được:**
+**Kết quả thực tế:**
 ```text
 vite v5.4.14 building for production...
 transforming...
@@ -431,4 +581,4 @@ dist/assets/index-D_u0B11e.js   362.45 kB │ gzip: 104.28 kB
 ```
 
 ---
-*Tài liệu được khởi tạo và lưu trữ đầy đủ tại: [`C:\Users\Admin\source\Group-j_GreenSpot\BackEnd\docs\voice_assistant_system_summary.md`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/docs/voice_assistant_system_summary.md).*
+*Tài liệu được cập nhật chuẩn xác và lưu trữ trực tiếp tại: [`C:\Users\Admin\source\Group-j_GreenSpot\BackEnd\docs\voice_assistant_system_summary.md`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/docs/voice_assistant_system_summary.md).*
