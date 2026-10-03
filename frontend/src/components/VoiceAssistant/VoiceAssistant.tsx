@@ -44,11 +44,35 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
 
   // Audio Stream & Web Speech Recognition Refs
+  const [activeMediaStream, setActiveMediaStream] = useState<MediaStream | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const recognitionRef = useRef<any>(null);
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const noSoundTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSpokenTimestampRef = useRef<number>(0);
+
+  // Dọn dẹp micro và timer
+  const stopRecordingCleanup = useCallback(() => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    if (noSoundTimerRef.current) {
+      clearTimeout(noSoundTimerRef.current);
+      noSoundTimerRef.current = null;
+    }
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch {}
+      recognitionRef.current = null;
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    }
+    setActiveMediaStream(null);
+  }, []);
 
   // Tải danh sách câu lệnh mẫu cho Màn 1
   const loadSuggestions = useCallback(async () => {
@@ -83,29 +107,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         window.speechSynthesis.cancel();
       }
     };
-  }, [loadSuggestions]);
-
-  // Dọn dẹp micro và timer
-  const stopRecordingCleanup = () => {
-    if (silenceTimerRef.current) {
-      clearTimeout(silenceTimerRef.current);
-      silenceTimerRef.current = null;
-    }
-    if (noSoundTimerRef.current) {
-      clearTimeout(noSoundTimerRef.current);
-      noSoundTimerRef.current = null;
-    }
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.abort();
-      } catch {}
-      recognitionRef.current = null;
-    }
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
-      mediaStreamRef.current = null;
-    }
-  };
+  }, [loadSuggestions, stopRecordingCleanup]);
 
   // Phát âm thanh phản hồi Text-to-Speech (TTS)
   const speakResponse = (text: string) => {
@@ -185,6 +187,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream;
+      setActiveMediaStream(stream);
     } catch {
       // Chưa cấp quyền hoặc bị chặn -> Kích hoạt mở Màn 4
       setShowMicPermissionModal(true);
@@ -469,7 +472,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
 
             {/* SÓNG ÂM (WAVEFORM ANIMATION MÀU XANH LÁ) */}
             <VoiceWaveform
-              stream={mediaStreamRef.current}
+              stream={activeMediaStream}
               isListening={currentScreen === "LISTENING"}
             />
 
