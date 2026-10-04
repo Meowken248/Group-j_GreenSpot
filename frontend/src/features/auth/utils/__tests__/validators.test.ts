@@ -5,6 +5,7 @@ import {
   validateEmail,
   validatePassword,
   validateConfirmPassword,
+  maskEmail,
 } from "../validators";
 
 describe("Auth Validators - Quy tắc kiểm tra từng ô chức năng #1", () => {
@@ -98,6 +99,18 @@ describe("Auth Validators - Quy tắc kiểm tra từng ô chức năng #1", () 
 
     it("Chấp nhận khi nhập lại mật khẩu khớp chính xác", () => {
       expect(validateConfirmPassword("GreenSpot@2026", "GreenSpot@2026")).toBeNull();
+    });
+  });
+
+  describe("5. Kiểm tra Che email (maskEmail) cho Màn 2", () => {
+    it("Che đúng 2 ký tự đầu + *** + domain", () => {
+      expect(maskEmail("dat@gmail.com")).toBe("da***@gmail.com");
+      expect(maskEmail("nguyenvana@gmail.com")).toBe("ng***@gmail.com");
+      expect(maskEmail("thanhdat@greenspot.vn")).toBe("th***@greenspot.vn");
+    });
+
+    it("Xử lý an toàn khi email rỗng", () => {
+      expect(maskEmail("")).toBe("");
     });
   });
 });

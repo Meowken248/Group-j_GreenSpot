@@ -103,3 +103,18 @@ export const validateConfirmPassword = (confirmValue: string, passwordValue: str
 
   return null;
 };
+
+/**
+ * Che bớt địa chỉ email theo đặc tả Màn 2:
+ * Hiển thị 2 ký tự đầu của phần tên, theo sau là *** rồi đến phần tên miền
+ * Ví dụ: nguyenvana@gmail.com -> ng***@gmail.com, dat@gmail.com -> da***@gmail.com
+ */
+export const maskEmail = (email: string): string => {
+  if (!email || !email.includes('@')) return email || '';
+  const atIndex = email.indexOf('@');
+  const namePart = email.substring(0, atIndex);
+  const domainPart = email.substring(atIndex);
+
+  const prefix = namePart.substring(0, 2);
+  return `${prefix}***${domainPart}`;
+};

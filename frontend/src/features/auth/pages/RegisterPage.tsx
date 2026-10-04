@@ -4,6 +4,7 @@ import { AuthFooter } from "../components/AuthFooter";
 import { PasswordInput } from "../components/PasswordInput";
 import { Toast } from "../components/Toast";
 import type { RegisterFormData, ToastState } from "../types/auth.types";
+import { AUTH_STORAGE_KEYS } from "../types/auth.types";
 import {
   validateFullName,
   validateEmail,
@@ -167,6 +168,11 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
       if (result.success) {
         // Đăng ký thành công hoặc tài khoản PENDING được cấp lại OTP
         showToast(result.message || "Mã OTP đã được gửi đến email của bạn", "success");
+
+        // Lưu thông tin phiên xác thực vào sessionStorage theo đặc tả Màn 2
+        sessionStorage.setItem(AUTH_STORAGE_KEYS.EMAIL, formData.email.trim());
+        sessionStorage.setItem(AUTH_STORAGE_KEYS.OTP_SENT_TIME, Date.now().toString());
+        sessionStorage.setItem(AUTH_STORAGE_KEYS.FAILED_ATTEMPTS, "0");
 
         // Sau 1 khoảng ngắn hoặc trực tiếp chuyển sang Màn 2 kèm email
         setTimeout(() => {

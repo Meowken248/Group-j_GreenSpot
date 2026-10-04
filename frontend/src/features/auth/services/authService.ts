@@ -74,3 +74,124 @@ export const registerCitizen = async (payload: RegisterRequestPayload): Promise<
     };
   }
 };
+
+export interface VerifyOtpResult {
+  success: boolean;
+  status: "SUCCESS" | "INVALID_OR_EXPIRED" | "MAX_ATTEMPTS_EXCEEDED" | "NETWORK_ERROR";
+  message: string;
+}
+
+export const verifyOtp = async (email: string, otpCode: string): Promise<VerifyOtpResult> => {
+  try {
+    const response = await api.post("/api/v1/auth/verify-otp", {
+      email,
+      otp_code: otpCode,
+    });
+
+    return {
+      success: true,
+      status: "SUCCESS",
+      message: response.data?.message || "Kích hoạt tài khoản thành công",
+    };
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      if (!error.response) {
+        return {
+          success: false,
+          status: "NETWORK_ERROR",
+          message: "Không thể kết nối đến máy chủ. Vui lòng thử lại",
+        };
+      }
+
+      const status = error.response.status;
+      const data = error.response.data;
+
+      if (status === 403 || data?.error_code === "MAX_ATTEMPTS_EXCEEDED") {
+        return {
+          success: false,
+          status: "MAX_ATTEMPTS_EXCEEDED",
+          message: "Bạn đã nhập sai quá 5 lần. Vui lòng gửi mã mới",
+        };
+      }
+
+      if (status === 400 || status === 401 || data?.error_code === "INVALID_OTP") {
+        return {
+          success: false,
+          status: "INVALID_OR_EXPIRED",
+          message: "Mã sai hoặc đã hết hạn",
+        };
+      }
+
+      return {
+        success: false,
+        status: "NETWORK_ERROR",
+        message: "Không thể kết nối đến máy chủ. Vui lòng thử lại",
+      };
+    }
+
+    return {
+      success: false,
+      status: "NETWORK_ERROR",
+      message: "Không thể kết nối đến máy chủ. Vui lòng thử lại",
+    };
+  }
+};
+
+export interface ResendOtpResult {
+  success: boolean;
+  status: "SUCCESS" | "RATE_LIMITED" | "EMAIL_SEND_FAILED" | "NETWORK_ERROR";
+  message: string;
+}
+
+export const resendOtp = async (email: string): Promise<ResendOtpResult> => {
+  try {
+    const response = await api.post("/api/v1/auth/resend-otp", { email });
+    return {
+      success: true,
+      status: "SUCCESS",
+      message: response.data?.message || "Mã OTP mới đã được gửi đến email của bạn",
+    };
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      if (!error.response) {
+        return {
+          success: false,
+          status: "NETWORK_ERROR",
+          message: "Không thể kết nối đến máy chủ. Vui lòng thử lại",
+        };
+      }
+
+      const status = error.response.status;
+      const data = error.response.data;
+
+      if (status === 429) {
+        return {
+          success: false,
+          status: "RATE_LIMITED",
+          message: "Bạn đã yêu cầu mã quá nhiều lần. Vui lòng thử lại sau 1 giờ",
+        };
+      }
+
+      if (status === 503 || data?.error_code === "EMAIL_SEND_FAILED") {
+        return {
+          success: false,
+          status: "EMAIL_SEND_FAILED",
+          message: "Không thể gửi mã OTP. Vui lòng thử lại sau",
+        };
+      }
+
+      return {
+        success: false,
+        status: "NETWORK_ERROR",
+        message: "Không thể kết nối đến máy chủ. Vui lòng thử lại",
+      };
+    }
+
+    return {
+      success: false,
+      status: "NETWORK_ERROR",
+      message: "Không thể kết nối đến máy chủ. Vui lòng thử lại",
+    };
+  }
+};
+

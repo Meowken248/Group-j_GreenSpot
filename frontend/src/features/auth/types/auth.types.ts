@@ -1,4 +1,11 @@
-export type AuthView = 'register' | 'otp' | 'login';
+export type AuthView = 'register' | 'otp' | 'activated' | 'login';
+
+export const AUTH_STORAGE_KEYS = {
+  EMAIL: "greenspot_pending_email",
+  OTP_SENT_TIME: "greenspot_otp_sent_timestamp",
+  FAILED_ATTEMPTS: "greenspot_otp_failed_attempts",
+  IS_ACTIVATED: "greenspot_account_activated",
+};
 
 export interface RegisterFormData {
   fullName: string;
