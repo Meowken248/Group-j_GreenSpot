@@ -195,3 +195,67 @@ export const resendOtp = async (email: string): Promise<ResendOtpResult> => {
   }
 };
 
+export interface LoginResult {
+  success: boolean;
+  status: "SUCCESS" | "INVALID_CREDENTIALS" | "NOT_ACTIVATED" | "ACCOUNT_LOCKED" | "NETWORK_ERROR";
+  message: string;
+  userData?: {
+    user_id: string;
+    email: string;
+    full_name: string;
+    status: string;
+  };
+}
+
+export const loginCitizen = async (payload: { email: string; password: string }): Promise<LoginResult> => {
+  try {
+    const response = await api.post("/api/v1/auth/login", payload);
+    return {
+      success: true,
+      status: "SUCCESS",
+      message: response.data?.message || "Đăng nhập thành công",
+      userData: response.data,
+    };
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      if (!error.response) {
+        return {
+          success: false,
+          status: "NETWORK_ERROR",
+          message: "Không thể kết nối đến máy chủ. Vui lòng thử lại",
+        };
+      }
+      const status = error.response.status;
+      const data = error.response.data;
+
+      if (status === 401 || data?.error_code === "INVALID_CREDENTIALS") {
+        return {
+          success: false,
+          status: "INVALID_CREDENTIALS",
+          message: data?.message || "Email hoặc mật khẩu không chính xác",
+        };
+      }
+
+      if (status === 403 && data?.error_code === "ACCOUNT_NOT_ACTIVATED") {
+        return {
+          success: false,
+          status: "NOT_ACTIVATED",
+          message: data?.message || "Tài khoản chưa được kích hoạt qua mã OTP",
+        };
+      }
+
+      return {
+        success: false,
+        status: "NETWORK_ERROR",
+        message: data?.message || "Đăng nhập thất bại. Vui lòng thử lại",
+      };
+    }
+    return {
+      success: false,
+      status: "NETWORK_ERROR",
+      message: "Không thể kết nối đến máy chủ. Vui lòng thử lại",
+    };
+  }
+};
+
+

@@ -68,3 +68,17 @@ class User(Base, TimestampMixin):
     reputation_score: Mapped[int] = mapped_column(Integer, default=100)
 
     role: Mapped["Role"] = relationship(back_populates="users")
+
+
+class UserOTP(Base, TimestampMixin):
+    """Bảng lưu trữ và quản lý vòng đời mã xác thực OTP Email"""
+    __tablename__ = "user_otps"
+
+    otp_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
+    otp_code_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    otp_plain: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    failed_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    is_used: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    purpose: Mapped[str] = mapped_column(String(50), default="REGISTER", nullable=False)

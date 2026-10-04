@@ -76,9 +76,8 @@ export const validatePassword = (value: string): string | null => {
   const hasLower = /[a-z]/.test(value);
   const hasUpper = /[A-Z]/.test(value);
   const hasNumber = /\d/.test(value);
-  // Tập ký tự đặc biệt theo đặc tả: `!@#$%^&*()_+-=[]{}
-  // Thoát các ký tự đặc biệt trong regex: ` ! @ # $ % ^ & * ( ) _ + - = [ ] { }
-  const hasSpecial = /[`!@#$%^&*()_+\-=[\]{}]/.test(value);
+  // Hỗ trợ tập ký tự đặc biệt đầy đủ bao gồm dấu chấm (.), dấu phẩy, hai chấm, hỏi chấm, gạch chéo...
+  const hasSpecial = /[`!@#$%^&*()_+\-=[\]{}.:;,?\/~]/.test(value);
 
   if (!hasLower || !hasUpper || !hasNumber || !hasSpecial) {
     return 'Mật khẩu phải từ 8 đến 32 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt';

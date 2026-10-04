@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import { AuthHeader } from "../components/AuthHeader";
 import { AuthFooter } from "../components/AuthFooter";
 import { PasswordInput } from "../components/PasswordInput";
+import { Toast } from "../components/Toast";
+import type { ToastState } from "../types/auth.types";
+import { loginCitizen } from "../services/authService";
 import "../styles/RegisterPage.scss";
 
 interface LoginPageProps {
@@ -15,9 +18,80 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toast, setToast] = useState<ToastState | null>(null);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!email.trim()) {
+      setToast({
+        type: "error",
+        message: "Vui lòng nhập địa chỉ email",
+      });
+      return;
+    }
+
+    if (!password) {
+      setToast({
+        type: "error",
+        message: "Vui lòng nhập mật khẩu",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const result = await loginCitizen({
+        email: email.trim(),
+        password,
+      });
+
+      if (result.success && result.userData) {
+        setToast({
+          type: "success",
+          message: result.message,
+        });
+
+        // Lưu thông tin người dùng vào localStorage
+        localStorage.setItem("greenspot_user", JSON.stringify(result.userData));
+
+        // Tự động chuyển hướng về trang chủ/bản đồ sau 1.5s
+        setTimeout(() => {
+          if (onLogoClick) {
+            onLogoClick();
+          } else {
+            window.location.reload();
+          }
+        }, 1500);
+      } else {
+        setToast({
+          type: "error",
+          message: result.message,
+        });
+      }
+    } catch {
+      setToast({
+        type: "error",
+        message: "Có lỗi xảy ra trong quá trình đăng nhập",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="auth-page-wrapper">
+      {/* Toast thông báo */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       <AuthHeader onLogoClick={onLogoClick} />
 
       <main className="auth-main-content">
@@ -33,7 +107,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             </p>
           </div>
 
-          <form className="register-form" onSubmit={(e) => e.preventDefault()}>
+          <form className="register-form" onSubmit={handleLogin}>
             <div className="form-group">
               <input
                 type="email"
@@ -42,6 +116,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
+                disabled={isSubmitting}
               />
             </div>
 
@@ -52,10 +127,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
+              disabled={isSubmitting}
             />
 
-            <button type="submit" className="btn-submit">
-              Đăng nhập
+            <button
+              type="submit"
+              className="btn-submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Đang xác thực..." : "Đăng nhập"}
             </button>
 
             <div className="switch-auth-action">
@@ -76,3 +156,4 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     </div>
   );
 };
+

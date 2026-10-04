@@ -85,6 +85,7 @@ describe("Auth Validators - Quy tắc kiểm tra từng ô chức năng #1", () 
       expect(validatePassword("User_123$Pass")).toBeNull();
       expect(validatePassword("Pass!12345")).toBeNull();
       expect(validatePassword("Eco[2026]Safe")).toBeNull();
+      expect(validatePassword("DatDatdemo123.")).toBeNull();
     });
   });
 
