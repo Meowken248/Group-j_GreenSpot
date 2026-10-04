@@ -1,5 +1,5 @@
-import api from "../api/client";
-import type { VoiceSampleCommand, VoiceProcessRequest, VoiceProcessResponse } from "../types/voice";
+import api from "../../api/client";
+import type { VoiceSampleCommand, VoiceProcessRequest, VoiceProcessResponse } from "../../types/voice_assistant";
 
 export const DEFAULT_SUGGESTIONS: VoiceSampleCommand[] = [
   {

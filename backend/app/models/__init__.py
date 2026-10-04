@@ -51,7 +51,7 @@ from app.models.flood import (
 )
 
 # 6. Trợ lý giọng nói rảnh tay (Hands-free Voice Assistant)
-from app.models.voice import (
+from app.models.voice_assistant import (
     VoiceSampleCommand,
     VoiceInteractionLog,
     VoiceActionType,

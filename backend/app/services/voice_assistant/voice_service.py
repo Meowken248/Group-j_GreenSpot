@@ -18,10 +18,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.crud.voice_repository import voice_repository, VoiceAssistantRepository
-from app.interface.voice_interface import IVoiceNluService
-from app.models.voice import VoiceActionType, VoiceInteractionLog, VoiceSampleCommand
-from app.schemas.voice import VoiceProcessRequest, VoiceProcessResponse
+from app.crud.voice_assistant import voice_repository, VoiceAssistantRepository
+from app.interface.voice_assistant import IVoiceNluService
+from app.models.voice_assistant import VoiceActionType, VoiceInteractionLog, VoiceSampleCommand
+from app.schemas.voice_assistant import VoiceProcessRequest, VoiceProcessResponse
 from app.services.weather_service import WeatherService
 from app.services.tide_service import tide_engine
 

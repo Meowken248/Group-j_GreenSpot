@@ -8,8 +8,8 @@ import uuid
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.interface.voice_interface import IVoiceAssistantRepository
-from app.models.voice import VoiceInteractionLog, VoiceSampleCommand
+from app.interface.voice_assistant import IVoiceAssistantRepository
+from app.models.voice_assistant import VoiceInteractionLog, VoiceSampleCommand
 
 
 class VoiceAssistantRepository(IVoiceAssistantRepository):

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import EcoMap from "./components/EcoMap";
 import AirQualityDashboard from "./components/AirQualityDashboard";
-import { VoiceAssistant } from "./components/VoiceAssistant/VoiceAssistant";
+import { VoiceAssistant } from "./components/VoiceAssistant";
 import api from "./api/client";
 import "./App.css";
 

@@ -6,7 +6,7 @@ from app.crud.eco_crud import (
     query_iot_sensor_stations,
 )
 
-from app.crud.voice_repository import VoiceAssistantRepository, voice_repository
+from app.crud.voice_assistant import VoiceAssistantRepository, voice_repository
 
 __all__ = [
     "query_district_boundaries",

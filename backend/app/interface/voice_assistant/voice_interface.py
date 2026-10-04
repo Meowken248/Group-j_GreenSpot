@@ -8,8 +8,8 @@ from typing import Any, Dict, List, Optional
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.voice import VoiceSampleCommand, VoiceInteractionLog
-from app.schemas.voice import VoiceProcessRequest, VoiceProcessResponse
+from app.models.voice_assistant import VoiceSampleCommand, VoiceInteractionLog
+from app.schemas.voice_assistant import VoiceProcessRequest, VoiceProcessResponse
 
 
 class IVoiceAssistantRepository(ABC):

@@ -151,7 +151,7 @@ Hệ thống được thiết kế theo đúng mô hình **Clean Architecture & 
 ## 4. MÔ HÌNH DỮ LIỆU CSDL & TRIỂN KHAI REPOSITORY PATTERN
 
 ### 4.1 Bảng `voice_sample_commands` (Danh mục câu lệnh mẫu & cấu hình Intent)
-- **Tập tin Model:** [`BackEnd/app/models/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/voice.py#L49-L105)
+- **Tập tin Model:** [`BackEnd/app/models/voice_assistant/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/voice_assistant/voice.py#L49-L105)
 - **Tập tin Migration:** [`BackEnd/alembic/versions/020_create_voice_assistant_tables.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/alembic/versions/020_create_voice_assistant_tables.py#L21-L40)
 
 | Tên Trường (Column) | Kiểu Dữ Liệu | Ràng Buộc (Constraints) | Ý Nghĩa / Mục Đích Nghiệp Vụ |
@@ -169,7 +169,7 @@ Hệ thống được thiết kế theo đúng mô hình **Clean Architecture & 
 | `updated_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | Thời điểm cập nhật dữ liệu lần cuối |
 
 ### 4.2 Bảng `voice_interaction_logs` (Nhật ký tương tác & Giám sát AI)
-- **Tập tin Model:** [`BackEnd/app/models/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/voice.py#L107-L177)
+- **Tập tin Model:** [`BackEnd/app/models/voice_assistant/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/voice_assistant/voice.py#L107-L177)
 - **Tập tin Migration:** [`BackEnd/alembic/versions/020_create_voice_assistant_tables.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/alembic/versions/020_create_voice_assistant_tables.py#L42-L63)
 
 | Tên Trường (Column) | Kiểu Dữ Liệu | Ràng Buộc (Constraints) | Ý Nghĩa / Mục Đích Nghiệp Vụ |
@@ -188,18 +188,18 @@ Hệ thống được thiết kế theo đúng mô hình **Clean Architecture & 
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now(), INDEX` | Thời điểm ghi nhận giao dịch vào CSDL |
 
 ### 4.3 Triển khai Kiến trúc Repository Pattern
-1. **Interface Contract:** [`BackEnd/app/interface/voice_interface.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/interface/voice_interface.py)
-   - Lớp trừu tượng [`IVoiceAssistantRepository(ABC)`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/interface/voice_interface.py#L15-L63) khai báo 5 phương thức cốt lõi:
+1. **Interface Contract:** [`BackEnd/app/interface/voice_assistant/voice_interface.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/interface/voice_assistant/voice_interface.py)
+   - Lớp trừu tượng [`IVoiceAssistantRepository(ABC)`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/interface/voice_assistant/voice_interface.py#L15-L63) khai báo 5 phương thức cốt lõi:
      * `get_active_sample_commands(db, limit, category)`
      * `get_all_sample_commands(db)`
      * `get_command_by_text(db, command_text)`
      * `create_interaction_log(db, log)`
      * `get_recent_logs(db, limit, user_id)`
-   - Lớp trừu tượng [`IVoiceNluService(ABC)`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/interface/voice_interface.py#L65-L92) khai báo:
+   - Lớp trừu tượng [`IVoiceNluService(ABC)`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/interface/voice_assistant/voice_interface.py#L65-L92) khai báo:
      * `normalize_text(raw_text)`
      * `process_voice_command(db, request)`
-2. **Lớp Triển Khai Thực Tế:** [`BackEnd/app/crud/voice_repository.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/crud/voice_repository.py)
-   - Lớp [`VoiceAssistantRepository`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/crud/voice_repository.py#L15-L92) triển khai toàn bộ các truy vấn dữ liệu bất đồng bộ (SQLAlchemy 2.0 Async), tối ưu chỉ mục truy vấn và cam kết giao dịch nguyên khối.
+2. **Lớp Triển Khai Thực Tế:** [`BackEnd/app/crud/voice_assistant/voice_repository.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/crud/voice_assistant/voice_repository.py)
+   - Lớp [`VoiceAssistantRepository`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/crud/voice_assistant/voice_repository.py#L15-L92) triển khai toàn bộ các truy vấn dữ liệu bất đồng bộ (SQLAlchemy 2.0 Async), tối ưu chỉ mục truy vấn và cam kết giao dịch nguyên khối.
 
 ---
 
@@ -208,7 +208,7 @@ Hệ thống được thiết kế theo đúng mô hình **Clean Architecture & 
 Phần này trình bày chính xác từng dòng code và nguyên lý hoạt động của các thuật toán lõi được xây dựng trong hệ thống.
 
 ### 5.1 Thuật toán 1: Chuẩn hóa Ngữ âm Tiếng Việt (Vietnamese Text Normalization)
-- **Tập tin:** [`BackEnd/app/services/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_service.py)
+- **Tập tin:** [`BackEnd/app/services/voice_assistant/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_assistant/voice_service.py)
 - **Vị trí dòng code:** **Dòng 65 đến Dòng 103** (Phương thức `normalize_text`)
 - **Mục đích:** Khắc phục lỗi phát âm, loại bỏ khoảng trắng dư thừa, viết hoa đầu câu, tự động viết hoa đúng chuẩn danh từ riêng và địa danh hành chính tại TP.HCM, tự động gắn dấu câu logic (`?` cho câu hỏi, `.` cho mệnh lệnh).
 - **Mã nguồn trích xuất:**
@@ -254,7 +254,7 @@ Phần này trình bày chính xác từng dòng code và nguyên lý hoạt đ�
 ---
 
 ### 5.2 Thuật toán 2: Khử Dấu Tiếng Việt Chuẩn Unicode NFD (Accent Stripping)
-- **Tập tin:** [`BackEnd/app/services/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_service.py)
+- **Tập tin:** [`BackEnd/app/services/voice_assistant/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_assistant/voice_service.py)
 - **Vị trí dòng code:** **Dòng 106 đến Dòng 118** (Phương thức `strip_accents` và `_strip_accents_and_punct`)
 - **Mục đích:** Cho phép bộ nhận diện Intent so khớp từ khóa chính xác tuyệt đối bất kể người dùng nói có dấu, không dấu hay do Speech-to-Text nhận dạng thiếu dấu thanh điệu.
 - **Mã nguồn trích xuất:**
@@ -278,7 +278,7 @@ Phần này trình bày chính xác từng dòng code và nguyên lý hoạt đ�
 ---
 
 ### 5.3 Thuật toán 3: Tính Độ Tương Đồng Tập Từ Vựng Jaccard (Word-Set Similarity)
-- **Tập tin:** [`BackEnd/app/services/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_service.py)
+- **Tập tin:** [`BackEnd/app/services/voice_assistant/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_assistant/voice_service.py)
 - **Vị trí dòng code:** **Dòng 120 đến Dòng 128** (Phương thức `_calculate_similarity`)
 - **Công thức toán học:**
   $$J(A, B) = \frac{|A \cap B|}{|A \cup B|}$$
@@ -298,7 +298,7 @@ Phần này trình bày chính xác từng dòng code và nguyên lý hoạt đ�
 ---
 
 ### 5.4 Thuật toán 4: Trích Xuất Tham Số Thực Thể Địa Danh (Slot/Entity Extraction)
-- **Tập tin:** [`BackEnd/app/services/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_service.py)
+- **Tập tin:** [`BackEnd/app/services/voice_assistant/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_assistant/voice_service.py)
 - **Vị trí dòng code:** **Dòng 130 đến Dòng 144** (Phương thức `_extract_location_slot`)
 - **Mục đích:** Tự động tách tên đường, giao lộ hoặc quận huyện từ câu nói của người dân để tự động điền sẵn vào form Báo cáo sự cố hoặc tra cứu trạm quan trắc không khí.
 - **Mã nguồn trích xuất:**
@@ -323,7 +323,7 @@ Phần này trình bày chính xác từng dòng code và nguyên lý hoạt đ�
 ---
 
 ### 5.5 Thuật toán 5: Động Cơ Phân Loại Ý Định Đa Tầng (Multi-tier Intent Engine)
-- **Tập tin:** [`BackEnd/app/services/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_service.py)
+- **Tập tin:** [`BackEnd/app/services/voice_assistant/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_assistant/voice_service.py)
 - **Vị trí dòng code:** **Dòng 220 đến Dòng 381** (Phương thức `match_intent`)
 - **Cấu trúc 4 tầng phân loại & 10 Ý Định Nghiệp Vụ Toàn Diện:**
   1. *Tầng 1 (Exact Match - Dòng 235 - 247):* Khớp chính xác 100% với câu lệnh mẫu trong cơ sở dữ liệu (`confidence = 1.0`).
@@ -344,7 +344,7 @@ Phần này trình bày chính xác từng dòng code và nguyên lý hoạt đ�
 ---
 
 ### 5.6 Thuật toán 6: Pipeline Xử Lý Toàn Trình & Nguyên Tắc Không Bịa Đặt Dữ Liệu (Zero Fabrication)
-- **Tập tin:** [`BackEnd/app/services/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_service.py)
+- **Tập tin:** [`BackEnd/app/services/voice_assistant/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_assistant/voice_service.py)
 - **Vị trí dòng code:** **Dòng 382 đến Dòng 535** (Phương thức `process_voice_command`)
 - **Nguyên tắc "Zero Fabrication":**
   1. *Thời tiết & Nhiệt độ (`CHECK_WEATHER`):* Sử dụng bảng ánh xạ tọa độ địa lý `LOCATION_COORDINATES` cho toàn bộ các quận huyện TP.HCM và các thành phố lớn để gọi trực tiếp `WeatherService.get_current_weather(lat, lng)`. Lấy trực tiếp nhiệt độ, mô tả WMO, độ ẩm, sức gió và nồng độ bụi thực tế từ API khí tượng.
@@ -476,22 +476,22 @@ Tất cả đường dẫn và số dòng mã được đối soát chính xác 
 
 | STT | Tập Tin (File Path) | Tầng Kiến Trúc | Các Hàm / Lớp / Logic Cốt Lõi | Dòng Mã (Lines) |
 | :---: | :--- | :--- | :--- | :--- |
-| **1** | [`BackEnd/app/models/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/voice.py) | Domain Model | Khai báo `VoiceSampleCommand`, `VoiceInteractionLog`, Enums `VoiceActionType`, `VoiceCategory` (bổ sung `WEATHER`) | 1 - 178 |
+| **1** | [`BackEnd/app/models/voice_assistant/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/voice_assistant/voice.py) | Domain Model | Khai báo `VoiceSampleCommand`, `VoiceInteractionLog`, Enums `VoiceActionType`, `VoiceCategory` (bổ sung `WEATHER`) | 1 - 178 |
 | **2** | [`BackEnd/alembic/versions/020_create_voice_assistant_tables.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/alembic/versions/020_create_voice_assistant_tables.py) | CSDL Migration | Khởi tạo bảng `voice_sample_commands`, `voice_interaction_logs` và các chỉ mục Index | 1 - 76 |
-| **3** | [`BackEnd/app/interface/voice_interface.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/interface/voice_interface.py) | Interface Contract | Khai báo Abstract Base Classes `IVoiceAssistantRepository` và `IVoiceNluService` | 1 - 92 |
-| **4** | [`BackEnd/app/crud/voice_repository.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/crud/voice_repository.py) | Repository Pattern | Triển khai truy vấn async: `get_active_sample_commands`, `create_interaction_log`... | 1 - 95 |
-| **5** | [`BackEnd/app/services/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_service.py) | Service / AI NLU | 10 Intent nghiệp vụ, tích hợp Open-Meteo & trạm thủy văn Phú An (Zero-Fabrication) | 1 - 575 |
-| **6** | [`BackEnd/app/schemas/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/schemas/voice.py) | DTO / Schemas | Pydantic V2 Schemas: `VoiceProcessRequest`, `VoiceProcessResponse`, `VoiceSampleCommandResponse` | 1 - 72 |
-| **7** | [`BackEnd/app/api/v1/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/voice.py) | API Router | Endpoints: `GET /suggestions`, `POST /process`, `GET /history` | 1 - 134 |
-| **8** | [`BackEnd/tests/test_voice_assistant.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/test_voice_assistant.py) | Unit Testing | 13 bài kiểm thử tự động bao phủ 100% tất cả các nhánh, kiểm thử thời tiết, triều cường, fallback | 1 - 605 |
+| **3** | [`BackEnd/app/interface/voice_assistant/voice_interface.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/interface/voice_assistant/voice_interface.py) | Interface Contract | Khai báo Abstract Base Classes `IVoiceAssistantRepository` và `IVoiceNluService` | 1 - 92 |
+| **4** | [`BackEnd/app/crud/voice_assistant/voice_repository.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/crud/voice_assistant/voice_repository.py) | Repository Pattern | Triển khai truy vấn async: `get_active_sample_commands`, `create_interaction_log`... | 1 - 95 |
+| **5** | [`BackEnd/app/services/voice_assistant/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_assistant/voice_service.py) | Service / AI NLU | 10 Intent nghiệp vụ, tích hợp Open-Meteo & trạm thủy văn Phú An (Zero-Fabrication) | 1 - 575 |
+| **6** | [`BackEnd/app/schemas/voice_assistant/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/schemas/voice_assistant/voice.py) | DTO / Schemas | Pydantic V2 Schemas: `VoiceProcessRequest`, `VoiceProcessResponse`, `VoiceSampleCommandResponse` | 1 - 72 |
+| **7** | [`BackEnd/app/api/v1/voice_assistant/router.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/voice_assistant/router.py) | API Router | Endpoints: `GET /suggestions`, `POST /process`, `GET /history` | 1 - 134 |
+| **8** | [`BackEnd/tests/voice_assistant/test_voice_assistant.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/voice_assistant/test_voice_assistant.py) | Unit Testing | 13 bài kiểm thử tự động bao phủ 100% tất cả các nhánh, kiểm thử thời tiết, triều cường, fallback | 1 - 605 |
 | **9** | [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx) | UI Presentation | Bộ điều khiển trung tâm 4 Màn hình, thẻ kết quả thời tiết, triều cường, Web Speech STT & TTS | 1 - 750 |
 | **10**| [`FrontEnd/src/components/VoiceAssistant/VoiceWaveform.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceWaveform.tsx) | Audio Visualization | Canvas Web Audio API sóng âm dao động màu xanh lá | 1 - 119 |
 | **11**| [`FrontEnd/src/components/VoiceAssistant/MicPermissionModal.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/MicPermissionModal.tsx) | Modal Popup | Popup Màn 4: "KHÔNG TRUY CẬP ĐƯỢC MICRO", hướng dẫn icon ổ khóa, thử lại, đóng bằng Esc | 1 - 118 |
 | **12**| [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.css`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.css) | UI / Styling | Thiết kế toàn màn hình, pulse animation, glassmorphism, responsive 2 cột, thẻ thời tiết & triều | 1 - 1172 |
-| **13**| [`FrontEnd/src/services/voiceService.ts`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/services/voiceService.ts) | Frontend Service | Gọi API Backend Axios: `fetchVoiceSuggestions`, `processVoiceCommand` | 1 - 67 |
-| **14**| [`FrontEnd/src/types/voice.ts`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/types/voice.ts) | Frontend Types | TypeScript Interfaces: `VoiceSampleCommand`, `VoiceProcessRequest`, `VoiceProcessResponse` | 1 - 36 |
+| **13**| [`FrontEnd/src/services/voice_assistant/voiceService.ts`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/services/voice_assistant/voiceService.ts) | Frontend Service | Gọi API Backend Axios: `fetchVoiceSuggestions`, `processVoiceCommand` | 1 - 67 |
+| **14**| [`FrontEnd/src/types/voice_assistant/voice.ts`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/types/voice_assistant/voice.ts) | Frontend Types | TypeScript Interfaces: `VoiceSampleCommand`, `VoiceProcessRequest`, `VoiceProcessResponse` | 1 - 36 |
 | **15**| [`FrontEnd/src/App.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/App.tsx) | Homepage Integration | Tích hợp tab `🎙️ Trợ lý Giọng nói` trên Navbar và nút nổi nhanh góc dưới trang chủ | 1 - 155 |
-| **16**| [`FrontEnd/src/components/__tests__/VoiceAssistant.test.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/__tests__/VoiceAssistant.test.tsx) | Frontend Testing | 9 bài kiểm thử Vitest toàn diện cho 4 màn hình, TTS, thẻ thời tiết, triều cường và phím Esc | 1 - 403 |
+| **16**| [`FrontEnd/src/components/VoiceAssistant/__tests__/VoiceAssistant.test.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/__tests__/VoiceAssistant.test.tsx) | Frontend Testing | 9 bài kiểm thử Vitest toàn diện cho 4 màn hình, TTS, thẻ thời tiết, triều cường và phím Esc | 1 - 403 |
 
 ---
 
@@ -533,7 +533,7 @@ Trong kỹ thuật kiểm thử phần mềm chuyên nghiệp (Software Testing 
 Mở cửa sổ PowerShell tại thư mục `BackEnd` và chạy:
 ```powershell
 $env:PYTHONPATH="."
-python tests/test_voice_assistant.py
+python tests/voice_assistant/test_voice_assistant.py
 ```
 **Kết quả thực tế đạt được:**
 ```text
@@ -566,7 +566,7 @@ npm test
 ```text
  ✓ src/hooks/__tests__/useFastGeolocation.test.ts (4 tests)
  ✓ src/components/__tests__/EcoMap.test.tsx (2 tests)
- ✓ src/components/__tests__/VoiceAssistant.test.tsx (9 tests)
+ ✓ src/components/VoiceAssistant/__tests__/VoiceAssistant.test.tsx (9 tests)
    ✓ VoiceAssistant Component - 100% Flow & Branch Coverage (Hình 4.37)
      ✓ Màn 1: Hiển thị giao diện trung tâm điều khiển, nút Micro lớn và gợi ý câu lệnh mẫu
      ✓ Màn 1: Nhấp trực tiếp vào một câu lệnh gợi ý -> Tự động nhận diện và chuyển thẳng sang Màn 3

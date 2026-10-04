@@ -16,17 +16,16 @@ import sys
 from unittest.mock import AsyncMock, MagicMock
 import uuid
 
-# Đảm bảo đường dẫn import cho app
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from fastapi.testclient import TestClient
 
 from app.database import get_db
 from app.main import app
-from app.models.voice import VoiceActionType, VoiceCategory, VoiceInteractionLog, VoiceSampleCommand
-from app.schemas.voice import VoiceProcessRequest
-from app.services.voice_service import VoiceNluService, voice_service
-from app.crud.voice_repository import VoiceAssistantRepository
+from app.models.voice_assistant import VoiceActionType, VoiceCategory, VoiceInteractionLog, VoiceSampleCommand
+from app.schemas.voice_assistant import VoiceProcessRequest
+from app.services.voice_assistant import VoiceNluService, voice_service
+from app.crud.voice_assistant import VoiceAssistantRepository
 
 
 # =====================================================================

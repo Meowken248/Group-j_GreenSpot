@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { MicPermissionModal } from "./MicPermissionModal";
 import { VoiceWaveform } from "./VoiceWaveform";
-import * as voiceService from "../../services/voiceService";
+import * as voiceService from "../../services/voice_assistant";
 import type {
   VoiceAssistantScreen,
   VoiceProcessResponse,
   VoiceSampleCommand,
-} from "../../types/voice";
+} from "../../types/voice_assistant";
 import "./VoiceAssistant.css";
 
 interface VoiceAssistantProps {

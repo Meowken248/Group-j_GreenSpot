@@ -1,8 +1,8 @@
 import '@testing-library/jest-dom/vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { VoiceAssistant } from '../VoiceAssistant/VoiceAssistant';
-import * as voiceService from '../../services/voiceService';
+import { VoiceAssistant } from '../VoiceAssistant';
+import * as voiceService from '../../../services/voice_assistant';
 
 // Setup Mock Web Speech API và AudioContext toàn cục
 beforeEach(() => {

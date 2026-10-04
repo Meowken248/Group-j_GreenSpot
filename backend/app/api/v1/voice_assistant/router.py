@@ -12,15 +12,15 @@ import uuid
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.crud.voice_repository import voice_repository
+from app.crud.voice_assistant import voice_repository
 from app.database import get_db
-from app.schemas.voice import (
+from app.schemas.voice_assistant import (
     VoiceHistoryItemResponse,
     VoiceProcessRequest,
     VoiceProcessResponse,
     VoiceSampleCommandResponse,
 )
-from app.services.voice_service import voice_service
+from app.services.voice_assistant import voice_service
 
 router = APIRouter(prefix="/voice", tags=["Voice Assistant"])
 
