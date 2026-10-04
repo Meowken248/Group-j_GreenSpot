@@ -196,13 +196,17 @@ class VoiceNluService(IVoiceNluService):
         current_lng: Optional[float] = None,
     ) -> Tuple[float, float]:
         """Tra cứu tọa độ tương ứng theo tên địa danh hoặc vị trí GPS người dùng"""
-        if current_lat is not None and current_lng is not None and "gần đây" in loc.lower():
+        loc_lower = loc.lower()
+        if current_lat is not None and current_lng is not None and ("gần đây" in loc_lower or "vị trí" in loc_lower):
             return current_lat, current_lng
 
-        clean = loc.lower().replace("tp.", "").replace("thành phố", "").replace("phường", "").replace("quận", "").strip()
+        clean = loc_lower.replace("tp.", "").replace("thành phố", "").replace("phường", "").replace("quận", "").strip()
         for k, v in LOCATION_COORDINATES.items():
             if k in clean or clean in k:
                 return v
+
+        if current_lat is not None and current_lng is not None:
+            return current_lat, current_lng
 
         return 10.7765, 106.7009
 

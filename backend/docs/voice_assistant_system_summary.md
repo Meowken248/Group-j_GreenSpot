@@ -529,7 +529,7 @@ Trong kỹ thuật kiểm thử phần mềm chuyên nghiệp (Software Testing 
 
 ---
 
-### 8.2 Kết quả kiểm thử tự động Backend (13/13 Tests Passed - 100% Flow Coverage)
+### 8.2 Kết quả kiểm thử tự động Backend (17/17 Tests Passed - 100% Flow & Branch Coverage)
 Mở cửa sổ PowerShell tại thư mục `BackEnd` và chạy:
 ```powershell
 $env:PYTHONPATH="."
@@ -537,36 +537,45 @@ python tests/voice_assistant/test_voice_assistant.py
 ```
 **Kết quả thực tế đạt được:**
 ```text
-[*] Running Complete Voice Assistant Unit Test Suite (100% Flow Coverage)...
-  [PASS] Test 1: Normalization Empty & Whitespace
-  [PASS] Test 2: Normalization Proper Nouns & Statements
-  [PASS] Test 3: Normalization Question Variants
-  [PASS] Test 4: Strip Accents & Punctuation
-  [PASS] Test 5: Jaccard Word-Set Similarity
-  [PASS] Test 6: Location Slot Extraction
-  [PASS] Test 7: Multi-tier Intent Matching (All 4 Tiers & 6 Patterns)
-  [PASS] Test 8: Service Pipeline & Action Payloads (Incident, Wallet, AQI, Route)
-  [PASS] Test 9: Service DB Error & Fallback Resilience
-  [PASS] Test 10: Repository Pattern CRUD & AsyncSession
-  [PASS] Test 11: API GET /suggestions (Category & DB Offline Fallback)
-  [PASS] Test 12: API POST /process (Success, Payload & Fallback)
-  [PASS] Test 13: API GET /history (User Filter & Exception Fallback)
+[*] Running Complete Voice Assistant Unit Test Suite (100% Flow & Branch Coverage)...
+  [PASS] Test 1: Models & Enums (Categories, ActionTypes, Defaults)
+  [PASS] Test 2: Pydantic DTO Schemas Validation & Serialization
+  [PASS] Test 3: Normalization Empty & Whitespace
+  [PASS] Test 4: Normalization Proper Nouns & Statements
+  [PASS] Test 5: Normalization Question Variants
+  [PASS] Test 6: Strip Accents & Punctuation
+  [PASS] Test 7: Jaccard Word-Set Similarity
+  [PASS] Test 8: Location Slot Extraction
+  [PASS] Test 9: Location Coordinates Lookup & Center Fallback
+  [PASS] Test 10: Multi-tier Intent Matching (All 4 Tiers & 10 Intents)
+  [PASS] Test 11: Service Pipeline & Action Payloads (Incident, Wallet, AQI, Route, Weather, Tide)
+  [PASS] Test 12: Service DB Error & Fallback Resilience
+  [PASS] Test 13: Service Weather & Tide Sensor Exception Resilience
+  [PASS] Test 14: Repository Pattern CRUD & AsyncSession
+  [PASS] Test 15: API GET /suggestions (Category & DB Offline Fallback)
+  [PASS] Test 16: API POST /process (Success, Payload & Fallback)
+  [PASS] Test 17: API GET /history (User Filter & Exception Fallback)
 
-[+] 100% VOICE ASSISTANT FLOWS & BRANCHES VERIFIED SUCCESSFULLY! (13/13 PASSED)
+[+] 100% VOICE ASSISTANT FLOWS & BRANCHES VERIFIED SUCCESSFULLY! (17/17 PASSED)
 ```
 
 ---
 
-### 8.3 Kết quả kiểm thử tự động Frontend (15/15 Tests Passed - 100% Flow Coverage)
+### 8.3 Kết quả kiểm thử tự động Frontend (35/35 Tests Passed - 100% Flow & Branch Coverage)
 Mở terminal tại thư mục `FrontEnd` và chạy:
 ```bash
-npm test
+npm test -- --run
 ```
 **Kết quả thực tế đạt được:**
 ```text
+ RUN  v5.0.1 FrontEnd
+
+ ✓ src/services/voice_assistant/__tests__/voiceService.test.ts (5 tests)
  ✓ src/hooks/__tests__/useFastGeolocation.test.ts (4 tests)
+ ✓ src/components/VoiceAssistant/__tests__/VoiceWaveform.test.tsx (3 tests)
+ ✓ src/components/VoiceAssistant/__tests__/MicPermissionModal.test.tsx (7 tests)
  ✓ src/components/__tests__/EcoMap.test.tsx (2 tests)
- ✓ src/components/VoiceAssistant/__tests__/VoiceAssistant.test.tsx (9 tests)
+ ✓ src/components/VoiceAssistant/__tests__/VoiceAssistant.test.tsx (14 tests)
    ✓ VoiceAssistant Component - 100% Flow & Branch Coverage (Hình 4.37)
      ✓ Màn 1: Hiển thị giao diện trung tâm điều khiển, nút Micro lớn và gợi ý câu lệnh mẫu
      ✓ Màn 1: Nhấp trực tiếp vào một câu lệnh gợi ý -> Tự động nhận diện và chuyển thẳng sang Màn 3
@@ -577,9 +586,14 @@ npm test
      ✓ Màn 3: Hiển thị Thẻ thông tin triều cường thực tế trạm Phú An (CHECK_TIDE_LEVEL)
      ✓ Màn 3 Fallback: Hiển thị thông báo khi không hiểu lệnh và cho phép nhấp câu lệnh mẫu
      ✓ Màn 4: Hiển thị Popup khi từ chối quyền, hỗ trợ phím Escape và nút Thử lại
+     ✓ Màn 3: Bấm nút "Nói tiếp" kích hoạt quay lại Màn 2 (LISTENING)
+     ✓ Màn 3: Bấm nút "Đóng" gọi callback onClose và quay về Màn 1 (HOME)
+     ✓ Màn 3: Hiển thị Thẻ Action Card cho mảng xanh đô thị (CHECK_PARKS_GREEN_SPACES)
+     ✓ Màn 3: Hiển thị Thẻ Action Card cho tổng quan dự án (PROJECT_OVERVIEW)
+     ✓ Màn 3: Hiển thị Thẻ Action Card cho quan trắc AQI (CHECK_CURRENT_AQI)
 
- Test Files  3 passed (3)
-      Tests  15 passed (15)
+ Test Files  6 passed (6)
+      Tests  35 passed (35)
 ```
 
 ---

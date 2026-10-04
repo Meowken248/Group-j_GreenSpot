@@ -287,8 +287,21 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
     handleProcessCommand(cmdText, "SUGGESTION_CLICK");
   };
 
-  // Điều hướng hoặc Đóng từ Màn 3
+  // Đóng trợ lý từ Header hoặc nút Đóng
   const handleCloseAssistant = () => {
+    stopRecordingCleanup();
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    setCurrentScreen("HOME");
+    setResultData(null);
+    if (onClose) {
+      onClose();
+    }
+  };
+
+  // Mở chức năng liên quan từ Thẻ hành động
+  const handleOpenTargetFeature = () => {
     stopRecordingCleanup();
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
@@ -296,10 +309,10 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
     if (resultData?.action_target && onNavigateToFeature) {
       onNavigateToFeature(resultData.action_target, resultData.action_payload);
     }
+    setCurrentScreen("HOME");
+    setResultData(null);
     if (onClose) {
       onClose();
-    } else {
-      setCurrentScreen("HOME");
     }
   };
 
@@ -664,7 +677,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                       <button
                         type="button"
                         className="btn-open-target-feature"
-                        onClick={handleCloseAssistant}
+                        onClick={handleOpenTargetFeature}
                       >
                         <span>Mở chức năng liên quan</span>
                         <span>➔</span>
