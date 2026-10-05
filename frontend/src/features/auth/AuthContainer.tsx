@@ -3,6 +3,7 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { OtpVerificationPage } from "./pages/OtpVerificationPage";
 import { AccountActivatedPage } from "./pages/AccountActivatedPage";
 import { LoginPage } from "./pages/LoginPage";
+import { DeviceManagementPage } from "./pages/DeviceManagementPage";
 import type { AuthView } from "./types/auth.types";
 import { AUTH_STORAGE_KEYS } from "./types/auth.types";
 
@@ -15,8 +16,22 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({
   initialView = "register",
   onExitAuth,
 }) => {
-  // Xác định màn hình khởi đầu dựa trên trạng thái trong sessionStorage
+  // Xác định màn hình khởi đầu dựa trên trạng thái trong sessionStorage / URL
   const [currentView, setCurrentView] = useState<AuthView>(() => {
+    // Nếu URL là /devices hoặc #devices -> mở Quản lý thiết bị
+    if (window.location.pathname === "/devices" || window.location.hash === "#devices") {
+      return "devices";
+    }
+
+    // Nếu URL là /login hoặc #login -> mở Đăng nhập
+    if (
+      window.location.pathname === "/login" ||
+      window.location.pathname.startsWith("/login") ||
+      window.location.hash === "#login"
+    ) {
+      return "login";
+    }
+
     // Nếu vừa kích hoạt xong mà F5 -> chuyển thẳng trang Đăng nhập theo đặc tả Màn 3
     if (sessionStorage.getItem(AUTH_STORAGE_KEYS.IS_ACTIVATED) === "true") {
       return "login";
@@ -34,7 +49,10 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({
     return sessionStorage.getItem(AUTH_STORAGE_KEYS.EMAIL) || "";
   });
 
-  const handleNavigateToLogin = () => {
+  const [loginRedirect, setLoginRedirect] = useState<string | undefined>();
+
+  const handleNavigateToLogin = (redirect?: string) => {
+    setLoginRedirect(redirect);
     setCurrentView("login");
   };
 
@@ -56,6 +74,19 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({
   const handleNavigateToActivated = () => {
     setCurrentView("activated");
   };
+
+  // MÀN QUẢN LÝ THIẾT BỊ (MÀN 2 CHỨC NĂNG 2)
+  if (currentView === "devices") {
+    return (
+      <DeviceManagementPage
+        onNavigateToLogin={(redirectUrl?: string) => {
+          setLoginRedirect(redirectUrl);
+          setCurrentView("login");
+        }}
+        onLogoClick={onExitAuth}
+      />
+    );
+  }
 
   // MÀN 3: TÀI KHOẢN ĐÃ KÍCH HOẠT
   if (currentView === "activated") {
@@ -85,6 +116,16 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({
     return (
       <LoginPage
         onNavigateToRegister={handleNavigateToRegister}
+        onNavigateToOtp={handleNavigateToOtp}
+        redirectParam={loginRedirect}
+        onLoginSuccess={(targetUrl?: string) => {
+          setLoginRedirect(undefined);
+          if (targetUrl === "/devices" || targetUrl === "#devices") {
+            setCurrentView("devices");
+          } else if (onExitAuth) {
+            onExitAuth();
+          }
+        }}
         onLogoClick={onExitAuth}
       />
     );
@@ -99,3 +140,4 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({
     />
   );
 };
+

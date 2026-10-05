@@ -6,6 +6,8 @@ import {
   validatePassword,
   validateConfirmPassword,
   maskEmail,
+  validateLoginPassword,
+  sanitizeRedirectUrl,
 } from "../validators";
 
 describe("Auth Validators - Quy tắc kiểm tra từng ô chức năng #1", () => {
@@ -114,4 +116,31 @@ describe("Auth Validators - Quy tắc kiểm tra từng ô chức năng #1", () 
       expect(maskEmail("")).toBe("");
     });
   });
+
+  describe("6. Kiểm tra Mật khẩu Đăng nhập & Tham số redirect (Chức năng 2)", () => {
+    it("Bắt lỗi khi để trống mật khẩu đăng nhập", () => {
+      expect(validateLoginPassword("")).toBe("Vui lòng nhập mật khẩu");
+    });
+
+    it("Chấp nhận mật khẩu đăng nhập bất kỳ không rỗng", () => {
+      expect(validateLoginPassword("123456")).toBeNull();
+      expect(validateLoginPassword("anySimplePassword")).toBeNull();
+    });
+
+    it("Kiểm tra tham số redirect an toàn", () => {
+      // Hợp lệ: bắt đầu bằng 1 dấu / và không có //
+      expect(sanitizeRedirectUrl("/groups")).toBe("/groups");
+      expect(sanitizeRedirectUrl("/devices")).toBe("/devices");
+      expect(sanitizeRedirectUrl("/geo-feed?sort=newest")).toBe("/geo-feed?sort=newest");
+
+      // Không hợp lệ: bắt đầu bằng // (chống Open Redirect)
+      expect(sanitizeRedirectUrl("//google.com")).toBe("/geo-feed");
+      expect(sanitizeRedirectUrl("//malicious.site/login")).toBe("/geo-feed");
+
+      // Rỗng hoặc null: trả về mặc định
+      expect(sanitizeRedirectUrl(null)).toBe("/geo-feed");
+      expect(sanitizeRedirectUrl("")).toBe("/geo-feed");
+    });
+  });
 });
+

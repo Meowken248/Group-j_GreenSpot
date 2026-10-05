@@ -13,6 +13,7 @@ geoalchemy2>=0.14.0
 pydantic-settings>=2.2.0
 python-dotenv>=1.0.0
 email-validator>=2.0.0
+pyjwt>=2.8.0
 
 # Air Quality Dashboard & Visualization (Streamlit)
 streamlit>=1.40.0
