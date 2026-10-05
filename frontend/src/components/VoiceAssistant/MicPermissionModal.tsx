@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import "./VoiceAssistant.css";
+import "./VoiceAssistant.scss";
 
 interface MicPermissionModalProps {
   isOpen: boolean;

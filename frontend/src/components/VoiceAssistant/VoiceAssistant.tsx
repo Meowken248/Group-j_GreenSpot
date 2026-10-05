@@ -7,7 +7,7 @@ import type {
   VoiceProcessResponse,
   VoiceSampleCommand,
 } from "../../types/voice_assistant";
-import "./VoiceAssistant.css";
+import "./VoiceAssistant.scss";
 
 interface VoiceAssistantProps {
   onClose?: () => void;
