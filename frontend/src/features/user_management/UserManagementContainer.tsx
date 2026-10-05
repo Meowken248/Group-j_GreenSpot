@@ -545,12 +545,12 @@ export const UserManagementContainer: React.FC<UserManagementContainerProps> = (
                                 }
                                 disabled={isSelf}
                               >
-                                🔒
+                                🔓
                               </button>
                             ) : (
                               <button
                                 type="button"
-                                className="btn-action-icon"
+                                className="btn-action-icon action-unblock"
                                 title="Mở khóa tài khoản"
                                 onClick={() =>
                                   setConfirmState({
@@ -560,7 +560,7 @@ export const UserManagementContainer: React.FC<UserManagementContainerProps> = (
                                   })
                                 }
                               >
-                                🔓
+                                🔒
                               </button>
                             )}
 

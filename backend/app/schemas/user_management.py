@@ -132,19 +132,21 @@ class ChangeUserStatusRequest(BaseModel):
 
 class AdminResetPasswordRequest(BaseModel):
     """Yêu cầu đặt lại mật khẩu mới cho người dùng"""
-    new_password: str = Field(..., description="Mật khẩu mới tối thiểu 8 ký tự")
+    new_password: str = Field(..., description="Mật khẩu mới từ 8 đến 32 ký tự theo đúng quy tắc đăng ký")
 
     @field_validator("new_password", mode="before")
     @classmethod
     def validate_password(cls, v: str) -> str:
         if not isinstance(v, str):
             raise ValueError("Mật khẩu phải là chuỗi ký tự")
-        if len(v) < 8:
-            raise ValueError("Mật khẩu phải có tối thiểu 8 ký tự")
+        if " " in v or len(v) < 8 or len(v) > 32:
+            raise ValueError("Mật khẩu phải từ 8 đến 32 ký tự, không chứa khoảng trắng")
         if not re.search(r"[A-Z]", v):
             raise ValueError("Mật khẩu phải chứa ít nhất 1 chữ hoa")
         if not re.search(r"[a-z]", v):
             raise ValueError("Mật khẩu phải chứa ít nhất 1 chữ thường")
         if not re.search(r"\d", v):
             raise ValueError("Mật khẩu phải chứa ít nhất 1 chữ số")
+        if not re.search(r"[`!@#$%^&*()_+\-=[\]{}.:;,?\/~]", v):
+            raise ValueError("Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt")
         return v

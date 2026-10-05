@@ -311,18 +311,18 @@ describe('User Management Feature Tests', () => {
       const submitBtn = screen.getByRole('button', { name: /Lưu mật khẩu mới/i });
 
       // Nhập mật khẩu không khớp
-      fireEvent.change(passInput, { target: { value: 'AdminPass123' } });
-      fireEvent.change(confirmInput, { target: { value: 'AdminPass999' } });
+      fireEvent.change(passInput, { target: { value: 'AdminPass123!' } });
+      fireEvent.change(confirmInput, { target: { value: 'AdminPass999!' } });
       fireEvent.click(submitBtn);
 
       expect(await screen.findByText(/Mật khẩu xác nhận không khớp/i)).toBeInTheDocument();
 
       // Sửa lại cho khớp
-      fireEvent.change(confirmInput, { target: { value: 'AdminPass123' } });
+      fireEvent.change(confirmInput, { target: { value: 'AdminPass123!' } });
       fireEvent.click(submitBtn);
 
       await waitFor(() => {
-        expect(mockSubmit).toHaveBeenCalledWith('user-dm-2', 'AdminPass123');
+        expect(mockSubmit).toHaveBeenCalledWith('user-dm-2', 'AdminPass123!');
       });
     });
   });

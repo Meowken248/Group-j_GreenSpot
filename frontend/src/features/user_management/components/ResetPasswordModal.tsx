@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { UserItem } from '../types/userManagement.types';
+import { validatePassword } from '../../auth/utils/validators';
 
 interface ResetPasswordModalProps {
   isOpen: boolean;
@@ -50,12 +51,9 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
     e.preventDefault();
     setErrorMsg(null);
 
-    if (!newPassword || newPassword.length < 8) {
-      setErrorMsg('Mật khẩu mới phải có ít nhất 8 ký tự.');
-      return;
-    }
-    if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/\d/.test(newPassword)) {
-      setErrorMsg('Mật khẩu phải chứa ít nhất một chữ hoa, một chữ thường và một chữ số.');
+    const pwdErr = validatePassword(newPassword);
+    if (pwdErr) {
+      setErrorMsg(pwdErr);
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -68,7 +66,7 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
       await onSubmit(user.user_id, newPassword);
       onClose();
     } catch (err: any) {
-      const msg = err.response?.data?.detail || err.message || 'Không thể đặt lại mật khẩu';
+      const msg = err.response?.data?.message || err.response?.data?.detail || err.message || 'Không thể đặt lại mật khẩu';
       setErrorMsg(msg);
     } finally {
       setLoading(false);
@@ -127,7 +125,7 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
                 id="reset-newPassword"
                 type={showPassword ? 'text' : 'password'}
                 className="form-control font-mono"
-                placeholder="Tối thiểu 8 ký tự (hoa, thường, số)"
+                placeholder="Tối thiểu 8 ký tự (hoa, thường, số, ký tự đặc biệt)"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 disabled={loading}

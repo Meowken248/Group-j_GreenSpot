@@ -429,6 +429,16 @@ class TestUserManagementUnitCoverage(unittest.IsolatedAsyncioTestCase):
         await self.session.commit()
 
         try:
+            # 3. Đổi mật khẩu mới trùng mật khẩu cũ -> Bị từ chối HTTP 400 SAME_AS_OLD_PASSWORD
+            res_same = await reset_user_password(
+                user_id=str(test_uid),
+                payload=AdminResetPasswordRequest(new_password="OldPassword123!"),
+                current_admin=self.admin,
+                db=self.session,
+            )
+            self.assertEqual(res_same.status_code, 400)
+
+            # 4. Đổi mật khẩu mới hợp lệ khác mật khẩu cũ -> Thành công
             res_ok = await reset_user_password(
                 user_id=str(test_uid),
                 payload=AdminResetPasswordRequest(new_password="NewSecretPass123!"),
@@ -546,6 +556,10 @@ class TestUserManagementUnitCoverage(unittest.IsolatedAsyncioTestCase):
             AdminResetPasswordRequest(new_password="NOLOWERCASE1")
         with self.assertRaises(ValidationError):
             AdminResetPasswordRequest(new_password="NoDigitsHere!")
+        with self.assertRaises(ValidationError):
+            AdminResetPasswordRequest(new_password="NoSpecialChar123")
+        with self.assertRaises(ValidationError):
+            AdminResetPasswordRequest(new_password="Has Space 123!")
         req_pwd = AdminResetPasswordRequest(new_password="ValidPass123!")
         self.assertEqual(req_pwd.new_password, "ValidPass123!")
 

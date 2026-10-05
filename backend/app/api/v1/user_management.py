@@ -20,7 +20,7 @@ from app.schemas.user_management import (
     AdminResetPasswordRequest,
 )
 from app.api.v1.rbac import get_current_active_user, require_admin_user, SYSTEM_ORDER
-from app.utils.security import hash_password
+from app.utils.security import hash_password, verify_password
 
 router = APIRouter(prefix="/users", tags=["Quản lý người dùng & Tài khoản"])
 
@@ -429,6 +429,16 @@ async def reset_user_password(
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"error_code": "USER_NOT_FOUND", "message": "Người dùng không tồn tại"},
+        )
+
+    # Kiểm tra không cho phép đổi mật khẩu mới trùng với mật khẩu cũ trước đó
+    if target_user.password_hash and verify_password(payload.new_password, target_user.password_hash):
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "error_code": "SAME_AS_OLD_PASSWORD",
+                "message": "Mật khẩu mới không được trùng với mật khẩu cũ trước đó",
+            },
         )
 
     target_user.password_hash = hash_password(payload.new_password)
