@@ -66,7 +66,7 @@
     align-items: center;
     gap: 1.25rem;
 
-    // Yêu cầu đặc tả: Vì người dùng chưa đăng nhập, chuông và avatar mờ và không bấm được
+    // Khi chưa đăng nhập: chuông và avatar mờ, không bấm được
     .action-item-disabled {
       opacity: 0.35;
       pointer-events: none;
@@ -96,5 +96,157 @@
         font-size: 1rem;
       }
     }
+
+    // Khi đã đăng nhập: chuông và avatar sáng rõ, bấm được
+    .action-item-active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: none;
+      cursor: pointer;
+      padding: 0;
+      position: relative;
+      transition: $transition-fast;
+
+      &.bell-icon-active {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background-color: $neutral-100;
+        color: $neutral-700;
+        font-size: 1.15rem;
+
+        &:hover {
+          background-color: $neutral-200;
+          color: $neutral-900;
+          transform: translateY(-1px);
+        }
+
+        .notification-badge-dot {
+          position: absolute;
+          top: 6px;
+          right: 6px;
+          width: 8px;
+          height: 8px;
+          background-color: $primary-600;
+          border-radius: 50%;
+          border: 1.5px solid #ffffff;
+        }
+      }
+
+      &.avatar-active {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, $primary-50, $primary-100);
+        border: 2px solid $primary-500;
+        color: $primary-800;
+        font-size: 1.05rem;
+        box-shadow: 0 2px 6px rgba($primary-600, 0.2);
+
+        &:hover,
+        &.menu-open {
+          border-color: $primary-600;
+          box-shadow: 0 0 0 3px rgba($primary-500, 0.25);
+          transform: translateY(-1px);
+        }
+      }
+    }
+
+    // Dropdown menu của Avatar
+    .avatar-dropdown-container {
+      position: relative;
+
+      .avatar-dropdown-menu {
+        position: absolute;
+        top: calc(100% + 10px);
+        right: 0;
+        width: 240px;
+        background-color: #ffffff;
+        border: 1px solid $neutral-200;
+        border-radius: $radius-lg;
+        box-shadow: $shadow-xl;
+        padding: 0.5rem;
+        z-index: 1000;
+        animation: dropdownFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        display: flex;
+        flex-direction: column;
+
+        .dropdown-user-header {
+          padding: 0.6rem 0.75rem 0.5rem 0.75rem;
+
+          .user-fullname {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: $neutral-900;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .user-email {
+            font-size: 0.78rem;
+            color: $neutral-500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+        }
+
+        .dropdown-divider {
+          height: 1px;
+          background-color: $neutral-100;
+          margin: 0.35rem 0;
+        }
+
+        .dropdown-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          padding: 0.6rem 0.75rem;
+          background: none;
+          border: none;
+          border-radius: $radius-md;
+          font-family: $font-family;
+          font-size: 0.88rem;
+          font-weight: 600;
+          color: $neutral-700;
+          cursor: pointer;
+          transition: $transition-fast;
+          text-align: left;
+
+          .item-icon {
+            font-size: 1rem;
+          }
+
+          &:hover {
+            background-color: $neutral-100;
+            color: $neutral-900;
+          }
+
+          &.item-logout {
+            color: $error-600;
+
+            &:hover {
+              background-color: $error-50;
+              color: $error-700;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }

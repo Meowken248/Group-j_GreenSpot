@@ -10,7 +10,7 @@ interface PasswordInputProps {
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   disabled?: boolean;
   hasError?: boolean;
-  errorMessage?: string;
+  errorMessage?: React.ReactNode;
   inputRef?: React.Ref<HTMLInputElement>;
   autoComplete?: string;
 }

@@ -117,3 +117,31 @@ export const maskEmail = (email: string): string => {
   const prefix = namePart.substring(0, 2);
   return `${prefix}***${domainPart}`;
 };
+
+/**
+ * Kiểm tra Mật khẩu ở Màn Đăng nhập:
+ * - Bắt buộc.
+ * - Tối đa 32 ký tự.
+ * - Tuyệt đối không kiểm tra độ mạnh ở màn đăng nhập.
+ */
+export const validateLoginPassword = (value: string): string | null => {
+  if (!value || value.length === 0) {
+    return 'Vui lòng nhập mật khẩu';
+  }
+  return null;
+};
+
+/**
+ * Kiểm tra an toàn cho tham số redirect:
+ * - Chỉ chấp nhận đường dẫn nội bộ bắt đầu bằng đúng 1 dấu / và không bắt đầu bằng //
+ * - Nếu sai hoặc không có, trả về defaultPath ('/geo-feed')
+ */
+export const sanitizeRedirectUrl = (redirectParam: string | null | undefined, defaultPath = '/geo-feed'): string => {
+  if (!redirectParam) return defaultPath;
+  const trimmed = redirectParam.trim();
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+    return trimmed;
+  }
+  return defaultPath;
+};
+

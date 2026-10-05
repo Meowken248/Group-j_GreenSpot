@@ -1,17 +1,25 @@
+import uuid
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Request, Header, status
 from fastapi.responses import JSONResponse
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.rbac import User, Role, UserOTP
+from app.models.rbac import User, Role, UserOTP, UserSession, LoginAttempt
 from app.schemas.auth import (
     CitizenRegisterRequest,
     CitizenVerifyOtpRequest,
     CitizenResendOtpRequest,
     CitizenLoginRequest,
     CitizenLoginResponse,
+    UserSummary,
+    RefreshTokenRequest,
+    RefreshTokenResponse,
+    SessionListResponse,
+    SessionItemResponse,
+    RevokeSessionResponse,
     AuthSuccessResponse,
 )
 from app.services.email_service import EmailService
@@ -20,6 +28,14 @@ from app.utils.security import (
     hash_otp_code,
     hash_password,
     verify_password,
+    create_access_token,
+    decode_access_token,
+    generate_refresh_token,
+    hash_refresh_token,
+    parse_user_agent,
+    check_login_locked,
+    record_login_failure,
+    record_login_success,
 )
 
 router = APIRouter(prefix="/auth", tags=["Authentication & Identity"])
@@ -376,64 +392,445 @@ async def resend_citizen_otp(
     )
 
 
+# =========================================================================
+# PHỤ THUỘC XÁC THỰC ACCESS TOKEN & PHIÊN ĐĂNG NHẬP
+# =========================================================================
+
+async def get_current_user_and_session(
+    authorization: Optional[str] = Header(None),
+    db: AsyncSession = Depends(get_db)
+) -> tuple[User, UserSession]:
+    """
+    Dependency kiểm tra tính hợp lệ của Access Token và phiên thiết bị:
+    - Thiếu/hỏng Token -> 401 TOKEN_EXPIRED
+    - Phiên đã bị thu hồi (từ xa hoặc giới hạn 5 phiên) -> 401 SESSION_INVALID
+    - Tài khoản bị khóa -> 401 SESSION_INVALID
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"error_code": "TOKEN_MISSING", "message": "Vui lòng đăng nhập lại"}
+        )
+    token = authorization.split(" ")[1]
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"error_code": "TOKEN_EXPIRED", "message": "Vui lòng đăng nhập lại"}
+        )
+    
+    session_id_str = payload.get("session_id")
+    user_id_str = payload.get("sub")
+    if not session_id_str or not user_id_str:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"error_code": "TOKEN_INVALID", "message": "Vui lòng đăng nhập lại"}
+        )
+    
+    try:
+        session_id = uuid.UUID(session_id_str)
+        user_id = uuid.UUID(user_id_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"error_code": "TOKEN_INVALID", "message": "Vui lòng đăng nhập lại"}
+        )
+
+    # 1. Kiểm tra phiên đăng nhập trong CSDL
+    session_res = await db.execute(select(UserSession).where(UserSession.session_id == session_id))
+    user_session = session_res.scalar_one_or_none()
+    
+    now = datetime.now(timezone.utc)
+    if not user_session or user_session.revoked_at is not None or user_session.expires_at <= now:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"error_code": "SESSION_INVALID", "message": "Vui lòng đăng nhập lại"}
+        )
+        
+    # 2. Kiểm tra trạng thái tài khoản
+    user_res = await db.execute(select(User).where(User.user_id == user_id))
+    user = user_res.scalar_one_or_none()
+    if not user or user.status != "ACTIVE":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"error_code": "SESSION_INVALID", "message": "Vui lòng đăng nhập lại"}
+        )
+        
+    # Cập nhật thời điểm hoạt động gần nhất
+    user_session.last_active_at = now
+    await db.commit()
+    
+    return user, user_session
+
+
+# =========================================================================
+# CÁC ENDPOINT CHỨC NĂNG 2: ĐĂNG NHẬP, LÀM MỚI & QUẢN LÝ PHIÊN
+# =========================================================================
+
 @router.post("/login", response_model=CitizenLoginResponse)
 async def login_citizen(
     payload: CitizenLoginRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Đăng nhập Công dân GreenSpot:
-    - Kiểm tra email tồn tại và trạng thái ACTIVE.
-    - Kiểm tra mật khẩu mã hóa PBKDF2-HMAC-SHA256.
+    Màn 1: Đăng nhập hệ thống & Khởi tạo phiên đa thiết bị:
+    - Kiểm tra khóa 15 phút nếu đã nhập sai quá 5 lần (403 LOGIN_LOCKED).
+    - Kiểm tra email và mật khẩu (nếu sai tăng số lần thử, lần thứ 5 khóa 15p).
+    - Kiểm tra trạng thái PENDING -> 403 "Tài khoản chưa được kích hoạt. Kích hoạt ngay".
+    - Kiểm tra trạng thái LOCKED -> 403 "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên".
+    - Giới hạn tối đa 5 phiên (tự động thu hồi phiên cũ nhất nếu đã đủ 5).
+    - Cấp cặp Token: Access Token (15m) + Refresh Token (7d).
     """
     clean_email = payload.email.strip().lower()
 
-    # Tìm tài khoản theo email
+    # 1. Kiểm tra xem có đang bị khóa 15 phút không
+    is_locked, remaining_mins = await check_login_locked(db, clean_email)
+    if is_locked:
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={
+                "error_code": "LOGIN_LOCKED",
+                "message": "Bạn đã nhập sai quá 5 lần. Vui lòng thử lại sau 15 phút"
+            }
+        )
+
+    # 2. Tìm tài khoản người dùng
     user_query = select(User).where(User.email == clean_email)
     user_result = await db.execute(user_query)
     user = user_result.scalar_one_or_none()
 
     if not user:
+        failed_count, now_locked = await record_login_failure(db, clean_email)
+        if now_locked:
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={
+                    "error_code": "LOGIN_LOCKED",
+                    "message": "Bạn đã nhập sai quá 5 lần. Vui lòng thử lại sau 15 phút"
+                }
+            )
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={
                 "error_code": "INVALID_CREDENTIALS",
-                "message": "Email hoặc mật khẩu không chính xác"
+                "message": "Email hoặc mật khẩu không đúng"
             }
         )
 
+    # 3. Kiểm tra mật khẩu
+    if not verify_password(payload.password, user.password_hash):
+        failed_count, now_locked = await record_login_failure(db, clean_email)
+        if now_locked:
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={
+                    "error_code": "LOGIN_LOCKED",
+                    "message": "Bạn đã nhập sai quá 5 lần. Vui lòng thử lại sau 15 phút"
+                }
+            )
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={
+                "error_code": "INVALID_CREDENTIALS",
+                "message": "Email hoặc mật khẩu không đúng"
+            }
+        )
+
+    # 4. Kiểm tra tài khoản chưa kích hoạt (PENDING)
     if user.status == "PENDING":
         return JSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
             content={
                 "error_code": "ACCOUNT_NOT_ACTIVATED",
-                "message": "Tài khoản chưa được kích hoạt qua mã OTP. Vui lòng xác thực trước"
+                "message": "Tài khoản chưa được kích hoạt. Kích hoạt ngay"
             }
         )
 
+    # 5. Kiểm tra tài khoản bị khóa (LOCKED)
     if user.status != "ACTIVE":
         return JSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
             content={
-                "error_code": "ACCOUNT_INACTIVE",
-                "message": "Tài khoản này đang bị khóa hoặc vô hiệu hóa"
+                "error_code": "ACCOUNT_LOCKED",
+                "message": "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên"
             }
         )
 
-    if not verify_password(payload.password, user.password_hash):
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={
-                "error_code": "INVALID_CREDENTIALS",
-                "message": "Email hoặc mật khẩu không chính xác"
-            }
+    # Đăng nhập thành công -> Xóa trạng thái thử sai
+    await record_login_success(db, clean_email)
+
+    now = datetime.now(timezone.utc)
+
+    # 6. Giới hạn tối đa 5 phiên hoạt động đồng thời
+    active_sessions_query = select(UserSession).where(
+        and_(
+            UserSession.user_id == user.user_id,
+            UserSession.revoked_at.is_(None),
+            UserSession.expires_at > now
         )
+    ).order_by(UserSession.last_active_at.asc())
+    
+    active_sessions_result = await db.execute(active_sessions_query)
+    active_sessions = list(active_sessions_result.scalars().all())
+
+    # Nếu đã có từ 5 phiên trở lên, thu hồi các phiên cũ nhất để còn tối đa 4 phiên
+    if len(active_sessions) >= 5:
+        sessions_to_revoke = active_sessions[: len(active_sessions) - 4]
+        for old_s in sessions_to_revoke:
+            old_s.revoked_at = now
+
+    # 7. Nhận diện thiết bị từ User-Agent và IP
+    user_agent_str = request.headers.get("user-agent")
+    client_ip = request.client.host if request.client else None
+    device_name = parse_user_agent(user_agent_str)
+
+    # 8. Khởi tạo phiên mới & Cặp Token
+    new_session_id = uuid.uuid4()
+    raw_refresh_token = generate_refresh_token()
+    refresh_hash = hash_refresh_token(raw_refresh_token)
+    session_expires = now + timedelta(days=7)
+
+    new_session = UserSession(
+        session_id=new_session_id,
+        user_id=user.user_id,
+        refresh_token_hash=refresh_hash,
+        device_name=device_name,
+        ip_address=client_ip,
+        user_agent=user_agent_str,
+        expires_at=session_expires,
+        last_active_at=now
+    )
+    db.add(new_session)
+    await db.commit()
+
+    # Lấy thông tin vai trò
+    role_query = select(Role).where(Role.role_id == user.role_id)
+    role_result = await db.execute(role_query)
+    role = role_result.scalar_one_or_none()
+    role_code = role.role_code if role else "CITIZEN"
+
+    access_token = create_access_token(
+        user_id=str(user.user_id),
+        email=user.email,
+        role=role_code,
+        session_id=str(new_session_id)
+    )
 
     return CitizenLoginResponse(
         success=True,
-        message=f"Đăng nhập thành công! Chào mừng {user.full_name}",
+        message="Đăng nhập thành công",
+        access_token=access_token,
+        refresh_token=raw_refresh_token,
+        token_type="bearer",
+        expires_in=900,
+        session_id=str(new_session_id),
+        user=UserSummary(
+            user_id=str(user.user_id),
+            email=user.email,
+            full_name=user.full_name,
+            role=role_code,
+            status=user.status
+        )
+    )
+
+
+@router.post("/refresh", response_model=RefreshTokenResponse)
+async def refresh_access_token(
+    payload: RefreshTokenRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Cơ chế Silent Refresh: Làm mới Access Token bằng Refresh Token (7 ngày):
+    - Kiểm tra tính hợp lệ của Refresh Token.
+    - Cập nhật thời điểm hoạt động last_active_at.
+    - Cấp Access Token 15 phút mới mà không làm gián đoạn người dùng.
+    """
+    rt_hash = hash_refresh_token(payload.refresh_token.strip())
+    now = datetime.now(timezone.utc)
+
+    session_query = select(UserSession).where(UserSession.refresh_token_hash == rt_hash)
+    session_result = await db.execute(session_query)
+    user_session = session_result.scalar_one_or_none()
+
+    if not user_session or user_session.revoked_at is not None or user_session.expires_at <= now:
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={
+                "error_code": "SESSION_INVALID",
+                "message": "Vui lòng đăng nhập lại"
+            }
+        )
+
+    # Kiểm tra User còn ACTIVE không
+    user_query = select(User).where(User.user_id == user_session.user_id)
+    user_result = await db.execute(user_query)
+    user = user_result.scalar_one_or_none()
+
+    if not user or user.status != "ACTIVE":
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={
+                "error_code": "SESSION_INVALID",
+                "message": "Vui lòng đăng nhập lại"
+            }
+        )
+
+    # Cập nhật mốc hoạt động gần nhất
+    user_session.last_active_at = now
+    await db.commit()
+
+    role_query = select(Role).where(Role.role_id == user.role_id)
+    role_result = await db.execute(role_query)
+    role = role_result.scalar_one_or_none()
+    role_code = role.role_code if role else "CITIZEN"
+
+    new_access_token = create_access_token(
         user_id=str(user.user_id),
         email=user.email,
-        full_name=user.full_name,
-        status=user.status
+        role=role_code,
+        session_id=str(user_session.session_id)
     )
+
+    return RefreshTokenResponse(
+        success=True,
+        access_token=new_access_token,
+        token_type="bearer",
+        expires_in=900
+    )
+
+
+@router.get("/sessions", response_model=SessionListResponse)
+async def list_user_sessions(
+    auth_data: tuple[User, UserSession] = Depends(get_current_user_and_session),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Màn 2: Lấy danh sách các thiết bị đang có phiên còn hiệu lực của người dùng hiện tại:
+    - Đánh dấu phiên hiện tại (is_current = True) và đưa lên đầu danh sách.
+    """
+    user, current_session = auth_data
+    now = datetime.now(timezone.utc)
+
+    query = select(UserSession).where(
+        and_(
+            UserSession.user_id == user.user_id,
+            UserSession.revoked_at.is_(None),
+            UserSession.expires_at > now
+        )
+    ).order_by(UserSession.last_active_at.desc())
+
+    result = await db.execute(query)
+    sessions = list(result.scalars().all())
+
+    session_items = []
+    for s in sessions:
+        is_cur = (s.session_id == current_session.session_id)
+        session_items.append(
+            SessionItemResponse(
+                session_id=str(s.session_id),
+                device_name=s.device_name,
+                ip_address=s.ip_address,
+                is_current=is_cur,
+                last_active_at=s.last_active_at.isoformat(),
+                created_at=s.created_at.isoformat()
+            )
+        )
+
+    # Đưa phiên hiện tại (is_current = True) lên đầu danh sách
+    session_items.sort(key=lambda x: 0 if x.is_current else 1)
+
+    return SessionListResponse(
+        success=True,
+        sessions=session_items,
+        total=len(session_items)
+    )
+
+
+@router.delete("/sessions/{session_id}", response_model=RevokeSessionResponse)
+async def revoke_single_session(
+    session_id: str,
+    auth_data: tuple[User, UserSession] = Depends(get_current_user_and_session),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Màn 3 (Dạng 1): Thu hồi phiên của một thiết bị cụ thể.
+    - Gán revoked_at bằng thời điểm hiện tại.
+    - Nếu phiên đã bị thu hồi trước đó -> 400 "Phiên này đã được đăng xuất trước đó".
+    """
+    user, current_session = auth_data
+    now = datetime.now(timezone.utc)
+
+    try:
+        target_session_uuid = uuid.UUID(session_id)
+    except ValueError:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "error_code": "INVALID_SESSION_ID",
+                "message": "Mã phiên không hợp lệ"
+            }
+        )
+
+    query = select(UserSession).where(
+        and_(
+            UserSession.session_id == target_session_uuid,
+            UserSession.user_id == user.user_id
+        )
+    )
+    result = await db.execute(query)
+    target_session = result.scalar_one_or_none()
+
+    if not target_session or target_session.revoked_at is not None:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "error_code": "SESSION_ALREADY_REVOKED",
+                "message": "Phiên này đã được đăng xuất trước đó"
+            }
+        )
+
+    target_session.revoked_at = now
+    await db.commit()
+
+    is_cur = (target_session.session_id == current_session.session_id)
+    message = "Bạn đã đăng xuất" if is_cur else "Đã đăng xuất thiết bị"
+
+    return RevokeSessionResponse(
+        success=True,
+        message=message,
+        is_current=is_cur
+    )
+
+
+@router.delete("/sessions", response_model=RevokeSessionResponse)
+async def revoke_all_sessions(
+    auth_data: tuple[User, UserSession] = Depends(get_current_user_and_session),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Màn 3 (Dạng 2): Thu hồi toàn bộ phiên trên mọi thiết bị (Đăng xuất tất cả).
+    - Gán revoked_at cho mọi phiên còn hiệu lực của người dùng này.
+    """
+    user, current_session = auth_data
+    now = datetime.now(timezone.utc)
+
+    update_stmt = (
+        update(UserSession)
+        .where(
+            and_(
+                UserSession.user_id == user.user_id,
+                UserSession.revoked_at.is_(None)
+            )
+        )
+        .values(revoked_at=now)
+    )
+    await db.execute(update_stmt)
+    await db.commit()
+
+    return RevokeSessionResponse(
+        success=True,
+        message="Đã đăng xuất khỏi tất cả thiết bị",
+        is_current=True
+    )
+

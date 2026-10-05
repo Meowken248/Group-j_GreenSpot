@@ -68,6 +68,7 @@ class User(Base, TimestampMixin):
     reputation_score: Mapped[int] = mapped_column(Integer, default=100)
 
     role: Mapped["Role"] = relationship(back_populates="users")
+    sessions: Mapped[List["UserSession"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 
 class UserOTP(Base, TimestampMixin):
@@ -82,3 +83,42 @@ class UserOTP(Base, TimestampMixin):
     failed_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_used: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     purpose: Mapped[str] = mapped_column(String(50), default="REGISTER", nullable=False)
+
+
+class UserSession(Base, TimestampMixin):
+    """
+    Bảng quản lý phiên đăng nhập đa thiết bị (Multi-platform Session) của người dùng:
+    - Lưu refresh_token_hash để xác thực refresh token.
+    - Phân tích thiết bị (device_name, ip_address, user_agent).
+    - Hạn sử dụng 7 ngày.
+    - revoked_at đánh dấu phiên đã bị thu hồi (đăng xuất máy này / đăng xuất tất cả / vượt quá 5 phiên).
+    """
+    __tablename__ = "user_sessions"
+
+    session_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
+    refresh_token_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    device_name: Mapped[str] = mapped_column(String(150), default="Thiết bị không xác định", nullable=False)
+    ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_active_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    user: Mapped["User"] = relationship(back_populates="sessions")
+
+
+class LoginAttempt(Base):
+    """
+    Bảng theo dõi các lần thử đăng nhập thất bại để áp dụng khóa 15 phút khi sai quá 5 lần:
+    - Lưu email.
+    - failed_count đếm số lần sai trong 15 phút.
+    - locked_until: mốc thời gian khóa (nếu failed_count >= 5).
+    """
+    __tablename__ = "login_attempts"
+
+    email: Mapped[str] = mapped_column(String(255), primary_key=True, index=True)
+    failed_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    locked_until: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_attempt_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+

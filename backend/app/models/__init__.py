@@ -13,6 +13,8 @@ from app.models.rbac import (
     RolePermission,
     User,
     UserOTP,
+    UserSession,
+    LoginAttempt,
 )
 
 # 2. Không gian Hành chính & Cơ sở Xanh (Spatial WebGIS)
@@ -61,6 +63,8 @@ __all__ = [
     "RolePermission",
     "User",
     "UserOTP",
+    "UserSession",
+    "LoginAttempt",
     # Spatial & Green Facilities
     "AdministrativeUnit",
     "EssentialFacility",
