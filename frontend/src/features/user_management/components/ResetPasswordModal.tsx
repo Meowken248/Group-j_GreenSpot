@@ -74,8 +74,8 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
   };
 
   return (
-    <div className="um-modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="um-modal-content" onClick={(e) => e.stopPropagation()}>
+    <div className="um-modal-overlay" role="dialog" aria-modal="true">
+      <div className="um-modal-content">
         <div className="um-modal-header">
           <div className="header-icon-title">
             <div className="modal-icon key-icon">🔑🔄</div>

@@ -95,8 +95,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   }[actionType];
 
   return (
-    <div className="um-modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="um-modal-content um-confirm-content" onClick={(e) => e.stopPropagation()}>
+    <div className="um-modal-overlay" role="dialog" aria-modal="true">
+      <div className="um-modal-content um-confirm-content">
         <div className="um-modal-header">
           <div className="header-icon-title">
             <div className={`modal-icon ${config.badgeClass}`}>{config.icon}</div>

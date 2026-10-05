@@ -56,8 +56,8 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
   const targetRole = roleOptions.find((r) => r.role_id === selectedRoleId);
 
   return (
-    <div className="um-modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="um-modal-content" onClick={(e) => e.stopPropagation()}>
+    <div className="um-modal-overlay" role="dialog" aria-modal="true">
+      <div className="um-modal-content">
         <div className="um-modal-header">
           <div className="header-icon-title">
             <div className="modal-icon role-icon">🛡️🔄</div>

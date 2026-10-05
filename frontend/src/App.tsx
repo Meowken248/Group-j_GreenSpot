@@ -24,7 +24,10 @@ function App() {
     if (hash === "#dashboard" || path === "/dashboard") return "dashboard";
     if (hash === "#auth" || hash === "#login" || hash === "#register") return "auth";
     if (hash === "#users" || path === "/users") return "users";
-    // Mặc định ưu tiên hiển thị ngay giao diện Phân quyền vai trò RBAC
+    if (hash === "#rbac" || path === "/rbac") return "rbac";
+    // Mặc định: khi chưa đăng nhập, hiển thị Bản đồ WebGIS công cộng
+    const token = localStorage.getItem("eco_access_token");
+    if (!token) return "map";
     return "rbac";
   });
   const [backendStatus, setBackendStatus] = useState<string | null>(null);
@@ -269,71 +272,82 @@ function App() {
           </button>
         )}
 
-        {hasUserMgmtAccess && (
+        {currentUser ? (
+          <>
+            {hasUserMgmtAccess && (
+              <button
+                type="button"
+                className={`view-tab-btn ${activeTab === "users" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("users");
+                  window.location.hash = "#users";
+                }}
+                title="Quản lý người dùng & Cấp tài khoản"
+              >
+                <span>👥</span>
+                <span>Quản lý người dùng</span>
+              </button>
+            )}
+
+            {hasRbacAccess && (
+              <button
+                type="button"
+                className={`view-tab-btn ${activeTab === "rbac" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("rbac");
+                  window.location.hash = "#rbac";
+                }}
+                title="Quản lý phân quyền vai trò RBAC & Ma trận quyền"
+              >
+                <span>🛡️</span>
+                <span>Phân quyền vai trò</span>
+              </button>
+            )}
+
+            {hasMapAccess && (
+              <button
+                type="button"
+                className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+                title="Bản đồ không gian xanh, ngập lụt & trạm IoT"
+              >
+                <span>🗺️</span>
+                <span>Bản đồ WebGIS</span>
+              </button>
+            )}
+
+            {hasAqiAccess && (
+              <button
+                type="button"
+                className={`view-tab-btn ${activeTab === "dashboard" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("dashboard");
+                  window.location.hash = "#dashboard";
+                }}
+                title="Bảng điều khiển phân tích chất lượng không khí & khí tượng toàn quốc"
+              >
+                <span>📊</span>
+                <span>Phân tích AQI & Khí hậu</span>
+              </button>
+            )}
+          </>
+        ) : (
           <button
             type="button"
-            className={`view-tab-btn ${activeTab === "users" ? "active" : ""}`}
+            className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
             onClick={() => {
-              setActiveTab("users");
-              window.location.hash = "#users";
+              setActiveTab("map");
+              window.location.hash = "#map";
             }}
-            title="Quản lý người dùng & Cấp tài khoản"
+            title="Bản đồ không gian xanh, ngập lụt & trạm IoT"
           >
-            <span>👥</span>
-            <span>Quản lý người dùng</span>
+            <span>🗺️</span>
+            <span>Bản đồ WebGIS</span>
           </button>
         )}
-
-        {hasRbacAccess && (
-          <button
-            type="button"
-            className={`view-tab-btn ${activeTab === "rbac" ? "active" : ""}`}
-            onClick={() => {
-              setActiveTab("rbac");
-              window.location.hash = "#rbac";
-            }}
-            title="Quản lý phân quyền vai trò RBAC & Ma trận quyền"
-          >
-            <span>🛡️</span>
-            <span>Phân quyền vai trò</span>
-          </button>
-        )}
-
-        <button
-          type="button"
-          className={`view-tab-btn ${activeTab === "map" ? "active" : ""} ${!hasMapAccess ? "permission-locked" : ""}`}
-          onClick={(e) => {
-            if (!hasMapAccess) {
-              e.preventDefault();
-              return;
-            }
-            setActiveTab("map");
-            window.location.hash = "#map";
-          }}
-          disabled={!hasMapAccess}
-          title={hasMapAccess ? "Bản đồ không gian xanh, ngập lụt & trạm IoT" : "Chức năng bị khóa: Bạn chưa được cấp quyền truy cập Bản đồ WebGIS"}
-        >
-          <span>{hasMapAccess ? "🗺️" : "🔒"}</span>
-          <span>Bản đồ WebGIS</span>
-        </button>
-
-        <button
-          type="button"
-          className={`view-tab-btn ${activeTab === "dashboard" ? "active" : ""} ${!hasAqiAccess ? "permission-locked" : ""}`}
-          onClick={(e) => {
-            if (!hasAqiAccess) {
-              e.preventDefault();
-              return;
-            }
-            setActiveTab("dashboard");
-            window.location.hash = "#dashboard";
-          }}
-          disabled={!hasAqiAccess}
-          title={hasAqiAccess ? "Bảng điều khiển phân tích chất lượng không khí & khí tượng toàn quốc" : "Chức năng bị khóa: Bạn chưa được cấp quyền truy cập Phân tích AQI & Khí hậu"}
-        >
-          <span>{hasAqiAccess ? "📊" : "🔒"}</span>
-          <span>Phân tích AQI & Khí hậu</span>
-        </button>
       </nav>
 
       {/* VIEW NỘI DUNG CHÍNH: AUTH, RBAC, MAP HOẶC DASHBOARD */}
