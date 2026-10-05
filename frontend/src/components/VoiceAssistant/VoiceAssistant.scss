@@ -1,12 +1,84 @@
-/* ==========================================================================
-   Voice Assistant (Trợ lý giọng nói rảnh tay) - Modern Premium Design System
-   ========================================================================== */
+// =============================================================================
+// Voice Assistant (Trợ lý giọng nói rảnh tay) - SASS Design System & Tokens
+// =============================================================================
+
+// Colors
+$va-primary-green: #10b981;
+$va-primary-green-light: #34d399;
+$va-primary-glow: rgba(16, 185, 129, 0.4);
+$va-accent-orange: #f59e0b;
+$va-accent-orange-dark: #d97706;
+$va-accent-orange-glow: rgba(245, 158, 11, 0.35);
+$va-danger-red: #ef4444;
+$va-danger-glow: rgba(239, 68, 68, 0.35);
+$va-bg-dark-start: #091319;
+$va-bg-dark-mid: #0d1f2d;
+$va-bg-dark-end: #0a2522;
+$va-bg-panel: rgba(13, 31, 45, 0.72);
+$va-bg-glass-card: rgba(255, 255, 255, 0.05);
+$va-border-glass: rgba(255, 255, 255, 0.14);
+$va-border-subtle: rgba(255, 255, 255, 0.08);
+$va-text-light: #f8fafc;
+$va-text-muted: #94a3b8;
+
+// Spacing & Border Radii
+$va-radius-pill: 9999px;
+$va-radius-panel: 20px;
+$va-radius-card: 16px;
+$va-radius-sm: 8px;
+
+// Mixins
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin glass-panel($bg: $va-bg-panel, $border: $va-border-glass, $blur: 16px, $radius: $va-radius-panel) {
+  background: $bg;
+  backdrop-filter: blur($blur);
+  border: 1.5px solid $border;
+  border-radius: $radius;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+@mixin wide-pill-button {
+  width: 100% !important;
+  max-width: 480px !important;
+  height: 54px !important;
+  border-radius: $va-radius-pill !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.3px !important;
+  cursor: pointer !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-sizing: border-box !important;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px) !important;
+    filter: brightness(1.08) !important;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0) !important;
+  }
+}
 
 .voice-assistant-fullscreen {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: linear-gradient(135deg, #091319 0%, #0d1f2d 50%, #0a2522 100%);
+  background: linear-gradient(135deg, $va-bg-dark-start 0%, $va-bg-dark-mid 50%, $va-bg-dark-end 100%);
   color: #f1f5f9;
   display: flex;
   flex-direction: column;
@@ -29,10 +101,8 @@
   padding: 0 24px;
   background: rgba(13, 31, 45, 0.75);
   backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  border-bottom: 1px solid $va-border-subtle;
+  @include flex-between;
   flex-shrink: 0;
 }
 
@@ -179,11 +249,7 @@
    KHUNG PANEL BAO NGOÀI CÁC MÀN HÌNH (WIREFRAME CARD CONTAINER)
    ========================================================================== */
 .voice-panel-container {
-  background: rgba(13, 31, 45, 0.72);
-  border: 1.5px solid rgba(255, 255, 255, 0.14);
-  border-radius: 20px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(16px);
+  @include glass-panel;
   padding: 28px 32px;
   box-sizing: border-box;
   width: 100%;
@@ -191,9 +257,7 @@
 
 .voice-panel-header {
   width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  @include flex-between;
   padding-bottom: 14px;
   margin-bottom: 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -203,7 +267,7 @@
   font-size: 20px;
   font-weight: 800;
   letter-spacing: 0.8px;
-  color: #f8fafc;
+  color: $va-text-light;
   text-transform: uppercase;
   margin: 0;
   display: flex;
@@ -215,29 +279,7 @@
    NÚT OVAL/PILL DẠNG RỘNG (WIREFRAMES 1, 2, 3, 4: BUTTON ...)
    ========================================================================== */
 .wide-pill-btn {
-  width: 100% !important;
-  max-width: 480px !important;
-  height: 54px !important;
-  border-radius: 9999px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 12px !important;
-  font-size: 16px !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.3px !important;
-  cursor: pointer !important;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  box-sizing: border-box !important;
-}
-
-.wide-pill-btn:hover:not(:disabled) {
-  transform: translateY(-2px) !important;
-  filter: brightness(1.08) !important;
-}
-
-.wide-pill-btn:active:not(:disabled) {
-  transform: translateY(0) !important;
+  @include wide-pill-button;
 }
 
 /* ==========================================================================
