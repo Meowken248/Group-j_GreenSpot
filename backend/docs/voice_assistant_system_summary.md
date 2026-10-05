@@ -422,21 +422,25 @@ Phần này trình bày chính xác từng dòng code và nguyên lý hoạt đ�
 ### 5.5 Thuật toán 5: Động Cơ Phân Loại Ý Định Đa Tầng (Multi-tier Intent Engine)
 - **Tập tin:** [`BackEnd/app/services/voice_assistant/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_assistant/voice_service.py)
 - **Vị trí dòng code:** **Dòng 220 đến Dòng 381** (Phương thức `match_intent`)
-- **Cấu trúc 4 tầng phân loại & 10 Ý Định Nghiệp Vụ Toàn Diện:**
-  1. *Tầng 1 (Exact Match - Dòng 235 - 247):* Khớp chính xác 100% với câu lệnh mẫu trong cơ sở dữ liệu (`confidence = 1.0`).
-  2. *Tầng 2 (Semantic Rule/Pattern Match - Dòng 249 - 349):* Quét từ khóa mục tiêu thực tế (`confidence >= 0.90`):
+- **Cấu trúc 4 tầng phân loại & 14 Ý Định Nghiệp Vụ Toàn Diện:**
+  1. *Tầng 1 (Exact Match):* Khớp chính xác 100% với câu lệnh mẫu trong cơ sở dữ liệu (`confidence = 1.0`).
+  2. *Tầng 2 (Semantic Rule/Pattern Match):* Quét từ khóa mục tiêu thực tế (`confidence >= 0.90`):
+     - `GREETING`: Nhận diện câu chào hỏi, hỏi thăm (*"xin chào"*, *"chào bạn"*, *"hello"*) ➔ Phản hồi giọng nói thân thiện kèm danh sách câu gợi ý nhanh.
+     - `COURTESY`: Nhận diện cảm ơn, tạm biệt (*"cảm ơn"*, *"thank you"*, *"tạm biệt"*) ➔ Lời chúc hành trình an toàn.
+     - `CURRENT_LOCATION`: Nhận diện hỏi vị trí (*"tôi đang ở đâu?"*, *"vị trí hiện tại"*, *"tọa độ của tôi"*, *"xung quanh tôi có gì"*) ➔ Tự động giải mã tọa độ GPS sang quận/huyện TP.HCM gần nhất, quét bán kính 2km cảnh báo điểm ngập cục bộ, cung cấp thời tiết và AQI tại vị trí đó.
+     - `EMERGENCY_ASSISTANCE`: Nhận diện cứu hộ, sự cố xe (*"cứu hộ"*, *"xe chết máy do ngập"*, *"hotline cứu hộ"*) ➔ Cung cấp danh bạ hotline (1022, 114, 115, Cứu hộ giao thông 1900 6886) và hướng dẫn 4 bước xử lý xe chết máy tránh thủy kích.
      - `REPORT_INCIDENT`: Nhận diện xả rác, bãi rác, ô nhiễm, gom rác ➔ Chuyển hướng `/report-incident`.
-     - `CHECK_SAFE_ROUTE`: Nhận diện đường an toàn, không bị ngập, né ngập ➔ Chuyển hướng `map_flood`.
+     - `CHECK_SAFE_ROUTE`: Nhận diện lộ trình an toàn, né ngập, hỏi đường ngập (*"đường nào đang bị ngập?"*, *"những đường nào ngập?"*, *"đường X có ngập không?"*, *"quanh đây có ngập không?"*) ➔ Phân tích 30 điểm đen ngập úng, báo rõ đoạn ngập cục bộ do cống quá tải hoặc xác nhận đường an toàn nếu nằm ngoài điểm đen.
+     - `REPORT_FLOOD`: Nhận diện phản ánh điểm ngập nước ➔ Chuyển hướng `/report-flood`.
      - `CHECK_REWARD_WALLET`: Nhận diện ví điểm, xem điểm, GreenPoints ➔ Tra cứu `/wallet`.
      - `OPEN_AIR_QUALITY_MAP`: Nhận diện mở bản đồ chất lượng không khí, AQI ➔ Chuyển hướng `dashboard_aqi`.
      - `CHECK_CURRENT_AQI`: Nhận diện chất lượng không khí theo quận ➔ Tra cứu số liệu AQI thực tế từ trạm quan trắc.
-     - `REPORT_FLOOD`: Nhận diện phản ánh điểm ngập nước ➔ Chuyển hướng `/report-flood`.
-     - `CHECK_WEATHER`: Nhận diện thời tiết, nhiệt độ, mưa, nắng hôm nay ➔ Tra cứu thời tiết thực tế từ Open-Meteo API.
+     - `CHECK_WEATHER`: Nhận diện thời tiết, nhiệt độ (*"bao nhiêu độ?"*), dự báo mưa (*"trời có mưa không?"*, *"sắp mưa chưa?"*), thời tiết tại vị trí GPS (*"thời tiết ở chỗ tôi"*) ➔ Tra cứu dữ liệu thời gian thực từ Open-Meteo API.
      - `CHECK_TIDE_LEVEL`: Nhận diện triều cường, mực nước trạm Phú An/Nhà Bè ➔ Tra cứu dữ liệu thủy văn thực tế từ `tide_engine`.
      - `CHECK_PARKS_GREEN_SPACES`: Nhận diện công viên, cây xanh, không gian xanh ➔ Chuyển hướng `map` mảng xanh.
-     - `PROJECT_OVERVIEW`: Nhận diện giới thiệu dự án GreenSpot, tính năng hệ thống ➔ Tra cứu tổng quan 6 phân hệ.
-  3. *Tầng 3 (Fuzzy Jaccard Similarity - Dòng 351 - 370):* So khớp mờ tập từ vựng với các mẫu câu có sẵn, chấp nhận nếu điểm tương đồng $\ge 0.40$.
-  4. *Tầng 4 (Graceful Fallback - Dòng 372 - 380):* Xử lý câu lệnh lạ an toàn, trả về thông điệp thân thiện kèm danh sách gợi ý. Tuyệt đối không bịa thông tin ngoài dự án.
+     - `PROJECT_OVERVIEW`: Nhận diện giới thiệu dự án GreenSpot, tính năng hệ thống ➔ Tra cứu tổng quan các phân hệ.
+  3. *Tầng 3 (Fuzzy Jaccard Similarity):* So khớp mờ tập từ vựng với các mẫu câu có sẵn, chấp nhận nếu điểm tương đồng $\ge 0.40$.
+  4. *Tầng 4 (Graceful Fallback):* Xử lý câu lệnh lạ an toàn, trả về thông điệp thân thiện kèm danh sách gợi ý. Tuyệt đối không bịa thông tin ngoài dự án.
 
 ---
 
