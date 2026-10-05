@@ -11,6 +11,7 @@ interface RbacContainerProps {
   initialView?: RbacViewMode;
   initialRoleId?: number;
   onExit?: () => void;
+  onNavigateToAuth?: () => void;
 }
 
 interface ToastState {
@@ -23,6 +24,7 @@ export const RbacContainer: React.FC<RbacContainerProps> = ({
   initialView = "list",
   initialRoleId,
   onExit,
+  onNavigateToAuth,
 }) => {
   const [currentView, setCurrentView] = useState<RbacViewMode>(initialView);
   const [matrixTargetRoleId, setMatrixTargetRoleId] = useState<number | undefined>(initialRoleId);
@@ -30,15 +32,35 @@ export const RbacContainer: React.FC<RbacContainerProps> = ({
 
   const toastCounterRef = useRef(0);
 
-  // Lấy thông tin người dùng từ localStorage
-  const currentUser = React.useMemo(() => {
+  // Lấy thông tin người dùng từ localStorage phản hồi thời gian thực
+  const [currentUser, setCurrentUser] = useState<any>(() => {
     try {
       const raw = localStorage.getItem(AUTH_STORAGE_KEYS.USER_INFO);
       return raw ? JSON.parse(raw) : null;
     } catch {
       return null;
     }
+  });
+
+  useEffect(() => {
+    const handleAuth = () => {
+      try {
+        const raw = localStorage.getItem(AUTH_STORAGE_KEYS.USER_INFO);
+        setCurrentUser(raw ? JSON.parse(raw) : null);
+      } catch {
+        setCurrentUser(null);
+      }
+    };
+    window.addEventListener("auth_change", handleAuth);
+    window.addEventListener("storage", handleAuth);
+    return () => {
+      window.removeEventListener("auth_change", handleAuth);
+      window.removeEventListener("storage", handleAuth);
+    };
   }, []);
+
+  const token = typeof window !== "undefined" ? localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN) : null;
+  const isAdmin = Boolean(token && currentUser?.role === "ADMIN");
 
   const showToast = (message: string, type: "success" | "error" | "warning" = "success") => {
     const id = ++toastCounterRef.current;
@@ -54,20 +76,6 @@ export const RbacContainer: React.FC<RbacContainerProps> = ({
   const removeToast = (id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
-
-  // PHÂN QUYỀN TRANG: Chỉ Admin mới được truy cập
-  useEffect(() => {
-    const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
-    const role = currentUser?.role;
-
-    if (!token || role !== "ADMIN") {
-      showToast("Bạn không có quyền truy cập trang này", "error");
-      const timer = setTimeout(() => {
-        if (onExit) onExit();
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [currentUser, onExit]);
 
   return (
     <div className="rbac-master-container">
@@ -157,35 +165,82 @@ export const RbacContainer: React.FC<RbacContainerProps> = ({
 
       {/* NỘI DUNG MÀN HÌNH TƯƠNG ỨNG */}
       <main className="rbac-main-content">
-        {currentView === "list" && (
-          <RoleListPage
-            onNavigateToCreate={() => setCurrentView("create")}
-            onNavigateToMatrix={(roleId) => {
-              setMatrixTargetRoleId(roleId);
-              setCurrentView("matrix");
-            }}
-            onUnauthorized={onExit}
-            showToast={showToast}
-          />
-        )}
+        {!isAdmin ? (
+          <div className="rbac-admin-gate-wrapper">
+            <div className="admin-gate-card">
+              <div className="gate-icon-badge">🛡️</div>
+              <h2>Khu vực Quản trị Phân quyền (RBAC)</h2>
+              <p className="gate-desc">
+                Chức năng Quản lý Vai trò và Ma trận Phân quyền ACL 7 cột dành riêng cho Quản trị viên (Admin) của nền tảng GreenSpot.
+              </p>
 
-        {currentView === "create" && (
-          <CreateRolePage
-            onBackToList={() => setCurrentView("list")}
-            onRoleCreated={(newRoleId) => {
-              setMatrixTargetRoleId(newRoleId);
-              setCurrentView("matrix");
-            }}
-            showToast={showToast}
-          />
-        )}
+              <div className="gate-credentials-box">
+                <div className="box-title">🔑 Thông tin tài khoản Quản trị viên thử nghiệm:</div>
+                <div className="cred-line">
+                  <span className="cred-label">Email:</span>
+                  <code className="cred-val">ddatmguyen2023+test@gmail.com</code>
+                </div>
+                <div className="cred-line">
+                  <span className="cred-label">Mật khẩu:</span>
+                  <code className="cred-val">Dat123123,</code>
+                </div>
+              </div>
 
-        {currentView === "matrix" && (
-          <RolePermissionMatrixPage
-            initialRoleId={matrixTargetRoleId}
-            onBackToList={() => setCurrentView("list")}
-            showToast={showToast}
-          />
+              <div className="gate-actions-row">
+                {onNavigateToAuth ? (
+                  <button
+                    type="button"
+                    className="btn-gate-login"
+                    onClick={onNavigateToAuth}
+                  >
+                    🔐 Đăng nhập Quản trị viên
+                  </button>
+                ) : null}
+                {onExit && (
+                  <button
+                    type="button"
+                    className="btn-gate-back"
+                    onClick={onExit}
+                  >
+                    🗺️ Về Bản đồ WebGIS
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {currentView === "list" && (
+              <RoleListPage
+                onNavigateToCreate={() => setCurrentView("create")}
+                onNavigateToMatrix={(roleId) => {
+                  setMatrixTargetRoleId(roleId);
+                  setCurrentView("matrix");
+                }}
+                onUnauthorized={onExit}
+                showToast={showToast}
+              />
+            )}
+
+            {currentView === "create" && (
+              <CreateRolePage
+                onBackToList={() => setCurrentView("list")}
+                onRoleCreated={(newRoleId) => {
+                  setMatrixTargetRoleId(newRoleId);
+                  setCurrentView("matrix");
+                }}
+                showToast={showToast}
+              />
+            )}
+
+            {currentView === "matrix" && (
+              <RolePermissionMatrixPage
+                initialRoleId={matrixTargetRoleId}
+                onBackToList={() => setCurrentView("list")}
+                showToast={showToast}
+              />
+            )}
+          </>
         )}
       </main>
 

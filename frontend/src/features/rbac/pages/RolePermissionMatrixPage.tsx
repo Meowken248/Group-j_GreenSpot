@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import type {
   RoleItem,
   ModulePermissionInfo,
   PermissionMatrixResponse,
+  AclActionType,
 } from "../types/rbac.types";
 import { rbacService } from "../services/rbacService";
 import "../styles/RolePermissionMatrixPage.scss";
@@ -13,11 +14,15 @@ interface RolePermissionMatrixPageProps {
   showToast: (message: string, type: "success" | "error" | "warning") => void;
 }
 
-const ACTION_COLS: Array<{ key: "VIEW" | "CREATE" | "UPDATE" | "DELETE"; label: string }> = [
-  { key: "VIEW", label: "Xem" },
-  { key: "CREATE", label: "Thêm" },
-  { key: "UPDATE", label: "Sửa" },
-  { key: "DELETE", label: "Xoá" },
+// 7 HÀNH ĐỘNG CHUẨN ACL THEO ĐÚNG ẢNH MẪU
+export const ACL_COLUMNS: Array<{ key: AclActionType; label: string }> = [
+  { key: "ACCESS", label: "TRUY CẬP" },
+  { key: "VIEW", label: "XEM" },
+  { key: "CREATE", label: "THÊM" },
+  { key: "UPDATE", label: "CẬP NHẬT" },
+  { key: "DELETE", label: "XOÁ" },
+  { key: "IMPORT", label: "IMPORT" },
+  { key: "EXPORT", label: "EXPORT" },
 ];
 
 export const RolePermissionMatrixPage: React.FC<RolePermissionMatrixPageProps> = ({
@@ -34,11 +39,8 @@ export const RolePermissionMatrixPage: React.FC<RolePermissionMatrixPageProps> =
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [hasOccConflict, setHasOccConflict] = useState<boolean>(false);
 
-  // Lưu trữ trạng thái quyền ban đầu để tính toán dirty state
+  // Lưu trạng thái quyền ban đầu để tính toán dirty state
   const [savedPermissionsMap, setSavedPermissionsMap] = useState<Record<string, string[]>>({});
-
-  const tableScrollRef = useRef<HTMLDivElement>(null);
-  const activeColHeaderRef = useRef<HTMLTableCellElement | null>(null);
 
   // Tải dữ liệu ma trận quyền từ Backend
   const loadMatrixData = async (preferredRoleId?: number) => {
@@ -51,19 +53,18 @@ export const RolePermissionMatrixPage: React.FC<RolePermissionMatrixPageProps> =
       setRolePermissions(data.role_permissions);
       setSavedPermissionsMap(JSON.parse(JSON.stringify(data.role_permissions)));
 
-      // Xác định vai trò active đang được chỉnh sửa
+      // Xác định vai trò active
       if (preferredRoleId && data.roles.some((r) => r.role_id === preferredRoleId)) {
         setActiveRoleId(preferredRoleId);
       } else if (initialRoleId && data.roles.some((r) => r.role_id === initialRoleId)) {
         setActiveRoleId(initialRoleId);
       } else {
-        // Mặc định chọn vai trò tùy chỉnh đầu tiên hoặc DISTRICT_MANAGER (không chọn ADMIN vì không thể sửa)
-        const firstEditable =
+        // Mặc định chọn vai trò tùy chỉnh đầu tiên, hoặc DISTRICT_MANAGER, hoặc vai trò đầu
+        const defaultRole =
           data.roles.find((r) => !r.is_system) ||
           data.roles.find((r) => r.role_code === "DISTRICT_MANAGER") ||
-          data.roles[1] ||
           data.roles[0];
-        setActiveRoleId(firstEditable ? firstEditable.role_id : null);
+        setActiveRoleId(defaultRole ? defaultRole.role_id : null);
       }
     } catch (err: any) {
       showToast("Không thể tải ma trận phân quyền. Vui lòng thử lại", "error");
@@ -90,7 +91,7 @@ export const RolePermissionMatrixPage: React.FC<RolePermissionMatrixPageProps> =
     return savedPermissionsMap[String(activeRoleId)] || [];
   }, [savedPermissionsMap, activeRoleId]);
 
-  // Kiểm tra Dirty State: quyền hiện tại có khác với quyền đã lưu ban đầu không
+  // Kiểm tra Dirty State
   const isDirty = useMemo(() => {
     if (!activeRoleId) return false;
     const currentSet = new Set(activeRolePerms);
@@ -102,24 +103,12 @@ export const RolePermissionMatrixPage: React.FC<RolePermissionMatrixPageProps> =
     return false;
   }, [activeRolePerms, savedActiveRolePerms, activeRoleId]);
 
-  // Tự động cuộn ngang đến cột của vai trò đang sửa
-  useEffect(() => {
-    if (!isLoading && activeColHeaderRef.current && tableScrollRef.current) {
-      const scrollEl = tableScrollRef.current;
-      const targetEl = activeColHeaderRef.current;
-      const targetLeft = targetEl.offsetLeft - 320; // Trừ đi độ rộng của sticky column
-      if (targetLeft > 0) {
-        scrollEl.scrollTo({ left: targetLeft, behavior: "smooth" });
-      }
-    }
-  }, [activeRoleId, isLoading]);
-
-  // Cảnh báo người dùng khi có thay đổi chưa lưu (beforeunload)
+  // Cảnh báo beforeunload khi có thay đổi chưa lưu
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isDirty) {
         e.preventDefault();
-        e.returnValue = "Bạn có thay đổi chưa lưu trong ma trận quyền. Bạn có chắc chắn muốn rời đi?";
+        e.returnValue = "Bạn có thay đổi chưa lưu trong ma trận quyền. Bạn có chắc muốn rời đi?";
         return e.returnValue;
       }
     };
@@ -127,15 +116,12 @@ export const RolePermissionMatrixPage: React.FC<RolePermissionMatrixPageProps> =
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isDirty]);
 
-  // RÀNG BUỘC CHECKBOX (INTERLOCKING LOGIC)
-  const handleTogglePermission = (moduleCode: string, action: string) => {
+  // RÀNG BUỘC CHECKBOX (INTERLOCKING RULES CHO 7 CỘT ACL)
+  const handleTogglePermission = (moduleCode: string, action: AclActionType) => {
     if (!activeRoleId || !activeRole || activeRole.role_code === "ADMIN") return;
 
-    // Không áp dụng cho ROLE đối với vai trò khác Admin
+    // Không áp dụng phân quyền module ROLE cho vai trò khác Admin
     if (moduleCode === "ROLE") return;
-
-    // STATISTICS và AUDIT_LOG chỉ có VIEW
-    if (["STATISTICS", "AUDIT_LOG"].includes(moduleCode) && action !== "VIEW") return;
 
     const permCode = `${moduleCode}:${action}`;
     const currentPerms = new Set(activeRolePerms);
@@ -145,18 +131,33 @@ export const RolePermissionMatrixPage: React.FC<RolePermissionMatrixPageProps> =
       // 1. Thao tác: BỎ TÍCH
       currentPerms.delete(permCode);
 
-      // QUY TẮC RÀNG BUỘC: Khi bỏ tích "Xem", tự động bỏ tích Thêm, Sửa, Xoá của module đó
+      // QUY TẮC RÀNG BUỘC 1: Nếu bỏ tích TRUY CẬP -> Bỏ tích toàn bộ các quyền còn lại của module đó
+      if (action === "ACCESS") {
+        currentPerms.delete(`${moduleCode}:VIEW`);
+        currentPerms.delete(`${moduleCode}:CREATE`);
+        currentPerms.delete(`${moduleCode}:UPDATE`);
+        currentPerms.delete(`${moduleCode}:DELETE`);
+        currentPerms.delete(`${moduleCode}:IMPORT`);
+        currentPerms.delete(`${moduleCode}:EXPORT`);
+      }
+
+      // QUY TẮC RÀNG BUỘC 2: Nếu bỏ tích XEM -> Bỏ tích các quyền Thêm, Cập nhật, Xoá, Import, Export
       if (action === "VIEW") {
         currentPerms.delete(`${moduleCode}:CREATE`);
         currentPerms.delete(`${moduleCode}:UPDATE`);
         currentPerms.delete(`${moduleCode}:DELETE`);
+        currentPerms.delete(`${moduleCode}:IMPORT`);
+        currentPerms.delete(`${moduleCode}:EXPORT`);
       }
     } else {
       // 2. Thao tác: TÍCH CHỌN
       currentPerms.add(permCode);
 
-      // QUY TẮC RÀNG BUỘC: Khi tích Thêm, Sửa, hoặc Xoá -> Tự động tích chọn "Xem"
-      if (["CREATE", "UPDATE", "DELETE"].includes(action)) {
+      // QUY TẮC RÀNG BUỘC 3: Nếu tích bất kỳ quyền con nào -> Luôn tự động bật TRUY CẬP
+      currentPerms.add(`${moduleCode}:ACCESS`);
+
+      // QUY TẮC RÀNG BUỘC 4: Nếu tích Thêm, Cập nhật, Xoá, Import, Export -> Tự động bật XEM
+      if (["CREATE", "UPDATE", "DELETE", "IMPORT", "EXPORT"].includes(action)) {
         currentPerms.add(`${moduleCode}:VIEW`);
       }
     }
@@ -167,7 +168,29 @@ export const RolePermissionMatrixPage: React.FC<RolePermissionMatrixPageProps> =
     }));
   };
 
-  // Hoàn tác các thay đổi chưa lưu của vai trò đang chọn
+  // Bật / tắt cả hàng chức năng
+  const handleToggleRow = (moduleCode: string) => {
+    if (!activeRoleId || !activeRole || activeRole.role_code === "ADMIN") return;
+    if (moduleCode === "ROLE") return;
+
+    const currentPerms = new Set(activeRolePerms);
+    const hasAny = ACL_COLUMNS.some((col) => currentPerms.has(`${moduleCode}:${col.key}`));
+
+    if (hasAny) {
+      // Đang có ít nhất 1 quyền -> Bỏ tích toàn bộ hàng
+      ACL_COLUMNS.forEach((col) => currentPerms.delete(`${moduleCode}:${col.key}`));
+    } else {
+      // Chưa có quyền nào -> Tích chọn toàn bộ 7 quyền của hàng
+      ACL_COLUMNS.forEach((col) => currentPerms.add(`${moduleCode}:${col.key}`));
+    }
+
+    setRolePermissions((prev) => ({
+      ...prev,
+      [String(activeRoleId)]: Array.from(currentPerms),
+    }));
+  };
+
+  // Hoàn tác các thay đổi chưa lưu
   const handleRevertChanges = () => {
     if (!activeRoleId) return;
     setRolePermissions((prev) => ({
@@ -176,11 +199,11 @@ export const RolePermissionMatrixPage: React.FC<RolePermissionMatrixPageProps> =
     }));
   };
 
-  // Chuyển đổi vai trò đang sửa
+  // Chuyển đổi vai trò đang xem / chỉnh sửa
   const handleSwitchActiveRole = (newId: number) => {
     if (isDirty) {
       const confirmLeave = window.confirm(
-        "Bạn có các thay đổi quyền chưa lưu cho vai trò này. Bạn có chắc chắn muốn chuyển sang vai trò khác?"
+        "Bạn có các thay đổi quyền chưa lưu cho vai trò này. Bạn có chắc muốn chuyển sang vai trò khác?"
       );
       if (!confirmLeave) return;
       handleRevertChanges();
@@ -188,20 +211,20 @@ export const RolePermissionMatrixPage: React.FC<RolePermissionMatrixPageProps> =
     setActiveRoleId(newId);
   };
 
-  // Bấm nút quay lại danh sách
+  // Quay lại danh sách vai trò
   const handleBack = () => {
     if (isDirty) {
       const confirmLeave = window.confirm(
-        "Bạn có các thay đổi quyền chưa lưu. Bạn có chắc chắn muốn quay lại danh sách vai trò?"
+        "Bạn có các thay đổi quyền chưa lưu. Bạn có chắc muốn quay lại danh sách vai trò?"
       );
       if (!confirmLeave) return;
     }
     onBackToList();
   };
 
-  // Lưu thay đổi vào Backend
+  // Lưu ma trận phân quyền
   const handleSaveMatrix = async () => {
-    if (!activeRole || !isDirty || isSaving) return;
+    if (!activeRole || isSaving || activeRole.role_code === "ADMIN") return;
 
     setIsSaving(true);
     setHasOccConflict(false);
@@ -245,90 +268,48 @@ export const RolePermissionMatrixPage: React.FC<RolePermissionMatrixPageProps> =
   };
 
   return (
-    <div className="matrix-page">
-      {/* HEADER & BREADCRUMB */}
-      <div className="matrix-page-header">
-        <div className="header-breadcrumb">
-          <span className="crumb-item" onClick={handleBack}>
-            Phân quyền vai trò (RBAC)
-          </span>
-          <span className="crumb-separator">/</span>
-          <span className="crumb-current">Ma trận phân quyền động</span>
-        </div>
-        <div className="header-title-row">
-          <div>
-            <h1>
-              <span>📊</span>
-              <span>Ma Trận Phân Quyền Động GreenSpot</span>
-            </h1>
-            <p className="header-desc">
-              Phân định chi tiết quyền hạn Xem, Thêm, Sửa, Xoá trên 15 chức năng môi trường. Cột đang chọn sửa được đánh dấu nổi bật.
-            </p>
-          </div>
-        </div>
+    <div className="matrix-page-acl">
+      {/* THANH ĐIỀU HƯỚNG BREADCRUMB */}
+      <div className="acl-top-nav">
+        <button type="button" className="btn-back-nav" onClick={handleBack}>
+          ← Danh sách vai trò
+        </button>
+        <span className="nav-separator">/</span>
+        <span className="nav-title">Phân quyền chi tiết (ACL Matrix)</span>
       </div>
 
-      {/* THANH ĐIỀU KHIỂN & TRẠNG THÁI DIRTY (ACTION BAR) */}
-      <div className="matrix-action-bar">
-        <div className="bar-left">
-          <label htmlFor="role-select" className="role-selector-label">
-            Đang chỉnh sửa:
-          </label>
-          <select
-            id="role-select"
-            className="role-select-dropdown"
-            value={activeRoleId ?? ""}
-            onChange={(e) => handleSwitchActiveRole(Number(e.target.value))}
-            disabled={isLoading || isSaving}
-          >
-            {roles.map((r) => (
-              <option key={r.role_id} value={r.role_id}>
-                {r.role_name} {r.role_code === "ADMIN" ? "(Admin - Cố định)" : `(${r.scope_display})`}
-              </option>
-            ))}
-          </select>
-
-          {activeRole && (
-            <span className="editing-badge">
-              <span>{activeRole.scope === "CITY" ? "🌐" : "🏢"}</span>
-              <span>{activeRole.scope_display}</span>
-              <span>• v{activeRole.version}</span>
-            </span>
-          )}
-
-          {isDirty && (
-            <span className="dirty-warning-pill" role="status">
-              <span className="dot-blink" />
-              <span>Có thay đổi chưa lưu</span>
-            </span>
-          )}
+      {/* THANH TIÊU ĐỀ & VAI TRÒ CHỌN (KHỚP HOÀN TOÀN ẢNH MẪU) */}
+      <div className="acl-header-bar">
+        <div className="acl-header-left">
+          <p className="acl-subtitle-text">
+            Tất cả thành viên thuộc vai trò / nhóm sẽ nhận quyền này.
+          </p>
         </div>
 
-        <div className="bar-right">
-          <button
-            type="button"
-            className="btn-back-list"
-            onClick={handleBack}
-            disabled={isSaving}
-          >
-            ← Danh sách vai trò
-          </button>
-
-          {isDirty && (
-            <button
-              type="button"
-              className="btn-revert-changes"
-              onClick={handleRevertChanges}
-              disabled={isSaving}
-              title="Khôi phục trạng thái ban đầu"
+        <div className="acl-header-right">
+          {/* CAPSULE CHỌN VAI TRÒ (HIỂN THỊ DẠNG PILL NHƯ ẢNH MẪU) */}
+          <div className="role-capsule-selector">
+            <span className="capsule-avatar-dot" aria-hidden="true" />
+            <select
+              className="role-capsule-select"
+              value={activeRoleId ?? ""}
+              onChange={(e) => handleSwitchActiveRole(Number(e.target.value))}
+              disabled={isLoading || isSaving}
+              aria-label="Chọn vai trò phân quyền"
             >
-              Huỷ thay đổi
-            </button>
-          )}
+              {roles.map((r) => (
+                <option key={r.role_id} value={r.role_id}>
+                  {r.role_name.toUpperCase()} {r.role_code === "ADMIN" ? "(ADMIN)" : `(${r.scope_display})`}
+                </option>
+              ))}
+            </select>
+            <span className="capsule-arrow" aria-hidden="true">▾</span>
+          </div>
 
+          {/* NÚT LƯU THEO ĐÚNG STYLE NÚT TRÊN ẢNH MẪU */}
           <button
             type="button"
-            className="btn-save-matrix"
+            className="btn-save-acl"
             onClick={handleSaveMatrix}
             disabled={!isDirty || isSaving || activeRole?.role_code === "ADMIN"}
             title={
@@ -336,215 +317,112 @@ export const RolePermissionMatrixPage: React.FC<RolePermissionMatrixPageProps> =
                 ? "Admin luôn có đầy đủ quyền, không thể chỉnh sửa"
                 : !isDirty
                 ? "Chưa có thay đổi nào để lưu"
-                : "Lưu ma trận quyền cho vai trò này"
+                : "Lưu quyền"
             }
           >
-            {isSaving ? "Đang lưu..." : "💾 Lưu thay đổi"}
+            {isSaving ? "Đang lưu..." : "Lưu"}
           </button>
         </div>
       </div>
 
-      {/* BANNER XUNG ĐỘT PHIÊN BẢN OCC (409) */}
+      {/* CẢNH BÁO XUNG ĐỘT OCC NẾU CÓ */}
       {hasOccConflict && (
-        <div className="occ-conflict-banner" role="alert">
-          <div className="conflict-msg">
-            <span aria-hidden="true">⚠️</span>
-            <span>
-              Ma trận quyền đã được người khác thay đổi. Vui lòng tải lại trang để lấy dữ liệu mới nhất.
-            </span>
-          </div>
+        <div className="acl-occ-alert" role="alert">
+          <span>⚠️ Ma trận quyền đã được người khác thay đổi. Vui lòng tải lại trang.</span>
           <button
             type="button"
-            className="btn-reload-latest"
+            className="btn-reload-occ"
             onClick={() => loadMatrixData(activeRoleId || undefined)}
           >
-            🔄 Tải lại dữ liệu mới nhất
+            Tải lại
           </button>
         </div>
       )}
 
-      {/* BẢNG MA TRẬN PHÂN QUYỀN */}
-      <div className="matrix-table-card">
-        <div className="matrix-scroll-wrapper" ref={tableScrollRef}>
-          <table className="rbac-matrix-table" aria-label="Bảng ma trận phân quyền RBAC">
-            <thead>
-              {/* TIER 1: TÊN VAI TRÒ */}
-              <tr>
-                <th className="col-module-sticky" rowSpan={2}>
-                  Chức năng hệ thống
+      {/* BẢNG MA TRẬN PHÂN QUYỀN 7 CỘT THEO ĐÚNG ẢNH MẪU */}
+      <div className="acl-table-container">
+        <table className="acl-matrix-table" aria-label="Bảng phân quyền chi tiết ACL">
+          <thead>
+            <tr>
+              <th className="th-feature-col">CHỨC NĂNG</th>
+              {ACL_COLUMNS.map((col) => (
+                <th key={col.key} className="th-action-col">
+                  {col.label}
                 </th>
-                {roles.map((r) => {
-                  const isActiveCol = r.role_id === activeRoleId;
-                  return (
-                    <th
-                      key={r.role_id}
-                      colSpan={4}
-                      className={`th-role-header ${isActiveCol ? "active-editing-column" : ""}`}
-                      ref={isActiveCol ? (el) => { activeColHeaderRef.current = el; } : undefined}
-                      style={{ cursor: "pointer" }}
-                      onClick={() => {
-                        if (r.role_id !== activeRoleId) {
-                          handleSwitchActiveRole(r.role_id);
-                        }
-                      }}
-                      title={`Click để chuyển sang chỉnh sửa vai trò ${r.role_name}`}
-                    >
-                      <div className="role-th-content">
-                        <span className="role-header-title">{r.role_name}</span>
-                        <div className="role-header-badges">
-                          {r.is_system ? (
-                            <span className="badge-sys">Hệ thống</span>
-                          ) : (
-                            <span className="badge-scope">{r.scope_display}</span>
-                          )}
-                          {isActiveCol && (
-                            <span className="badge-active-edit">Đang sửa</span>
-                          )}
-                        </div>
-                      </div>
-                    </th>
-                  );
-                })}
-              </tr>
+              ))}
+            </tr>
+          </thead>
 
-              {/* TIER 2: CÁC CỘT HÀNH ĐỘNG (XEM, THÊM, SỬA, XOÁ) */}
-              <tr>
-                {roles.map((r) => {
-                  const isActiveCol = r.role_id === activeRoleId;
-                  return (
-                    <React.Fragment key={`sub-${r.role_id}`}>
-                      {ACTION_COLS.map((col) => (
-                        <th
-                          key={`${r.role_id}-${col.key}`}
-                          className={`th-action-header ${isActiveCol ? "active-editing-column" : ""}`}
-                        >
-                          {col.label}
-                        </th>
-                      ))}
-                    </React.Fragment>
-                  );
-                })}
-              </tr>
-            </thead>
+          <tbody>
+            {modules.map((mod) => {
+              const isRoleModule = mod.code === "ROLE";
+              const isAdmin = activeRole?.role_code === "ADMIN";
 
-            <tbody>
-              {modules.map((mod, modIdx) => {
-                const isRoleModule = mod.code === "ROLE";
-                const isViewOnlyModule = ["STATISTICS", "AUDIT_LOG"].includes(mod.code);
+              return (
+                <tr key={mod.code}>
+                  {/* CỘT TÊN CHỨC NĂNG */}
+                  <td className="td-feature-title" onClick={() => handleToggleRow(mod.code)}>
+                    <div className="feature-title-wrapper">
+                      <span className="feature-name">{mod.name}</span>
+                      <span className="feature-code">[{mod.code}]</span>
+                    </div>
+                  </td>
 
-                return (
-                  <tr key={mod.code}>
-                    {/* CỘT CỐ ĐỊNH: TÊN CHỨC NĂNG */}
-                    <td className="col-module-sticky td-module-info">
-                      <div className="module-cell-content">
-                        <div className="module-title-row">
-                          <span className="module-index">{modIdx + 1}</span>
-                          <span className="module-name">{mod.name}</span>
-                        </div>
-                        <span className="module-code-tag">{mod.code}</span>
-                      </div>
-                    </td>
+                  {/* 7 CỘT CHECKBOX: TRUY CẬP, XEM, THÊM, CẬP NHẬT, XOÁ, IMPORT, EXPORT */}
+                  {ACL_COLUMNS.map((col) => {
+                    const permCode = `${mod.code}:${col.key}`;
+                    const isChecked = isAdmin || activeRolePerms.includes(permCode);
 
-                    {/* CÁC CỘT VAI TRÒ */}
-                    {roles.map((r) => {
-                      const isActiveCol = r.role_id === activeRoleId;
-                      const rolePerms = rolePermissions[String(r.role_id)] || [];
-                      const isAdmin = r.role_code === "ADMIN";
+                    // Module ROLE chỉ dành riêng cho Admin
+                    const isLocked = isRoleModule && !isAdmin;
 
-                      return (
-                        <React.Fragment key={`cell-${r.role_id}-${mod.code}`}>
-                          {ACTION_COLS.map((col) => {
-                            const permCode = `${mod.code}:${col.key}`;
-                            const isChecked = rolePerms.includes(permCode);
-
-                            // Ô không áp dụng:
-                            // 1. Module ROLE chỉ áp dụng cho ADMIN
-                            if (isRoleModule && !isAdmin) {
-                              return (
-                                <td
-                                  key={`cell-${r.role_id}-${permCode}`}
-                                  className={`td-perm-cell ${isActiveCol ? "active-editing-column" : ""}`}
-                                >
-                                  <span className="cell-locked" title="Chức năng phân quyền chỉ dành riêng cho Admin">
-                                    🔒
-                                  </span>
-                                </td>
-                              );
-                            }
-
-                            // 2. STATISTICS và AUDIT_LOG chỉ có quyền VIEW
-                            if (isViewOnlyModule && col.key !== "VIEW") {
-                              return (
-                                <td
-                                  key={`cell-${r.role_id}-${permCode}`}
-                                  className={`td-perm-cell ${isActiveCol ? "active-editing-column" : ""}`}
-                                >
-                                  <span className="cell-na" title="Chức năng chỉ hỗ trợ thao tác Xem">
-                                    —
-                                  </span>
-                                </td>
-                              );
-                            }
-
-                            // Cột có thể tương tác (chỉ khi là active column và không phải Admin)
-                            const isEditable = isActiveCol && !isAdmin;
-
-                            return (
-                              <td
-                                key={`cell-${r.role_id}-${permCode}`}
-                                className={`td-perm-cell ${isActiveCol ? "active-editing-column" : ""}`}
-                              >
-                                <label className="checkbox-container">
-                                  <input
-                                    type="checkbox"
-                                    checked={isChecked}
-                                    disabled={!isEditable}
-                                    onChange={() => handleTogglePermission(mod.code, col.key)}
-                                    aria-label={`${r.role_name} - ${mod.name} - ${col.label}`}
-                                  />
-                                </label>
-                              </td>
-                            );
-                          })}
-                        </React.Fragment>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    return (
+                      <td key={permCode} className="td-checkbox-cell">
+                        {isLocked ? (
+                          <span className="acl-cell-lock" title="Chức năng chỉ dành cho Admin">
+                            🔒
+                          </span>
+                        ) : (
+                          <label className="acl-checkbox-label">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              disabled={isAdmin || isSaving}
+                              onChange={() => handleTogglePermission(mod.code, col.key)}
+                              aria-label={`${mod.name} - ${col.label}`}
+                            />
+                            <span className="acl-custom-box" />
+                          </label>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
-      {/* CHÚ THÍCH & QUY TẮC RÀNG BUỘC (FOOTER) */}
-      <footer className="matrix-legend-footer">
-        <div className="legend-items">
-          <div className="legend-item">
-            <span className="legend-chip chip-editing" />
-            <span>Cột đang sửa (tương tác trực tiếp)</span>
-          </div>
-          <div className="legend-item">
-            <span className="legend-chip chip-readonly" />
-            <span>Chế độ chỉ xem (chọn cột để sửa)</span>
-          </div>
-          <div className="legend-item">
-            <span className="legend-chip chip-na">—</span>
-            <span>Không áp dụng thao tác</span>
-          </div>
-          <div className="legend-item">
-            <span>🔒</span>
-            <span>Đặc quyền bảo mật Admin</span>
-          </div>
-        </div>
-
-        <div className="interlock-tip">
-          <span>💡</span>
+      {/* THÔNG TIN TRỢ GIÚP DƯỚI BẢNG */}
+      <div className="acl-footer-note">
+        <div className="note-left">
+          <span className="note-dot" />
           <span>
-            Ràng buộc tự động: Chọn <strong>Thêm/Sửa/Xoá</strong> sẽ tự bật <strong>Xem</strong>; Bỏ <strong>Xem</strong> sẽ tự huỷ toàn bộ thao tác còn lại.
+            {isDirty
+              ? "● Bạn đang có thay đổi quyền chưa lưu"
+              : activeRole?.role_code === "ADMIN"
+              ? "Vai trò Admin luôn sở hữu toàn bộ quyền hạn (không thể chỉnh sửa)"
+              : "Dữ liệu ma trận quyền đang ở trạng thái mới nhất"}
           </span>
         </div>
-      </footer>
+
+        {isDirty && (
+          <button type="button" className="btn-revert-acl" onClick={handleRevertChanges}>
+            Huỷ thay đổi
+          </button>
+        )}
+      </div>
     </div>
   );
 };

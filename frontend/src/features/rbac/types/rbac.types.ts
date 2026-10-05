@@ -29,10 +29,19 @@ export interface CreateRolePayload {
   scope: ScopeType;
 }
 
+export type AclActionType =
+  | "ACCESS"
+  | "VIEW"
+  | "CREATE"
+  | "UPDATE"
+  | "DELETE"
+  | "IMPORT"
+  | "EXPORT";
+
 export interface ModulePermissionInfo {
   code: string;
   name: string;
-  actions: ("VIEW" | "CREATE" | "UPDATE" | "DELETE")[];
+  actions: (AclActionType | string)[];
 }
 
 export interface PermissionMatrixResponse {

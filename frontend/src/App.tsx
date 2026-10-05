@@ -14,7 +14,15 @@ import api from "./api/client";
 import "./App.css";
 
 function App() {
-  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac">("auth");
+  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac">(() => {
+    const hash = window.location.hash.toLowerCase();
+    const path = window.location.pathname.toLowerCase();
+    if (hash === "#map" || path === "/map") return "map";
+    if (hash === "#dashboard" || path === "/dashboard") return "dashboard";
+    if (hash === "#auth" || hash === "#login" || hash === "#register") return "auth";
+    // Mặc định ưu tiên hiển thị ngay giao diện Phân quyền vai trò RBAC
+    return "rbac";
+  });
   const [backendStatus, setBackendStatus] = useState<string | null>(null);
   const [checkingBackend, setCheckingBackend] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -234,22 +242,26 @@ function App() {
           </button>
         )}
 
-        {currentUser?.role === "ADMIN" && (
-          <button
-            type="button"
-            className={`view-tab-btn ${activeTab === "rbac" ? "active" : ""}`}
-            onClick={() => setActiveTab("rbac")}
-            title="Quản lý phân quyền vai trò RBAC & Ma trận quyền"
-          >
-            <span>🛡️</span>
-            <span>Phân quyền vai trò</span>
-          </button>
-        )}
+        <button
+          type="button"
+          className={`view-tab-btn ${activeTab === "rbac" ? "active" : ""}`}
+          onClick={() => {
+            setActiveTab("rbac");
+            window.location.hash = "#rbac";
+          }}
+          title="Quản lý phân quyền vai trò RBAC & Ma trận quyền"
+        >
+          <span>🛡️</span>
+          <span>Phân quyền vai trò</span>
+        </button>
 
         <button
           type="button"
           className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
-          onClick={() => setActiveTab("map")}
+          onClick={() => {
+            setActiveTab("map");
+            window.location.hash = "#map";
+          }}
           title="Bản đồ không gian xanh, ngập lụt & trạm IoT"
         >
           <span>🗺️</span>
@@ -258,7 +270,10 @@ function App() {
         <button
           type="button"
           className={`view-tab-btn ${activeTab === "dashboard" ? "active" : ""}`}
-          onClick={() => setActiveTab("dashboard")}
+          onClick={() => {
+            setActiveTab("dashboard");
+            window.location.hash = "#dashboard";
+          }}
           title="Bảng điều khiển phân tích chất lượng không khí & khí tượng toàn quốc"
         >
           <span>📊</span>
@@ -272,12 +287,25 @@ function App() {
           <AuthContainer
             initialView={authRedirectUrl ? "login" : undefined}
             redirectUrl={authRedirectUrl}
-            onExitAuth={() => setActiveTab("map")}
+            onExitAuth={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
           />
         </div>
       ) : activeTab === "rbac" ? (
         <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
-          <RbacContainer onExit={() => setActiveTab("map")} />
+          <RbacContainer
+            onExit={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
+            onNavigateToAuth={() => {
+              setAuthRedirectUrl("/rbac");
+              setActiveTab("auth");
+              window.location.hash = "#login";
+            }}
+          />
         </div>
       ) : activeTab === "map" ? (
         <EcoMap />

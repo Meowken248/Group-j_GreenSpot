@@ -29,10 +29,10 @@ class TestRbacDatabase(unittest.TestCase):
                 dm_role = next(r for r in roles if r[0] == "DISTRICT_MANAGER")
                 self.assertEqual(dm_role[2], "DISTRICT")  # scope Quận
 
-                # 2. Kiểm tra danh mục 15 modules và 54 permissions
+                # 2. Kiểm tra danh mục 15 modules và 105 permissions (15 modules x 7 actions)
                 perms_count = await session.execute(text("SELECT count(*) FROM permissions"))
                 total = perms_count.scalar()
-                self.assertEqual(total, 54)
+                self.assertEqual(total, 105)
 
                 modules_res = await session.execute(text("SELECT DISTINCT module FROM permissions"))
                 modules = [m[0] for m in modules_res.fetchall()]
@@ -43,14 +43,14 @@ class TestRbacDatabase(unittest.TestCase):
                 self.assertIn("GIS_MAP", modules)
                 self.assertIn("INCIDENTS", modules)
 
-                # 3. Kiểm tra Admin có đủ 54 permissions
+                # 3. Kiểm tra Admin có đủ 105 permissions
                 admin_perms = await session.execute(text("""
                     SELECT count(*) 
                     FROM role_permissions rp 
                     JOIN roles r ON rp.role_id = r.role_id 
                     WHERE r.role_code = 'ADMIN'
                 """))
-                self.assertEqual(admin_perms.scalar(), 54)
+                self.assertEqual(admin_perms.scalar(), 105)
 
                 # 4. Kiểm tra tài khoản ddatmguyen2023+test@gmail.com có quyền ADMIN
                 user_res = await session.execute(text("""

@@ -130,11 +130,12 @@ class TestRbacApi(unittest.TestCase):
         self.assertIn("STATISTICS", mod_codes)
         self.assertIn("AUDIT_LOG", mod_codes)
 
-        # Module STATISTICS và AUDIT_LOG chỉ có action VIEW
+        # Mỗi module có đầy đủ 7 actions chuẩn ACL
         stat_mod = next(m for m in modules if m["code"] == "STATISTICS")
-        self.assertEqual(stat_mod["actions"], ["VIEW"])
-        audit_mod = next(m for m in modules if m["code"] == "AUDIT_LOG")
-        self.assertEqual(audit_mod["actions"], ["VIEW"])
+        self.assertEqual(len(stat_mod["actions"]), 7)
+        self.assertIn("ACCESS", stat_mod["actions"])
+        self.assertIn("IMPORT", stat_mod["actions"])
+        self.assertIn("EXPORT", stat_mod["actions"])
 
         # Danh sách vai trò và role_permissions
         self.assertIn("roles", matrix)
@@ -145,8 +146,8 @@ class TestRbacApi(unittest.TestCase):
         Kiểm tra cập nhật quyền hạn vai trò:
         - Chặn sửa Admin (403 ADMIN_IMMUTABLE)
         - Kiểm tra OCC Conflict (409 VERSION_MISMATCH)
-        - Tự động áp dụng interlocking: thêm CREATE tự động có VIEW
-        - Bỏ qua các ô không áp dụng
+        - Tự động áp dụng interlocking: thêm CREATE tự động có VIEW và ACCESS
+        - Bỏ qua các ô không áp dụng (ROLE chỉ cho Admin)
         - Tăng version sau khi lưu
         """
         # Lấy danh sách roles để tìm Admin và role tùy chỉnh
@@ -183,12 +184,12 @@ class TestRbacApi(unittest.TestCase):
         self.assertEqual(res_occ.status_code, 409)
         self.assertEqual(res_occ.json()["error_code"], "VERSION_MISMATCH")
 
-        # 3. Cập nhật hợp lệ với Interlocking Rules: gửi INCIDENTS:CREATE -> backend tự cấp INCIDENTS:VIEW
+        # 3. Cập nhật hợp lệ với Interlocking Rules: gửi INCIDENTS:CREATE -> backend tự cấp INCIDENTS:VIEW và INCIDENTS:ACCESS
         res_update = requests.put(
             f"{BASE_URL}/rbac/roles/{custom_role['role_id']}/permissions",
             headers=self.headers,
             json={
-                "permissions": ["INCIDENTS:CREATE", "STATISTICS:DELETE", "ROLE:VIEW"],
+                "permissions": ["INCIDENTS:CREATE", "ROLE:VIEW"],
                 "version": custom_role["version"],
             },
         )
@@ -197,13 +198,13 @@ class TestRbacApi(unittest.TestCase):
         self.assertTrue(up_data["success"])
         self.assertEqual(up_data["new_version"], custom_role["version"] + 1)
 
-        # 4. Kiểm tra lại qua ma trận quyền: INCIDENTS:VIEW phải được tự động thêm vào, STATISTICS:DELETE và ROLE:VIEW bị lọc bỏ
+        # 4. Kiểm tra lại qua ma trận quyền: INCIDENTS:VIEW và INCIDENTS:ACCESS phải được tự động thêm vào, ROLE:VIEW bị lọc bỏ
         matrix_res = requests.get(f"{BASE_URL}/rbac/matrix", headers=self.headers)
         matrix = matrix_res.json()
         saved_perms = matrix["role_permissions"].get(str(custom_role["role_id"]), [])
         self.assertIn("INCIDENTS:CREATE", saved_perms)
         self.assertIn("INCIDENTS:VIEW", saved_perms)       # Interlocking tự động
-        self.assertNotIn("STATISTICS:DELETE", saved_perms) # Bỏ qua ô không áp dụng
+        self.assertIn("INCIDENTS:ACCESS", saved_perms)     # Interlocking tự động
         self.assertNotIn("ROLE:VIEW", saved_perms)         # ROLE chỉ dành cho Admin
 
     def test_06_delete_custom_role(self):

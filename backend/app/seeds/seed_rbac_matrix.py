@@ -12,22 +12,24 @@ from sqlalchemy import text
 from app.database import engine, AsyncSessionLocal
 
 
+ACTIONS_LIST = ["ACCESS", "VIEW", "CREATE", "UPDATE", "DELETE", "IMPORT", "EXPORT"]
+
 MODULE_DEFINITIONS = [
-    {"code": "GIS_MAP", "name": "Bản đồ số WebGIS", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "INCIDENTS", "name": "Báo cáo sự cố môi trường", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "GREEN_SPOTS", "name": "Điểm xanh & Công viên sinh thái", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "RECYCLING_FACILITIES", "name": "Trạm thu gom & Điểm tái chế", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "IOT_SENSORS", "name": "Trạm quan trắc IoT & Cảm biến", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "FLOOD_WARNINGS", "name": "Cảnh báo ngập lụt & Triều cường", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "AIR_QUALITY", "name": "Chỉ số chất lượng không khí AQI", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "WEATHER", "name": "Khí tượng & Dự báo thời tiết", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "DISPATCH_TASKS", "name": "Phân công & Điều phối hiện trường", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "CITIZEN_FEEDBACK", "name": "Phản ánh & Đóng góp ý kiến", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "CAMPAIGNS", "name": "Chiến dịch môi trường & Điểm xanh", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "USER_MANAGEMENT", "name": "Quản lý người dùng & Tài khoản", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "ROLE", "name": "Phân quyền vai trò", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "STATISTICS", "name": "Thống kê & Báo cáo tổng hợp", "actions": ["VIEW"]},
-    {"code": "AUDIT_LOG", "name": "Nhật ký kiểm toán hệ thống", "actions": ["VIEW"]},
+    {"code": "GIS_MAP", "name": "Bản đồ số WebGIS", "actions": ACTIONS_LIST},
+    {"code": "INCIDENTS", "name": "Báo cáo sự cố môi trường", "actions": ACTIONS_LIST},
+    {"code": "GREEN_SPOTS", "name": "Điểm xanh & Công viên sinh thái", "actions": ACTIONS_LIST},
+    {"code": "RECYCLING_FACILITIES", "name": "Trạm thu gom & Điểm tái chế", "actions": ACTIONS_LIST},
+    {"code": "IOT_SENSORS", "name": "Trạm quan trắc IoT & Cảm biến", "actions": ACTIONS_LIST},
+    {"code": "FLOOD_WARNINGS", "name": "Cảnh báo ngập lụt & Triều cường", "actions": ACTIONS_LIST},
+    {"code": "AIR_QUALITY", "name": "Chỉ số chất lượng không khí AQI", "actions": ACTIONS_LIST},
+    {"code": "WEATHER", "name": "Khí tượng & Dự báo thời tiết", "actions": ACTIONS_LIST},
+    {"code": "DISPATCH_TASKS", "name": "Phân công & Điều phối hiện trường", "actions": ACTIONS_LIST},
+    {"code": "CITIZEN_FEEDBACK", "name": "Phản ánh & Đóng góp ý kiến", "actions": ACTIONS_LIST},
+    {"code": "CAMPAIGNS", "name": "Chiến dịch môi trường & Điểm xanh", "actions": ACTIONS_LIST},
+    {"code": "USER_MANAGEMENT", "name": "Quản lý người dùng & Tài khoản", "actions": ACTIONS_LIST},
+    {"code": "ROLE", "name": "Phân quyền vai trò", "actions": ACTIONS_LIST},
+    {"code": "STATISTICS", "name": "Thống kê & Báo cáo tổng hợp", "actions": ACTIONS_LIST},
+    {"code": "AUDIT_LOG", "name": "Nhật ký kiểm toán hệ thống", "actions": ACTIONS_LIST},
 ]
 
 SYSTEM_ROLES = [

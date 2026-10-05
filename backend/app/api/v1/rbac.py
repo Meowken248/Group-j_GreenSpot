@@ -23,29 +23,31 @@ from app.utils.security import decode_access_token
 
 router = APIRouter(prefix="/rbac", tags=["Role-Based Access Control (RBAC)"])
 
+ACTIONS_LIST = ["ACCESS", "VIEW", "CREATE", "UPDATE", "DELETE", "IMPORT", "EXPORT"]
+
 # 15 Modules chuẩn theo đặc tả hệ thống
 MODULE_DEFINITIONS: List[dict] = [
-    {"code": "GIS_MAP", "name": "Bản đồ số WebGIS", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "INCIDENTS", "name": "Báo cáo sự cố môi trường", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "GREEN_SPOTS", "name": "Điểm xanh & Công viên sinh thái", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "RECYCLING_FACILITIES", "name": "Trạm thu gom & Điểm tái chế", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "IOT_SENSORS", "name": "Trạm quan trắc IoT & Cảm biến", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "FLOOD_WARNINGS", "name": "Cảnh báo ngập lụt & Triều cường", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "AIR_QUALITY", "name": "Chỉ số chất lượng không khí AQI", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "WEATHER", "name": "Khí tượng & Dự báo thời tiết", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "DISPATCH_TASKS", "name": "Phân công & Điều phối hiện trường", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "CITIZEN_FEEDBACK", "name": "Phản ánh & Đóng góp ý kiến", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "CAMPAIGNS", "name": "Chiến dịch môi trường & Điểm xanh", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "USER_MANAGEMENT", "name": "Quản lý người dùng & Tài khoản", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "ROLE", "name": "Phân quyền vai trò", "actions": ["VIEW", "CREATE", "UPDATE", "DELETE"]},
-    {"code": "STATISTICS", "name": "Thống kê & Báo cáo tổng hợp", "actions": ["VIEW"]},
-    {"code": "AUDIT_LOG", "name": "Nhật ký kiểm toán hệ thống", "actions": ["VIEW"]},
+    {"code": "GIS_MAP", "name": "Bản đồ số WebGIS", "actions": ACTIONS_LIST},
+    {"code": "INCIDENTS", "name": "Báo cáo sự cố môi trường", "actions": ACTIONS_LIST},
+    {"code": "GREEN_SPOTS", "name": "Điểm xanh & Công viên sinh thái", "actions": ACTIONS_LIST},
+    {"code": "RECYCLING_FACILITIES", "name": "Trạm thu gom & Điểm tái chế", "actions": ACTIONS_LIST},
+    {"code": "IOT_SENSORS", "name": "Trạm quan trắc IoT & Cảm biến", "actions": ACTIONS_LIST},
+    {"code": "FLOOD_WARNINGS", "name": "Cảnh báo ngập lụt & Triều cường", "actions": ACTIONS_LIST},
+    {"code": "AIR_QUALITY", "name": "Chỉ số chất lượng không khí AQI", "actions": ACTIONS_LIST},
+    {"code": "WEATHER", "name": "Khí tượng & Dự báo thời tiết", "actions": ACTIONS_LIST},
+    {"code": "DISPATCH_TASKS", "name": "Phân công & Điều phối hiện trường", "actions": ACTIONS_LIST},
+    {"code": "CITIZEN_FEEDBACK", "name": "Phản ánh & Đóng góp ý kiến", "actions": ACTIONS_LIST},
+    {"code": "CAMPAIGNS", "name": "Chiến dịch môi trường & Điểm xanh", "actions": ACTIONS_LIST},
+    {"code": "USER_MANAGEMENT", "name": "Quản lý người dùng & Tài khoản", "actions": ACTIONS_LIST},
+    {"code": "ROLE", "name": "Phân quyền vai trò", "actions": ACTIONS_LIST},
+    {"code": "STATISTICS", "name": "Thống kê & Báo cáo tổng hợp", "actions": ACTIONS_LIST},
+    {"code": "AUDIT_LOG", "name": "Nhật ký kiểm toán hệ thống", "actions": ACTIONS_LIST},
 ]
 
 SYSTEM_ORDER = {"ADMIN": 1, "DISTRICT_MANAGER": 2, "RESPONDER": 3, "CITIZEN": 4}
 
 
-async def require_admin_user(
+async def get_current_active_user(
     authorization: Optional[str] = Header(None),
     db: AsyncSession = Depends(get_db),
 ) -> User:
@@ -54,7 +56,6 @@ async def require_admin_user(
     - Bắt buộc có Access Token hợp lệ
     - Phiên đăng nhập chưa bị thu hồi
     - Tài khoản phải là ACTIVE
-    - Người dùng phải có quyền Admin (role_code == 'ADMIN')
     """
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(
@@ -106,13 +107,66 @@ async def require_admin_user(
             detail={"error_code": "SESSION_INVALID", "message": "Vui lòng đăng nhập lại"},
         )
 
-    if not user.role or user.role.role_code != "ADMIN":
+    return user
+
+
+async def require_admin_user(
+    current_user: User = Depends(get_current_active_user),
+) -> User:
+    """
+    Dependency kiểm tra quyền Quản trị viên (role_code == 'ADMIN').
+    """
+    if not current_user.role or current_user.role.role_code != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={"error_code": "PERMISSION_DENIED", "message": "Bạn không có quyền truy cập trang này"},
         )
+    return current_user
 
-    return user
+
+def require_permission(module: str, action: str):
+    """
+    Dependency kiểm tra quyền hạn cụ thể theo module và action chuẩn ACL
+    (ACCESS, VIEW, CREATE, UPDATE, DELETE, IMPORT, EXPORT).
+    Admin luôn được bypass cấp quyền đầy đủ.
+    """
+    async def _perm_dependency(
+        current_user: User = Depends(get_current_active_user),
+        db: AsyncSession = Depends(get_db),
+    ) -> User:
+        if current_user.role and current_user.role.role_code == "ADMIN":
+            return current_user
+
+        if not current_user.role_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "error_code": "PERMISSION_DENIED",
+                    "message": f"Bạn không có quyền {action} trên chức năng {module}",
+                },
+            )
+
+        perm_code = f"{module}:{action}"
+        stmt = (
+            select(RolePermission)
+            .join(Permission, RolePermission.permission_id == Permission.permission_id)
+            .where(
+                RolePermission.role_id == current_user.role_id,
+                Permission.permission_code == perm_code,
+            )
+        )
+        res = await db.execute(stmt)
+        if not res.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "error_code": "PERMISSION_DENIED",
+                    "message": f"Bạn không có quyền {action} trên chức năng {module}",
+                },
+            )
+        return current_user
+
+    return _perm_dependency
 
 
 @router.get("/roles", response_model=RoleListResponse)
@@ -365,18 +419,22 @@ async def update_role_permissions(
     # 5. Áp dụng quy tắc ràng buộc giữa các ô (Interlocking Rules)
     requested_perms = set(payload.permissions)
 
-    # Tự động thêm VIEW nếu có CREATE, UPDATE, DELETE cho cùng module
     for p_code in list(requested_perms):
         if ":" in p_code:
             mod, act = p_code.split(":")
-            if act in ["CREATE", "UPDATE", "DELETE"]:
+            # Nếu có bất kỳ quyền con nào -> tự động thêm quyền ACCESS (Truy cập)
+            if act in ["VIEW", "CREATE", "UPDATE", "DELETE", "IMPORT", "EXPORT"]:
+                access_code = f"{mod}:ACCESS"
+                if access_code in perm_dict:
+                    requested_perms.add(access_code)
+            # Nếu có quyền ghi / sửa / xóa / xuất / nhập -> tự động thêm VIEW (Xem)
+            if act in ["CREATE", "UPDATE", "DELETE", "IMPORT", "EXPORT"]:
                 view_code = f"{mod}:VIEW"
                 if view_code in perm_dict:
                     requested_perms.add(view_code)
 
     # Loại bỏ các ô không áp dụng:
     # - Hàng ROLE chỉ dành riêng cho Admin
-    # - Module STATISTICS và AUDIT_LOG chỉ có VIEW
     valid_perm_ids = []
     for p_code in requested_perms:
         if ":" not in p_code:
@@ -384,8 +442,6 @@ async def update_role_permissions(
         mod, act = p_code.split(":")
         if mod == "ROLE":
             # Không gán quyền quản trị role cho vai trò khác admin
-            continue
-        if mod in ["STATISTICS", "AUDIT_LOG"] and act != "VIEW":
             continue
         if p_code in perm_dict:
             valid_perm_ids.append(perm_dict[p_code])
@@ -507,4 +563,105 @@ async def reassign_and_delete_role(
     return {
         "success": True,
         "message": f"Đã chuyển toàn bộ người dùng sang vai trò '{target_role.role_name}' và xoá vai trò thành công",
+    }
+
+
+@router.get("/me/permissions")
+async def get_my_permissions(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Trả về danh sách toàn bộ quyền hạn mà người dùng hiện tại đang sở hữu.
+    Nếu là Admin -> trả về tất cả 105 quyền hạn trong hệ thống.
+    """
+    is_admin = bool(current_user.role and current_user.role.role_code == "ADMIN")
+
+    if is_admin:
+        perms_res = await db.execute(select(Permission.permission_code))
+        all_perms = [p for p in perms_res.scalars()]
+        return {
+            "user_id": str(current_user.user_id),
+            "email": current_user.email,
+            "role_code": "ADMIN",
+            "role_name": "Admin",
+            "is_admin": True,
+            "permissions": all_perms,
+        }
+
+    # Người dùng thông thường
+    if not current_user.role_id:
+        return {
+            "user_id": str(current_user.user_id),
+            "email": current_user.email,
+            "role_code": None,
+            "role_name": None,
+            "is_admin": False,
+            "permissions": [],
+        }
+
+    stmt = (
+        select(Permission.permission_code)
+        .join(RolePermission, Permission.permission_id == RolePermission.permission_id)
+        .where(RolePermission.role_id == current_user.role_id)
+    )
+    res = await db.execute(stmt)
+    user_perms = [p for p in res.scalars()]
+
+    return {
+        "user_id": str(current_user.user_id),
+        "email": current_user.email,
+        "role_code": current_user.role.role_code if current_user.role else None,
+        "role_name": current_user.role.role_name if current_user.role else None,
+        "is_admin": False,
+        "permissions": user_perms,
+    }
+
+
+@router.get("/check-permission")
+async def check_specific_permission(
+    module: str,
+    action: str,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Kiểm tra nhanh xem người dùng hiện tại có được phép thực hiện 1 quyền hạn cụ thể hay không.
+    """
+    if current_user.role and current_user.role.role_code == "ADMIN":
+        return {
+            "module": module,
+            "action": action,
+            "permission_code": f"{module}:{action}",
+            "allowed": True,
+            "reason": "ADMIN_FULL_ACCESS",
+        }
+
+    if not current_user.role_id:
+        return {
+            "module": module,
+            "action": action,
+            "permission_code": f"{module}:{action}",
+            "allowed": False,
+            "reason": "NO_ROLE_ASSIGNED",
+        }
+
+    perm_code = f"{module}:{action}"
+    stmt = (
+        select(RolePermission)
+        .join(Permission, RolePermission.permission_id == Permission.permission_id)
+        .where(
+            RolePermission.role_id == current_user.role_id,
+            Permission.permission_code == perm_code,
+        )
+    )
+    res = await db.execute(stmt)
+    has_perm = bool(res.scalar_one_or_none())
+
+    return {
+        "module": module,
+        "action": action,
+        "permission_code": perm_code,
+        "allowed": has_perm,
+        "reason": "GRANTED" if has_perm else "NOT_PERMITTED",
     }

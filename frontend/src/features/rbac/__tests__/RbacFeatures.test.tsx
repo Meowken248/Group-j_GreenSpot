@@ -253,25 +253,25 @@ describe('RBAC Feature Unit & Component Tests', () => {
   });
 
   // =========================================================================
-  // MÀN 3: MA TRẬN PHÂN QUYỀN ĐỘNG (RolePermissionMatrixPage)
+  // MÀN 3: MA TRẬN PHÂN QUYỀN ĐỘNG CHUẨN ACL (RolePermissionMatrixPage)
   // =========================================================================
-  describe('RolePermissionMatrixPage (Màn 3)', () => {
+  describe('RolePermissionMatrixPage (Màn 3 - ACL 7 Cột)', () => {
     const mockMatrixData: PermissionMatrixResponse = {
       modules: [
-        { code: "GIS_MAP", name: "Bản đồ số WebGIS", actions: ["VIEW", "CREATE", "UPDATE", "DELETE"] },
-        { code: "INCIDENTS", name: "Báo cáo sự cố môi trường", actions: ["VIEW", "CREATE", "UPDATE", "DELETE"] },
-        { code: "ROLE", name: "Phân quyền vai trò", actions: ["VIEW", "CREATE", "UPDATE", "DELETE"] },
-        { code: "STATISTICS", name: "Thống kê & Báo cáo tổng hợp", actions: ["VIEW"] },
+        { code: "GIS_MAP", name: "Bản đồ số WebGIS", actions: ["ACCESS", "VIEW", "CREATE", "UPDATE", "DELETE", "IMPORT", "EXPORT"] },
+        { code: "INCIDENTS", name: "Báo cáo sự cố môi trường", actions: ["ACCESS", "VIEW", "CREATE", "UPDATE", "DELETE", "IMPORT", "EXPORT"] },
+        { code: "ROLE", name: "Phân quyền vai trò", actions: ["ACCESS", "VIEW", "CREATE", "UPDATE", "DELETE", "IMPORT", "EXPORT"] },
+        { code: "STATISTICS", name: "Thống kê & Báo cáo tổng hợp", actions: ["ACCESS", "VIEW", "CREATE", "UPDATE", "DELETE", "IMPORT", "EXPORT"] },
       ],
       roles: mockRoles,
       role_permissions: {
-        "1": ["GIS_MAP:VIEW", "GIS_MAP:CREATE", "ROLE:VIEW"],
-        "2": ["GIS_MAP:VIEW"],
+        "1": ["GIS_MAP:ACCESS", "GIS_MAP:VIEW", "GIS_MAP:CREATE", "ROLE:ACCESS"],
+        "2": ["GIS_MAP:ACCESS", "GIS_MAP:VIEW"],
         "5": [],
       },
     };
 
-    it('render đầy đủ danh sách chức năng và ràng buộc interlocking logic', async () => {
+    it('render đầy đủ 7 cột hành động ACL và áp dụng quy tắc ràng buộc liên động', async () => {
       vi.mocked(rbacService.getPermissionMatrix).mockResolvedValue(mockMatrixData);
 
       render(
@@ -283,27 +283,34 @@ describe('RBAC Feature Unit & Component Tests', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Ma Trận Phân Quyền Động GreenSpot')).toBeInTheDocument();
+        expect(screen.getByText('Tất cả thành viên thuộc vai trò / nhóm sẽ nhận quyền này.')).toBeInTheDocument();
       });
 
-      expect(screen.getByText('Bản đồ số WebGIS')).toBeInTheDocument();
-      expect(screen.getByText('Báo cáo sự cố môi trường')).toBeInTheDocument();
-      expect(screen.getByText('Phân quyền vai trò')).toBeInTheDocument();
-      expect(screen.getByText('Thống kê & Báo cáo tổng hợp')).toBeInTheDocument();
+      // Kiểm tra 7 cột hành động theo đúng ảnh mẫu
+      expect(screen.getByText('TRUY CẬP')).toBeInTheDocument();
+      expect(screen.getByText('XEM')).toBeInTheDocument();
+      expect(screen.getByText('THÊM')).toBeInTheDocument();
+      expect(screen.getByText('CẬP NHẬT')).toBeInTheDocument();
+      expect(screen.getByText('XOÁ')).toBeInTheDocument();
+      expect(screen.getByText('IMPORT')).toBeInTheDocument();
+      expect(screen.getByText('EXPORT')).toBeInTheDocument();
 
-      // Kiểm tra checkbox của cột đang sửa (vai trò 2)
-      const incidentsCreateCheckbox = screen.getByLabelText('District Manager - Báo cáo sự cố môi trường - Thêm') as HTMLInputElement;
+      // Kiểm tra checkbox của chức năng "Báo cáo sự cố môi trường"
+      const incidentsCreateCheckbox = screen.getByLabelText('Báo cáo sự cố môi trường - THÊM') as HTMLInputElement;
       expect(incidentsCreateCheckbox.checked).toBe(false);
 
-      // Thao tác tích chọn "Thêm" -> Interlocking tự động bật "Xem"
+      // Thao tác tích chọn "THÊM" -> Interlocking tự động bật "XEM" và "TRUY CẬP"
       fireEvent.click(incidentsCreateCheckbox);
       expect(incidentsCreateCheckbox.checked).toBe(true);
 
-      const incidentsViewCheckbox = screen.getByLabelText('District Manager - Báo cáo sự cố môi trường - Xem') as HTMLInputElement;
+      const incidentsViewCheckbox = screen.getByLabelText('Báo cáo sự cố môi trường - XEM') as HTMLInputElement;
       expect(incidentsViewCheckbox.checked).toBe(true);
 
-      // Kiểm tra nút Lưu thay đổi được kích hoạt
-      const saveBtn = screen.getByText('💾 Lưu thay đổi');
+      const incidentsAccessCheckbox = screen.getByLabelText('Báo cáo sự cố môi trường - TRUY CẬP') as HTMLInputElement;
+      expect(incidentsAccessCheckbox.checked).toBe(true);
+
+      // Nút Lưu được kích hoạt khi có thay đổi (dirty)
+      const saveBtn = screen.getByRole('button', { name: 'Lưu' });
       expect(saveBtn).not.toBeDisabled();
     });
   });
