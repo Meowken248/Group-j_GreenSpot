@@ -74,13 +74,17 @@ describe('VoiceAssistant Component - 100% Flow & Branch Coverage (Hình 4.37)', 
     expect(screen.getByText('GreenSpot')).toBeInTheDocument();
     expect(screen.getByText('Voice AI')).toBeInTheDocument();
 
-    // Kiểm tra Badge & Tiêu đề Màn 1
+    // Kiểm tra Badge & Tiêu đề Màn 1 theo Wireframe 1
+    expect(screen.getByText('TRỢ LÝ GIỌNG NÓI')).toBeInTheDocument();
     expect(screen.getByText(/TRỢ LÝ GIỌNG NÓI RẢNH TAY/i)).toBeInTheDocument();
     expect(screen.getByText(/Bạn cần hỗ trợ điều gì hôm nay\?/i)).toBeInTheDocument();
 
-    // Kiểm tra Nút micro lớn & Nút bắt đầu nói
+    // Kiểm tra Nút micro lớn & Nút bắt đầu nói dạng wide-pill-btn
     expect(screen.getByLabelText(/Kích hoạt nhận dạng giọng nói/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Bắt đầu nói/i })).toBeInTheDocument();
+    expect(screen.getByText('Nút micro lớn')).toBeInTheDocument();
+    const startBtn = screen.getByRole('button', { name: /Bắt đầu nói/i });
+    expect(startBtn).toBeInTheDocument();
+    expect(startBtn).toHaveClass('wide-pill-btn');
 
     // Kiểm tra danh sách câu lệnh mẫu gợi ý
     await waitFor(() => {
@@ -136,19 +140,23 @@ describe('VoiceAssistant Component - 100% Flow & Branch Coverage (Hình 4.37)', 
 
     // Kiểm tra Màn 3 được hiển thị với 2 khối theo chiều ngang
     await waitFor(() => {
-      // Khối Cột trái "LỆNH CỦA BẠN"
+      // Khối Cột trái "LỆNH CỦA BẠN" (Wireframe 3)
       expect(screen.getByText(/LỆNH CỦA BẠN/i)).toBeInTheDocument();
+      expect(screen.getByText(/Văn bản nhận dạng:/i)).toBeInTheDocument();
       expect(screen.getByText(/"Báo cáo bãi rác gần đây\."/i)).toBeInTheDocument();
 
-      // Khối Cột phải "PHẢN HỒI"
+      // Khối Cột phải "PHẢN HỒI" (Wireframe 3)
       expect(screen.getByText(/PHẢN HỒI TỪ TRỢ LÝ/i)).toBeInTheDocument();
+      expect(screen.getByText(/Câu trả lời \/ hành động đã thực hiện:/i)).toBeInTheDocument();
       expect(
         screen.getByText(/Trợ lý: Đang mở biểu mẫu Báo cáo sự cố rác thải cho bạn\./i)
       ).toBeInTheDocument();
 
-      // Nút Nói tiếp và Đóng
-      expect(screen.getByRole('button', { name: /Nói tiếp/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Đóng/i })).toBeInTheDocument();
+      // Nút Nói tiếp và Đóng dạng wide-pill-btn xếp chồng theo chiều dọc
+      const nextBtn = screen.getByRole('button', { name: /Nói tiếp/i });
+      const closeBtn = screen.getByRole('button', { name: /^Đóng$/i });
+      expect(nextBtn).toHaveClass('wide-pill-btn');
+      expect(closeBtn).toHaveClass('wide-pill-btn');
     });
   });
 
@@ -174,11 +182,15 @@ describe('VoiceAssistant Component - 100% Flow & Branch Coverage (Hình 4.37)', 
     const startBtn = screen.getByRole('button', { name: /Bắt đầu nói/i });
     fireEvent.click(startBtn);
 
-    // Kiểm tra Màn 2 hiển thị
+    // Kiểm tra Màn 2 hiển thị theo Wireframe 2
     await waitFor(() => {
       expect(screen.getByText('ĐANG NGHE...')).toBeInTheDocument();
+      expect(screen.getByText('Sóng âm')).toBeInTheDocument();
+      expect(screen.getByText(/Văn bản nhận dạng theo thời gian thực:/i)).toBeInTheDocument();
       expect(screen.getByTestId('voice-waveform')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Dừng & Xử lý ngay/i })).toBeInTheDocument();
+      const stopBtn = screen.getByRole('button', { name: /Dừng & Xử lý ngay/i });
+      expect(stopBtn).toBeInTheDocument();
+      expect(stopBtn).toHaveClass('wide-pill-btn');
     });
 
     // Bấm nút Dừng để kết thúc thu âm

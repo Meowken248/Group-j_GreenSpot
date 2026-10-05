@@ -64,7 +64,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
     if (recognitionRef.current) {
       try {
         recognitionRef.current.abort();
-      } catch {}
+      } catch { }
       recognitionRef.current = null;
     }
     if (mediaStreamRef.current) {
@@ -376,13 +376,17 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       {/* NỘI DUNG CHÍNH (KHỐI TRỢ LÝ GIỌNG NÓI TOÀN MÀN HÌNH) */}
       <main className="voice-main-content">
         {/* ======================================================== */}
-        {/* MÀN 1: TRUNG TÂM ĐIỀU KHIỂN TRỢ LÝ GIỌNG NÓI */}
+        {/* MÀN 1: TRUNG TÂM ĐIỀU KHIỂN TRỢ LÝ GIỌNG NÓI (CHỜ LỆNH) */}
         {/* ======================================================== */}
         {currentScreen === "HOME" && (
-          <div className="voice-screen voice-home-screen" data-testid="voice-home-screen">
-            <div className="voice-home-header-badge">
-              <span className="pulse-dot" />
-              <span>TRỢ LÝ GIỌNG NÓI RẢNH TAY</span>
+          <div className="voice-screen voice-home-screen voice-panel-container" data-testid="voice-home-screen">
+            {/* TIÊU ĐỀ KHỐI THEO WIREFRAME 1: TRỢ LÝ GIỌNG NÓI */}
+            <div className="voice-panel-header">
+              <h2 className="voice-panel-title">TRỢ LÝ GIỌNG NÓI</h2>
+              <div className="voice-home-header-badge">
+                <span className="pulse-dot" />
+                <span>TRỢ LÝ GIỌNG NÓI RẢNH TAY</span>
+              </div>
             </div>
 
             <h1 className="voice-main-title">Bạn cần hỗ trợ điều gì hôm nay?</h1>
@@ -411,7 +415,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
               </div>
             )}
 
-            {/* NÚT MICRO LỚN VỚI HIỆU ỨNG NHỊP THỞ (PULSE ANIMATION) */}
+            {/* NÚT MICRO LỚN VỚI HIỆU ỨNG NHỊP THỞ (PULSE ANIMATION - WIREFRAME 1) */}
             <div className="voice-mic-hero-wrapper">
               <button
                 type="button"
@@ -425,22 +429,10 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                 <div className="pulse-ring ring-3" />
                 <span className="mic-icon" aria-hidden="true">🎙️</span>
               </button>
+              <span className="mic-label-badge">Nút micro lớn</span>
             </div>
 
-            {/* NÚT BẮT ĐẦU NÓI */}
-            <div className="voice-start-btn-container">
-              <button
-                type="button"
-                className="btn-start-speaking"
-                onClick={startListening}
-                disabled={browserUnsupported}
-              >
-                <span className="btn-icon">🎤</span>
-                <span>Bắt đầu nói</span>
-              </button>
-            </div>
-
-            {/* GỢI Ý CÂU LỆNH MẪU THỰC TẾ */}
+            {/* GỢI Ý CÂU LỆNH MẪU THỰC TẾ (WIREFRAME 1) */}
             <div className="voice-suggestions-section">
               <div className="suggestions-header">
                 <span className="suggestions-icon">💡</span>
@@ -466,43 +458,53 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                 )}
               </div>
             </div>
+
+            {/* NÚT BẮT ĐẦU NÓI DẠNG PILL RỘNG THEO WIREFRAME 1 */}
+            <div className="voice-start-btn-container">
+              <button
+                type="button"
+                className="btn-start-speaking wide-pill-btn"
+                onClick={startListening}
+                disabled={browserUnsupported}
+              >
+                <span className="btn-icon">🎤</span>
+                <span>Bắt đầu nói</span>
+              </button>
+            </div>
           </div>
         )}
 
         {/* ======================================================== */}
-        {/* MÀN 2: TRẠNG THÁI THU ÂM VÀ NHẬN DẠNG THỜI GIAN THỰC */}
+        {/* MÀN 2: TRẠNG THÁI THU ÂM VÀ NHẬN DẠNG THỜI GIAN THỰC (ĐANG NGHE) */}
         {/* ======================================================== */}
         {currentScreen === "LISTENING" && (
-          <div className="voice-screen voice-listening-screen" data-testid="voice-listening-screen">
-            <div className="listening-status-header">
+          <div className="voice-screen voice-listening-screen voice-panel-container" data-testid="voice-listening-screen">
+            {/* TIÊU ĐỀ KHỐI THEO WIREFRAME 2: ĐANG NGHE... */}
+            <div className="voice-panel-header">
+              <h2 className="voice-panel-title listening-title">ĐANG NGHE...</h2>
               <span className="listening-pulse-dot" />
-              <h2 className="listening-title">ĐANG NGHE...</h2>
             </div>
 
             <p className="listening-instruction">
               Hãy phát âm rõ ràng yêu cầu của bạn, hệ thống sẽ tự động xử lý khi bạn dừng nói.
             </p>
 
-            {/* SÓNG ÂM (WAVEFORM ANIMATION MÀU XANH LÁ) */}
-            <VoiceWaveform
-              stream={activeMediaStream}
-              isListening={currentScreen === "LISTENING"}
-            />
+            {/* SÓNG ÂM (WAVEFORM ANIMATION MÀU XANH LÁ - WIREFRAME 2) */}
+            <div className="waveform-box-wrapper">
+              <div className="waveform-sublabel">Sóng âm</div>
+              <VoiceWaveform
+                stream={activeMediaStream}
+                isListening={currentScreen === "LISTENING"}
+              />
+            </div>
 
-            {/* VĂN BẢN NHẬN DẠNG THEO THỜI GIAN THỰC (< 200MS) */}
+            {/* VĂN BẢN NHẬN DẠNG THEO THỜI GIAN THỰC (< 200MS - WIREFRAME 2) */}
             <div className="realtime-transcript-card" aria-live="polite">
-              <span className="transcript-label">Văn bản nhận dạng thời gian thực:</span>
+              <span className="transcript-label">Văn bản nhận dạng theo thời gian thực:</span>
               <p className="transcript-text">
                 {realtimeTranscript || "Đang nhận diện giọng nói của bạn..."}
               </p>
             </div>
-
-            {/* CẢNH BÁO MÔI TRƯỜNG QUÁ NHIỀU TẠP ÂM (NẾU CÓ) */}
-            {noiseWarning && (
-              <div className="voice-noise-warning-badge" role="alert">
-                <span>⚠️ {noiseWarning}</span>
-              </div>
-            )}
 
             {/* DÒNG TRẠNG THÁI ĐANG XỬ LÝ (KHI DỪNG NÓI HOẶC BẤM DỪNG) */}
             {isProcessing && (
@@ -512,11 +514,18 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
               </div>
             )}
 
-            {/* NÚT "DỪNG" CHỦ ĐỘNG KẾT THÚC CÂU NÓI */}
+            {/* CẢNH BÁO MÔI TRƯỜNG QUÁ NHIỀU TẠP ÂM (HIỂN THỊ PHÍA TRÊN NÚT DỪNG THEO SPEC) */}
+            {noiseWarning && (
+              <div className="voice-noise-warning-badge yellow-warning" role="alert">
+                <span>⚠️ {noiseWarning}</span>
+              </div>
+            )}
+
+            {/* NÚT "DỪNG" CHỦ ĐỘNG KẾT THÚC CÂU NÓI DẠNG PILL RỘNG THEO WIREFRAME 2 */}
             <div className="listening-actions">
               <button
                 type="button"
-                className="btn-stop-listening"
+                className="btn-stop-listening wide-pill-btn"
                 onClick={handleStopListening}
                 disabled={isProcessing}
               >
@@ -528,22 +537,22 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         )}
 
         {/* ======================================================== */}
-        {/* MÀN 3: PHẢN HỒI VÀ THỰC THI HÀNH ĐỘNG THEO Ý ĐỊNH */}
+        {/* MÀN 3: PHẢN HỒI VÀ THỰC THI HÀNH ĐỘNG THEO Ý ĐỊNH (KẾT QUẢ LỆNH) */}
         {/* ======================================================== */}
         {currentScreen === "RESULT" && resultData && (
           <div className="voice-screen voice-result-screen" data-testid="voice-result-screen">
             <div className="result-container-split">
-              {/* KHỐI CỘT TRÁI: "LỆNH CỦA BẠN" */}
-              <div className="result-column-left">
+              {/* KHỐI CỘT TRÁI: "LỆNH CỦA BẠN" (WIREFRAME 3) */}
+              <div className="result-column-left voice-panel-container">
                 <div className="column-card user-command-card">
-                  <div className="column-header">
+                  <div className="voice-panel-header">
                     <span className="column-icon">🗣️</span>
-                    <h3>LỆNH CỦA BẠN</h3>
+                    <h3 className="voice-panel-title">LỆNH CỦA BẠN</h3>
                   </div>
+
+                  <div className="command-sublabel">Văn bản nhận dạng:</div>
                   <div className="normalized-command-box">
-                    <p className="normalized-text">
-                      "{resultData.normalized_text}"
-                    </p>
+                    <p className="normalized-text">"{resultData.normalized_text}"</p>
                     <span className="command-tag-badge">
                       {resultData.detected_intent || "Ý định chung"}
                     </span>
@@ -555,13 +564,13 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                 </div>
               </div>
 
-              {/* KHỐI CỘT PHẢI: "PHẢN HỒI" */}
-              <div className="result-column-right">
+              {/* KHỐI CỘT PHẢI: "PHẢN HỒI" (WIREFRAME 3) */}
+              <div className="result-column-right voice-panel-container">
                 <div className="column-card assistant-response-card">
-                  <div className="column-header">
+                  <div className="voice-panel-header">
                     <div className="header-title-tts">
                       <span className="column-icon">🤖</span>
-                      <h3>PHẢN HỒI TỪ TRỢ LÝ</h3>
+                      <h3 className="voice-panel-title">PHẢN HỒI TỪ TRỢ LÝ</h3>
                     </div>
                     {/* Nút phát lại âm thanh */}
                     <button
@@ -574,9 +583,15 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                     </button>
                   </div>
 
+                  <div className="response-sublabel">Câu trả lời / hành động đã thực hiện:</div>
+
                   {/* Câu trả lời văn bản */}
                   <div className="assistant-message-bubble">
-                    <p>{resultData.response_text}</p>
+                    <p>
+                      {resultData.response_text.startsWith("Trợ lý:")
+                        ? resultData.response_text
+                        : `Trợ lý: ${resultData.response_text}`}
+                    </p>
                   </div>
 
                   {/* THẺ HÀNH ĐỘNG THỰC THI TƯƠNG ỨNG */}
@@ -706,11 +721,11 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                     </div>
                   )}
 
-                  {/* NÚT "NÓI TIẾP" VÀ NÚT "ĐÓNG" */}
-                  <div className="result-action-footer">
+                  {/* NÚT "NÓI TIẾP" VÀ NÚT "ĐÓNG" DẠNG PILL RỘNG XẾP CHỒNG THEO CHIỀU DỌC (WIREFRAME 3) */}
+                  <div className="result-action-footer-stacked">
                     <button
                       type="button"
-                      className="btn-speak-again"
+                      className="btn-speak-again wide-pill-btn"
                       onClick={startListening}
                     >
                       <span className="btn-icon">🎙️</span>
@@ -718,7 +733,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                     </button>
                     <button
                       type="button"
-                      className="btn-close-result"
+                      className="btn-close-result wide-pill-btn"
                       onClick={handleCloseAssistant}
                     >
                       Đóng
@@ -735,10 +750,12 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       <footer className="voice-footer" role="contentinfo">
         <div className="voice-footer-inner">
           <p className="footer-copyright">
-            © 2026 GreenSpot. Nền tảng Đô thị Môi trường Thông minh TP.HCM
+            Bản quyền © 2026 GreenSpot. Nền tảng Đô thị Môi trường Thông minh TP.HCM
           </p>
           <div className="footer-links">
             <button type="button" className="footer-link-btn">Liên hệ</button>
+            <span className="sep">•</span>
+            <button type="button" className="footer-link-btn">Chính sách</button>
             <span className="sep">•</span>
             <button type="button" className="footer-link-btn">Chính sách bảo mật</button>
             <span className="sep">•</span>
