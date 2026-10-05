@@ -24,6 +24,9 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
   // Trạng thái Popup Màn 4
   const [showMicPermissionModal, setShowMicPermissionModal] = useState<boolean>(false);
 
+  // Vị trí GPS hiện tại của người dùng phục vụ truy vấn cục bộ
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+
   // Danh sách câu lệnh mẫu Màn 1
   const [suggestions, setSuggestions] = useState<VoiceSampleCommand[]>([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState<boolean>(false);
@@ -94,6 +97,23 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
   useEffect(() => {
     loadSuggestions();
 
+    // Lấy tọa độ GPS người dùng để phục vụ tra cứu chính xác
+    if (typeof navigator !== "undefined" && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserCoords({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          });
+        },
+        () => {
+          // Mặc định khu vực trung tâm TP.HCM (Quận 1)
+          setUserCoords({ lat: 10.7765, lng: 106.7009 });
+        },
+        { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+      );
+    }
+
     // Kiểm tra tính năng Web Speech API trên trình duyệt
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -149,6 +169,8 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       const response = await voiceService.processVoiceCommand({
         transcript: transcriptText,
         session_source: source,
+        current_lat: userCoords?.lat,
+        current_lng: userCoords?.lng,
       });
 
       setResultData(response);
@@ -685,6 +707,41 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                                 </div>
                               )}
 
+                              {/* Trường hợp hỏi lân cận vị trí hiện tại có điểm ngập */}
+                              {resultData.action_payload.nearby_spot && (
+                                <div className="specific-spot-card nearby" data-testid="nearby-spot-card">
+                                  <div className="spot-top-line">
+                                    <strong className="spot-name">📍 {resultData.action_payload.nearby_spot.name}</strong>
+                                    <span className="spot-depth-tag warning">
+                                      Cách {resultData.action_payload.nearby_spot.dist_m}m (~{resultData.action_payload.nearby_spot.estimated_depth_cm}cm)
+                                    </span>
+                                  </div>
+                                  <div className="spot-detail-row">
+                                    <span className="detail-label">Đoạn đường:</span>
+                                    <span className="detail-val">{resultData.action_payload.nearby_spot.street}</span>
+                                  </div>
+                                  {resultData.action_payload.nearby_spot.detour_advice && (
+                                    <div className="spot-detour-box">
+                                      🧭 <strong>Lộ trình né:</strong> {resultData.action_payload.nearby_spot.detour_advice}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Trường hợp hỏi tuyến đường an toàn nằm ngoài điểm đen */}
+                              {resultData.action_payload.is_safe && resultData.action_payload.matched_street && (
+                                <div className="safe-street-badge-card" data-testid="safe-street-card">
+                                  <div className="safe-street-header">
+                                    <span className="safe-icon">✅</span>
+                                    <strong>{resultData.action_payload.matched_street}</strong>
+                                    <span className="safe-status-pill">Khô ráo &amp; An toàn</span>
+                                  </div>
+                                  <p className="safe-desc">
+                                    Tuyến đường này cao ráo, cống thoát nước tốt và nằm ngoài 30 điểm đen ngập úng của TP.HCM.
+                                  </p>
+                                </div>
+                              )}
+
                               {/* Trường hợp danh sách các đoạn trũng cần lưu ý (General Query) */}
                               {resultData.action_payload.specific_segments && resultData.action_payload.specific_segments.length > 0 && (
                                 <div className="flood-segments-section">
@@ -776,6 +833,92 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                             <div className="flood-report-preview">
                               <span className="flood-badge">⚠️ Phản ánh điểm ngập nước</span>
                               <p>Đang chuyển tiếp tới bản đồ và form tiếp nhận ngập lụt...</p>
+                            </div>
+                          )}
+
+                          {resultData.detected_intent === "CURRENT_LOCATION" && (
+                            <div className="location-preview" data-testid="location-preview-card">
+                              <div className="location-header-row">
+                                <span className="location-district-badge">
+                                  📍 {resultData.action_payload.district || "Vị trí hiện tại"}
+                                </span>
+                                <span className={`location-safety-pill ${resultData.action_payload.is_hazard_free ? "safe" : "warning"}`}>
+                                  {resultData.action_payload.is_hazard_free ? "✅ Khu vực an toàn" : "⚠️ Có điểm ngập gần"}
+                                </span>
+                              </div>
+                              <div className="location-coords">
+                                Tọa độ GPS: {resultData.action_payload.latitude?.toFixed(4)}, {resultData.action_payload.longitude?.toFixed(4)}
+                              </div>
+                              {resultData.action_payload.weather && (
+                                <div className="location-weather-summary">
+                                  <span>🌡️ {resultData.action_payload.weather.temp} ({resultData.action_payload.weather.desc})</span>
+                                  <span>🍃 AQI {resultData.action_payload.weather.aqi} ({resultData.action_payload.weather.aqi_status})</span>
+                                </div>
+                              )}
+                              {resultData.action_payload.nearby_hazard && (
+                                <div className="location-hazard-alert">
+                                  <strong>⚠️ Điểm trũng gần nhất ({resultData.action_payload.nearby_hazard.dist_m}m):</strong>
+                                  <p>{resultData.action_payload.nearby_hazard.name} ({resultData.action_payload.nearby_hazard.street})</p>
+                                  <span>Độ sâu dự kiến: ~{resultData.action_payload.nearby_hazard.estimated_depth_cm}cm</span>
+                                </div>
+                              )}
+                              <p className="location-advice">🧭 {resultData.action_payload.safe_advice}</p>
+                            </div>
+                          )}
+
+                          {resultData.detected_intent === "EMERGENCY_ASSISTANCE" && (
+                            <div className="emergency-preview" data-testid="emergency-preview-card">
+                              <div className="emergency-header">
+                                <span className="emergency-icon">🚨</span>
+                                <strong>{resultData.action_payload.title || "Cứu hộ khẩn cấp & Hotline TP.HCM"}</strong>
+                              </div>
+                              <div className="emergency-hotlines-grid">
+                                {resultData.action_payload.emergency_hotlines?.map((hl: any, idx: number) => (
+                                  <a key={idx} href={`tel:${hl.phone}`} className="hotline-btn">
+                                    <span className="hl-name">{hl.name}</span>
+                                    <span className="hl-phone">📞 {hl.phone}</span>
+                                  </a>
+                                ))}
+                              </div>
+                              {resultData.action_payload.flooded_vehicle_tips && (
+                                <div className="emergency-tips-list">
+                                  <div className="tips-title">💡 Mẹo xử lý xe chết máy do ngập nước:</div>
+                                  <ul>
+                                    {resultData.action_payload.flooded_vehicle_tips.map((tip: string, i: number) => (
+                                      <li key={i}>{tip}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {resultData.detected_intent === "GREETING" && (
+                            <div className="greeting-preview" data-testid="greeting-preview-card">
+                              <p className="greeting-message">👋 {resultData.action_payload.greeting}</p>
+                              {resultData.action_payload.quick_prompts && (
+                                <div className="quick-prompts-section">
+                                  <span className="prompts-label">Gợi ý câu lệnh bạn có thể thử:</span>
+                                  <div className="prompts-chips">
+                                    {resultData.action_payload.quick_prompts.map((prompt: string, idx: number) => (
+                                      <button
+                                        key={idx}
+                                        type="button"
+                                        className="prompt-chip-btn"
+                                        onClick={() => handleProcessCommand(prompt, "SUGGESTION_CLICK")}
+                                      >
+                                        🗣️ {prompt}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {resultData.detected_intent === "COURTESY" && (
+                            <div className="courtesy-preview" data-testid="courtesy-preview-card">
+                              <p className="courtesy-message">✨ {resultData.action_payload.message || "Cảm ơn bạn đã tin dùng GreenSpot Voice Assistant!"}</p>
                             </div>
                           )}
                         </div>

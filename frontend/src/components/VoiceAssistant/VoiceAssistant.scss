@@ -1517,3 +1517,297 @@ $va-radius-sm: 8px;
   background: rgba(255, 255, 255, 0.15);
   color: #ffffff;
 }
+
+/* ==========================================================================
+   CARDS MỚI: VỊ TRÍ HIỆN TẠI, CỨU HỘ KHẨN CẤP, CHÀO HỎI & TUYẾN ĐƯỜNG AN TOÀN
+   ========================================================================== */
+
+/* 1. Thẻ Tuyến đường An toàn ngoài điểm đen */
+.safe-street-badge-card {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .safe-street-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+
+    .safe-icon {
+      font-size: 18px;
+    }
+
+    strong {
+      color: #34d399;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .safe-status-pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.25);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.5);
+    }
+  }
+
+  .safe-desc {
+    margin: 0;
+    font-size: 13px;
+    color: #cbd5e1;
+    line-height: 1.4;
+  }
+}
+
+/* 2. Thẻ Vị trí Hiện tại (GPS & Môi trường xung quanh) */
+.location-preview {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  .location-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .location-district-badge {
+      font-size: 16px;
+      font-weight: 800;
+      color: #38bdf8;
+    }
+
+    .location-safety-pill {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 9999px;
+
+      &.safe {
+        background: rgba(16, 185, 129, 0.2);
+        color: #34d399;
+        border: 1px solid rgba(52, 211, 153, 0.4);
+      }
+
+      &.warning {
+        background: rgba(245, 158, 11, 0.2);
+        color: #fbbf24;
+        border: 1px solid rgba(245, 158, 11, 0.4);
+      }
+    }
+  }
+
+  .location-coords {
+    font-size: 12px;
+    font-family: monospace;
+    color: #94a3b8;
+  }
+
+  .location-weather-summary {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: #e2e8f0;
+    background: rgba(15, 23, 42, 0.5);
+    padding: 8px 12px;
+    border-radius: 8px;
+  }
+
+  .location-hazard-alert {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: #fca5a5;
+
+    p {
+      margin: 4px 0 2px;
+      font-weight: 600;
+      color: #fecaca;
+    }
+
+    span {
+      font-size: 12px;
+      color: #f87171;
+    }
+  }
+
+  .location-advice {
+    margin: 0;
+    font-size: 13px;
+    color: #93c5fd;
+    font-style: italic;
+  }
+}
+
+/* 3. Thẻ Cứu hộ khẩn cấp & Hotline */
+.emergency-preview {
+  background: rgba(220, 38, 38, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .emergency-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #f87171;
+    font-size: 15px;
+
+    .emergency-icon {
+      font-size: 20px;
+    }
+  }
+
+  .emergency-hotlines-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+
+    .hotline-btn {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      padding: 10px 12px;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: rgba(239, 68, 68, 0.35);
+        transform: translateY(-1px);
+      }
+
+      .hl-name {
+        font-size: 12px;
+        color: #cbd5e1;
+        font-weight: 500;
+      }
+
+      .hl-phone {
+        font-size: 15px;
+        font-weight: 800;
+        color: #fef08a;
+      }
+    }
+  }
+
+  .emergency-tips-list {
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 10px;
+    padding: 10px 14px;
+
+    .tips-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fbbf24;
+      margin-bottom: 6px;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      li {
+        font-size: 12px;
+        color: #cbd5e1;
+        line-height: 1.4;
+      }
+    }
+  }
+}
+
+/* 4. Thẻ Chào hỏi & Gợi ý câu lệnh nhanh */
+.greeting-preview {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .greeting-message {
+    margin: 0;
+    font-size: 14px;
+    color: #e2e8f0;
+    line-height: 1.5;
+  }
+
+  .quick-prompts-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .prompts-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #34d399;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .prompts-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+
+      .prompt-chip-btn {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 9999px;
+        padding: 6px 14px;
+        color: #f1f5f9;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: rgba(16, 185, 129, 0.25);
+          border-color: #34d399;
+          color: #34d399;
+          transform: translateY(-1px);
+        }
+      }
+    }
+  }
+}
+
+/* 5. Thẻ Cảm ơn / Tạm biệt */
+.courtesy-preview {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 14px;
+  padding: 14px 16px;
+
+  .courtesy-message {
+    margin: 0;
+    font-size: 14px;
+    color: #e9d5ff;
+    line-height: 1.5;
+  }
+}
+
