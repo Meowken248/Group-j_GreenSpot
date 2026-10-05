@@ -451,11 +451,25 @@ async def test_process_voice_command_all_action_payloads():
     assert res3.action_payload["aqi"] > 0
     assert "category" in res3.action_payload
 
-    # 4. Payload CHECK_SAFE_ROUTE
+    # 4. Payload CHECK_SAFE_ROUTE (Dữ liệu ngập lụt thực tế theo từng đoạn trũng & cống thoát)
     req4 = VoiceProcessRequest(transcript="đường nào an toàn không bị ngập nước", session_source="VOICE")
     res4 = await service.process_voice_command(mock_db, req4)
     assert res4.detected_intent == "CHECK_SAFE_ROUTE"
-    assert res4.action_payload["hazard_avoided"] == 3
+    assert isinstance(res4.action_payload["hazard_avoided"], int)
+    assert res4.action_payload["hazard_avoided"] >= 0
+    assert "specific_segments" in res4.action_payload
+    assert "safe_corridors" in res4.action_payload
+    assert "realistic_nature" in res4.action_payload
+
+    # 4b. Tra cứu đích danh 1 tuyến đường có điểm trũng cục bộ (Nguyễn Hữu Cảnh)
+    req4_spot = VoiceProcessRequest(transcript="Đường Nguyễn Hữu Cảnh có ngập không?", session_source="VOICE")
+    res4_spot = await service.process_voice_command(mock_db, req4_spot)
+    assert res4_spot.detected_intent == "CHECK_SAFE_ROUTE"
+    assert res4_spot.action_payload["matched_street"] == "Nguyễn Hữu Cảnh"
+    assert "Chân cầu Thủ Thiêm" in res4_spot.action_payload["specific_spot"]
+    assert res4_spot.action_payload["length_m"] == 800
+    assert "chân cầu" in res4_spot.action_payload["spot_type"].lower()
+
 
     # 5. Payload CHECK_WEATHER (Dữ liệu thời tiết thực tế tại Thủ Đức - Grounded API)
     req5 = VoiceProcessRequest(transcript="Thời tiết hôm nay tại Thủ Đức.", session_source="VOICE")
