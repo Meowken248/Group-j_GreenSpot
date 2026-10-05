@@ -59,6 +59,11 @@ export const validateEmail = (value: string): string | null => {
     return 'Email không được chứa khoảng trắng';
   }
 
+  // Cấm chữ in hoa
+  if (/[A-Z]/.test(value)) {
+    return 'Email không được chứa chữ in hoa';
+  }
+
   if (value.length > 254) {
     return 'Email không hợp lệ';
   }
@@ -68,8 +73,8 @@ export const validateEmail = (value: string): string | null => {
     return 'Email không hợp lệ';
   }
 
-  // Chuẩn RFC: local-part @ domain-labels . tld (TLD chỉ gồm chữ cái, tối thiểu 2 ký tự)
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  // Chuẩn RFC: local-part @ domain-labels . tld (TLD chỉ gồm chữ cái, tối thiểu 2 ký tự, chỉ chữ thường)
+  const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
   if (!emailRegex.test(value)) {
     return 'Email không hợp lệ';
   }

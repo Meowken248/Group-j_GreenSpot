@@ -58,9 +58,15 @@ describe("Auth Validators - Quy tắc kiểm tra từng ô chức năng #1", () 
     });
 
     it("Bắt lỗi khi email chứa khoảng trắng", () => {
-      expect(validateEmail(" Lovuong@gmail.com")).toBe("Email không được chứa khoảng trắng");
-      expect(validateEmail("Lovuong@gmail.com ")).toBe("Email không được chứa khoảng trắng");
-      expect(validateEmail("Lov uong@gmail.com")).toBe("Email không được chứa khoảng trắng");
+      expect(validateEmail(" lovuong@gmail.com")).toBe("Email không được chứa khoảng trắng");
+      expect(validateEmail("lovuong@gmail.com ")).toBe("Email không được chứa khoảng trắng");
+      expect(validateEmail("lov uong@gmail.com")).toBe("Email không được chứa khoảng trắng");
+    });
+
+    it("Bắt lỗi khi email chứa chữ in hoa", () => {
+      expect(validateEmail("Lovuong@GMAIL.COM")).toBe("Email không được chứa chữ in hoa");
+      expect(validateEmail("lovuong@Gmail.com")).toBe("Email không được chứa chữ in hoa");
+      expect(validateEmail("Lovuong@gmail.com")).toBe("Email không được chứa chữ in hoa");
     });
 
     it("Bắt lỗi khi email sai định dạng", () => {
@@ -69,7 +75,7 @@ describe("Auth Validators - Quy tắc kiểm tra từng ô chức năng #1", () 
       expect(validateEmail("datnguyen@gmail")).toBe("Email không hợp lệ");
       expect(validateEmail("datnguyen@.com")).toBe("Email không hợp lệ");
       expect(validateEmail("@gmail.com")).toBe("Email không hợp lệ");
-      expect(validateEmail("Lovuong@gmail.,com")).toBe("Email không hợp lệ");
+      expect(validateEmail("lovuong@gmail.,com")).toBe("Email không hợp lệ");
       expect(validateEmail("user@gmail,com")).toBe("Email không hợp lệ");
       expect(validateEmail("user,name@gmail.com")).toBe("Email không hợp lệ");
       expect(validateEmail("user@gmail..com")).toBe("Email không hợp lệ");
