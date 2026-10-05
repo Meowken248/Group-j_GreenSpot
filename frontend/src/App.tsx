@@ -75,106 +75,101 @@ function App() {
         </button>
       </nav>
 
-<<<<<<< HEAD
-  {/* VIEW NỘI DUNG CHÍNH: MAP, DASHBOARD HOẶC VOICE ASSISTANT */ }
-  { activeTab === "map" && <EcoMap /> }
-  {
-    activeTab === "dashboard" && (
-=======
-      {/* VIEW NỘI DUNG CHÍNH: AUTH, MAP HOẶC DASHBOARD */}
+      {/* VIEW NỘI DUNG CHÍNH: AUTH, MAP, DASHBOARD, HOẶC VOICE ASSISTANT */}
       {activeTab === "auth" ? (
         <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
           <AuthContainer onExitAuth={() => setActiveTab("map")} />
         </div>
       ) : activeTab === "map" ? (
         <EcoMap />
-      ) : (
->>>>>>> Dat/1
-      <AirQualityDashboard onBackToMap={() => setActiveTab("map")} />
-    )
-  }
-  {
-    activeTab === "voice" && (
-      <VoiceAssistant
-        onClose={() => setActiveTab("map")}
-        onNavigateToFeature={(target) => {
-          if (target === "dashboard_aqi") {
-            setActiveTab("dashboard");
-          } else {
-            setActiveTab("map");
-          }
-        }}
-      />
-    )
-  }
+      ) : activeTab === "dashboard" ? (
+        <AirQualityDashboard onBackToMap={() => setActiveTab("map")} />
+      ) : activeTab === "voice" ? (
+        <VoiceAssistant />
+      ) : null}
 
-  {/* NÚT TRỢ LÝ GIỌNG NÓI NHANH NỔI (FLOATING QUICK ACTION KHI Ở MAP HOẶC DASHBOARD) */ }
-  {
-    activeTab !== "voice" && (
-      <button
-        type="button"
-        className="floating-voice-quick-btn"
-        onClick={() => setActiveTab("voice")}
-        title="Bật Trợ lý giọng nói rảnh tay"
-        aria-label="Trợ lý giọng nói"
-      >
-        <span className="floating-mic-icon">🎙️</span>
-        <span className="floating-mic-label">Trợ lý ảo</span>
-      </button>
-    )
-  }
+      {
+        activeTab === "voice" && (
+          <VoiceAssistant
+            onClose={() => setActiveTab("map")}
+            onNavigateToFeature={(target) => {
+              if (target === "dashboard_aqi") {
+                setActiveTab("dashboard");
+              } else {
+                setActiveTab("map");
+              }
+            }}
+          />
+        )
+      }
 
-  {/* NÚT KIỂM TRA MICROSERVICE BACKEND (GÓC TRÊN BÊN PHẢI) */ }
-  <div className="quick-status-badge">
-    <button
-      type="button"
-      className={`health-badge-btn ${activeTab === "dashboard" ? "dark-mode" : ""}`}
-      onClick={() => {
-        setShowDrawer((prev) => !prev);
-        if (!backendStatus) checkHealth();
-      }}
-      title="Kiểm tra trạng thái Backend FastAPI"
-    >
-      <span className={`dot ${backendStatus?.startsWith("Online") ? "online" : "offline"}`} />
-      <span>API Service</span>
-    </button>
-
-    {showDrawer && (
-      <div className={`health-popover ${activeTab === "dashboard" ? "dark-mode" : ""}`}>
-        <div className="popover-header">
-          <strong>Backend Diagnostic</strong>
+      {/* NÚT TRỢ LÝ GIỌNG NÓI NHANH NỔI (FLOATING QUICK ACTION KHI Ở MAP HOẶC DASHBOARD) */}
+      {
+        activeTab !== "voice" && (
           <button
             type="button"
-            className="close-btn"
-            onClick={() => setShowDrawer(false)}
+            className="floating-voice-quick-btn"
+            onClick={() => setActiveTab("voice")}
+            title="Bật Trợ lý giọng nói rảnh tay"
+            aria-label="Trợ lý giọng nói"
           >
-            ×
+            <span className="floating-mic-icon">🎙️</span>
+            <span className="floating-mic-label">Trợ lý ảo</span>
           </button>
-        </div>
-        <p className="popover-desc">
-          Kiểm tra kết nối microservice FastAPI backend qua axios client.
-        </p>
-        <div className="popover-actions">
-          <button
-            type="button"
-            className="btn-action"
-            onClick={checkHealth}
-            disabled={checkingBackend}
-          >
-            {checkingBackend ? "Đang ping..." : "Ping /health"}
-          </button>
-        </div>
-        {backendStatus && (
-          <div
-            className={`status-pill ${backendStatus.startsWith("Online") ? "success" : "warning"
-              }`}
-          >
-            {backendStatus}
+        )
+      }
+
+      {/* NÚT KIỂM TRA MICROSERVICE BACKEND (GÓC TRÊN BÊN PHẢI) */}
+      <div className="quick-status-badge">
+        <button
+          type="button"
+          className={`health-badge-btn ${activeTab === "dashboard" ? "dark-mode" : ""}`}
+          onClick={() => {
+            setShowDrawer((prev) => !prev);
+            if (!backendStatus) checkHealth();
+          }}
+          title="Kiểm tra trạng thái Backend FastAPI"
+        >
+          <span className={`dot ${backendStatus?.startsWith("Online") ? "online" : "offline"}`} />
+          <span>API Service</span>
+        </button>
+
+        {showDrawer && (
+          <div className={`health-popover ${activeTab === "dashboard" ? "dark-mode" : ""}`}>
+            <div className="popover-header">
+              <strong>Backend Diagnostic</strong>
+              <button
+                type="button"
+                className="close-btn"
+                onClick={() => setShowDrawer(false)}
+              >
+                ×
+              </button>
+            </div>
+            <p className="popover-desc">
+              Kiểm tra kết nối microservice FastAPI backend qua axios client.
+            </p>
+            <div className="popover-actions">
+              <button
+                type="button"
+                className="btn-action"
+                onClick={checkHealth}
+                disabled={checkingBackend}
+              >
+                {checkingBackend ? "Đang ping..." : "Ping /health"}
+              </button>
+            </div>
+            {backendStatus && (
+              <div
+                className={`status-pill ${backendStatus.startsWith("Online") ? "success" : "warning"
+                  }`}
+              >
+                {backendStatus}
+              </div>
+            )}
           </div>
         )}
       </div>
-    )}
-  </div>
     </div >
   );
 }
