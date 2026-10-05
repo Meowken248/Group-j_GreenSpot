@@ -71,6 +71,11 @@ export const MicPermissionModal: React.FC<MicPermissionModalProps> = ({
           Hãy cấp quyền micro cho trình duyệt
         </p>
 
+        {/* Thông báo ban đầu khi trình duyệt đang chặn truy cập micro */}
+        <div className="voice-modal-initial-notice" role="status">
+          <span>Trình duyệt đang chặn truy cập micro</span>
+        </div>
+
         {/* Hình minh họa bấm vào biểu tượng ổ khóa trên thanh địa chỉ URL */}
         <div className="voice-permission-instruction-box">
           <div className="browser-url-mockup">
@@ -93,11 +98,11 @@ export const MicPermissionModal: React.FC<MicPermissionModalProps> = ({
           </div>
         )}
 
-        {/* Hai nút chức năng: Thử lại và Đóng */}
-        <div className="voice-modal-actions">
+        {/* Hai nút chức năng: Thử lại và Đóng xếp chồng theo chiều dọc (Wireframe 4) */}
+        <div className="voice-modal-actions-stacked">
           <button
             type="button"
-            className="btn-retry-permission"
+            className="btn-retry-permission wide-pill-btn"
             onClick={handleRetryPermission}
             disabled={isRetrying}
           >
@@ -105,7 +110,7 @@ export const MicPermissionModal: React.FC<MicPermissionModalProps> = ({
           </button>
           <button
             type="button"
-            className="btn-close-modal"
+            className="btn-close-modal wide-pill-btn"
             onClick={onClose}
           >
             Đóng

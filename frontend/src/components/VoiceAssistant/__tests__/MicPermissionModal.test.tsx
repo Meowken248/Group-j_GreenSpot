@@ -19,7 +19,7 @@ describe('MicPermissionModal Component (Màn 4)', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('Khi isOpen=true -> hiển thị đầy đủ giao diện Màn 4, nhãn POPUP, ổ khóa và hướng dẫn', () => {
+  it('Khi isOpen=true -> hiển thị đầy đủ giao diện Màn 4, nhãn POPUP, ổ khóa, hướng dẫn và nút wide-pill', () => {
     render(
       <MicPermissionModal isOpen={true} onClose={vi.fn()} onPermissionGranted={vi.fn()} />
     );
@@ -27,10 +27,15 @@ describe('MicPermissionModal Component (Màn 4)', () => {
     expect(screen.getByText('POPUP')).toBeInTheDocument();
     expect(screen.getByText('KHÔNG TRUY CẬP ĐƯỢC MICRO')).toBeInTheDocument();
     expect(screen.getByText(/Hãy cấp quyền micro cho trình duyệt/i)).toBeInTheDocument();
+    expect(screen.getByText('Trình duyệt đang chặn truy cập micro')).toBeInTheDocument();
     expect(screen.getByText('greenspot.gov.vn')).toBeInTheDocument();
     expect(screen.getByText('🎤 Bị chặn')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Thử lại/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Đóng/i })).toBeInTheDocument();
+    const retryBtn = screen.getByRole('button', { name: /Thử lại/i });
+    const closeBtn = screen.getByRole('button', { name: /Đóng/i });
+    expect(retryBtn).toBeInTheDocument();
+    expect(retryBtn).toHaveClass('wide-pill-btn');
+    expect(closeBtn).toBeInTheDocument();
+    expect(closeBtn).toHaveClass('wide-pill-btn');
   });
 
   it('Bấm nút "Đóng" kích hoạt callback onClose', () => {
