@@ -22,7 +22,7 @@ function App() {
     const path = window.location.pathname.toLowerCase();
     if (hash === "#map" || path === "/map") return "map";
     if (hash === "#dashboard" || path === "/dashboard") return "dashboard";
-    if (hash === "#auth" || hash === "#login" || hash === "#register") return "auth";
+    if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") return "auth";
     if (hash === "#users" || path === "/users") return "users";
     if (hash === "#rbac" || path === "/rbac") return "rbac";
     // Mặc định: khi chưa đăng nhập, hiển thị Bản đồ WebGIS công cộng
@@ -86,7 +86,7 @@ function App() {
       const hash = window.location.hash.toLowerCase();
       if (hash === "#map") setActiveTab("map");
       else if (hash === "#dashboard") setActiveTab("dashboard");
-      else if (hash === "#auth" || hash === "#login" || hash === "#register") setActiveTab("auth");
+      else if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") setActiveTab("auth");
       else if (hash === "#users") setActiveTab("users");
       else if (hash === "#rbac") setActiveTab("rbac");
     };
@@ -235,6 +235,7 @@ function App() {
                     setUserDropdownOpen(false);
                     setAuthRedirectUrl("/devices");
                     setActiveTab("auth");
+                    window.location.hash = "#devices";
                   }}
                 >
                   <span className="action-icon">💻</span>
@@ -354,7 +355,13 @@ function App() {
       {activeTab === "auth" ? (
         <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
           <AuthContainer
-            initialView={authRedirectUrl ? "login" : undefined}
+            initialView={
+              authRedirectUrl === "/devices" || window.location.hash === "#devices"
+                ? "devices"
+                : authRedirectUrl
+                ? "login"
+                : undefined
+            }
             redirectUrl={authRedirectUrl}
             onExitAuth={() => {
               setActiveTab("map");

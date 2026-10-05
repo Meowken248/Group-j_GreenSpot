@@ -19,14 +19,23 @@ export const validateFullName = (value: string): string | null => {
     return 'Vui lòng nhập họ tên';
   }
 
-  const normalized = normalizeFullName(value);
-  if (normalized.length < 2 || normalized.length > 50) {
+  // Cấm khoảng trắng ở đầu hoặc cuối chuỗi
+  if (value.startsWith(' ') || value.endsWith(' ')) {
+    return 'Họ tên không được chứa khoảng trắng ở đầu hoặc cuối';
+  }
+
+  // Cấm từ 2 khoảng trắng liên tiếp trở lên trong đoạn text
+  if (/\s{2,}/.test(value)) {
+    return 'Họ tên không được chứa nhiều khoảng trắng liên tiếp';
+  }
+
+  if (value.length < 2 || value.length > 50) {
     return 'Họ tên phải từ 2 đến 50 ký tự, chỉ gồm chữ cái và khoảng trắng';
   }
 
   // Cho phép chữ cái tiếng Việt và khoảng trắng, từ chối số và ký tự đặc biệt
   const nameRegex = /^[\p{L}\s]+$/u;
-  if (!nameRegex.test(normalized)) {
+  if (!nameRegex.test(value)) {
     return 'Họ tên phải từ 2 đến 50 ký tự, chỉ gồm chữ cái và khoảng trắng';
   }
 
@@ -37,20 +46,31 @@ export const validateFullName = (value: string): string | null => {
  * Kiểm tra Email:
  * - Bắt buộc.
  * - Tối đa 254 ký tự.
- * - Đúng định dạng ten@tenmien.đuôi theo biểu thức: ^[^\s@]+@[^\s@]+\.[^\s@]{2,}$
+ * - Tuyệt đối không chứa khoảng trắng ở bất kỳ vị trí nào.
+ * - Đúng định dạng chuẩn RFC
  */
 export const validateEmail = (value: string): string | null => {
   if (!value || value.trim().length === 0) {
     return 'Vui lòng nhập email';
   }
 
-  const trimmed = value.trim();
-  if (trimmed.length > 254) {
+  // Cấm hoàn toàn khoảng trắng ở bất kỳ vị trí nào (đầu, cuối hoặc giữa)
+  if (/\s/.test(value)) {
+    return 'Email không được chứa khoảng trắng';
+  }
+
+  if (value.length > 254) {
     return 'Email không hợp lệ';
   }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-  if (!emailRegex.test(trimmed)) {
+  // Chặn dấu phẩy hoặc hai dấu chấm liên tiếp
+  if (value.includes(',') || value.includes('..')) {
+    return 'Email không hợp lệ';
+  }
+
+  // Chuẩn RFC: local-part @ domain-labels . tld (TLD chỉ gồm chữ cái, tối thiểu 2 ký tự)
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(value)) {
     return 'Email không hợp lệ';
   }
 

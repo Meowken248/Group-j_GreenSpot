@@ -33,10 +33,21 @@ describe("Auth Validators - Quy tắc kiểm tra từng ô chức năng #1", () 
       expect(validateFullName("Nguyễn @ Đạt")).toBe("Họ tên phải từ 2 đến 50 ký tự, chỉ gồm chữ cái và khoảng trắng");
     });
 
+    it("Bắt lỗi khi họ tên có khoảng trắng ở đầu hoặc cuối", () => {
+      expect(validateFullName(" Lovuong")).toBe("Họ tên không được chứa khoảng trắng ở đầu hoặc cuối");
+      expect(validateFullName("Lovuong ")).toBe("Họ tên không được chứa khoảng trắng ở đầu hoặc cuối");
+    });
+
+    it("Bắt lỗi khi họ tên chứa từ 2 khoảng trắng liên tiếp trở lên", () => {
+      expect(validateFullName("Lov  uong")).toBe("Họ tên không được chứa nhiều khoảng trắng liên tiếp");
+      expect(validateFullName("Nguyễn   Thành    Đạt")).toBe("Họ tên không được chứa nhiều khoảng trắng liên tiếp");
+    });
+
     it("Chấp nhận họ tên tiếng Việt có dấu hợp lệ", () => {
       expect(validateFullName("Nguyễn Thành Đạt")).toBeNull();
       expect(validateFullName("Trần Lê Hoàng Oanh")).toBeNull();
       expect(validateFullName("Vũ Đình Khánh")).toBeNull();
+      expect(validateFullName("Lov uong")).toBeNull();
     });
   });
 
@@ -46,17 +57,28 @@ describe("Auth Validators - Quy tắc kiểm tra từng ô chức năng #1", () 
       expect(validateEmail("   ")).toBe("Vui lòng nhập email");
     });
 
+    it("Bắt lỗi khi email chứa khoảng trắng", () => {
+      expect(validateEmail(" Lovuong@gmail.com")).toBe("Email không được chứa khoảng trắng");
+      expect(validateEmail("Lovuong@gmail.com ")).toBe("Email không được chứa khoảng trắng");
+      expect(validateEmail("Lov uong@gmail.com")).toBe("Email không được chứa khoảng trắng");
+    });
+
     it("Bắt lỗi khi email sai định dạng", () => {
       expect(validateEmail("datnguyen")).toBe("Email không hợp lệ");
       expect(validateEmail("datnguyen@")).toBe("Email không hợp lệ");
       expect(validateEmail("datnguyen@gmail")).toBe("Email không hợp lệ");
       expect(validateEmail("datnguyen@.com")).toBe("Email không hợp lệ");
       expect(validateEmail("@gmail.com")).toBe("Email không hợp lệ");
+      expect(validateEmail("Lovuong@gmail.,com")).toBe("Email không hợp lệ");
+      expect(validateEmail("user@gmail,com")).toBe("Email không hợp lệ");
+      expect(validateEmail("user,name@gmail.com")).toBe("Email không hợp lệ");
+      expect(validateEmail("user@gmail..com")).toBe("Email không hợp lệ");
     });
 
     it("Chấp nhận email hợp lệ", () => {
       expect(validateEmail("dat.nguyen@greenspot.vn")).toBeNull();
       expect(validateEmail("user123@gmail.com")).toBeNull();
+      expect(validateEmail("lovuong@gmail.com")).toBeNull();
     });
   });
 

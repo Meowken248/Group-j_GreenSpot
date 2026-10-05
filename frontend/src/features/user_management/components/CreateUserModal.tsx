@@ -57,8 +57,9 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
       return;
     }
 
-    const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
-    if (!emailRegex.test(email.trim())) {
+    const trimmedEmail = email.trim();
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (trimmedEmail.includes(',') || trimmedEmail.includes('..') || !emailRegex.test(trimmedEmail)) {
       setErrorMsg('Địa chỉ email không đúng định dạng.');
       return;
     }
@@ -152,7 +153,8 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
               </label>
               <input
                 id="createUser-email"
-                type="email"
+                type="text"
+                inputMode="email"
                 className="form-control"
                 placeholder="nam.tran@greenspot.vn"
                 value={email}

@@ -330,7 +330,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             <div className="form-group">
               <input
                 ref={emailRef}
-                type="email"
+                type="text"
+                inputMode="email"
                 id="login-email"
                 name="email"
                 className={`form-input ${errors.emailHasError ? "has-error" : ""}`}
