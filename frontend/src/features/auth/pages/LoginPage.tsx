@@ -12,6 +12,7 @@ import {
 } from "../utils/validators";
 import { loginCitizen, resendOtp } from "../services/authService";
 import { resetSessionExpired } from "../services/sessionManager";
+import api from "../../../api/client";
 import "../styles/RegisterPage.scss";
 import "../styles/LoginPage.scss";
 
@@ -197,6 +198,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         localStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, result.data.access_token);
         localStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, result.data.refresh_token);
         localStorage.setItem(AUTH_STORAGE_KEYS.USER_INFO, JSON.stringify(result.data.user));
+
+        // Cập nhật ngay lập tức token mới vào Axios headers và reset cờ phiên hết hạn
+        api.defaults.headers.common.Authorization = `Bearer ${result.data.access_token}`;
+        resetSessionExpired();
 
         // Thông báo đồng bộ trạng thái đăng nhập cho toàn bộ ứng dụng
         window.dispatchEvent(new Event("auth_change"));

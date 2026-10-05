@@ -54,8 +54,10 @@ api.interceptors.request.use((config) => {
   }
 
   const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
-  if (token && !config.headers.Authorization) {
+  if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  } else {
+    delete config.headers.Authorization;
   }
   return config;
 });
@@ -80,14 +82,20 @@ api.interceptors.response.use(
 
     // Chỉ can thiệp khi gặp lỗi 401 Unauthorized
     if (status === 401) {
-      const hadAccessToken = Boolean(
-        localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN)
-      );
+      const currentAccessToken = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
       const refreshToken = localStorage.getItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
 
       // Đặc tả: Chỉ hiện Popup khi trong localStorage đang có token mà máy chủ từ chối.
       // Nếu không có token từ đầu, không hiện Popup.
-      if (!hadAccessToken && !refreshToken) {
+      if (!currentAccessToken && !refreshToken) {
+        return Promise.reject(error);
+      }
+
+      // Kiểm tra nếu request 401 mang token cũ đã bị thay thế bởi phiên đăng nhập mới
+      const reqAuth = originalRequest?.headers?.Authorization || originalRequest?.headers?.authorization;
+      const reqToken = typeof reqAuth === "string" && reqAuth.startsWith("Bearer ") ? reqAuth.slice(7) : null;
+      if (currentAccessToken && reqToken && currentAccessToken !== reqToken) {
+        // Request cũ không hợp lệ nhưng người dùng đã có token mới hợp lệ -> Không kích hoạt modal hết hạn
         return Promise.reject(error);
       }
 

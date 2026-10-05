@@ -4,6 +4,17 @@ import { AUTH_STORAGE_KEYS } from '../../auth';
 
 export const PERMISSION_STORAGE_KEY = 'eco_user_permissions';
 
+/**
+ * Ánh xạ giữa danh mục môi trường (WebGIS) và mã Module RBAC
+ */
+export const CATEGORY_TO_MODULE: Record<string, string> = {
+  incident: 'INCIDENTS',
+  green_spot: 'GREEN_SPOTS',
+  recycling: 'RECYCLING_FACILITIES',
+  sensor: 'IOT_SENSORS',
+  flood: 'FLOOD_WARNINGS',
+};
+
 export interface UserPermissionProfile {
   user_id: string;
   email: string;
@@ -83,7 +94,11 @@ export async function fetchMyPermissions(): Promise<string[]> {
       return [];
     }
 
-    const res = await api.get('/api/v1/rbac/my-permissions');
+    const res = await api.get('/api/v1/rbac/my-permissions', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     const perms: string[] = res.data.permissions || [];
     localStorage.setItem(PERMISSION_STORAGE_KEY, JSON.stringify(perms));
     

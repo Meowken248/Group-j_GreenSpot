@@ -6,6 +6,7 @@ import {
   SessionExpiredModal,
   LogoutConfirmModal,
   subscribeSessionExpired,
+  resetSessionExpired,
   AUTH_STORAGE_KEYS,
   revokeAllSessions,
 } from "./features/auth";
@@ -44,8 +45,6 @@ function App() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-
-
   // Đóng dropdown tài khoản khi click ra ngoài
   useEffect(() => {
     if (!userDropdownOpen) return;
@@ -63,6 +62,19 @@ function App() {
       setSessionExpiredOpen(true);
     });
     return unsubscribe;
+  }, []);
+
+  // Tự động đóng popup phiên hết hạn ngay khi người dùng đăng nhập lại thành công
+  useEffect(() => {
+    const handleAuthChange = () => {
+      const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+      if (token) {
+        setSessionExpiredOpen(false);
+        resetSessionExpired();
+      }
+    };
+    window.addEventListener("auth_change", handleAuthChange);
+    return () => window.removeEventListener("auth_change", handleAuthChange);
   }, []);
 
   // Lắng nghe sự kiện hashchange để đồng bộ view khi thay đổi URL hoặc bấm Back/Forward
@@ -85,6 +97,8 @@ function App() {
     localStorage.removeItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
     localStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
     localStorage.removeItem(AUTH_STORAGE_KEYS.USER_INFO);
+    delete api.defaults.headers.common.Authorization;
+    resetSessionExpired();
     window.dispatchEvent(new Event("auth_change"));
     setActiveTab("auth");
   };
@@ -99,6 +113,8 @@ function App() {
       localStorage.removeItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
       localStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
       localStorage.removeItem(AUTH_STORAGE_KEYS.USER_INFO);
+      delete api.defaults.headers.common.Authorization;
+      resetSessionExpired();
       window.dispatchEvent(new Event("auth_change"));
       setIsLoggingOut(false);
       setLogoutModalOpen(false);
@@ -286,10 +302,15 @@ function App() {
         <button
           type="button"
           className={`view-tab-btn ${activeTab === "map" ? "active" : ""} ${!hasMapAccess ? "permission-locked" : ""}`}
-          onClick={() => {
+          onClick={(e) => {
+            if (!hasMapAccess) {
+              e.preventDefault();
+              return;
+            }
             setActiveTab("map");
             window.location.hash = "#map";
           }}
+          disabled={!hasMapAccess}
           title={hasMapAccess ? "Bản đồ không gian xanh, ngập lụt & trạm IoT" : "Chức năng bị khóa: Bạn chưa được cấp quyền truy cập Bản đồ WebGIS"}
         >
           <span>{hasMapAccess ? "🗺️" : "🔒"}</span>
@@ -299,10 +320,15 @@ function App() {
         <button
           type="button"
           className={`view-tab-btn ${activeTab === "dashboard" ? "active" : ""} ${!hasAqiAccess ? "permission-locked" : ""}`}
-          onClick={() => {
+          onClick={(e) => {
+            if (!hasAqiAccess) {
+              e.preventDefault();
+              return;
+            }
             setActiveTab("dashboard");
             window.location.hash = "#dashboard";
           }}
+          disabled={!hasAqiAccess}
           title={hasAqiAccess ? "Bảng điều khiển phân tích chất lượng không khí & khí tượng toàn quốc" : "Chức năng bị khóa: Bạn chưa được cấp quyền truy cập Phân tích AQI & Khí hậu"}
         >
           <span>{hasAqiAccess ? "📊" : "🔒"}</span>

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { AUTH_STORAGE_KEYS } from "../types/auth.types";
 import { resetSessionExpired } from "../services/sessionManager";
+import api from "../../../api/client";
 import "../styles/SessionExpiredModal.scss";
 
 export interface SessionExpiredModalProps {
@@ -51,6 +52,9 @@ export const SessionExpiredModal: React.FC<SessionExpiredModalProps> = ({
     localStorage.removeItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
     localStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
     localStorage.removeItem(AUTH_STORAGE_KEYS.USER_INFO);
+
+    // Xóa header Authorization cũ khỏi Axios
+    delete api.defaults.headers.common.Authorization;
 
     // 2. Đặt lại cờ session expired
     resetSessionExpired();
