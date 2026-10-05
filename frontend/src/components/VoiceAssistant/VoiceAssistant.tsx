@@ -630,9 +630,101 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                           )}
 
                           {resultData.detected_intent === "CHECK_SAFE_ROUTE" && (
-                            <div className="safe-route-preview">
-                              <p>✅ {resultData.action_payload.destination}</p>
-                              <p>• Tránh được: {resultData.action_payload.hazard_avoided} điểm ngập</p>
+                            <div className="safe-route-preview" data-testid="safe-route-card">
+                              <div className="safe-route-header-row">
+                                <span className="safe-route-dest-badge">
+                                  🛣️ {resultData.action_payload.destination || "Lộ trình di chuyển an toàn"}
+                                </span>
+                                {resultData.action_payload.hazard_avoided !== undefined && (
+                                  <span className="hazard-avoided-pill">
+                                    Tránh {resultData.action_payload.hazard_avoided} đoạn trũng ngập
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Thông điệp cốt lõi đúng thực tế */}
+                              <div className="safe-route-insight-box">
+                                <span className="insight-icon">💡</span>
+                                <span className="insight-text">
+                                  {resultData.action_payload.realistic_nature ||
+                                    "Thực tế ngập úng tại TP.HCM chỉ xảy ra cục bộ tại một đoạn trũng thấp hoặc khu vực cống thoát nước không kịp tiêu thoát, các đoạn khác lưu thông bình thường."}
+                                </span>
+                              </div>
+
+                              {/* Trường hợp tra cứu đích danh 1 tuyến đường */}
+                              {resultData.action_payload.specific_spot && (
+                                <div className="specific-spot-card">
+                                  <div className="spot-top-line">
+                                    <strong className="spot-name">📍 {resultData.action_payload.specific_spot}</strong>
+                                    <span className={`spot-depth-tag ${resultData.action_payload.risk_level?.toLowerCase() || 'warning'}`}>
+                                      ~{resultData.action_payload.estimated_depth_cm || 0} cm ({resultData.action_payload.length_m || 500}m)
+                                    </span>
+                                  </div>
+                                  {resultData.action_payload.spot_type && (
+                                    <div className="spot-detail-row">
+                                      <span className="detail-label">Đặc điểm hình thái:</span>
+                                      <span className="detail-val">{resultData.action_payload.spot_type}</span>
+                                    </div>
+                                  )}
+                                  {resultData.action_payload.drainage_issue && (
+                                    <div className="spot-detail-row">
+                                      <span className="detail-label">Nguyên nhân thoát nước:</span>
+                                      <span className="detail-val warning-text">{resultData.action_payload.drainage_issue}</span>
+                                    </div>
+                                  )}
+                                  {resultData.action_payload.segment_scope && (
+                                    <div className="spot-scope-note">
+                                      ℹ️ {resultData.action_payload.segment_scope}
+                                    </div>
+                                  )}
+                                  {resultData.action_payload.detour_advice && (
+                                    <div className="spot-detour-box">
+                                      🧭 <strong>Lộ trình né:</strong> {resultData.action_payload.detour_advice}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Trường hợp danh sách các đoạn trũng cần lưu ý (General Query) */}
+                              {resultData.action_payload.specific_segments && resultData.action_payload.specific_segments.length > 0 && (
+                                <div className="flood-segments-section">
+                                  <div className="section-label">⚠️ Các đoạn trũng cục bộ cần lưu ý:</div>
+                                  <div className="segments-grid">
+                                    {resultData.action_payload.specific_segments.map((seg: any, idx: number) => (
+                                      <div key={idx} className="segment-card-item">
+                                        <div className="segment-header">
+                                          <span className="seg-name">{seg.name}</span>
+                                          <span className={`seg-badge ${seg.risk_level?.toLowerCase() || 'warning'}`}>
+                                            ~{seg.estimated_depth_cm}cm ({seg.length_m}m)
+                                          </span>
+                                        </div>
+                                        <div className="seg-desc">
+                                          • {seg.drainage_issue || seg.spot_type || "Cống thoát nước quá tải khi mưa lớn"}
+                                        </div>
+                                        {seg.detour_advice && (
+                                          <div className="seg-detour-hint">
+                                            💡 {seg.detour_advice}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Danh sách các trục đường cao ráo an toàn */}
+                              {resultData.action_payload.safe_corridors && (
+                                <div className="safe-corridors-section">
+                                  <div className="section-label">✅ Trục đường cao ráo không ngập:</div>
+                                  <div className="corridor-tags">
+                                    {resultData.action_payload.safe_corridors.map((c: any, i: number) => (
+                                      <span key={i} className="corridor-tag">
+                                        {typeof c === "string" ? c : c.name}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
 
