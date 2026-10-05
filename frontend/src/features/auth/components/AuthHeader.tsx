@@ -75,6 +75,7 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({
       localStorage.removeItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
       localStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
       localStorage.removeItem(AUTH_STORAGE_KEYS.USER_INFO);
+      window.dispatchEvent(new Event("auth_change"));
       window.location.href = "/login";
     }
   };
@@ -139,6 +140,11 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({
               aria-haspopup="true"
             >
               <span role="img" aria-label="Ảnh đại diện">👤</span>
+              {userInfo?.full_name && (
+                <span className="auth-header-username" style={{ fontSize: "12.5px", fontWeight: 600, color: "#1e293b", marginLeft: "6px" }}>
+                  {userInfo.full_name}
+                </span>
+              )}
             </button>
 
             {dropdownOpen && (

@@ -11,6 +11,7 @@ import {
   sanitizeRedirectUrl,
 } from "../utils/validators";
 import { loginCitizen, resendOtp } from "../services/authService";
+import { resetSessionExpired } from "../services/sessionManager";
 import "../styles/RegisterPage.scss";
 import "../styles/LoginPage.scss";
 
@@ -21,6 +22,8 @@ interface LoginPageProps {
   onLoginSuccess?: (redirectUrl: string) => void;
   onLogoClick?: () => void;
   redirectParam?: string | null;
+  initialEmail?: string;
+  activatedNotice?: boolean;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({
@@ -30,8 +33,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   onLoginSuccess,
   onLogoClick,
   redirectParam,
+  initialEmail = "",
+  activatedNotice = false,
 }) => {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
 
   const [errors, setErrors] = useState<{
@@ -43,13 +48,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
-  const [toast, setToast] = useState<ToastState | null>(null);
+  const [toast, setToast] = useState<ToastState | null>(() => {
+    if (activatedNotice) {
+      return {
+        id: Date.now(),
+        type: "success",
+        message: "Tài khoản đã kích hoạt thành công! Vui lòng nhập mật khẩu để đăng nhập.",
+      };
+    }
+    return null;
+  });
 
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
 
   // 1. Kiểm tra phiên đã tồn tại: nếu đã có token hợp lệ -> chuyển luôn đến Bảng tin
   useEffect(() => {
+    resetSessionExpired();
     const existingToken = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
     if (existingToken) {
       const rawRedirect = redirectParam || new URLSearchParams(window.location.search).get("redirect");
@@ -62,9 +77,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       return;
     }
 
-    // Đặc tả: Khi mở màn hình, con trỏ tự động đặt vào ô Email
-    emailRef.current?.focus();
-  }, [onLoginSuccess, onLogoClick, redirectParam]);
+    // Nếu có initialEmail thì focus vào ô Mật khẩu, ngược lại focus ô Email
+    if (initialEmail) {
+      setEmail(initialEmail);
+      passwordRef.current?.focus();
+    } else {
+      emailRef.current?.focus();
+    }
+  }, [onLoginSuccess, onLogoClick, redirectParam, initialEmail]);
 
   // onBlur ô Email
   const handleEmailBlur = () => {
@@ -177,6 +197,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         localStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, result.data.access_token);
         localStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, result.data.refresh_token);
         localStorage.setItem(AUTH_STORAGE_KEYS.USER_INFO, JSON.stringify(result.data.user));
+
+        // Thông báo đồng bộ trạng thái đăng nhập cho toàn bộ ứng dụng
+        window.dispatchEvent(new Event("auth_change"));
 
         // Kiểm tra an toàn tham số redirect
         const rawRedirect = redirectParam || new URLSearchParams(window.location.search).get("redirect");
