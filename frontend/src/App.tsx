@@ -9,17 +9,20 @@ import {
   AUTH_STORAGE_KEYS,
   revokeAllSessions,
 } from "./features/auth";
-import { RbacContainer } from "./features/rbac";
+import { RbacContainer, usePermissions } from "./features/rbac";
+import { UserManagementContainer } from "./features/user_management";
+import { AccessDeniedView } from "./components/AccessDeniedView";
 import api from "./api/client";
 import "./App.css";
 
 function App() {
-  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac">(() => {
+  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users">(() => {
     const hash = window.location.hash.toLowerCase();
     const path = window.location.pathname.toLowerCase();
     if (hash === "#map" || path === "/map") return "map";
     if (hash === "#dashboard" || path === "/dashboard") return "dashboard";
     if (hash === "#auth" || hash === "#login" || hash === "#register") return "auth";
+    if (hash === "#users" || path === "/users") return "users";
     // Mặc định ưu tiên hiển thị ngay giao diện Phân quyền vai trò RBAC
     return "rbac";
   });
@@ -29,41 +32,19 @@ function App() {
   const [sessionExpiredOpen, setSessionExpiredOpen] = useState(false);
   const [authRedirectUrl, setAuthRedirectUrl] = useState<string | undefined>();
 
-  // Quản lý thông tin người dùng đang đăng nhập
-  const [currentUser, setCurrentUser] = useState<any>(() => {
-    try {
-      const raw = localStorage.getItem(AUTH_STORAGE_KEYS.USER_INFO);
-      const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
-      return token && raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  });
+  // Hook quản lý tài khoản và quyền hạn thời gian thực (RBAC Permission Guard)
+  const { currentUser, canAccess } = usePermissions();
+  const hasMapAccess = canAccess("GIS_MAP");
+  const hasAqiAccess = canAccess("AIR_QUALITY");
+  const hasUserMgmtAccess = currentUser?.role === "ADMIN" || canAccess("USER_MANAGEMENT");
+  const hasRbacAccess = currentUser?.role === "ADMIN" || canAccess("ROLE");
 
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // Lắng nghe sự kiện thay đổi đăng nhập để đồng bộ Header ngay lập tức
-  useEffect(() => {
-    const handleAuthChange = () => {
-      try {
-        const raw = localStorage.getItem(AUTH_STORAGE_KEYS.USER_INFO);
-        const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
-        setCurrentUser(token && raw ? JSON.parse(raw) : null);
-      } catch {
-        setCurrentUser(null);
-      }
-    };
 
-    window.addEventListener("auth_change", handleAuthChange);
-    window.addEventListener("storage", handleAuthChange);
-    return () => {
-      window.removeEventListener("auth_change", handleAuthChange);
-      window.removeEventListener("storage", handleAuthChange);
-    };
-  }, []);
 
   // Đóng dropdown tài khoản khi click ra ngoài
   useEffect(() => {
@@ -84,10 +65,27 @@ function App() {
     return unsubscribe;
   }, []);
 
+  // Lắng nghe sự kiện hashchange để đồng bộ view khi thay đổi URL hoặc bấm Back/Forward
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.toLowerCase();
+      if (hash === "#map") setActiveTab("map");
+      else if (hash === "#dashboard") setActiveTab("dashboard");
+      else if (hash === "#auth" || hash === "#login" || hash === "#register") setActiveTab("auth");
+      else if (hash === "#users") setActiveTab("users");
+      else if (hash === "#rbac") setActiveTab("rbac");
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
   const handleRelogin = (redirectUrl?: string) => {
     setSessionExpiredOpen(false);
     setAuthRedirectUrl(redirectUrl);
-    setCurrentUser(null);
+    localStorage.removeItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+    localStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
+    localStorage.removeItem(AUTH_STORAGE_KEYS.USER_INFO);
+    window.dispatchEvent(new Event("auth_change"));
     setActiveTab("auth");
   };
 
@@ -105,7 +103,6 @@ function App() {
       setIsLoggingOut(false);
       setLogoutModalOpen(false);
       setUserDropdownOpen(false);
-      setCurrentUser(null);
       setAuthRedirectUrl(undefined);
       setActiveTab("auth");
     }
@@ -188,7 +185,21 @@ function App() {
                       className="dropdown-menu-action"
                       onClick={() => {
                         setUserDropdownOpen(false);
+                        setActiveTab("users");
+                        window.location.hash = "#users";
+                      }}
+                    >
+                      <span className="action-icon">👥</span>
+                      <span>Quản lý người dùng</span>
+                    </button>
+                    <div className="dropdown-separator" />
+                    <button
+                      type="button"
+                      className="dropdown-menu-action"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
                         setActiveTab("rbac");
+                        window.location.hash = "#rbac";
                       }}
                     >
                       <span className="action-icon">🛡️</span>
@@ -242,41 +253,59 @@ function App() {
           </button>
         )}
 
-        <button
-          type="button"
-          className={`view-tab-btn ${activeTab === "rbac" ? "active" : ""}`}
-          onClick={() => {
-            setActiveTab("rbac");
-            window.location.hash = "#rbac";
-          }}
-          title="Quản lý phân quyền vai trò RBAC & Ma trận quyền"
-        >
-          <span>🛡️</span>
-          <span>Phân quyền vai trò</span>
-        </button>
+        {hasUserMgmtAccess && (
+          <button
+            type="button"
+            className={`view-tab-btn ${activeTab === "users" ? "active" : ""}`}
+            onClick={() => {
+              setActiveTab("users");
+              window.location.hash = "#users";
+            }}
+            title="Quản lý người dùng & Cấp tài khoản"
+          >
+            <span>👥</span>
+            <span>Quản lý người dùng</span>
+          </button>
+        )}
+
+        {hasRbacAccess && (
+          <button
+            type="button"
+            className={`view-tab-btn ${activeTab === "rbac" ? "active" : ""}`}
+            onClick={() => {
+              setActiveTab("rbac");
+              window.location.hash = "#rbac";
+            }}
+            title="Quản lý phân quyền vai trò RBAC & Ma trận quyền"
+          >
+            <span>🛡️</span>
+            <span>Phân quyền vai trò</span>
+          </button>
+        )}
 
         <button
           type="button"
-          className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
+          className={`view-tab-btn ${activeTab === "map" ? "active" : ""} ${!hasMapAccess ? "permission-locked" : ""}`}
           onClick={() => {
             setActiveTab("map");
             window.location.hash = "#map";
           }}
-          title="Bản đồ không gian xanh, ngập lụt & trạm IoT"
+          title={hasMapAccess ? "Bản đồ không gian xanh, ngập lụt & trạm IoT" : "Chức năng bị khóa: Bạn chưa được cấp quyền truy cập Bản đồ WebGIS"}
         >
-          <span>🗺️</span>
+          <span>{hasMapAccess ? "🗺️" : "🔒"}</span>
           <span>Bản đồ WebGIS</span>
         </button>
+
         <button
           type="button"
-          className={`view-tab-btn ${activeTab === "dashboard" ? "active" : ""}`}
+          className={`view-tab-btn ${activeTab === "dashboard" ? "active" : ""} ${!hasAqiAccess ? "permission-locked" : ""}`}
           onClick={() => {
             setActiveTab("dashboard");
             window.location.hash = "#dashboard";
           }}
-          title="Bảng điều khiển phân tích chất lượng không khí & khí tượng toàn quốc"
+          title={hasAqiAccess ? "Bảng điều khiển phân tích chất lượng không khí & khí tượng toàn quốc" : "Chức năng bị khóa: Bạn chưa được cấp quyền truy cập Phân tích AQI & Khí hậu"}
         >
-          <span>📊</span>
+          <span>{hasAqiAccess ? "📊" : "🔒"}</span>
           <span>Phân tích AQI & Khí hậu</span>
         </button>
       </nav>
@@ -307,10 +336,74 @@ function App() {
             }}
           />
         </div>
+      ) : activeTab === "users" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <UserManagementContainer
+            onBackToHome={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
+            onNavigateToAuth={() => {
+              setAuthRedirectUrl("/users");
+              setActiveTab("auth");
+              window.location.hash = "#login";
+            }}
+          />
+        </div>
       ) : activeTab === "map" ? (
-        <EcoMap />
+        hasMapAccess ? (
+          <EcoMap />
+        ) : (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <AccessDeniedView
+              moduleName="Bản đồ số WebGIS"
+              moduleCode="GIS_MAP"
+              userRole={currentUser?.role}
+              userEmail={currentUser?.email}
+              onBackToHome={() => {
+                if (hasAqiAccess) {
+                  setActiveTab("dashboard");
+                  window.location.hash = "#dashboard";
+                } else {
+                  setActiveTab("auth");
+                  window.location.hash = "#login";
+                }
+              }}
+              onNavigateToAuth={() => {
+                setAuthRedirectUrl("/map");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+            />
+          </div>
+        )
       ) : (
-        <AirQualityDashboard onBackToMap={() => setActiveTab("map")} />
+        hasAqiAccess ? (
+          <AirQualityDashboard onBackToMap={() => setActiveTab("map")} />
+        ) : (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <AccessDeniedView
+              moduleName="Chỉ số chất lượng không khí AQI & Khí hậu"
+              moduleCode="AIR_QUALITY"
+              userRole={currentUser?.role}
+              userEmail={currentUser?.email}
+              onBackToHome={() => {
+                if (hasMapAccess) {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                } else {
+                  setActiveTab("auth");
+                  window.location.hash = "#login";
+                }
+              }}
+              onNavigateToAuth={() => {
+                setAuthRedirectUrl("/dashboard");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+            />
+          </div>
+        )
       )}
 
       {/* NÚT KIỂM TRA MICROSERVICE BACKEND (GÓC TRÊN BÊN PHẢI) */}

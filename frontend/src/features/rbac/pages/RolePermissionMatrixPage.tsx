@@ -376,18 +376,35 @@ export const RolePermissionMatrixPage: React.FC<RolePermissionMatrixPageProps> =
                     // Module ROLE chỉ dành riêng cho Admin
                     const isLocked = isRoleModule && !isAdmin;
 
+                    // Quyền TRUY CẬP của module này có đang bật không?
+                    const isAccessGranted = isAdmin || activeRolePerms.includes(`${mod.code}:ACCESS`);
+
+                    // Nếu không phải cột ACCESS mà quyền ACCESS chưa được bật -> Vô hiệu hóa ô con
+                    const isChildActionDisabled = !isAdmin && col.key !== "ACCESS" && !isAccessGranted;
+                    const isDisabled = isAdmin || isSaving || isChildActionDisabled;
+
+                    const tooltipText = isLocked
+                      ? "Chức năng chỉ dành cho Admin"
+                      : isChildActionDisabled
+                      ? "Cần cấp quyền TRUY CẬP trước khi phân quyền thao tác chi tiết"
+                      : `${mod.name} - ${col.label}`;
+
                     return (
-                      <td key={permCode} className="td-checkbox-cell">
+                      <td key={permCode} className="td-checkbox-cell" title={tooltipText}>
                         {isLocked ? (
                           <span className="acl-cell-lock" title="Chức năng chỉ dành cho Admin">
                             🔒
                           </span>
                         ) : (
-                          <label className="acl-checkbox-label">
+                          <label
+                            className={`acl-checkbox-label ${
+                              isChildActionDisabled ? "acl-checkbox-disabled-child" : ""
+                            }`}
+                          >
                             <input
                               type="checkbox"
                               checked={isChecked}
-                              disabled={isAdmin || isSaving}
+                              disabled={isDisabled}
                               onChange={() => handleTogglePermission(mod.code, col.key)}
                               aria-label={`${mod.name} - ${col.label}`}
                             />

@@ -283,7 +283,7 @@ describe('RBAC Feature Unit & Component Tests', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Tất cả thành viên thuộc vai trò / nhóm sẽ nhận quyền này.')).toBeInTheDocument();
+        expect(screen.getByLabelText('Báo cáo sự cố môi trường - TRUY CẬP')).toBeInTheDocument();
       });
 
       // Kiểm tra 7 cột hành động theo đúng ảnh mẫu
@@ -295,23 +295,40 @@ describe('RBAC Feature Unit & Component Tests', () => {
       expect(screen.getByText('IMPORT')).toBeInTheDocument();
       expect(screen.getByText('EXPORT')).toBeInTheDocument();
 
-      // Kiểm tra checkbox của chức năng "Báo cáo sự cố môi trường"
+      // Kiểm tra checkbox TRUY CẬP ban đầu chưa tích cho "Báo cáo sự cố môi trường"
+      const incidentsAccessCheckbox = screen.getByLabelText('Báo cáo sự cố môi trường - TRUY CẬP') as HTMLInputElement;
+      expect(incidentsAccessCheckbox.checked).toBe(false);
+
+      // Khi TRUY CẬP chưa được tích: các ô con (THÊM, XEM, XOÁ...) phải bị disabled
       const incidentsCreateCheckbox = screen.getByLabelText('Báo cáo sự cố môi trường - THÊM') as HTMLInputElement;
       expect(incidentsCreateCheckbox.checked).toBe(false);
+      expect(incidentsCreateCheckbox.disabled).toBe(true);
 
-      // Thao tác tích chọn "THÊM" -> Interlocking tự động bật "XEM" và "TRUY CẬP"
+      // 1. Thao tác tích chọn TRUY CẬP -> Các ô con được mở khóa (enabled)
+      fireEvent.click(incidentsAccessCheckbox);
+      expect(incidentsAccessCheckbox.checked).toBe(true);
+      expect(incidentsCreateCheckbox.disabled).toBe(false);
+
+      // Nút Lưu được kích hoạt khi có thay đổi (dirty)
+      const saveBtn = screen.getByRole('button', { name: 'Lưu' });
+      expect(saveBtn).not.toBeDisabled();
+
+      // 2. Thao tác tích chọn THÊM -> Tự động bật XEM
       fireEvent.click(incidentsCreateCheckbox);
       expect(incidentsCreateCheckbox.checked).toBe(true);
 
       const incidentsViewCheckbox = screen.getByLabelText('Báo cáo sự cố môi trường - XEM') as HTMLInputElement;
       expect(incidentsViewCheckbox.checked).toBe(true);
 
-      const incidentsAccessCheckbox = screen.getByLabelText('Báo cáo sự cố môi trường - TRUY CẬP') as HTMLInputElement;
-      expect(incidentsAccessCheckbox.checked).toBe(true);
+      // 3. Thao tác bỏ tích TRUY CẬP -> Tự động xóa sạch và tắt toàn bộ quyền con
+      fireEvent.click(incidentsAccessCheckbox);
+      expect(incidentsAccessCheckbox.checked).toBe(false);
+      expect(incidentsCreateCheckbox.checked).toBe(false);
+      expect(incidentsViewCheckbox.checked).toBe(false);
+      expect(incidentsCreateCheckbox.disabled).toBe(true);
 
-      // Nút Lưu được kích hoạt khi có thay đổi (dirty)
-      const saveBtn = screen.getByRole('button', { name: 'Lưu' });
-      expect(saveBtn).not.toBeDisabled();
+      // Khi quyền quay về trạng thái ban đầu -> không còn dirty -> Nút Lưu bị disabled
+      expect(saveBtn).toBeDisabled();
     });
   });
 });

@@ -100,3 +100,14 @@ class PermissionMatrixResponse(BaseModel):
     modules: List[ModulePermissionInfo]
     roles: List[RoleItemResponse]
     role_permissions: dict[str, List[str]]  # { str(role_id): ["GIS_MAP:VIEW", ...] }
+
+
+class MyPermissionsResponse(BaseModel):
+    """Thông tin quyền hạn của người dùng đang đăng nhập"""
+    user_id: str
+    email: str
+    full_name: str
+    role_id: Optional[int] = None
+    role_code: str
+    role_name: str
+    permissions: List[str]

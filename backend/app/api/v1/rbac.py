@@ -1,9 +1,9 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Header, status
 from fastapi.responses import JSONResponse
-from sqlalchemy import select, func, text, delete
+from sqlalchemy import select, func, text, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -18,6 +18,7 @@ from app.schemas.rbac import (
     ReassignAndDeleteRoleRequest,
     ModulePermissionInfo,
     PermissionMatrixResponse,
+    MyPermissionsResponse,
 )
 from app.utils.security import decode_access_token
 
@@ -452,7 +453,17 @@ async def update_role_permissions(
     for p_id in valid_perm_ids:
         db.add(RolePermission(role_id=role_id, permission_id=p_id))
 
-    # 7. Tăng version OCC
+    # 7. Thu hồi các phiên đang hoạt động của người dùng thuộc role_id này để quyền mới có hiệu lực ngay
+    await db.execute(
+        update(UserSession)
+        .where(
+            UserSession.user_id.in_(select(User.user_id).where(User.role_id == role_id)),
+            UserSession.revoked_at.is_(None),
+        )
+        .values(revoked_at=datetime.now(timezone.utc))
+    )
+
+    # 8. Tăng version OCC
     role.version = (role.version or 1) + 1
     await db.commit()
 
@@ -462,6 +473,7 @@ async def update_role_permissions(
         role_id=role_id,
         new_version=role.version,
     )
+
 
 
 @router.delete("/roles/{role_id}")
@@ -566,6 +578,7 @@ async def reassign_and_delete_role(
     }
 
 
+@router.get("/my-permissions")
 @router.get("/me/permissions")
 async def get_my_permissions(
     current_user: User = Depends(get_current_active_user),

@@ -947,6 +947,52 @@ class TestRbacUnitCoverage(unittest.IsolatedAsyncioTestCase):
         req_dist = CreateRoleRequest(role_name="Vai trò Mới", scope="Quận 1")
         self.assertEqual(req_dist.scope, "DISTRICT")
 
+    # =========================================================================
+    # 13. KIỂM THỬ MY PERMISSIONS ENDPOINT (GET /api/v1/rbac/my-permissions)
+    # =========================================================================
+    async def test_get_my_permissions_admin(self):
+        """Admin nhận 100% tất cả các quyền hệ thống"""
+        admin_role = Role(role_id=1, role_code="ADMIN", role_name="Quản trị viên hệ thống")
+        user = User(user_id=uuid.uuid4(), email="admin_perm@test.com", full_name="Admin Test", status="ACTIVE", role=admin_role, role_id=1)
+        res = await get_my_permissions(current_user=user, db=self.session)
+        self.assertEqual(res["role_code"], "ADMIN")
+        self.assertTrue(res["is_admin"])
+        self.assertGreaterEqual(len(res["permissions"]), 100)
+        self.assertIn("GIS_MAP:ACCESS", res["permissions"])
+        self.assertIn("ROLE:ACCESS", res["permissions"])
+
+    async def test_get_my_permissions_citizen(self):
+        """Citizen nhận đúng các quyền được gán trong DB"""
+        c_res = await self.session.execute(select(Role).where(Role.role_code == "CITIZEN"))
+        citizen_role = c_res.scalars().first()
+
+        user = User(
+            user_id=uuid.uuid4(),
+            email="citizen_perm@test.com",
+            full_name="Citizen Test",
+            status="ACTIVE",
+            role=citizen_role,
+            role_id=citizen_role.role_id,
+        )
+        res = await get_my_permissions(current_user=user, db=self.session)
+        self.assertEqual(res["role_code"], "CITIZEN")
+        self.assertIn("INCIDENTS:CREATE", res["permissions"])
+        self.assertNotIn("ROLE:ACCESS", res["permissions"])
+
+    async def test_get_my_permissions_no_role(self):
+        """User không có role_id trả về danh sách rỗng"""
+        user = User(
+            user_id=uuid.uuid4(),
+            email="no_role_perm@test.com",
+            full_name="No Role User",
+            status="ACTIVE",
+            role=None,
+            role_id=None,
+        )
+        res = await get_my_permissions(current_user=user, db=self.session)
+        self.assertIsNone(res["role_code"])
+        self.assertEqual(len(res["permissions"]), 0)
+
 
 if __name__ == "__main__":
     unittest.main()
