@@ -6,6 +6,7 @@ export interface AuthHeaderProps {
   onLogoClick?: () => void;
   isLoggedIn?: boolean;
   onNavigateToDevices?: () => void;
+  onNavigateToRbac?: () => void;
   onLogout?: () => void;
 }
 
@@ -13,6 +14,7 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({
   onLogoClick,
   isLoggedIn,
   onNavigateToDevices,
+  onNavigateToRbac,
   onLogout,
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -157,6 +159,28 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({
                 )}
 
                 <div className="dropdown-divider" />
+
+                {userInfo?.role === "ADMIN" && (
+                  <>
+                    <button
+                      type="button"
+                      className="dropdown-item"
+                      role="menuitem"
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        if (onNavigateToRbac) {
+                          onNavigateToRbac();
+                        } else {
+                          window.location.hash = "#rbac";
+                        }
+                      }}
+                    >
+                      <span className="item-icon">🛡️</span>
+                      <span>Phân quyền vai trò</span>
+                    </button>
+                    <div className="dropdown-divider" />
+                  </>
+                )}
 
                 <button
                   type="button"

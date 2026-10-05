@@ -9,11 +9,12 @@ import {
   AUTH_STORAGE_KEYS,
   revokeAllSessions,
 } from "./features/auth";
+import { RbacContainer } from "./features/rbac";
 import api from "./api/client";
 import "./App.css";
 
 function App() {
-  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth">("auth");
+  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac">("auth");
   const [backendStatus, setBackendStatus] = useState<string | null>(null);
   const [checkingBackend, setCheckingBackend] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -172,6 +173,23 @@ function App() {
 
                 <div className="dropdown-separator" />
 
+                {currentUser?.role === "ADMIN" && (
+                  <>
+                    <button
+                      type="button"
+                      className="dropdown-menu-action"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        setActiveTab("rbac");
+                      }}
+                    >
+                      <span className="action-icon">🛡️</span>
+                      <span>Phân quyền vai trò</span>
+                    </button>
+                    <div className="dropdown-separator" />
+                  </>
+                )}
+
                 <button
                   type="button"
                   className="dropdown-menu-action"
@@ -216,6 +234,18 @@ function App() {
           </button>
         )}
 
+        {currentUser?.role === "ADMIN" && (
+          <button
+            type="button"
+            className={`view-tab-btn ${activeTab === "rbac" ? "active" : ""}`}
+            onClick={() => setActiveTab("rbac")}
+            title="Quản lý phân quyền vai trò RBAC & Ma trận quyền"
+          >
+            <span>🛡️</span>
+            <span>Phân quyền vai trò</span>
+          </button>
+        )}
+
         <button
           type="button"
           className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
@@ -236,7 +266,7 @@ function App() {
         </button>
       </nav>
 
-      {/* VIEW NỘI DUNG CHÍNH: AUTH, MAP HOẶC DASHBOARD */}
+      {/* VIEW NỘI DUNG CHÍNH: AUTH, RBAC, MAP HOẶC DASHBOARD */}
       {activeTab === "auth" ? (
         <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
           <AuthContainer
@@ -244,6 +274,10 @@ function App() {
             redirectUrl={authRedirectUrl}
             onExitAuth={() => setActiveTab("map")}
           />
+        </div>
+      ) : activeTab === "rbac" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <RbacContainer onExit={() => setActiveTab("map")} />
         </div>
       ) : activeTab === "map" ? (
         <EcoMap />

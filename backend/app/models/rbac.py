@@ -18,6 +18,8 @@ class Role(Base, TimestampMixin):
     role_name: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
     is_system: Mapped[bool] = mapped_column(Boolean, default=False)
+    scope: Mapped[str] = mapped_column(String(20), default="DISTRICT", nullable=False)  # "CITY" hoặc "DISTRICT"
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)  # Optimistic Concurrency Control
 
     users: Mapped[List["User"]] = relationship(back_populates="role")
     permissions: Mapped[List["Permission"]] = relationship(

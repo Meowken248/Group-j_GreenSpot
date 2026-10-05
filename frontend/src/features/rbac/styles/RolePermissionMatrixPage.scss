@@ -1,0 +1,596 @@
+@use "./variables" as *;
+@use "./mixins" as *;
+
+.matrix-page {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+  box-sizing: border-box;
+  font-family: $font-family;
+
+  // HEADER VÀ BREADCRUMB
+  .matrix-page-header {
+    margin-bottom: 20px;
+
+    .header-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: $neutral-500;
+      margin-bottom: 8px;
+
+      .crumb-item {
+        color: $neutral-500;
+        text-decoration: none;
+        cursor: pointer;
+        transition: $transition-fast;
+
+        &:hover {
+          color: $primary-600;
+        }
+      }
+
+      .crumb-separator {
+        color: $neutral-400;
+      }
+
+      .crumb-current {
+        color: $neutral-800;
+        font-weight: 600;
+      }
+    }
+
+    .header-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+
+      h1 {
+        margin: 0;
+        font-size: 26px;
+        font-weight: 700;
+        color: $neutral-900;
+        letter-spacing: -0.02em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .header-desc {
+        margin: 6px 0 0;
+        font-size: 14px;
+        color: $neutral-500;
+      }
+    }
+  }
+
+  // THANH ĐIỀU KHIỂN & TRẠNG THÁI DIRTY (ACTION BAR)
+  .matrix-action-bar {
+    @include glass-panel;
+    border-radius: $radius-xl;
+    padding: 16px 20px;
+    background: #ffffff;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    box-shadow: $shadow-md;
+
+    .bar-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+
+      .role-selector-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: $neutral-700;
+      }
+
+      .role-select-dropdown {
+        padding: 8px 12px;
+        font-size: 14px;
+        font-weight: 600;
+        font-family: $font-family;
+        color: $neutral-900;
+        background: $neutral-50;
+        border: 1px solid $neutral-300;
+        border-radius: $radius-md;
+        outline: none;
+        cursor: pointer;
+        transition: $transition-fast;
+
+        &:focus {
+          border-color: $primary-500;
+          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
+      }
+
+      .editing-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        background: $primary-100;
+        color: $primary-800;
+        font-size: 12.5px;
+        font-weight: 600;
+        border-radius: 20px;
+      }
+
+      .dirty-warning-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        background: $warning-100;
+        color: $warning-600;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 20px;
+        animation: pulse-dot 1.5s infinite;
+
+        .dot-blink {
+          width: 8px;
+          height: 8px;
+          background: $warning-500;
+          border-radius: 50%;
+        }
+      }
+    }
+
+    .bar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      .btn-back-list {
+        @include button-base;
+        padding: 9px 16px;
+        font-size: 13.5px;
+        background: #ffffff;
+        border: 1px solid $neutral-300;
+        color: $neutral-700;
+
+        &:hover {
+          background: $neutral-50;
+          border-color: $neutral-400;
+          color: $neutral-900;
+        }
+      }
+
+      .btn-revert-changes {
+        @include button-base;
+        padding: 9px 16px;
+        font-size: 13.5px;
+        background: $neutral-100;
+        border: 1px solid $neutral-300;
+        color: $neutral-700;
+
+        &:hover {
+          background: $neutral-200;
+          color: $neutral-900;
+        }
+      }
+
+      .btn-save-matrix {
+        @include button-base;
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        background: $primary-600;
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+
+        &:hover:not(:disabled) {
+          background: $primary-700;
+          box-shadow: 0 6px 16px rgba(5, 150, 105, 0.35);
+        }
+
+        &:disabled {
+          background: $neutral-200;
+          color: $neutral-400;
+          box-shadow: none;
+        }
+      }
+    }
+  }
+
+  // BANNER XUNG ĐỘT PHIÊN BẢN OCC (409)
+  .occ-conflict-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 20px;
+    border-radius: $radius-lg;
+    background: $error-50;
+    border: 1px solid $error-400;
+    color: $error-700;
+    margin-bottom: 20px;
+
+    .conflict-msg {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13.5px;
+      font-weight: 600;
+    }
+
+    .btn-reload-latest {
+      @include button-base;
+      padding: 6px 14px;
+      font-size: 13px;
+      background: $error-600;
+      color: #ffffff;
+
+      &:hover {
+        background: $error-700;
+      }
+    }
+  }
+
+  // BẢNG MA TRẬN PHÂN QUYỀN (STICKY & RESPONSIVE SCROLL)
+  .matrix-table-card {
+    @include glass-panel;
+    border-radius: $radius-xl;
+    background: #ffffff;
+    box-shadow: $shadow-lg;
+    overflow: hidden;
+
+    .matrix-scroll-wrapper {
+      max-height: calc(100vh - 280px);
+      overflow: auto;
+      position: relative;
+
+      /* Custom scrollbars */
+      &::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      &::-webkit-scrollbar-track {
+        background: $neutral-100;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: $neutral-300;
+        border-radius: 4px;
+      }
+    }
+
+    .rbac-matrix-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 13px;
+
+      // STICKY HEADER CHO BẢNG
+      thead {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+
+        tr:first-child th {
+          background: #ffffff;
+          border-bottom: 1px solid $neutral-200;
+        }
+
+        tr:last-child th {
+          background: $neutral-50;
+          border-bottom: 2px solid $neutral-300;
+        }
+      }
+
+      // CỘT ĐẦU TIÊN CỐ ĐỊNH (STICKY LEFT COLUMN)
+      .col-module-sticky {
+        position: sticky;
+        left: 0;
+        z-index: 25;
+        width: 320px;
+        min-width: 300px;
+        max-width: 340px;
+        background: #ffffff;
+        box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.06);
+        border-right: 2px solid $neutral-200;
+      }
+
+      thead tr:first-child th.col-module-sticky {
+        z-index: 30;
+        background: #ffffff;
+      }
+
+      thead tr:last-child th.col-module-sticky {
+        z-index: 30;
+        background: $neutral-50;
+      }
+
+      // TH HEADER VAI TRÒ (TIER 1)
+      .th-role-header {
+        text-align: center;
+        padding: 12px 8px;
+        border-right: 1px solid $neutral-200;
+        min-width: 220px;
+        vertical-align: top;
+
+        .role-th-content {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+
+          .role-header-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: $neutral-800;
+          }
+
+          .role-header-badges {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+
+            .badge-sys {
+              font-size: 10.5px;
+              font-weight: 600;
+              padding: 1px 6px;
+              background: $neutral-200;
+              color: $neutral-700;
+              border-radius: 4px;
+            }
+
+            .badge-scope {
+              font-size: 10.5px;
+              font-weight: 500;
+              padding: 1px 6px;
+              background: $neutral-100;
+              color: $neutral-600;
+              border-radius: 4px;
+            }
+
+            .badge-active-edit {
+              font-size: 10.5px;
+              font-weight: 700;
+              padding: 1px 6px;
+              background: $primary-600;
+              color: #ffffff;
+              border-radius: 4px;
+            }
+          }
+        }
+
+        &.active-editing-column {
+          background: $primary-50 !important;
+          border-left: 2px solid $primary-500;
+          border-right: 2px solid $primary-500;
+
+          .role-header-title {
+            color: $primary-800;
+          }
+        }
+      }
+
+      // TH HEADER HÀNH ĐỘNG (TIER 2: XEM, THÊM, SỬA, XOÁ)
+      .th-action-header {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: $neutral-600;
+        padding: 8px 4px;
+        text-align: center;
+        width: 55px;
+        min-width: 52px;
+        border-right: 1px solid $neutral-100;
+
+        &:last-child {
+          border-right: 1px solid $neutral-200;
+        }
+
+        &.active-editing-column {
+          background: rgba(16, 185, 129, 0.12) !important;
+          color: $primary-800;
+          font-weight: 700;
+        }
+      }
+
+      // DÒNG THÂN BẢNG (TBODY TR)
+      tbody tr {
+        transition: background 0.15s ease;
+
+        &:hover {
+          background: $neutral-50;
+
+          .col-module-sticky {
+            background: $neutral-50;
+          }
+        }
+
+        &:nth-child(even) {
+          background: rgba(248, 250, 252, 0.6);
+
+          .col-module-sticky {
+            background: rgba(248, 250, 252, 0.95);
+          }
+        }
+
+        td {
+          padding: 10px 6px;
+          border-bottom: 1px solid $neutral-200;
+          vertical-align: middle;
+        }
+      }
+
+      // CỘT CHỨC NĂNG (MODULE CELL)
+      .td-module-info {
+        padding: 12px 16px !important;
+
+        .module-cell-content {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+
+          .module-title-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            .module-index {
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              width: 20px;
+              height: 20px;
+              background: $neutral-100;
+              color: $neutral-600;
+              border-radius: 50%;
+              font-size: 11px;
+              font-weight: 700;
+            }
+
+            .module-name {
+              font-size: 13.5px;
+              font-weight: 600;
+              color: $neutral-800;
+            }
+          }
+
+          .module-code-tag {
+            font-size: 11px;
+            font-family: monospace;
+            color: $neutral-400;
+            margin-left: 28px;
+          }
+        }
+      }
+
+      // Ô CHECKBOX PHÂN QUYỀN
+      .td-perm-cell {
+        text-align: center;
+        border-right: 1px solid $neutral-100;
+
+        &:last-child {
+          border-right: 1px solid $neutral-200;
+        }
+
+        &.active-editing-column {
+          background: rgba(16, 185, 129, 0.06);
+        }
+
+        .checkbox-container {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 22px;
+          height: 22px;
+          cursor: pointer;
+
+          input[type="checkbox"] {
+            width: 17px;
+            height: 17px;
+            cursor: pointer;
+            accent-color: $primary-600;
+            border-radius: 4px;
+            transition: transform 0.1s ease;
+
+            &:active:not(:disabled) {
+              transform: scale(0.92);
+            }
+
+            &:disabled {
+              cursor: not-allowed;
+              opacity: 0.6;
+            }
+          }
+        }
+
+        .cell-na {
+          color: $neutral-300;
+          font-size: 13px;
+          user-select: none;
+        }
+
+        .cell-locked {
+          color: $neutral-400;
+          font-size: 12px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+
+  // FOOTER CHÚ THÍCH DƯỚI BẢNG
+  .matrix-legend-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: #ffffff;
+    border-radius: $radius-lg;
+    border: 1px solid $neutral-200;
+    font-size: 12.5px;
+    color: $neutral-600;
+
+    .legend-items {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        .legend-chip {
+          width: 16px;
+          height: 16px;
+          border-radius: 3px;
+
+          &.chip-editing {
+            background: rgba(16, 185, 129, 0.18);
+            border: 1px solid $primary-500;
+          }
+
+          &.chip-readonly {
+            background: $neutral-100;
+            border: 1px solid $neutral-300;
+          }
+
+          &.chip-na {
+            background: $neutral-200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            color: $neutral-500;
+          }
+        }
+      }
+    }
+
+    .interlock-tip {
+      font-size: 12px;
+      color: $neutral-500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+  }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
