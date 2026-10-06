@@ -12,28 +12,56 @@ import {
 } from "./features/auth";
 import { RbacContainer, usePermissions, ModulePermissionGuard } from "./features/rbac";
 import { UserManagementContainer } from "./features/user_management";
+import { ProfileContainer } from "./features/profile";
 import api from "./api/client";
 import "./App.css";
 
+// Hàm kiểm tra trạng thái đăng nhập thực tế của phiên hiện tại
+const checkIsLoggedIn = (): boolean => {
+  try {
+    const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+    const userInfo = localStorage.getItem(AUTH_STORAGE_KEYS.USER_INFO);
+    return Boolean(token && userInfo);
+  } catch {
+    return false;
+  }
+};
+
 function App() {
-  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users">(() => {
+  const [authRedirectUrl, setAuthRedirectUrl] = useState<string | undefined>(() => {
+    const hash = window.location.hash.toLowerCase();
+    const isLogged = checkIsLoggedIn();
+    if ((hash === "#profile" || window.location.pathname.toLowerCase() === "/profile") && !isLogged) {
+      return "/profile";
+    }
+    return undefined;
+  });
+
+  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users" | "profile">(() => {
     const hash = window.location.hash.toLowerCase();
     const path = window.location.pathname.toLowerCase();
+    const isLogged = checkIsLoggedIn();
+
     if (hash === "#map" || path === "/map") return "map";
     if (hash === "#dashboard" || path === "/dashboard") return "dashboard";
     if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") return "auth";
     if (hash === "#users" || path === "/users") return "users";
     if (hash === "#rbac" || path === "/rbac") return "rbac";
+    if (hash === "#profile" || path === "/profile") {
+      // Bắt buộc phải có cả token và thông tin user hợp lệ
+      if (!isLogged) {
+        return "auth";
+      }
+      return "profile";
+    }
     // Mặc định: khi chưa đăng nhập, hiển thị Bản đồ WebGIS công cộng
-    const token = localStorage.getItem("eco_access_token");
-    if (!token) return "map";
-    return "rbac";
+    if (!isLogged) return "map";
+    return "profile";
   });
   const [backendStatus, setBackendStatus] = useState<string | null>(null);
   const [checkingBackend, setCheckingBackend] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
   const [sessionExpiredOpen, setSessionExpiredOpen] = useState(false);
-  const [authRedirectUrl, setAuthRedirectUrl] = useState<string | undefined>();
 
   // Hook quản lý tài khoản và quyền hạn thời gian thực (RBAC Permission Guard)
   const { currentUser, canAccess } = usePermissions();
@@ -83,15 +111,35 @@ function App() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.toLowerCase();
+      const isLogged = checkIsLoggedIn();
+
       if (hash === "#map") setActiveTab("map");
       else if (hash === "#dashboard") setActiveTab("dashboard");
       else if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") setActiveTab("auth");
       else if (hash === "#users") setActiveTab("users");
       else if (hash === "#rbac") setActiveTab("rbac");
+      else if (hash === "#profile") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/profile");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("profile");
+        }
+      }
     };
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
+
+  // Tự động đẩy người dùng về màn hình đăng nhập nếu ở tab profile mà chưa có currentUser
+  useEffect(() => {
+    if (activeTab === "profile" && !currentUser) {
+      setAuthRedirectUrl("/profile");
+      setActiveTab("auth");
+      window.location.hash = "#login";
+    }
+  }, [activeTab, currentUser]);
 
   const handleRelogin = (redirectUrl?: string) => {
     setSessionExpiredOpen(false);
@@ -193,6 +241,21 @@ function App() {
                     </span>
                   </div>
                 </div>
+
+                <div className="dropdown-separator" />
+
+                <button
+                  type="button"
+                  className="dropdown-menu-action"
+                  onClick={() => {
+                    setUserDropdownOpen(false);
+                    setActiveTab("profile");
+                    window.location.hash = "#profile";
+                  }}
+                >
+                  <span className="action-icon">🌿</span>
+                  <span>Trang cá nhân & Green Passport</span>
+                </button>
 
                 <div className="dropdown-separator" />
 
@@ -333,6 +396,19 @@ function App() {
                 <span>Phân tích AQI & Khí hậu</span>
               </button>
             )}
+
+            <button
+              type="button"
+              className={`view-tab-btn ${activeTab === "profile" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("profile");
+                window.location.hash = "#profile";
+              }}
+              title="Trang cá nhân, Green Passport & Lịch sử đóng góp"
+            >
+              <span>🌿</span>
+              <span>Hồ sơ xanh</span>
+            </button>
           </>
         ) : (
           <button
@@ -350,7 +426,7 @@ function App() {
         )}
       </nav>
 
-      {/* VIEW NỘI DUNG CHÍNH: AUTH, RBAC, MAP HOẶC DASHBOARD */}
+      {/* VIEW NỘI DUNG CHÍNH: AUTH, RBAC, PROFILE, MAP HOẶC DASHBOARD */}
       {activeTab === "auth" ? (
         <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
           <AuthContainer
@@ -368,6 +444,37 @@ function App() {
             }}
           />
         </div>
+      ) : activeTab === "profile" ? (
+        !currentUser ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/profile"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <ProfileContainer
+              onBackToMap={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              onNavigateToAqi={() => {
+                setActiveTab("dashboard");
+                window.location.hash = "#dashboard";
+              }}
+              onNavigateToAuth={() => {
+                setAuthRedirectUrl("/profile");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+            />
+          </div>
+        )
       ) : activeTab === "rbac" ? (
         <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
           <RbacContainer

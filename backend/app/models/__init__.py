@@ -53,6 +53,15 @@ from app.models.flood import (
     RouteSafetyStatus,
 )
 
+# 6. Trang cá nhân, Hộ chiếu Xanh, Huy hiệu & Lịch sử đóng góp (Profile Domain)
+from app.models.profile import (
+    CitizenLevel,
+    Badge,
+    UserBadge,
+    UserActivity,
+    Post,
+)
+
 __all__ = [
     "Base",
     "TimestampMixin",
@@ -88,4 +97,10 @@ __all__ = [
     "FloodCauseType",
     "FloodSeverityLevel",
     "RouteSafetyStatus",
+    # Profile & Green Passport Domain
+    "CitizenLevel",
+    "Badge",
+    "UserBadge",
+    "UserActivity",
+    "Post",
 ]
