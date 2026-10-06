@@ -43,7 +43,7 @@ import {
 } from "../hooks/useFastGeolocation";
 import LiveWeatherRadarMap, { type WeatherOverlay } from "./LiveWeatherRadarMap";
 import MapControlSidebar from "./MapControlSidebar";
-import { usePermissions, CATEGORY_TO_MODULE } from "../features/rbac/services/permissionGuard";
+import { usePermissions, useModulePermissions, CATEGORY_TO_MODULE } from "../features/rbac/services/permissionGuard";
 
 // Cấu hình danh mục dự phòng an toàn (tránh lỗi undefined khi chưa kịp đồng bộ)
 export const DEFAULT_CATEGORY_CFG = {
@@ -425,8 +425,11 @@ function EcoMap() {
 
   // Phân quyền vai trò RBAC cho các chức năng và lớp dữ liệu trên bản đồ
   const { canAccess } = usePermissions();
-  const hasFloodAccess = canAccess("FLOOD_WARNINGS");
+  const mapPerms = useModulePermissions("GIS_MAP");
+  const floodPerms = useModulePermissions("FLOOD_WARNINGS");
+  const hasFloodAccess = canAccess("FLOOD_WARNINGS") || floodPerms.hasAccess;
   const hasIncidentAccess = canAccess("INCIDENTS");
+  const canReportFlood = floodPerms.canCreate || mapPerms.canCreate;
 
   // Tự động hủy chọn danh mục nếu vai trò không có quyền truy cập
   useEffect(() => {
@@ -2651,38 +2654,75 @@ function EcoMap() {
         />
       )}
 
-      {/* 9. Context Menu (Right Click) Báo Cáo Ngập Lụt */}
+      {/* 9. Context Menu (Right Click) Báo Cáo Ngập Lụt - Có Kiểm Soát Phân Quyền CREATE */}
       {contextMenu && (
-        <div
-          style={{
-            position: "absolute",
-            left: contextMenu.x,
-            top: contextMenu.y,
-            backgroundColor: "#1e293b",
-            color: "white",
-            padding: "12px",
-            borderRadius: "8px",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-            zIndex: 1000,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            border: "1px solid #38bdf8",
-          }}
-          onClick={async (e) => {
-            e.stopPropagation();
-            const success = await reportFloodAPI(contextMenu.lat, contextMenu.lng, 35);
-            setContextMenu(null);
-            if (success) {
-              alert("Báo cáo ngập lụt thành công! Hệ thống đang tải lại bản đồ...");
-              setRefreshTrigger((prev) => prev + 1);
-            }
-          }}
-        >
-          <span className="material-symbols-outlined text-blue-400">flood</span>
-          <span className="font-semibold text-sm">Báo cáo đoạn đường này đang ngập</span>
-        </div>
+        canReportFlood ? (
+          <div
+            id="context-menu-flood-active"
+            style={{
+              position: "absolute",
+              left: contextMenu.x,
+              top: contextMenu.y,
+              backgroundColor: "#1e293b",
+              color: "white",
+              padding: "12px 16px",
+              borderRadius: "10px",
+              boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(56, 189, 248, 0.4)",
+              zIndex: 1000,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              border: "1px solid #38bdf8",
+              transition: "transform 0.15s ease",
+            }}
+            onClick={async (e) => {
+              e.stopPropagation();
+              const success = await reportFloodAPI(contextMenu.lat, contextMenu.lng, 35);
+              setContextMenu(null);
+              if (success) {
+                alert("Báo cáo ngập lụt thành công! Hệ thống đang tải lại bản đồ...");
+                setRefreshTrigger((prev) => prev + 1);
+              }
+            }}
+          >
+            <span className="material-symbols-outlined text-blue-400">flood</span>
+            <span className="font-semibold text-sm">Báo cáo đoạn đường này đang ngập</span>
+          </div>
+        ) : (
+          <div
+            id="context-menu-flood-locked"
+            style={{
+              position: "absolute",
+              left: contextMenu.x,
+              top: contextMenu.y,
+              backgroundColor: "#0f172a",
+              color: "#94a3b8",
+              padding: "12px 16px",
+              borderRadius: "10px",
+              boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(100, 116, 139, 0.3)",
+              zIndex: 1000,
+              cursor: "not-allowed",
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+              border: "1px solid #475569",
+              maxWidth: "280px",
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setContextMenu(null);
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "16px" }}>🔒</span>
+              <span style={{ fontWeight: 700, fontSize: "13px", color: "#f87171" }}>Khóa Quyền Báo Cáo Ngập</span>
+            </div>
+            <span style={{ fontSize: "11.5px", color: "#cbd5e1", lineHeight: 1.45 }}>
+              Tài khoản đang ở chế độ Chỉ Xem. Cần quyền <strong>THÊM (CREATE)</strong> để gửi báo cáo ngập lụt.
+            </span>
+          </div>
+        )
       )}
     </div>
   );

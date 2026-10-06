@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../../api/client';
-import { AUTH_STORAGE_KEYS } from '../../auth';
+import { AUTH_STORAGE_KEYS } from '../../auth/types/auth.types';
+import type { IModulePermissionState } from '../types/permissionGuard.interface';
+import type { AclActionType } from '../types/rbac.types';
 
 export const PERMISSION_STORAGE_KEY = 'eco_user_permissions';
 
@@ -213,5 +215,61 @@ export function usePermissions() {
     canAccess,
     canDo,
     refreshPermissions,
+  };
+}
+
+/**
+ * React Hook kiểm tra quyền hạn chi tiết của 1 Module theo chuẩn 7 cột ACL (IModulePermissionState)
+ * @param moduleCode Mã module (vd: 'GIS_MAP', 'INCIDENTS', 'CAMPAIGNS')
+ */
+export function useModulePermissions(moduleCode: string): IModulePermissionState {
+  const { currentUser, permissions } = usePermissions();
+
+  const isGuest = !currentUser;
+  const isAdmin = currentUser?.role === 'ADMIN';
+
+  const checkAction = useCallback(
+    (action: string): boolean => {
+      if (isAdmin) {
+        return true;
+      }
+      if (isGuest) {
+        if (action === 'ACCESS' || action === 'VIEW') {
+          return moduleCode === 'GIS_MAP' || moduleCode === 'AIR_QUALITY' || moduleCode === 'WEATHER';
+        }
+        return false;
+      }
+      return permissions.includes(`${moduleCode}:${action}`);
+    },
+    [isAdmin, isGuest, moduleCode, permissions]
+  );
+
+  const hasAccess = checkAction('ACCESS');
+  const hasView = checkAction('VIEW');
+  const canCreate = checkAction('CREATE');
+  const canUpdate = checkAction('UPDATE');
+  const canDelete = checkAction('DELETE');
+  const canImport = checkAction('IMPORT');
+  const canExport = checkAction('EXPORT');
+
+  const isViewOnly = hasView && !canCreate && !canUpdate && !canDelete && !canImport && !canExport;
+
+  const canDo = useCallback(
+    (action: AclActionType): boolean => {
+      return checkAction(action);
+    },
+    [checkAction]
+  );
+
+  return {
+    hasAccess,
+    hasView,
+    canCreate,
+    canUpdate,
+    canDelete,
+    canImport,
+    canExport,
+    isViewOnly,
+    canDo,
   };
 }

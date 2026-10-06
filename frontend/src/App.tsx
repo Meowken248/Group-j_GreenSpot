@@ -10,9 +10,8 @@ import {
   AUTH_STORAGE_KEYS,
   revokeAllSessions,
 } from "./features/auth";
-import { RbacContainer, usePermissions } from "./features/rbac";
+import { RbacContainer, usePermissions, ModulePermissionGuard } from "./features/rbac";
 import { UserManagementContainer } from "./features/user_management";
-import { AccessDeniedView } from "./components/AccessDeniedView";
 import api from "./api/client";
 import "./App.css";
 
@@ -398,59 +397,19 @@ function App() {
           />
         </div>
       ) : activeTab === "map" ? (
-        hasMapAccess ? (
+        <ModulePermissionGuard
+          moduleCode="GIS_MAP"
+          moduleName="Bản đồ số WebGIS"
+        >
           <EcoMap />
-        ) : (
-          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
-            <AccessDeniedView
-              moduleName="Bản đồ số WebGIS"
-              moduleCode="GIS_MAP"
-              userRole={currentUser?.role}
-              userEmail={currentUser?.email}
-              onBackToHome={() => {
-                if (hasAqiAccess) {
-                  setActiveTab("dashboard");
-                  window.location.hash = "#dashboard";
-                } else {
-                  setActiveTab("auth");
-                  window.location.hash = "#login";
-                }
-              }}
-              onNavigateToAuth={() => {
-                setAuthRedirectUrl("/map");
-                setActiveTab("auth");
-                window.location.hash = "#login";
-              }}
-            />
-          </div>
-        )
+        </ModulePermissionGuard>
       ) : (
-        hasAqiAccess ? (
+        <ModulePermissionGuard
+          moduleCode="AIR_QUALITY"
+          moduleName="Chỉ số chất lượng không khí AQI & Khí hậu"
+        >
           <AirQualityDashboard onBackToMap={() => setActiveTab("map")} />
-        ) : (
-          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
-            <AccessDeniedView
-              moduleName="Chỉ số chất lượng không khí AQI & Khí hậu"
-              moduleCode="AIR_QUALITY"
-              userRole={currentUser?.role}
-              userEmail={currentUser?.email}
-              onBackToHome={() => {
-                if (hasMapAccess) {
-                  setActiveTab("map");
-                  window.location.hash = "#map";
-                } else {
-                  setActiveTab("auth");
-                  window.location.hash = "#login";
-                }
-              }}
-              onNavigateToAuth={() => {
-                setAuthRedirectUrl("/dashboard");
-                setActiveTab("auth");
-                window.location.hash = "#login";
-              }}
-            />
-          </div>
-        )
+        </ModulePermissionGuard>
       )}
 
       {/* NÚT KIỂM TRA MICROSERVICE BACKEND (GÓC TRÊN BÊN PHẢI) */}

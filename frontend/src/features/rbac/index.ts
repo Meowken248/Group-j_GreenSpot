@@ -1,7 +1,11 @@
 export type * from "./types/rbac.types";
+export type * from "./types/permissionGuard.interface";
+export * from "./types/permissionGuard.interface";
 export * from "./services/rbacService";
 export * from "./components/DeleteRoleModal";
 export * from "./components/ReassignUsersModal";
+export * from "./components/ModuleViewLockedView";
+export * from "./components/ModulePermissionGuard";
 export * from "./pages/RoleListPage";
 export * from "./pages/CreateRolePage";
 export * from "./pages/RolePermissionMatrixPage";
