@@ -4,6 +4,8 @@ Hỗ trợ PostgreSQL 16 + PostGIS 3.4
 """
 
 import asyncio
+import asyncpg
+from app.core.config import settings
 from sqlalchemy import text
 from app.database import engine
 
@@ -202,10 +204,6 @@ INSERT INTO ai_knowledge_embeddings (document_title, document_type, chunk_index,
     'Khi phát hiện điểm ngập sâu trên 20cm do rác chặn họng thu nước: Cán bộ trực ban thông báo Đội Công ích trong vòng 15 phút, triển khai xe hút và đội nạo vét cống ngay lập tức.')
 ON CONFLICT DO NOTHING;
 """
-
-
-import asyncpg
-from app.config import settings
 
 
 async def seed():
