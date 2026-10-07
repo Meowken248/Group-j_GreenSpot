@@ -1,0 +1,282 @@
+@use './variables' as *;
+@use './mixins' as *;
+
+.auth-page-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at 10% 20%, rgba($primary-50, 0.8) 0%, rgba($neutral-50, 1) 90%);
+  font-family: $font-family;
+  color: $neutral-800;
+  box-sizing: border-box;
+
+  .auth-main-content {
+    flex: 1;
+    @include flex-center;
+    padding: 2.5rem 1.25rem;
+    box-sizing: border-box;
+
+    @include mobile {
+      padding: 1.5rem 1rem;
+    }
+  }
+
+  // Khung ĐĂNG KÝ
+  .register-card {
+    width: 100%;
+    max-width: 480px;
+    background-color: #ffffff;
+    border: 1px solid $neutral-200;
+    border-radius: $radius-xl;
+    padding: 2.5rem 2.25rem;
+    box-shadow: $shadow-xl;
+    box-sizing: border-box;
+    transition: $transition-normal;
+
+    @include mobile {
+      padding: 1.75rem 1.25rem;
+    }
+
+    .card-header-section {
+      text-align: center;
+      margin-bottom: 2rem;
+
+      .badge-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        background-color: $primary-50;
+        border: 1px solid $primary-200;
+        border-radius: 9999px;
+        color: $primary-700;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+      }
+
+      .card-title {
+        font-size: 1.75rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: $neutral-900;
+        margin: 0 0 0.5rem 0;
+      }
+
+      .card-subtitle {
+        font-size: 0.92rem;
+        color: $neutral-500;
+        line-height: 1.5;
+        margin: 0;
+      }
+    }
+
+    .register-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        position: relative;
+
+        .form-input {
+          @include form-input-base;
+        }
+
+        .input-error-msg {
+          font-size: 0.84rem;
+          color: $error-600;
+          font-weight: 500;
+          margin-top: 6px;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          line-height: 1.35;
+
+          .login-inline-link {
+            background: none;
+            border: none;
+            color: $primary-700;
+            text-decoration: underline;
+            font-weight: 700;
+            font-size: inherit;
+            cursor: pointer;
+            padding: 0 2px;
+            display: inline;
+
+            &:hover {
+              color: $primary-800;
+            }
+          }
+        }
+
+        &.password-group {
+          .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+
+            .form-input {
+              padding-right: 44px;
+            }
+
+            .password-toggle-btn {
+              position: absolute;
+              right: 12px;
+              background: none;
+              border: none;
+              color: $neutral-400;
+              cursor: pointer;
+              @include flex-center;
+              padding: 4px;
+              border-radius: $radius-sm;
+              transition: $transition-fast;
+
+              &:hover {
+                color: $neutral-700;
+              }
+
+              &:disabled {
+                cursor: not-allowed;
+                opacity: 0.5;
+              }
+            }
+          }
+        }
+      }
+
+      // Nút "Đăng ký"
+      .btn-submit {
+        margin-top: 0.5rem;
+        width: 100%;
+        height: 48px;
+        background: linear-gradient(135deg, $primary-500, $primary-600);
+        color: #ffffff;
+        font-family: $font-family;
+        font-size: 1rem;
+        font-weight: 600;
+        border: none;
+        border-radius: $radius-md;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba($primary-600, 0.3);
+        transition: $transition-fast;
+        @include flex-center;
+        gap: 8px;
+
+        &:hover:not(:disabled) {
+          background: linear-gradient(135deg, $primary-600, $primary-700);
+          box-shadow: 0 6px 16px rgba($primary-600, 0.4);
+          transform: translateY(-1px);
+        }
+
+        &:active:not(:disabled) {
+          transform: translateY(0);
+        }
+
+        &:disabled {
+          background: $neutral-300;
+          color: $neutral-500;
+          cursor: not-allowed;
+          box-shadow: none;
+          transform: none;
+        }
+
+        .spinner {
+          width: 18px;
+          height: 18px;
+          border: 2.5px solid rgba(255, 255, 255, 0.35);
+          border-top-color: #ffffff;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+      }
+
+      // Nút "Đã có tài khoản? Đăng nhập"
+      .switch-auth-action {
+        text-align: center;
+        margin-top: 0.5rem;
+
+        .btn-switch-login {
+          background: none;
+          border: none;
+          color: $neutral-600;
+          font-family: $font-family;
+          font-size: 0.92rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: $transition-fast;
+          padding: 8px 12px;
+          border-radius: $radius-md;
+
+          span {
+            color: $primary-600;
+            font-weight: 700;
+            text-decoration: underline;
+            margin-left: 4px;
+          }
+
+          &:hover:not(:disabled) {
+            background-color: $neutral-100;
+            color: $neutral-800;
+
+            span {
+              color: $primary-700;
+            }
+          }
+
+          &:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+          }
+        }
+      }
+    }
+  }
+
+  // Footer styling
+  .auth-footer {
+    width: 100%;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    border-top: 1px solid $neutral-200;
+    background-color: #ffffff;
+    box-sizing: border-box;
+
+    .footer-links {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-size: 0.85rem;
+      color: $neutral-500;
+      flex-wrap: wrap;
+
+      .footer-link {
+        cursor: pointer;
+        transition: $transition-fast;
+
+        &:hover {
+          color: $primary-600;
+        }
+      }
+
+      .footer-divider {
+        color: $neutral-300;
+      }
+    }
+
+    .footer-copyright {
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
+      color: $neutral-400;
+    }
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
