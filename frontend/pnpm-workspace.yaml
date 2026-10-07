@@ -1,8 +1,2 @@
 allowBuilds:
-<<<<<<< HEAD
-  "@parcel/watcher": true
-
-dangerouslyAllowAllBuilds: true
-=======
   '@parcel/watcher': false
->>>>>>> Tuan/37
