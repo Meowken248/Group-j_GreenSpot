@@ -1,4 +1,87 @@
-m  total_green_points = 720,
+import asyncio
+import os
+import uuid
+from datetime import datetime, timezone, timedelta
+import asyncpg
+from app.core.config import settings
+
+
+async def seed_profile_data():
+    print("🚀 Bắt đầu nạp dữ liệu Profile Domain & Green Passport...")
+
+    db_url = os.environ.get("DATABASE_URL", str(settings.DATABASE_URL))
+    clean_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
+    conn = await asyncpg.connect(clean_url)
+
+    # 1. SEED CẤP BẬC CÔNG DÂN XANH (CITIZEN LEVELS)
+    print(" 🌱 [1/6] Nạp dữ liệu citizen_levels...")
+    levels = [
+        (1, "Hạt Mầm", 0, "https://api.iconify.design/twemoji:seedling.svg", 1),
+        (2, "Chồi Non", 100, "https://api.iconify.design/twemoji:herb.svg", 2),
+        (3, "Cây Xanh", 300, "https://api.iconify.design/twemoji:deciduous-tree.svg", 3),
+        (4, "Rừng Xanh", 700, "https://api.iconify.design/twemoji:evergreen-tree.svg", 4),
+        (5, "Đại Ngàn", 1500, "https://api.iconify.design/twemoji:national-park.svg", 5),
+    ]
+    for lvl in levels:
+        await conn.execute("""
+            INSERT INTO citizen_levels (level_id, level_name, min_points, badge_icon_url, sort_order)
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (level_id) DO UPDATE
+            SET level_name = EXCLUDED.level_name,
+                min_points = EXCLUDED.min_points,
+                badge_icon_url = EXCLUDED.badge_icon_url,
+                sort_order = EXCLUDED.sort_order;
+        """, lvl[0], lvl[1], lvl[2], lvl[3], lvl[4])
+
+    # 2. SEED HUY HIỆU VINH DANH (BADGES)
+    print(" 🏅 [2/6] Nạp dữ liệu badges...")
+    badges = [
+        (1, "CLEANUP_HERO", "Dũng sĩ làm sạch", "Tham gia 5 hoạt động thu gom và dọn rác", "https://api.iconify.design/fluent-emoji:wastebasket.svg", "Hoàn thành 5 hoạt động dọn rác", 1),
+        (2, "GREEN_COMMUTER", "Chiến binh xanh", "Sử dụng phương tiện công cộng hoặc đi bộ 20km", "https://api.iconify.design/fluent-emoji:bicycle.svg", "Tích lũy 20km xanh", 2),
+        (3, "RECYCLE_MASTER", "Đại sứ tái chế", "Đem rác tái chế đến các trạm thu gom 10 lần", "https://api.iconify.design/fluent-emoji:recycling-symbol.svg", "Đổi rác lấy quà 10 lần", 3),
+        (4, "PLANT_CHAMPION", "Bàn tay xanh", "Trồng hoặc chăm sóc ít nhất 3 cây xanh đô thị", "https://api.iconify.design/fluent-emoji:potted-plant.svg", "Chăm sóc 3 cây xanh", 4),
+        (5, "VOICE_PIONEER", "Người tiên phong", "Phản ánh môi trường đầu tiên qua GreenSpot", "https://api.iconify.design/fluent-emoji:megaphone.svg", "Gửi phản ánh môi trường đầu tiên", 5),
+    ]
+    for b in badges:
+        await conn.execute("""
+            INSERT INTO badges (badge_id, badge_code, name, description, icon_url, unlock_condition, sort_order, is_active)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, true)
+            ON CONFLICT (badge_id) DO UPDATE
+            SET badge_code = EXCLUDED.badge_code,
+                name = EXCLUDED.name,
+                description = EXCLUDED.description,
+                icon_url = EXCLUDED.icon_url,
+                unlock_condition = EXCLUDED.unlock_condition,
+                sort_order = EXCLUDED.sort_order;
+        """, b[0], b[1], b[2], b[3], b[4], b[5], b[6])
+
+    # 3. CẬP NHẬT THÔNG TIN HỒ SƠ NGƯỜI DÙNG (USERS PROFILE)
+    print(" 👤 [3/6] Cập nhật thông tin hồ sơ cho users...")
+    citizen_uuid = uuid.UUID("44444444-4444-4444-4444-444444444444")
+    newbie_uuid = uuid.uuid4()
+
+    # Cập nhật cho tài khoản Công dân mẫu citizen@ecoreport.gov.vn
+    await conn.execute("""
+        UPDATE users
+        SET bio = 'Sống xanh mỗi ngày cùng GreenSpot! Tích cực tham gia bảo vệ môi trường TP.HCM.',
+            cover_image_url = 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&w=1200&q=80',
+            avatar_url = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+            reputation_score = 100,
+            total_green_points = 450,
+            friends_count = 32,
+            version = 1,
+            activated_at = '2024-02-15 08:30:00+07'
+        WHERE email = 'citizen@ecoreport.gov.vn';
+    """)
+
+    # Cập nhật cho tài khoản Admin ddatmguyen2023+test@gmail.com
+    await conn.execute("""
+        UPDATE users
+        SET bio = 'Quản trị viên Hệ thống GreenSpot. Lan tỏa lối sống xanh và bảo tồn đô thị sinh thái.',
+            cover_image_url = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
+            avatar_url = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+            reputation_score = 100,
+            total_green_points = 720,
             friends_count = 56,
             version = 1,
             activated_at = '2024-01-10 09:00:00+07'
@@ -49,14 +132,14 @@ m  total_green_points = 720,
         ("CHALLENGE", "Hoàn thành thử thách 7 ngày không dùng túi nilon", "Thực hành sử dụng túi vải đi chợ và bình nước cá nhân", 80, 5),
         ("CLEANUP", "Tham gia Chủ nhật xanh nạo vét mương thoát nước", "Đội tình nguyện thanh niên xung kích phường Linh Trung", 60, 7),
         ("COMMUNITY", "Khảo sát và xác minh tình trạng ngập đường Kha Vạn Cân", "Cung cấp tọa độ và mức nước cho bản đồ FloodLens", 25, 9),
-        ("SURVEY", "Tham gia khảo sát đánh giá chất lượng không khí", "Góp ý chất lượng môi trường khu dân cư", 0, 10), # Test points = 0 (hiển thị "—")
+        ("SURVEY", "Tham gia khảo sát đánh giá chất lượng không khí", "Góp ý chất lượng môi trường khu dân cư", 0, 10),
         ("REPORT_INCIDENT", "Báo cáo điểm xả nước thải chưa qua xử lý", "Gửi phản ánh khẩn cấp đến cơ quan quản lý", 50, 12),
         ("RECYCLING", "Đổi 10 vỏ pin cũ lấy cây sen đá", "Điểm đổi pin an toàn trường THPT Thủ Đức", 20, 14),
         ("PLANT_TREE", "Gieo mầm vườn rau hữu cơ tại ban công", "Chia sẻ kinh nghiệm ủ phân compost từ rác nhà bếp", 35, 16),
         ("CHALLENGE", "Thử thách 10.000 bước chân bảo vệ môi trường", "Đi bộ thay vì sử dụng xe máy cho cự ly gần", 30, 18),
         ("CLEANUP", "Dọn dẹp làm sạch tuyến hẻm 48 đường số 6", "Phối hợp cùng hội phụ nữ và thanh niên", 40, 20),
         ("COMMUNITY", "Tuyên truyền phân loại rác tại nguồn cho 5 hộ dân", "Phát cẩm nang hướng dẫn phân loại 3 loại rác", 45, 22),
-        ("SURVEY", "Ghi nhận chỉ số bụi mịn từ cảm biến cá nhân", "Cập nhật dữ liệu trạm IoT khu vực Linh Tây", 0, 25), # Test points = 0
+        ("SURVEY", "Ghi nhận chỉ số bụi mịn từ cảm biến cá nhân", "Cập nhật dữ liệu trạm IoT khu vực Linh Tây", 0, 25),
         ("REPORT_INCIDENT", "Báo cáo cành cây gãy đổ chắn lối đi sau mưa bão", "Hỗ trợ đảm bảo an toàn giao thông đô thị", 30, 28),
         ("RECYCLING", "Tái chế thùng xốp và chai nhựa thành chậu hoa", "Làm đẹp hành lang chung cư", 25, 30),
         ("PLANT_TREE", "Trồng cây hoa chuông vàng vỉa hè", "Tạo cảnh quan xanh sạch đẹp", 35, 35),
@@ -102,7 +185,7 @@ m  total_green_points = 720,
         ),
         (
             "Chia sẻ mẹo phân loại rác hữu cơ tại nhà siêu đơn giản: Mình dùng thùng ủ men vi sinh Bokashi, không hề có mùi hôi và sau 2 tuần là có phân bón hữu cơ tuyệt vời cho rau sạch. Bạn nào quan tâm nhắn mình gửi tài liệu hướng dẫn nha!",
-            None, # Không có ảnh
+            None,
             "PUBLIC",
             False,
             38, 19, 4
@@ -118,7 +201,7 @@ m  total_green_points = 720,
             "Bài viết này đã được người dùng chọn ẩn khỏi bảng tin công khai. Chỉ có chính chủ mới nhìn thấy bài viết này trên dòng thời gian cá nhân kèm nhãn 'Đã ẩn'.",
             None,
             "PUBLIC",
-            True, # is_hidden = True (Chức năng 13)
+            True,
             5, 1, 8
         ),
         (
@@ -156,7 +239,6 @@ m  total_green_points = 720,
             False,
             64, 22, 21
         ),
-        # Các bài từ 11 đến 15 (để kiểm thử nút Xem Thêm khi danh sách có hơn 10 bài)
         (
             "Bắt đầu ngày mới với ly cà phê trong bình giữ nhiệt cá nhân. Nói không với ly nhựa mang đi!",
             None,
@@ -205,9 +287,8 @@ m  total_green_points = 720,
             """, p_id, target_u, content, media, vis, hidden, reacts, comms, created_time)
 
     await conn.close()
-    print("✨ Hoàn tất 100% nạp dữ liệu mẫu cho Chức năng 5!")
+    print("✨ Hoàn tất 100% nạp dữ liệu mẫu cho Chức năng Profile & Green Passport!")
 
 
 if __name__ == "__main__":
     asyncio.run(seed_profile_data())
-m

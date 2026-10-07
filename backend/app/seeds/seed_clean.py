@@ -17,20 +17,12 @@ from app.core.config import settings
 SEED_SQL = """
 -- 1. ROLES
 INSERT INTO roles (role_id, role_code, role_name, description, is_system)
-SELECT 1, 'ADMIN', 'Quản trị viên Hệ thống', 'Toàn quyền quản trị', TRUE
-WHERE NOT EXISTS (SELECT 1 FROM roles WHERE role_code = 'ADMIN');
-
-INSERT INTO roles (role_id, role_code, role_name, description, is_system)
-SELECT 2, 'OFFICER', 'Cán bộ Môi trường', 'Tiếp nhận và xử lý sự cố', TRUE
-WHERE NOT EXISTS (SELECT 1 FROM roles WHERE role_code = 'OFFICER');
-
-INSERT INTO roles (role_id, role_code, role_name, description, is_system)
-SELECT 3, 'COLLECTOR', 'Đội Thu gom Hiện trường', 'Xử lý tại chỗ', TRUE
-WHERE NOT EXISTS (SELECT 1 FROM roles WHERE role_code = 'COLLECTOR');
-
-INSERT INTO roles (role_id, role_code, role_name, description, is_system)
-SELECT 4, 'CITIZEN', 'Công dân Đô thị', 'Gửi báo cáo ô nhiễm', TRUE
-WHERE NOT EXISTS (SELECT 1 FROM roles WHERE role_code = 'CITIZEN');
+VALUES
+  (1, 'ADMIN', 'Quản trị viên Hệ thống', 'Toàn quyền quản trị', TRUE),
+  (2, 'DISTRICT_MANAGER', 'Cán bộ Môi trường', 'Tiếp nhận và xử lý sự cố', TRUE),
+  (3, 'RESPONDER', 'Đội Thu gom Hiện trường', 'Xử lý tại chỗ', TRUE),
+  (4, 'CITIZEN', 'Công dân Đô thị', 'Gửi báo cáo ô nhiễm', TRUE)
+ON CONFLICT (role_id) DO NOTHING;
 
 -- 2. USERS
 INSERT INTO users (user_id, email, phone_number, password_hash, full_name, role_id, status)
