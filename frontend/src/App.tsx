@@ -1,17 +1,180 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import EcoMap from "./components/EcoMap";
 import AirQualityDashboard from "./components/AirQualityDashboard";
 import { VoiceAssistant } from "./components/VoiceAssistant";
-
-import { AuthContainer } from "./features/auth";
+import {
+  AuthContainer,
+  SessionExpiredModal,
+  LogoutConfirmModal,
+  subscribeSessionExpired,
+  resetSessionExpired,
+  AUTH_STORAGE_KEYS,
+  revokeAllSessions,
+} from "./features/auth";
+import { RbacContainer, usePermissions, ModulePermissionGuard } from "./features/rbac";
+import { UserManagementContainer } from "./features/user_management";
+import { ProfileContainer } from "./features/profile";
 import api from "./api/client";
 import "./App.css";
 
+// Hàm kiểm tra trạng thái đăng nhập thực tế của phiên hiện tại
+const checkIsLoggedIn = (): boolean => {
+  try {
+    const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+    const userInfo = localStorage.getItem(AUTH_STORAGE_KEYS.USER_INFO);
+    return Boolean(token && userInfo);
+  } catch {
+    return false;
+  }
+};
+
 function App() {
-  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "voice" | "auth">("auth");
+  const [authRedirectUrl, setAuthRedirectUrl] = useState<string | undefined>(() => {
+    const hash = window.location.hash.toLowerCase();
+    const isLogged = checkIsLoggedIn();
+    if ((hash === "#profile" || window.location.pathname.toLowerCase() === "/profile") && !isLogged) {
+      return "/profile";
+    }
+    return undefined;
+  });
+
+  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "voice">(() => {
+    const hash = window.location.hash.toLowerCase();
+    const path = window.location.pathname.toLowerCase();
+    const isLogged = checkIsLoggedIn();
+
+    if (hash === "#map" || path === "/map") return "map";
+    if (hash === "#dashboard" || path === "/dashboard") return "dashboard";
+    if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") return "auth";
+    if (hash === "#users" || path === "/users") return "users";
+    if (hash === "#rbac" || path === "/rbac") return "rbac";
+    if (hash === "#voice" || path === "/voice") return "voice";
+    if (hash === "#profile" || path === "/profile") {
+      // Bắt buộc phải có cả token và thông tin user hợp lệ
+      if (!isLogged) {
+        return "auth";
+      }
+      return "profile";
+    }
+    // Mặc định: khi chưa đăng nhập, hiển thị Bản đồ WebGIS công cộng
+    if (!isLogged) return "map";
+    return "profile";
+  });
   const [backendStatus, setBackendStatus] = useState<string | null>(null);
   const [checkingBackend, setCheckingBackend] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
+  const [sessionExpiredOpen, setSessionExpiredOpen] = useState(false);
+
+  // Hook quản lý tài khoản và quyền hạn thời gian thực (RBAC Permission Guard)
+  const { currentUser, canAccess } = usePermissions();
+  const hasMapAccess = canAccess("GIS_MAP");
+  const hasAqiAccess = canAccess("AIR_QUALITY");
+  const hasUserMgmtAccess = currentUser?.role === "ADMIN" || canAccess("USER_MANAGEMENT");
+  const hasRbacAccess = currentUser?.role === "ADMIN" || canAccess("ROLE");
+
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Đóng dropdown tài khoản khi click ra ngoài
+  useEffect(() => {
+    if (!userDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [userDropdownOpen]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeSessionExpired(() => {
+      setSessionExpiredOpen(true);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Tự động đóng popup phiên hết hạn ngay khi người dùng đăng nhập lại thành công
+  useEffect(() => {
+    const handleAuthChange = () => {
+      const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+      if (token) {
+        setSessionExpiredOpen(false);
+        resetSessionExpired();
+      }
+    };
+    window.addEventListener("auth_change", handleAuthChange);
+    return () => window.removeEventListener("auth_change", handleAuthChange);
+  }, []);
+
+  // Lắng nghe sự kiện hashchange để đồng bộ view khi thay đổi URL hoặc bấm Back/Forward
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.toLowerCase();
+      const isLogged = checkIsLoggedIn();
+
+      if (hash === "#map") setActiveTab("map");
+      else if (hash === "#dashboard") setActiveTab("dashboard");
+      else if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") setActiveTab("auth");
+      else if (hash === "#users") setActiveTab("users");
+      else if (hash === "#rbac") setActiveTab("rbac");
+      else if (hash === "#profile") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/profile");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("profile");
+        }
+      }
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  // Tự động đẩy người dùng về màn hình đăng nhập nếu ở tab profile mà chưa có currentUser
+  useEffect(() => {
+    if (activeTab === "profile" && !currentUser) {
+      setAuthRedirectUrl("/profile");
+      setActiveTab("auth");
+      window.location.hash = "#login";
+    }
+  }, [activeTab, currentUser]);
+
+  const handleRelogin = (redirectUrl?: string) => {
+    setSessionExpiredOpen(false);
+    setAuthRedirectUrl(redirectUrl);
+    localStorage.removeItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+    localStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
+    localStorage.removeItem(AUTH_STORAGE_KEYS.USER_INFO);
+    delete api.defaults.headers.common.Authorization;
+    resetSessionExpired();
+    window.dispatchEvent(new Event("auth_change"));
+    setActiveTab("auth");
+  };
+
+  const handleConfirmLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await revokeAllSessions();
+    } catch {
+      // bỏ qua lỗi nếu token đã mất hiệu lực
+    } finally {
+      localStorage.removeItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+      localStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
+      localStorage.removeItem(AUTH_STORAGE_KEYS.USER_INFO);
+      delete api.defaults.headers.common.Authorization;
+      resetSessionExpired();
+      window.dispatchEvent(new Event("auth_change"));
+      setIsLoggingOut(false);
+      setLogoutModalOpen(false);
+      setUserDropdownOpen(false);
+      setAuthRedirectUrl(undefined);
+      setActiveTab("auth");
+    }
+  };
 
   const checkHealth = async () => {
     setCheckingBackend(true);
@@ -35,73 +198,366 @@ function App() {
 
   return (
     <div className="app-container">
+      {/* POPUP PHIÊN ĐÃ HẾT HẠN (MÀN 4 - SINGLETON MODAL ĐÈ LÊN MỌI MÀN HÌNH) */}
+      <SessionExpiredModal
+        isOpen={sessionExpiredOpen}
+        onRelogin={handleRelogin}
+      />
+
+      {/* POPUP XÁC NHẬN ĐĂNG XUẤT (MÀN 3) */}
+      <LogoutConfirmModal
+        isOpen={logoutModalOpen}
+        isCurrentDevice={true}
+        deviceName={currentUser ? `Tài khoản ${currentUser.full_name || currentUser.email}` : "Thiết bị này"}
+        isLoading={isLoggingOut}
+        onCancel={() => setLogoutModalOpen(false)}
+        onConfirm={handleConfirmLogout}
+      />
+
       {/* THANH ĐIỀU HƯỚNG CHUYỂN ĐỔI CHẾ ĐỘ VIEW (TOP CENTER) */}
       <nav className={`view-mode-switcher ${activeTab === "dashboard" || activeTab === "voice" ? "dark-mode" : ""}`} aria-label="Chế độ hiển thị">
-        <button
-          type="button"
-          className={`view-tab-btn ${activeTab === "auth" ? "active" : ""}`}
-          onClick={() => setActiveTab("auth")}
-          title="Đăng ký tài khoản công dân số & Xác thực OTP"
-        >
-          <span>🌱</span>
-          <span>Đăng ký công dân</span>
-        </button>
-        <button
-          type="button"
-          className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
-          onClick={() => setActiveTab("map")}
-          title="Bản đồ không gian xanh, ngập lụt & trạm IoT"
-        >
-          <span>🗺️</span>
-          <span>Bản đồ WebGIS</span>
-        </button>
-        <button
-          type="button"
-          className={`view-tab-btn ${activeTab === "dashboard" ? "active" : ""}`}
-          onClick={() => setActiveTab("dashboard")}
-          title="Bảng điều khiển phân tích chất lượng không khí & khí tượng toàn quốc"
-        >
-          <span>📊</span>
-          <span>Phân tích AQI & Khí hậu</span>
-        </button>
-        <button
-          type="button"
-          className={`view-tab-btn ${activeTab === "voice" ? "active" : ""}`}
-          onClick={() => setActiveTab("voice")}
-          title="Trợ lý giọng nói rảnh tay (Hands-free Voice Assistant)"
-        >
-          <span>🎙️</span>
-          <span>Trợ lý Giọng nói</span>
-        </button>
+        {currentUser ? (
+          <div className="user-profile-nav-wrapper" ref={userMenuRef}>
+            <button
+              type="button"
+              className={`view-tab-btn user-nav-btn ${activeTab === "auth" ? "active" : ""} ${userDropdownOpen ? "menu-open" : ""}`}
+              onClick={() => setUserDropdownOpen((prev) => !prev)}
+              title="Tài khoản công dân số"
+              aria-expanded={userDropdownOpen}
+            >
+              <span className="user-avatar-icon">👤</span>
+              <span className="user-display-name">{currentUser.full_name || "Công dân"}</span>
+              <span className="user-status-dot" title="Đang hoạt động">🟢</span>
+              <span className="user-nav-arrow">{userDropdownOpen ? "▴" : "▾"}</span>
+            </button>
+
+            {userDropdownOpen && (
+              <div className={`user-nav-dropdown ${activeTab === "dashboard" || activeTab === "voice" ? "dark-mode" : ""}`} role="menu">
+                <div className="dropdown-user-info">
+                  <div className="dropdown-avatar">🌱</div>
+                  <div className="dropdown-user-details">
+                    <strong className="user-name">{currentUser.full_name || "Công dân GreenSpot"}</strong>
+                    <span className="user-email">{currentUser.email}</span>
+                    <span className="user-role-badge">
+                      {currentUser.role === "CITIZEN" ? "Công dân sinh thái" : currentUser.role}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="dropdown-separator" />
+
+                <button
+                  type="button"
+                  className="dropdown-menu-action"
+                  onClick={() => {
+                    setUserDropdownOpen(false);
+                    setActiveTab("profile");
+                    window.location.hash = "#profile";
+                  }}
+                >
+                  <span className="action-icon">🌿</span>
+                  <span>Trang cá nhân & Green Passport</span>
+                </button>
+
+                <div className="dropdown-separator" />
+
+                {currentUser?.role === "ADMIN" && (
+                  <>
+                    <button
+                      type="button"
+                      className="dropdown-menu-action"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        setActiveTab("users");
+                        window.location.hash = "#users";
+                      }}
+                    >
+                      <span className="action-icon">👥</span>
+                      <span>Quản lý người dùng</span>
+                    </button>
+                    <div className="dropdown-separator" />
+                    <button
+                      type="button"
+                      className="dropdown-menu-action"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        setActiveTab("rbac");
+                        window.location.hash = "#rbac";
+                      }}
+                    >
+                      <span className="action-icon">🛡️</span>
+                      <span>Phân quyền vai trò</span>
+                    </button>
+                    <div className="dropdown-separator" />
+                  </>
+                )}
+
+                <button
+                  type="button"
+                  className="dropdown-menu-action"
+                  onClick={() => {
+                    setUserDropdownOpen(false);
+                    setAuthRedirectUrl("/devices");
+                    setActiveTab("auth");
+                    window.location.hash = "#devices";
+                  }}
+                >
+                  <span className="action-icon">💻</span>
+                  <span>Quản lý thiết bị & Phiên</span>
+                </button>
+
+                <div className="dropdown-separator" />
+
+                <button
+                  type="button"
+                  className="dropdown-menu-action logout-action"
+                  onClick={() => {
+                    setUserDropdownOpen(false);
+                    setLogoutModalOpen(true);
+                  }}
+                >
+                  <span className="action-icon">🚪</span>
+                  <span>Đăng xuất tài khoản</span>
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            type="button"
+            className={`view-tab-btn ${activeTab === "auth" ? "active" : ""}`}
+            onClick={() => {
+              setAuthRedirectUrl(undefined);
+              setActiveTab("auth");
+            }}
+            title="Đăng nhập hoặc đăng ký tài khoản công dân"
+          >
+            <span>🌱</span>
+            <span>Đăng ký / Đăng nhập</span>
+          </button>
+        )}
+
+        {currentUser ? (
+          <>
+            {hasUserMgmtAccess && (
+              <button
+                type="button"
+                className={`view-tab-btn ${activeTab === "users" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("users");
+                  window.location.hash = "#users";
+                }}
+                title="Quản lý người dùng & Cấp tài khoản"
+              >
+                <span>👥</span>
+                <span>Quản lý người dùng</span>
+              </button>
+            )}
+
+            {hasRbacAccess && (
+              <button
+                type="button"
+                className={`view-tab-btn ${activeTab === "rbac" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("rbac");
+                  window.location.hash = "#rbac";
+                }}
+                title="Quản lý phân quyền vai trò RBAC & Ma trận quyền"
+              >
+                <span>🛡️</span>
+                <span>Phân quyền vai trò</span>
+              </button>
+            )}
+
+            {hasMapAccess && (
+              <button
+                type="button"
+                className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+                title="Bản đồ không gian xanh, ngập lụt & trạm IoT"
+              >
+                <span>🗺️</span>
+                <span>Bản đồ WebGIS</span>
+              </button>
+            )}
+
+            {hasAqiAccess && (
+              <button
+                type="button"
+                className={`view-tab-btn ${activeTab === "dashboard" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("dashboard");
+                  window.location.hash = "#dashboard";
+                }}
+                title="Bảng điều khiển phân tích chất lượng không khí & khí tượng toàn quốc"
+              >
+                <span>📊</span>
+                <span>Phân tích AQI & Khí hậu</span>
+              </button>
+            )}
+            
+            <button
+              type="button"
+              className={`view-tab-btn ${activeTab === "voice" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("voice");
+                window.location.hash = "#voice";
+              }}
+              title="Trợ lý giọng nói rảnh tay (Hands-free Voice Assistant)"
+            >
+              <span>🎙️</span>
+              <span>Trợ lý Giọng nói</span>
+            </button>
+
+            <button
+              type="button"
+              className={`view-tab-btn ${activeTab === "profile" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("profile");
+                window.location.hash = "#profile";
+              }}
+              title="Trang cá nhân, Green Passport & Lịch sử đóng góp"
+            >
+              <span>🌿</span>
+              <span>Hồ sơ xanh</span>
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              title="Bản đồ không gian xanh, ngập lụt & trạm IoT"
+            >
+              <span>🗺️</span>
+              <span>Bản đồ WebGIS</span>
+            </button>
+            <button
+              type="button"
+              className={`view-tab-btn ${activeTab === "voice" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("voice");
+                window.location.hash = "#voice";
+              }}
+              title="Trợ lý giọng nói rảnh tay (Hands-free Voice Assistant)"
+            >
+              <span>🎙️</span>
+              <span>Trợ lý Giọng nói</span>
+            </button>
+          </>
+        )}
       </nav>
 
-      {/* VIEW NỘI DUNG CHÍNH: AUTH, MAP, DASHBOARD, HOẶC VOICE ASSISTANT */}
+      {/* VIEW NỘI DUNG CHÍNH: AUTH, RBAC, PROFILE, MAP, DASHBOARD HOẶC VOICE */}
       {activeTab === "auth" ? (
         <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
-          <AuthContainer onExitAuth={() => setActiveTab("map")} />
-        </div>
-      ) : activeTab === "map" ? (
-        <EcoMap />
-      ) : activeTab === "dashboard" ? (
-        <AirQualityDashboard onBackToMap={() => setActiveTab("map")} />
-      ) : activeTab === "voice" ? (
-        <VoiceAssistant />
-      ) : null}
-
-      {
-        activeTab === "voice" && (
-          <VoiceAssistant
-            onClose={() => setActiveTab("map")}
-            onNavigateToFeature={(target) => {
-              if (target === "dashboard_aqi") {
-                setActiveTab("dashboard");
-              } else {
-                setActiveTab("map");
-              }
+          <AuthContainer
+            initialView={
+              authRedirectUrl === "/devices" || window.location.hash === "#devices"
+                ? "devices"
+                : authRedirectUrl
+                ? "login"
+                : undefined
+            }
+            redirectUrl={authRedirectUrl}
+            onExitAuth={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
             }}
           />
+        </div>
+      ) : activeTab === "profile" ? (
+        !currentUser ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/profile"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <ProfileContainer
+              onBackToMap={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              onNavigateToAqi={() => {
+                setActiveTab("dashboard");
+                window.location.hash = "#dashboard";
+              }}
+              onNavigateToAuth={() => {
+                setAuthRedirectUrl("/profile");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+            />
+          </div>
         )
-      }
+      ) : activeTab === "rbac" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <RbacContainer
+            onExit={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
+            onNavigateToAuth={() => {
+              setAuthRedirectUrl("/rbac");
+              setActiveTab("auth");
+              window.location.hash = "#login";
+            }}
+          />
+        </div>
+      ) : activeTab === "users" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <UserManagementContainer
+            onBackToHome={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
+            onNavigateToAuth={() => {
+              setAuthRedirectUrl("/users");
+              setActiveTab("auth");
+              window.location.hash = "#login";
+            }}
+          />
+        </div>
+      ) : activeTab === "map" ? (
+        <ModulePermissionGuard
+          moduleCode="GIS_MAP"
+          moduleName="Bản đồ số WebGIS"
+        >
+          <EcoMap />
+        </ModulePermissionGuard>
+      ) : activeTab === "dashboard" ? (
+        <ModulePermissionGuard
+          moduleCode="AIR_QUALITY"
+          moduleName="Chỉ số chất lượng không khí AQI & Khí hậu"
+        >
+          <AirQualityDashboard onBackToMap={() => setActiveTab("map")} />
+        </ModulePermissionGuard>
+      ) : activeTab === "voice" ? (
+        <VoiceAssistant
+          onClose={() => setActiveTab("map")}
+          onNavigateToFeature={(target) => {
+            if (target === "dashboard_aqi") {
+              setActiveTab("dashboard");
+            } else {
+              setActiveTab("map");
+            }
+          }}
+        />
+      ) : null}
 
       {/* NÚT TRỢ LÝ GIỌNG NÓI NHANH NỔI (FLOATING QUICK ACTION KHI Ở MAP HOẶC DASHBOARD) */}
       {

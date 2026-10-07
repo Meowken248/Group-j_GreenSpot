@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -26,6 +26,7 @@ class UserSummary(BaseModel):
     full_name: str
     role: str
     status: str
+    permissions: List[str] = Field(default_factory=list, description="Danh sách các mã quyền của người dùng")
 
 
 class CitizenLoginRequest(BaseModel):

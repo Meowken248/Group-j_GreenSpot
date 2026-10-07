@@ -73,8 +73,18 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
     setFormData((prev) => ({ ...prev, [field]: value }));
 
     // Khi người dùng gõ vào ô email, nếu trước đó có lỗi email đã đăng ký thì xóa trạng thái đó
-    if (field === "email" && errors.emailIsActiveAccount) {
-      setErrors((prev) => ({ ...prev, email: undefined, emailIsActiveAccount: false }));
+    if (field === "email") {
+      if (errors.emailIsActiveAccount) {
+        setErrors((prev) => ({ ...prev, email: undefined, emailIsActiveAccount: false }));
+      } else if (errors.email) {
+        const emailErr = validateEmail(value);
+        setErrors((prev) => ({ ...prev, email: emailErr || undefined }));
+      }
+    }
+
+    if (field === "fullName" && errors.fullName) {
+      const nameErr = validateFullName(value);
+      setErrors((prev) => ({ ...prev, fullName: nameErr || undefined }));
     }
 
     // Đặc tả: "Nếu người dùng sửa ô Mật khẩu sau khi đã nhập ô này (Nhập lại MK), hệ thống kiểm tra lại ngay"
@@ -287,7 +297,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                 ref={emailRef}
                 id="email"
                 name="email"
-                type="email"
+                type="text"
+                inputMode="email"
                 className={`form-input ${errors.email ? "has-error" : ""}`}
                 placeholder="Email"
                 value={formData.email}

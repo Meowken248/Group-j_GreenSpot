@@ -59,6 +59,16 @@ from app.models.voice_assistant import (
     VoiceInteractionLog,
     VoiceActionType,
     VoiceCategory,
+
+    
+# 6. Trang cá nhân, Hộ chiếu Xanh, Huy hiệu & Lịch sử đóng góp (Profile Domain)
+from app.models.profile import (
+    CitizenLevel,
+    Badge,
+    UserBadge,
+    UserActivity,
+    Post,
+
 )
 
 __all__ = [
@@ -96,9 +106,18 @@ __all__ = [
     "FloodCauseType",
     "FloodSeverityLevel",
     "RouteSafetyStatus",
+<<<<<<< HEAD
     # Voice Assistant
     "VoiceSampleCommand",
     "VoiceInteractionLog",
     "VoiceActionType",
     "VoiceCategory",
+=======
+    # Profile & Green Passport Domain
+    "CitizenLevel",
+    "Badge",
+    "UserBadge",
+    "UserActivity",
+    "Post",
+>>>>>>> origin/Dat/4
 ]

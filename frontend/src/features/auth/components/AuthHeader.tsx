@@ -6,6 +6,7 @@ export interface AuthHeaderProps {
   onLogoClick?: () => void;
   isLoggedIn?: boolean;
   onNavigateToDevices?: () => void;
+  onNavigateToRbac?: () => void;
   onLogout?: () => void;
 }
 
@@ -13,6 +14,7 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({
   onLogoClick,
   isLoggedIn,
   onNavigateToDevices,
+  onNavigateToRbac,
   onLogout,
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -75,6 +77,7 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({
       localStorage.removeItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
       localStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
       localStorage.removeItem(AUTH_STORAGE_KEYS.USER_INFO);
+      window.dispatchEvent(new Event("auth_change"));
       window.location.href = "/login";
     }
   };
@@ -139,6 +142,11 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({
               aria-haspopup="true"
             >
               <span role="img" aria-label="Ảnh đại diện">👤</span>
+              {userInfo?.full_name && (
+                <span className="auth-header-username" style={{ fontSize: "12.5px", fontWeight: 600, color: "#1e293b", marginLeft: "6px" }}>
+                  {userInfo.full_name}
+                </span>
+              )}
             </button>
 
             {dropdownOpen && (
@@ -151,6 +159,28 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({
                 )}
 
                 <div className="dropdown-divider" />
+
+                {userInfo?.role === "ADMIN" && (
+                  <>
+                    <button
+                      type="button"
+                      className="dropdown-item"
+                      role="menuitem"
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        if (onNavigateToRbac) {
+                          onNavigateToRbac();
+                        } else {
+                          window.location.hash = "#rbac";
+                        }
+                      }}
+                    >
+                      <span className="item-icon">🛡️</span>
+                      <span>Phân quyền vai trò</span>
+                    </button>
+                    <div className="dropdown-divider" />
+                  </>
+                )}
 
                 <button
                   type="button"

@@ -1,7 +1,7 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, date
 from typing import List, Optional
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -18,6 +18,8 @@ class Role(Base, TimestampMixin):
     role_name: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
     is_system: Mapped[bool] = mapped_column(Boolean, default=False)
+    scope: Mapped[str] = mapped_column(String(20), default="DISTRICT", nullable=False)  # "CITY" hoặc "DISTRICT"
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)  # Optimistic Concurrency Control
 
     users: Mapped[List["User"]] = relationship(back_populates="role")
     permissions: Mapped[List["Permission"]] = relationship(
@@ -62,6 +64,14 @@ class User(Base, TimestampMixin):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str] = mapped_column(String(150), nullable=False)
     avatar_url: Mapped[Optional[str]] = mapped_column(String(500))
+    cover_image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    bio: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    date_of_birth: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    activated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    total_green_points: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    friends_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)  # Optimistic Locking
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)  # Soft Delete
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.role_id"), nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
     citizen_id_card: Mapped[Optional[str]] = mapped_column(String(20))
@@ -69,6 +79,9 @@ class User(Base, TimestampMixin):
 
     role: Mapped["Role"] = relationship(back_populates="users")
     sessions: Mapped[List["UserSession"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    posts: Mapped[List["Post"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    badges: Mapped[List["UserBadge"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    activities: Mapped[List["UserActivity"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 
 class UserOTP(Base, TimestampMixin):

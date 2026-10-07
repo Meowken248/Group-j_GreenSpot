@@ -7,7 +7,7 @@ from sqlalchemy import select, func, and_, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.rbac import User, Role, UserOTP, UserSession, LoginAttempt
+from app.models.rbac import User, Role, UserOTP, UserSession, LoginAttempt, Permission, RolePermission
 from app.schemas.auth import (
     CitizenRegisterRequest,
     CitizenVerifyOtpRequest,
@@ -617,6 +617,20 @@ async def login_citizen(
         session_id=str(new_session_id)
     )
 
+    # Lấy danh sách quyền hạn thực tế của người dùng
+    user_perms: list[str] = []
+    if role_code == "ADMIN":
+        all_p = await db.execute(select(Permission.permission_code))
+        user_perms = [p[0] for p in all_p.fetchall()]
+    elif user.role_id:
+        p_stmt = (
+            select(Permission.permission_code)
+            .join(RolePermission, Permission.permission_id == RolePermission.permission_id)
+            .where(RolePermission.role_id == user.role_id)
+        )
+        p_res = await db.execute(p_stmt)
+        user_perms = [p[0] for p in p_res.fetchall()]
+
     return CitizenLoginResponse(
         success=True,
         message="Đăng nhập thành công",
@@ -630,7 +644,8 @@ async def login_citizen(
             email=user.email,
             full_name=user.full_name,
             role=role_code,
-            status=user.status
+            status=user.status,
+            permissions=user_perms,
         )
     )
 

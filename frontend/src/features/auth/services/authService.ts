@@ -1,6 +1,7 @@
 import api from "../../../api/client";
 import type { RegisterRequestPayload, RegisterSuccessResponse } from "../types/auth.types";
 import axios from "axios";
+import { resetSessionExpired } from "./sessionManager";
 
 export interface RegisterResult {
   success: boolean;
@@ -10,6 +11,7 @@ export interface RegisterResult {
 }
 
 export const registerCitizen = async (payload: RegisterRequestPayload): Promise<RegisterResult> => {
+  resetSessionExpired();
   try {
     const response = await api.post<RegisterSuccessResponse>("/api/v1/auth/register", payload);
     return {
@@ -222,6 +224,7 @@ export interface LoginResult {
 }
 
 export const loginCitizen = async (payload: { email: string; password: string }): Promise<LoginResult> => {
+  resetSessionExpired();
   try {
     const response = await api.post("/api/v1/auth/login", payload);
     return {
