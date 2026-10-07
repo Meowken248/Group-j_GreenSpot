@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import "./VoiceAssistant.css";
+import "./VoiceAssistant.scss";
 
 interface VoiceWaveformProps {
   stream?: MediaStream | null;

@@ -27,91 +27,188 @@
 
 - **Frontend:**
   - Viết bằng **React + TypeScript**, tuân thủ nghiêm ngặt chuẩn gõ chữ nghiêm ngặt (`verbatimModuleSyntax: true`).
+  - **Kiến trúc Giao diện SASS/SCSS Toàn Phần:** Toàn bộ hệ thống giao diện được chuẩn hóa 100% bằng **SASS/SCSS** ([`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.scss`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.scss)), sử dụng hệ thống Design Tokens, biến SCSS (`$va-primary-green`, `$va-bg-panel`, `$va-text-main`), mixins tái sử dụng (`@mixin glass-panel`, `@mixin wide-pill-button`, `@mixin flex-center`) và cấu trúc lồng nhau (nesting) BEM sạch sẽ, loại bỏ hoàn toàn CSS thô phân mảnh.
   - Sử dụng **Web Speech API** (`webkitSpeechRecognition` / `SpeechRecognition`) cho nhận dạng âm thanh thời gian thực (độ trễ < 200ms) và **SpeechSynthesis API** cho phát âm thanh phản hồi (TTS).
-  - Sử dụng **Web Audio API** (`AudioContext`, `AnalyserNode`) phân tích Fast Fourier Transform (FFT 64) để vẽ sóng âm dao động màu xanh lá (`VoiceWaveform`) trên HTML5 Canvas.
+  - Sử dụng **Web Audio API** (`AudioContext`, `AnalyserNode`) phân tích Fast Fourier Transform (FFT 64) để vẽ sóng âm dao động màu xanh lá ([`VoiceWaveform.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceWaveform.tsx)) trên HTML5 Canvas.
+  - Bố cục chuẩn theo Wireframe STT 37 (Hình 4.37): Cấu trúc 4 màn hình rõ ràng, các nút chức năng dạng viên thuốc rộng bo tròn tuyệt đối (**Wide Pill Buttons**) xếp chồng theo chiều dọc ở Màn 3 và Màn 4, popup viền nét đứt màu cam cảnh báo quyền micro.
   - Tích hợp liền mạch trên trang chủ ([`FrontEnd/src/App.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/App.tsx#L58-L64)) qua tab Navbar và nút nổi mở nhanh góc màn hình.
 - **Backend:**
   - Viết bằng **FastAPI (Python 3.11+)** theo cấu trúc **Clean Architecture** và **Repository Pattern** (Interface trừu tượng tách biệt hoàn toàn lớp truy cập CSDL và lớp dịch vụ AI NLU).
   - Động cơ **AI NLU tự phát triển (In-house Multi-tier Engine)** xử lý chuẩn hóa ngữ âm tiếng Việt, khử dấu thanh điệu chuẩn Unicode NFD, trích xuất thực thể địa danh (Slot Extraction) và phân loại ý định qua 4 tầng (Exact Match -> Semantic Patterns -> Fuzzy Jaccard Similarity -> Graceful Fallback).
+  - **Mô Hình Thủy Văn & Dự Báo Điểm Ngập Cục Bộ Thực Tế (Realistic Localized Flood & Drainage Modeling):**
+    * Tích hợp 30 điểm đen ngập lụt thực tế tại TP.HCM (số hóa từ OpenStreetMap và Cổng Dữ Liệu Mở TP.HCM), ánh xạ từ điển bối cảnh hình thái vật lý `HOTSPOT_REALISTIC_PHYSICAL_CONTEXT`.
+    * Phân loại chuẩn 4 nhóm hình thái ngập đô thị: `VÙNG TRŨNG THẤP`, `CỔ CHAI CỐNG THOÁT`, `NGẬP TRIỀU CƯỜNG VEN SÔNG`, `HẠ TẦNG THI CÔNG`.
+    * Phản ánh đúng thực tế đô thị TP.HCM: Ngập lụt không diễn ra trên toàn tuyến đường dài nhiều cây số, mà chỉ ngập cục bộ tại một đoạn trũng ngắn (300m - 1500m) hoặc nơi miệng thu cống bị quá tải / cửa xả rạch bị triều dâng bít dòng; các đoạn khác của con đường vẫn hoàn toàn khô ráo và phương tiện lưu thông bình thường.
+    * Phân tích rõ nguyên nhân cống quá tải, cảnh báo đoạn ngập cụ thể, đề xuất lộ trình né ngập và 4 trục hành lang cao ráo an toàn (Điện Biên Phủ, Mai Chí Thọ, Xa Lộ Hà Nội, Phạm Văn Đồng).
+    * Hỗ trợ cả tra cứu theo tuyến đường cụ thể (vd: *"đường Nguyễn Hữu Cảnh có ngập không?"*) lẫn tra cứu an toàn tổng quan (*"đường nào an toàn không bị ngập?"*).
 - **Cơ sở dữ liệu:**
   - Chuẩn hóa đúng **2 bảng duy nhất** trên PostgreSQL 16: `voice_sample_commands` và `voice_interaction_logs`.
   - Migration được quản lý qua Alembic: revision `020_voice_assistant` ([`BackEnd/alembic/versions/020_create_voice_assistant_tables.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/alembic/versions/020_create_voice_assistant_tables.py)).
 - **Chất lượng kiểm thử:**
-  - Backend: **8/8 unit tests** đạt 100% độ bao phủ logic NLU, Normalization, Router và Mock DB.
-  - Frontend: **10/10 tests Vitest** đạt 100% độ bao phủ các màn hình 1, 2, 3, 4.
+  - Backend: **17/17 tests tự động** đạt 100% độ bao phủ (Voice Assistant Suite) + **6/6 tests** Flood & Tide Suite.
+  - Frontend: **35/35 tests Vitest** (6 test files) đạt 100% độ bao phủ các màn hình 1, 2, 3, 4, Waveform, Permission Modal, Geolocation và Service.
+  - Biên dịch: 0 lỗi cảnh báo kiểu (`tsc -b && vite build` 100% Type-Safe).
 
 ---
 
-## 2. ĐẶC TẢ CHI TIẾT 4 MÀN HÌNH TƯƠNG TÁC (HÌNH 4.37)
+## 2. ĐẶC TẢ CHI TIẾT 4 MÀN HÌNH TƯƠNG TÁC (STT 37 - WIREFRAMES & SPEC)
 
 ```
    +-----------------------------------------------------------------------------------+
-   |                                 HÌNH 4.37 FLOW                                    |
+   |                                 HÌNH 4.37 FLOW & WIREFRAMES                       |
    |                                                                                   |
-   |   [ MÀN 1: TRUNG TÂM ]  -----(Bấm Micro)-----> [ MÀN 2: THU ÂM REALTIME ]         |
-   |     - Nút Mic Pulse                              - Sóng âm xanh lá FFT            |
-   |     - 4 Câu lệnh mẫu                             - Chữ chạy theo giọng nói        |
-   |     - Nhấp câu mẫu xử lý ngay                    - Đếm im lặng 3s / Timeout 10s   |
-   |            |                                              |                       |
-   |            | (Lỗi quyền micro)                            | (Nói xong / Bấm Dừng) |
-   |            v                                              v                       |
-   |   [ MÀN 4: POPUP QUYỀN ]                       [ MÀN 3: PHẢN HỒI & THỰC THI ]     |
-   |     - "KHÔNG TRUY CẬP ĐƯỢC MICRO"                - Cột trái: Lệnh của bạn (chuẩn) |
-   |     - Hướng dẫn icon Ổ khóa 🔒                   - Cột phải: Loa TTS + Kết quả     |
-   |     - Nút "Thử lại" & "Đóng" (Esc)               - Nút "Nói tiếp" & "Đóng"        |
+   |   [ MÀN 1/4: CHỜ LỆNH ]   -----(Bắt đầu nói)-----> [ MÀN 2/4: ĐANG NGHE ]         |
+   |     - Khung: TRỢ LÝ GIỌNG NÓI                        - Khung: ĐANG NGHE...        |
+   |     - Nút micro lớn (Pulse Animation)                - Sóng âm xanh lá FFT        |
+   |     - Gợi ý câu lệnh mẫu                             - Chữ chạy real-time < 200ms |
+   |     - button: Bắt đầu nói (Wide Pill)                - Cảnh báo vàng trên nút Dừng|
+   |            |                                         - button: Dừng (Wide Pill)   |
+   |            | (Lỗi quyền micro)                                |                   |
+   |            v                                                  v (3s im lặng/Dừng) |
+   |   [ MÀN 4/4: POPUP QUYỀN ]                         [ MÀN 3/4: KẾT QUẢ LỆNH ]      |
+   |     - "POPUP" + "KHÔNG TRUY CẬP ĐƯỢC MICRO" (Cam)    - 2 cột đối xứng:            |
+   |     - "Trình duyệt đang chặn truy cập micro"           + Cột trái: LỆNH CỦA BẠN   |
+   |     - Hướng dẫn icon Ổ khóa 🔒 + 3 bước               + Cột phải: PHẢN HỒI       |
+   |     - button: Thử lại (Wide Pill)                      + button: Nói tiếp (Pill)  |
+   |     - button: Đóng (Wide Pill - Xếp chồng)             + button: Đóng (Pill)      |
    +-----------------------------------------------------------------------------------+
 ```
 
-### 2.1 Màn 1: Trung tâm Điều khiển Giọng nói (Voice Home)
-- **Tập tin:** [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx#L320-L418)
-- **Các thành phần giao diện chính:**
-  1. *Nút Micro lớn trung tâm:* Kích thước 120px với 3 vòng tròn hiệu ứng nhịp thở (`pulse animation` trong CSS). Khi bấm vào sẽ xin quyền micro và chuyển ngay sang Màn 2.
-  2. *Nút hành động "Bắt đầu nói":* Đặt ngay dưới micro để tăng tính trực quan.
-  3. *Danh mục câu lệnh mẫu thực tế:* Hiển thị dưới dạng các thẻ chip bo tròn (Chips), tải động từ API `/api/v1/voice/suggestions`:
+### 2.0 Khung Chung (Common Layout Frame)
+- **HEADER: `logo | menu | chuông | avatar`:**
+  - `logo`: Biểu tượng lá xanh 🌿 `GreenSpot` kèm nhãn phân hệ `Voice AI`.
+  - `menu`: Nút kích hoạt menu điều hướng chức năng hệ thống (`☰ Menu`).
+  - `chuông`: Biểu tượng chuông thông báo đẩy (`🔔`) hỗ trợ tiếp nhận cảnh báo môi trường khẩn cấp.
+  - `avatar`: Biểu tượng hồ sơ cá nhân của công dân (`👤`).
+  - Nút thoát nhanh (`✕`) để trở về bản đồ WebGIS hoặc màn hình trước đó.
+- **FOOTER: `bản quyền | liên hệ | chính sách`:**
+  - `bản quyền`: *"Bản quyền © 2026 GreenSpot. Nền tảng Đô thị Môi trường Thông minh TP.HCM"*.
+  - `liên hệ`: Nút liên hệ tiếp nhận hỗ trợ công dân.
+  - `chính sách`: Nút điều khoản dịch vụ và chính sách bảo mật dữ liệu công dân.
+
+### 2.1 Màn 1/4: Chờ Lệnh (Voice Home - Trung Tâm Điều Khiển)
+- **Tập tin:** [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx)
+- **Cấu trúc khối:**
+  1. *Khung bao viền có tiêu đề góc trên bên trái:* **"TRỢ LÝ GIỌNG NÓI"** kèm badge *"TRỢ LÝ GIỌNG NÓI RẢNH TAY"*.
+  2. *Nút Micro lớn trung tâm:* Kích thước lớn 120px nổi bật với hiệu ứng nhịp thở nhẹ (3 vòng sóng tỏa `pulse animation`), kèm nhãn phụ đề *"Nút micro lớn"*.
+  3. *Danh mục câu lệnh mẫu thực tế:* Hiển thị trực quan qua các thẻ pill gợi ý:
      - *"Báo cáo bãi rác gần đây"*
      - *"Đường nào an toàn không bị ngập?"*
      - *"Xem số dư ví điểm"*
      - *"Mở bản đồ chất lượng không khí"*
-  4. *Tính năng Click-to-Process:* Người dùng có thể **nhấp chuột trực tiếp vào bất kỳ thẻ gợi ý nào**; hệ thống sẽ bỏ qua thu âm và lập tức gọi API `/api/v1/voice/process` để mở thẳng Màn 3.
-  5. *Bảo vệ ngoại lệ:* Kiểm tra hỗ trợ Speech Recognition của trình duyệt. Nếu trình duyệt không hỗ trợ hoặc đang mất kết nối mạng, hiển thị thông báo hướng dẫn người dùng chuyển sang bàn phím thông thường.
+  4. *Tính năng Click-to-Process:* Công dân có thể nhấp trực tiếp vào bất kỳ câu lệnh mẫu nào để hệ thống xử lý ngay lập tức mà không cần phát âm.
+  5. *Nút hành động chính:* Nút dạng viên thuốc kéo dài bo tròn tuyệt đối (**Wide Pill Button**): `button: Bắt đầu nói` ở vị trí trung tâm phía dưới.
+  6. *Xử lý lỗi theo bảng đặc tả:*
+     - Thiết bị không hỗ trợ: Hiện cảnh báo *"Trình duyệt không hỗ trợ nhận dạng giọng nói. Hãy dùng bàn phím"*, làm mờ nút micro.
+     - Lỗi mạng khi mở: Hiện *"Không thể khởi động trợ lý ảo. Vui lòng thử lại"* kèm nút *"Thử lại"*.
+     - Chưa cấp quyền: Tự động kích hoạt Màn 4 (Popup quyền micro bị từ chối).
 
-### 2.2 Màn 2: Thu âm & Nhận dạng Giọng nói Real-time
-- **Tập tin:** [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx#L420-L490) và [`VoiceWaveform.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceWaveform.tsx#L1-L119)
-- **Các thành phần giao diện chính:**
-  1. *Văn bản hiển thị Real-time:* Hiển thị chữ chạy trực tiếp theo từng lời nói của công dân với độ trễ phản hồi cực thấp (< 200ms).
-  2. *Sóng âm động màu xanh lá:* Phân tích tần số âm thanh từ micro qua `AnalyserNode`, hiển thị 28 thanh sóng âm gradient chuyển màu `#10b981` ➔ `#34d399` ➔ `#059669`.
-  3. *Cảnh báo tạp âm môi trường:* Tự động đo lường năng lượng âm thanh nền, nếu phát hiện biến thiên đột ngột vượt ngưỡng sẽ bật huy hiệu `[⚠️ Môi trường nhiều tạp âm]`.
-  4. *Nút "Dừng" thu âm:* Cho phép công dân chủ động bấm kết thúc câu nói bất kỳ lúc nào để chuyển sang Màn 3.
-  5. *Cơ chế tự động 3 giây:* Nếu người dùng ngừng nói trong **3 giây**, hệ thống tự động nhận định câu lệnh đã kết thúc và tự động gửi dữ liệu sang Backend xử lý.
-  6. *Watchdog Timer 10 giây:* Nếu kích hoạt thu âm nhưng sau **10 giây** hoàn toàn không có tiếng động, hệ thống tự động tắt micro, hiện thông báo toast và trở về Màn 1 để tránh tiêu tốn pin và tài nguyên.
+### 2.2 Màn 2/4: Đang Nghe (Listening & Real-time Speech-to-Text)
+- **Tập tin:** [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx) và [`VoiceWaveform.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceWaveform.tsx)
+- **Cấu trúc khối:**
+  1. *Khung bao viền có tiêu đề:* **"ĐANG NGHE..."** với chấm đỏ nhấp nháy thu âm.
+  2. *Sóng âm (Waveform Animation):* Dải sóng âm màu xanh lá dao động trực tiếp theo biên độ và tần số giọng nói thực tế của người dùng qua Web Audio API Fast Fourier Transform (FFT).
+  3. *Văn bản nhận dạng theo thời gian thực:* Khối hiển thị tức thì từng từ ngữ người dùng vừa phát âm với độ trễ phản hồi dưới 200ms.
+  4. *Cảnh báo tạp âm môi trường (Spec Table):* Khi môi trường quá ồn, hiển thị dòng cảnh báo màu vàng: *"Âm thanh không rõ ràng. Vui lòng nói lại gần micro hơn"* đặt ngay phía trên nút Dừng.
+  5. *Quy tắc thời gian (Watchdog):*
+     - Người dùng ngừng nói quá 3 giây hoặc bấm nút Dừng: Chuyển trạng thái *"Đang xử lý câu lệnh…"* và chuyển sang Màn 3.
+     - Sau 10 giây không có âm thanh: Báo *"Không nghe thấy giọng nói của bạn"*, tự động hủy thu âm và quay lại Màn 1.
+     - Mất mạng trong lúc thu: Báo *"Mất kết nối. Vui lòng thử lại"*, hủy thu âm và quay lại Màn 1 kèm toast lỗi.
+  6. *Nút hành động chính:* Nút dạng viên thuốc kéo dài bo tròn tuyệt đối (**Wide Pill Button**): `button: Dừng` (hoặc *"Dừng & Xử lý ngay"*) màu đỏ/cam nổi bật.
 
-### 2.3 Màn 3: Phản hồi & Thực thi Hành động (2 Cột Đối Xứng)
-- **Tập tin:** [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx#L492-L680)
-- **Bố cục 2 cột tiêu chuẩn UX:**
-  - **Cột trái "LỆNH CỦA BẠN" (Dòng 507 - 540):** Hiển thị văn bản câu nói đã được AI chuẩn hóa ngữ âm, viết hoa danh từ riêng, sửa lỗi chính tả và ngắt dấu câu hoàn chỉnh. Bên dưới kèm theo nhãn phân loại ý định (Ví dụ: `🏷️ Ý định: Báo cáo sự cố`).
-  - **Cột phải "PHẢN HỒI" (Dòng 542 - 640):**
-    - Trợ lý ảo tự động đọc câu trả lời bằng giọng nói tiếng Việt tự nhiên thông qua loa thiết bị (`SpeechSynthesis`). Có nút bấm nghe lại âm thanh kèm hiệu ứng sóng âm đang nói.
-    - Thẻ hành động động (Dynamic Action Card) tùy theo loại ý định (100% dữ liệu thực tế, không bịa đặt số liệu):
-      * **Thời tiết & Khí tượng (`CHECK_WEATHER`):** Thẻ thời tiết thời gian thực hiển thị nhiệt độ (ví dụ `31.5°C`), mô tả thời tiết, độ ẩm, sức gió và chỉ số AQI thực tế được truy vấn trực tiếp từ `WeatherService` và trạm đo tại địa bàn tương ứng (ví dụ: Thủ Đức, Quận 1, Bình Thạnh...).
-      * **Thủy văn & Triều cường (`CHECK_TIDE_LEVEL`):** Thẻ mực nước thực tế hiển thị mực nước trạm thủy văn Phú An (ví dụ: `1.48m`), trạng thái triều (đang dâng hay đang rút), mức báo động (Báo động 1/2/3) và cảnh báo nguy cơ tràn bờ ngập lụt lấy từ `tide_engine`.
-      * **Báo cáo sự cố rác thải (`REPORT_INCIDENT`):** Điền sẵn phiếu gồm Tiêu đề, Loại sự cố (Rác thải đô thị), Vị trí giao lộ trích xuất được từ câu nói (Ví dụ: *"ngã tư Lê Lợi"*), và nút "Mở form Báo cáo ngay".
-      * **Tuyến đường an toàn (`CHECK_SAFE_ROUTE`):** Thẻ gợi ý lộ trình di chuyển tránh các điểm ngập nước, kèm nút "Xem bản đồ ngập lụt".
-      * **Tra cứu chất lượng không khí (`CHECK_CURRENT_AQI` / `OPEN_AIR_QUALITY_MAP`):** Thẻ hiển thị chỉ số AQI thực tế, nồng độ bụi mịn PM2.5, nhiệt độ và độ ẩm thực tế.
-      * **Không gian xanh & Công viên (`CHECK_PARKS_GREEN_SPACES`):** Thẻ quy mô quản lý hơn 450 hecta công viên cây xanh và điều hướng sang bản đồ lớp phủ mảng xanh.
-      * **Tổng quan dự án GreenSpot (`PROJECT_OVERVIEW`):** Giới thiệu đầy đủ 6 phân hệ cốt lõi của nền tảng Đô thị Môi trường Thông minh.
-      * **Ví điểm thưởng (`CHECK_REWARD_WALLET`):** Thẻ hiển thị số dư 350 GreenPoints, thứ hạng Chiến binh Xanh và lịch sử đổi thưởng gần nhất.
-  - **Kịch bản Fallback (Nguyên tắc Zero-Fabrication):** Nếu người dùng hỏi những thông tin nằm ngoài phạm vi các dịch vụ môi trường đô thị của GreenSpot (như giá vàng, chứng khoán, ẩm thực...), trợ lý ảo TUYỆT ĐỐI không bịa đặt thông tin, mà hiển thị lời giải thích nhẹ nhàng: *"Xin lỗi, tôi chưa hiểu lệnh này. Bạn có thể thử lại các câu gợi ý"* kèm 4 nút bấm gợi ý nhanh.
-  - **Thanh điều khiển dưới cùng (Dòng 642 - 675):** Nút **"Nói tiếp"** (mở lại micro để ra lệnh tiếp) và nút **"Đóng"** (thoát trợ lý quay lại màn hình chính).
+### 2.3 Màn 3/4: Kết Quả Lệnh (Response & Action Execution)
+- **Tập tin:** [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx)
+- **Bố cục 2 khối theo chiều ngang (Left - Right Split Containers):**
+  - **Khối Cột Trái "LỆNH CỦA BẠN":**
+    - Tiêu đề khung: **"LỆNH CỦA BẠN"**.
+    - Nhãn phụ: *"Văn bản nhận dạng:"*.
+    - Nội dung: Toàn văn câu nói của công dân đã được AI chuẩn hóa chính tả, viết hoa danh từ riêng, sửa dấu câu hoàn chỉnh. Kèm huy hiệu phân loại ý định (Intent Badge), độ trễ AI (ms) và độ tin cậy.
+  - **Khối Cột Phải "PHẢN HỒI":**
+    - Tiêu đề khung: **"PHẢN HỒI"** (kèm phụ đề *TỪ TRỢ LÝ*).
+    - Nhãn phụ: *"Câu trả lời / hành động đã thực hiện:"*.
+    - Trợ lý ảo tự động phát giọng đọc AI phản hồi qua loa thiết bị (TTS), có nút *"🔊 Nghe lại"*.
+    - Thẻ điều hướng hoặc tra cứu dữ liệu tương ứng (Zero-Fabrication Data):
+      * **Thẻ Dự Báo Ngập Điểm Cục Bộ Thực Tế (`CHECK_SAFE_ROUTE`):**
+        - Header thẻ: Tổng số điểm đen ngập lụt được giám sát và lượng mưa thời gian thực.
+        - Khối điểm ngập cục bộ cụ thể:
+          * Badge hình thái: `VÙNG TRŨNG THẤP`, `CỔ CHAI CỐNG THOÁT`, `NGẬP TRIỀU CƯỜNG VEN SÔNG`, `HẠ TẦNG THI CÔNG`.
+          * Chiều dài đoạn ngập (vd: đoạn 500m gần chân cầu Thủ Thiêm, đoạn 800m cầu Phú Xuân, đoạn 700m dốc Chợ Thủ Đức...).
+          * Chiều sâu ngập dự kiến (cm) và mức độ cảnh báo (CRITICAL, WARNING, ALERT, SAFE).
+          * Nguyên nhân cống quá tải: Nêu rõ cống hộp cũ, miệng hố ga bị rác cản trở hoặc cửa xả rạch bị triều dâng bít dòng.
+          * Khẳng định thực tế: Các đoạn khác của con đường vẫn hoàn toàn khô ráo, phương tiện lưu thông bình thường.
+        - Khối Lộ trình né ngập đề xuất (Detour Advice).
+        - Khối Danh sách Hành lang Trục đường cao ráo an toàn: Trục Điện Biên Phủ, Trục Phạm Văn Đồng, Trục Mai Chí Thọ, Trục Xa Lộ Hà Nội.
+        - Nút điều hướng: `Mở bản đồ cảnh báo ngập ➔` (chuyển thẳng sang WebGIS bản đồ ngập lụt).
+      * **Thẻ Thời Tiết Thời Gian Thực (`CHECK_WEATHER`):** Trạm quan trắc địa phương, nhiệt độ thực tế, mô tả WMO, độ ẩm, sức gió và chỉ số AQI tích hợp từ Open-Meteo API.
+      * **Thẻ Triều Cường Thực Tế (`CHECK_TIDE_LEVEL`):** Trạm thủy văn Phú An / Nhà Bè, mực nước thực tế theo mét, trạng thái triều và mức báo động I/II/III.
+      * **Thẻ Tra cứu Ví Điểm Thưởng (`CHECK_REWARD_WALLET`):** Số dư GreenPoints, cấp bậc Chiến binh Xanh, lịch sử tích điểm và nút mở ví.
+      * **Thẻ Điều Hướng Báo Cáo Sự Cố (`REPORT_INCIDENT`):** Điền sẵn form Báo cáo sự cố rác thải (STT 01), phân loại sự cố môi trường và địa điểm trích xuất.
+      * **Thẻ Mảng Xanh & Tổng Quan Dự Án:** Thống kê hơn 450 ha mảng xanh và hệ sinh thái 6 phân hệ Smart Urban WebGIS.
+      * **Không hiểu ý định (Fallback):** Thông báo *"Xin lỗi, tôi chưa hiểu lệnh này. Bạn có thể thử lại các câu gợi ý"* kèm danh sách câu lệnh mẫu tương tác được ngay.
+    - **Hai nút chức năng dạng viên thuốc rộng xếp chồng theo chiều dọc (Wireframe 3):**
+      * `button: Nói tiếp` (mở lại micro và quay về Màn 2).
+      * `button: Đóng` (thoát trợ lý và chuyển sang màn hình chức năng vừa yêu cầu).
 
-### 2.4 Màn 4: Popup Cảnh báo Quyền Microphone (Mic Permission Modal)
-- **Tập tin:** [`FrontEnd/src/components/VoiceAssistant/MicPermissionModal.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/MicPermissionModal.tsx#L1-L118)
-- **Các thành phần giao diện chính:**
-  1. *Thẻ nhãn nhỏ POPUP* phía trên tiêu đề.
-  2. *Tiêu đề in đậm màu cam rực rỡ:* **"KHÔNG TRUY CẬP ĐƯỢC MICRO"**.
-  3. *Dòng phụ đề:* *"Hãy cấp quyền micro cho trình duyệt"*.
-  4. *Hộp đồ họa mô phỏng thanh URL trình duyệt:* Biểu tượng Ổ khóa (🔒), địa chỉ `greenspot.gov.vn` và huy hiệu đỏ `🎤 Bị chặn`.
-  5. *3 bước hướng dẫn trực quan:* Nhấp vào biểu tượng ổ khóa ➔ Chuyển Micro sang Cho phép ➔ Nhấn "Thử lại".
-  6. *Hai nút chức năng:* Nút **"Thử lại"** (chủ động yêu cầu lại quyền micro `getUserMedia`) và nút **"Đóng"** (hỗ trợ phím `Escape`).
+### 2.4 Màn 4/4: Popup Quyền Micro Bị Từ Chối (Mic Permission Modal)
+- **Tập tin:** [`FrontEnd/src/components/VoiceAssistant/MicPermissionModal.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/MicPermissionModal.tsx)
+- **Cấu trúc khối:**
+  1. Popup hiện ở chính giữa màn hình với nền mờ (`backdrop blur`), đè lên Màn 1. Khung popup có viền nét đứt màu cam nổi bật (`border: 2px dashed rgba(245, 158, 11, 0.7)`) theo đúng wireframe.
+  2. Dòng nhỏ: *"POPUP"*.
+  3. Tiêu đề in đậm màu cam rực rỡ: **"KHÔNG TRUY CẬP ĐƯỢC MICRO"**.
+  4. Dòng nội dung hướng dẫn: *"Hãy cấp quyền micro cho trình duyệt"*.
+  5. Thông báo trạng thái chặn: *"Trình duyệt đang chặn truy cập micro"*.
+  6. Hình minh họa ổ khóa trên thanh địa chỉ URL: `[ 🔒 greenspot.gov.vn | 🎤 Bị chặn ]` cùng 3 bước hướng dẫn cụ thể.
+  7. Dòng cảnh báo màu đỏ nếu thử lại thất bại: *"Micro vẫn đang bị chặn. Vui lòng kiểm tra cài đặt trình duyệt"*.
+  8. **Hai nút chức năng dạng viên thuốc rộng xếp chồng theo chiều dọc (Wireframe 4):**
+     * `button: Thử lại` (kích hoạt lại yêu cầu xin cấp quyền microphone của trình duyệt).
+     * `button: Đóng` (đóng popup quay về Màn 1 để thao tác bằng tay, hỗ trợ phím `Escape`).
+
+### 2.5 Kiến Trúc Giao Diện SASS/SCSS Toàn Diện (SASS Architecture & Design System Tokens)
+- **Tập tin:** [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.scss`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.scss)
+- **Nguyên tắc thiết kế:** Không sử dụng CSS thô phân mảnh hay Tailwind ad-hoc. Sử dụng 100% SASS/SCSS với Design Tokens, biến ngữ nghĩa, mixins cấu trúc và lồng ghép phân cấp BEM sạch sẽ:
+  - **Hệ thống Biến (SASS Variables):**
+    ```scss
+    $va-primary-green: #10b981;
+    $va-primary-green-hover: #059669;
+    $va-primary-green-glow: rgba(16, 185, 129, 0.35);
+    $va-bg-panel: rgba(15, 23, 42, 0.85);
+    $va-border-glass: rgba(255, 255, 255, 0.12);
+    $va-border-glass-hover: rgba(16, 185, 129, 0.45);
+    $va-text-main: #f8fafc;
+    $va-text-muted: #94a3b8;
+    $va-warning-amber: #f59e0b;
+    $va-danger-red: #ef4444;
+    $va-card-bg: rgba(30, 41, 59, 0.7);
+    ```
+  - **Các Mixin Tái Sử Dụng (Reusable Mixins):**
+    ```scss
+    @mixin glass-panel {
+      background: $va-bg-panel;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid $va-border-glass;
+      border-radius: 20px;
+    }
+
+    @mixin wide-pill-button {
+      width: 100%;
+      border-radius: 9999px;
+      padding: 14px 28px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    ```
+  - **Lồng ghép phân cấp theo Màn hình:**
+    * `.va-overlay`: Lớp phủ toàn màn hình cố định với gradient nền ban đêm hiện đại.
+    * `.va-screen-1-home`: Nút micro trung tâm 120px với `@keyframes vaPulseAnimation`, danh sách pill câu lệnh gợi ý `.va-suggestion-pill`.
+    * `.va-screen-2-listening`: Khung sóng âm Canvas `.va-waveform-box`, dải chữ chạy real-time và nút Dừng màu đỏ/cam.
+    * `.va-screen-3-result`: Bố cục chia 2 cột `.va-split-layout`, cột trái `.va-left-panel`, cột phải `.va-right-panel`, các thẻ kết quả chuyên dụng (`.va-flood-result-card`, `.va-weather-card`, `.va-tide-card`) và cụm nút xếp chồng `.va-stacked-actions`.
+    * `.va-screen-4-modal`: Khung popup viền nét đứt cam (`border: 2px dashed rgba(245, 158, 11, 0.7)`), mô phỏng thanh URL ổ khóa và 2 nút xếp chồng.
 
 ---
 
@@ -325,21 +422,25 @@ Phần này trình bày chính xác từng dòng code và nguyên lý hoạt đ�
 ### 5.5 Thuật toán 5: Động Cơ Phân Loại Ý Định Đa Tầng (Multi-tier Intent Engine)
 - **Tập tin:** [`BackEnd/app/services/voice_assistant/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_assistant/voice_service.py)
 - **Vị trí dòng code:** **Dòng 220 đến Dòng 381** (Phương thức `match_intent`)
-- **Cấu trúc 4 tầng phân loại & 10 Ý Định Nghiệp Vụ Toàn Diện:**
-  1. *Tầng 1 (Exact Match - Dòng 235 - 247):* Khớp chính xác 100% với câu lệnh mẫu trong cơ sở dữ liệu (`confidence = 1.0`).
-  2. *Tầng 2 (Semantic Rule/Pattern Match - Dòng 249 - 349):* Quét từ khóa mục tiêu thực tế (`confidence >= 0.90`):
+- **Cấu trúc 4 tầng phân loại & 14 Ý Định Nghiệp Vụ Toàn Diện:**
+  1. *Tầng 1 (Exact Match):* Khớp chính xác 100% với câu lệnh mẫu trong cơ sở dữ liệu (`confidence = 1.0`).
+  2. *Tầng 2 (Semantic Rule/Pattern Match):* Quét từ khóa mục tiêu thực tế (`confidence >= 0.90`):
+     - `GREETING`: Nhận diện câu chào hỏi, hỏi thăm (*"xin chào"*, *"chào bạn"*, *"hello"*) ➔ Phản hồi giọng nói thân thiện kèm danh sách câu gợi ý nhanh.
+     - `COURTESY`: Nhận diện cảm ơn, tạm biệt (*"cảm ơn"*, *"thank you"*, *"tạm biệt"*) ➔ Lời chúc hành trình an toàn.
+     - `CURRENT_LOCATION`: Nhận diện hỏi vị trí (*"tôi đang ở đâu?"*, *"vị trí hiện tại"*, *"tọa độ của tôi"*, *"xung quanh tôi có gì"*) ➔ Tự động giải mã tọa độ GPS sang quận/huyện TP.HCM gần nhất, quét bán kính 2km cảnh báo điểm ngập cục bộ, cung cấp thời tiết và AQI tại vị trí đó.
+     - `EMERGENCY_ASSISTANCE`: Nhận diện cứu hộ, sự cố xe (*"cứu hộ"*, *"xe chết máy do ngập"*, *"hotline cứu hộ"*) ➔ Cung cấp danh bạ hotline (1022, 114, 115, Cứu hộ giao thông 1900 6886) và hướng dẫn 4 bước xử lý xe chết máy tránh thủy kích.
      - `REPORT_INCIDENT`: Nhận diện xả rác, bãi rác, ô nhiễm, gom rác ➔ Chuyển hướng `/report-incident`.
-     - `CHECK_SAFE_ROUTE`: Nhận diện đường an toàn, không bị ngập, né ngập ➔ Chuyển hướng `map_flood`.
+     - `CHECK_SAFE_ROUTE`: Nhận diện lộ trình an toàn, né ngập, hỏi đường ngập (*"đường nào đang bị ngập?"*, *"những đường nào ngập?"*, *"đường X có ngập không?"*, *"quanh đây có ngập không?"*) ➔ Phân tích 30 điểm đen ngập úng, báo rõ đoạn ngập cục bộ do cống quá tải hoặc xác nhận đường an toàn nếu nằm ngoài điểm đen.
+     - `REPORT_FLOOD`: Nhận diện phản ánh điểm ngập nước ➔ Chuyển hướng `/report-flood`.
      - `CHECK_REWARD_WALLET`: Nhận diện ví điểm, xem điểm, GreenPoints ➔ Tra cứu `/wallet`.
      - `OPEN_AIR_QUALITY_MAP`: Nhận diện mở bản đồ chất lượng không khí, AQI ➔ Chuyển hướng `dashboard_aqi`.
      - `CHECK_CURRENT_AQI`: Nhận diện chất lượng không khí theo quận ➔ Tra cứu số liệu AQI thực tế từ trạm quan trắc.
-     - `REPORT_FLOOD`: Nhận diện phản ánh điểm ngập nước ➔ Chuyển hướng `/report-flood`.
-     - `CHECK_WEATHER`: Nhận diện thời tiết, nhiệt độ, mưa, nắng hôm nay ➔ Tra cứu thời tiết thực tế từ Open-Meteo API.
+     - `CHECK_WEATHER`: Nhận diện thời tiết, nhiệt độ (*"bao nhiêu độ?"*), dự báo mưa (*"trời có mưa không?"*, *"sắp mưa chưa?"*), thời tiết tại vị trí GPS (*"thời tiết ở chỗ tôi"*) ➔ Tra cứu dữ liệu thời gian thực từ Open-Meteo API.
      - `CHECK_TIDE_LEVEL`: Nhận diện triều cường, mực nước trạm Phú An/Nhà Bè ➔ Tra cứu dữ liệu thủy văn thực tế từ `tide_engine`.
      - `CHECK_PARKS_GREEN_SPACES`: Nhận diện công viên, cây xanh, không gian xanh ➔ Chuyển hướng `map` mảng xanh.
-     - `PROJECT_OVERVIEW`: Nhận diện giới thiệu dự án GreenSpot, tính năng hệ thống ➔ Tra cứu tổng quan 6 phân hệ.
-  3. *Tầng 3 (Fuzzy Jaccard Similarity - Dòng 351 - 370):* So khớp mờ tập từ vựng với các mẫu câu có sẵn, chấp nhận nếu điểm tương đồng $\ge 0.40$.
-  4. *Tầng 4 (Graceful Fallback - Dòng 372 - 380):* Xử lý câu lệnh lạ an toàn, trả về thông điệp thân thiện kèm danh sách gợi ý. Tuyệt đối không bịa thông tin ngoài dự án.
+     - `PROJECT_OVERVIEW`: Nhận diện giới thiệu dự án GreenSpot, tính năng hệ thống ➔ Tra cứu tổng quan các phân hệ.
+  3. *Tầng 3 (Fuzzy Jaccard Similarity):* So khớp mờ tập từ vựng với các mẫu câu có sẵn, chấp nhận nếu điểm tương đồng $\ge 0.40$.
+  4. *Tầng 4 (Graceful Fallback):* Xử lý câu lệnh lạ an toàn, trả về thông điệp thân thiện kèm danh sách gợi ý. Tuyệt đối không bịa thông tin ngoài dự án.
 
 ---
 
@@ -454,6 +555,72 @@ Phần này trình bày chính xác từng dòng code và nguyên lý hoạt đ�
 
 ---
 
+### 5.11 Thuật toán 11: Mô Hình Bối Cảnh Thủy Văn & Dự Báo Ngập Điểm Cục Bộ (Realistic Localized Flood Analysis & Hydrological Grounding)
+- **Tập tin:** [`BackEnd/app/services/flood_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/flood_service.py#L9585-L9745) và [`BackEnd/app/services/voice_assistant/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_assistant/voice_service.py#L520-L640)
+- **Nguyên lý thủy văn thực tế đô thị:**
+  Tại các đô thị lớn có mạng lưới kênh rạch chằng chịt và triều bán nhật triều như TP.HCM, việc ngập lụt **không bao giờ diễn ra đồng loạt trên toàn bộ chiều dài nhiều cây số** của một tuyến đường. Thay vào đó, ngập chỉ xảy ra cục bộ tại một đoạn trũng thấp (chiều dài 300m - 1500m), nơi miệng thu cống bị tắc nghẽn, tiết diện cống ngầm quá tải không kịp thoát lưu lượng mưa dồn về, hoặc cửa xả rạch bị nước triều dâng bít dòng. Toàn bộ các đoạn khác của tuyến đường và các trục đường trên cao vẫn khô ráo và các phương tiện lưu thông bình thường.
+- **Từ điển Bối cảnh Hình thái Vật lý `HOTSPOT_REALISTIC_PHYSICAL_CONTEXT`:**
+  Được ánh xạ cho toàn bộ 30 điểm đen ngập lụt thực tế tại TP.HCM (số hóa LineString tọa độ GIS từ OpenStreetMap và Cổng Dữ Liệu Mở TP.HCM):
+  ```python
+  HOTSPOT_REALISTIC_PHYSICAL_CONTEXT = {
+      "flood-01": {
+          "spot_type": "Vùng trũng chân cầu",
+          "drainage_issue": "Cống thoát nước ra rạch Văn Thánh không kịp tiêu thoát khi mưa lớn kết hợp triều dâng",
+          "segment_scope": "Chỉ ngập cục bộ đoạn trũng 800m gần chân cầu Thủ Thiêm, các đoạn khác của đường Nguyễn Hữu Cảnh khô ráo",
+      },
+      "flood-05": {
+          "spot_type": "Vùng trũng đáy dốc",
+          "drainage_issue": "Nước mưa từ đỉnh dốc đổ dồn về đáy chợ quá nhanh khiến miệng cống không kịp thu nước",
+          "segment_scope": "Chỉ ngập cục bộ đoạn 700m dốc Chợ Thủ Đức, đoạn trên dốc vẫn khô ráo",
+      },
+      "flood-06": {
+          "spot_type": "Vùng trũng thấp hạ lưu sông",
+          "drainage_issue": "Triều cường dâng từ sông Soài Rạp tràn qua mặt đường, cống ngăn triều chưa đồng bộ",
+          "segment_scope": "Chỉ ngập đoạn 1200m gần Cầu Phú Xuân khi đỉnh triều lên cao",
+      },
+      ...
+  }
+  ```
+- **Hai Chế Độ Phân Tích Thông Minh Trong `VoiceService.process_voice_command`:**
+  1. *Chế độ 1: Tra Cứu Tuyến Đường Cụ Thể (Street-Specific Query):*
+     - Thuật toán trích xuất tên đường từ câu hỏi của người dùng và khử dấu Unicode NFD để so khớp với 30 điểm đen:
+       ```python
+       for feat in point_features:
+           props = feat.get("properties", {})
+           street_unaccented = self.strip_accents(props.get("street", "")).lower()
+           name_unaccented = self.strip_accents(props.get("name", "")).lower()
+           if (street_unaccented in unaccented_lower) or (name_unaccented in unaccented_lower):
+               matched_spot = props
+               break
+       ```
+     - Nếu đường đó có điểm nghẽn: Giải thích chính xác đoạn đường nào bị ngập (chiều dài bao nhiêu mét), chiều sâu dự kiến, phân tích nguyên nhân cống quá tải, **khẳng định các đoạn khác vẫn khô ráo** và hướng dẫn lộ trình né tránh cụ thể.
+  2. *Chế độ 2: Tra Cứu An Toàn Tổng Quan (General Safe Route Query):*
+     - Nếu người dùng hỏi tổng thể (*"Đường nào an toàn không bị ngập?"*), hệ thống phân tích bức tranh thủy văn tổng thể:
+       * Khẳng định cơ chế ngập cục bộ tại TP.HCM (300m - 1500m).
+       * Đưa ra danh sách các điểm ngập cần né tránh.
+       * Cung cấp danh sách 4 hành lang trục đường cao ráo an toàn tuyệt đối: Trục Điện Biên Phủ (Bình Thạnh), Trục Phạm Văn Đồng (Gò Vấp - Thủ Đức), Trục Mai Chí Thọ (TP. Thủ Đức), Trục Xa Lộ Hà Nội.
+- **Cấu trúc Dữ liệu Payload Frontend Nhận Được:**
+  ```json
+  {
+    "matched_street": "Nguyễn Hữu Cảnh",
+    "specific_spot": "Nguyễn Hữu Cảnh (Chân cầu Thủ Thiêm)",
+    "length_m": 800,
+    "spot_type": "Vùng trũng chân cầu",
+    "drainage_issue": "Cống thoát nước ra rạch Văn Thánh không kịp tiêu thoát",
+    "segment_scope": "Chỉ ngập cục bộ đoạn trũng 800m gần chân cầu Thủ Thiêm, các đoạn khác của đường Nguyễn Hữu Cảnh khô ráo",
+    "estimated_depth_cm": 35,
+    "risk_level": "WARNING",
+    "detour_advice": "Rẽ sang đường Điện Biên Phủ hoặc đường ven sông Nguyễn Gia Trí (D2 cũ).",
+    "safe_corridors": [
+      {"name": "Trục Điện Biên Phủ (Bình Thạnh)", "status": "Cao ráo, cống hộp tiêu thoát tốt"},
+      {"name": "Trục Phạm Văn Đồng (Gò Vấp - Thủ Đức)", "status": "Mặt đường cao, không ngập"},
+      {"name": "Trục Mai Chí Thọ (TP. Thủ Đức)", "status": "Hạ tầng thoát nước hoàn chỉnh"}
+    ]
+  }
+  ```
+
+---
+
 ## 6. KỊCH BẢN NGHIỆP VỤ THỰC TẾ MẪU (END-TO-END WALKTHROUGH SCENARIOS)
 
 | Kịch Bản | Người Dùng Nói (Raw Transcript) | Chuẩn Hóa AI (Normalized Text) | Intent Phân Loại | Action Thực Thi & Phản Hồi (100% Zero-Fabrication) |
@@ -461,7 +628,9 @@ Phần này trình bày chính xác từng dòng code và nguyên lý hoạt đ�
 | **Kịch bản A (Thời tiết Thủ Đức)** | `"thời tiết hôm nay tại thủ đức"` | `"Thời tiết hôm nay tại Thủ Đức."` | `CHECK_WEATHER` | **Tra cứu:** `WeatherService`<br>**Tọa độ:** (10.8494, 106.7584)<br>**TTS:** *"Trợ lý: Thời tiết tại Thủ Đức hiện tại 31.5°C, Nắng ấm, độ ẩm 68%, sức gió 12.5 km/h. AQI 45 (Mức Tốt)."* |
 | **Kịch bản B (Triều cường)** | `"mực nước triều cường trạm phú an"` | `"Mực nước triều cường trạm Phú An."` | `CHECK_TIDE_LEVEL` | **Tra cứu:** `tide_engine.get_current_tide`<br>**Payload:** Mực nước 1.48m, Triều đang lên, Báo động 1.<br>**TTS:** *"Trợ lý: Mực nước trạm thủy văn Phú An hiện là 1.48m, Triều đang lên ở mức Báo động 1."* |
 | **Kịch bản C (Báo rác)** | `"báo cáo bãi rác ngã tư lê lợi"` | `"Báo cáo bãi rác ngã tư Lê Lợi."` | `REPORT_INCIDENT` | **Điều hướng:** `/report-incident`<br>**Điền sẵn:** Loại rác thải đô thị, địa điểm ngã tư Lê Lợi.<br>**TTS:** *"Trợ lý: Đang mở biểu mẫu Báo cáo sự cố rác thải cho bạn tại ngã tư Lê Lợi."* |
-| **Kịch bản D (Tránh ngập)** | `"đường nào an toàn không bị ngập"` | `"Đường nào an toàn không bị ngập?"` | `CHECK_SAFE_ROUTE` | **Điều hướng:** `map_flood`<br>**Payload:** 3 điểm ngập đã né tránh.<br>**TTS:** *"Trợ lý: Đang hiển thị bản đồ các tuyến đường an toàn không bị ngập nước."* |
+| **Kịch bản D1 (An toàn tổng thể)** | `"đường nào an toàn không bị ngập"` | `"Đường nào an toàn không bị ngập?"` | `CHECK_SAFE_ROUTE` | **Điều hướng:** `map_flood`<br>**Payload:** Cảnh báo các đoạn trũng cục bộ (300m - 1500m), đề xuất 4 trục cao ráo (Điện Biên Phủ, Mai Chí Thọ, Xa Lộ Hà Nội, Phạm Văn Đồng).<br>**TTS:** *"Trợ lý: Tại TP.HCM ngập úng chỉ diễn ra cục bộ tại một số đoạn trũng hoặc cống thoát quá tải. Các trục đường Điện Biên Phủ, Xa Lộ Hà Nội, Phạm Văn Đồng, Mai Chí Thọ hoàn toàn an toàn."* |
+| **Kịch bản D2 (Tuyến cụ thể - Nguyễn Hữu Cảnh)** | `"đường nguyễn hữu cảnh có ngập không"` | `"Đường Nguyễn Hữu Cảnh có ngập không?"` | `CHECK_SAFE_ROUTE` | **Tra cứu:** `FloodService.get_flood_hotspots_geojson`<br>**Payload:** Đoạn 800m chân cầu Thủ Thiêm ngập ~35cm do cống rạch Văn Thánh; các đoạn khác khô ráo.<br>**TTS:** *"Trợ lý: Tuyến đường Nguyễn Hữu Cảnh chỉ ngập cục bộ tại chân cầu Thủ Thiêm dài khoảng 800m do cống thoát nước ra rạch Văn Thánh không kịp tiêu thoát. Các đoạn khác vẫn khô ráo. Lộ trình né: Rẽ sang Điện Biên Phủ."* |
+| **Kịch bản D3 (Tuyến cụ thể - Huỳnh Tấn Phát)** | `"đoạn huỳnh tấn phát quận 7 có ngập không"` | `"Đoạn Huỳnh Tấn Phát Quận 7 có ngập không?"` | `CHECK_SAFE_ROUTE` | **Tra cứu:** `FloodService.get_flood_hotspots_geojson`<br>**Payload:** Đoạn 1200m gần Cầu Phú Xuân ngập do triều dâng sông Soài Rạp; các đoạn khác khô ráo.<br>**TTS:** *"Trợ lý: Tuyến đường Huỳnh Tấn Phát chỉ ngập đoạn 1200m gần Cầu Phú Xuân khi đỉnh triều lên cao. Các đoạn khác lưu thông an toàn. Lộ trình né: Trục Nguyễn Lương Bằng."* |
 | **Kịch bản E (Ví điểm)** | `"xem số dư ví điểm xanh"` | `"Xem số dư ví điểm xanh."` | `CHECK_REWARD_WALLET` | **Tra cứu:** `/wallet`<br>**Payload:** 350 GreenPoints, Cấp 3 Chiến binh Xanh.<br>**TTS:** *"Trợ lý: Số dư ví điểm xanh của bạn hiện có 350 điểm GreenPoints."* |
 | **Kịch bản F (Khí tượng)** | `"chất lượng không khí quận 1 hôm nay"` | `"Chất lượng không khí Quận 1 hôm nay."` | `CHECK_CURRENT_AQI` | **Tra cứu:** `WeatherService`<br>**Payload:** Trạm Bến Nghé, AQI thực tế, PM2.5.<br>**TTS:** *"Trợ lý: Chất lượng không khí Quận 1 hôm nay ở mức Tốt, AQI 42, không khí trong lành."* |
 | **Kịch bản G (Mảng xanh)** | `"các công viên và cây xanh của thành phố"` | `"Các công viên và cây xanh của thành phố."` | `CHECK_PARKS_GREEN_SPACES` | **Điều hướng:** `map`<br>**Payload:** Quản lý hơn 450 hecta không gian xanh.<br>**TTS:** *"Trợ lý: Hệ thống GreenSpot đang quản lý hơn 450 hecta không gian xanh. Đang mở bản đồ không gian xanh cho bạn."* |
@@ -480,18 +649,20 @@ Tất cả đường dẫn và số dòng mã được đối soát chính xác 
 | **2** | [`BackEnd/alembic/versions/020_create_voice_assistant_tables.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/alembic/versions/020_create_voice_assistant_tables.py) | CSDL Migration | Khởi tạo bảng `voice_sample_commands`, `voice_interaction_logs` và các chỉ mục Index | 1 - 76 |
 | **3** | [`BackEnd/app/interface/voice_assistant/voice_interface.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/interface/voice_assistant/voice_interface.py) | Interface Contract | Khai báo Abstract Base Classes `IVoiceAssistantRepository` và `IVoiceNluService` | 1 - 92 |
 | **4** | [`BackEnd/app/crud/voice_assistant/voice_repository.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/crud/voice_assistant/voice_repository.py) | Repository Pattern | Triển khai truy vấn async: `get_active_sample_commands`, `create_interaction_log`... | 1 - 95 |
-| **5** | [`BackEnd/app/services/voice_assistant/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_assistant/voice_service.py) | Service / AI NLU | 10 Intent nghiệp vụ, tích hợp Open-Meteo & trạm thủy văn Phú An (Zero-Fabrication) | 1 - 575 |
-| **6** | [`BackEnd/app/schemas/voice_assistant/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/schemas/voice_assistant/voice.py) | DTO / Schemas | Pydantic V2 Schemas: `VoiceProcessRequest`, `VoiceProcessResponse`, `VoiceSampleCommandResponse` | 1 - 72 |
-| **7** | [`BackEnd/app/api/v1/voice_assistant/router.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/voice_assistant/router.py) | API Router | Endpoints: `GET /suggestions`, `POST /process`, `GET /history` | 1 - 134 |
-| **8** | [`BackEnd/tests/voice_assistant/test_voice_assistant.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/voice_assistant/test_voice_assistant.py) | Unit Testing | 13 bài kiểm thử tự động bao phủ 100% tất cả các nhánh, kiểm thử thời tiết, triều cường, fallback | 1 - 605 |
-| **9** | [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx) | UI Presentation | Bộ điều khiển trung tâm 4 Màn hình, thẻ kết quả thời tiết, triều cường, Web Speech STT & TTS | 1 - 750 |
-| **10**| [`FrontEnd/src/components/VoiceAssistant/VoiceWaveform.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceWaveform.tsx) | Audio Visualization | Canvas Web Audio API sóng âm dao động màu xanh lá | 1 - 119 |
-| **11**| [`FrontEnd/src/components/VoiceAssistant/MicPermissionModal.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/MicPermissionModal.tsx) | Modal Popup | Popup Màn 4: "KHÔNG TRUY CẬP ĐƯỢC MICRO", hướng dẫn icon ổ khóa, thử lại, đóng bằng Esc | 1 - 118 |
-| **12**| [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.css`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.css) | UI / Styling | Thiết kế toàn màn hình, pulse animation, glassmorphism, responsive 2 cột, thẻ thời tiết & triều | 1 - 1172 |
-| **13**| [`FrontEnd/src/services/voice_assistant/voiceService.ts`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/services/voice_assistant/voiceService.ts) | Frontend Service | Gọi API Backend Axios: `fetchVoiceSuggestions`, `processVoiceCommand` | 1 - 67 |
-| **14**| [`FrontEnd/src/types/voice_assistant/voice.ts`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/types/voice_assistant/voice.ts) | Frontend Types | TypeScript Interfaces: `VoiceSampleCommand`, `VoiceProcessRequest`, `VoiceProcessResponse` | 1 - 36 |
-| **15**| [`FrontEnd/src/App.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/App.tsx) | Homepage Integration | Tích hợp tab `🎙️ Trợ lý Giọng nói` trên Navbar và nút nổi nhanh góc dưới trang chủ | 1 - 155 |
-| **16**| [`FrontEnd/src/components/VoiceAssistant/__tests__/VoiceAssistant.test.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/__tests__/VoiceAssistant.test.tsx) | Frontend Testing | 9 bài kiểm thử Vitest toàn diện cho 4 màn hình, TTS, thẻ thời tiết, triều cường và phím Esc | 1 - 403 |
+| **5** | [`BackEnd/app/services/voice_assistant/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_assistant/voice_service.py) | Service / AI NLU | 10 Intent nghiệp vụ, tích hợp Open-Meteo, trạm Phú An, và phân tích ngập cục bộ 30 điểm đen | 1 - 694 |
+| **6** | [`BackEnd/app/services/flood_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/flood_service.py) | Domain & Hydrology Engine | 30 điểm đen ngập lụt OSM/OpenData, từ điển `HOTSPOT_REALISTIC_PHYSICAL_CONTEXT` (hình thái, cống quá tải, phạm vi đoạn) | 1 - 10054 |
+| **7** | [`BackEnd/app/schemas/voice_assistant/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/schemas/voice_assistant/voice.py) | DTO / Schemas | Pydantic V2 Schemas: `VoiceProcessRequest`, `VoiceProcessResponse`, `VoiceSampleCommandResponse` | 1 - 72 |
+| **8** | [`BackEnd/app/api/v1/voice_assistant/router.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/voice_assistant/router.py) | API Router | Endpoints: `GET /suggestions`, `POST /process`, `GET /history` | 1 - 134 |
+| **9** | [`BackEnd/tests/voice_assistant/test_voice_assistant.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/voice_assistant/test_voice_assistant.py) | Unit Testing | 17 bài kiểm thử tự động bao phủ 100% tất cả các nhánh, kiểm thử thời tiết, triều cường, ngập cục bộ, fallback | 1 - 729 |
+| **10**| [`BackEnd/tests/test_flood_and_tide.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/test_flood_and_tide.py) | Hydrology Testing | 6 bài kiểm thử tự động xác thực mô hình điều hòa triều cường và dự báo ngập 30 điểm đen | 1 - 90 |
+| **11**| [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx) | UI Presentation | Bộ điều khiển trung tâm 4 Màn hình, thẻ kết quả ngập cục bộ, thời tiết, triều cường, Web Speech STT & TTS | 1 - 790 |
+| **12**| [`FrontEnd/src/components/VoiceAssistant/VoiceWaveform.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceWaveform.tsx) | Audio Visualization | Canvas Web Audio API sóng âm dao động màu xanh lá | 1 - 119 |
+| **13**| [`FrontEnd/src/components/VoiceAssistant/MicPermissionModal.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/MicPermissionModal.tsx) | Modal Popup | Popup Màn 4: "KHÔNG TRUY CẬP ĐƯỢC MICRO", viền nét đứt cam, hướng dẫn icon ổ khóa, thử lại, đóng bằng Esc | 1 - 118 |
+| **14**| [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.scss`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.scss) | SASS / SCSS Styling | Chuẩn hóa 100% SASS: Design Tokens, variables, mixins (`glass-panel`, `wide-pill-button`), nesting BEM | 1 - 1330 |
+| **15**| [`FrontEnd/src/services/voice_assistant/voiceService.ts`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/services/voice_assistant/voiceService.ts) | Frontend Service | Gọi API Backend Axios: `fetchVoiceSuggestions`, `processVoiceCommand` | 1 - 67 |
+| **16**| [`FrontEnd/src/types/voice_assistant/voice.ts`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/types/voice_assistant/voice.ts) | Frontend Types | TypeScript Interfaces: `VoiceSampleCommand`, `VoiceProcessRequest`, `VoiceProcessResponse` | 1 - 36 |
+| **17**| [`FrontEnd/src/App.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/App.tsx) | Homepage Integration | Tích hợp tab `🎙️ Trợ lý Giọng nói` trên Navbar và nút nổi nhanh góc dưới trang chủ | 1 - 155 |
+| **18**| [`FrontEnd/src/components/VoiceAssistant/__tests__/VoiceAssistant.test.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/__tests__/VoiceAssistant.test.tsx) | Frontend Testing | 14 bài kiểm thử Vitest toàn diện cho 4 màn hình, TTS, thẻ ngập cục bộ, thời tiết, triều cường và phím Esc | 1 - 508 |
 
 ---
 
@@ -529,7 +700,7 @@ Trong kỹ thuật kiểm thử phần mềm chuyên nghiệp (Software Testing 
 
 ---
 
-### 8.2 Kết quả kiểm thử tự động Backend (17/17 Tests Passed - 100% Flow & Branch Coverage)
+### 8.2 Kết quả kiểm thử tự động Backend - Voice Assistant (17/17 Tests Passed - 100% Flow & Branch Coverage)
 Mở cửa sổ PowerShell tại thư mục `BackEnd` và chạy:
 ```powershell
 $env:PYTHONPATH="."
@@ -561,7 +732,21 @@ python tests/voice_assistant/test_voice_assistant.py
 
 ---
 
-### 8.3 Kết quả kiểm thử tự động Frontend (35/35 Tests Passed - 100% Flow & Branch Coverage)
+### 8.3 Kết quả kiểm thử tự động Backend - Thủy Văn & Dự Báo Ngập (6/6 Tests Passed)
+Mở cửa sổ PowerShell tại thư mục `BackEnd` và chạy:
+```powershell
+$env:PYTHONPATH="."
+python tests/test_flood_and_tide.py
+```
+**Kết quả thực tế đạt được:**
+```text
+Running automated unit tests...
+ALL TESTS PASSED SUCCESSFULLY! (6/6)
+```
+
+---
+
+### 8.4 Kết quả kiểm thử tự động Frontend (35/35 Tests Passed - 100% Flow & Branch Coverage)
 Mở terminal tại thư mục `FrontEnd` và chạy:
 ```bash
 npm test -- --run
@@ -598,20 +783,25 @@ npm test -- --run
 
 ---
 
-### 8.4 Biên dịch Production Bundle
+### 8.5 Biên dịch Production Bundle
 Mở terminal tại thư mục `FrontEnd` và chạy:
 ```bash
 npm run build
 ```
 **Kết quả thực tế đạt được:**
 ```text
+> frontend@0.0.0 build
 > tsc -b && vite build
+
 vite v8.3.0 building client environment for production...
-✓ 138 modules transformed.
+transforming...
+✓ 140 modules transformed.
+rendering chunks...
+computing gzip size...
 dist/index.html                     1.57 kB │ gzip:   0.76 kB
-dist/assets/index-CDgHMpBa.css    146.00 kB │ gzip:  21.65 kB
-dist/assets/index-CdPPIqyS.js   1,541.28 kB │ gzip: 427.14 kB
-✓ built in 520ms (0 errors, 100% Type-Safe)
+dist/assets/index-CnW3cerd.css    151.82 kB │ gzip:  22.54 kB
+dist/assets/index-CrBYEKoY.js   1,545.87 kB │ gzip: 428.12 kB
+✓ built in 923ms (0 errors, 100% Type-Safe)
 ```
 
 ---

@@ -7,7 +7,7 @@ import type {
   VoiceProcessResponse,
   VoiceSampleCommand,
 } from "../../types/voice_assistant";
-import "./VoiceAssistant.css";
+import "./VoiceAssistant.scss";
 
 interface VoiceAssistantProps {
   onClose?: () => void;
@@ -23,6 +23,9 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
 
   // Trạng thái Popup Màn 4
   const [showMicPermissionModal, setShowMicPermissionModal] = useState<boolean>(false);
+
+  // Vị trí GPS hiện tại của người dùng phục vụ truy vấn cục bộ
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   // Danh sách câu lệnh mẫu Màn 1
   const [suggestions, setSuggestions] = useState<VoiceSampleCommand[]>([]);
@@ -64,7 +67,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
     if (recognitionRef.current) {
       try {
         recognitionRef.current.abort();
-      } catch {}
+      } catch { }
       recognitionRef.current = null;
     }
     if (mediaStreamRef.current) {
@@ -93,6 +96,23 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
 
   useEffect(() => {
     loadSuggestions();
+
+    // Lấy tọa độ GPS người dùng để phục vụ tra cứu chính xác
+    if (typeof navigator !== "undefined" && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserCoords({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          });
+        },
+        () => {
+          // Mặc định khu vực trung tâm TP.HCM (Quận 1)
+          setUserCoords({ lat: 10.7765, lng: 106.7009 });
+        },
+        { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+      );
+    }
 
     // Kiểm tra tính năng Web Speech API trên trình duyệt
     const SpeechRecognition =
@@ -149,6 +169,8 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       const response = await voiceService.processVoiceCommand({
         transcript: transcriptText,
         session_source: source,
+        current_lat: userCoords?.lat,
+        current_lng: userCoords?.lng,
       });
 
       setResultData(response);
@@ -376,13 +398,17 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       {/* NỘI DUNG CHÍNH (KHỐI TRỢ LÝ GIỌNG NÓI TOÀN MÀN HÌNH) */}
       <main className="voice-main-content">
         {/* ======================================================== */}
-        {/* MÀN 1: TRUNG TÂM ĐIỀU KHIỂN TRỢ LÝ GIỌNG NÓI */}
+        {/* MÀN 1: TRUNG TÂM ĐIỀU KHIỂN TRỢ LÝ GIỌNG NÓI (CHỜ LỆNH) */}
         {/* ======================================================== */}
         {currentScreen === "HOME" && (
-          <div className="voice-screen voice-home-screen" data-testid="voice-home-screen">
-            <div className="voice-home-header-badge">
-              <span className="pulse-dot" />
-              <span>TRỢ LÝ GIỌNG NÓI RẢNH TAY</span>
+          <div className="voice-screen voice-home-screen voice-panel-container" data-testid="voice-home-screen">
+            {/* TIÊU ĐỀ KHỐI THEO WIREFRAME 1: TRỢ LÝ GIỌNG NÓI */}
+            <div className="voice-panel-header">
+              <h2 className="voice-panel-title">TRỢ LÝ GIỌNG NÓI</h2>
+              <div className="voice-home-header-badge">
+                <span className="pulse-dot" />
+                <span>TRỢ LÝ GIỌNG NÓI RẢNH TAY</span>
+              </div>
             </div>
 
             <h1 className="voice-main-title">Bạn cần hỗ trợ điều gì hôm nay?</h1>
@@ -411,7 +437,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
               </div>
             )}
 
-            {/* NÚT MICRO LỚN VỚI HIỆU ỨNG NHỊP THỞ (PULSE ANIMATION) */}
+            {/* NÚT MICRO LỚN VỚI HIỆU ỨNG NHỊP THỞ (PULSE ANIMATION - WIREFRAME 1) */}
             <div className="voice-mic-hero-wrapper">
               <button
                 type="button"
@@ -425,22 +451,10 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                 <div className="pulse-ring ring-3" />
                 <span className="mic-icon" aria-hidden="true">🎙️</span>
               </button>
+              <span className="mic-label-badge">Nút micro lớn</span>
             </div>
 
-            {/* NÚT BẮT ĐẦU NÓI */}
-            <div className="voice-start-btn-container">
-              <button
-                type="button"
-                className="btn-start-speaking"
-                onClick={startListening}
-                disabled={browserUnsupported}
-              >
-                <span className="btn-icon">🎤</span>
-                <span>Bắt đầu nói</span>
-              </button>
-            </div>
-
-            {/* GỢI Ý CÂU LỆNH MẪU THỰC TẾ */}
+            {/* GỢI Ý CÂU LỆNH MẪU THỰC TẾ (WIREFRAME 1) */}
             <div className="voice-suggestions-section">
               <div className="suggestions-header">
                 <span className="suggestions-icon">💡</span>
@@ -466,43 +480,53 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                 )}
               </div>
             </div>
+
+            {/* NÚT BẮT ĐẦU NÓI DẠNG PILL RỘNG THEO WIREFRAME 1 */}
+            <div className="voice-start-btn-container">
+              <button
+                type="button"
+                className="btn-start-speaking wide-pill-btn"
+                onClick={startListening}
+                disabled={browserUnsupported}
+              >
+                <span className="btn-icon">🎤</span>
+                <span>Bắt đầu nói</span>
+              </button>
+            </div>
           </div>
         )}
 
         {/* ======================================================== */}
-        {/* MÀN 2: TRẠNG THÁI THU ÂM VÀ NHẬN DẠNG THỜI GIAN THỰC */}
+        {/* MÀN 2: TRẠNG THÁI THU ÂM VÀ NHẬN DẠNG THỜI GIAN THỰC (ĐANG NGHE) */}
         {/* ======================================================== */}
         {currentScreen === "LISTENING" && (
-          <div className="voice-screen voice-listening-screen" data-testid="voice-listening-screen">
-            <div className="listening-status-header">
+          <div className="voice-screen voice-listening-screen voice-panel-container" data-testid="voice-listening-screen">
+            {/* TIÊU ĐỀ KHỐI THEO WIREFRAME 2: ĐANG NGHE... */}
+            <div className="voice-panel-header">
+              <h2 className="voice-panel-title listening-title">ĐANG NGHE...</h2>
               <span className="listening-pulse-dot" />
-              <h2 className="listening-title">ĐANG NGHE...</h2>
             </div>
 
             <p className="listening-instruction">
               Hãy phát âm rõ ràng yêu cầu của bạn, hệ thống sẽ tự động xử lý khi bạn dừng nói.
             </p>
 
-            {/* SÓNG ÂM (WAVEFORM ANIMATION MÀU XANH LÁ) */}
-            <VoiceWaveform
-              stream={activeMediaStream}
-              isListening={currentScreen === "LISTENING"}
-            />
+            {/* SÓNG ÂM (WAVEFORM ANIMATION MÀU XANH LÁ - WIREFRAME 2) */}
+            <div className="waveform-box-wrapper">
+              <div className="waveform-sublabel">Sóng âm</div>
+              <VoiceWaveform
+                stream={activeMediaStream}
+                isListening={currentScreen === "LISTENING"}
+              />
+            </div>
 
-            {/* VĂN BẢN NHẬN DẠNG THEO THỜI GIAN THỰC (< 200MS) */}
+            {/* VĂN BẢN NHẬN DẠNG THEO THỜI GIAN THỰC (< 200MS - WIREFRAME 2) */}
             <div className="realtime-transcript-card" aria-live="polite">
-              <span className="transcript-label">Văn bản nhận dạng thời gian thực:</span>
+              <span className="transcript-label">Văn bản nhận dạng theo thời gian thực:</span>
               <p className="transcript-text">
                 {realtimeTranscript || "Đang nhận diện giọng nói của bạn..."}
               </p>
             </div>
-
-            {/* CẢNH BÁO MÔI TRƯỜNG QUÁ NHIỀU TẠP ÂM (NẾU CÓ) */}
-            {noiseWarning && (
-              <div className="voice-noise-warning-badge" role="alert">
-                <span>⚠️ {noiseWarning}</span>
-              </div>
-            )}
 
             {/* DÒNG TRẠNG THÁI ĐANG XỬ LÝ (KHI DỪNG NÓI HOẶC BẤM DỪNG) */}
             {isProcessing && (
@@ -512,11 +536,18 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
               </div>
             )}
 
-            {/* NÚT "DỪNG" CHỦ ĐỘNG KẾT THÚC CÂU NÓI */}
+            {/* CẢNH BÁO MÔI TRƯỜNG QUÁ NHIỀU TẠP ÂM (HIỂN THỊ PHÍA TRÊN NÚT DỪNG THEO SPEC) */}
+            {noiseWarning && (
+              <div className="voice-noise-warning-badge yellow-warning" role="alert">
+                <span>⚠️ {noiseWarning}</span>
+              </div>
+            )}
+
+            {/* NÚT "DỪNG" CHỦ ĐỘNG KẾT THÚC CÂU NÓI DẠNG PILL RỘNG THEO WIREFRAME 2 */}
             <div className="listening-actions">
               <button
                 type="button"
-                className="btn-stop-listening"
+                className="btn-stop-listening wide-pill-btn"
                 onClick={handleStopListening}
                 disabled={isProcessing}
               >
@@ -528,22 +559,22 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         )}
 
         {/* ======================================================== */}
-        {/* MÀN 3: PHẢN HỒI VÀ THỰC THI HÀNH ĐỘNG THEO Ý ĐỊNH */}
+        {/* MÀN 3: PHẢN HỒI VÀ THỰC THI HÀNH ĐỘNG THEO Ý ĐỊNH (KẾT QUẢ LỆNH) */}
         {/* ======================================================== */}
         {currentScreen === "RESULT" && resultData && (
           <div className="voice-screen voice-result-screen" data-testid="voice-result-screen">
             <div className="result-container-split">
-              {/* KHỐI CỘT TRÁI: "LỆNH CỦA BẠN" */}
-              <div className="result-column-left">
+              {/* KHỐI CỘT TRÁI: "LỆNH CỦA BẠN" (WIREFRAME 3) */}
+              <div className="result-column-left voice-panel-container">
                 <div className="column-card user-command-card">
-                  <div className="column-header">
+                  <div className="voice-panel-header">
                     <span className="column-icon">🗣️</span>
-                    <h3>LỆNH CỦA BẠN</h3>
+                    <h3 className="voice-panel-title">LỆNH CỦA BẠN</h3>
                   </div>
+
+                  <div className="command-sublabel">Văn bản nhận dạng:</div>
                   <div className="normalized-command-box">
-                    <p className="normalized-text">
-                      "{resultData.normalized_text}"
-                    </p>
+                    <p className="normalized-text">"{resultData.normalized_text}"</p>
                     <span className="command-tag-badge">
                       {resultData.detected_intent || "Ý định chung"}
                     </span>
@@ -555,13 +586,13 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                 </div>
               </div>
 
-              {/* KHỐI CỘT PHẢI: "PHẢN HỒI" */}
-              <div className="result-column-right">
+              {/* KHỐI CỘT PHẢI: "PHẢN HỒI" (WIREFRAME 3) */}
+              <div className="result-column-right voice-panel-container">
                 <div className="column-card assistant-response-card">
-                  <div className="column-header">
+                  <div className="voice-panel-header">
                     <div className="header-title-tts">
                       <span className="column-icon">🤖</span>
-                      <h3>PHẢN HỒI TỪ TRỢ LÝ</h3>
+                      <h3 className="voice-panel-title">PHẢN HỒI TỪ TRỢ LÝ</h3>
                     </div>
                     {/* Nút phát lại âm thanh */}
                     <button
@@ -574,9 +605,15 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                     </button>
                   </div>
 
+                  <div className="response-sublabel">Câu trả lời / hành động đã thực hiện:</div>
+
                   {/* Câu trả lời văn bản */}
                   <div className="assistant-message-bubble">
-                    <p>{resultData.response_text}</p>
+                    <p>
+                      {resultData.response_text.startsWith("Trợ lý:")
+                        ? resultData.response_text
+                        : `Trợ lý: ${resultData.response_text}`}
+                    </p>
                   </div>
 
                   {/* THẺ HÀNH ĐỘNG THỰC THI TƯƠNG ỨNG */}
@@ -615,9 +652,136 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                           )}
 
                           {resultData.detected_intent === "CHECK_SAFE_ROUTE" && (
-                            <div className="safe-route-preview">
-                              <p>✅ {resultData.action_payload.destination}</p>
-                              <p>• Tránh được: {resultData.action_payload.hazard_avoided} điểm ngập</p>
+                            <div className="safe-route-preview" data-testid="safe-route-card">
+                              <div className="safe-route-header-row">
+                                <span className="safe-route-dest-badge">
+                                  🛣️ {resultData.action_payload.destination || "Lộ trình di chuyển an toàn"}
+                                </span>
+                                {resultData.action_payload.hazard_avoided !== undefined && (
+                                  <span className="hazard-avoided-pill">
+                                    Tránh {resultData.action_payload.hazard_avoided} đoạn trũng ngập
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Thông điệp cốt lõi đúng thực tế */}
+                              <div className="safe-route-insight-box">
+                                <span className="insight-icon">💡</span>
+                                <span className="insight-text">
+                                  {resultData.action_payload.realistic_nature ||
+                                    "Thực tế ngập úng tại TP.HCM chỉ xảy ra cục bộ tại một đoạn trũng thấp hoặc khu vực cống thoát nước không kịp tiêu thoát, các đoạn khác lưu thông bình thường."}
+                                </span>
+                              </div>
+
+                              {/* Trường hợp tra cứu đích danh 1 tuyến đường */}
+                              {resultData.action_payload.specific_spot && (
+                                <div className="specific-spot-card">
+                                  <div className="spot-top-line">
+                                    <strong className="spot-name">📍 {resultData.action_payload.specific_spot}</strong>
+                                    <span className={`spot-depth-tag ${resultData.action_payload.risk_level?.toLowerCase() || 'warning'}`}>
+                                      ~{resultData.action_payload.estimated_depth_cm || 0} cm ({resultData.action_payload.length_m || 500}m)
+                                    </span>
+                                  </div>
+                                  {resultData.action_payload.spot_type && (
+                                    <div className="spot-detail-row">
+                                      <span className="detail-label">Đặc điểm hình thái:</span>
+                                      <span className="detail-val">{resultData.action_payload.spot_type}</span>
+                                    </div>
+                                  )}
+                                  {resultData.action_payload.drainage_issue && (
+                                    <div className="spot-detail-row">
+                                      <span className="detail-label">Nguyên nhân thoát nước:</span>
+                                      <span className="detail-val warning-text">{resultData.action_payload.drainage_issue}</span>
+                                    </div>
+                                  )}
+                                  {resultData.action_payload.segment_scope && (
+                                    <div className="spot-scope-note">
+                                      ℹ️ {resultData.action_payload.segment_scope}
+                                    </div>
+                                  )}
+                                  {resultData.action_payload.detour_advice && (
+                                    <div className="spot-detour-box">
+                                      🧭 <strong>Lộ trình né:</strong> {resultData.action_payload.detour_advice}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Trường hợp hỏi lân cận vị trí hiện tại có điểm ngập */}
+                              {resultData.action_payload.nearby_spot && (
+                                <div className="specific-spot-card nearby" data-testid="nearby-spot-card">
+                                  <div className="spot-top-line">
+                                    <strong className="spot-name">📍 {resultData.action_payload.nearby_spot.name}</strong>
+                                    <span className="spot-depth-tag warning">
+                                      Cách {resultData.action_payload.nearby_spot.dist_m}m (~{resultData.action_payload.nearby_spot.estimated_depth_cm}cm)
+                                    </span>
+                                  </div>
+                                  <div className="spot-detail-row">
+                                    <span className="detail-label">Đoạn đường:</span>
+                                    <span className="detail-val">{resultData.action_payload.nearby_spot.street}</span>
+                                  </div>
+                                  {resultData.action_payload.nearby_spot.detour_advice && (
+                                    <div className="spot-detour-box">
+                                      🧭 <strong>Lộ trình né:</strong> {resultData.action_payload.nearby_spot.detour_advice}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Trường hợp hỏi tuyến đường an toàn nằm ngoài điểm đen */}
+                              {resultData.action_payload.is_safe && resultData.action_payload.matched_street && (
+                                <div className="safe-street-badge-card" data-testid="safe-street-card">
+                                  <div className="safe-street-header">
+                                    <span className="safe-icon">✅</span>
+                                    <strong>{resultData.action_payload.matched_street}</strong>
+                                    <span className="safe-status-pill">Khô ráo &amp; An toàn</span>
+                                  </div>
+                                  <p className="safe-desc">
+                                    Tuyến đường này cao ráo, cống thoát nước tốt và nằm ngoài 30 điểm đen ngập úng của TP.HCM.
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* Trường hợp danh sách các đoạn trũng cần lưu ý (General Query) */}
+                              {resultData.action_payload.specific_segments && resultData.action_payload.specific_segments.length > 0 && (
+                                <div className="flood-segments-section">
+                                  <div className="section-label">⚠️ Các đoạn trũng cục bộ cần lưu ý:</div>
+                                  <div className="segments-grid">
+                                    {resultData.action_payload.specific_segments.map((seg: any, idx: number) => (
+                                      <div key={idx} className="segment-card-item">
+                                        <div className="segment-header">
+                                          <span className="seg-name">{seg.name}</span>
+                                          <span className={`seg-badge ${seg.risk_level?.toLowerCase() || 'warning'}`}>
+                                            ~{seg.estimated_depth_cm}cm ({seg.length_m}m)
+                                          </span>
+                                        </div>
+                                        <div className="seg-desc">
+                                          • {seg.drainage_issue || seg.spot_type || "Cống thoát nước quá tải khi mưa lớn"}
+                                        </div>
+                                        {seg.detour_advice && (
+                                          <div className="seg-detour-hint">
+                                            💡 {seg.detour_advice}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Danh sách các trục đường cao ráo an toàn */}
+                              {resultData.action_payload.safe_corridors && (
+                                <div className="safe-corridors-section">
+                                  <div className="section-label">✅ Trục đường cao ráo không ngập:</div>
+                                  <div className="corridor-tags">
+                                    {resultData.action_payload.safe_corridors.map((c: any, i: number) => (
+                                      <span key={i} className="corridor-tag">
+                                        {typeof c === "string" ? c : c.name}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
 
@@ -671,6 +835,92 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                               <p>Đang chuyển tiếp tới bản đồ và form tiếp nhận ngập lụt...</p>
                             </div>
                           )}
+
+                          {resultData.detected_intent === "CURRENT_LOCATION" && (
+                            <div className="location-preview" data-testid="location-preview-card">
+                              <div className="location-header-row">
+                                <span className="location-district-badge">
+                                  📍 {resultData.action_payload.district || "Vị trí hiện tại"}
+                                </span>
+                                <span className={`location-safety-pill ${resultData.action_payload.is_hazard_free ? "safe" : "warning"}`}>
+                                  {resultData.action_payload.is_hazard_free ? "✅ Khu vực an toàn" : "⚠️ Có điểm ngập gần"}
+                                </span>
+                              </div>
+                              <div className="location-coords">
+                                Tọa độ GPS: {resultData.action_payload.latitude?.toFixed(4)}, {resultData.action_payload.longitude?.toFixed(4)}
+                              </div>
+                              {resultData.action_payload.weather && (
+                                <div className="location-weather-summary">
+                                  <span>🌡️ {resultData.action_payload.weather.temp} ({resultData.action_payload.weather.desc})</span>
+                                  <span>🍃 AQI {resultData.action_payload.weather.aqi} ({resultData.action_payload.weather.aqi_status})</span>
+                                </div>
+                              )}
+                              {resultData.action_payload.nearby_hazard && (
+                                <div className="location-hazard-alert">
+                                  <strong>⚠️ Điểm trũng gần nhất ({resultData.action_payload.nearby_hazard.dist_m}m):</strong>
+                                  <p>{resultData.action_payload.nearby_hazard.name} ({resultData.action_payload.nearby_hazard.street})</p>
+                                  <span>Độ sâu dự kiến: ~{resultData.action_payload.nearby_hazard.estimated_depth_cm}cm</span>
+                                </div>
+                              )}
+                              <p className="location-advice">🧭 {resultData.action_payload.safe_advice}</p>
+                            </div>
+                          )}
+
+                          {resultData.detected_intent === "EMERGENCY_ASSISTANCE" && (
+                            <div className="emergency-preview" data-testid="emergency-preview-card">
+                              <div className="emergency-header">
+                                <span className="emergency-icon">🚨</span>
+                                <strong>{resultData.action_payload.title || "Cứu hộ khẩn cấp & Hotline TP.HCM"}</strong>
+                              </div>
+                              <div className="emergency-hotlines-grid">
+                                {resultData.action_payload.emergency_hotlines?.map((hl: any, idx: number) => (
+                                  <a key={idx} href={`tel:${hl.phone}`} className="hotline-btn">
+                                    <span className="hl-name">{hl.name}</span>
+                                    <span className="hl-phone">📞 {hl.phone}</span>
+                                  </a>
+                                ))}
+                              </div>
+                              {resultData.action_payload.flooded_vehicle_tips && (
+                                <div className="emergency-tips-list">
+                                  <div className="tips-title">💡 Mẹo xử lý xe chết máy do ngập nước:</div>
+                                  <ul>
+                                    {resultData.action_payload.flooded_vehicle_tips.map((tip: string, i: number) => (
+                                      <li key={i}>{tip}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {resultData.detected_intent === "GREETING" && (
+                            <div className="greeting-preview" data-testid="greeting-preview-card">
+                              <p className="greeting-message">👋 {resultData.action_payload.greeting}</p>
+                              {resultData.action_payload.quick_prompts && (
+                                <div className="quick-prompts-section">
+                                  <span className="prompts-label">Gợi ý câu lệnh bạn có thể thử:</span>
+                                  <div className="prompts-chips">
+                                    {resultData.action_payload.quick_prompts.map((prompt: string, idx: number) => (
+                                      <button
+                                        key={idx}
+                                        type="button"
+                                        className="prompt-chip-btn"
+                                        onClick={() => handleProcessCommand(prompt, "SUGGESTION_CLICK")}
+                                      >
+                                        🗣️ {prompt}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {resultData.detected_intent === "COURTESY" && (
+                            <div className="courtesy-preview" data-testid="courtesy-preview-card">
+                              <p className="courtesy-message">✨ {resultData.action_payload.message || "Cảm ơn bạn đã tin dùng GreenSpot Voice Assistant!"}</p>
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -706,11 +956,11 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                     </div>
                   )}
 
-                  {/* NÚT "NÓI TIẾP" VÀ NÚT "ĐÓNG" */}
-                  <div className="result-action-footer">
+                  {/* NÚT "NÓI TIẾP" VÀ NÚT "ĐÓNG" DẠNG PILL RỘNG XẾP CHỒNG THEO CHIỀU DỌC (WIREFRAME 3) */}
+                  <div className="result-action-footer-stacked">
                     <button
                       type="button"
-                      className="btn-speak-again"
+                      className="btn-speak-again wide-pill-btn"
                       onClick={startListening}
                     >
                       <span className="btn-icon">🎙️</span>
@@ -718,7 +968,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                     </button>
                     <button
                       type="button"
-                      className="btn-close-result"
+                      className="btn-close-result wide-pill-btn"
                       onClick={handleCloseAssistant}
                     >
                       Đóng
@@ -735,10 +985,12 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       <footer className="voice-footer" role="contentinfo">
         <div className="voice-footer-inner">
           <p className="footer-copyright">
-            © 2026 GreenSpot. Nền tảng Đô thị Môi trường Thông minh TP.HCM
+            Bản quyền © 2026 GreenSpot. Nền tảng Đô thị Môi trường Thông minh TP.HCM
           </p>
           <div className="footer-links">
             <button type="button" className="footer-link-btn">Liên hệ</button>
+            <span className="sep">•</span>
+            <button type="button" className="footer-link-btn">Chính sách</button>
             <span className="sep">•</span>
             <button type="button" className="footer-link-btn">Chính sách bảo mật</button>
             <span className="sep">•</span>
