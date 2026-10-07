@@ -1,0 +1,350 @@
+/* ==========================================================================
+   GreenSpot - Chức năng 34: Quét mã QR nhận điểm (Physical QR Scanner)
+   ========================================================================== */
+
+.qr-scan-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  color: #1e293b;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  animation: qrFadeIn 0.3s ease-out;
+}
+
+@keyframes qrFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header */
+.qr-header {
+  background: linear-gradient(135deg, #064e3b 0%, #047857 50%, #059669 100%);
+  border-radius: 1rem;
+  padding: 1.75rem 2rem;
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 25px -5px rgba(6, 78, 59, 0.25);
+}
+
+.qr-header::after {
+  content: "📷";
+  position: absolute;
+  right: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 5rem;
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+.qr-title {
+  font-size: 1.65rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.qr-subtitle {
+  font-size: 0.9rem;
+  color: #d1fae5;
+  max-width: 580px;
+  line-height: 1.45;
+}
+
+/* Scanner Stage Card */
+.qr-scanner-card {
+  background: #0f172a;
+  border-radius: 1.25rem;
+  padding: 2rem;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+  position: relative;
+}
+
+/* Viewfinder Camera Stage */
+.qr-viewfinder-box {
+  width: 320px;
+  height: 320px;
+  max-width: 100%;
+  position: relative;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin: 1.5rem 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Laser sweep line */
+.qr-laser-line {
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #22c55e, #86efac, #22c55e, transparent);
+  box-shadow: 0 0 15px #22c55e, 0 0 5px #86efac;
+  animation: qrLaserSweep 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes qrLaserSweep {
+  0% { top: 8%; opacity: 0.9; }
+  100% { top: 90%; opacity: 0.9; }
+}
+
+/* Corner markers */
+.qr-corner {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-color: #22c55e;
+  border-style: solid;
+}
+
+.qr-corner-tl { top: 12px; left: 12px; border-width: 4px 0 0 4px; border-top-left-radius: 6px; }
+.qr-corner-tr { top: 12px; right: 12px; border-width: 4px 4px 0 0; border-top-right-radius: 6px; }
+.qr-corner-bl { bottom: 12px; left: 12px; border-width: 0 0 4px 4px; border-bottom-left-radius: 6px; }
+.qr-corner-br { bottom: 12px; right: 12px; border-width: 0 4px 4px 0; border-bottom-right-radius: 6px; }
+
+/* Status text inside viewfinder */
+.qr-guide-text {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  font-weight: 600;
+  text-align: center;
+  z-index: 2;
+  background: rgba(15, 23, 42, 0.7);
+  padding: 0.4rem 0.85rem;
+  border-radius: 1rem;
+  backdrop-filter: blur(4px);
+}
+
+/* Scanner Action Controls */
+.qr-actions-row {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.qr-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.qr-btn-flash {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.qr-btn-flash:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.qr-btn-flash.active {
+  background: #f59e0b;
+  color: #ffffff;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+}
+
+.qr-btn-manual {
+  background: #059669;
+  color: #ffffff;
+}
+
+.qr-btn-manual:hover {
+  background: #047857;
+}
+
+/* Anti-fraud GPS Badge */
+.qr-gps-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #6ee7b7;
+  padding: 0.4rem 0.85rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  margin-top: 1rem;
+}
+
+/* Camera Denied Warning Box */
+.qr-permission-denied-box {
+  background: #450a0a;
+  border: 1px solid #991b1b;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  text-align: center;
+  color: #fecaca;
+  margin: 1.5rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.qr-permission-denied-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #fca5a5;
+}
+
+/* Modals */
+.qr-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1.25rem;
+}
+
+.qr-modal-card {
+  background: #ffffff;
+  border-radius: 1.25rem;
+  max-width: 480px;
+  width: 100%;
+  padding: 2rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  text-align: center;
+  position: relative;
+  animation: qrModalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes qrModalPop {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.qr-modal-icon {
+  font-size: 3.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.qr-modal-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.qr-modal-title.success {
+  color: #047857;
+}
+
+.qr-modal-title.error {
+  color: #ea580c;
+}
+
+.qr-modal-desc {
+  font-size: 0.95rem;
+  color: #475569;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.qr-points-highlight {
+  display: inline-block;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+  font-size: 1.5rem;
+  font-weight: 800;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.qr-modal-buttons {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.qr-btn-primary {
+  background: #059669;
+  color: #ffffff;
+  padding: 0.65rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+
+.qr-btn-secondary {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 0.65rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+/* Sample Quick Chips for Manual Input Modal */
+.qr-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  justify-content: center;
+}
+
+.qr-chip {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #047857;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.qr-chip:hover {
+  background: #ecfdf5;
+  border-color: #10b981;
+}
+
+.qr-manual-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #cbd5e1;
+  border-radius: 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: center;
+  outline: none;
+  text-transform: uppercase;
+}
+
+.qr-manual-input:focus {
+  border-color: #059669;
+}

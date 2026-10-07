@@ -68,9 +68,17 @@ class User(Base, TimestampMixin):
     status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
     citizen_id_card: Mapped[Optional[str]] = mapped_column(String(20))
     reputation_score: Mapped[int] = mapped_column(Integer, default=100)
+    green_points: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    lifetime_points: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     role: Mapped["Role"] = relationship(back_populates="users")
     sessions: Mapped[List["UserSession"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    reward_transactions: Mapped[List["RewardTransaction"]] = relationship(
+        "RewardTransaction", back_populates="user", cascade="all, delete-orphan"
+    )
+    vouchers: Mapped[List["UserVoucher"]] = relationship(
+        "UserVoucher", back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class UserOTP(Base, TimestampMixin):

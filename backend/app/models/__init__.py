@@ -53,6 +53,47 @@ from app.models.flood import (
     RouteSafetyStatus,
 )
 
+# 6. Kinh tế Điểm thưởng Công dân Xanh & Ví điểm (Gamification & Rewards Domain - Chức năng 28, 29, 30 & 31)
+from app.models.reward import (
+    CitizenReward,
+    RewardTransaction,
+    UserVoucher,
+)
+
+# 7. Thử thách xanh trong tuần (Chức năng 25)
+from app.models.challenge import (
+    GreenChallenge,
+    UserChallenge,
+)
+
+# 8. Nhật ký kiểm toán Audit Log (Chức năng 26)
+from app.models.audit import (
+    AuditLog,
+)
+
+# 9. Thư viện sống xanh: Cẩm nang phân loại rác (Chức năng 27)
+from app.models.waste_handbook import (
+    WasteHandbookItem,
+)
+
+# 10. Bảng xếp hạng & Bản đồ nhiệt môi trường (Chức năng 32 & 33)
+from app.models.leaderboard import (
+    CommunityGroup,
+    DistrictEnvironmentalStat,
+)
+
+# 11. Quét mã QR & Vòng quay may mắn (Chức năng 34 & 35)
+from app.models.qr_lucky import (
+    EcoQRCode,
+    UserQRScan,
+    LuckyWheelSpin,
+)
+
+# 12. Hiệu ứng thăng cấp danh hiệu & Bài vinh danh (Chức năng 36)
+from app.models.milestone import (
+    MilestonePost,
+)
+
 __all__ = [
     "Base",
     "TimestampMixin",
@@ -65,6 +106,32 @@ __all__ = [
     "UserOTP",
     "UserSession",
     "LoginAttempt",
+    # Rewards & Eco Points (Chức năng 28, 29, 30 & 31)
+    "CitizenReward",
+    "RewardTransaction",
+    "UserVoucher",
+    # Features 25, 26, 27
+    "GreenChallenge",
+    "UserChallenge",
+    "AuditLog",
+    "WasteHandbookItem",
+    # Features 32, 33
+    "CommunityGroup",
+    "DistrictEnvironmentalStat",
+    # Features 34, 35
+    "EcoQRCode",
+    "UserQRScan",
+    "LuckyWheelSpin",
+    # Feature 36
+    "MilestonePost",
+    # Features 25, 26, 27
+    "GreenChallenge",
+    "UserChallenge",
+    "AuditLog",
+    "WasteHandbookItem",
+    # Features 32, 33
+    "CommunityGroup",
+    "DistrictEnvironmentalStat",
     # Spatial & Green Facilities
     "AdministrativeUnit",
     "EssentialFacility",
