@@ -401,6 +401,20 @@
   transform: scale(0.97);
 }
 
+.sidebar-tab-btn.permission-locked {
+  opacity: 0.38 !important;
+  cursor: not-allowed !important;
+  color: #8e8e93 !important;
+  pointer-events: auto;
+}
+
+.sidebar-tab-btn.permission-locked:hover {
+  background: transparent !important;
+  color: #8e8e93 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
 .sidebar-tab-icon {
   font-size: 13px;
   line-height: 1;
@@ -705,6 +719,24 @@
 .category-filter-item.active .category-filter-count {
   background: rgba(255, 255, 255, 0.25);
   color: #ffffff;
+}
+
+.category-filter-item.permission-locked {
+  opacity: 0.42 !important;
+  cursor: not-allowed !important;
+  color: #8e8e93 !important;
+  background: rgba(0, 0, 0, 0.03) !important;
+  border-color: rgba(0, 0, 0, 0.06) !important;
+  box-shadow: none !important;
+  pointer-events: auto;
+}
+
+.category-filter-item.permission-locked:hover {
+  background: rgba(0, 0, 0, 0.03) !important;
+  color: #8e8e93 !important;
+  border-color: rgba(0, 0, 0, 0.06) !important;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 /* POI Grid & Buttons */

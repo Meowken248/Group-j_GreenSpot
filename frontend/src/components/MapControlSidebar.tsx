@@ -5,6 +5,10 @@ import {
   type EcoLocation,
   type EcoCategory,
 } from "../data/hcmEcoLocations";
+import {
+  usePermissions,
+  CATEGORY_TO_MODULE,
+} from "../features/rbac/services/permissionGuard";
 import type { LivePOI } from "../services/poiService";
 import type { LiveWeatherResponse } from "../services/ecoApiService";
 import type { ReverseGeocodeResult } from "../services/osmAdvancedService";
@@ -165,9 +169,22 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
     liveWeather,
   } = props;
 
+  const { canAccess } = usePermissions();
+  const hasFloodAccess = canAccess("FLOOD_WARNINGS");
+  const hasWeatherAccess = canAccess("WEATHER");
+
   const [activeTab, setActiveTab] = useState<SidebarTab>("explore");
   const [showColorThemeSubmenu, setShowColorThemeSubmenu] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Tự động chuyển về tab Khám phá nếu tab hiện tại bị thu hồi quyền
+  useEffect(() => {
+    if (activeTab === "flood" && !hasFloodAccess) {
+      setActiveTab("explore");
+    } else if (activeTab === "weather" && !hasWeatherAccess) {
+      setActiveTab("explore");
+    }
+  }, [activeTab, hasFloodAccess, hasWeatherAccess]);
 
   // Global Keyboard Shortcuts (macOS standard: ⌘F search, Esc dismiss/collapse, ⌘1-5 tabs)
   useEffect(() => {
@@ -482,13 +499,24 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
 
           <button
             type="button"
-            className={`sidebar-tab-btn ${activeTab === "flood" ? "active" : ""}`}
-            onClick={() => setActiveTab("flood")}
-            title="Giám sát ngập lụt & triều cường (3 nguồn)"
+            className={`sidebar-tab-btn ${activeTab === "flood" ? "active" : ""} ${!hasFloodAccess ? "permission-locked" : ""}`}
+            onClick={(e) => {
+              if (!hasFloodAccess) {
+                e.preventDefault();
+                return;
+              }
+              setActiveTab("flood");
+            }}
+            disabled={!hasFloodAccess}
+            title={
+              hasFloodAccess
+                ? "Giám sát ngập lụt & triều cường (3 nguồn)"
+                : "Chức năng bị khóa: Bạn chưa được cấp quyền Cảnh báo ngập lụt & Triều cường"
+            }
           >
             <div className="sidebar-tab-icon">
-              <span>🌊</span>
-              {floodData && (
+              <span>{hasFloodAccess ? "🌊" : "🔒"}</span>
+              {hasFloodAccess && floodData && (
                 <span
                   className="sidebar-tab-badge"
                   style={{
@@ -507,12 +535,23 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
 
           <button
             type="button"
-            className={`sidebar-tab-btn ${activeTab === "weather" ? "active" : ""}`}
-            onClick={() => setActiveTab("weather")}
-            title="Radar Khí tượng & Bản đồ nhiệt Heatmap"
+            className={`sidebar-tab-btn ${activeTab === "weather" ? "active" : ""} ${!hasWeatherAccess ? "permission-locked" : ""}`}
+            onClick={(e) => {
+              if (!hasWeatherAccess) {
+                e.preventDefault();
+                return;
+              }
+              setActiveTab("weather");
+            }}
+            disabled={!hasWeatherAccess}
+            title={
+              hasWeatherAccess
+                ? "Radar Khí tượng & Bản đồ nhiệt Heatmap"
+                : "Chức năng bị khóa: Bạn chưa được cấp quyền Khí tượng & Dự báo thời tiết"
+            }
           >
             <div className="sidebar-tab-icon">
-              <span>🌪️</span>
+              <span>{hasWeatherAccess ? "🌪️" : "🔒"}</span>
             </div>
             <span className="sidebar-tab-title">Khí tượng</span>
           </button>
@@ -961,17 +1000,32 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
                   {(Object.keys(CATEGORY_CONFIG) as EcoCategory[]).map(
                     (catKey) => {
                       const cfg = CATEGORY_CONFIG[catKey];
-                      const isSelected = selectedCategory === catKey;
+                      const catModule = CATEGORY_TO_MODULE[catKey];
+                      const hasCatAccess = catModule ? canAccess(catModule) : true;
+                      const isSelected = selectedCategory === catKey && hasCatAccess;
                       return (
                         <button
                           key={catKey}
                           type="button"
-                          className={`category-filter-item ${isSelected ? "active" : ""
-                            }`}
+                          className={`category-filter-item ${isSelected ? "active" : ""} ${!hasCatAccess ? "permission-locked" : ""}`}
                           style={{
                             background: isSelected ? cfg.color : undefined,
+                            opacity: !hasCatAccess ? 0.42 : undefined,
+                            cursor: !hasCatAccess ? "not-allowed" : "pointer",
                           }}
-                          onClick={() => setSelectedCategory(catKey)}
+                          onClick={(e) => {
+                            if (!hasCatAccess) {
+                              e.preventDefault();
+                              return;
+                            }
+                            setSelectedCategory(catKey);
+                          }}
+                          disabled={!hasCatAccess}
+                          title={
+                            hasCatAccess
+                              ? `Xem danh mục ${cfg.name}`
+                              : `Chức năng bị khóa: Bạn chưa được cấp quyền truy cập ${cfg.name}`
+                          }
                         >
                           <div
                             style={{
@@ -980,11 +1034,11 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
                               gap: 6,
                             }}
                           >
-                            <span>{cfg.icon}</span>
+                            <span>{!hasCatAccess ? "🔒" : cfg.icon}</span>
                             <span>{cfg.name}</span>
                           </div>
                           <span className="category-filter-count">
-                            {loadingEco ? "..." : categoryCounts[catKey]}
+                            {!hasCatAccess ? "🔒" : loadingEco ? "..." : categoryCounts[catKey]}
                           </span>
                         </button>
                       );

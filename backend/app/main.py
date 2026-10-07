@@ -9,6 +9,15 @@ from app.services.runtime_sync_service import run_periodic_runtime_worker
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Tự động đồng bộ cấu trúc bảng (User, Role, UserOTP...) vào cơ sở dữ liệu
+    from app.database import engine, Base
+    import app.models  # noqa: F401
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as e:
+        print(f"[Database Error] Không thể tự động tạo bảng: {e}")
+
     # Khởi động tiến trình background runtime đồng bộ số liệu IoT và cảnh báo
     worker_task = asyncio.create_task(run_periodic_runtime_worker())
     yield
@@ -36,6 +45,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+from fastapi.staticfiles import StaticFiles
+from app.core.config import UPLOAD_DIR
+
+# Mount thư mục lưu trữ tệp đính kèm và ảnh hồ sơ
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 app.include_router(api_v1_router, prefix="/api/v1")
 

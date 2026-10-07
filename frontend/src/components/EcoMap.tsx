@@ -43,6 +43,7 @@ import {
 } from "../hooks/useFastGeolocation";
 import LiveWeatherRadarMap, { type WeatherOverlay } from "./LiveWeatherRadarMap";
 import MapControlSidebar from "./MapControlSidebar";
+import { usePermissions, useModulePermissions, CATEGORY_TO_MODULE } from "../features/rbac/services/permissionGuard";
 
 // Cấu hình danh mục dự phòng an toàn (tránh lỗi undefined khi chưa kịp đồng bộ)
 export const DEFAULT_CATEGORY_CFG = {
@@ -422,6 +423,40 @@ function EcoMap() {
   const [clickedAddress, setClickedAddress] = useState<ReverseGeocodeResult | null>(null);
   const [loadingReverse, setLoadingReverse] = useState<boolean>(false);
 
+  // Phân quyền vai trò RBAC cho các chức năng và lớp dữ liệu trên bản đồ
+  const { canAccess } = usePermissions();
+  const mapPerms = useModulePermissions("GIS_MAP");
+  const floodPerms = useModulePermissions("FLOOD_WARNINGS");
+  const hasFloodAccess = canAccess("FLOOD_WARNINGS") || floodPerms.hasAccess;
+  const hasIncidentAccess = canAccess("INCIDENTS");
+  const canReportFlood = floodPerms.canCreate || mapPerms.canCreate;
+
+  // Tự động hủy chọn danh mục nếu vai trò không có quyền truy cập
+  useEffect(() => {
+    if (selectedCategory !== "all") {
+      const mod = CATEGORY_TO_MODULE[selectedCategory];
+      if (mod && !canAccess(mod)) {
+        setSelectedCategory("all");
+      }
+    }
+  }, [selectedCategory, canAccess]);
+
+  // Tự động đóng chi tiết địa điểm/điểm ngập nếu bị tước quyền
+  useEffect(() => {
+    if (selectedLocation) {
+      const mod = CATEGORY_TO_MODULE[selectedLocation.category];
+      if (mod && !canAccess(mod)) {
+        setSelectedLocation(null);
+      }
+    }
+  }, [selectedLocation, canAccess]);
+
+  useEffect(() => {
+    if (selectedFloodSpot && !hasFloodAccess) {
+      setSelectedFloodSpot(null);
+    }
+  }, [selectedFloodSpot, hasFloodAccess]);
+
   // OSRM Routing State (Tuyến đường thực tế)
   const [activeRoute, setActiveRoute] = useState<RouteResult | null>(null);
   const [calculatingRoute, setCalculatingRoute] = useState<boolean>(false);
@@ -525,10 +560,14 @@ function EcoMap() {
 
   // 3. Tải dữ liệu ngập lụt đô thị 3 nguồn tích hợp (Cổng TP.HCM, GloFAS & Lượng mưa thông minh)
   const loadFloodData = useCallback((rainMm?: number) => {
+    if (!hasFloodAccess) {
+      setFloodData(null);
+      return;
+    }
     fetchFloodHotspotsAPI(rainMm).then((data) => {
       if (data) setFloodData(data);
     });
-  }, []);
+  }, [hasFloodAccess]);
 
   useEffect(() => {
     loadFloodData(simulatedRainfallMm ?? undefined);
@@ -540,6 +579,12 @@ function EcoMap() {
 
   // GeoJSON cho bản đồ nhiệt mật độ rủi ro sự cố môi trường
   const incidentRiskGeoJSON = useMemo<FeatureCollection>(() => {
+    if (!hasIncidentAccess) {
+      return {
+        type: "FeatureCollection",
+        features: [],
+      };
+    }
     const features = ecoLocations
       .filter((loc) => loc.category === "incident")
       .map((loc) => {
@@ -568,18 +613,18 @@ function EcoMap() {
       type: "FeatureCollection",
       features,
     };
-  }, [ecoLocations]);
+  }, [ecoLocations, hasIncidentAccess]);
 
   // GeoJSON cho các đoạn đường ngập lụt được bôi màu sắc trực quan (Vector LineString)
   const floodRoadSegmentsGeoJSON = useMemo<FeatureCollection | null>(() => {
-    if (!showFloodWatch || !floodData?.road_segments || floodData.road_segments.length === 0) {
+    if (!hasFloodAccess || !showFloodWatch || !floodData?.road_segments || floodData.road_segments.length === 0) {
       return null;
     }
     return {
       type: "FeatureCollection",
       features: floodData.road_segments as any,
     };
-  }, [showFloodWatch, floodData]);
+  }, [hasFloodAccess, showFloodWatch, floodData]);
 
   // Tự động gọi API tìm kiếm trực tiếp quán xá, số nhà toàn TP.HCM (Debounce 350ms)
   useEffect(() => {
@@ -759,16 +804,48 @@ function EcoMap() {
     setCalculatingRoute(false);
   };
 
+  // Danh sách địa điểm môi trường người dùng ĐƯỢC PHÉP TRUY CẬP theo vai trò RBAC
+  const accessibleLocations = useMemo(() => {
+    return ecoLocations.filter((loc) => {
+      const moduleCode = CATEGORY_TO_MODULE[loc.category];
+      return moduleCode ? canAccess(moduleCode) : true;
+    });
+  }, [ecoLocations, canAccess]);
+
   // Danh sách địa điểm môi trường hiển thị sau khi lọc
   const filteredLocations = useMemo(() => {
-    if (selectedCategory === "all") return ecoLocations;
-    return ecoLocations.filter((loc) => loc.category === selectedCategory);
-  }, [ecoLocations, selectedCategory]);
+    if (selectedCategory === "all") return accessibleLocations;
+    const moduleCode = CATEGORY_TO_MODULE[selectedCategory];
+    if (moduleCode && !canAccess(moduleCode)) return [];
+    return accessibleLocations.filter((loc) => loc.category === selectedCategory);
+  }, [accessibleLocations, selectedCategory, canAccess]);
+
+  // Tổng hợp số lượng địa điểm đã được kiểm soát theo quyền RBAC
+  const accessibleCategoryCounts = useMemo(() => {
+    let all = 0;
+    const counts = { ...categoryCounts };
+    (Object.keys(CATEGORY_TO_MODULE) as EcoCategory[]).forEach((cat) => {
+      const mod = CATEGORY_TO_MODULE[cat];
+      if (!canAccess(mod)) {
+        counts[cat] = 0;
+      } else {
+        all += (counts[cat] || 0);
+      }
+    });
+    counts.all = all;
+    return counts;
+  }, [categoryCounts, canAccess]);
 
   // GeoJSON các đoạn đường ngập úng (LineString / MultiLineString vẽ trực tiếp lên lòng đường)
   const floodCorridorsGeoJSON = useMemo<FeatureCollection>(() => {
+    if (!hasFloodAccess) {
+      return {
+        type: "FeatureCollection",
+        features: [],
+      };
+    }
     const features: any[] = [];
-    ecoLocations.forEach((loc) => {
+    accessibleLocations.forEach((loc) => {
       // CHỈ vẽ đường màu xanh nếu đường thực sự đang ngập (không phải SAFE)
       if (loc.category === "flood" && loc.roadCorridor && loc.severityLevel !== "SAFE") {
         features.push({
@@ -792,14 +869,14 @@ function EcoMap() {
       type: "FeatureCollection",
       features,
     };
-  }, [ecoLocations]);
+  }, [accessibleLocations, hasFloodAccess]);
 
-  // Lọc nội bộ từ dữ liệu đã tải qua API
+  // Lọc nội bộ từ dữ liệu đã tải qua API (chỉ tìm trong các địa điểm có quyền)
   const localSearchResults = useMemo(() => {
     if (!searchQuery.trim()) return { ecoMatches: [] as EcoLocation[], landmarkMatches: [] as HCMLocation[] };
     const q = searchQuery.toLowerCase();
 
-    const ecoMatches = ecoLocations.filter(
+    const ecoMatches = accessibleLocations.filter(
       (l) =>
         l.name.toLowerCase().includes(q) ||
         l.district.toLowerCase().includes(q) ||
@@ -814,7 +891,7 @@ function EcoMap() {
     );
 
     return { ecoMatches, landmarkMatches };
-  }, [searchQuery, ecoLocations, landmarks]);
+  }, [searchQuery, accessibleLocations, landmarks]);
 
   // Điều hướng camera
   const handleFlyToLocation = (lng: number, lat: number, zoom = 16.5, pitch = 55, bearing = -15) => {
@@ -832,6 +909,10 @@ function EcoMap() {
 
   // Chọn địa điểm sinh thái
   const handleSelectEcoLocation = (loc: EcoLocation) => {
+    const mod = CATEGORY_TO_MODULE[loc.category];
+    if (mod && !canAccess(mod)) {
+      return;
+    }
     setSelectedPOI(null);
     setClickedAddress(null);
     setSelectedLocation(loc);
@@ -855,6 +936,9 @@ function EcoMap() {
 
   // Chọn điểm ngập lụt để xem chi tiết 3 Nguồn (Cổng TP.HCM, GloFAS, Lượng mưa thông minh)
   const handleSelectFloodSpot = async (spot: FloodHotspotProperties, coords: [number, number]) => {
+    if (!hasFloodAccess) {
+      return;
+    }
     setSelectedLocation(null);
     setSelectedPOI(null);
     setClickedAddress(null);
@@ -945,7 +1029,7 @@ function EcoMap() {
         // Category & POIs
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
-        categoryCounts={categoryCounts}
+        categoryCounts={accessibleCategoryCounts}
         loadingEco={loadingEco}
         poiType={poiType}
         setPoiType={setPoiType}
@@ -971,11 +1055,11 @@ function EcoMap() {
         }}
         activeHeatmap={activeHeatmap}
         setActiveHeatmap={setActiveHeatmap}
-        showFloodWatch={showFloodWatch}
+        showFloodWatch={showFloodWatch && hasFloodAccess}
         setShowFloodWatch={setShowFloodWatch}
         simulateFlood={simulateFlood}
         setSimulateFlood={setSimulateFlood}
-        floodData={floodData}
+        floodData={hasFloodAccess ? floodData : null}
         simulatedRainfallMm={simulatedRainfallMm}
         setSimulatedRainfallMm={setSimulatedRainfallMm}
         onInspectGpsGloFAS={handleInspectGpsGloFAS}
@@ -1162,7 +1246,7 @@ function EcoMap() {
           pitch: 50,
           bearing: -15,
         }}
-        interactiveLayerIds={showFloodWatch ? ["flood-segments-core", "flood-segments-glow", "flood-corridor-main", "flood-corridor-glow"] : ["flood-corridor-main", "flood-corridor-glow"]}
+        interactiveLayerIds={hasFloodAccess && showFloodWatch ? ["flood-segments-core", "flood-segments-glow", "flood-corridor-main", "flood-corridor-glow"] : []}
         onClick={(e) => {
           setContextMenu(null);
           handleMapClick(e);
@@ -1198,7 +1282,7 @@ function EcoMap() {
             setMouseCoords({ lat: e.lngLat.lat, lng: e.lngLat.lng });
             lastMouseMoveRef.current = now;
 
-            if (showFloodWatch) {
+            if (showFloodWatch && hasFloodAccess) {
               let floodFeat: any = null;
               if (e.features && e.features.length > 0) {
                 floodFeat = e.features.find(
@@ -2570,38 +2654,75 @@ function EcoMap() {
         />
       )}
 
-      {/* 9. Context Menu (Right Click) Báo Cáo Ngập Lụt */}
+      {/* 9. Context Menu (Right Click) Báo Cáo Ngập Lụt - Có Kiểm Soát Phân Quyền CREATE */}
       {contextMenu && (
-        <div
-          style={{
-            position: "absolute",
-            left: contextMenu.x,
-            top: contextMenu.y,
-            backgroundColor: "#1e293b",
-            color: "white",
-            padding: "12px",
-            borderRadius: "8px",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-            zIndex: 1000,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            border: "1px solid #38bdf8",
-          }}
-          onClick={async (e) => {
-            e.stopPropagation();
-            const success = await reportFloodAPI(contextMenu.lat, contextMenu.lng, 35);
-            setContextMenu(null);
-            if (success) {
-              alert("Báo cáo ngập lụt thành công! Hệ thống đang tải lại bản đồ...");
-              setRefreshTrigger((prev) => prev + 1);
-            }
-          }}
-        >
-          <span className="material-symbols-outlined text-blue-400">flood</span>
-          <span className="font-semibold text-sm">Báo cáo đoạn đường này đang ngập</span>
-        </div>
+        canReportFlood ? (
+          <div
+            id="context-menu-flood-active"
+            style={{
+              position: "absolute",
+              left: contextMenu.x,
+              top: contextMenu.y,
+              backgroundColor: "#1e293b",
+              color: "white",
+              padding: "12px 16px",
+              borderRadius: "10px",
+              boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(56, 189, 248, 0.4)",
+              zIndex: 1000,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              border: "1px solid #38bdf8",
+              transition: "transform 0.15s ease",
+            }}
+            onClick={async (e) => {
+              e.stopPropagation();
+              const success = await reportFloodAPI(contextMenu.lat, contextMenu.lng, 35);
+              setContextMenu(null);
+              if (success) {
+                alert("Báo cáo ngập lụt thành công! Hệ thống đang tải lại bản đồ...");
+                setRefreshTrigger((prev) => prev + 1);
+              }
+            }}
+          >
+            <span className="material-symbols-outlined text-blue-400">flood</span>
+            <span className="font-semibold text-sm">Báo cáo đoạn đường này đang ngập</span>
+          </div>
+        ) : (
+          <div
+            id="context-menu-flood-locked"
+            style={{
+              position: "absolute",
+              left: contextMenu.x,
+              top: contextMenu.y,
+              backgroundColor: "#0f172a",
+              color: "#94a3b8",
+              padding: "12px 16px",
+              borderRadius: "10px",
+              boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(100, 116, 139, 0.3)",
+              zIndex: 1000,
+              cursor: "not-allowed",
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+              border: "1px solid #475569",
+              maxWidth: "280px",
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setContextMenu(null);
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "16px" }}>🔒</span>
+              <span style={{ fontWeight: 700, fontSize: "13px", color: "#f87171" }}>Khóa Quyền Báo Cáo Ngập</span>
+            </div>
+            <span style={{ fontSize: "11.5px", color: "#cbd5e1", lineHeight: 1.45 }}>
+              Tài khoản đang ở chế độ Chỉ Xem. Cần quyền <strong>THÊM (CREATE)</strong> để gửi báo cáo ngập lụt.
+            </span>
+          </div>
+        )
       )}
     </div>
   );
