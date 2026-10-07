@@ -588,4 +588,157 @@ describe('VoiceAssistant Component - 100% Flow & Branch Coverage (Hình 4.37)', 
       expect(screen.getByText(/Trạm quan trắc Bến Nghé/i)).toBeInTheDocument();
     });
   });
+
+  it('Màn 3: Hiển thị Thẻ Action Card cho Vị trí hiện tại (CURRENT_LOCATION)', async () => {
+    vi.spyOn(voiceService, 'fetchVoiceSuggestions').mockResolvedValue(voiceService.DEFAULT_SUGGESTIONS);
+    vi.spyOn(voiceService, 'processVoiceCommand').mockResolvedValue({
+      log_id: 'loc-uuid-1',
+      raw_transcript: 'Tôi đang ở đâu',
+      normalized_text: 'Tôi đang ở đâu.',
+      detected_intent: 'CURRENT_LOCATION',
+      confidence_score: 0.95,
+      action_type: 'LOOKUP',
+      action_target: 'map',
+      action_payload: {
+        latitude: 10.7765,
+        longitude: 106.7009,
+        district: 'Quận 1',
+        weather: {
+          temp: '31°C',
+          desc: 'Nắng ấm',
+          aqi: 45,
+          aqi_status: 'Tốt',
+        },
+        nearby_hazard: null,
+        is_hazard_free: true,
+        safe_advice: 'Lưu thông bình thường trên các trục lộ chính.',
+      },
+      response_text: 'Trợ lý: Bạn hiện đang ở khu vực Quận 1. Khu vực xung quanh khô ráo.',
+      is_success: true,
+      processing_time_ms: 12,
+    });
+
+    render(<VoiceAssistant />);
+
+    const chip = await screen.findByText(/Báo cáo bãi rác gần đây/i);
+    fireEvent.click(chip);
+
+    await waitFor(() => {
+      const card = screen.getByTestId('location-preview-card');
+      expect(card).toBeInTheDocument();
+      expect(card).toHaveTextContent('Quận 1');
+      expect(card).toHaveTextContent('Khu vực an toàn');
+      expect(card).toHaveTextContent('10.7765, 106.7009');
+      expect(card).toHaveTextContent('Lưu thông bình thường');
+    });
+  });
+
+  it('Màn 3: Hiển thị Thẻ Cứu hộ khẩn cấp & Hotline (EMERGENCY_ASSISTANCE)', async () => {
+    vi.spyOn(voiceService, 'fetchVoiceSuggestions').mockResolvedValue(voiceService.DEFAULT_SUGGESTIONS);
+    vi.spyOn(voiceService, 'processVoiceCommand').mockResolvedValue({
+      log_id: 'emer-uuid-1',
+      raw_transcript: 'Xe chết máy do ngập cứu hộ',
+      normalized_text: 'Xe chết máy do ngập cứu hộ.',
+      detected_intent: 'EMERGENCY_ASSISTANCE',
+      confidence_score: 0.98,
+      action_type: 'LOOKUP',
+      action_target: 'map_flood',
+      action_payload: {
+        title: 'Danh bạ cứu hộ khẩn cấp & Xử lý xe ngập nước TP.HCM',
+        emergency_hotlines: [
+          { name: 'Tổng đài 1022 TP.HCM', phone: '1022', type: 'GOVERNMENT' },
+          { name: 'Cảnh sát Cứu nạn Cứu hộ', phone: '114', type: 'EMERGENCY' },
+        ],
+        flooded_vehicle_tips: [
+          'Tuyệt đối KHÔNG cố gắng đề nổ máy lại nhằm tránh hiện tượng thủy kích.',
+          'Dắt xe lên vỉa hè cao ráo.',
+        ],
+      },
+      response_text: 'Trợ lý: Khi xe bị ngập nước tuyệt đối không đề máy lại.',
+      is_success: true,
+      processing_time_ms: 11,
+    });
+
+    render(<VoiceAssistant />);
+
+    const chip = await screen.findByText(/Báo cáo bãi rác gần đây/i);
+    fireEvent.click(chip);
+
+    await waitFor(() => {
+      const card = screen.getByTestId('emergency-preview-card');
+      expect(card).toBeInTheDocument();
+      expect(card).toHaveTextContent('Danh bạ cứu hộ khẩn cấp');
+      expect(card).toHaveTextContent('Tổng đài 1022 TP.HCM');
+      expect(card).toHaveTextContent('thủy kích');
+    });
+  });
+
+  it('Màn 3: Hiển thị Thẻ Chào hỏi & Gợi ý câu lệnh nhanh (GREETING)', async () => {
+    vi.spyOn(voiceService, 'fetchVoiceSuggestions').mockResolvedValue(voiceService.DEFAULT_SUGGESTIONS);
+    vi.spyOn(voiceService, 'processVoiceCommand').mockResolvedValue({
+      log_id: 'greet-uuid-1',
+      raw_transcript: 'Xin chào',
+      normalized_text: 'Xin chào.',
+      detected_intent: 'GREETING',
+      confidence_score: 0.98,
+      action_type: 'LOOKUP',
+      action_target: 'map',
+      action_payload: {
+        greeting: 'Xin chào! GreenSpot sẵn sàng đồng hành cùng bạn.',
+        quick_prompts: ['Đường nào đang bị ngập?', 'Thời tiết hôm nay thế nào?'],
+      },
+      response_text: 'Trợ lý: Xin chào bạn! Tôi là Trợ lý Ảo GreenSpot.',
+      is_success: true,
+      processing_time_ms: 8,
+    });
+
+    render(<VoiceAssistant />);
+
+    const chip = await screen.findByText(/Báo cáo bãi rác gần đây/i);
+    fireEvent.click(chip);
+
+    await waitFor(() => {
+      const card = screen.getByTestId('greeting-preview-card');
+      expect(card).toBeInTheDocument();
+      expect(card).toHaveTextContent('GreenSpot sẵn sàng đồng hành');
+      expect(card).toHaveTextContent('Đường nào đang bị ngập?');
+    });
+  });
+
+  it('Màn 3: Hiển thị Thẻ Tuyến đường an toàn ngoài điểm đen (CHECK_SAFE_ROUTE)', async () => {
+    vi.spyOn(voiceService, 'fetchVoiceSuggestions').mockResolvedValue(voiceService.DEFAULT_SUGGESTIONS);
+    vi.spyOn(voiceService, 'processVoiceCommand').mockResolvedValue({
+      log_id: 'safe-uuid-1',
+      raw_transcript: 'Đường Lê Lợi có ngập không',
+      normalized_text: 'Đường Lê Lợi có ngập không.',
+      detected_intent: 'CHECK_SAFE_ROUTE',
+      confidence_score: 0.95,
+      action_type: 'NAVIGATION',
+      action_target: 'map_flood',
+      action_payload: {
+        destination: 'Tuyến đường an toàn đường Lê Lợi',
+        matched_street: 'đường Lê Lợi',
+        is_safe: true,
+        hazard_avoided: 0,
+        condition: 'Khô ráo, an toàn, nằm ngoài điểm đen ngập úng',
+        realistic_nature: 'Tuyến đường Lê Lợi không thuộc danh sách các điểm trũng úng cục bộ.',
+        safe_corridors: [{ name: 'đường Lê Lợi', status: 'Lưu thông an toàn' }],
+      },
+      response_text: 'Trợ lý: Tuyến đường Lê Lợi nằm ngoài 30 điểm đen ngập úng của TP.HCM.',
+      is_success: true,
+      processing_time_ms: 10,
+    });
+
+    render(<VoiceAssistant />);
+
+    const chip = await screen.findByText(/Báo cáo bãi rác gần đây/i);
+    fireEvent.click(chip);
+
+    await waitFor(() => {
+      const card = screen.getByTestId('safe-street-card');
+      expect(card).toBeInTheDocument();
+      expect(card).toHaveTextContent('đường Lê Lợi');
+      expect(card).toHaveTextContent('Khô ráo & An toàn');
+    });
+  });
 });

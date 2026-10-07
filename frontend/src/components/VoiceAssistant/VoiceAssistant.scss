@@ -902,6 +902,228 @@ $va-radius-sm: 8px;
   font-weight: 600;
 }
 
+/* THẺ LỘ TRÌNH AN TOÀN & ĐIỂM NGẬP CỤC BỘ THỰC TẾ */
+.safe-route-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  width: 100%;
+
+  .safe-route-header-row {
+    @include flex-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .safe-route-dest-badge {
+    font-size: 15px;
+    font-weight: 800;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  .hazard-avoided-pill {
+    font-size: 12px;
+    font-weight: 700;
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  .safe-route-insight-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: rgba(14, 165, 233, 0.08);
+    border: 1px solid rgba(14, 165, 233, 0.2);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 12.5px;
+    color: #bae6fd;
+    line-height: 1.45;
+
+    .insight-icon {
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+  }
+
+  .specific-spot-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    .spot-top-line {
+      @include flex-between;
+      gap: 8px;
+
+      .spot-name {
+        font-size: 14px;
+        color: #f8fafc;
+      }
+
+      .spot-depth-tag {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 6px;
+
+        &.critical {
+          background: rgba(239, 68, 68, 0.25);
+          color: #fca5a5;
+          border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
+        &.warning {
+          background: rgba(249, 115, 22, 0.25);
+          color: #fdba74;
+          border: 1px solid rgba(249, 115, 22, 0.4);
+        }
+
+        &.alert, &.safe {
+          background: rgba(16, 185, 129, 0.2);
+          color: #6ee7b7;
+          border: 1px solid rgba(16, 185, 129, 0.35);
+        }
+      }
+    }
+
+    .spot-detail-row {
+      display: flex;
+      gap: 6px;
+      font-size: 12px;
+
+      .detail-label {
+        color: #94a3b8;
+        flex-shrink: 0;
+      }
+
+      .detail-val {
+        color: #e2e8f0;
+
+        &.warning-text {
+          color: #fca5a5;
+        }
+      }
+    }
+
+    .spot-scope-note {
+      font-size: 11.5px;
+      color: #94a3b8;
+      font-style: italic;
+      margin-top: 2px;
+    }
+
+    .spot-detour-box {
+      font-size: 12px;
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px dashed rgba(16, 185, 129, 0.25);
+      padding: 6px 10px;
+      border-radius: 8px;
+      margin-top: 4px;
+    }
+  }
+
+  .flood-segments-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #f59e0b;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .segments-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+
+    .segment-card-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+
+      .segment-header {
+        @include flex-between;
+        margin-bottom: 4px;
+
+        .seg-name {
+          font-weight: 700;
+          color: #f1f5f9;
+        }
+
+        .seg-badge {
+          font-size: 10.5px;
+          font-weight: 700;
+          padding: 1px 6px;
+          border-radius: 4px;
+          background: rgba(245, 158, 11, 0.2);
+          color: #fcd34d;
+        }
+      }
+
+      .seg-desc {
+        color: #94a3b8;
+        font-size: 11.5px;
+        margin-bottom: 3px;
+      }
+
+      .seg-detour-hint {
+        color: #34d399;
+        font-size: 11px;
+      }
+    }
+  }
+
+  .safe-corridors-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #10b981;
+      text-transform: uppercase;
+    }
+
+    .corridor-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+
+      .corridor-tag {
+        font-size: 11.5px;
+        font-weight: 600;
+        background: rgba(16, 185, 129, 0.12);
+        color: #6ee7b7;
+        border: 1px solid rgba(16, 185, 129, 0.25);
+        padding: 3px 8px;
+        border-radius: 6px;
+      }
+    }
+  }
+}
+
 /* THẺ TRIỀU CƯỜNG THỰC TẾ */
 .tide-preview {
   display: flex;
@@ -1295,3 +1517,297 @@ $va-radius-sm: 8px;
   background: rgba(255, 255, 255, 0.15);
   color: #ffffff;
 }
+
+/* ==========================================================================
+   CARDS MỚI: VỊ TRÍ HIỆN TẠI, CỨU HỘ KHẨN CẤP, CHÀO HỎI & TUYẾN ĐƯỜNG AN TOÀN
+   ========================================================================== */
+
+/* 1. Thẻ Tuyến đường An toàn ngoài điểm đen */
+.safe-street-badge-card {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .safe-street-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+
+    .safe-icon {
+      font-size: 18px;
+    }
+
+    strong {
+      color: #34d399;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .safe-status-pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.25);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.5);
+    }
+  }
+
+  .safe-desc {
+    margin: 0;
+    font-size: 13px;
+    color: #cbd5e1;
+    line-height: 1.4;
+  }
+}
+
+/* 2. Thẻ Vị trí Hiện tại (GPS & Môi trường xung quanh) */
+.location-preview {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  .location-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .location-district-badge {
+      font-size: 16px;
+      font-weight: 800;
+      color: #38bdf8;
+    }
+
+    .location-safety-pill {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 9999px;
+
+      &.safe {
+        background: rgba(16, 185, 129, 0.2);
+        color: #34d399;
+        border: 1px solid rgba(52, 211, 153, 0.4);
+      }
+
+      &.warning {
+        background: rgba(245, 158, 11, 0.2);
+        color: #fbbf24;
+        border: 1px solid rgba(245, 158, 11, 0.4);
+      }
+    }
+  }
+
+  .location-coords {
+    font-size: 12px;
+    font-family: monospace;
+    color: #94a3b8;
+  }
+
+  .location-weather-summary {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: #e2e8f0;
+    background: rgba(15, 23, 42, 0.5);
+    padding: 8px 12px;
+    border-radius: 8px;
+  }
+
+  .location-hazard-alert {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: #fca5a5;
+
+    p {
+      margin: 4px 0 2px;
+      font-weight: 600;
+      color: #fecaca;
+    }
+
+    span {
+      font-size: 12px;
+      color: #f87171;
+    }
+  }
+
+  .location-advice {
+    margin: 0;
+    font-size: 13px;
+    color: #93c5fd;
+    font-style: italic;
+  }
+}
+
+/* 3. Thẻ Cứu hộ khẩn cấp & Hotline */
+.emergency-preview {
+  background: rgba(220, 38, 38, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .emergency-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #f87171;
+    font-size: 15px;
+
+    .emergency-icon {
+      font-size: 20px;
+    }
+  }
+
+  .emergency-hotlines-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+
+    .hotline-btn {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      padding: 10px 12px;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: rgba(239, 68, 68, 0.35);
+        transform: translateY(-1px);
+      }
+
+      .hl-name {
+        font-size: 12px;
+        color: #cbd5e1;
+        font-weight: 500;
+      }
+
+      .hl-phone {
+        font-size: 15px;
+        font-weight: 800;
+        color: #fef08a;
+      }
+    }
+  }
+
+  .emergency-tips-list {
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 10px;
+    padding: 10px 14px;
+
+    .tips-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fbbf24;
+      margin-bottom: 6px;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      li {
+        font-size: 12px;
+        color: #cbd5e1;
+        line-height: 1.4;
+      }
+    }
+  }
+}
+
+/* 4. Thẻ Chào hỏi & Gợi ý câu lệnh nhanh */
+.greeting-preview {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .greeting-message {
+    margin: 0;
+    font-size: 14px;
+    color: #e2e8f0;
+    line-height: 1.5;
+  }
+
+  .quick-prompts-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .prompts-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #34d399;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .prompts-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+
+      .prompt-chip-btn {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 9999px;
+        padding: 6px 14px;
+        color: #f1f5f9;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: rgba(16, 185, 129, 0.25);
+          border-color: #34d399;
+          color: #34d399;
+          transform: translateY(-1px);
+        }
+      }
+    }
+  }
+}
+
+/* 5. Thẻ Cảm ơn / Tạm biệt */
+.courtesy-preview {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 14px;
+  padding: 14px 16px;
+
+  .courtesy-message {
+    margin: 0;
+    font-size: 14px;
+    color: #e9d5ff;
+    line-height: 1.5;
+  }
+}
+

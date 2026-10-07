@@ -387,6 +387,48 @@ def test_intent_matching_all_tiers_and_branches():
     assert intent == "PROJECT_OVERVIEW"
     assert act == "LOOKUP"
 
+    # Tầng 2: Semantic Pattern GREETING
+    intent, conf, act, tgt, resp = service.match_intent("Xin chào bạn trợ lý!", commands)
+    assert intent == "GREETING"
+    assert conf >= 0.95
+
+    # Tầng 2: Semantic Pattern COURTESY
+    intent, conf, act, tgt, resp = service.match_intent("Cảm ơn bạn rất nhiều nhé!", commands)
+    assert intent == "COURTESY"
+    assert conf >= 0.95
+
+    # Tầng 2: Semantic Pattern CURRENT_LOCATION
+    intent, conf, act, tgt, resp = service.match_intent("Tôi đang ở đâu vậy?", commands)
+    assert intent == "CURRENT_LOCATION"
+    assert conf >= 0.95
+
+    # Tầng 2: Semantic Pattern EMERGENCY_ASSISTANCE
+    intent, conf, act, tgt, resp = service.match_intent("Xe bị chết máy do ngập nước cần cứu hộ gấp!", commands)
+    assert intent == "EMERGENCY_ASSISTANCE"
+    assert conf >= 0.95
+
+    # Tầng 2: Semantic Pattern CHECK_SAFE_ROUTE (Các câu hỏi về đường nào đang bị ngập)
+    intent, conf, act, tgt, resp = service.match_intent("Đường nào đang bị ngập ở TP.HCM?", commands)
+    assert intent == "CHECK_SAFE_ROUTE"
+    assert conf >= 0.95
+
+    intent, conf, act, tgt, resp = service.match_intent("Những đường nào ngập nước bây giờ?", commands)
+    assert intent == "CHECK_SAFE_ROUTE"
+    assert conf >= 0.95
+
+    intent, conf, act, tgt, resp = service.match_intent("Quanh đây có ngập không?", commands)
+    assert intent == "CHECK_SAFE_ROUTE"
+    assert conf >= 0.95
+
+    # Tầng 2: Semantic Pattern CHECK_WEATHER (Mưa & Nhiệt độ)
+    intent, conf, act, tgt, resp = service.match_intent("Chiều nay trời có mưa không?", commands)
+    assert intent == "CHECK_WEATHER"
+    assert conf >= 0.95
+
+    intent, conf, act, tgt, resp = service.match_intent("Hiện tại ngoài trời bao nhiêu độ?", commands)
+    assert intent == "CHECK_WEATHER"
+    assert conf >= 0.95
+
     # Tầng 3: Fuzzy Jaccard Match (ví dụ: 'báo cáo rác ở gần đây')
     intent, conf, act, tgt, resp = service.match_intent("Báo cáo rác ở gần đây.", commands)
     assert intent == "REPORT_INCIDENT"
@@ -451,11 +493,25 @@ async def test_process_voice_command_all_action_payloads():
     assert res3.action_payload["aqi"] > 0
     assert "category" in res3.action_payload
 
-    # 4. Payload CHECK_SAFE_ROUTE
+    # 4. Payload CHECK_SAFE_ROUTE (Dữ liệu ngập lụt thực tế theo từng đoạn trũng & cống thoát)
     req4 = VoiceProcessRequest(transcript="đường nào an toàn không bị ngập nước", session_source="VOICE")
     res4 = await service.process_voice_command(mock_db, req4)
     assert res4.detected_intent == "CHECK_SAFE_ROUTE"
-    assert res4.action_payload["hazard_avoided"] == 3
+    assert isinstance(res4.action_payload["hazard_avoided"], int)
+    assert res4.action_payload["hazard_avoided"] >= 0
+    assert "specific_segments" in res4.action_payload
+    assert "safe_corridors" in res4.action_payload
+    assert "realistic_nature" in res4.action_payload
+
+    # 4b. Tra cứu đích danh 1 tuyến đường có điểm trũng cục bộ (Nguyễn Hữu Cảnh)
+    req4_spot = VoiceProcessRequest(transcript="Đường Nguyễn Hữu Cảnh có ngập không?", session_source="VOICE")
+    res4_spot = await service.process_voice_command(mock_db, req4_spot)
+    assert res4_spot.detected_intent == "CHECK_SAFE_ROUTE"
+    assert res4_spot.action_payload["matched_street"] == "Nguyễn Hữu Cảnh"
+    assert "Chân cầu Thủ Thiêm" in res4_spot.action_payload["specific_spot"]
+    assert res4_spot.action_payload["length_m"] == 800
+    assert "chân cầu" in res4_spot.action_payload["spot_type"].lower()
+
 
     # 5. Payload CHECK_WEATHER (Dữ liệu thời tiết thực tế tại Thủ Đức - Grounded API)
     req5 = VoiceProcessRequest(transcript="Thời tiết hôm nay tại Thủ Đức.", session_source="VOICE")
@@ -490,6 +546,75 @@ async def test_process_voice_command_all_action_payloads():
     assert res8.detected_intent == "PROJECT_OVERVIEW"
     assert res8.is_success is True
     assert len(res8.action_payload["modules"]) >= 5
+
+    # 9. Payload GREETING (Chào hỏi thân thiện kèm danh sách câu lệnh gợi ý nhanh)
+    req9 = VoiceProcessRequest(transcript="Xin chào trợ lý GreenSpot!", session_source="VOICE")
+    res9 = await service.process_voice_command(mock_db, req9)
+    assert res9.detected_intent == "GREETING"
+    assert res9.is_success is True
+    assert "quick_prompts" in res9.action_payload
+    assert len(res9.action_payload["quick_prompts"]) >= 4
+
+    # 10. Payload COURTESY (Cảm ơn & Tạm biệt)
+    req10 = VoiceProcessRequest(transcript="Cảm ơn bạn rất nhiều nhé!", session_source="VOICE")
+    res10 = await service.process_voice_command(mock_db, req10)
+    assert res10.detected_intent == "COURTESY"
+    assert res10.is_success is True
+    assert res10.action_payload["courtesy_type"] == "THANK_YOU_OR_BYE"
+
+    # 11. Payload CURRENT_LOCATION (Xác định vị trí GPS, quận huyện, ngập lụt lân cận & thời tiết thực tế)
+    req11 = VoiceProcessRequest(
+        transcript="Tôi đang ở đâu vậy?",
+        session_source="VOICE",
+        current_lat=10.7765,
+        current_lng=106.7009,
+    )
+    res11 = await service.process_voice_command(mock_db, req11)
+    assert res11.detected_intent == "CURRENT_LOCATION"
+    assert res11.is_success is True
+    assert res11.action_payload["district"] == "Quận 1"
+    assert "latitude" in res11.action_payload
+    assert "weather" in res11.action_payload
+    assert "is_hazard_free" in res11.action_payload
+
+    # 12. Payload EMERGENCY_ASSISTANCE (Hotline cứu nạn 1022, 114 & mẹo xử lý xe chết máy ngập nước)
+    req12 = VoiceProcessRequest(transcript="Cứu hộ xe chết máy do ngập nước gấp!", session_source="VOICE")
+    res12 = await service.process_voice_command(mock_db, req12)
+    assert res12.detected_intent == "EMERGENCY_ASSISTANCE"
+    assert res12.is_success is True
+    assert len(res12.action_payload["emergency_hotlines"]) >= 3
+    assert len(res12.action_payload["flooded_vehicle_tips"]) >= 3
+
+    # 13. Payload CHECK_SAFE_ROUTE: Hỏi về đường an toàn ngoài 30 điểm ngập (đường Lê Lợi)
+    req13 = VoiceProcessRequest(transcript="Đường Lê Lợi có ngập không?", session_source="VOICE")
+    res13 = await service.process_voice_command(mock_db, req13)
+    assert res13.detected_intent == "CHECK_SAFE_ROUTE"
+    assert res13.action_payload["is_safe"] is True
+    assert "Lê Lợi" in res13.action_payload["matched_street"]
+    assert "ngoài 30 điểm đen" in res13.response_text
+
+    # 14. Payload CHECK_SAFE_ROUTE: Hỏi ngập quanh đây với GPS
+    req14 = VoiceProcessRequest(
+        transcript="Quanh đây có ngập không?",
+        session_source="VOICE",
+        current_lat=10.7765,
+        current_lng=106.7009,
+    )
+    res14 = await service.process_voice_command(mock_db, req14)
+    assert res14.detected_intent == "CHECK_SAFE_ROUTE"
+    assert "hazard_avoided" in res14.action_payload
+
+    # 15. Payload CHECK_WEATHER: Hỏi cụ thể về trời mưa
+    req15 = VoiceProcessRequest(transcript="Chiều nay trời có mưa không?", session_source="VOICE")
+    res15 = await service.process_voice_command(mock_db, req15)
+    assert res15.detected_intent == "CHECK_WEATHER"
+    assert "mưa" in res15.response_text.lower()
+
+    # 16. Payload CHECK_WEATHER: Hỏi cụ thể về nhiệt độ ngoài trời
+    req16 = VoiceProcessRequest(transcript="Bây giờ ngoài trời bao nhiêu độ?", session_source="VOICE")
+    res16 = await service.process_voice_command(mock_db, req16)
+    assert res16.detected_intent == "CHECK_WEATHER"
+    assert "nhiệt độ" in res16.response_text.lower()
 
 
 async def test_process_voice_command_error_and_fallback_resilience():
