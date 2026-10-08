@@ -63,9 +63,22 @@ class TestAIDeduplicationUnitCoverage(unittest.IsolatedAsyncioTestCase):
 
         # Lấy 1 cluster mẫu trong CSDL
         cl_res = await self.session.execute(
-            select(IncidentDuplicateCluster).where(IncidentDuplicateCluster.deleted_at.is_(None))
+            select(IncidentDuplicateCluster).where(
+                IncidentDuplicateCluster.deleted_at.is_(None),
+                IncidentDuplicateCluster.status == "PENDING_REVIEW",
+            )
         )
         self.sample_cluster = cl_res.scalars().first()
+        if not self.sample_cluster:
+            from app.seeds.deduplication.seed_data import seed_deduplication_data
+            await seed_deduplication_data()
+            cl_res = await self.session.execute(
+                select(IncidentDuplicateCluster).where(
+                    IncidentDuplicateCluster.deleted_at.is_(None),
+                    IncidentDuplicateCluster.status == "PENDING_REVIEW",
+                )
+            )
+            self.sample_cluster = cl_res.scalars().first()
 
     async def asyncTearDown(self):
         try:
