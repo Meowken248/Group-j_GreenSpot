@@ -1,0 +1,964 @@
+// =============================================================================
+// GreenSpot - Friends & Follows Domain Stylesheet (Feature STT 6)
+// Tuân thủ triệt để PROJECT_RULES.md: 100% SASS, Variables, Mixins, Nesting.
+// =============================================================================
+
+// Variables
+$color-primary: #10b981;
+$color-primary-dark: #059669;
+$color-primary-light: #ecfdf5;
+$color-accent: #3b82f6;
+$color-accent-light: #eff6ff;
+$color-danger: #ef4444;
+$color-danger-dark: #dc2626;
+$color-danger-light: #fef2f2;
+$color-warning: #f59e0b;
+$color-warning-light: #fffbeb;
+$color-text-main: #1e293b;
+$color-text-muted: #64748b;
+$color-bg-page: #f8fafc;
+$color-card-bg: #ffffff;
+$color-border: #e2e8f0;
+
+$radius-sm: 6px;
+$radius-md: 10px;
+$radius-lg: 16px;
+$radius-full: 9999px;
+
+$shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+$shadow-modal: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+// Mixins
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin card-surface {
+  background-color: $color-card-bg;
+  border-radius: $radius-lg;
+  border: 1px solid $color-border;
+  box-shadow: $shadow-md;
+  transition: all 0.2s ease-in-out;
+}
+
+@mixin smooth-transition {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// Bố cục khung trang chính (Page Framework)
+.friends-page-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: $color-bg-page;
+  font-family: inherit;
+  color: $color-text-main;
+
+  // Header thanh điều hướng trên cùng
+  .friends-header {
+    background-color: $color-card-bg;
+    border-bottom: 1px solid $color-border;
+    padding: 0.85rem 1.75rem;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    box-shadow: $shadow-sm;
+
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      @include flex-between;
+
+      .brand-section {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        cursor: pointer;
+
+        .brand-logo {
+          width: 38px;
+          height: 38px;
+          background: linear-gradient(135deg, $color-primary, #047857);
+          color: white;
+          border-radius: $radius-md;
+          @include flex-center;
+          font-size: 1.25rem;
+          font-weight: 700;
+          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+        }
+
+        .brand-text {
+          font-size: 1.2rem;
+          font-weight: 700;
+          color: #065f46;
+          letter-spacing: -0.02em;
+        }
+      }
+
+      .header-navigation-tabs {
+        display: flex;
+        background: #f1f5f9;
+        padding: 0.25rem;
+        border-radius: $radius-md;
+        gap: 0.25rem;
+
+        .nav-tab-btn {
+          border: none;
+          background: transparent;
+          padding: 0.5rem 1.15rem;
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: $color-text-muted;
+          border-radius: $radius-sm;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          @include smooth-transition;
+
+          &:hover {
+            color: $color-text-main;
+          }
+
+          &.active {
+            background-color: $color-card-bg;
+            color: $color-primary-dark;
+            box-shadow: $shadow-sm;
+          }
+        }
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+
+        .bell-btn {
+          background: #f1f5f9;
+          border: 1px solid $color-border;
+          width: 38px;
+          height: 38px;
+          border-radius: $radius-full;
+          @include flex-center;
+          cursor: pointer;
+          font-size: 1.1rem;
+          @include smooth-transition;
+
+          &:hover {
+            background-color: #e2e8f0;
+          }
+        }
+
+        .user-avatar-pill {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          padding: 0.3rem 0.75rem 0.3rem 0.3rem;
+          background: #f8fafc;
+          border: 1px solid $color-border;
+          border-radius: $radius-full;
+
+          .avatar-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: $radius-full;
+            object-fit: cover;
+            background: linear-gradient(135deg, $color-accent, #1d4ed8);
+            color: white;
+            @include flex-center;
+            font-weight: 600;
+            font-size: 0.85rem;
+          }
+
+          .user-name {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: $color-text-main;
+          }
+        }
+      }
+    }
+  }
+
+  // Thân trang nội dung chính (Main Content)
+  .friends-main-container {
+    flex: 1;
+    max-width: 1200px;
+    width: 100%;
+    margin: 1.75rem auto;
+    padding: 0 1.25rem;
+
+    // Lưới 2 khối ngang chuẩn theo đặc tả
+    .two-column-layout {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 1.75rem;
+
+      @media (max-width: 900px) {
+        grid-template-columns: 1fr;
+      }
+    }
+  }
+
+  // Khối Card giao diện chung
+  .section-card {
+    @include card-surface;
+    padding: 1.5rem;
+
+    .card-header-bar {
+      @include flex-between;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid #f1f5f9;
+
+      .card-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: $color-text-main;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        .count-badge {
+          font-size: 0.75rem;
+          font-weight: 700;
+          background: $color-primary-light;
+          color: $color-primary-dark;
+          padding: 0.2rem 0.6rem;
+          border-radius: $radius-full;
+        }
+      }
+    }
+  }
+
+  // =========================================================================
+  // MÀN 1: LỜI MỜI KẾT BẠN & GỢI Ý CÔNG DÂN XANH
+  // =========================================================================
+
+  // Khối Lời mời kết bạn (Cột trái)
+  .requests-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+
+    .empty-state-notice {
+      text-align: center;
+      padding: 2.5rem 1rem;
+      color: $color-text-muted;
+
+      .empty-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      p {
+        margin: 0;
+        font-size: 0.95rem;
+      }
+    }
+
+    .request-row-item {
+      @include flex-between;
+      padding: 1rem;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: $radius-md;
+      @include smooth-transition;
+
+      &:hover {
+        border-color: #cbd5e1;
+        box-shadow: $shadow-sm;
+      }
+
+      // Làm mờ tức thì khi chấp nhận / từ chối
+      &.fading-row {
+        opacity: 0.35;
+        filter: grayscale(60%);
+        pointer-events: none;
+        transform: scale(0.99);
+      }
+
+      .user-meta-left {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+
+        .user-avatar-round {
+          width: 50px;
+          height: 50px;
+          border-radius: $radius-full;
+          object-fit: cover;
+          background: linear-gradient(135deg, $color-primary, #0d9488);
+          color: white;
+          @include flex-center;
+          font-weight: 700;
+          font-size: 1.1rem;
+          flex-shrink: 0;
+        }
+
+        .user-text-details {
+          .user-name-title {
+            font-size: 0.98rem;
+            font-weight: 700;
+            color: $color-text-main;
+            margin: 0 0 0.25rem 0;
+          }
+
+          .user-subtext {
+            font-size: 0.82rem;
+            color: $color-text-muted;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            .dot-divider {
+              color: #cbd5e1;
+            }
+          }
+        }
+      }
+
+      .action-buttons-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        .btn-accept {
+          background-color: $color-primary;
+          color: white;
+          border: none;
+          padding: 0.55rem 1.1rem;
+          border-radius: $radius-sm;
+          font-weight: 600;
+          font-size: 0.85rem;
+          cursor: pointer;
+          @include smooth-transition;
+
+          &:hover {
+            background-color: $color-primary-dark;
+          }
+
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
+        }
+
+        .btn-reject {
+          background-color: #f1f5f9;
+          color: $color-text-muted;
+          border: 1px solid $color-border;
+          padding: 0.55rem 1rem;
+          border-radius: $radius-sm;
+          font-weight: 600;
+          font-size: 0.85rem;
+          cursor: pointer;
+          @include smooth-transition;
+
+          &:hover {
+            background-color: #e2e8f0;
+            color: $color-text-main;
+          }
+
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
+        }
+      }
+    }
+  }
+
+  // Khối Gợi ý công dân xanh (Cột phải)
+  .suggestions-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+
+    .suggestion-card-item {
+      @include flex-between;
+      padding: 0.85rem 1rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: $radius-md;
+      @include smooth-transition;
+
+      &:hover {
+        background: #ffffff;
+        box-shadow: $shadow-sm;
+      }
+
+      .user-meta-left {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+
+        .user-avatar-round {
+          width: 44px;
+          height: 44px;
+          border-radius: $radius-full;
+          object-fit: cover;
+          background: linear-gradient(135deg, $color-accent, #6366f1);
+          color: white;
+          @include flex-center;
+          font-weight: 700;
+          font-size: 1rem;
+          flex-shrink: 0;
+        }
+
+        .user-text-details {
+          .user-name-title {
+            font-size: 0.92rem;
+            font-weight: 700;
+            margin: 0 0 0.2rem 0;
+          }
+
+          .user-subtext {
+            font-size: 0.8rem;
+            color: $color-text-muted;
+
+            .points-highlight {
+              color: #047857;
+              font-weight: 600;
+            }
+          }
+        }
+      }
+
+      .action-buttons-group {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+
+        .btn-add-friend {
+          background-color: $color-primary-light;
+          color: $color-primary-dark;
+          border: 1px solid rgba(16, 185, 129, 0.3);
+          padding: 0.45rem 0.85rem;
+          border-radius: $radius-sm;
+          font-size: 0.82rem;
+          font-weight: 600;
+          cursor: pointer;
+          @include smooth-transition;
+
+          &:hover:not(:disabled) {
+            background-color: $color-primary;
+            color: white;
+          }
+
+          &.btn-requested {
+            background-color: #f1f5f9;
+            color: $color-text-muted;
+            border-color: #cbd5e1;
+            cursor: default;
+          }
+        }
+
+        .btn-follow-toggle {
+          background-color: transparent;
+          color: $color-accent;
+          border: 1px solid $color-accent;
+          padding: 0.45rem 0.85rem;
+          border-radius: $radius-sm;
+          font-size: 0.82rem;
+          font-weight: 600;
+          cursor: pointer;
+          @include smooth-transition;
+
+          &:hover {
+            background-color: $color-accent-light;
+          }
+
+          &.btn-unfollow {
+            color: $color-text-muted;
+            border-color: #cbd5e1;
+
+            &:hover {
+              background-color: $color-danger-light;
+              color: $color-danger;
+              border-color: rgba(239, 68, 68, 0.4);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // =========================================================================
+  // MÀN 2: QUẢN LÝ BẠN BÈ & ĐANG THEO DÕI
+  // =========================================================================
+
+  // Thanh tìm kiếm Realtime Debounce 300ms
+  .search-debounce-bar {
+    position: relative;
+    margin-bottom: 1.25rem;
+
+    .search-input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.75rem 1rem 0.75rem 2.5rem;
+      border: 1px solid $color-border;
+      border-radius: $radius-md;
+      font-size: 0.92rem;
+      outline: none;
+      background-color: #f8fafc;
+      @include smooth-transition;
+
+      &:focus {
+        border-color: $color-primary;
+        background-color: #ffffff;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+      }
+    }
+
+    .search-icon-adornment {
+      position: absolute;
+      left: 0.9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: $color-text-muted;
+      font-size: 0.95rem;
+      pointer-events: none;
+    }
+  }
+
+  // Danh sách bạn bè hiện tại
+  .friends-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+
+    .friend-row-item {
+      @include flex-between;
+      padding: 1rem;
+      background: #ffffff;
+      border: 1px solid $color-border;
+      border-radius: $radius-md;
+      @include smooth-transition;
+
+      &:hover {
+        box-shadow: $shadow-sm;
+      }
+
+      .friend-meta-left {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+
+        .avatar-wrapper {
+          position: relative;
+
+          .friend-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: $radius-full;
+            object-fit: cover;
+            background: linear-gradient(135deg, $color-primary, #059669);
+            color: white;
+            @include flex-center;
+            font-weight: 700;
+          }
+
+          .online-dot {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 12px;
+            height: 12px;
+            border-radius: $radius-full;
+            background-color: #22c55e;
+            border: 2px solid white;
+
+            &.offline {
+              background-color: #94a3b8;
+            }
+          }
+        }
+
+        .friend-text-info {
+          .friend-name-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            .friend-name {
+              font-size: 0.98rem;
+              font-weight: 700;
+              margin: 0;
+            }
+
+            // Tag nổi bật tài khoản bị khóa theo đặc tả
+            .tag-suspended {
+              font-size: 0.72rem;
+              font-weight: 700;
+              padding: 0.15rem 0.5rem;
+              border-radius: $radius-sm;
+              background-color: $color-danger-light;
+              color: $color-danger-dark;
+              border: 1px solid rgba(239, 68, 68, 0.25);
+            }
+          }
+
+          .friend-district-sub {
+            font-size: 0.82rem;
+            color: $color-text-muted;
+            margin-top: 0.2rem;
+          }
+        }
+      }
+
+      .friend-actions-right {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        .btn-chat {
+          background-color: $color-accent-light;
+          color: $color-accent;
+          border: 1px solid rgba(59, 130, 246, 0.25);
+          padding: 0.5rem 0.95rem;
+          border-radius: $radius-sm;
+          font-weight: 600;
+          font-size: 0.82rem;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 0.35rem;
+          @include smooth-transition;
+
+          &:hover:not(:disabled) {
+            background-color: $color-accent;
+            color: white;
+          }
+
+          // Vô hiệu hóa nút chat khi tài khoản bị tạm khóa
+          &:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            background-color: #f1f5f9;
+            color: $color-text-muted;
+            border-color: #cbd5e1;
+          }
+        }
+
+        .btn-unfriend-trigger {
+          background-color: transparent;
+          color: $color-danger;
+          border: 1px solid transparent;
+          padding: 0.5rem 0.85rem;
+          border-radius: $radius-sm;
+          font-weight: 600;
+          font-size: 0.82rem;
+          cursor: pointer;
+          @include smooth-transition;
+
+          &:hover {
+            background-color: $color-danger-light;
+            border-color: rgba(239, 68, 68, 0.3);
+          }
+        }
+      }
+    }
+  }
+
+  // Danh sách đang theo dõi
+  .following-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+
+    .following-item-row {
+      @include flex-between;
+      padding: 0.85rem 1rem;
+      background: #f8fafc;
+      border: 1px solid $color-border;
+      border-radius: $radius-md;
+      @include smooth-transition;
+
+      .user-meta-left {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+
+        .following-avatar {
+          width: 42px;
+          height: 42px;
+          border-radius: $radius-full;
+          background: linear-gradient(135deg, $color-warning, #d97706);
+          color: white;
+          @include flex-center;
+          font-weight: 700;
+        }
+
+        .following-text {
+          .name {
+            font-size: 0.92rem;
+            font-weight: 700;
+            margin: 0 0 0.15rem 0;
+          }
+
+          .meta {
+            font-size: 0.8rem;
+            color: $color-text-muted;
+          }
+        }
+      }
+
+      .btn-unfollow-direct {
+        background-color: #ffffff;
+        color: $color-text-muted;
+        border: 1px solid $color-border;
+        padding: 0.4rem 0.8rem;
+        border-radius: $radius-sm;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        @include smooth-transition;
+
+        &:hover {
+          background-color: $color-danger-light;
+          color: $color-danger;
+          border-color: rgba(239, 68, 68, 0.3);
+        }
+      }
+    }
+  }
+
+  // Footer chân trang chuẩn đặc tả
+  .friends-footer {
+    background-color: $color-card-bg;
+    border-top: 1px solid $color-border;
+    padding: 1.5rem 1.75rem;
+    margin-top: auto;
+
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      @include flex-between;
+      font-size: 0.85rem;
+      color: $color-text-muted;
+
+      @media (max-width: 768px) {
+        flex-direction: column;
+        gap: 0.75rem;
+        text-align: center;
+      }
+
+      .footer-links {
+        display: flex;
+        gap: 1.5rem;
+
+        a {
+          color: $color-text-muted;
+          text-decoration: none;
+          @include smooth-transition;
+
+          &:hover {
+            color: $color-primary-dark;
+          }
+        }
+      }
+    }
+  }
+}
+
+// =============================================================================
+// MÀN 3: POPUP MODAL XÁC NHẬN HỦY KẾT BẠN
+// =============================================================================
+
+.unfriend-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  @include flex-center;
+  z-index: 999;
+  padding: 1.25rem;
+
+  .unfriend-modal-content {
+    background-color: #ffffff;
+    border-radius: $radius-lg;
+    max-width: 480px;
+    width: 100%;
+    padding: 2rem;
+    box-shadow: $shadow-modal;
+    position: relative;
+    border: 1px solid $color-border;
+    animation: modalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+    .modal-close-icon {
+      position: absolute;
+      top: 1.25rem;
+      right: 1.25rem;
+      background: #f1f5f9;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: $radius-full;
+      cursor: pointer;
+      @include flex-center;
+      color: $color-text-muted;
+      font-size: 1.1rem;
+      @include smooth-transition;
+
+      &:hover {
+        background-color: #e2e8f0;
+        color: $color-text-main;
+      }
+    }
+
+    .modal-danger-badge {
+      width: 52px;
+      height: 52px;
+      border-radius: $radius-full;
+      background-color: $color-danger-light;
+      color: $color-danger;
+      @include flex-center;
+      font-size: 1.6rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .modal-header-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #991b1b;
+      margin: 0 0 0.75rem 0;
+      letter-spacing: -0.01em;
+    }
+
+    .modal-body-desc {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: $color-text-muted;
+      margin: 0 0 1.75rem 0;
+
+      strong {
+        color: $color-text-main;
+      }
+    }
+
+    .modal-footer-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+
+      .btn-cancel-modal {
+        background-color: #f1f5f9;
+        color: $color-text-main;
+        border: 1px solid $color-border;
+        padding: 0.65rem 1.25rem;
+        border-radius: $radius-md;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        @include smooth-transition;
+
+        &:hover:not(:disabled) {
+          background-color: #e2e8f0;
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+
+      .btn-confirm-unfriend {
+        background-color: $color-danger;
+        color: white;
+        border: none;
+        padding: 0.65rem 1.45rem;
+        border-radius: $radius-md;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        @include smooth-transition;
+
+        &:hover:not(:disabled) {
+          background-color: $color-danger-dark;
+        }
+
+        &:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+}
+
+// Toast Thông báo 3 giây
+.friends-toast-container {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  pointer-events: none;
+
+  .friends-toast {
+    pointer-events: auto;
+    background-color: #1e293b;
+    color: white;
+    padding: 0.85rem 1.4rem;
+    border-radius: $radius-md;
+    box-shadow: $shadow-lg;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    animation: toastSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+    &.success {
+      border-left: 4px solid $color-primary;
+    }
+
+    &.error {
+      border-left: 4px solid $color-danger;
+    }
+
+    &.info {
+      border-left: 4px solid $color-accent;
+    }
+  }
+}
+
+// Keyframes
+@keyframes modalPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

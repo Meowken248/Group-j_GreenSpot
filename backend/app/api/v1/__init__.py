@@ -8,12 +8,14 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.rbac import router as rbac_router
 from app.api.v1.user_management import router as user_management_router
 from app.api.v1.profile import router as profile_router
+from app.api.v1.friends import router as friends_router
 
 api_v1_router = APIRouter()
 api_v1_router.include_router(auth_router)
 api_v1_router.include_router(rbac_router)
 api_v1_router.include_router(user_management_router)
 api_v1_router.include_router(profile_router)
+api_v1_router.include_router(friends_router)
 api_v1_router.include_router(eco_locations_router)
 api_v1_router.include_router(spatial_router)
 api_v1_router.include_router(weather_router)

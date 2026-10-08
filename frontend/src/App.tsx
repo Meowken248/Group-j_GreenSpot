@@ -13,6 +13,7 @@ import {
 import { RbacContainer, usePermissions, ModulePermissionGuard } from "./features/rbac";
 import { UserManagementContainer } from "./features/user_management";
 import { ProfileContainer } from "./features/profile";
+import { FriendsContainer } from "./features/friends";
 import api from "./api/client";
 import "./App.css";
 
@@ -37,7 +38,7 @@ function App() {
     return undefined;
   });
 
-  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users" | "profile">(() => {
+  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "friends">(() => {
     const hash = window.location.hash.toLowerCase();
     const path = window.location.pathname.toLowerCase();
     const isLogged = checkIsLoggedIn();
@@ -47,6 +48,7 @@ function App() {
     if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") return "auth";
     if (hash === "#users" || path === "/users") return "users";
     if (hash === "#rbac" || path === "/rbac") return "rbac";
+    if (hash === "#friends" || path === "/friends") return "friends";
     if (hash === "#profile" || path === "/profile") {
       // Bắt buộc phải có cả token và thông tin user hợp lệ
       if (!isLogged) {
@@ -399,6 +401,19 @@ function App() {
 
             <button
               type="button"
+              className={`view-tab-btn ${activeTab === "friends" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("friends");
+                window.location.hash = "#friends";
+              }}
+              title="Kết bạn và theo dõi công dân xanh"
+            >
+              <span>🤝</span>
+              <span>Bạn bè & Kết nối</span>
+            </button>
+
+            <button
+              type="button"
               className={`view-tab-btn ${activeTab === "profile" ? "active" : ""}`}
               onClick={() => {
                 setActiveTab("profile");
@@ -486,6 +501,19 @@ function App() {
               setAuthRedirectUrl("/rbac");
               setActiveTab("auth");
               window.location.hash = "#login";
+            }}
+          />
+        </div>
+      ) : activeTab === "friends" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <FriendsContainer
+            onBackToHome={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
+            onNavigateToProfile={() => {
+              setActiveTab("profile");
+              window.location.hash = "#profile";
             }}
           />
         </div>
