@@ -30,6 +30,7 @@ from app.models.incident import (
     Incident,
     IncidentMedia,
 )
+from app.models.deduplication import IncidentDuplicateCluster
 
 # 4. Trạm Quan trắc Cảm biến IoT & Dữ liệu Khí tượng
 from app.models.iot import (
@@ -90,6 +91,7 @@ __all__ = [
     "WasteCategory",
     "Incident",
     "IncidentMedia",
+    "IncidentDuplicateCluster",
     # IoT Sensors
     "IoTSensorStation",
     # Flood, Tide & Safe Navigation
