@@ -1,0 +1,85 @@
+@use './variables' as *;
+@use './mixins' as *;
+
+.toast-container {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+
+  @include mobile {
+    top: 16px;
+    right: 16px;
+    left: 16px;
+  }
+}
+
+.toast-item {
+  pointer-events: auto;
+  min-width: 320px;
+  max-width: 440px;
+  padding: 14px 18px;
+  border-radius: $radius-md;
+  box-shadow: $shadow-xl;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: $font-family;
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.4;
+  animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: all 0.25s ease;
+
+  @include mobile {
+    min-width: auto;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .toast-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .toast-message {
+    flex-grow: 1;
+  }
+
+  &.toast-success {
+    background-color: #ffffff;
+    border-left: 4px solid $success-500;
+    color: $neutral-800;
+    box-shadow: 0 10px 25px -5px rgba($success-500, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+    .toast-icon {
+      color: $success-600;
+    }
+  }
+
+  &.toast-error {
+    background-color: #ffffff;
+    border-left: 4px solid $error-500;
+    color: $neutral-800;
+    box-shadow: 0 10px 25px -5px rgba($error-500, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+    .toast-icon {
+      color: $error-600;
+    }
+  }
+}
+
+@keyframes toastSlideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
