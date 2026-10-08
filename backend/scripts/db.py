@@ -1,25 +1,29 @@
 """
-Công cụ phím tắt dòng lệnh quản lý Database GreenSpot (EcoReport):
-Cách dùng:
-    python db.py up        -> Bật Database PostgreSQL (Docker)
-    python db.py down      -> Tắt Database
-    python db.py studio    -> Mở giao diện xem bảng dữ liệu trực quan (Prisma Studio)
-    python db.py seed      -> Nạp dữ liệu Admin và 3 cụm báo cáo trùng AI
-    python db.py migrate   -> Đồng bộ bảng CSDL (Alembic)
-    python db.py pull      -> Tự động cập nhật Prisma schema từ DB
+Công cụ tiện ích quản lý Database GreenSpot (EcoReport)
+Thư mục: BackEnd/scripts/db.py
+
+Cách sử dụng (từ thư mục BackEnd):
+    python scripts/db.py up        -> Bật Database PostgreSQL (Docker)
+    python scripts/db.py down      -> Tắt Database
+    python scripts/db.py studio    -> Mở giao diện Web xem dữ liệu (Prisma Studio)
+    python scripts/db.py seed      -> Nạp dữ liệu Admin và báo cáo trùng AI mẫu
+    python scripts/db.py migrate   -> Cập nhật cấu trúc bảng mới (Alembic)
+    python scripts/db.py pull      -> Kéo cấu trúc bảng từ PostgreSQL về Prisma schema
 """
 
 import sys
 import subprocess
 from pathlib import Path
 
-# Đảm bảo UTF-8 cho Windows console
+# Đảm bảo UTF-8 cho console Windows
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 
-backend_dir = Path(__file__).resolve().parent
+# scripts_dir -> BackEnd -> Root
+scripts_dir = Path(__file__).resolve().parent
+backend_dir = scripts_dir.parent
 root_dir = backend_dir.parent
 
 
@@ -46,7 +50,7 @@ def db_studio():
 
 def db_seed():
     print("🌱 Nạp toàn bộ dữ liệu mẫu (Admin + 3 cụm AI Deduplication)...")
-    run_cmd("python seed_admin.py", cwd=backend_dir)
+    run_cmd("python app/seeds/seed_admin.py", cwd=backend_dir)
     run_cmd("python app/seeds/deduplication/seed_data.py", cwd=backend_dir)
 
 
@@ -64,12 +68,12 @@ def print_help():
     print("\n" + "=" * 60)
     print("🌿 BỘ LỆNH TẮT QUẢN LÝ DATABASE GREENSPOT")
     print("=" * 60)
-    print("  python db.py up       : Bật Database (Docker)")
-    print("  python db.py down     : Tắt Database")
-    print("  python db.py studio   : Mở giao diện Web xem dữ liệu (Prisma Studio)")
-    print("  python db.py seed     : Nạp dữ liệu mẫu (Admin + Báo cáo trùng AI)")
-    print("  python db.py migrate  : Cập nhật cấu trúc bảng mới")
-    print("  python db.py pull     : Tự động kéo cấu trúc bảng về Prisma schema")
+    print("  python scripts/db.py up       : Bật Database (Docker)")
+    print("  python scripts/db.py down     : Tắt Database")
+    print("  python scripts/db.py studio   : Mở giao diện Web xem dữ liệu (Prisma Studio)")
+    print("  python scripts/db.py seed     : Nạp dữ liệu mẫu (Admin + Báo cáo trùng AI)")
+    print("  python scripts/db.py migrate  : Cập nhật cấu trúc bảng mới")
+    print("  python scripts/db.py pull     : Tự động kéo cấu trúc bảng về Prisma schema")
     print("=" * 60 + "\n")
 
 
