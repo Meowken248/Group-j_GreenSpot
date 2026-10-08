@@ -162,6 +162,25 @@ async def seed_friends_data():
     conn = await asyncpg.connect(url)
 
     try:
+        # Đảm bảo các tài khoản kiểm thử chính tồn tại
+        default_pwd_hash = "$2b$12$J8u6e1W2p.6e1.8u6e1W2p6e1.8u6e1W2p6e1.8u6e1W2p6e1.8u6"
+        citizen_uuid = uuid.UUID("44444444-4444-4444-4444-444444444444")
+        test_uuid = uuid.UUID("55555555-5555-5555-5555-555555555555")
+
+        await conn.execute("""
+            INSERT INTO users (
+                user_id, email, phone_number, password_hash, full_name, role_id, status, reputation_score, total_green_points, friends_count, version, activated_at
+            ) VALUES ($1, 'citizen@ecoreport.gov.vn', '0901000004', $2, 'Nguyễn Thành Đạt (Công dân)', 4, 'ACTIVE', 100, 720, 0, 1, now())
+            ON CONFLICT (email) DO NOTHING;
+        """, citizen_uuid, default_pwd_hash)
+
+        await conn.execute("""
+            INSERT INTO users (
+                user_id, email, phone_number, password_hash, full_name, role_id, status, reputation_score, total_green_points, friends_count, version, activated_at
+            ) VALUES ($1, 'ddatmguyen2023+test@gmail.com', '0901000005', $2, 'Nguyễn Thành Đạt', 1, 'ACTIVE', 100, 720, 0, 1, now())
+            ON CONFLICT (email) DO NOTHING;
+        """, test_uuid, default_pwd_hash)
+
         # 1. Tìm hoặc xác định danh sách các tài khoản người dùng chính (để tạo quan hệ bạn bè)
         target_emails = [
             "citizen@ecoreport.gov.vn",
@@ -174,11 +193,6 @@ async def seed_friends_data():
             if row:
                 main_user_uuids.append(row["user_id"])
 
-        if not main_user_uuids:
-            # Nếu chưa có tài khoản nào trong 2 tài khoản trên, dùng tài khoản mẫu citizen
-            citizen_uuid = uuid.UUID("44444444-4444-4444-4444-444444444444")
-            main_user_uuids.append(citizen_uuid)
-
         # 2. Đảm bảo các SAMPLE_FRIEND_USERS tồn tại trong bảng users
         print(" 👤 [1/4] Đảm bảo 10 tài khoản mẫu tồn tại...")
         default_pwd_hash = "$2b$12$J8u6e1W2p.6e1.8u6e1W2p6e1.8u6e1W2p6e1.8u6e1W2p6e1.8u6"
@@ -187,8 +201,8 @@ async def seed_friends_data():
             await conn.execute("""
                 INSERT INTO users (
                     user_id, email, phone_number, password_hash, full_name, avatar_url,
-                    bio, status, total_green_points, friends_count, role_id, version, activated_at
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 1, now())
+                    bio, status, total_green_points, friends_count, role_id, reputation_score, version, activated_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 100, 1, now())
                 ON CONFLICT (email) DO UPDATE SET
                     full_name = EXCLUDED.full_name,
                     avatar_url = EXCLUDED.avatar_url,

@@ -23,7 +23,7 @@
 | 3 | Phân quyền vai trò RBAC (Admin, District Manager, Responder, Citizen) kèm ma trận phân quyền động | ⬜ | 1, 2 |
 | 4 | Vai trò trong nhóm (Quản trị nhóm, Kiểm duyệt viên, Thành viên) | ⬜ | 2, 3, **16** |
 | 5 | Trang cá nhân (Timeline): ảnh bìa, avatar, bài đăng, Green Passport, huy hiệu, lịch sử đóng góp | ⬜ | 2; mềm: 9, 28, 29, 35 |
-| 6 | Kết bạn và theo dõi: gửi lời mời, chấp nhận, danh sách bạn bè | ⬜ | 1, 2 |
+| 6 | Kết bạn và theo dõi: gửi lời mời, chấp nhận, danh sách bạn bè | ✅ | 1, 2 |
 | 7 | Cài đặt tài khoản: đổi chế độ giao diện sáng hoặc tối, đổi ngôn ngữ Việt hoặc Anh | ⬜ | 2 |
 | 8 | Bảng tin Geo-Feed theo bán kính với các tab Gần tôi, Quận của tôi, Bạn bè, Nhóm | ⬜ | 2, **9**, 6, 16 |
 | 9 | Đăng bài kèm toạ độ, ảnh, video, gắn thẻ bạn bè hoặc đăng vào nhóm | ⬜ | 2, 6, 16 |
