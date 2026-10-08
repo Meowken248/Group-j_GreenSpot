@@ -14,6 +14,7 @@ import {
 import { RbacContainer, usePermissions, ModulePermissionGuard } from "./features/rbac";
 import { UserManagementContainer } from "./features/user_management";
 import { ProfileContainer } from "./features/profile";
+import { DeduplicationDashboard } from "./features/reports";
 import api from "./api/client";
 import "./App.css";
 
@@ -38,7 +39,7 @@ function App() {
     return undefined;
   });
 
-  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "voice">(() => {
+  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "voice" | "dedup">(() => {
     const hash = window.location.hash.toLowerCase();
     const path = window.location.pathname.toLowerCase();
     const isLogged = checkIsLoggedIn();
@@ -49,6 +50,7 @@ function App() {
     if (hash === "#users" || path === "/users") return "users";
     if (hash === "#rbac" || path === "/rbac") return "rbac";
     if (hash === "#voice" || path === "/voice") return "voice";
+    if (hash === "#dedup" || path === "/dedup") return "dedup";
     if (hash === "#profile" || path === "/profile") {
       // Bắt buộc phải có cả token và thông tin user hợp lệ
       if (!isLogged) {
@@ -71,6 +73,12 @@ function App() {
   const hasAqiAccess = canAccess("AIR_QUALITY");
   const hasUserMgmtAccess = currentUser?.role === "ADMIN" || canAccess("USER_MANAGEMENT");
   const hasRbacAccess = currentUser?.role === "ADMIN" || canAccess("ROLE");
+  const hasDedupAccess =
+    currentUser?.role === "ADMIN" ||
+    currentUser?.role === "OFFICER" ||
+    currentUser?.role === "DISTRICT_MANAGER" ||
+    currentUser?.role === "COORDINATOR" ||
+    canAccess("INCIDENTS");
 
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
@@ -120,6 +128,7 @@ function App() {
       else if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") setActiveTab("auth");
       else if (hash === "#users") setActiveTab("users");
       else if (hash === "#rbac") setActiveTab("rbac");
+      else if (hash === "#dedup" || window.location.pathname === "/dedup") setActiveTab("dedup");
       else if (hash === "#profile") {
         if (!isLogged) {
           setAuthRedirectUrl("/profile");
@@ -289,6 +298,19 @@ function App() {
                       <span>Phân quyền vai trò</span>
                     </button>
                     <div className="dropdown-separator" />
+                    <button
+                      type="button"
+                      className="dropdown-menu-action"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        setActiveTab("dedup");
+                        window.location.hash = "#dedup";
+                      }}
+                    >
+                      <span className="action-icon">📑</span>
+                      <span>Báo cáo trùng lặp (AI)</span>
+                    </button>
+                    <div className="dropdown-separator" />
                   </>
                 )}
 
@@ -366,6 +388,21 @@ function App() {
               >
                 <span>🛡️</span>
                 <span>Phân quyền vai trò</span>
+              </button>
+            )}
+
+            {hasDedupAccess && (
+              <button
+                type="button"
+                className={`view-tab-btn ${activeTab === "dedup" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("dedup");
+                  window.location.hash = "#dedup";
+                }}
+                title="Bảng điều khiển AI gom cụm báo cáo trùng lặp"
+              >
+                <span>📑</span>
+                <span>Báo cáo trùng (AI)</span>
               </button>
             )}
 
@@ -529,6 +566,16 @@ function App() {
               setAuthRedirectUrl("/users");
               setActiveTab("auth");
               window.location.hash = "#login";
+            }}
+          />
+        </div>
+      ) : activeTab === "dedup" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <DeduplicationDashboard
+            currentUser={currentUser}
+            onBackToHome={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
             }}
           />
         </div>
