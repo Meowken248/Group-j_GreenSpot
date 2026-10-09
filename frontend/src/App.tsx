@@ -14,10 +14,11 @@ import {
 import { RbacContainer, usePermissions, ModulePermissionGuard } from "./features/rbac";
 import { UserManagementContainer } from "./features/user_management";
 import { ProfileContainer } from "./features/profile";
+import { ReportContainer } from "./features/reports";
 import api from "./api/client";
 import "./App.css";
 
-type TabType = "map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "voice";
+type TabType = "map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "voice" | "report";
 
 // Hàm kiểm tra trạng thái đăng nhập thực tế của phiên hiện tại
 const checkIsLoggedIn = (): boolean => {
@@ -36,6 +37,9 @@ function App() {
     const isLogged = checkIsLoggedIn();
     if ((hash === "#profile" || window.location.pathname.toLowerCase() === "/profile") && !isLogged) {
       return "/profile";
+    }
+    if ((hash === "#report" || window.location.pathname.toLowerCase() === "/report") && !isLogged) {
+      return "/report";
     }
     return undefined;
   });
@@ -57,6 +61,12 @@ function App() {
         return "auth";
       }
       return "profile";
+    }
+    if (hash === "#report" || path === "/report") {
+      if (!isLogged) {
+        return "auth";
+      }
+      return "report";
     }
     // Mặc định: khi chưa đăng nhập, hiển thị Bản đồ WebGIS công cộng
     if (!isLogged) return "map";
@@ -132,15 +142,28 @@ function App() {
           setActiveTab("profile");
         }
       }
+      else if (hash === "#report") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/report");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("report");
+        }
+      }
     };
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
-  // Tự động đẩy người dùng về màn hình đăng nhập nếu ở tab profile mà chưa có currentUser
+  // Tự động đẩy người dùng về màn hình đăng nhập nếu ở tab profile hoặc report mà chưa có phiên đăng nhập hợp lệ
   useEffect(() => {
     if (activeTab === "profile" && !currentUser) {
       setAuthRedirectUrl("/profile");
+      setActiveTab("auth");
+      window.location.hash = "#login";
+    } else if (activeTab === "report" && !checkIsLoggedIn()) {
+      setAuthRedirectUrl("/report");
       setActiveTab("auth");
       window.location.hash = "#login";
     }
@@ -417,6 +440,19 @@ function App() {
 
             <button
               type="button"
+              className={`view-tab-btn btn-report-nav ${activeTab === "report" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("report");
+                window.location.hash = "#report";
+              }}
+              title="Tiếp nhận phản ánh đa phương tiện (Chức năng 18)"
+            >
+              <span>📢</span>
+              <span>Gửi phản ánh</span>
+            </button>
+
+            <button
+              type="button"
               className={`view-tab-btn ${activeTab === "profile" ? "active" : ""}`}
               onClick={() => {
                 setActiveTab("profile");
@@ -430,6 +466,24 @@ function App() {
           </>
         ) : (
           <>
+            <button
+              type="button"
+              className={`view-tab-btn btn-report-nav ${activeTab === "report" ? "active" : ""}`}
+              onClick={() => {
+                if (!checkIsLoggedIn()) {
+                  setAuthRedirectUrl("/report");
+                  setActiveTab("auth");
+                  window.location.hash = "#login";
+                } else {
+                  setActiveTab("report");
+                  window.location.hash = "#report";
+                }
+              }}
+              title="Tiếp nhận phản ánh đa phương tiện (Chức năng 18)"
+            >
+              <span>📢</span>
+              <span>Gửi phản ánh</span>
+            </button>
             <button
               type="button"
               className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
@@ -470,7 +524,7 @@ function App() {
         )}
       </nav>
 
-      {/* VIEW NỘI DUNG CHÍNH: AUTH, RBAC, USERS, PROFILE, VOICE, MAP HOẶC DASHBOARD */}
+      {/* VIEW NỘI DUNG CHÍNH: AUTH, RBAC, USERS, PROFILE, VOICE, REPORT, MAP HOẶC DASHBOARD */}
       {activeTab === "auth" ? (
         <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
           <AuthContainer
@@ -485,6 +539,20 @@ function App() {
             onExitAuth={() => {
               setActiveTab("map");
               window.location.hash = "#map";
+            }}
+          />
+        </div>
+      ) : activeTab === "report" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#090d16" }}>
+          <ReportContainer
+            onNavigateTab={(tab) => {
+              setActiveTab(tab as TabType);
+              window.location.hash = `#${tab}`;
+            }}
+            onRequireLogin={(redirectUrl) => {
+              setAuthRedirectUrl(redirectUrl);
+              setActiveTab("auth");
+              window.location.hash = "#login";
             }}
           />
         </div>
@@ -553,6 +621,9 @@ function App() {
           onNavigateToFeature={(target) => {
             if (target === "dashboard_aqi") {
               setActiveTab("dashboard");
+            } else if (target === "/report-incident" || target === "report") {
+              setActiveTab("report");
+              window.location.hash = "#report";
             } else {
               setActiveTab("map");
             }

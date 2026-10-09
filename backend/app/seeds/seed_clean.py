@@ -16,26 +16,25 @@ from app.core.config import settings
 
 SEED_SQL = """
 -- 1. ROLES
-INSERT INTO roles (role_id, role_code, role_name, description, is_system)
+INSERT INTO roles (role_id, role_code, role_name, description, is_system, scope, version)
 VALUES
-  (1, 'ADMIN', 'Quản trị viên Hệ thống', 'Toàn quyền quản trị', TRUE),
-  (2, 'DISTRICT_MANAGER', 'Cán bộ Môi trường', 'Tiếp nhận và xử lý sự cố', TRUE),
-  (3, 'RESPONDER', 'Đội Thu gom Hiện trường', 'Xử lý tại chỗ', TRUE),
-  (4, 'CITIZEN', 'Công dân Đô thị', 'Gửi báo cáo ô nhiễm', TRUE)
+  (1, 'ADMIN', 'Quản trị viên Hệ thống', 'Toàn quyền quản trị', TRUE, 'SYSTEM', 1),
+  (2, 'DISTRICT_MANAGER', 'Cán bộ Môi trường', 'Tiếp nhận và xử lý sự cố', TRUE, 'DISTRICT', 1),
+  (3, 'RESPONDER', 'Đội Thu gom Hiện trường', 'Xử lý tại chỗ', TRUE, 'DISTRICT', 1),
+  (4, 'CITIZEN', 'Công dân Đô thị', 'Gửi báo cáo ô nhiễm', TRUE, 'PERSONAL', 1)
 ON CONFLICT (role_id) DO NOTHING;
 
 -- 2. USERS
-INSERT INTO users (user_id, email, phone_number, password_hash, full_name, role_id, status)
-SELECT '11111111-1111-1111-1111-111111111111', 'admin@ecoreport.gov.vn', '0901000001', 'mock_hash', 'Quản trị viên Hệ thống', 1, 'ACTIVE'
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'admin@ecoreport.gov.vn');
-
-INSERT INTO users (user_id, email, phone_number, password_hash, full_name, role_id, status)
-SELECT '22222222-2222-2222-2222-222222222222', 'officer@ecoreport.gov.vn', '0901000002', 'mock_hash', 'Cán bộ Phòng TN&MT', 2, 'ACTIVE'
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'officer@ecoreport.gov.vn');
-
-INSERT INTO users (user_id, email, phone_number, password_hash, full_name, role_id, status)
-SELECT '44444444-4444-4444-4444-444444444444', 'citizen@ecoreport.gov.vn', '0901000004', 'mock_hash', 'Nguyễn Thành Đạt (Công dân)', 4, 'ACTIVE'
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'citizen@ecoreport.gov.vn');
+INSERT INTO users (
+    user_id, email, phone_number, password_hash, full_name, role_id, status,
+    reputation_score, total_green_points, friends_count, version, activated_at
+)
+VALUES
+  ('11111111-1111-1111-1111-111111111111', 'admin@ecoreport.gov.vn', '0901000001', '1c17534bf8bef4f5904e8252c14edeee$5ac2e327d162f4cd6e98e774a09b74559e0c164e52fad60f642bdbd4ad82c0d5', 'Quản trị viên Hệ thống', 1, 'ACTIVE', 100, 500, 10, 1, NOW()),
+  ('22222222-2222-2222-2222-222222222222', 'officer@ecoreport.gov.vn', '0901000002', '1c17534bf8bef4f5904e8252c14edeee$5ac2e327d162f4cd6e98e774a09b74559e0c164e52fad60f642bdbd4ad82c0d5', 'Cán bộ Phòng TN&MT', 2, 'ACTIVE', 100, 300, 5, 1, NOW()),
+  ('44444444-4444-4444-4444-444444444444', 'citizen@ecoreport.gov.vn', '0901000004', '1c17534bf8bef4f5904e8252c14edeee$5ac2e327d162f4cd6e98e774a09b74559e0c164e52fad60f642bdbd4ad82c0d5', 'Nguyễn Thành Đạt (Công dân)', 4, 'ACTIVE', 100, 200, 12, 1, NOW())
+ON CONFLICT (email) DO UPDATE
+SET password_hash = EXCLUDED.password_hash, status = 'ACTIVE';
 
 -- 3. ADMINISTRATIVE UNITS (ĐƠN VỊ HÀNH CHÍNH & RANH GIỚI POLYGON)
 INSERT INTO administrative_units (unit_id, unit_code, name, level, area_km2, population, centroid, boundary)
@@ -74,24 +73,24 @@ SELECT 6, '787', 'Huyện Cần Giờ', 'DISTRICT', 1, 704.45, 71500,
 WHERE NOT EXISTS (SELECT 1 FROM administrative_units WHERE unit_code = '787');
 
 -- 4. WASTE CATEGORIES
-INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, color_hex, icon_name)
-SELECT 1, 'DOMESTIC_WASTE', 'Rác thải sinh hoạt ứ đọng', 'Bãi rác tự phát, túi ni lông bốc mùi', 'MEDIUM', 24, '#EAB308', 'trash'
+INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, color_hex, icon_name, is_active)
+SELECT 1, 'DOMESTIC_WASTE', 'Rác thải sinh hoạt ứ đọng', 'Bãi rác tự phát, túi ni lông bốc mùi', 'MEDIUM', 24, '#EAB308', 'trash', TRUE
 WHERE NOT EXISTS (SELECT 1 FROM waste_categories WHERE category_code = 'DOMESTIC_WASTE');
 
-INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, color_hex, icon_name)
-SELECT 2, 'HAZARDOUS_WASTE', 'Chất thải nguy hại & Pin cũ', 'Pin cũ, hóa chất, bóng đèn huỳnh quang', 'CRITICAL', 12, '#EF4444', 'alert-triangle'
+INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, color_hex, icon_name, is_active)
+SELECT 2, 'HAZARDOUS_WASTE', 'Chất thải nguy hại & Pin cũ', 'Pin cũ, hóa chất, bóng đèn huỳnh quang', 'CRITICAL', 12, '#EF4444', 'alert-triangle', TRUE
 WHERE NOT EXISTS (SELECT 1 FROM waste_categories WHERE category_code = 'HAZARDOUS_WASTE');
 
-INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, color_hex, icon_name)
-SELECT 3, 'WATERWAY_POLLUTION', 'Ô nhiễm kênh rạch & Nguồn nước', 'Rác thải nổi lềnh bềnh, nước đen bốc mùi', 'HIGH', 36, '#3B82F6', 'droplets'
+INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, color_hex, icon_name, is_active)
+SELECT 3, 'WATERWAY_POLLUTION', 'Ô nhiễm kênh rạch & Nguồn nước', 'Rác thải nổi lềnh bềnh, nước đen bốc mùi', 'HIGH', 36, '#3B82F6', 'droplets', TRUE
 WHERE NOT EXISTS (SELECT 1 FROM waste_categories WHERE category_code = 'WATERWAY_POLLUTION');
 
-INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, color_hex, icon_name)
-SELECT 4, 'DRAINAGE_BLOCK', 'Điểm nghẽn cống ngập úng', 'Miệng hố ga bị rác bịt kín gây ngập cục bộ', 'HIGH', 18, '#06B6D4', 'cloud-rain'
+INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, color_hex, icon_name, is_active)
+SELECT 4, 'DRAINAGE_BLOCK', 'Điểm nghẽn cống ngập úng', 'Miệng hố ga bị rác bịt kín gây ngập cục bộ', 'HIGH', 18, '#06B6D4', 'cloud-rain', TRUE
 WHERE NOT EXISTS (SELECT 1 FROM waste_categories WHERE category_code = 'DRAINAGE_BLOCK');
 
-INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, color_hex, icon_name)
-SELECT 5, 'CONSTRUCTION_DEBRIS', 'Xà bần & Phế thải xây dựng', 'Gạch vữa phế thải lấn chiếm lòng lề đường', 'LOW', 72, '#78716C', 'truck'
+INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, color_hex, icon_name, is_active)
+SELECT 5, 'CONSTRUCTION_DEBRIS', 'Xà bần & Phế thải xây dựng', 'Gạch vữa phế thải lấn chiếm lòng lề đường', 'LOW', 72, '#78716C', 'truck', TRUE
 WHERE NOT EXISTS (SELECT 1 FROM waste_categories WHERE category_code = 'CONSTRUCTION_DEBRIS');
 
 -- 5. INCIDENTS (SỰ CỐ MÔI TRƯỜNG THỰC TẾ TP.HCM)

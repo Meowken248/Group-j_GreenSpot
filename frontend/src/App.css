@@ -52,6 +52,21 @@
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);
 }
 
+.view-tab-btn.btn-report-nav {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.view-tab-btn.btn-report-nav:hover {
+  color: #34d399;
+}
+
+.view-tab-btn.btn-report-nav.active {
+  background: #065f46;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+}
+
 .view-tab-btn.permission-locked {
   opacity: 0.42;
   color: #94a3b8;
