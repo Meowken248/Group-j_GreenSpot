@@ -14,6 +14,7 @@ import {
 import { RbacContainer, usePermissions, ModulePermissionGuard } from "./features/rbac";
 import { UserManagementContainer } from "./features/user_management";
 import { ProfileContainer } from "./features/profile";
+import { FriendsContainer } from "./features/friends";
 import { DeduplicationDashboard } from "./features/reports";
 import api from "./api/client";
 import "./App.css";
@@ -32,33 +33,54 @@ const checkIsLoggedIn = (): boolean => {
 function App() {
   const [authRedirectUrl, setAuthRedirectUrl] = useState<string | undefined>(() => {
     const hash = window.location.hash.toLowerCase();
+    const path = window.location.pathname.toLowerCase();
     const isLogged = checkIsLoggedIn();
-    if ((hash === "#profile" || window.location.pathname.toLowerCase() === "/profile") && !isLogged) {
-      return "/profile";
+    if (!isLogged) {
+      if (hash === "#profile" || path === "/profile") return "/profile";
+      if (hash === "#friends" || path === "/friends") return "/friends";
+      if (hash === "#dashboard" || path === "/dashboard") return "/dashboard";
+      if (hash === "#users" || path === "/users") return "/users";
+      if (hash === "#rbac" || path === "/rbac") return "/rbac";
     }
     return undefined;
   });
 
-  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "voice" | "dedup">(() => {
+  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "friends" | "voice" | "dedup">(() => {
     const hash = window.location.hash.toLowerCase();
     const path = window.location.pathname.toLowerCase();
     const isLogged = checkIsLoggedIn();
 
     if (hash === "#map" || path === "/map") return "map";
-    if (hash === "#dashboard" || path === "/dashboard") return "dashboard";
     if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") return "auth";
-    if (hash === "#users" || path === "/users") return "users";
-    if (hash === "#rbac" || path === "/rbac") return "rbac";
     if (hash === "#voice" || path === "/voice") return "voice";
-    if (hash === "#dedup" || path === "/dedup") return "dedup";
+
+    // Khách vãng lai chưa đăng nhập: Không được phép vào các trang phân tích khí hậu, bạn bè, profile, quản trị, trùng lặp
+    if (hash === "#dashboard" || path === "/dashboard") {
+      if (!isLogged) return "auth";
+      return "dashboard";
+    }
+    if (hash === "#friends" || path === "/friends") {
+      if (!isLogged) return "auth";
+      return "friends";
+    }
     if (hash === "#profile" || path === "/profile") {
-      // Bắt buộc phải có cả token và thông tin user hợp lệ
-      if (!isLogged) {
-        return "auth";
-      }
+      if (!isLogged) return "auth";
       return "profile";
     }
-    // Mặc định: khi chưa đăng nhập, hiển thị Bản đồ WebGIS công cộng
+    if (hash === "#users" || path === "/users") {
+      if (!isLogged) return "auth";
+      return "users";
+    }
+    if (hash === "#rbac" || path === "/rbac") {
+      if (!isLogged) return "auth";
+      return "rbac";
+    }
+    if (hash === "#dedup" || path === "/dedup") {
+      if (!isLogged) return "auth";
+      return "dedup";
+    }
+
+    // Mặc định: khi chưa đăng nhập, chỉ hiển thị Bản đồ WebGIS công cộng
     if (!isLogged) return "map";
     return "profile";
   });
@@ -123,13 +145,53 @@ function App() {
       const hash = window.location.hash.toLowerCase();
       const isLogged = checkIsLoggedIn();
 
-      if (hash === "#map") setActiveTab("map");
-      else if (hash === "#dashboard") setActiveTab("dashboard");
-      else if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") setActiveTab("auth");
-      else if (hash === "#users") setActiveTab("users");
-      else if (hash === "#rbac") setActiveTab("rbac");
-      else if (hash === "#dedup" || window.location.pathname === "/dedup") setActiveTab("dedup");
-      else if (hash === "#profile") {
+      if (hash === "#map") {
+        setActiveTab("map");
+      } else if (hash === "#dashboard") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/dashboard");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("dashboard");
+        }
+      } else if (hash === "#friends") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/friends");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("friends");
+        }
+      } else if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") {
+        setActiveTab("auth");
+      } else if (hash === "#users") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/users");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("users");
+        }
+      } else if (hash === "#rbac") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/rbac");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("rbac");
+        }
+      } else if (hash === "#voice") {
+        setActiveTab("voice");
+      } else if (hash === "#dedup" || window.location.pathname === "/dedup") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/dedup");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("dedup");
+        }
+      } else if (hash === "#profile") {
         if (!isLogged) {
           setAuthRedirectUrl("/profile");
           setActiveTab("auth");
@@ -143,12 +205,34 @@ function App() {
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
-  // Tự động đẩy người dùng về màn hình đăng nhập nếu ở tab profile mà chưa có currentUser
+  // Tự động đẩy người dùng về màn hình đăng nhập nếu ở các tab yêu cầu tài khoản mà chưa có currentUser
   useEffect(() => {
-    if (activeTab === "profile" && !currentUser) {
-      setAuthRedirectUrl("/profile");
-      setActiveTab("auth");
-      window.location.hash = "#login";
+    if (!currentUser) {
+      if (activeTab === "profile") {
+        setAuthRedirectUrl("/profile");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "friends") {
+        setAuthRedirectUrl("/friends");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "dashboard") {
+        setAuthRedirectUrl("/dashboard");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "users") {
+        setAuthRedirectUrl("/users");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "rbac") {
+        setAuthRedirectUrl("/rbac");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "dedup") {
+        setAuthRedirectUrl("/dedup");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      }
     }
   }, [activeTab, currentUser]);
 
@@ -451,6 +535,19 @@ function App() {
 
             <button
               type="button"
+              className={`view-tab-btn ${activeTab === "friends" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("friends");
+                window.location.hash = "#friends";
+              }}
+              title="Kết bạn và theo dõi công dân xanh"
+            >
+              <span>🤝</span>
+              <span>Bạn bè & Kết nối</span>
+            </button>
+
+            <button
+              type="button"
               className={`view-tab-btn ${activeTab === "profile" ? "active" : ""}`}
               onClick={() => {
                 setActiveTab("profile");
@@ -555,6 +652,33 @@ function App() {
             }}
           />
         </div>
+      ) : activeTab === "friends" ? (
+        !currentUser ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/friends"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <FriendsContainer
+              currentUser={currentUser}
+              onBackToHome={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              onNavigateToProfile={() => {
+                setActiveTab("profile");
+                window.location.hash = "#profile";
+              }}
+            />
+          </div>
+        )
       ) : activeTab === "users" ? (
         <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
           <UserManagementContainer
@@ -579,20 +703,31 @@ function App() {
             }}
           />
         </div>
-      ) : activeTab === "map" ? (
-        <ModulePermissionGuard
-          moduleCode="GIS_MAP"
-          moduleName="Bản đồ số WebGIS"
-        >
-          <EcoMap />
-        </ModulePermissionGuard>
       ) : activeTab === "dashboard" ? (
-        <ModulePermissionGuard
-          moduleCode="AIR_QUALITY"
-          moduleName="Chỉ số chất lượng không khí AQI & Khí hậu"
-        >
-          <AirQualityDashboard onBackToMap={() => setActiveTab("map")} />
-        </ModulePermissionGuard>
+        !currentUser ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/dashboard"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <ModulePermissionGuard
+            moduleCode="AIR_QUALITY"
+            moduleName="Chỉ số chất lượng không khí AQI & Khí hậu"
+          >
+            <AirQualityDashboard
+              onBackToMap={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </ModulePermissionGuard>
+        )
       ) : activeTab === "voice" ? (
         <VoiceAssistant
           onClose={() => setActiveTab("map")}
@@ -604,7 +739,15 @@ function App() {
             }
           }}
         />
-      ) : null}
+      ) : (
+        /* Mặc định an toàn cho khách vãng lai và tab map: Bản đồ số WebGIS công cộng */
+        <ModulePermissionGuard
+          moduleCode="GIS_MAP"
+          moduleName="Bản đồ số WebGIS"
+        >
+          <EcoMap />
+        </ModulePermissionGuard>
+      )}
 
       {/* NÚT TRỢ LÝ GIỌNG NÓI NHANH NỔI (FLOATING QUICK ACTION KHI Ở MAP HOẶC DASHBOARD) */}
       {
