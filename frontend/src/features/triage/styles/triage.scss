@@ -1,0 +1,1423 @@
+// =============================================================================
+// GreenSpot AI Triage & Spatial Buffer Analysis Stylesheet (STT 39 & STT 40)
+// Quy tắc 4: CHỈ DÙNG SASS (.scss), variables, mixins, nesting. Không inline css.
+// =============================================================================
+
+// --- 1. BIẾN HỆ THỐNG MÀU SẮC & GIAO DIỆN (Variables) ---
+$primary-green: #10b981;
+$primary-dark: #065f46;
+$accent-teal: #0d9488;
+$bg-slate: #0f172a;
+$bg-card: #1e293b;
+$bg-card-hover: #24344d;
+$border-card: #334155;
+$border-highlight: #475569;
+
+$text-main: #f8fafc;
+$text-muted: #94a3b8;
+$text-dim: #64748b;
+
+$color-critical: #ef4444; // Đỏ - Khẩn cấp
+$color-high: #f97316;     // Cam - Cao
+$color-medium: #eab308;   // Vàng - Trung bình
+$color-low: #22c55e;      // Xanh lục - Thấp
+
+$radius-sm: 6px;
+$radius-md: 10px;
+$radius-lg: 16px;
+$radius-full: 9999px;
+
+$shadow-subtle: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+$shadow-floating: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+
+// --- 2. MIXINS TIỆN ÍCH TÁI SỬ DỤNG ---
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin card-panel {
+  background-color: $bg-card;
+  border: 1px solid $border-card;
+  border-radius: $radius-lg;
+  padding: 1.5rem;
+  box-shadow: $shadow-subtle;
+  transition: all 0.2s ease-in-out;
+}
+
+@mixin pill-badge($bg-col, $text-col) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: $radius-full;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: rgba($bg-col, 0.15);
+  color: $text-col;
+  border: 1px solid rgba($bg-col, 0.3);
+}
+
+@mixin button-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: $radius-full;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: all 0.2s ease;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// --- 3. KHUNG CHUNG: HEADER & FOOTER DÙNG CHUNG ---
+.triage-app-container {
+  min-height: 100vh;
+  background-color: $bg-slate;
+  color: $text-main;
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  // Header thanh điều hướng trên cùng
+  .triage-global-header {
+    background-color: rgba(30, 41, 59, 0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid $border-card;
+    padding: 0.75rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    @include flex-between;
+
+    .header-branding {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      .brand-icon {
+        width: 38px;
+        height: 38px;
+        background: linear-gradient(135deg, $primary-green, $accent-teal);
+        border-radius: $radius-md;
+        @include flex-center;
+        color: white;
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+
+      .brand-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        color: $text-main;
+
+        span {
+          color: $primary-green;
+        }
+      }
+
+      .badge-system {
+        @include pill-badge($primary-green, $primary-green);
+        margin-left: 0.5rem;
+      }
+    }
+
+    .header-nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+
+      .nav-switch-tab {
+        display: flex;
+        background-color: rgba(15, 23, 42, 0.6);
+        border: 1px solid $border-card;
+        border-radius: $radius-full;
+        padding: 0.25rem;
+
+        .tab-btn {
+          background: transparent;
+          border: none;
+          color: $text-muted;
+          padding: 0.4rem 1rem;
+          border-radius: $radius-full;
+          font-size: 0.825rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &.active {
+            background-color: $primary-green;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+          }
+
+          &:hover:not(.active) {
+            color: $text-main;
+          }
+        }
+      }
+
+      .notification-bell {
+        position: relative;
+        width: 36px;
+        height: 36px;
+        border-radius: $radius-full;
+        background-color: rgba(51, 65, 85, 0.5);
+        border: 1px solid $border-card;
+        @include flex-center;
+        color: $text-muted;
+        cursor: pointer;
+
+        &:hover {
+          color: $text-main;
+          background-color: $border-card;
+        }
+
+        .bell-dot {
+          position: absolute;
+          top: 6px;
+          right: 6px;
+          width: 8px;
+          height: 8px;
+          background-color: $color-critical;
+          border-radius: $radius-full;
+        }
+      }
+
+      .user-avatar-pill {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.25rem 0.75rem 0.25rem 0.35rem;
+        background-color: rgba(51, 65, 85, 0.4);
+        border: 1px solid $border-card;
+        border-radius: $radius-full;
+
+        .avatar-img {
+          width: 30px;
+          height: 30px;
+          border-radius: $radius-full;
+          background-color: $primary-green;
+          @include flex-center;
+          font-weight: bold;
+          font-size: 0.8rem;
+          color: white;
+        }
+
+        .avatar-role {
+          font-size: 0.775rem;
+          font-weight: 600;
+          color: $text-main;
+        }
+      }
+    }
+  }
+
+  // Nội dung làm việc ở giữa
+  .triage-workspace-main {
+    flex: 1;
+    padding: 2rem;
+    max-width: 1440px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+
+    .triage-selector-bar {
+      @include card-panel;
+      padding: 1rem 1.5rem;
+      margin-bottom: 1.5rem;
+      @include flex-between;
+
+      .selector-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+
+        label {
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: $text-muted;
+        }
+
+        select {
+          background-color: $bg-slate;
+          border: 1px solid $border-card;
+          color: $text-main;
+          padding: 0.5rem 1rem;
+          border-radius: $radius-md;
+          font-size: 0.875rem;
+          outline: none;
+          min-width: 320px;
+
+          &:focus {
+            border-color: $primary-green;
+          }
+        }
+      }
+
+      .selector-right {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+    }
+  }
+
+  // Footer bản quyền & liên hệ
+  .triage-global-footer {
+    background-color: #0b1120;
+    border-top: 1px solid $border-card;
+    padding: 1.25rem 2rem;
+    @include flex-between;
+    font-size: 0.8rem;
+    color: $text-dim;
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .footer-links {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+
+      a {
+        color: $text-dim;
+        text-decoration: none;
+        transition: color 0.2s ease;
+
+        &:hover {
+          color: $primary-green;
+        }
+      }
+    }
+  }
+}
+
+// --- 4. GIAO DIỆN STT 39: AI TRIAGE (Hình 4.39) ---
+
+// MÀN 1/3: 3 KHỐI THEO CHIỀU NGANG TỪ TRÁI SANG PHẢI
+.triage-screen-1-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 0.9fr;
+  gap: 1.5rem;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
+
+  // Khối 1: THÔNG TIN SỰ CỐ (Cột trái)
+  .col-incident-info {
+    @include card-panel;
+    display: flex;
+    flex-direction: column;
+
+    .panel-heading {
+      font-size: 1rem;
+      font-weight: 700;
+      color: $text-main;
+      border-bottom: 1px solid $border-card;
+      padding-bottom: 0.75rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .incident-meta-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      flex: 1;
+
+      .meta-item {
+        .meta-label {
+          font-size: 0.75rem;
+          color: $text-dim;
+          text-transform: uppercase;
+          font-weight: 600;
+          margin-bottom: 0.35rem;
+        }
+
+        .meta-value-text {
+          font-size: 0.875rem;
+          line-height: 1.5;
+          color: $text-main;
+          background-color: rgba(15, 23, 42, 0.4);
+          padding: 0.75rem;
+          border-radius: $radius-md;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+      }
+
+      .meta-media-preview {
+        margin-top: 0.5rem;
+
+        .media-image {
+          width: 100%;
+          height: 180px;
+          object-fit: cover;
+          border-radius: $radius-md;
+          border: 1px solid $border-card;
+        }
+
+        .no-media-box {
+          height: 120px;
+          border: 1px dashed $border-card;
+          border-radius: $radius-md;
+          @include flex-center;
+          color: $text-dim;
+          font-size: 0.8rem;
+        }
+      }
+    }
+  }
+
+  // Khối 2: TÓM TẮT AI (Cột giữa)
+  .col-ai-summary {
+    @include card-panel;
+    display: flex;
+    flex-direction: column;
+    border-color: rgba(16, 185, 129, 0.4);
+    position: relative;
+
+    .panel-heading {
+      font-size: 1rem;
+      font-weight: 700;
+      color: $primary-green;
+      border-bottom: 1px solid $border-card;
+      padding-bottom: 0.75rem;
+      margin-bottom: 1rem;
+      @include flex-between;
+    }
+
+    .summary-content-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+
+      .summary-text-card {
+        background: linear-gradient(180deg, rgba(16, 185, 129, 0.05) 0%, rgba(15, 23, 42, 0.4) 100%);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        border-radius: $radius-md;
+        padding: 1.25rem;
+        min-height: 160px;
+        position: relative;
+
+        .summary-paragraph {
+          font-size: 0.925rem;
+          line-height: 1.6;
+          color: #e2e8f0;
+          font-style: normal;
+        }
+
+        .short-desc-warning {
+          background-color: rgba(234, 179, 8, 0.15);
+          border: 1px solid rgba(234, 179, 8, 0.3);
+          color: #fde047;
+          padding: 0.5rem 0.75rem;
+          border-radius: $radius-sm;
+          font-size: 0.8rem;
+          margin-top: 0.75rem;
+        }
+
+        .loading-overlay {
+          position: absolute;
+          inset: 0;
+          background-color: rgba(30, 41, 59, 0.85);
+          backdrop-filter: blur(2px);
+          border-radius: $radius-md;
+          @include flex-center;
+          flex-direction: column;
+          gap: 0.75rem;
+          color: $primary-green;
+          font-size: 0.85rem;
+          font-weight: 600;
+
+          .spinner {
+            width: 28px;
+            height: 28px;
+            border: 3px solid rgba(16, 185, 129, 0.2);
+            border-top-color: $primary-green;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+          }
+        }
+      }
+
+      .btn-regenerate {
+        @include button-base;
+        background-color: rgba(16, 185, 129, 0.15);
+        color: $primary-green;
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        margin-top: 1.5rem;
+        width: 100%;
+
+        &:hover:not(:disabled) {
+          background-color: $primary-green;
+          color: white;
+        }
+      }
+    }
+  }
+
+  // Khối 3: ƯU TIÊN (Cột phải)
+  .col-priority-recommend {
+    @include card-panel;
+    display: flex;
+    flex-direction: column;
+
+    .panel-heading {
+      font-size: 1rem;
+      font-weight: 700;
+      color: $text-main;
+      border-bottom: 1px solid $border-card;
+      padding-bottom: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .priority-presentation {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+
+      .priority-badge-big {
+        @include flex-center;
+        flex-direction: column;
+        padding: 2rem 1rem;
+        border-radius: $radius-md;
+        background-color: rgba(15, 23, 42, 0.6);
+        border: 1px solid $border-card;
+        text-align: center;
+
+        .label-hint {
+          font-size: 0.85rem;
+          color: $text-muted;
+          margin-bottom: 0.5rem;
+        }
+
+        .priority-value-display {
+          font-size: 1.75rem;
+          font-weight: 800;
+          letter-spacing: -0.025em;
+
+          &.red {
+            color: $color-critical;
+          }
+
+          &.orange {
+            color: $color-high;
+          }
+
+          &.yellow {
+            color: $color-medium;
+          }
+
+          &.green {
+            color: $color-low;
+          }
+        }
+
+        .sla-commitment-text {
+          margin-top: 0.75rem;
+          font-size: 0.8rem;
+          color: $text-dim;
+        }
+      }
+
+      .action-row {
+        margin-top: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+
+        .btn-view-reason {
+          @include button-base;
+          background: linear-gradient(135deg, $primary-green, $accent-teal);
+          color: white;
+          width: 100%;
+
+          &:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+          }
+        }
+      }
+    }
+  }
+}
+
+// MÀN 2/3: BẢNG GIẢI TRÌNH CĂN CỨ RA QUYẾT ĐỊNH CỦA AI (XAI)
+.triage-screen-2-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 1.5rem;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+
+  // Khối PHÂN TÍCH (Cột trái)
+  .col-xai-analysis {
+    @include card-panel;
+
+    .panel-heading {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: $text-main;
+      border-bottom: 1px solid $border-card;
+      padding-bottom: 0.75rem;
+      margin-bottom: 1.25rem;
+      @include flex-between;
+    }
+
+    .risk-score-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(249, 115, 22, 0.15));
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: $radius-md;
+      margin-bottom: 1.5rem;
+
+      .banner-left {
+        .score-title {
+          font-size: 0.8rem;
+          text-transform: uppercase;
+          color: $text-muted;
+          font-weight: 600;
+        }
+
+        .score-number {
+          font-size: 1.75rem;
+          font-weight: 800;
+          color: $color-critical;
+        }
+      }
+
+      .banner-right {
+        @include pill-badge($color-critical, $color-critical);
+        font-size: 0.85rem;
+      }
+    }
+
+    .tps-breakdown-table {
+      margin-bottom: 1.5rem;
+
+      .section-subtitle {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: $text-muted;
+        margin-bottom: 0.75rem;
+      }
+
+      .factors-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+
+        .factor-item {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.65rem 0.9rem;
+          background-color: rgba(15, 23, 42, 0.5);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: $radius-sm;
+          font-size: 0.875rem;
+
+          .factor-bullet {
+            width: 8px;
+            height: 8px;
+            background-color: $color-high;
+            border-radius: 50%;
+          }
+        }
+      }
+    }
+
+    .score-formula-box {
+      background-color: rgba(15, 23, 42, 0.6);
+      border: 1px solid $border-card;
+      border-radius: $radius-sm;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      color: $text-dim;
+      font-family: monospace;
+    }
+  }
+
+  // Khối QUYẾT ĐỊNH (Cột phải)
+  .col-xai-decision {
+    @include card-panel;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    .panel-heading {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: $text-main;
+      border-bottom: 1px solid $border-card;
+      padding-bottom: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .decision-recommend-card {
+      background-color: rgba(15, 23, 42, 0.6);
+      border: 1px solid $border-card;
+      border-radius: $radius-md;
+      padding: 1.75rem 1.25rem;
+      text-align: center;
+      margin-bottom: 2rem;
+
+      .card-tag {
+        font-size: 0.85rem;
+        color: $text-muted;
+        margin-bottom: 0.5rem;
+      }
+
+      .card-val {
+        font-size: 2rem;
+        font-weight: 800;
+        margin-bottom: 0.75rem;
+      }
+
+      .sla-note {
+        font-size: 0.85rem;
+        color: $text-dim;
+      }
+    }
+
+    .decision-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+
+      .btn-accept {
+        @include button-base;
+        background: linear-gradient(135deg, $primary-green, $accent-teal);
+        color: white;
+        padding: 0.85rem;
+        font-size: 1rem;
+
+        &:hover {
+          opacity: 0.95;
+        }
+      }
+
+      .btn-choose-other {
+        @include button-base;
+        background-color: rgba(51, 65, 85, 0.5);
+        color: $text-main;
+        border: 1px solid $border-card;
+        padding: 0.85rem;
+
+        &:hover {
+          background-color: $border-card;
+        }
+      }
+
+      .btn-back-screen1 {
+        background: transparent;
+        border: none;
+        color: $text-dim;
+        font-size: 0.8rem;
+        cursor: pointer;
+        text-align: center;
+
+        &:hover {
+          color: $text-main;
+        }
+      }
+    }
+  }
+}
+
+// MÀN 3/3: POPUP TÙY CHỈNH & ĐIỀU CHỈNH MỨC ƯU TIÊN (Human-in-the-loop)
+.triage-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  @include flex-center;
+  z-index: 100;
+
+  .triage-popup-dialog {
+    background-color: $bg-card;
+    border: 1px solid $border-highlight;
+    border-radius: $radius-lg;
+    padding: 2rem;
+    width: 90%;
+    max-width: 480px;
+    box-shadow: $shadow-floating;
+    animation: popupScale 0.25s ease-out;
+
+    .popup-subtag {
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: $primary-green;
+      font-weight: 800;
+      margin-bottom: 0.35rem;
+    }
+
+    .popup-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: $text-main;
+      margin-bottom: 1.5rem;
+    }
+
+    .popup-field-group {
+      margin-bottom: 1.25rem;
+
+      .field-label {
+        font-size: 0.825rem;
+        color: $text-muted;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: block;
+      }
+
+      .priority-select-control {
+        width: 100%;
+        background-color: $bg-slate;
+        border: 1px solid $border-card;
+        color: $text-main;
+        padding: 0.65rem 0.9rem;
+        border-radius: $radius-md;
+        font-size: 0.9rem;
+        outline: none;
+
+        &:focus {
+          border-color: $primary-green;
+        }
+      }
+
+      .reason-textarea {
+        width: 100%;
+        background-color: $bg-slate;
+        border: 1px solid $border-card;
+        color: $text-main;
+        padding: 0.75rem;
+        border-radius: $radius-md;
+        font-size: 0.875rem;
+        resize: vertical;
+        min-height: 90px;
+        outline: none;
+        box-sizing: border-box;
+
+        &.has-error {
+          border-color: $color-critical;
+          background-color: rgba(239, 68, 68, 0.05);
+        }
+
+        &:focus:not(.has-error) {
+          border-color: $primary-green;
+        }
+      }
+
+      .char-counter {
+        display: flex;
+        justify-content: flex-end;
+        font-size: 0.725rem;
+        color: $text-dim;
+        margin-top: 0.25rem;
+      }
+
+      .field-error-msg {
+        color: $color-critical;
+        font-size: 0.775rem;
+        margin-top: 0.35rem;
+      }
+    }
+
+    .popup-button-bar {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.75rem;
+
+      .btn-confirm {
+        @include button-base;
+        flex: 1;
+        background: linear-gradient(135deg, $primary-green, $accent-teal);
+        color: white;
+
+        &:hover:not(:disabled) {
+          opacity: 0.95;
+        }
+      }
+
+      .btn-cancel {
+        @include button-base;
+        flex: 1;
+        background-color: rgba(51, 65, 85, 0.5);
+        color: $text-muted;
+        border: 1px solid $border-card;
+
+        &:hover:not(:disabled) {
+          color: $text-main;
+          background-color: $border-card;
+        }
+      }
+    }
+  }
+}
+
+// --- 5. GIAO DIỆN STT 40: SPATIAL BUFFER ANALYSIS (Hình 4.40) ---
+
+// MÀN 1/3: BẢN ĐỒ & TÙY CHỌN
+.spatial-screen-1-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 0.7fr;
+  gap: 1.5rem;
+
+  @media (max-width: 960px) {
+    grid-template-columns: 1fr;
+  }
+
+  // Khối BẢN ĐỒ (Cột trái)
+  .col-map-view {
+    @include card-panel;
+    padding: 0;
+    overflow: hidden;
+    height: 520px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+
+    .map-header-bar {
+      padding: 0.75rem 1.25rem;
+      background-color: rgba(30, 41, 59, 0.9);
+      border-bottom: 1px solid $border-card;
+      @include flex-between;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .map-canvas-container {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+  }
+
+  // Khối TUỲ CHỌN (Cột phải)
+  .col-map-options {
+    @include card-panel;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    .panel-heading {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: $text-main;
+      border-bottom: 1px solid $border-card;
+      padding-bottom: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .options-form {
+      .option-group {
+        margin-bottom: 1.5rem;
+
+        &.has-error {
+          .group-title {
+            color: $color-critical;
+          }
+          .checkbox-group-wrapper {
+            border: 1px solid $color-critical;
+            border-radius: $radius-md;
+            padding: 0.75rem;
+            background-color: rgba(239, 68, 68, 0.05);
+          }
+        }
+
+        .group-title {
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: $text-muted;
+          margin-bottom: 0.75rem;
+        }
+
+        .radius-radios {
+          display: flex;
+          gap: 0.75rem;
+
+          .radius-btn {
+            flex: 1;
+            padding: 0.65rem 0.5rem;
+            border-radius: $radius-md;
+            background-color: rgba(15, 23, 42, 0.6);
+            border: 1px solid $border-card;
+            color: $text-muted;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+
+            &.active {
+              background-color: $primary-green;
+              color: white;
+              border-color: $primary-green;
+            }
+
+            &:hover:not(.active) {
+              border-color: $primary-green;
+              color: $text-main;
+            }
+          }
+        }
+
+        .checkbox-group-wrapper {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+
+          .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+
+            input[type="checkbox"] {
+              width: 18px;
+              height: 18px;
+              accent-color: $primary-green;
+              cursor: pointer;
+            }
+          }
+        }
+
+        .group-error-msg {
+          color: $color-critical;
+          font-size: 0.775rem;
+          margin-top: 0.5rem;
+        }
+      }
+    }
+
+    .btn-find-facilities {
+      @include button-base;
+      background: linear-gradient(135deg, $primary-green, $accent-teal);
+      color: white;
+      padding: 0.85rem;
+      width: 100%;
+      font-size: 0.95rem;
+
+      &:hover:not(:disabled) {
+        opacity: 0.95;
+      }
+    }
+  }
+}
+
+// MÀN 2/3: BẢNG TỔNG HỢP DANH SÁCH CƠ SỞ THIẾT YẾU
+.spatial-screen-2-grid {
+  display: grid;
+  grid-template-columns: 0.7fr 1.3fr;
+  gap: 1.5rem;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+
+  // Khối BỘ LỌC (Cột trái)
+  .col-quick-filters {
+    @include card-panel;
+
+    .panel-heading {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: $text-main;
+      border-bottom: 1px solid $border-card;
+      padding-bottom: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .filters-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
+      .filter-pill-btn {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 1rem;
+        background-color: rgba(15, 23, 42, 0.6);
+        border: 1px solid $border-card;
+        border-radius: $radius-md;
+        color: $text-muted;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &.active {
+          background-color: rgba(16, 185, 129, 0.15);
+          border-color: $primary-green;
+          color: $primary-green;
+        }
+
+        &:hover:not(.active) {
+          border-color: $border-highlight;
+          color: $text-main;
+        }
+      }
+    }
+
+    .btn-back-to-map {
+      margin-top: 1.5rem;
+      background: transparent;
+      border: 1px solid $border-card;
+      color: $text-dim;
+      padding: 0.65rem;
+      width: 100%;
+      border-radius: $radius-full;
+      cursor: pointer;
+      font-size: 0.8rem;
+
+      &:hover {
+        color: $text-main;
+        border-color: $text-dim;
+      }
+    }
+  }
+
+  // Khối DANH SÁCH (Cột phải)
+  .col-facilities-list {
+    @include card-panel;
+
+    .panel-heading {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: $text-main;
+      border-bottom: 1px solid $border-card;
+      padding-bottom: 0.75rem;
+      margin-bottom: 1.25rem;
+      @include flex-between;
+    }
+
+    .immediate-risk-banner {
+      background-color: rgba(239, 68, 68, 0.15);
+      border: 1px solid $color-critical;
+      border-radius: $radius-md;
+      padding: 0.75rem 1rem;
+      color: #fca5a5;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      animation: pulseGlow 1.5s infinite alternate;
+    }
+
+    .facilities-items-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+
+      .facility-row-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        background-color: rgba(15, 23, 42, 0.6);
+        border: 1px solid $border-card;
+        border-radius: $radius-md;
+        transition: all 0.2s ease;
+
+        &.danger-border {
+          border-color: $color-critical;
+          background-color: rgba(239, 68, 68, 0.05);
+        }
+
+        .fac-info {
+          .fac-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: $text-main;
+            margin-bottom: 0.25rem;
+          }
+
+          .fac-sub {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.8rem;
+            color: $text-dim;
+
+            .dist-text {
+              font-weight: 700;
+              color: $primary-green;
+
+              &.danger {
+                color: $color-critical;
+              }
+            }
+          }
+        }
+
+        .btn-view-fac-detail {
+          @include button-base;
+          background-color: rgba(51, 65, 85, 0.6);
+          color: $text-main;
+          border: 1px solid $border-card;
+          padding: 0.45rem 0.9rem;
+          font-size: 0.8rem;
+
+          &:hover {
+            background-color: $primary-green;
+            color: white;
+            border-color: $primary-green;
+          }
+        }
+      }
+
+      .empty-green-message {
+        background-color: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        border-radius: $radius-md;
+        padding: 2rem;
+        text-align: center;
+        color: $color-low;
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+// MÀN 3/3: HỒ SƠ CHI TIẾT CƠ SỞ & HÀNH ĐỘNG
+.spatial-screen-3-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 1.5rem;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+
+  // Khối THÔNG TIN (Cột trái)
+  .col-facility-info {
+    @include card-panel;
+
+    .panel-heading {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: $text-main;
+      border-bottom: 1px solid $border-card;
+      padding-bottom: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .detail-card-body {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+
+      .detail-field {
+        .field-label {
+          font-size: 0.75rem;
+          color: $text-dim;
+          text-transform: uppercase;
+          font-weight: 700;
+          margin-bottom: 0.35rem;
+        }
+
+        .field-text {
+          font-size: 0.95rem;
+          color: $text-main;
+          background-color: rgba(15, 23, 42, 0.4);
+          padding: 0.75rem;
+          border-radius: $radius-md;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .vulnerability-badge {
+          background-color: rgba(239, 68, 68, 0.15);
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          color: #fca5a5;
+          padding: 0.75rem;
+          border-radius: $radius-md;
+          font-size: 0.875rem;
+          font-weight: 600;
+        }
+      }
+    }
+  }
+
+  // Khối HÀNH ĐỘNG (Cột phải)
+  .col-facility-actions {
+    @include card-panel;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    .panel-heading {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: $text-main;
+      border-bottom: 1px solid $border-card;
+      padding-bottom: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .actions-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+
+      .btn-action-call {
+        @include button-base;
+        background-color: rgba(59, 130, 246, 0.2);
+        color: #60a5fa;
+        border: 1px solid rgba(59, 130, 246, 0.4);
+        padding: 0.85rem;
+        font-size: 0.95rem;
+
+        &:hover:not(:disabled) {
+          background-color: #3b82f6;
+          color: white;
+        }
+      }
+
+      .btn-action-directions {
+        @include button-base;
+        background-color: rgba(16, 185, 129, 0.2);
+        color: $primary-green;
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        padding: 0.85rem;
+        font-size: 0.95rem;
+
+        &:hover:not(:disabled) {
+          background-color: $primary-green;
+          color: white;
+        }
+      }
+
+      .btn-action-alert {
+        @include button-base;
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+        padding: 0.85rem;
+        font-size: 0.95rem;
+
+        &:hover:not(:disabled) {
+          opacity: 0.95;
+        }
+      }
+
+      .no-contact-hint {
+        color: $text-dim;
+        font-size: 0.75rem;
+        text-align: center;
+      }
+    }
+
+    .btn-back-to-list {
+      margin-top: 1.5rem;
+      background: transparent;
+      border: 1px solid $border-card;
+      color: $text-dim;
+      padding: 0.65rem;
+      border-radius: $radius-full;
+      cursor: pointer;
+      font-size: 0.8rem;
+      text-align: center;
+
+      &:hover {
+        color: $text-main;
+        border-color: $text-dim;
+      }
+    }
+  }
+}
+
+// --- 6. TOAST NOTIFICATION FLOATING ---
+.triage-toast-notification {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background-color: #1e293b;
+  border: 1px solid $primary-green;
+  box-shadow: $shadow-floating;
+  border-radius: $radius-md;
+  padding: 0.85rem 1.5rem;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  z-index: 200;
+  animation: slideInUp 0.3s ease-out;
+
+  &.error {
+    border-color: $color-critical;
+    color: #fca5a5;
+  }
+}
+
+// --- 7. ANIMATIONS ---
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes popupScale {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulseGlow {
+  from {
+    box-shadow: 0 0 5px rgba(239, 68, 68, 0.2);
+  }
+  to {
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+  }
+}
