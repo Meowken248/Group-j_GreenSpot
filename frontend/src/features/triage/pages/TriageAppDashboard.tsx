@@ -96,16 +96,7 @@ export const TriageAppDashboard: React.FC = () => {
           <div className="selector-right">
             <button
               type="button"
-              style={{
-                background: "rgba(51, 65, 85, 0.5)",
-                border: "1px solid #334155",
-                color: "#f8fafc",
-                padding: "0.45rem 1rem",
-                borderRadius: "9999px",
-                cursor: "pointer",
-                fontSize: "0.825rem",
-                fontWeight: 600,
-              }}
+              className="selector-refresh-btn"
               onClick={loadIncidents}
             >
               🔄 Tải lại danh sách
@@ -115,49 +106,20 @@ export const TriageAppDashboard: React.FC = () => {
 
         {/* Trạng thái tải / lỗi */}
         {isLoading && (
-          <div style={{ textAlign: "center", padding: "4rem", color: "#10b981" }}>
-            <div
-              style={{
-                display: "inline-block",
-                width: "36px",
-                height: "36px",
-                border: "3px solid rgba(16, 185, 129, 0.2)",
-                borderTopColor: "#10b981",
-                borderRadius: "50%",
-                animation: "spin 0.8s linear infinite",
-              }}
-            />
-            <div style={{ marginTop: "1rem", fontWeight: 600 }}>
+          <div className="triage-state-loading">
+            <div className="loading-spinner" />
+            <div className="loading-text">
               Đang phân tích dữ liệu AI Triage & Không gian địa lý…
             </div>
           </div>
         )}
 
         {errorMsg && !isLoading && (
-          <div
-            style={{
-              backgroundColor: "rgba(239, 68, 68, 0.15)",
-              border: "1px solid #ef4444",
-              borderRadius: "10px",
-              padding: "1.5rem",
-              textAlign: "center",
-              color: "#fca5a5",
-              margin: "2rem 0",
-            }}
-          >
+          <div className="triage-state-error">
             <div>⚠️ {errorMsg}</div>
             <button
               type="button"
-              style={{
-                marginTop: "1rem",
-                background: "#ef4444",
-                border: "none",
-                color: "white",
-                padding: "0.5rem 1.25rem",
-                borderRadius: "9999px",
-                cursor: "pointer",
-                fontWeight: 600,
-              }}
+              className="btn-retry-action"
               onClick={loadIncidents}
             >
               Thử lại

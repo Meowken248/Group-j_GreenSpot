@@ -175,7 +175,7 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
                 <div className="meta-label">Tọa độ GPS & Địa chỉ hành chính</div>
                 <div className="meta-value-text">
                   <div>📌 {data.address_text}</div>
-                  <div style={{ marginTop: "4px", fontSize: "0.8rem", color: "#94a3b8" }}>
+                  <div className="meta-coordinates-text">
                     GPS: ({data.latitude.toFixed(6)}, {data.longitude.toFixed(6)})
                   </div>
                 </div>
@@ -200,7 +200,7 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
           <div className="col-ai-summary">
             <div className="panel-heading">
               <span>🤖 TÓM TẮT AI</span>
-              <span style={{ fontSize: "0.75rem", color: "#10b981", fontWeight: "normal" }}>
+              <span className="summary-ai-badge">
                 LLM Tinh chỉnh đô thị
               </span>
             </div>
@@ -214,12 +214,11 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
                   </div>
                 ) : serverError ? (
                   <div>
-                    <p style={{ color: "#ef4444", fontSize: "0.875rem" }}>{serverError}</p>
+                    <p className="summary-error-text">{serverError}</p>
                     <button
                       type="button"
-                      className="btn-regenerate"
+                      className="btn-regenerate btn-retry-summary"
                       onClick={handleRegenerateSummary}
-                      style={{ marginTop: "1rem" }}
                     >
                       Thử lại
                     </button>
@@ -279,15 +278,7 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
                 </button>
                 <button
                   type="button"
-                  style={{
-                    background: "transparent",
-                    border: "1px solid #334155",
-                    color: "#94a3b8",
-                    padding: "0.55rem",
-                    borderRadius: "9999px",
-                    cursor: "pointer",
-                    fontSize: "0.8rem",
-                  }}
+                  className="btn-spatial-switch"
                   onClick={onNavigateToSpatial}
                 >
                   🌐 Quét vùng đệm cơ sở thiết yếu (STT 40)
@@ -308,7 +299,7 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
           <div className="col-xai-analysis">
             <div className="panel-heading">
               <span>📊 BẢNG PHÂN TÍCH RỦI RO (XAI LOGIC)</span>
-              <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>
+              <span className="xai-tracking-badge">
                 Mã: {data.tracking_code}
               </span>
             </div>
@@ -348,7 +339,7 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
               <div>
                 min( 100, BaseSeverity × 0.40 + ProximityRisk × 0.30 + ScaleFactor × 0.20 + UrgencyNLP × 0.10 )
               </div>
-              <div style={{ marginTop: "6px", color: "#10b981" }}>
+              <div className="score-formula-result">
                 = ({data.base_severity_score} × 0.4) + ({data.proximity_risk_score} × 0.3) + ({data.scale_factor_score} × 0.2) + ({data.urgency_nlp_score} × 0.1) = <strong>{data.ai_triage_score} điểm</strong>
               </div>
             </div>
@@ -362,19 +353,7 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
 
             <div className="decision-recommend-card">
               <div className="card-tag">Đề xuất chính thức từ mô hình AI:</div>
-              <div
-                className="card-val"
-                style={{
-                  color:
-                    data.priority_color === "red"
-                      ? "#ef4444"
-                      : data.priority_color === "orange"
-                      ? "#f97316"
-                      : data.priority_color === "yellow"
-                      ? "#eab308"
-                      : "#22c55e",
-                }}
-              >
+              <div className={`card-val priority-text-${data.priority_color}`}>
                 Gợi ý AI: {data.ai_suggested_priority}
               </div>
               <div className="sla-note">
@@ -426,23 +405,14 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
 
             <div className="popup-field-group">
               <label className="field-label">Mức thay đổi:</label>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                <span style={{ color: "#94a3b8", fontSize: "0.9rem" }}>Từ</span>
-                <span
-                  style={{
-                    fontWeight: "bold",
-                    color: "#f97316",
-                    background: "rgba(249, 115, 22, 0.15)",
-                    padding: "0.2rem 0.6rem",
-                    borderRadius: "4px",
-                  }}
-                >
+              <div className="priority-change-flow">
+                <span className="from-label">Từ</span>
+                <span className="from-val">
                   {data.ai_suggested_priority}
                 </span>
-                <span style={{ color: "#94a3b8" }}>→</span>
+                <span className="arrow-sep">→</span>
                 <select
-                  className="priority-select-control"
-                  style={{ width: "auto", flex: 1 }}
+                  className="priority-select-control select-priority-flex"
                   value={targetPriority}
                   onChange={(e) => setTargetPriority(e.target.value)}
                   disabled={isSavingDecision}

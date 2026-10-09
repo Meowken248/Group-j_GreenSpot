@@ -160,7 +160,7 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
           <div className="col-map-view">
             <div className="map-header-bar">
               <span>🗺️ BẢN ĐỒ PHÂN TÍCH VÙNG ĐỆM (BUFFER RADIUS GIS)</span>
-              <span style={{ color: "#10b981", fontSize: "0.8rem" }}>
+              <span className="map-radius-badge">
                 Bán kính: {radiusMeters >= 1000 ? `${radiusMeters / 1000} km` : `${radiusMeters} m`}
               </span>
             </div>
@@ -336,16 +336,7 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
 
               <button
                 type="button"
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: "#64748b",
-                  width: "100%",
-                  padding: "0.75rem",
-                  fontSize: "0.825rem",
-                  cursor: "pointer",
-                  marginTop: "0.5rem",
-                }}
+                className="btn-back-to-triage-sub"
                 onClick={onBackToTriage}
               >
                 ← Quay lại Màn hình Tóm tắt AI (STT 39)
@@ -418,7 +409,7 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
           <div className="col-facilities-list">
             <div className="panel-heading">
               <span>📋 DANH SÁCH CƠ SỞ CHỊU ẢNH HƯỞNG</span>
-              <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>
+              <span className="filter-header-count">
                 Bán kính: {searchResponse.radius_meters >= 1000 ? `${searchResponse.radius_meters / 1000} km` : `${searchResponse.radius_meters} m`}
               </span>
             </div>
@@ -448,7 +439,7 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
                           {fac.distance_display}
                         </span>
                         {fac.is_immediate_risk && (
-                          <span style={{ color: "#ef4444", fontWeight: "bold" }}>
+                          <span className="dist-danger-flag">
                             [Rất gần &lt; 100m]
                           </span>
                         )}
@@ -502,7 +493,7 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
 
               <div className="detail-field">
                 <div className="field-label">Khoảng cách chim bay tới sự cố</div>
-                <div className="field-text" style={{ color: "#10b981", fontWeight: "bold" }}>
+                <div className="field-text detail-distance-val">
                   {selectedFacilityDetail.incident_distance_display || "Trong vùng đệm"}
                 </div>
               </div>
@@ -511,7 +502,7 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
                 <div className="field-label">Đầu mối & Số điện thoại khẩn cấp</div>
                 <div className="field-text">
                   <div>👤 {selectedFacilityDetail.contact_person || "Ban giám hiệu / Ban giám đốc"}</div>
-                  <div style={{ marginTop: "4px", color: "#60a5fa", fontWeight: "600" }}>
+                  <div className="contact-phone-val">
                     📞 {selectedFacilityDetail.contact_phone || "Chưa có thông tin liên hệ của cơ sở này"}
                   </div>
                 </div>
@@ -549,8 +540,7 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
                   href={selectedFacilityDetail.directions_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn-action-directions"
-                  style={{ textDecoration: "none" }}
+                  className="btn-action-directions btn-action-directions-link"
                 >
                   🗺️ Chỉ đường dẫn xe dọn rác
                 </a>
