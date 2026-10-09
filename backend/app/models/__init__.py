@@ -79,6 +79,9 @@ from app.models.friends import (
     FriendRequestStatus,
 )
 
+# 8. Cài đặt người dùng (User Settings Domain)
+from app.models.settings import UserSettings
+
 __all__ = [
     "Base",
     "TimestampMixin",
@@ -131,5 +134,7 @@ __all__ = [
     "Friendship",
     "UserFollow",
     "FriendRequestStatus",
+    # User Settings Domain
+    "UserSettings",
 ]
 

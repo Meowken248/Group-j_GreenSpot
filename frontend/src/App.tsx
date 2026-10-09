@@ -16,6 +16,14 @@ import { UserManagementContainer } from "./features/user_management";
 import { ProfileContainer } from "./features/profile";
 import { FriendsContainer } from "./features/friends";
 import { DeduplicationDashboard } from "./features/reports";
+import {
+  SettingsContainer,
+  applyThemeToDocument,
+  getLocalPreferences,
+  fetchPreferencesFromServer,
+  subscribeThemeChange,
+} from "./features/settings";
+import type { ThemeMode } from "./features/settings";
 import api from "./api/client";
 import "./App.css";
 
@@ -41,11 +49,13 @@ function App() {
       if (hash === "#dashboard" || path === "/dashboard") return "/dashboard";
       if (hash === "#users" || path === "/users") return "/users";
       if (hash === "#rbac" || path === "/rbac") return "/rbac";
+      if (hash === "#dedup" || path === "/dedup") return "/dedup";
+      if (hash === "#settings" || path === "/settings") return "/settings";
     }
     return undefined;
   });
 
-  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "friends" | "voice" | "dedup">(() => {
+  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "friends" | "voice" | "dedup" | "settings">(() => {
     const hash = window.location.hash.toLowerCase();
     const path = window.location.pathname.toLowerCase();
     const isLogged = checkIsLoggedIn();
@@ -54,7 +64,11 @@ function App() {
     if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") return "auth";
     if (hash === "#voice" || path === "/voice") return "voice";
 
-    // Khách vãng lai chưa đăng nhập: Không được phép vào các trang phân tích khí hậu, bạn bè, profile, quản trị, trùng lặp
+    // Khách vãng lai chưa đăng nhập: Không được phép vào các trang cài đặt, phân tích khí hậu, bạn bè, profile, quản trị, trùng lặp
+    if (hash === "#settings" || path === "/settings") {
+      if (!isLogged) return "auth";
+      return "settings";
+    }
     if (hash === "#dashboard" || path === "/dashboard") {
       if (!isLogged) return "auth";
       return "dashboard";
@@ -88,6 +102,35 @@ function App() {
   const [checkingBackend, setCheckingBackend] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
   const [sessionExpiredOpen, setSessionExpiredOpen] = useState(false);
+
+  // Quản lý theme thời gian thực từ LocalStorage và sự kiện thay đổi
+  const [currentTheme, setCurrentTheme] = useState<ThemeMode>(() => getLocalPreferences().theme);
+  const isDarkMode = currentTheme === "DARK";
+
+  useEffect(() => {
+    const localPrefs = getLocalPreferences();
+    applyThemeToDocument(localPrefs.theme);
+    setCurrentTheme(localPrefs.theme);
+
+    // Tự động đồng bộ cài đặt giao diện từ server nếu đã đăng nhập
+    if (checkIsLoggedIn()) {
+      fetchPreferencesFromServer()
+        .then((remotePrefs) => {
+          if (remotePrefs?.theme) {
+            setCurrentTheme(remotePrefs.theme);
+            applyThemeToDocument(remotePrefs.theme);
+          }
+        })
+        .catch(() => {
+          // Bỏ qua nếu lỗi kết nối
+        });
+    }
+
+    const unsubscribe = subscribeThemeChange((newTheme) => {
+      setCurrentTheme(newTheme);
+    });
+    return unsubscribe;
+  }, []);
 
   // Hook quản lý tài khoản và quyền hạn thời gian thực (RBAC Permission Guard)
   const { currentUser, canAccess } = usePermissions();
@@ -308,7 +351,7 @@ function App() {
       />
 
       {/* THANH ĐIỀU HƯỚNG CHUYỂN ĐỔI CHẾ ĐỘ VIEW (TOP CENTER) */}
-      <nav className={`view-mode-switcher ${activeTab === "dashboard" || activeTab === "voice" ? "dark-mode" : ""}`} aria-label="Chế độ hiển thị">
+      <nav className={`view-mode-switcher ${isDarkMode ? "dark-mode" : ""}`} aria-label="Chế độ hiển thị">
         {currentUser ? (
           <div className="user-profile-nav-wrapper" ref={userMenuRef}>
             <button
@@ -325,7 +368,7 @@ function App() {
             </button>
 
             {userDropdownOpen && (
-              <div className={`user-nav-dropdown ${activeTab === "dashboard" || activeTab === "voice" ? "dark-mode" : ""}`} role="menu">
+              <div className={`user-nav-dropdown ${isDarkMode ? "dark-mode" : ""}`} role="menu">
                 <div className="dropdown-user-info">
                   <div className="dropdown-avatar">🌱</div>
                   <div className="dropdown-user-details">
@@ -410,6 +453,21 @@ function App() {
                 >
                   <span className="action-icon">💻</span>
                   <span>Quản lý thiết bị & Phiên</span>
+                </button>
+
+                <div className="dropdown-separator" />
+
+                <button
+                  type="button"
+                  className="dropdown-menu-action"
+                  onClick={() => {
+                    setUserDropdownOpen(false);
+                    setActiveTab("settings");
+                    window.location.hash = "#settings";
+                  }}
+                >
+                  <span className="action-icon">⚙️</span>
+                  <span>Cài đặt tài khoản</span>
                 </button>
 
                 <div className="dropdown-separator" />
@@ -558,6 +616,19 @@ function App() {
               <span>🌿</span>
               <span>Hồ sơ xanh</span>
             </button>
+
+            <button
+              type="button"
+              className={`view-tab-btn ${activeTab === "settings" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("settings");
+                window.location.hash = "#settings";
+              }}
+              title="Cài đặt giao diện, ngôn ngữ và bảo mật tài khoản"
+            >
+              <span>⚙️</span>
+              <span>Cài đặt</span>
+            </button>
           </>
         ) : (
           <>
@@ -591,7 +662,7 @@ function App() {
 
       {/* VIEW NỘI DUNG CHÍNH: AUTH, RBAC, PROFILE, MAP, DASHBOARD HOẶC VOICE */}
       {activeTab === "auth" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
           <AuthContainer
             initialView={
               authRedirectUrl === "/devices" || window.location.hash === "#devices"
@@ -609,7 +680,7 @@ function App() {
         </div>
       ) : activeTab === "profile" ? (
         !currentUser ? (
-          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
             <AuthContainer
               initialView="login"
               redirectUrl="/profile"
@@ -620,7 +691,7 @@ function App() {
             />
           </div>
         ) : (
-          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
             <ProfileContainer
               onBackToMap={() => {
                 setActiveTab("map");
@@ -639,7 +710,7 @@ function App() {
           </div>
         )
       ) : activeTab === "rbac" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
           <RbacContainer
             onExit={() => {
               setActiveTab("map");
@@ -654,7 +725,7 @@ function App() {
         </div>
       ) : activeTab === "friends" ? (
         !currentUser ? (
-          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
             <AuthContainer
               initialView="login"
               redirectUrl="/friends"
@@ -665,7 +736,7 @@ function App() {
             />
           </div>
         ) : (
-          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
             <FriendsContainer
               currentUser={currentUser}
               onBackToHome={() => {
@@ -680,7 +751,7 @@ function App() {
           </div>
         )
       ) : activeTab === "users" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
           <UserManagementContainer
             onBackToHome={() => {
               setActiveTab("map");
@@ -694,7 +765,7 @@ function App() {
           />
         </div>
       ) : activeTab === "dedup" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
           <DeduplicationDashboard
             currentUser={currentUser}
             onBackToHome={() => {
@@ -703,6 +774,34 @@ function App() {
             }}
           />
         </div>
+      ) : activeTab === "settings" ? (
+        !currentUser ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/settings"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <SettingsContainer
+              currentUser={currentUser}
+              onBackToMap={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              onNavigateToAuth={() => {
+                setAuthRedirectUrl("/settings");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+            />
+          </div>
+        )
       ) : activeTab === "dashboard" ? (
         !currentUser ? (
           <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
@@ -729,16 +828,18 @@ function App() {
           </ModulePermissionGuard>
         )
       ) : activeTab === "voice" ? (
-        <VoiceAssistant
-          onClose={() => setActiveTab("map")}
-          onNavigateToFeature={(target) => {
-            if (target === "dashboard_aqi") {
-              setActiveTab("dashboard");
-            } else {
-              setActiveTab("map");
-            }
-          }}
-        />
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+          <VoiceAssistant
+            onClose={() => setActiveTab("map")}
+            onNavigateToFeature={(target) => {
+              if (target === "dashboard_aqi") {
+                setActiveTab("dashboard");
+              } else {
+                setActiveTab("map");
+              }
+            }}
+          />
+        </div>
       ) : (
         /* Mặc định an toàn cho khách vãng lai và tab map: Bản đồ số WebGIS công cộng */
         <ModulePermissionGuard
@@ -769,7 +870,7 @@ function App() {
       <div className="quick-status-badge">
         <button
           type="button"
-          className={`health-badge-btn ${activeTab === "dashboard" ? "dark-mode" : ""}`}
+          className={`health-badge-btn ${isDarkMode || activeTab === "dashboard" ? "dark-mode" : ""}`}
           onClick={() => {
             setShowDrawer((prev) => !prev);
             if (!backendStatus) checkHealth();
@@ -781,7 +882,7 @@ function App() {
         </button>
 
         {showDrawer && (
-          <div className={`health-popover ${activeTab === "dashboard" ? "dark-mode" : ""}`}>
+          <div className={`health-popover ${isDarkMode || activeTab === "dashboard" ? "dark-mode" : ""}`}>
             <div className="popover-header">
               <strong>Backend Diagnostic</strong>
               <button
