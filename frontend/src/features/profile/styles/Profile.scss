@@ -1,0 +1,1581 @@
+// =========================================================================
+// GreenSpot Profile Domain SCSS Styles (Chức năng 5)
+// Tuân thủ 100% quy tắc CSS trong PROJECT_RULES.md: Chỉ dùng SASS (.scss)
+// =========================================================================
+
+$primary-50: #ecfdf5;
+$primary-100: #d1fae5;
+$primary-200: #a7f3d0;
+$primary-300: #6ee7b7;
+$primary-400: #34d399;
+$primary-500: #10b981;
+$primary-600: #059669;
+$primary-700: #047857;
+$primary-800: #065f46;
+
+$neutral-50: #f8fafc;
+$neutral-100: #f1f5f9;
+$neutral-200: #e2e8f0;
+$neutral-300: #cbd5e1;
+$neutral-400: #94a3b8;
+$neutral-500: #64748b;
+$neutral-600: #475569;
+$neutral-700: #334155;
+$neutral-800: #1e293b;
+$neutral-900: #0f172a;
+
+$error-50: #fef2f2;
+$error-100: #fee2e2;
+$error-500: #ef4444;
+$error-600: #dc2626;
+
+$warning-50: #fffbeb;
+$warning-100: #fef3c7;
+$warning-500: #f59e0b;
+$warning-600: #d97706;
+
+$info-50: #eff6ff;
+$info-100: #dbeafe;
+$info-500: #3b82f6;
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin card-surface {
+  background: #ffffff;
+  border: 1px solid $neutral-200;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+}
+
+// ==========================================
+// TOAST NOTIFICATIONS (3s Auto-dismiss)
+// ==========================================
+.profile-toast-container {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+
+  .profile-toast {
+    pointer-events: auto;
+    min-width: 300px;
+    max-width: 420px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+    &.toast-error {
+      background-color: $error-50;
+      border: 1px solid $error-500;
+      color: $error-600;
+    }
+
+    &.toast-success {
+      background-color: $primary-50;
+      border: 1px solid $primary-500;
+      color: $primary-700;
+    }
+  }
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+// ==========================================
+// WRAPPER CHÍNH CỦA TRANG PROFILE
+// ==========================================
+.profile-page-wrapper {
+  min-height: 100vh;
+  background-color: #f8fafc;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: $neutral-800;
+  display: flex;
+  flex-direction: column;
+
+  // Header thanh điều hướng quay lại
+  .profile-subnav-bar {
+    max-width: 1280px;
+    width: 100%;
+    margin: 16px auto 0;
+    padding: 0 20px;
+
+    .back-profile-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: $primary-600;
+      font-weight: 600;
+      font-size: 14px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        color: $primary-700;
+        transform: translateX(-3px);
+      }
+    }
+  }
+
+  .profile-main-content {
+    max-width: 1280px;
+    width: 100%;
+    margin: 20px auto 40px;
+    padding: 0 20px;
+    flex: 1;
+  }
+
+  // =========================================================================
+  // MÀN 1: BỐ CỤC 3 CỘT (RESPONSIVE < 1024PX XẾP DỌC)
+  // =========================================================================
+  .profile-timeline-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr 320px;
+    gap: 24px;
+    align-items: start;
+
+    @media (max-width: 1023px) {
+      grid-template-columns: 1fr;
+      
+      // Thứ tự khi xếp dọc theo đặc tả:
+      // 1. Ảnh bìa - Avatar (Cột trái)
+      // 2. Giới thiệu (Cột phải)
+      // 3. Bài đăng (Cột giữa)
+      .col-left-profile {
+        order: 1;
+      }
+      .col-right-intro {
+        order: 2;
+      }
+      .col-mid-posts {
+        order: 3;
+      }
+    }
+  }
+
+  // CỘT TRÁI: ẢNH BÌA – AVATAR
+  .col-left-profile {
+    @include card-surface;
+    overflow: hidden;
+
+    .cover-container {
+      width: 100%;
+      padding-top: 33.333%; // Tỉ lệ 3:1
+      position: relative;
+      background-color: $neutral-300;
+
+      .cover-img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .cover-fallback {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: $neutral-300;
+      }
+    }
+
+    .avatar-wrapper {
+      position: relative;
+      margin-top: -60px; // Avatar 120px đè mép ảnh bìa
+      padding-left: 20px;
+      margin-bottom: 12px;
+
+      .avatar-circle {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 4px solid #ffffff;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        object-fit: cover;
+        background-color: $neutral-200;
+        display: block;
+      }
+
+      .avatar-placeholder {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 4px solid #ffffff;
+        background-color: $neutral-300;
+        color: $neutral-600;
+        font-size: 38px;
+        font-weight: 700;
+        @include flex-center;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      }
+    }
+
+    .profile-user-details {
+      padding: 0 20px 24px;
+
+      .user-name {
+        font-size: 20px;
+        font-weight: 700;
+        color: $neutral-900;
+        margin-bottom: 4px;
+      }
+
+      .friends-line {
+        font-size: 14px;
+        color: $neutral-500;
+        margin-bottom: 16px;
+      }
+
+      .btn-edit-profile {
+        width: 100%;
+        padding: 10px 16px;
+        background-color: $neutral-100;
+        border: 1px solid $neutral-300;
+        border-radius: 10px;
+        color: $neutral-700;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background-color: $neutral-200;
+          color: $neutral-900;
+        }
+      }
+
+      .empty-action-space {
+        min-height: 42px; // Giữ chỗ cho nút kết bạn ở trang người khác
+      }
+    }
+  }
+
+  // CỘT PHẢI: GIỚI THIỆU
+  .col-right-intro {
+    @include card-surface;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    .intro-block-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: $neutral-900;
+      margin-bottom: 8px;
+    }
+
+    .bio-text {
+      font-size: 14px;
+      line-height: 1.6;
+      color: $neutral-700;
+      white-space: pre-line; // Giữ nguyên các lần xuống dòng
+      word-break: break-word;
+
+      .empty-bio-hint {
+        color: $neutral-500;
+        font-style: italic;
+
+        .link-add-bio {
+          color: $primary-600;
+          font-weight: 600;
+          cursor: pointer;
+          margin-left: 4px;
+          text-decoration: underline;
+
+          &:hover {
+            color: $primary-700;
+          }
+        }
+      }
+    }
+
+    .info-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: $neutral-600;
+
+      .info-label {
+        color: $neutral-500;
+      }
+
+      .info-val {
+        font-weight: 600;
+        color: $neutral-800;
+      }
+
+      .level-pill-badge {
+        background-color: $primary-100;
+        color: $primary-700;
+        font-weight: 700;
+        font-size: 12px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background-color: $primary-200;
+          transform: translateY(-1px);
+        }
+      }
+    }
+
+    .highlight-badges-section {
+      .badges-label-row {
+        font-size: 14px;
+        color: $neutral-500;
+        margin-bottom: 10px;
+      }
+
+      .badges-list-flex {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+
+        .badge-icon-item {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: #f1f5f9;
+          border: 1px solid $neutral-200;
+          @include flex-center;
+          cursor: pointer;
+          transition: transform 0.2s ease;
+
+          img {
+            width: 28px;
+            height: 28px;
+          }
+
+          &:hover {
+            transform: scale(1.1);
+          }
+        }
+
+        .badges-extra-pill {
+          font-size: 13px;
+          font-weight: 700;
+          color: $neutral-600;
+          background: $neutral-100;
+          padding: 6px 10px;
+          border-radius: 16px;
+        }
+
+        .no-badges-text {
+          font-size: 14px;
+          color: $neutral-400;
+          font-style: italic;
+        }
+      }
+    }
+
+    .intro-links-group {
+      border-top: 1px solid $neutral-200;
+      padding-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+
+      .intro-nav-link {
+        font-size: 14px;
+        font-weight: 600;
+        color: $primary-600;
+        text-decoration: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: color 0.2s ease;
+
+        &:hover {
+          color: $primary-700;
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+
+  // CỘT GIỮA: BÀI ĐĂNG ({N})
+  .col-mid-posts {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    .posts-header-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: $neutral-900;
+    }
+
+    .post-card {
+      @include card-surface;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: $primary-300;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+      }
+
+      .post-meta-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+
+        .post-relative-time {
+          font-size: 13px;
+          color: $neutral-400;
+        }
+
+        .post-hidden-tag {
+          font-size: 11px;
+          font-weight: 700;
+          background-color: $neutral-200;
+          color: $neutral-600;
+          padding: 2px 8px;
+          border-radius: 6px;
+        }
+      }
+
+      .post-body-flex {
+        display: flex;
+        gap: 16px;
+        justify-content: space-between;
+
+        .post-content-text {
+          flex: 1;
+          font-size: 15px;
+          line-height: 1.5;
+          color: $neutral-800;
+          display: -webkit-box;
+          -webkit-line-clamp: 3; // Cắt tối đa 3 dòng
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .post-thumb-img {
+          width: 80px;
+          height: 80px;
+          border-radius: 10px;
+          object-fit: cover;
+          flex-shrink: 0;
+          border: 1px solid $neutral-200;
+        }
+      }
+
+      .post-footer-stats {
+        margin-top: 14px;
+        font-size: 13px;
+        color: $neutral-500;
+      }
+    }
+
+    .empty-posts-box {
+      @include card-surface;
+      padding: 40px 20px;
+      text-align: center;
+
+      p {
+        color: $neutral-500;
+        font-size: 15px;
+        margin-bottom: 16px;
+      }
+
+      .btn-create-post {
+        background-color: $primary-600;
+        color: #ffffff;
+        font-weight: 600;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+
+        &:hover {
+          background-color: $primary-700;
+        }
+      }
+    }
+
+    .load-more-section {
+      text-align: center;
+      margin-top: 8px;
+
+      .btn-load-more {
+        background-color: #ffffff;
+        border: 1px solid $neutral-300;
+        color: $neutral-700;
+        font-weight: 600;
+        padding: 10px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover:not(:disabled) {
+          background-color: $neutral-100;
+          border-color: $neutral-400;
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+
+  // TRẠNG THÁI LỖI TỪNG CỘT & NÚT TẢI LẠI
+  .column-error-box {
+    @include card-surface;
+    padding: 24px;
+    text-align: center;
+    border-color: $error-500;
+    background-color: $error-50;
+
+    .error-msg-text {
+      color: $error-600;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .btn-retry-col {
+      color: $error-600;
+      text-decoration: underline;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+
+      &:hover {
+        color: $error-500;
+      }
+    }
+  }
+
+  // =========================================================================
+  // MÀN 2: GREEN PASSPORT & HUY HIỆU (2 CỘT)
+  // =========================================================================
+  .passport-badges-layout {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 28px;
+    align-items: start;
+
+    @media (max-width: 900px) {
+      grid-template-columns: 1fr;
+    }
+
+    // THẺ HỘ CHIẾU XANH (CỘT TRÁI)
+    .passport-card-box {
+      @include card-surface;
+      padding: 32px 24px;
+      background: linear-gradient(145deg, #ffffff 0%, #f0fdf4 100%);
+      border: 2px solid $primary-200;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+
+      .passport-user-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+
+        .passport-avatar {
+          width: 64px;
+          height: 64px;
+          border-radius: 50%;
+          border: 3px solid $primary-400;
+          object-fit: cover;
+        }
+
+        .passport-avatar-placeholder {
+          width: 64px;
+          height: 64px;
+          border-radius: 50%;
+          background: $neutral-300;
+          color: $neutral-700;
+          font-weight: 700;
+          font-size: 24px;
+          @include flex-center;
+        }
+
+        .passport-full-name {
+          font-size: 18px;
+          font-weight: 800;
+          color: $neutral-900;
+        }
+      }
+
+      .passport-code-line {
+        font-family: 'Courier New', monospace;
+        font-size: 15px;
+        font-weight: 700;
+        color: $primary-800;
+        background: $primary-100;
+        padding: 6px 12px;
+        border-radius: 8px;
+        display: inline-block;
+      }
+
+      .passport-level-section {
+        .level-lbl {
+          font-size: 13px;
+          color: $neutral-500;
+          margin-bottom: 4px;
+        }
+        .level-val-big {
+          font-size: 26px;
+          font-weight: 800;
+          color: $primary-700;
+        }
+      }
+
+      .passport-points-line {
+        font-size: 15px;
+        font-weight: 600;
+        color: $neutral-700;
+      }
+
+      .passport-progress-block {
+        .progress-bar-bg {
+          width: 100%;
+          height: 12px;
+          background-color: $neutral-200;
+          border-radius: 6px;
+          overflow: hidden;
+          margin-bottom: 8px;
+
+          .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, $primary-500, $primary-600);
+            border-radius: 6px;
+            transition: width 0.5s ease-in-out;
+          }
+        }
+
+        .progress-hint-text {
+          font-size: 13px;
+          color: $neutral-500;
+          font-weight: 500;
+        }
+      }
+
+      .passport-date-line {
+        font-size: 13px;
+        color: $neutral-500;
+        border-top: 1px dashed $neutral-300;
+        padding-top: 12px;
+      }
+
+      .passport-history-link {
+        color: $primary-600;
+        font-weight: 700;
+        font-size: 14px;
+        cursor: pointer;
+        text-decoration: underline;
+
+        &:hover {
+          color: $primary-700;
+        }
+      }
+    }
+
+    // BỘ SƯU TẬP HUY HIỆU (CỘT PHẢI)
+    .badges-collection-box {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+
+      .badge-group {
+        @include card-surface;
+        padding: 24px;
+
+        .group-header-title {
+          font-size: 18px;
+          font-weight: 700;
+          color: $neutral-900;
+          margin-bottom: 20px;
+        }
+
+        .badges-grid-3col {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
+
+          @media (max-width: 600px) {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        .badge-grid-cell {
+          border: 1px solid $neutral-200;
+          border-radius: 12px;
+          padding: 16px;
+          text-align: center;
+          position: relative;
+          background: #ffffff;
+          transition: all 0.2s ease;
+          cursor: pointer;
+
+          &:hover {
+            border-color: $primary-400;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+
+            .badge-tooltip {
+              visibility: visible;
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          .badge-icon-64 {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 12px;
+            display: block;
+          }
+
+          .cell-badge-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: $neutral-800;
+            margin-bottom: 4px;
+          }
+
+          .cell-badge-sub {
+            font-size: 12px;
+            color: $neutral-500;
+          }
+
+          // Trạng thái Chưa mở khóa
+          &.locked-cell {
+            background-color: $neutral-50;
+            opacity: 0.85;
+
+            .badge-icon-64 {
+              filter: grayscale(100%);
+              opacity: 0.6;
+            }
+
+            .lock-overlay-icon {
+              position: absolute;
+              top: 14px;
+              right: 14px;
+              font-size: 16px;
+              color: $neutral-500;
+            }
+
+            .cell-condition-text {
+              font-size: 12px;
+              color: $neutral-500;
+              margin-top: 6px;
+              line-height: 1.4;
+            }
+          }
+
+          // Tooltip mô tả huy hiệu
+          .badge-tooltip {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%) translateY(6px);
+            width: 220px;
+            background-color: $neutral-900;
+            color: #ffffff;
+            font-size: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            z-index: 100;
+            pointer-events: none;
+            transition: all 0.2s ease;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+
+            &::after {
+              content: '';
+              position: absolute;
+              top: 100%;
+              left: 50%;
+              margin-left: -5px;
+              border-width: 5px;
+              border-style: solid;
+              border-color: $neutral-900 transparent transparent transparent;
+            }
+
+            .tooltip-title {
+              font-weight: 700;
+              margin-bottom: 4px;
+            }
+          }
+        }
+
+        .empty-group-text {
+          color: $neutral-500;
+          font-size: 14px;
+          font-style: italic;
+          padding: 12px 0;
+        }
+      }
+    }
+  }
+
+  // =========================================================================
+  // MÀN 3: LỊCH SỬ ĐÓNG GÓP (2 KHUNG: BỘ LỌC VÀ DANH SÁCH)
+  // =========================================================================
+  .contribution-history-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+
+    // KHUNG BỘ LỌC
+    .history-filter-box {
+      @include card-surface;
+      padding: 24px;
+
+      .filter-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: $neutral-900;
+        margin-bottom: 16px;
+      }
+
+      .filter-inputs-row {
+        display: flex;
+        gap: 16px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+
+        .input-group {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          min-width: 180px;
+          flex: 1;
+
+          label {
+            font-size: 13px;
+            font-weight: 600;
+            color: $neutral-700;
+          }
+
+          input, select {
+            height: 42px;
+            padding: 0 12px;
+            border: 1px solid $neutral-300;
+            border-radius: 8px;
+            font-size: 14px;
+            color: $neutral-800;
+            background-color: #ffffff;
+            transition: border-color 0.2s ease;
+
+            &:focus {
+              outline: none;
+              border-color: $primary-500;
+              box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+            }
+
+            &.error-border {
+              border-color: $error-500 !important;
+            }
+          }
+        }
+
+        .btn-clear-filter {
+          color: $primary-600;
+          font-weight: 600;
+          font-size: 14px;
+          text-decoration: underline;
+          background: none;
+          border: none;
+          cursor: pointer;
+          height: 42px;
+          display: flex;
+          align-items: center;
+
+          &:hover {
+            color: $primary-700;
+          }
+        }
+      }
+
+      .filter-error-text {
+        margin-top: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        color: $error-600;
+      }
+    }
+
+    // KHUNG DANH SÁCH
+    .history-list-box {
+      @include card-surface;
+      padding: 24px;
+
+      .list-summary-bar {
+        font-size: 15px;
+        font-weight: 700;
+        color: $neutral-800;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid $neutral-200;
+      }
+
+      .activities-table {
+        width: 100%;
+        border-collapse: collapse;
+
+        th {
+          text-align: left;
+          padding: 12px 16px;
+          font-size: 13px;
+          font-weight: 700;
+          color: $neutral-500;
+          border-bottom: 1px solid $neutral-200;
+        }
+
+        td {
+          padding: 16px;
+          font-size: 14px;
+          color: $neutral-800;
+          border-bottom: 1px solid $neutral-100;
+        }
+
+        tr:hover td {
+          background-color: $neutral-50;
+        }
+
+        .points-badge-col {
+          font-weight: 700;
+          color: $primary-600;
+
+          &.zero-points {
+            color: $neutral-400;
+          }
+        }
+      }
+
+      .empty-history-box {
+        padding: 40px 20px;
+        text-align: center;
+        color: $neutral-500;
+        font-size: 15px;
+
+        .btn-reset-filter {
+          margin-top: 10px;
+          color: $primary-600;
+          text-decoration: underline;
+          cursor: pointer;
+          font-weight: 600;
+        }
+      }
+    }
+  }
+
+  // =========================================================================
+  // MÀN 4: CHỈNH SỬA HỒ SƠ (3 CỘT: ẢNH, THÔNG TIN, LƯU)
+  // =========================================================================
+  .edit-profile-layout {
+    display: grid;
+    grid-template-columns: 340px 1fr 200px;
+    gap: 28px;
+    align-items: start;
+
+    @media (max-width: 960px) {
+      grid-template-columns: 1fr;
+    }
+
+    // CỘT ẢNH
+    .col-edit-media {
+      @include card-surface;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+
+      .media-upload-block {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+
+        .block-label {
+          font-size: 14px;
+          font-weight: 700;
+          color: $neutral-800;
+        }
+
+        .preview-cover-3to1 {
+          width: 100%;
+          padding-top: 33.333%;
+          position: relative;
+          background-color: $neutral-200;
+          border-radius: 8px;
+          overflow: hidden;
+
+          img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+        }
+
+        .preview-avatar-120 {
+          width: 120px;
+          height: 120px;
+          border-radius: 50%;
+          background-color: $neutral-200;
+          overflow: hidden;
+          margin: 0 auto;
+          @include flex-center;
+
+          img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+
+          .avatar-char {
+            font-size: 40px;
+            font-weight: 700;
+            color: $neutral-600;
+          }
+        }
+
+        .btn-choose-file {
+          width: 100%;
+          padding: 8px 14px;
+          background-color: $neutral-100;
+          border: 1px solid $neutral-300;
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 600;
+          color: $neutral-700;
+          cursor: pointer;
+          transition: background-color 0.2s ease;
+
+          &:hover:not(:disabled) {
+            background-color: $neutral-200;
+          }
+
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
+        }
+
+        .media-hint-text {
+          font-size: 12px;
+          color: $neutral-500;
+          line-height: 1.4;
+        }
+
+        .pending-save-pill {
+          font-size: 12px;
+          color: $warning-600;
+          font-style: italic;
+        }
+
+        .media-error-text {
+          font-size: 12px;
+          font-weight: 600;
+          color: $error-600;
+        }
+      }
+    }
+
+    // CỘT THÔNG TIN
+    .col-edit-info {
+      @include card-surface;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        label {
+          font-size: 14px;
+          font-weight: 700;
+          color: $neutral-800;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        textarea {
+          padding: 10px 14px;
+          border: 1px solid $neutral-300;
+          border-radius: 8px;
+          font-size: 14px;
+          color: $neutral-900;
+          font-family: inherit;
+          transition: border-color 0.2s ease;
+
+          &:focus {
+            outline: none;
+            border-color: $primary-500;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+          }
+
+          &.input-error {
+            border-color: $error-500 !important;
+          }
+
+          &:disabled {
+            background-color: $neutral-100;
+            cursor: not-allowed;
+          }
+        }
+
+        textarea {
+          resize: vertical;
+          min-height: 90px;
+        }
+
+        .counter-row {
+          display: flex;
+          justify-content: flex-end;
+          font-size: 12px;
+          color: $neutral-500;
+
+          &.counter-limit {
+            color: $error-600;
+            font-weight: 700;
+          }
+        }
+
+        .group-hint-text {
+          font-size: 12px;
+          color: $neutral-500;
+          line-height: 1.4;
+        }
+
+        .field-error-msg {
+          font-size: 13px;
+          font-weight: 600;
+          color: $error-600;
+        }
+      }
+    }
+
+    // CỘT LƯU
+    .col-edit-actions {
+      @include card-surface;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+
+      .btn-save-profile {
+        width: 100%;
+        padding: 12px;
+        background-color: $primary-600;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 14px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover:not(:disabled) {
+          background-color: $primary-700;
+        }
+
+        &:disabled {
+          background-color: $neutral-300;
+          color: $neutral-500;
+          cursor: not-allowed;
+        }
+      }
+
+      .btn-cancel-profile {
+        width: 100%;
+        padding: 12px;
+        background-color: #ffffff;
+        border: 1px solid $neutral-300;
+        color: $neutral-700;
+        font-weight: 600;
+        font-size: 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover:not(:disabled) {
+          background-color: $neutral-100;
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+
+  // SKELETON LOADERS
+  .skeleton-box {
+    background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+    background-size: 200% 100%;
+    animation: skeletonPulse 1.5s infinite ease-in-out;
+    border-radius: 6px;
+  }
+
+  // ==========================================
+  // HEADER ĐẶC TẢ (Logo, Menu, Chuông, Avatar)
+  // ==========================================
+  .profile-page-header {
+    background: #ffffff;
+    border-bottom: 1px solid $neutral-200;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+
+    .header-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 20px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+
+      .brand-logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        color: $neutral-900;
+        font-weight: 800;
+        font-size: 18px;
+        letter-spacing: -0.02em;
+
+        .brand-icon {
+          font-size: 24px;
+        }
+
+        .brand-name {
+          color: $primary-600;
+        }
+      }
+
+      .header-nav {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        @media (max-width: 768px) {
+          display: none;
+        }
+
+        .nav-link-btn {
+          background: transparent;
+          border: none;
+          padding: 8px 14px;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 600;
+          color: $neutral-600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &:hover {
+            color: $primary-600;
+            background-color: $neutral-100;
+          }
+
+          &.active {
+            color: $primary-700;
+            background-color: $primary-50;
+          }
+        }
+      }
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .bell-notification-btn {
+        background: transparent;
+        border: 1px solid $neutral-200;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        cursor: pointer;
+        position: relative;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background-color: $neutral-100;
+        }
+
+        .bell-dot {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          width: 8px;
+          height: 8px;
+          background-color: $error-500;
+          border-radius: 50%;
+          border: 1.5px solid #ffffff;
+        }
+      }
+
+      .header-user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 2px solid $primary-500;
+        overflow: hidden;
+        cursor: pointer;
+        background-color: $neutral-200;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        span {
+          font-weight: 700;
+          font-size: 16px;
+          color: $primary-700;
+        }
+      }
+    }
+  }
+
+  // ==========================================
+  // FOOTER ĐẶC TẢ (Bản quyền, Liên hệ, Chính sách)
+  // ==========================================
+  .profile-page-footer {
+    background: #ffffff;
+    border-top: 1px solid $neutral-200;
+    padding: 32px 20px;
+    margin-top: auto;
+
+    .footer-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+
+      @media (max-width: 768px) {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    .footer-copyright {
+      font-size: 13px;
+      color: $neutral-500;
+      line-height: 1.5;
+
+      strong {
+        color: $neutral-800;
+      }
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 20px;
+      font-size: 13px;
+
+      .footer-link-item {
+        color: $neutral-600;
+        text-decoration: none;
+        cursor: pointer;
+        transition: color 0.2s ease;
+
+        &:hover {
+          color: $primary-600;
+        }
+      }
+
+      .footer-divider {
+        color: $neutral-300;
+      }
+    }
+  }
+
+  // ==========================================
+  // MÀN HÌNH CHẶN YÊU CẦU ĐĂNG NHẬP (AUTH GATE)
+  // ==========================================
+  .auth-gate-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: 40px 20px;
+
+    .profile-auth-card {
+      @include card-surface;
+      max-width: 520px;
+      width: 100%;
+      padding: 48px 36px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+      border: 1px solid $neutral-200;
+
+      .auth-card-icon {
+        font-size: 56px;
+        margin-bottom: 20px;
+        filter: drop-shadow(0 4px 6px rgba(16, 185, 129, 0.2));
+      }
+
+      .auth-card-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: $neutral-900;
+        margin-bottom: 12px;
+        letter-spacing: -0.02em;
+      }
+
+      .auth-card-description {
+        font-size: 15px;
+        color: $neutral-600;
+        line-height: 1.6;
+        margin-bottom: 32px;
+      }
+
+      .auth-card-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+
+        .btn-auth-primary {
+          width: 100%;
+          padding: 14px 24px;
+          background-color: $primary-600;
+          color: #ffffff;
+          font-weight: 700;
+          font-size: 15px;
+          border-radius: 10px;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.2);
+
+          &:hover {
+            background-color: $primary-700;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 8px -1px rgba(5, 150, 105, 0.3);
+          }
+        }
+
+        .btn-auth-secondary {
+          width: 100%;
+          padding: 12px 24px;
+          background-color: #ffffff;
+          border: 1px solid $neutral-300;
+          color: $neutral-700;
+          font-weight: 600;
+          font-size: 14px;
+          border-radius: 10px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background-color: $neutral-100;
+            border-color: $neutral-400;
+          }
+        }
+      }
+    }
+  }
+
+  .btn-login-direct {
+    padding: 8px 16px;
+    background-color: $primary-600;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: $primary-700;
+    }
+  }
+}
+
+@keyframes skeletonPulse {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
