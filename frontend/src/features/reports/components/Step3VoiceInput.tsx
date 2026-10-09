@@ -27,8 +27,21 @@ export const Step3VoiceInput: React.FC<Step3Props> = ({
 
   const recognitionRef = useRef<any>(null);
   const timerRef = useRef<number | null>(null);
+  const audioStreamRef = useRef<MediaStream | null>(null);
 
-  // Khởi tạo Web Speech API
+  const stopTracks = () => {
+    if (audioStreamRef.current) {
+      audioStreamRef.current.getTracks().forEach((track) => {
+        try {
+          track.stop();
+          track.enabled = false;
+        } catch {}
+      });
+      audioStreamRef.current = null;
+    }
+  };
+
+  // Khởi tạo Web Speech API & Cleanup khi unmount
   useEffect(() => {
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -38,7 +51,17 @@ export const Step3VoiceInput: React.FC<Step3Props> = ({
     }
 
     return () => {
-      stopRecordingSession();
+      if (timerRef.current) {
+        window.clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {}
+        recognitionRef.current = null;
+      }
+      stopTracks();
     };
   }, []);
 
@@ -51,7 +74,9 @@ export const Step3VoiceInput: React.FC<Step3Props> = ({
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error("Trình duyệt không hỗ trợ ghi âm");
       }
+      stopTracks();
       const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioStreamRef.current = audioStream;
       setStream(audioStream);
       setIsRecording(true);
       setRecordSeconds(0);
@@ -130,10 +155,8 @@ export const Step3VoiceInput: React.FC<Step3Props> = ({
       recognitionRef.current = null;
     }
 
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
-    }
+    stopTracks();
+    setStream(null);
 
     setIsRecording(false);
 

@@ -16,6 +16,9 @@ from app.schemas.incident import (
     DuplicateCheckResponse,
     IncidentDetailResponse,
     IncidentMediaItem,
+    IncidentListItem,
+    IncidentManagementSummaryStats,
+    IncidentListResponse,
 )
 
 # Múi giờ Việt Nam (UTC+7)
@@ -362,5 +365,226 @@ async def get_incident_detail(
             for m in media_list
         ],
         upvotes_count=inc.upvotes_count,
+        is_anonymous=inc.is_anonymous,
+        reporter_phone_masked=inc.reporter_phone_masked,
     )
+
+
+async def list_incidents_for_management(
+    db: AsyncSession,
+    severity: Optional[str] = None,
+    status: Optional[str] = None,
+    unit_id: Optional[int] = None,
+    search: Optional[str] = None,
+    page: int = 1,
+    limit: int = 20,
+) -> IncidentListResponse:
+    """
+    Dành cho Quản trị viên (ADMIN) & Cán bộ (DISTRICT_MANAGER):
+    Tra cứu danh sách sự cố với bộ lọc đa năng (Độ khẩn cấp, Trạng thái kiểm chứng/xử lý, Quận huyện)
+    và tổng hợp số liệu KPI thời gian thực.
+    """
+    now_utc = datetime.now(timezone.utc)
+
+    # 1. Thống kê KPI tổng thể
+    # Đếm theo các tiêu chí quản trị
+    all_res = await db.execute(select(Incident.status, Incident.severity, Incident.sla_deadline))
+    all_rows = all_res.fetchall()
+
+    stats = IncidentManagementSummaryStats(
+        total=len(all_rows),
+        unverified=sum(1 for r in all_rows if r[0] == "PENDING"),
+        in_progress=sum(1 for r in all_rows if r[0] == "IN_PROGRESS"),
+        resolved=sum(1 for r in all_rows if r[0] == "RESOLVED"),
+        rejected=sum(1 for r in all_rows if r[0] == "REJECTED"),
+        critical=sum(1 for r in all_rows if r[1] in ["CRITICAL", "EMERGENCY", "HIGH"]),
+        sla_warning=sum(
+            1 for r in all_rows
+            if r[0] in ["PENDING", "IN_PROGRESS"] and r[2] and (r[2] <= now_utc or r[2] <= now_utc + timedelta(hours=6))
+        ),
+    )
+
+    # 2. Xây dựng câu truy vấn có điều kiện lọc
+    query = (
+        select(Incident, WasteCategory.name, AdministrativeUnit.name, User.full_name)
+        .join(WasteCategory, WasteCategory.category_id == Incident.category_id, isouter=True)
+        .join(AdministrativeUnit, AdministrativeUnit.unit_id == Incident.unit_id, isouter=True)
+        .join(User, User.user_id == Incident.reporter_id, isouter=True)
+    )
+
+    conditions = []
+    if severity and severity != "ALL":
+        if severity == "CRITICAL":
+            conditions.append(Incident.severity.in_(["CRITICAL", "EMERGENCY"]))
+        else:
+            conditions.append(Incident.severity == severity)
+
+    if status and status != "ALL":
+        conditions.append(Incident.status == status)
+
+    if unit_id and unit_id > 0:
+        conditions.append(Incident.unit_id == unit_id)
+
+    if search and search.strip():
+        kw = f"%{search.strip().lower()}%"
+        conditions.append(
+            (Incident.tracking_code.ilike(kw)) |
+            (Incident.title.ilike(kw)) |
+            (Incident.address_text.ilike(kw))
+        )
+
+    if conditions:
+        query = query.where(and_(*conditions))
+
+    # Đếm tổng kết quả thỏa điều kiện
+    count_stmt = select(func.count(Incident.incident_id))
+    if conditions:
+        count_stmt = count_stmt.where(and_(*conditions))
+    total_count_res = await db.execute(count_stmt)
+    total_count = total_count_res.scalar() or 0
+
+    # Phân trang & sắp xếp: Ưu tiên mới nhất & Khẩn cấp lên đầu
+    offset = max(0, (page - 1) * limit)
+    query = query.order_by(Incident.created_at.desc()).offset(offset).limit(limit)
+
+    results = await db.execute(query)
+    rows = results.fetchall()
+
+    # Thu thập media cho các incidents này
+    incident_ids = [r[0].incident_id for r in rows]
+    media_map: Dict[uuid.UUID, List[IncidentMediaItem]] = {}
+    if incident_ids:
+        m_stmt = select(IncidentMedia).where(IncidentMedia.incident_id.in_(incident_ids))
+        m_res = await db.execute(m_stmt)
+        for m in m_res.scalars().all():
+            media_map.setdefault(m.incident_id, []).append(
+                IncidentMediaItem(
+                    file_url=m.file_url,
+                    thumbnail_url=m.thumbnail_url or m.file_url,
+                    media_type=m.media_type,
+                    file_size_bytes=m.file_size_bytes,
+                    mime_type=m.mime_type,
+                )
+            )
+
+    items: List[IncidentListItem] = []
+    for inc, cat_name, unit_name, reporter_name in rows:
+        m_items = media_map.get(inc.incident_id, [])
+        first_thumb = m_items[0].thumbnail_url if m_items else None
+        is_overdue = bool(inc.sla_deadline and now_utc > inc.sla_deadline and inc.status in ["PENDING", "IN_PROGRESS"])
+
+        items.append(
+            IncidentListItem(
+                incident_id=str(inc.incident_id),
+                tracking_code=inc.tracking_code,
+                title=inc.title,
+                description=inc.description,
+                severity=inc.severity,
+                status=inc.status,
+                address_text=inc.address_text,
+                latitude=float(inc.latitude),
+                longitude=float(inc.longitude),
+                category_id=inc.category_id,
+                category_name=cat_name or "Chưa phân loại",
+                unit_id=inc.unit_id,
+                unit_name=unit_name or "Thành phố Hồ Chí Minh",
+                is_anonymous=inc.is_anonymous,
+                reporter_name=reporter_name if not inc.is_anonymous else "Công dân ẩn danh",
+                reporter_phone_masked=inc.reporter_phone_masked,
+                sla_deadline=inc.sla_deadline,
+                is_sla_overdue=is_overdue,
+                created_at=inc.created_at,
+                thumbnail_url=first_thumb,
+                media=m_items,
+            )
+        )
+
+    return IncidentListResponse(
+        items=items,
+        total=total_count,
+        page=page,
+        limit=limit,
+        stats=stats,
+    )
+
+
+async def verify_incident_by_admin(
+    db: AsyncSession,
+    incident_id: uuid.UUID,
+    action: str,
+    note: Optional[str] = None,
+    admin_id: Optional[uuid.UUID] = None,
+) -> IncidentDetailResponse:
+    """
+    Admin xác thực phản ánh:
+    - action == 'VERIFY': Xác nhận thông tin chính xác, chuyển sang IN_PROGRESS (Đã kiểm chứng / Đang xử lý)
+    - action == 'REJECT': Báo cáo sai lệch, không có rác, chuyển sang REJECTED (Từ chối)
+    """
+    stmt = select(Incident).where(Incident.incident_id == incident_id)
+    res = await db.execute(stmt)
+    inc = res.scalar_one_or_none()
+    if not inc:
+        raise ValueError("Không tìm thấy sự cố phản ánh.")
+
+    if action == "VERIFY":
+        inc.status = "IN_PROGRESS"
+    elif action == "REJECT":
+        inc.status = "REJECTED"
+    else:
+        raise ValueError("Hành động kiểm chứng không hợp lệ.")
+
+    # Ghi nhận hoạt động nếu có ghi chú
+    if note and admin_id:
+        activity = UserActivity(
+            activity_id=uuid.uuid4(),
+            user_id=admin_id,
+            activity_type="VERIFY_INCIDENT",
+            title=f"Kiểm chứng sự cố: {inc.tracking_code}",
+            description=f"Hành động: {action}. Ghi chú: {note}",
+            points=0,
+        )
+        db.add(activity)
+
+    await db.commit()
+    await db.refresh(inc)
+
+    return await get_incident_detail(db, incident_id)
+
+
+async def update_incident_status_by_admin(
+    db: AsyncSession,
+    incident_id: uuid.UUID,
+    new_status: str,
+    note: Optional[str] = None,
+    admin_id: Optional[uuid.UUID] = None,
+) -> IncidentDetailResponse:
+    """Cập nhật trạng thái xử lý của sự cố: PENDING, IN_PROGRESS, RESOLVED, CLOSED, REJECTED"""
+    stmt = select(Incident).where(Incident.incident_id == incident_id)
+    res = await db.execute(stmt)
+    inc = res.scalar_one_or_none()
+    if not inc:
+        raise ValueError("Không tìm thấy sự cố phản ánh.")
+
+    inc.status = new_status
+    now_utc = datetime.now(timezone.utc)
+    if new_status == "RESOLVED":
+        inc.resolved_at = now_utc
+    elif new_status == "CLOSED":
+        inc.closed_at = now_utc
+
+    if note and admin_id:
+        activity = UserActivity(
+            activity_id=uuid.uuid4(),
+            user_id=admin_id,
+            activity_type="UPDATE_INCIDENT_STATUS",
+            title=f"Cập nhật trạng thái sự cố {inc.tracking_code}: {new_status}",
+            description=note,
+            points=0,
+        )
+        db.add(activity)
+
+    await db.commit()
+    await db.refresh(inc)
+
+    return await get_incident_detail(db, incident_id)
 

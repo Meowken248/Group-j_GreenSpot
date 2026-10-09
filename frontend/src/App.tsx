@@ -15,10 +15,11 @@ import { RbacContainer, usePermissions, ModulePermissionGuard } from "./features
 import { UserManagementContainer } from "./features/user_management";
 import { ProfileContainer } from "./features/profile";
 import { ReportContainer } from "./features/reports";
+import { IncidentManagementContainer } from "./features/incident_management";
 import api from "./api/client";
 import "./App.css";
 
-type TabType = "map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "voice" | "report";
+type TabType = "map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "voice" | "report" | "incidents";
 
 // Hàm kiểm tra trạng thái đăng nhập thực tế của phiên hiện tại
 const checkIsLoggedIn = (): boolean => {
@@ -68,6 +69,12 @@ function App() {
       }
       return "report";
     }
+    if (hash === "#incidents" || path === "/incidents") {
+      if (!isLogged) {
+        return "auth";
+      }
+      return "incidents";
+    }
     // Mặc định: khi chưa đăng nhập, hiển thị Bản đồ WebGIS công cộng
     if (!isLogged) return "map";
     return "profile";
@@ -83,6 +90,10 @@ function App() {
   const hasAqiAccess = canAccess("AIR_QUALITY");
   const hasUserMgmtAccess = currentUser?.role === "ADMIN" || canAccess("USER_MANAGEMENT");
   const hasRbacAccess = currentUser?.role === "ADMIN" || canAccess("ROLE");
+  const hasIncidentMgmtAccess =
+    currentUser?.role === "ADMIN" ||
+    currentUser?.role === "DISTRICT_MANAGER" ||
+    canAccess("INCIDENTS");
 
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
@@ -151,6 +162,15 @@ function App() {
           setActiveTab("report");
         }
       }
+      else if (hash === "#incidents") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/incidents");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("incidents");
+        }
+      }
     };
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
@@ -164,6 +184,10 @@ function App() {
       window.location.hash = "#login";
     } else if (activeTab === "report" && !checkIsLoggedIn()) {
       setAuthRedirectUrl("/report");
+      setActiveTab("auth");
+      window.location.hash = "#login";
+    } else if (activeTab === "incidents" && !checkIsLoggedIn()) {
+      setAuthRedirectUrl("/incidents");
       setActiveTab("auth");
       window.location.hash = "#login";
     }
@@ -287,6 +311,24 @@ function App() {
 
                 <div className="dropdown-separator" />
 
+                {hasIncidentMgmtAccess && (
+                  <>
+                    <button
+                      type="button"
+                      className="dropdown-menu-action"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        setActiveTab("incidents");
+                        window.location.hash = "#incidents";
+                      }}
+                    >
+                      <span className="action-icon">📋</span>
+                      <span>Quản lý sự cố môi trường</span>
+                    </button>
+                    <div className="dropdown-separator" />
+                  </>
+                )}
+
                 {currentUser?.role === "ADMIN" && (
                   <>
                     <button
@@ -392,6 +434,21 @@ function App() {
               >
                 <span>🛡️</span>
                 <span>Phân quyền vai trò</span>
+              </button>
+            )}
+
+            {hasIncidentMgmtAccess && (
+              <button
+                type="button"
+                className={`view-tab-btn btn-incidents-nav ${activeTab === "incidents" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("incidents");
+                  window.location.hash = "#incidents";
+                }}
+                title="Quản lý & Duyệt phản ánh sự cố môi trường (Chức năng 18)"
+              >
+                <span>📋</span>
+                <span>Quản lý sự cố</span>
               </button>
             )}
 
@@ -553,6 +610,15 @@ function App() {
               setAuthRedirectUrl(redirectUrl);
               setActiveTab("auth");
               window.location.hash = "#login";
+            }}
+          />
+        </div>
+      ) : activeTab === "incidents" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#0b1120" }}>
+          <IncidentManagementContainer
+            onNavigateToMap={(_lat, _lng) => {
+              setActiveTab("map");
+              window.location.hash = "#map";
             }}
           />
         </div>

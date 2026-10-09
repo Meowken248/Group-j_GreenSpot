@@ -1,6 +1,6 @@
 import uuid
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status, Header
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, status, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -14,6 +14,10 @@ from app.schemas.incident import (
     DuplicateCheckRequest,
     DuplicateCheckResponse,
     IncidentDetailResponse,
+    IncidentListItem,
+    IncidentListResponse,
+    IncidentVerifyRequest,
+    IncidentStatusUpdateRequest,
 )
 from app.services.watermark_service import apply_image_watermark, save_video_media
 from app.services.incident_service import (
@@ -21,6 +25,9 @@ from app.services.incident_service import (
     check_duplicate_incidents,
     create_new_incident,
     get_incident_detail,
+    list_incidents_for_management,
+    verify_incident_by_admin,
+    update_incident_status_by_admin,
 )
 
 router = APIRouter(prefix="/incidents", tags=["Incidents & Multimedia Reporting"])
@@ -192,4 +199,80 @@ async def get_incident_detail_endpoint(
             detail="Không tìm thấy sự cố phản ánh.",
         )
     return inc
+
+
+@router.get("", response_model=IncidentListResponse)
+async def list_incidents_management_endpoint(
+    severity: Optional[str] = Query(None, description="Lọc mức độ: ALL, CRITICAL, HIGH, MEDIUM, LOW"),
+    status: Optional[str] = Query(None, description="Lọc trạng thái: ALL, PENDING, IN_PROGRESS, RESOLVED, REJECTED"),
+    unit_id: Optional[int] = Query(None, description="Lọc theo ID quận huyện"),
+    search: Optional[str] = Query(None, description="Từ khóa tìm kiếm (Mã sự cố, tiêu đề, địa chỉ)"),
+    page: int = Query(1, ge=1, description="Số trang hiện tại"),
+    limit: int = Query(20, ge=1, le=100, description="Số bản ghi trên mỗi trang"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Màn Quản trị Sự cố: Danh sách phản ánh phân trang, bộ lọc đa năng và thống kê KPI.
+    """
+    return await list_incidents_for_management(
+        db=db,
+        severity=severity,
+        status=status,
+        unit_id=unit_id,
+        search=search,
+        page=page,
+        limit=limit,
+    )
+
+
+@router.patch("/{incident_id}/verify", response_model=IncidentDetailResponse)
+async def verify_incident_endpoint(
+    incident_id: uuid.UUID,
+    payload: IncidentVerifyRequest,
+    auth_data: tuple[User, UserSession] = Depends(get_current_user_and_session),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Admin / Cán bộ kiểm chứng phản ánh:
+    - action = "VERIFY": Xác nhận thông tin chính xác -> chuyển sang IN_PROGRESS (Đã kiểm chứng)
+    - action = "REJECT": Báo cáo sai lệch / spam -> chuyển sang REJECTED (Từ chối)
+    """
+    current_user, _ = auth_data
+    try:
+        return await verify_incident_by_admin(
+            db=db,
+            incident_id=incident_id,
+            action=payload.action,
+            note=payload.note,
+            admin_id=current_user.user_id,
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Lỗi khi xử lý kiểm chứng.")
+
+
+@router.patch("/{incident_id}/status", response_model=IncidentDetailResponse)
+async def update_incident_status_endpoint(
+    incident_id: uuid.UUID,
+    payload: IncidentStatusUpdateRequest,
+    auth_data: tuple[User, UserSession] = Depends(get_current_user_and_session),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Admin / Cán bộ cập nhật tiến độ xử lý: PENDING -> IN_PROGRESS -> RESOLVED -> CLOSED.
+    """
+    current_user, _ = auth_data
+    try:
+        return await update_incident_status_by_admin(
+            db=db,
+            incident_id=incident_id,
+            new_status=payload.status,
+            note=payload.note,
+            admin_id=current_user.user_id,
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Lỗi khi cập nhật trạng thái.")
 

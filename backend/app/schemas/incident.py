@@ -113,4 +113,58 @@ class IncidentDetailResponse(BaseModel):
     created_at: datetime
     media: List[IncidentMediaItem] = []
     upvotes_count: int = 0
+    is_anonymous: bool = False
+    reporter_phone_masked: Optional[str] = None
+
+
+class IncidentListItem(BaseModel):
+    incident_id: str
+    tracking_code: str
+    title: str
+    description: str
+    severity: str
+    status: str
+    address_text: str
+    latitude: float
+    longitude: float
+    category_id: int
+    category_name: str
+    unit_id: Optional[int] = None
+    unit_name: Optional[str] = None
+    is_anonymous: bool = False
+    reporter_name: Optional[str] = None
+    reporter_phone_masked: Optional[str] = None
+    sla_deadline: Optional[datetime] = None
+    is_sla_overdue: bool = False
+    created_at: datetime
+    thumbnail_url: Optional[str] = None
+    media: List[IncidentMediaItem] = []
+
+
+class IncidentManagementSummaryStats(BaseModel):
+    total: int = 0
+    unverified: int = 0
+    in_progress: int = 0
+    resolved: int = 0
+    rejected: int = 0
+    critical: int = 0
+    sla_warning: int = 0
+
+
+class IncidentListResponse(BaseModel):
+    items: List[IncidentListItem] = []
+    total: int = 0
+    page: int = 1
+    limit: int = 20
+    stats: IncidentManagementSummaryStats
+
+
+class IncidentVerifyRequest(BaseModel):
+    action: str = Field(..., description="Hành động kiểm chứng: VERIFY (Xác nhận) hoặc REJECT (Từ chối)")
+    note: Optional[str] = Field(None, description="Ghi chú kiểm duyệt hoặc lý do từ chối")
+
+
+class IncidentStatusUpdateRequest(BaseModel):
+    status: str = Field(..., description="Trạng thái mới: PENDING, IN_PROGRESS, RESOLVED, CLOSED, REJECTED")
+    note: Optional[str] = Field(None, description="Ghi chú điều phối hoặc hoàn thành")
 

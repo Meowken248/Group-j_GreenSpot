@@ -26,22 +26,41 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<number | null>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
 
   const currentMediaList = formData.media || [];
   const isMaxReached = currentMediaList.length >= 5;
   const isAnyUploading = currentMediaList.some((m) => m.is_uploading);
 
+  const stopCamera = () => {
+    if (cameraStreamRef.current) {
+      cameraStreamRef.current.getTracks().forEach((track) => {
+        try {
+          track.stop();
+          track.enabled = false;
+        } catch {}
+      });
+      cameraStreamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setCameraStream(null);
+  };
+
   // Mở camera khi component render
   const startCamera = async () => {
     setCameraError(null);
+    stopCamera();
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error("Trình duyệt không hỗ trợ camera");
       }
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: true,
+        audio: false,
       });
+      cameraStreamRef.current = stream;
       setCameraStream(stream);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -54,19 +73,18 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
     }
   };
 
-  const stopCamera = () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach((track) => track.stop());
-      setCameraStream(null);
-    }
-  };
-
   useEffect(() => {
     startCamera();
     return () => {
       stopCamera();
       if (timerIntervalRef.current) {
         window.clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        try {
+          mediaRecorderRef.current.stop();
+        } catch {}
       }
     };
   }, []);
@@ -312,7 +330,13 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
       setGeneralError("Đang xử lý ảnh… Vui lòng đợi hoàn tất");
       return;
     }
+    stopCamera();
     onNextStep();
+  };
+
+  const handleBack = () => {
+    stopCamera();
+    onPrevStep();
   };
 
   return (
@@ -516,7 +540,7 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
         <button
           type="button"
           className="btn-secondary btn-back"
-          onClick={onPrevStep}
+          onClick={handleBack}
         >
           ← Quay lại
         </button>
