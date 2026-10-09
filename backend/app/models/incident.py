@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Optional
 from geoalchemy2 import Geometry
 from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -61,10 +61,22 @@ class Incident(Base, TimestampMixin):
     master_incident_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("incidents.incident_id", ondelete="SET NULL"), nullable=True)
     is_duplicate_merged: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    # Trường phục vụ AI Triage & XAI Explainability (STT 39)
+    ai_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    ai_triage_score: Mapped[Optional[float]] = mapped_column(Numeric(5, 2), nullable=True)
+    ai_suggested_priority: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    ai_factors: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    ai_generated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    priority_modified_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
+    priority_modified_reason: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    priority_modified_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    sla_response_deadline: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
     category: Mapped["WasteCategory"] = relationship(back_populates="incidents")
     media: Mapped[List["IncidentMedia"]] = relationship(back_populates="incident", cascade="all, delete-orphan", lazy="selectin")
     reporter = relationship("User", foreign_keys=[reporter_id], lazy="selectin")
     unit = relationship("AdministrativeUnit", foreign_keys=[unit_id], lazy="selectin")
+    audit_logs = relationship("IncidentAuditLog", back_populates="incident", cascade="all, delete-orphan", lazy="selectin")
 
 
 class IncidentMedia(Base):
