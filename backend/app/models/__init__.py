@@ -62,6 +62,14 @@ from app.models.profile import (
     Post,
 )
 
+# 7. Kết bạn và theo dõi (Friends & Follows Domain)
+from app.models.friends import (
+    FriendRequest,
+    Friendship,
+    UserFollow,
+    FriendRequestStatus,
+)
+
 __all__ = [
     "Base",
     "TimestampMixin",
@@ -103,4 +111,10 @@ __all__ = [
     "UserBadge",
     "UserActivity",
     "Post",
+    # Friends & Follows Domain
+    "FriendRequest",
+    "Friendship",
+    "UserFollow",
+    "FriendRequestStatus",
 ]
+
