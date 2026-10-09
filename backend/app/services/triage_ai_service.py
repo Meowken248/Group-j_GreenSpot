@@ -189,7 +189,12 @@ class AITriageService:
         min_distance = None
 
         if inc.location is not None:
-            # ST_Distance qua WGS84 geography
+            # Bounding box 3km tối ưu hóa truy vấn PostGIS ST_Distance
+            inc_lat = float(inc.latitude) if inc.latitude else 10.7769
+            inc_lng = float(inc.longitude) if inc.longitude else 106.7009
+            delta_lat = 3000.0 / 111000.0
+            delta_lng = 3000.0 / (111000.0 * max(0.2, math.cos(math.radians(inc_lat))))
+
             fac_stmt = (
                 select(
                     EssentialFacility.facility_name,
@@ -198,7 +203,13 @@ class AITriageService:
                         func.ST_Transform(inc.location, 3857)
                     ).label("dist_m")
                 )
-                .where(EssentialFacility.deleted_at.is_(None))
+                .where(
+                    EssentialFacility.deleted_at.is_(None),
+                    func.ST_Y(EssentialFacility.location) >= inc_lat - delta_lat,
+                    func.ST_Y(EssentialFacility.location) <= inc_lat + delta_lat,
+                    func.ST_X(EssentialFacility.location) >= inc_lng - delta_lng,
+                    func.ST_X(EssentialFacility.location) <= inc_lng + delta_lng,
+                )
                 .order_by("dist_m")
                 .limit(1)
             )
@@ -321,7 +332,7 @@ class AITriageService:
             incident_id=inc.incident_id,
             action="AI_TRIAGE_REGENERATED",
             new_priority=inc.ai_suggested_priority,
-            risk_score=inc.ai_triage_score,
+            risk_score=int(round(float(inc.ai_triage_score))) if inc.ai_triage_score is not None else None,
             reason="Cán bộ yêu cầu làm mới tóm tắt AI",
             version=inc.version,
         )
@@ -375,7 +386,7 @@ class AITriageService:
             action="PRIORITY_ACCEPTED",
             old_priority=old_p,
             new_priority=new_p,
-            risk_score=inc.ai_triage_score,
+            risk_score=int(round(float(inc.ai_triage_score))) if inc.ai_triage_score is not None else None,
             performed_by=operator_id,
             reason="Cán bộ đồng thuận với mức đề xuất của AI",
             version=inc.version,
@@ -439,7 +450,7 @@ class AITriageService:
             action="PRIORITY_OVERRIDDEN",
             old_priority=old_p,
             new_priority=new_priority,
-            risk_score=inc.ai_triage_score,
+            risk_score=int(round(float(inc.ai_triage_score))) if inc.ai_triage_score is not None else None,
             reason=clean_reason,
             performed_by=operator_id,
             version=inc.version,

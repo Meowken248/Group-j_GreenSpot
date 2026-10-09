@@ -115,7 +115,12 @@ class SpatialFacilityService:
         inc_lat = float(inc.latitude)
         inc_lng = float(inc.longitude)
 
-        # Lấy danh sách cơ sở khớp với loại hình
+        # Tối ưu hóa hiệu năng truy vấn GIS: Bounding Box Filter trước khi tính Haversine
+        delta_lat = (query.radius_meters / 111000.0) * 1.15
+        cos_lat = max(0.2, math.cos(math.radians(inc_lat)))
+        delta_lng = (query.radius_meters / (111000.0 * cos_lat)) * 1.15
+
+        # Lấy danh sách cơ sở khớp với loại hình trong bounding box
         stmt_fac = select(
             EssentialFacility.facility_id,
             EssentialFacility.facility_name,
@@ -127,7 +132,11 @@ class SpatialFacilityService:
             func.ST_X(EssentialFacility.location).label("lng"),
         ).where(
             EssentialFacility.deleted_at.is_(None),
-            EssentialFacility.facility_type.in_(query.facility_types)
+            EssentialFacility.facility_type.in_(query.facility_types),
+            func.ST_Y(EssentialFacility.location) >= inc_lat - delta_lat,
+            func.ST_Y(EssentialFacility.location) <= inc_lat + delta_lat,
+            func.ST_X(EssentialFacility.location) >= inc_lng - delta_lng,
+            func.ST_X(EssentialFacility.location) <= inc_lng + delta_lng,
         )
         res_fac = await db.execute(stmt_fac)
         rows = res_fac.all()
