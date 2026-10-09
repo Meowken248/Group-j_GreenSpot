@@ -11,8 +11,7 @@ from app.api.v1.user_management import router as user_management_router
 from app.api.v1.profile import router as profile_router
 from app.api.v1.friends import router as friends_router
 from app.api.v1.deduplication import router as deduplication_router
-from app.api.v1.incidents_triage import router as incidents_triage_router
-from app.api.v1.spatial_facilities import router as spatial_facilities_router
+from app.api.v1.triage import triage_composite_router
 
 api_v1_router = APIRouter()
 api_v1_router.include_router(auth_router)
@@ -21,8 +20,7 @@ api_v1_router.include_router(user_management_router)
 api_v1_router.include_router(profile_router)
 api_v1_router.include_router(friends_router)
 api_v1_router.include_router(deduplication_router)
-api_v1_router.include_router(incidents_triage_router)
-api_v1_router.include_router(spatial_facilities_router)
+api_v1_router.include_router(triage_composite_router)
 api_v1_router.include_router(eco_locations_router)
 api_v1_router.include_router(spatial_router)
 api_v1_router.include_router(weather_router)
