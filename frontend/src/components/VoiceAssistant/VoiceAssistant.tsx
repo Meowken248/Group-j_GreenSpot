@@ -328,12 +328,16 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
-    if (resultData?.action_target && onNavigateToFeature) {
-      onNavigateToFeature(resultData.action_target, resultData.action_payload);
-    }
+    
+    const target = resultData?.action_target;
+    const payload = resultData?.action_payload;
+    
     setCurrentScreen("HOME");
     setResultData(null);
-    if (onClose) {
+    
+    if (target && onNavigateToFeature) {
+      onNavigateToFeature(target, payload);
+    } else if (onClose) {
       onClose();
     }
   };
@@ -347,7 +351,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
             type="button"
             className="voice-menu-btn"
             title="Menu điều hướng"
-            onClick={onClose}
+            onClick={handleCloseAssistant}
           >
             ☰
           </button>

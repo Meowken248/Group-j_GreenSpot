@@ -760,12 +760,23 @@ function App() {
         )
       ) : activeTab === "voice" ? (
         <VoiceAssistant
-          onClose={() => setActiveTab("map")}
+          onClose={() => {
+            setActiveTab("map");
+            window.location.hash = "#map";
+          }}
           onNavigateToFeature={(target) => {
             if (target === "dashboard_aqi") {
               setActiveTab("dashboard");
+              window.location.hash = "#dashboard";
+            } else if (target === "/report-incident") {
+              setActiveTab("triage");
+              window.location.hash = "#triage";
+            } else if (target === "/wallet") {
+              setActiveTab("profile");
+              window.location.hash = "#profile";
             } else {
               setActiveTab("map");
+              window.location.hash = "#map";
             }
           }}
         />
