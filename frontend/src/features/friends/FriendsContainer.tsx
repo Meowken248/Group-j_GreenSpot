@@ -15,11 +15,18 @@ import "./Friends.scss";
 interface FriendsContainerProps {
   onBackToHome?: () => void;
   onNavigateToProfile?: () => void;
+  currentUser?: {
+    user_id?: string;
+    email?: string;
+    full_name?: string;
+    role?: string;
+  } | null;
 }
 
 export const FriendsContainer: React.FC<FriendsContainerProps> = ({
   onBackToHome,
   onNavigateToProfile,
+  currentUser,
 }) => {
   // Tab điều hướng: "requests" (Màn 1) hoặc "friends" (Màn 2)
   const [activeSubTab, setActiveSubTab] = useState<"requests" | "friends">("requests");
@@ -304,11 +311,14 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
               onClick={onNavigateToProfile}
               role="button"
               tabIndex={0}
-              style={{ cursor: "pointer" }}
               title="Xem trang cá nhân của bạn"
             >
-              <div className="avatar-circle">GS</div>
-              <span className="user-name">Công Dân Xanh</span>
+              <div className="avatar-circle">
+                {currentUser?.full_name ? currentUser.full_name.trim().slice(0, 2).toUpperCase() : "GS"}
+              </div>
+              <span className="user-name">
+                {currentUser?.full_name || "Công Dân Xanh"}
+              </span>
             </div>
           </div>
         </div>
