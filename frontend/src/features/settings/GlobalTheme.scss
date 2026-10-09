@@ -1,0 +1,868 @@
+/**
+ * Global Dark Theme Engine for GreenSpot EcoReport
+ * Đồng bộ màu sắc toàn trang cho tất cả trang chính & trang con khi chuyển Dark Mode
+ * Đảm bảo: Tối sang trọng (Deep Slate/Obsidian), các button thấy rõ màu, tương phản cao, thật đẹp
+ * TUYỆT ĐỐI KHÔNG ĐỤNG CHẠM / GIỮ NGUYÊN: EcoMap (Bản đồ WebGIS) & AirQualityDashboard (Phân tích AQI)
+ */
+
+/* Khung chứa các trang con */
+.app-view-container {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  overflow-y: auto;
+  background-color: #f8fafc;
+  color: #0f172a;
+  transition: background-color 0.25s ease, color 0.25s ease;
+
+  &.dark-theme {
+    background-color: #0b0f19 !important;
+    color: #f3f4f6 !important;
+  }
+}
+
+/* =========================================================================
+   CHẾ ĐỘ TỐI TOÀN HỆ THỐNG ([data-theme="dark"], body.dark-mode, .dark-theme)
+   ========================================================================= */
+[data-theme="dark"],
+body.dark-mode,
+.app-view-container.dark-theme {
+  /* Biến toàn cục màu tối cao cấp */
+  --bg-app-dark: #0b0f19;
+  --bg-card-dark: #151e2e;
+  --bg-card-elevated: #1e293b;
+  --bg-input-dark: #0f172a;
+  --border-dark: #26334d;
+  --border-highlight: #3b82f6;
+  --text-primary-dark: #f9fafb;
+  --text-secondary-dark: #94a3b8;
+  --text-muted-dark: #64748b;
+
+  background-color: #0b0f19;
+  color: #f9fafb;
+
+  /* -------------------------------------------------------------------------
+     1. BÁO CÁO TRÙNG LẶP (DEDUPLICATION DASHBOARD)
+     ------------------------------------------------------------------------- */
+  .dedup-dashboard-wrapper {
+    background-color: #0b0f19 !important;
+    color: #f3f4f6 !important;
+
+    .dedup-header {
+      background: #151e2e !important;
+      border-bottom: 1px solid #26334d !important;
+
+      .brand-title, .user-name {
+        color: #f9fafb !important;
+      }
+    }
+
+    .dedup-content-body {
+      background-color: #0b0f19 !important;
+    }
+
+    .dedup-footer {
+      background: #151e2e !important;
+      border-top: 1px solid #26334d !important;
+      color: #94a3b8 !important;
+
+      .footer-links .footer-link {
+        color: #94a3b8 !important;
+        &:hover {
+          color: #10b981 !important;
+        }
+      }
+    }
+
+    /* Khối Cột trái: BỘ LỌC */
+    .filter-panel {
+      background: #151e2e !important;
+      border: 1px solid #26334d !important;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45) !important;
+
+      .panel-header {
+        border-bottom-color: #26334d !important;
+
+        .panel-title {
+          color: #f9fafb !important;
+        }
+      }
+
+      .filter-group {
+        .filter-label {
+          color: #cbd5e1 !important;
+        }
+
+        .filter-select {
+          background-color: #0f172a !important;
+          color: #f9fafb !important;
+          border-color: #334155 !important;
+
+          &:focus {
+            border-color: #10b981 !important;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25) !important;
+          }
+        }
+
+        /* Nút preset %: Tất cả, >70%, >80%, v.v. - THẤY RÕ MÀU, NỔI BẬT */
+        .similarity-presets .preset-chip {
+          background: #1e293b !important;
+          border: 1.5px solid #334155 !important;
+          color: #cbd5e1 !important;
+          font-weight: 600 !important;
+          transition: all 0.2s ease !important;
+
+          &:hover {
+            border-color: #10b981 !important;
+            color: #34d399 !important;
+            background: rgba(16, 185, 129, 0.15) !important;
+            transform: translateY(-1px);
+          }
+
+          &.active {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+            border-color: #34d399 !important;
+            color: #ffffff !important;
+            font-weight: 700 !important;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4) !important;
+          }
+        }
+
+        .slider-wrapper {
+          .range-slider {
+            accent-color: #10b981 !important;
+          }
+
+          .slider-value-display {
+            color: #94a3b8 !important;
+            .current-threshold {
+              color: #34d399 !important;
+              font-weight: 700 !important;
+            }
+          }
+        }
+      }
+
+      /* Nút "Đặt lại bộ lọc" nổi bật rõ màu */
+      .filter-actions .reset-btn {
+        background: #1e293b !important;
+        border: 1.5px dashed #0284c7 !important;
+        color: #38bdf8 !important;
+        font-weight: 600 !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+        transition: all 0.2s ease !important;
+
+        &:hover {
+          background: #0369a1 !important;
+          border-color: #38bdf8 !important;
+          color: #ffffff !important;
+          box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4) !important;
+        }
+      }
+    }
+
+    /* Khối Cột phải: NHÓM TRÙNG (Xử lý dứt điểm khối trắng bệch) */
+    .clusters-panel {
+      background: #151e2e !important;
+      border: 1px solid #26334d !important;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45) !important;
+
+      .panel-header {
+        border-bottom-color: #26334d !important;
+
+        .panel-title {
+          color: #f9fafb !important;
+        }
+
+        .cluster-counter-badge {
+          background: rgba(16, 185, 129, 0.2) !important;
+          color: #34d399 !important;
+          border-color: rgba(16, 185, 129, 0.4) !important;
+        }
+      }
+
+      /* Trạng thái rỗng không có trùng lặp */
+      .empty-state-container {
+        background: transparent !important;
+
+        .empty-icon {
+          filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.4));
+        }
+
+        .empty-title {
+          color: #f9fafb !important;
+          font-weight: 700 !important;
+        }
+
+        .empty-desc {
+          color: #94a3b8 !important;
+        }
+      }
+
+      /* Trạng thái loading và error */
+      .ai-loading-container {
+        background: transparent !important;
+        .loading-text {
+          color: #94a3b8 !important;
+        }
+      }
+
+      .error-state-container {
+        background: transparent !important;
+        .error-message {
+          color: #f87171 !important;
+        }
+        .retry-btn {
+          background: #ef4444 !important;
+          color: #ffffff !important;
+          border: none !important;
+        }
+      }
+
+      /* Danh sách thẻ cụm trùng */
+      .cluster-card {
+        background: #1e293b !important;
+        border: 1px solid #334155 !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+
+        &:hover {
+          border-color: #10b981 !important;
+          box-shadow: 0 6px 16px rgba(16, 185, 129, 0.2) !important;
+          transform: translateY(-2px);
+        }
+
+        .cluster-name {
+          color: #f9fafb !important;
+        }
+
+        .report-count-tag {
+          background: #334155 !important;
+          color: #cbd5e1 !important;
+        }
+
+        .similarity-tag {
+          background: rgba(2, 132, 199, 0.2) !important;
+          color: #38bdf8 !important;
+          border: 1px solid rgba(2, 132, 199, 0.4) !important;
+        }
+
+        .meta-district, .meta-factors {
+          color: #94a3b8 !important;
+        }
+
+        /* Nút So sánh */
+        .compare-btn {
+          background: linear-gradient(135deg, #10b981, #059669) !important;
+          color: #ffffff !important;
+          font-weight: 700 !important;
+          border: 1px solid #34d399 !important;
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35) !important;
+
+          &:hover {
+            background: linear-gradient(135deg, #059669, #047857) !important;
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5) !important;
+          }
+        }
+      }
+    }
+
+    /* Màn hình 2: So sánh Đối chứng A | B */
+    .side-by-side-comparison {
+      .comparison-header {
+        .btn-back-to-list {
+          background: #1e293b !important;
+          border: 1px solid #475569 !important;
+          color: #f1f5f9 !important;
+          &:hover {
+            background: #334155 !important;
+            border-color: #10b981 !important;
+          }
+        }
+        .comparison-title {
+          color: #f9fafb !important;
+        }
+      }
+
+      .report-card-column {
+        background: #151e2e !important;
+        border: 1px solid #26334d !important;
+        color: #f9fafb !important;
+
+        .card-header-bar {
+          border-bottom-color: #26334d !important;
+          .card-title {
+            color: #f9fafb !important;
+          }
+        }
+
+        .meta-row {
+          .meta-label {
+            color: #94a3b8 !important;
+          }
+          .meta-value {
+            color: #e2e8f0 !important;
+          }
+        }
+      }
+
+      .ai-verdict-column {
+        background: #151e2e !important;
+        border: 1.5px solid #26334d !important;
+
+        .verdict-header .verdict-title {
+          color: #f9fafb !important;
+        }
+
+        /* Nút hành động So sánh rõ ràng */
+        .action-buttons-group {
+          .btn-mark-distinct {
+            background: #1e293b !important;
+            border: 1.5px solid #475569 !important;
+            color: #e2e8f0 !important;
+            font-weight: 600 !important;
+            &:hover {
+              background: #334155 !important;
+              color: #f87171 !important;
+              border-color: #ef4444 !important;
+            }
+          }
+
+          .btn-open-merge {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+            border: 1px solid #34d399 !important;
+            color: #ffffff !important;
+            font-weight: 700 !important;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4) !important;
+
+            &:hover {
+              background: linear-gradient(135deg, #059669, #047857) !important;
+              box-shadow: 0 6px 18px rgba(16, 185, 129, 0.5) !important;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /* -------------------------------------------------------------------------
+     2. QUẢN LÝ NGƯỜI DÙNG & CẤP QUYỀN (USER MANAGEMENT)
+     ------------------------------------------------------------------------- */
+  .user-management-wrapper {
+    background-color: #0b0f19 !important;
+    color: #f3f4f6 !important;
+
+    .um-breadcrumb {
+      color: #64748b !important;
+      span.current {
+        color: #cbd5e1 !important;
+      }
+    }
+
+    .um-title {
+      color: #f9fafb !important;
+    }
+
+    .um-subtitle {
+      color: #94a3b8 !important;
+    }
+
+    /* Nút Quay lại bản đồ & Thêm người dùng mới */
+    .um-header-actions {
+      .btn.btn-secondary {
+        background: #1e293b !important;
+        border: 1.5px solid #475569 !important;
+        color: #f1f5f9 !important;
+        font-weight: 600 !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+
+        &:hover {
+          background: #334155 !important;
+          border-color: #10b981 !important;
+          color: #34d399 !important;
+        }
+      }
+
+      .btn-primary-action {
+        background: linear-gradient(135deg, #10b981, #059669) !important;
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4) !important;
+        border: 1px solid #34d399 !important;
+
+        &:hover {
+          background: linear-gradient(135deg, #059669, #047857) !important;
+          box-shadow: 0 6px 18px rgba(16, 185, 129, 0.55) !important;
+        }
+      }
+    }
+
+    /* 4 Thẻ thống kê (Stats Cards trong ảnh 2) */
+    .um-stats-grid .stat-card {
+      background: #151e2e !important;
+      border: 1px solid #26334d !important;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35) !important;
+
+      &:hover {
+        border-color: #3b82f6 !important;
+        transform: translateY(-2px);
+      }
+
+      .stat-value {
+        color: #f9fafb !important;
+        font-weight: 800 !important;
+      }
+
+      .stat-label {
+        color: #94a3b8 !important;
+        font-weight: 500 !important;
+      }
+    }
+
+    /* Khung nội dung chính & Bảng dữ liệu */
+    .um-main-card {
+      background: #151e2e !important;
+      border: 1px solid #26334d !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
+
+      .um-toolbar {
+        background: #0f172a !important;
+        border-bottom: 1px solid #26334d !important;
+
+        .search-box-wrapper {
+          background: #151e2e !important;
+          border: 1.5px solid #334155 !important;
+
+          .search-icon {
+            color: #94a3b8 !important;
+          }
+
+          .search-input {
+            background: transparent !important;
+            color: #f9fafb !important;
+
+            &::placeholder {
+              color: #64748b !important;
+            }
+          }
+        }
+
+        .filter-select {
+          background-color: #151e2e !important;
+          color: #f9fafb !important;
+          border: 1.5px solid #334155 !important;
+
+          &:focus {
+            border-color: #10b981 !important;
+          }
+        }
+
+        /* Nút Làm mới nổi bật rõ ràng */
+        .btn-refresh {
+          background: #1e293b !important;
+          border: 1.5px solid #3b82f6 !important;
+          color: #60a5fa !important;
+          font-weight: 700 !important;
+          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25) !important;
+          transition: all 0.2s ease !important;
+
+          &:hover:not(:disabled) {
+            background: #2563eb !important;
+            color: #ffffff !important;
+            border-color: #60a5fa !important;
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.45) !important;
+          }
+        }
+      }
+
+      /* Bảng danh sách người dùng */
+      .um-table-responsive .um-table {
+        thead tr th {
+          background-color: #0d1424 !important;
+          color: #94a3b8 !important;
+          border-bottom: 1px solid #26334d !important;
+          font-weight: 700 !important;
+        }
+
+        tbody tr {
+          border-bottom: 1px solid #1f293d !important;
+
+          &:hover {
+            background-color: rgba(30, 41, 59, 0.6) !important;
+          }
+
+          td {
+            color: #e2e8f0 !important;
+
+            .user-name {
+              color: #f9fafb !important;
+              font-weight: 700 !important;
+            }
+
+            .user-email, .user-phone {
+              color: #94a3b8 !important;
+            }
+
+            .creation-date {
+              color: #94a3b8 !important;
+            }
+          }
+        }
+
+        /* Các nút icon hành động (Xem, Cấp quyền, Khóa, Xóa) THẤY RÕ MÀU */
+        .um-action-btn-group .btn-icon-action {
+          background: #1e293b !important;
+          border: 1px solid #334155 !important;
+          color: #e2e8f0 !important;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+          transition: all 0.2s ease !important;
+
+          &:hover {
+            transform: translateY(-1px);
+          }
+
+          /* Nút Cấp quyền / Chìa khóa */
+          &.btn-perm:hover, &:nth-child(2):hover {
+            background: rgba(245, 158, 11, 0.2) !important;
+            border-color: #f59e0b !important;
+            color: #fbbf24 !important;
+          }
+
+          /* Nút Khóa / Mở khóa */
+          &.btn-lock:hover, &:nth-child(3):hover {
+            background: rgba(59, 130, 246, 0.2) !important;
+            border-color: #3b82f6 !important;
+            color: #60a5fa !important;
+          }
+
+          /* Nút Xóa */
+          &.btn-delete:hover, &:nth-child(4):hover {
+            background: rgba(239, 68, 68, 0.2) !important;
+            border-color: #ef4444 !important;
+            color: #f87171 !important;
+          }
+        }
+      }
+    }
+  }
+
+  /* -------------------------------------------------------------------------
+     3. PHÂN QUYỀN VAI TRÒ (RBAC - KHẮC PHỤC TRIỆT ĐỂ ẢNH 3)
+     ------------------------------------------------------------------------- */
+  .rbac-master-container {
+    background-color: #0b0f19 !important;
+    color: #f3f4f6 !important;
+
+    /* Header quản trị RBAC */
+    .rbac-top-header {
+      background: #151e2e !important;
+      border-bottom: 1px solid #26334d !important;
+
+      .brand-name {
+        color: #f9fafb !important;
+      }
+
+      .header-nav-links .nav-tab-link {
+        color: #94a3b8 !important;
+        background: transparent !important;
+
+        &:hover {
+          color: #f9fafb !important;
+          background: #1e293b !important;
+        }
+
+        &.active {
+          color: #34d399 !important;
+          background: rgba(16, 185, 129, 0.2) !important;
+          border: 1px solid rgba(16, 185, 129, 0.35) !important;
+        }
+      }
+
+      .header-user-actions {
+        .btn-header-bell {
+          background: #1e293b !important;
+          border-color: #334155 !important;
+          color: #cbd5e1 !important;
+          &:hover {
+            background: #334155 !important;
+          }
+        }
+
+        .user-capsule-badge {
+          background: #1e293b !important;
+          border-color: #334155 !important;
+          color: #f1f5f9 !important;
+        }
+
+        .btn-exit-admin {
+          background: #1e293b !important;
+          border-color: #475569 !important;
+          color: #e2e8f0 !important;
+          &:hover {
+            background: #334155 !important;
+            color: #ffffff !important;
+            border-color: #94a3b8 !important;
+          }
+        }
+      }
+    }
+
+    .rbac-main-content {
+      background-color: #0b0f19 !important;
+    }
+
+    /* Màn 1: Danh sách vai trò */
+    .role-list-page {
+      background-color: #0b0f19 !important;
+
+      .role-page-header {
+        .header-breadcrumb {
+          color: #64748b !important;
+          .crumb-current {
+            color: #cbd5e1 !important;
+          }
+        }
+        h1 {
+          color: #f9fafb !important;
+        }
+        .header-desc {
+          color: #94a3b8 !important;
+        }
+      }
+
+      .roles-left-pane {
+        background: #151e2e !important;
+        border: 1px solid #26334d !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+
+        .pane-title-bar {
+          border-bottom-color: #26334d !important;
+          h2 {
+            color: #f9fafb !important;
+          }
+        }
+
+        .role-card {
+          background: #1e293b !important;
+          border: 1px solid #334155 !important;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25) !important;
+
+          &:hover {
+            border-color: #10b981 !important;
+          }
+
+          .role-name {
+            color: #f9fafb !important;
+          }
+
+          .role-desc {
+            color: #94a3b8 !important;
+          }
+
+          .role-actions .btn-action {
+            background: #151e2e !important;
+            border-color: #334155 !important;
+            color: #cbd5e1 !important;
+
+            &:hover {
+              background: #334155 !important;
+              color: #ffffff !important;
+            }
+          }
+        }
+      }
+
+      .roles-right-pane .action-card {
+        background: #151e2e !important;
+        border: 1px solid #26334d !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+
+        .card-title {
+          color: #f9fafb !important;
+        }
+
+        .btn-add-role {
+          background: linear-gradient(135deg, #10b981, #059669) !important;
+          color: #ffffff !important;
+          border: 1px solid #34d399 !important;
+          box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4) !important;
+
+          &:hover {
+            background: linear-gradient(135deg, #059669, #047857) !important;
+          }
+        }
+      }
+    }
+
+    /* Màn 2: Tạo vai trò mới */
+    .create-role-page {
+      background-color: #0b0f19 !important;
+
+      .form-card, .preview-card {
+        background: #151e2e !important;
+        border: 1px solid #26334d !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+
+        h2, h3, h4, label {
+          color: #f9fafb !important;
+        }
+
+        input, textarea, select {
+          background: #0f172a !important;
+          border: 1.5px solid #334155 !important;
+          color: #f9fafb !important;
+        }
+
+        .btn-submit {
+          background: linear-gradient(135deg, #10b981, #059669) !important;
+          color: #ffffff !important;
+        }
+
+        .btn-cancel {
+          background: #1e293b !important;
+          border-color: #475569 !important;
+          color: #f1f5f9 !important;
+        }
+      }
+    }
+
+    /* Màn 3: Ma trận quyền (Role Permission Matrix) */
+    .role-matrix-page {
+      background-color: #0b0f19 !important;
+
+      .matrix-table-card {
+        background: #151e2e !important;
+        border: 1px solid #26334d !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+
+        .matrix-table {
+          th {
+            background-color: #0d1424 !important;
+            color: #94a3b8 !important;
+            border-color: #26334d !important;
+          }
+
+          td {
+            border-color: #1f293d !important;
+            color: #e2e8f0 !important;
+          }
+        }
+      }
+    }
+
+    .rbac-footer {
+      background: #151e2e !important;
+      border-top: 1px solid #26334d !important;
+      color: #94a3b8 !important;
+    }
+  }
+
+  /* -------------------------------------------------------------------------
+     4. HỒ SƠ XANH (PROFILE) & BẠN BÈ (FRIENDS)
+     ------------------------------------------------------------------------- */
+  .profile-page-wrapper,
+  .friends-page-wrapper {
+    background-color: #0b0f19 !important;
+    color: #f3f4f6 !important;
+
+    .profile-subnav-bar,
+    .friends-header-bar {
+      .back-profile-link,
+      .back-friends-link {
+        color: #34d399 !important;
+      }
+    }
+
+    .profile-header-card,
+    .profile-stats-card,
+    .passport-card,
+    .timeline-card,
+    .badge-card,
+    .friend-card,
+    .friends-search-card,
+    .request-card {
+      background: #151e2e !important;
+      border: 1px solid #26334d !important;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35) !important;
+      color: #f3f4f6 !important;
+
+      h1, h2, h3, h4, h5, p, span, strong {
+        color: #f9fafb !important;
+      }
+
+      .text-muted, .stat-label, .post-time, .bio-text {
+        color: #94a3b8 !important;
+      }
+
+      .btn-action, .btn-follow, .btn-unfollow {
+        background: #1e293b !important;
+        border: 1.5px solid #3b82f6 !important;
+        color: #60a5fa !important;
+
+        &:hover {
+          background: #2563eb !important;
+          color: #ffffff !important;
+        }
+      }
+    }
+  }
+
+  /* -------------------------------------------------------------------------
+     5. CÁC MODAL DIALOGS VÀ POPUPS TRÊN TOÀN HỆ THỐNG
+     ------------------------------------------------------------------------- */
+  .modal-overlay,
+  .dedup-modal-backdrop,
+  .um-modal-overlay,
+  .rbac-modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.8) !important;
+    backdrop-filter: blur(8px) !important;
+  }
+
+  .modal-box,
+  .modal-content,
+  .dedup-popup-box,
+  .um-modal,
+  .rbac-modal-box {
+    background: #151e2e !important;
+    border: 1px solid #334155 !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7) !important;
+    color: #f9fafb !important;
+
+    h1, h2, h3, h4, p, label {
+      color: #f9fafb !important;
+    }
+
+    input, textarea, select {
+      background: #0f172a !important;
+      border: 1.5px solid #334155 !important;
+      color: #f9fafb !important;
+    }
+
+    .modal-btn-confirm, .btn-primary {
+      background: linear-gradient(135deg, #10b981, #059669) !important;
+      color: #ffffff !important;
+      border: none !important;
+    }
+
+    .modal-btn-cancel, .btn-secondary {
+      background: #1e293b !important;
+      border: 1px solid #475569 !important;
+      color: #cbd5e1 !important;
+    }
+  }
+}
+
+/* =========================================================================
+   NGOẠI LỆ BẢO VỆ TUYỆT ĐỐI (GIỮ NGUYÊN BẢN 100%):
+   1. EcoMap (Bản đồ WebGIS)
+   2. AirQualityDashboard (Phân tích AQI & Khí hậu)
+   ========================================================================= */
+.ecomap-container,
+.map-container,
+#map,
+.leaflet-container,
+.maplibregl-map,
+.maplibre-gl,
+.air-quality-dashboard,
+.aqi-dashboard-wrapper {
+  color-scheme: normal !important;
+}
