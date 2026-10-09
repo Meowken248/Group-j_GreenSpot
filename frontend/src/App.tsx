@@ -418,7 +418,7 @@ function App() {
                       }}
                     >
                       <span className="action-icon">🤖</span>
-                      <span>Thẩm định AI & GIS (STT 39-40)</span>
+                      <span>Thẩm định AI & GIS</span>
                     </button>
                     <div className="dropdown-separator" />
                   </>
@@ -545,7 +545,7 @@ function App() {
                 <span>Phân tích AQI & Khí hậu</span>
               </button>
             )}
-            
+
             <button
               type="button"
               className={`view-tab-btn ${activeTab === "voice" ? "active" : ""}`}
@@ -623,8 +623,8 @@ function App() {
               authRedirectUrl === "/devices" || window.location.hash === "#devices"
                 ? "devices"
                 : authRedirectUrl
-                ? "login"
-                : undefined
+                  ? "login"
+                  : undefined
             }
             redirectUrl={authRedirectUrl}
             onExitAuth={() => {

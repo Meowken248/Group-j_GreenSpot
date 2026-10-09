@@ -281,7 +281,7 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
                   className="btn-spatial-switch"
                   onClick={onNavigateToSpatial}
                 >
-                  🌐 Quét vùng đệm cơ sở thiết yếu (STT 40)
+                  🌐 Quét vùng đệm cơ sở thiết yếu
                 </button>
               </div>
             </div>
