@@ -351,7 +351,7 @@ function App() {
       />
 
       {/* THANH ĐIỀU HƯỚNG CHUYỂN ĐỔI CHẾ ĐỘ VIEW (TOP CENTER) */}
-      <nav className={`view-mode-switcher ${isDarkMode || activeTab === "dashboard" || activeTab === "voice" ? "dark-mode" : ""}`} aria-label="Chế độ hiển thị">
+      <nav className={`view-mode-switcher ${isDarkMode ? "dark-mode" : ""}`} aria-label="Chế độ hiển thị">
         {currentUser ? (
           <div className="user-profile-nav-wrapper" ref={userMenuRef}>
             <button
@@ -368,7 +368,7 @@ function App() {
             </button>
 
             {userDropdownOpen && (
-              <div className={`user-nav-dropdown ${isDarkMode || activeTab === "dashboard" || activeTab === "voice" ? "dark-mode" : ""}`} role="menu">
+              <div className={`user-nav-dropdown ${isDarkMode ? "dark-mode" : ""}`} role="menu">
                 <div className="dropdown-user-info">
                   <div className="dropdown-avatar">🌱</div>
                   <div className="dropdown-user-details">
@@ -828,16 +828,18 @@ function App() {
           </ModulePermissionGuard>
         )
       ) : activeTab === "voice" ? (
-        <VoiceAssistant
-          onClose={() => setActiveTab("map")}
-          onNavigateToFeature={(target) => {
-            if (target === "dashboard_aqi") {
-              setActiveTab("dashboard");
-            } else {
-              setActiveTab("map");
-            }
-          }}
-        />
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+          <VoiceAssistant
+            onClose={() => setActiveTab("map")}
+            onNavigateToFeature={(target) => {
+              if (target === "dashboard_aqi") {
+                setActiveTab("dashboard");
+              } else {
+                setActiveTab("map");
+              }
+            }}
+          />
+        </div>
       ) : (
         /* Mặc định an toàn cho khách vãng lai và tab map: Bản đồ số WebGIS công cộng */
         <ModulePermissionGuard

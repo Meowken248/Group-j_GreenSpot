@@ -849,6 +849,235 @@ body.dark-mode,
       color: #cbd5e1 !important;
     }
   }
+
+  /* -------------------------------------------------------------------------
+     6. TRỢ LÝ GIỌNG NÓI RẢNH TAY (VOICE ASSISTANT - TOÀN BỘ CÁC MÀN HÌNH CON)
+     ------------------------------------------------------------------------- */
+  .voice-assistant-fullscreen {
+    background: radial-gradient(circle at 50% 10%, #151e2e 0%, #0b0f19 70%, #06090e 100%) !important;
+    color: #f9fafb !important;
+
+    .voice-header {
+      display: none !important;
+      background: rgba(21, 30, 46, 0.9) !important;
+      border-bottom: 1px solid #26334d !important;
+
+      .voice-menu-btn, .voice-icon-btn {
+        background: #1e293b !important;
+        border: 1px solid #334155 !important;
+        color: #cbd5e1 !important;
+
+        &:hover {
+          background: #334155 !important;
+          color: #ffffff !important;
+        }
+      }
+
+      .voice-close-app-btn {
+        background: rgba(239, 68, 68, 0.2) !important;
+        border-color: rgba(239, 68, 68, 0.4) !important;
+        color: #fca5a5 !important;
+
+        &:hover {
+          background: #ef4444 !important;
+          color: #ffffff !important;
+        }
+      }
+    }
+
+    .voice-panel-container {
+      background: #151e2e !important;
+      border: 1.5px solid #26334d !important;
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.6) !important;
+      color: #f9fafb !important;
+
+      .voice-panel-header {
+        border-bottom-color: #26334d !important;
+
+        .voice-panel-title {
+          color: #f9fafb !important;
+        }
+      }
+
+      .voice-main-title {
+        color: #f9fafb !important;
+      }
+
+      .voice-main-desc {
+        color: #94a3b8 !important;
+      }
+
+      .voice-home-header-badge {
+        background: rgba(16, 185, 129, 0.15) !important;
+        border: 1px solid rgba(16, 185, 129, 0.35) !important;
+        color: #34d399 !important;
+      }
+    }
+
+    /* Màn 1: Nút Micro lớn & Gợi ý */
+    .voice-big-mic-btn {
+      border-color: #34d399 !important;
+      box-shadow: 0 0 35px rgba(16, 185, 129, 0.55), inset 0 2px 6px rgba(255, 255, 255, 0.3) !important;
+    }
+
+    .btn-start-speaking {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+      border: 1px solid #34d399 !important;
+      color: #ffffff !important;
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45) !important;
+
+      &:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+        box-shadow: 0 8px 24px rgba(16, 185, 129, 0.6) !important;
+      }
+    }
+
+    .voice-suggestions-box {
+      background: #0f172a !important;
+      border: 1px solid #26334d !important;
+
+      .suggestion-chip {
+        background: #1e293b !important;
+        border: 1.5px solid #334155 !important;
+        color: #e2e8f0 !important;
+
+        &:hover {
+          background: rgba(16, 185, 129, 0.18) !important;
+          border-color: #10b981 !important;
+          color: #34d399 !important;
+          box-shadow: 0 0 12px rgba(16, 185, 129, 0.3) !important;
+        }
+      }
+    }
+
+    /* Màn 2: Đang nghe */
+    .voice-listening-screen {
+      .listening-title {
+        color: #f9fafb !important;
+      }
+
+      .listening-instruction {
+        color: #94a3b8 !important;
+      }
+
+      .waveform-box-wrapper {
+        background: #0f172a !important;
+        border: 1px solid #26334d !important;
+      }
+
+      .realtime-transcript-card {
+        background: #0f172a !important;
+        border: 1.5px solid #26334d !important;
+
+        .transcript-label {
+          color: #94a3b8 !important;
+        }
+
+        .transcript-text {
+          color: #f9fafb !important;
+        }
+      }
+
+      .btn-stop-listening {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+        border: 1px solid #f87171 !important;
+        color: #ffffff !important;
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45) !important;
+
+        &:hover {
+          background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+          box-shadow: 0 8px 24px rgba(239, 68, 68, 0.6) !important;
+        }
+      }
+    }
+
+    /* Màn 3: Kết quả phản hồi */
+    .voice-result-screen {
+      .assistant-message-bubble {
+        background: #1e293b !important;
+        border: 1px solid #334155 !important;
+        color: #f9fafb !important;
+      }
+
+      .action-execution-card {
+        background: #0f172a !important;
+        border: 1px solid #26334d !important;
+        color: #f9fafb !important;
+
+        .prefilled-form-preview,
+        .wallet-preview,
+        .specific-spot-card,
+        .safe-street-badge-card {
+          background: #151e2e !important;
+          border: 1px solid #26334d !important;
+          color: #f9fafb !important;
+        }
+      }
+
+      .btn-action-primary {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        border: 1px solid #34d399 !important;
+        color: #ffffff !important;
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45) !important;
+
+        &:hover {
+          background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+        }
+      }
+
+      .btn-listen-again {
+        background: #1e293b !important;
+        border: 1.5px solid #3b82f6 !important;
+        color: #60a5fa !important;
+        font-weight: 700 !important;
+
+        &:hover {
+          background: #2563eb !important;
+          color: #ffffff !important;
+        }
+      }
+
+      .btn-close-result {
+        background: #1e293b !important;
+        border: 1.5px solid #475569 !important;
+        color: #cbd5e1 !important;
+        font-weight: 600 !important;
+
+        &:hover {
+          background: #334155 !important;
+          color: #ffffff !important;
+        }
+      }
+    }
+
+    /* Màn 4: Modal từ chối quyền */
+    .voice-modal-overlay {
+      background: rgba(0, 0, 0, 0.8) !important;
+    }
+
+    .voice-permission-modal {
+      background: #151e2e !important;
+      border: 1px solid #334155 !important;
+      color: #f9fafb !important;
+
+      .guidance-box {
+        background: #0f172a !important;
+        border: 1px solid #26334d !important;
+      }
+
+      .btn-retry-permission {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        border: 1px solid #34d399 !important;
+        color: #ffffff !important;
+      }
+
+      .btn-close-modal {
+        background: #1e293b !important;
+        border: 1px solid #475569 !important;
+        color: #cbd5e1 !important;
+      }
+    }
+  }
 }
 
 /* =========================================================================
