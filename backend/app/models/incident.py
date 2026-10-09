@@ -53,8 +53,18 @@ class Incident(Base, TimestampMixin):
     resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
+    # Optimistic locking & Soft delete (Tuân thủ Quy tắc 6 & 7)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Khóa ngoại liên kết hồ sơ gộp (Master-Sub Incident Deduplication)
+    master_incident_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("incidents.incident_id", ondelete="SET NULL"), nullable=True)
+    is_duplicate_merged: Mapped[bool] = mapped_column(Boolean, default=False)
+
     category: Mapped["WasteCategory"] = relationship(back_populates="incidents")
-    media: Mapped[List["IncidentMedia"]] = relationship(back_populates="incident", cascade="all, delete-orphan")
+    media: Mapped[List["IncidentMedia"]] = relationship(back_populates="incident", cascade="all, delete-orphan", lazy="selectin")
+    reporter = relationship("User", foreign_keys=[reporter_id], lazy="selectin")
+    unit = relationship("AdministrativeUnit", foreign_keys=[unit_id], lazy="selectin")
 
 
 class IncidentMedia(Base):

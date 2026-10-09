@@ -30,6 +30,7 @@ from app.models.incident import (
     Incident,
     IncidentMedia,
 )
+from app.models.deduplication import IncidentDuplicateCluster
 
 # 4. Trạm Quan trắc Cảm biến IoT & Dữ liệu Khí tượng
 from app.models.iot import (
@@ -53,7 +54,15 @@ from app.models.flood import (
     RouteSafetyStatus,
 )
 
-# 6. Trang cá nhân, Hộ chiếu Xanh, Huy hiệu & Lịch sử đóng góp (Profile Domain)
+# 6. Trợ lý giọng nói rảnh tay (Hands-free Voice Assistant)
+from app.models.voice_assistant import (
+    VoiceSampleCommand,
+    VoiceInteractionLog,
+    VoiceActionType,
+    VoiceCategory,
+)
+
+# 7. Trang cá nhân, Hộ chiếu Xanh, Huy hiệu & Lịch sử đóng góp (Profile Domain)
 from app.models.profile import (
     CitizenLevel,
     Badge,
@@ -90,6 +99,7 @@ __all__ = [
     "WasteCategory",
     "Incident",
     "IncidentMedia",
+    "IncidentDuplicateCluster",
     # IoT Sensors
     "IoTSensorStation",
     # Flood, Tide & Safe Navigation
@@ -105,6 +115,11 @@ __all__ = [
     "FloodCauseType",
     "FloodSeverityLevel",
     "RouteSafetyStatus",
+    # Voice Assistant
+    "VoiceSampleCommand",
+    "VoiceInteractionLog",
+    "VoiceActionType",
+    "VoiceCategory",
     # Profile & Green Passport Domain
     "CitizenLevel",
     "Badge",

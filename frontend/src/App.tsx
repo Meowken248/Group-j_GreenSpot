@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import EcoMap from "./components/EcoMap";
 import AirQualityDashboard from "./components/AirQualityDashboard";
+import { VoiceAssistant } from "./components/VoiceAssistant";
 import {
   AuthContainer,
   SessionExpiredModal,
@@ -14,6 +15,7 @@ import { RbacContainer, usePermissions, ModulePermissionGuard } from "./features
 import { UserManagementContainer } from "./features/user_management";
 import { ProfileContainer } from "./features/profile";
 import { FriendsContainer } from "./features/friends";
+import { DeduplicationDashboard } from "./features/reports";
 import api from "./api/client";
 import "./App.css";
 
@@ -43,15 +45,16 @@ function App() {
     return undefined;
   });
 
-  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "friends">(() => {
+  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "friends" | "voice" | "dedup">(() => {
     const hash = window.location.hash.toLowerCase();
     const path = window.location.pathname.toLowerCase();
     const isLogged = checkIsLoggedIn();
 
     if (hash === "#map" || path === "/map") return "map";
     if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") return "auth";
+    if (hash === "#voice" || path === "/voice") return "voice";
 
-    // Khách vãng lai chưa đăng nhập: Không được phép vào các trang phân tích khí hậu, bạn bè, profile, quản trị
+    // Khách vãng lai chưa đăng nhập: Không được phép vào các trang phân tích khí hậu, bạn bè, profile, quản trị, trùng lặp
     if (hash === "#dashboard" || path === "/dashboard") {
       if (!isLogged) return "auth";
       return "dashboard";
@@ -72,6 +75,10 @@ function App() {
       if (!isLogged) return "auth";
       return "rbac";
     }
+    if (hash === "#dedup" || path === "/dedup") {
+      if (!isLogged) return "auth";
+      return "dedup";
+    }
 
     // Mặc định: khi chưa đăng nhập, chỉ hiển thị Bản đồ WebGIS công cộng
     if (!isLogged) return "map";
@@ -88,6 +95,12 @@ function App() {
   const hasAqiAccess = canAccess("AIR_QUALITY");
   const hasUserMgmtAccess = currentUser?.role === "ADMIN" || canAccess("USER_MANAGEMENT");
   const hasRbacAccess = currentUser?.role === "ADMIN" || canAccess("ROLE");
+  const hasDedupAccess =
+    currentUser?.role === "ADMIN" ||
+    currentUser?.role === "OFFICER" ||
+    currentUser?.role === "DISTRICT_MANAGER" ||
+    currentUser?.role === "COORDINATOR" ||
+    canAccess("INCIDENTS");
 
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
@@ -168,6 +181,16 @@ function App() {
         } else {
           setActiveTab("rbac");
         }
+      } else if (hash === "#voice") {
+        setActiveTab("voice");
+      } else if (hash === "#dedup" || window.location.pathname === "/dedup") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/dedup");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("dedup");
+        }
       } else if (hash === "#profile") {
         if (!isLogged) {
           setAuthRedirectUrl("/profile");
@@ -203,6 +226,10 @@ function App() {
         window.location.hash = "#login";
       } else if (activeTab === "rbac") {
         setAuthRedirectUrl("/rbac");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "dedup") {
+        setAuthRedirectUrl("/dedup");
         setActiveTab("auth");
         window.location.hash = "#login";
       }
@@ -281,7 +308,7 @@ function App() {
       />
 
       {/* THANH ĐIỀU HƯỚNG CHUYỂN ĐỔI CHẾ ĐỘ VIEW (TOP CENTER) */}
-      <nav className={`view-mode-switcher ${activeTab === "dashboard" ? "dark-mode" : ""}`} aria-label="Chế độ hiển thị">
+      <nav className={`view-mode-switcher ${activeTab === "dashboard" || activeTab === "voice" ? "dark-mode" : ""}`} aria-label="Chế độ hiển thị">
         {currentUser ? (
           <div className="user-profile-nav-wrapper" ref={userMenuRef}>
             <button
@@ -298,7 +325,7 @@ function App() {
             </button>
 
             {userDropdownOpen && (
-              <div className={`user-nav-dropdown ${activeTab === "dashboard" ? "dark-mode" : ""}`} role="menu">
+              <div className={`user-nav-dropdown ${activeTab === "dashboard" || activeTab === "voice" ? "dark-mode" : ""}`} role="menu">
                 <div className="dropdown-user-info">
                   <div className="dropdown-avatar">🌱</div>
                   <div className="dropdown-user-details">
@@ -353,6 +380,19 @@ function App() {
                     >
                       <span className="action-icon">🛡️</span>
                       <span>Phân quyền vai trò</span>
+                    </button>
+                    <div className="dropdown-separator" />
+                    <button
+                      type="button"
+                      className="dropdown-menu-action"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        setActiveTab("dedup");
+                        window.location.hash = "#dedup";
+                      }}
+                    >
+                      <span className="action-icon">📑</span>
+                      <span>Báo cáo trùng lặp (AI)</span>
                     </button>
                     <div className="dropdown-separator" />
                   </>
@@ -435,6 +475,21 @@ function App() {
               </button>
             )}
 
+            {hasDedupAccess && (
+              <button
+                type="button"
+                className={`view-tab-btn ${activeTab === "dedup" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("dedup");
+                  window.location.hash = "#dedup";
+                }}
+                title="Bảng điều khiển AI gom cụm báo cáo trùng lặp"
+              >
+                <span>📑</span>
+                <span>Báo cáo trùng (AI)</span>
+              </button>
+            )}
+
             {hasMapAccess && (
               <button
                 type="button"
@@ -464,6 +519,19 @@ function App() {
                 <span>Phân tích AQI & Khí hậu</span>
               </button>
             )}
+            
+            <button
+              type="button"
+              className={`view-tab-btn ${activeTab === "voice" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("voice");
+                window.location.hash = "#voice";
+              }}
+              title="Trợ lý giọng nói rảnh tay (Hands-free Voice Assistant)"
+            >
+              <span>🎙️</span>
+              <span>Trợ lý Giọng nói</span>
+            </button>
 
             <button
               type="button"
@@ -492,22 +560,36 @@ function App() {
             </button>
           </>
         ) : (
-          <button
-            type="button"
-            className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
-            onClick={() => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
-            title="Bản đồ không gian xanh, ngập lụt & trạm IoT"
-          >
-            <span>🗺️</span>
-            <span>Bản đồ WebGIS</span>
-          </button>
+          <>
+            <button
+              type="button"
+              className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              title="Bản đồ không gian xanh, ngập lụt & trạm IoT"
+            >
+              <span>🗺️</span>
+              <span>Bản đồ WebGIS</span>
+            </button>
+            <button
+              type="button"
+              className={`view-tab-btn ${activeTab === "voice" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("voice");
+                window.location.hash = "#voice";
+              }}
+              title="Trợ lý giọng nói rảnh tay (Hands-free Voice Assistant)"
+            >
+              <span>🎙️</span>
+              <span>Trợ lý Giọng nói</span>
+            </button>
+          </>
         )}
       </nav>
 
-      {/* VIEW NỘI DUNG CHÍNH: AUTH, RBAC, PROFILE, MAP HOẶC DASHBOARD */}
+      {/* VIEW NỘI DUNG CHÍNH: AUTH, RBAC, PROFILE, MAP, DASHBOARD HOẶC VOICE */}
       {activeTab === "auth" ? (
         <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
           <AuthContainer
@@ -611,6 +693,16 @@ function App() {
             }}
           />
         </div>
+      ) : activeTab === "dedup" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <DeduplicationDashboard
+            currentUser={currentUser}
+            onBackToHome={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
+          />
+        </div>
       ) : activeTab === "dashboard" ? (
         !currentUser ? (
           <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
@@ -636,6 +728,17 @@ function App() {
             />
           </ModulePermissionGuard>
         )
+      ) : activeTab === "voice" ? (
+        <VoiceAssistant
+          onClose={() => setActiveTab("map")}
+          onNavigateToFeature={(target) => {
+            if (target === "dashboard_aqi") {
+              setActiveTab("dashboard");
+            } else {
+              setActiveTab("map");
+            }
+          }}
+        />
       ) : (
         /* Mặc định an toàn cho khách vãng lai và tab map: Bản đồ số WebGIS công cộng */
         <ModulePermissionGuard
@@ -645,6 +748,22 @@ function App() {
           <EcoMap />
         </ModulePermissionGuard>
       )}
+
+      {/* NÚT TRỢ LÝ GIỌNG NÓI NHANH NỔI (FLOATING QUICK ACTION KHI Ở MAP HOẶC DASHBOARD) */}
+      {
+        activeTab !== "voice" && (
+          <button
+            type="button"
+            className="floating-voice-quick-btn"
+            onClick={() => setActiveTab("voice")}
+            title="Bật Trợ lý giọng nói rảnh tay"
+            aria-label="Trợ lý giọng nói"
+          >
+            <span className="floating-mic-icon">🎙️</span>
+            <span className="floating-mic-label">Trợ lý ảo</span>
+          </button>
+        )
+      }
 
       {/* NÚT KIỂM TRA MICROSERVICE BACKEND (GÓC TRÊN BÊN PHẢI) */}
       <div className="quick-status-badge">
@@ -697,7 +816,7 @@ function App() {
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 }
 

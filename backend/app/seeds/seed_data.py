@@ -203,6 +203,16 @@ INSERT INTO ai_knowledge_embeddings (document_title, document_type, chunk_index,
 ('Quy Trình Xử Lý Khẩn Cấp Điểm Ngập Cục Bộ', 'SOP_PROCEDURE', 1, 
     'Khi phát hiện điểm ngập sâu trên 20cm do rác chặn họng thu nước: Cán bộ trực ban thông báo Đội Công ích trong vòng 15 phút, triển khai xe hút và đội nạo vét cống ngay lập tức.')
 ON CONFLICT DO NOTHING;
+
+-- 21. SEED DANH MỤC CÂU LỆNH MẪU TRỢ LÝ GIỌNG NÓI (VOICE ASSISTANT)
+INSERT INTO voice_sample_commands (command_id, category, command_text, intent_code, action_type, action_target, default_response, is_active, display_order) VALUES
+('aaaaaaaa-0001-0001-0001-000000000001', 'INCIDENT', 'Báo cáo bãi rác gần đây', 'REPORT_INCIDENT', 'NAVIGATION', '/report-incident', 'Đang mở biểu mẫu Báo cáo sự cố rác thải cho bạn.', TRUE, 1),
+('aaaaaaaa-0001-0001-0001-000000000002', 'FLOOD', 'Đường nào an toàn không bị ngập?', 'CHECK_SAFE_ROUTE', 'NAVIGATION', 'map_flood', 'Đang hiển thị bản đồ các tuyến đường an toàn không bị ngập nước.', TRUE, 2),
+('aaaaaaaa-0001-0001-0001-000000000003', 'REWARD', 'Xem số dư ví điểm', 'CHECK_REWARD_WALLET', 'LOOKUP', '/wallet', 'Số dư ví điểm xanh của bạn hiện có 350 điểm GreenPoints.', TRUE, 3),
+('aaaaaaaa-0001-0001-0001-000000000004', 'AIR_QUALITY', 'Mở bản đồ chất lượng không khí', 'OPEN_AIR_QUALITY_MAP', 'NAVIGATION', 'dashboard_aqi', 'Đang mở bản đồ quan trắc chất lượng không khí và chỉ số AQI.', TRUE, 4),
+('aaaaaaaa-0001-0001-0001-000000000005', 'AIR_QUALITY', 'Chất lượng không khí Quận 1 hôm nay', 'CHECK_CURRENT_AQI', 'LOOKUP', 'dashboard_aqi', 'Chất lượng không khí Quận 1 hôm nay ở mức Tốt, AQI 42.', TRUE, 5),
+('aaaaaaaa-0001-0001-0001-000000000006', 'FLOOD', 'Báo cáo ngập nước', 'REPORT_FLOOD', 'NAVIGATION', '/report-flood', 'Đang mở biểu mẫu phản ánh điểm ngập nước đô thị.', TRUE, 6)
+ON CONFLICT (command_text) DO NOTHING;
 """
 
 
