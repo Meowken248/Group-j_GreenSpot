@@ -1,5 +1,5 @@
 import api from "../../../api/client";
-import {
+import type {
   TriageIncidentSummaryItem,
   TriageEvaluationData,
   RegenerateSummaryResponse,

@@ -16,6 +16,7 @@ import { UserManagementContainer } from "./features/user_management";
 import { ProfileContainer } from "./features/profile";
 import { FriendsContainer } from "./features/friends";
 import { DeduplicationDashboard } from "./features/reports";
+import { TriageAppDashboard } from "./features/triage";
 import api from "./api/client";
 import "./App.css";
 
@@ -45,7 +46,7 @@ function App() {
     return undefined;
   });
 
-  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "friends" | "voice" | "dedup">(() => {
+  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "friends" | "voice" | "dedup" | "triage">(() => {
     const hash = window.location.hash.toLowerCase();
     const path = window.location.pathname.toLowerCase();
     const isLogged = checkIsLoggedIn();
@@ -78,6 +79,10 @@ function App() {
     if (hash === "#dedup" || path === "/dedup") {
       if (!isLogged) return "auth";
       return "dedup";
+    }
+    if (hash === "#triage" || path === "/triage") {
+      if (!isLogged) return "auth";
+      return "triage";
     }
 
     // Mặc định: khi chưa đăng nhập, chỉ hiển thị Bản đồ WebGIS công cộng
@@ -190,6 +195,14 @@ function App() {
           window.location.hash = "#login";
         } else {
           setActiveTab("dedup");
+        }
+      } else if (hash === "#triage" || window.location.pathname === "/triage") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/triage");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("triage");
         }
       } else if (hash === "#profile") {
         if (!isLogged) {
@@ -393,6 +406,19 @@ function App() {
                     >
                       <span className="action-icon">📑</span>
                       <span>Báo cáo trùng lặp (AI)</span>
+                    </button>
+                    <div className="dropdown-separator" />
+                    <button
+                      type="button"
+                      className="dropdown-menu-action"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        setActiveTab("triage");
+                        window.location.hash = "#triage";
+                      }}
+                    >
+                      <span className="action-icon">🤖</span>
+                      <span>Thẩm định AI & GIS (STT 39-40)</span>
                     </button>
                     <div className="dropdown-separator" />
                   </>
@@ -702,6 +728,10 @@ function App() {
               window.location.hash = "#map";
             }}
           />
+        </div>
+      ) : activeTab === "triage" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#0f172a" }}>
+          <TriageAppDashboard />
         </div>
       ) : activeTab === "dashboard" ? (
         !currentUser ? (

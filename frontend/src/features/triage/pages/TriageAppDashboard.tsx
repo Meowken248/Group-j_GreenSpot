@@ -3,7 +3,7 @@ import "../styles/triage.scss";
 import { TriageHeader, TriageFooter } from "../components/TriageHeaderFooter";
 import { IncidentTriageView } from "../components/IncidentTriageView";
 import { SpatialFacilityView } from "../components/SpatialFacilityView";
-import { TriageIncidentSummaryItem, TriageEvaluationData } from "../types";
+import type { TriageIncidentSummaryItem, TriageEvaluationData } from "../types";
 import { triageService } from "../services/triageService";
 
 export const TriageAppDashboard: React.FC = () => {

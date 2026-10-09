@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { TriageEvaluationData, TriageScreenStep } from "../types";
+import type { TriageEvaluationData, TriageScreenStep } from "../types";
 import { triageService } from "../services/triageService";
 
 interface IncidentTriageViewProps {
@@ -101,7 +101,7 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
     setIsSavingDecision(true);
 
     try {
-      const res = await triageService.overridePriority(
+      await triageService.overridePriority(
         data.incident_id,
         targetPriority,
         trimmed,
