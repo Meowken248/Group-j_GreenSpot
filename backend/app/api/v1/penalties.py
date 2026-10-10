@@ -85,6 +85,20 @@ async def get_domains(
 
 
 @router.get(
+    "/domain-counts",
+    response_model=Dict[str, int],
+    summary="Lấy thống kê số lượng quy định theo từng lĩnh vực chuyên đề",
+)
+async def get_domain_counts(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Trả về số lượng quy định theo từng lĩnh vực để hiển thị badge trên giao diện bộ lọc Màn 2.
+    """
+    return await penalty_service.get_domain_counts(db)
+
+
+@router.get(
     "/{penalty_id}",
     response_model=PenaltyDetailResponse,
     summary="Xem chi tiết điều luật & mức phạt (Màn 3)",

@@ -42,6 +42,7 @@ export const PenaltyLookupContainer: React.FC<PenaltyLookupContainerProps> = ({
   const [total, setTotal] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
   const [availableDomains, setAvailableDomains] = useState<string[]>([]);
+  const [domainCounts, setDomainCounts] = useState<Record<string, number>>({});
   const [isLoadingResults, setIsLoadingResults] = useState<boolean>(false);
   const [resultsError, setResultsError] = useState<string | null>(null);
 
@@ -65,11 +66,15 @@ export const PenaltyLookupContainer: React.FC<PenaltyLookupContainerProps> = ({
     }
   }, []);
 
-  // 2. Tải danh sách lĩnh vực cho Màn 2
+  // 2. Tải danh sách lĩnh vực & số lượng cho Màn 2
   const loadDomains = useCallback(async () => {
     try {
-      const doms = await penaltyService.getDomains();
+      const [doms, counts] = await Promise.all([
+        penaltyService.getDomains(),
+        penaltyService.getDomainCounts(),
+      ]);
       setAvailableDomains(doms);
+      setDomainCounts(counts);
     } catch {
       // Dùng fallback nếu lỗi mạng
       setAvailableDomains([
@@ -145,16 +150,18 @@ export const PenaltyLookupContainer: React.FC<PenaltyLookupContainerProps> = ({
   // Handlers Màn 1
   const handleTriggerSearch = (customKw?: string) => {
     const kw = customKw !== undefined ? customKw : keyword;
+    setDomain('ALL'); // Luôn tìm kiếm trên toàn bộ lĩnh vực khi bắt đầu tìm từ khóa mới
     setQuickCategory(null);
     setScreenMode('LIST');
-    executeSearch(kw, domain, null, target, 1, false);
+    executeSearch(kw, 'ALL', null, target, 1, false);
   };
 
   const handleSelectQuickCategory = (catName: string) => {
     setQuickCategory(catName);
+    setDomain('ALL'); // Đặt lại về ALL khi chọn danh mục nhanh
     setKeyword('');
     setScreenMode('LIST');
-    executeSearch('', domain, catName, target, 1, false);
+    executeSearch('', 'ALL', catName, target, 1, false);
   };
 
   // Handlers Màn 2
@@ -291,6 +298,7 @@ export const PenaltyLookupContainer: React.FC<PenaltyLookupContainerProps> = ({
               onTargetChange={handleTargetChange}
               onDomainChange={handleDomainChange}
               availableDomains={availableDomains}
+              domainCounts={domainCounts}
               items={items}
               total={total}
               isLoading={isLoadingResults}

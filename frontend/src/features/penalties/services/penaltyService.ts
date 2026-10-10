@@ -53,6 +53,18 @@ export const penaltyService = {
   },
 
   /**
+   * Lấy số lượng quy định theo từng lĩnh vực chuyên đề (Màn 2)
+   */
+  async getDomainCounts(): Promise<Record<string, number>> {
+    try {
+      const res = await api.get<Record<string, number>>('/api/v1/penalties/domain-counts');
+      return res.data;
+    } catch {
+      return {};
+    }
+  },
+
+  /**
    * Xem chi tiết đầy đủ 3 khối thông tin của điều luật (Màn 3)
    */
   async getPenaltyDetail(

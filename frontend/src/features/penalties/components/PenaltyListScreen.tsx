@@ -12,6 +12,7 @@ interface PenaltyListScreenProps {
   onTargetChange: (newTarget: TargetType) => void;
   onDomainChange: (newDomain: string) => void;
   availableDomains: string[];
+  domainCounts?: Record<string, number>;
   items: PenaltySummaryItem[];
   total: number;
   isLoading: boolean;
@@ -35,6 +36,7 @@ export const PenaltyListScreen: React.FC<PenaltyListScreenProps> = ({
   onTargetChange,
   onDomainChange,
   availableDomains,
+  domainCounts,
   items,
   total,
   isLoading,
@@ -45,6 +47,9 @@ export const PenaltyListScreen: React.FC<PenaltyListScreenProps> = ({
   hasMore,
   onLoadMore,
 }) => {
+  const totalAllCount = domainCounts
+    ? Object.values(domainCounts).reduce((acc, curr) => acc + curr, 0)
+    : 0;
   return (
     <div className="pl-screen-two-grid" data-testid="penalty-screen-list">
       {/* KHỐI BỘ LỌC (CỘT TRÁI) */}
@@ -97,7 +102,10 @@ export const PenaltyListScreen: React.FC<PenaltyListScreenProps> = ({
               className={`domain-chip ${domain === 'ALL' ? 'active' : ''}`}
               onClick={() => onDomainChange('ALL')}
             >
-              Tất cả lĩnh vực
+              <span>Tất cả lĩnh vực</span>
+              {totalAllCount > 0 && (
+                <span className="domain-count-badge">{totalAllCount}</span>
+              )}
             </button>
             {availableDomains.map((dom) => (
               <button
@@ -106,7 +114,10 @@ export const PenaltyListScreen: React.FC<PenaltyListScreenProps> = ({
                 className={`domain-chip ${domain === dom ? 'active' : ''}`}
                 onClick={() => onDomainChange(dom)}
               >
-                {dom}
+                <span>{dom}</span>
+                {domainCounts && domainCounts[dom] !== undefined && (
+                  <span className="domain-count-badge">{domainCounts[dom]}</span>
+                )}
               </button>
             ))}
           </div>
@@ -163,9 +174,38 @@ export const PenaltyListScreen: React.FC<PenaltyListScreenProps> = ({
         ) : items.length === 0 ? (
           /* Trạng thái Không tìm thấy */
           <div className="pl-empty-state-card" data-testid="results-empty">
-            <div className="empty-icon">📂</div>
-            <h3 className="empty-title">Không tìm thấy quy định phù hợp với từ khoá</h3>
-            <p className="empty-tip">Vui lòng thử lại với từ khóa khác hoặc chuyển sang danh mục phổ biến.</p>
+            <div className="empty-icon">📁</div>
+            <h3 className="empty-title">
+              {domain !== 'ALL' && keyword
+                ? `Không tìm thấy quy định trong lĩnh vực "${domain}"`
+                : 'Không tìm thấy quy định phù hợp với từ khoá'}
+            </h3>
+            {domain !== 'ALL' && keyword ? (
+              <div className="empty-suggestion-box">
+                <p className="empty-tip">
+                  Hành vi <strong>&quot;{keyword}&quot;</strong> có thể thuộc một lĩnh vực chuyên môn khác.
+                </p>
+                <div className="empty-suggestion-actions">
+                  <button
+                    type="button"
+                    className="btn-suggestion-action"
+                    onClick={() => onDomainChange('ALL')}
+                  >
+                    <span>🌐</span>
+                    <span>Tìm &quot;{keyword}&quot; trong Tất cả lĩnh vực</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-suggestion-secondary"
+                    onClick={onBackToSearch}
+                  >
+                    ← Quay lại trang tìm kiếm
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="empty-tip">Vui lòng thử lại với từ khóa khác hoặc chuyển sang danh mục phổ biến.</p>
+            )}
           </div>
         ) : (
           /* Danh sách kết quả */

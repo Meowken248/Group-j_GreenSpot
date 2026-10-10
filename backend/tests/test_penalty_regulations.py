@@ -73,6 +73,81 @@ class TestPenaltyRegulationsDomainTDD(unittest.IsolatedAsyncioTestCase):
         for item in result.items:
             self.assertEqual(item.domain, "Nước thải")
 
+    async def test_search_engine_relevance_ranking_priority_order(self):
+        """Kiểm thử thuật toán sắp xếp Search Engine theo độ liên quan (Relevance Ranking):
+        🥇 Hạng 1: Từ khóa nằm ngay trong Title
+        🥈 Hạng 2: Từ khóa nằm trong Keywords
+        🥉 Hạng 3: Từ khóa chỉ nằm trong Description
+        """
+        unique_kw = "relevancetestkw"
+        # Item 3: Chỉ có trong Description
+        item_desc = PenaltyRegulation(
+            title="Quy định Z hành vi A",
+            domain="Khác",
+            keywords="không có",
+            description=f"Hành vi vi phạm liên quan đến {unique_kw} chi tiết",
+            legal_basis="Điều 1",
+            min_fine_individual=100000,
+            max_fine_individual=200000,
+            avg_fine_individual=150000,
+            min_fine_organization=200000,
+            max_fine_organization=400000,
+            avg_fine_organization=300000,
+            version=1,
+        )
+        # Item 2: Có trong Keywords
+        item_kw = PenaltyRegulation(
+            title="Quy định Y hành vi B",
+            domain="Khác",
+            keywords=f"từ khóa phụ, {unique_kw}, từ khóa mở rộng",
+            description="Mô tả bình thường không chứa từ khóa",
+            legal_basis="Điều 2",
+            min_fine_individual=100000,
+            max_fine_individual=200000,
+            avg_fine_individual=150000,
+            min_fine_organization=200000,
+            max_fine_organization=400000,
+            avg_fine_organization=300000,
+            version=1,
+        )
+        # Item 1: Nằm ngay trong Title
+        item_title = PenaltyRegulation(
+            title=f"Xử phạt vi phạm {unique_kw} trên địa bàn",
+            domain="Khác",
+            keywords="không có",
+            description="Mô tả bình thường không chứa từ khóa",
+            legal_basis="Điều 3",
+            min_fine_individual=100000,
+            max_fine_individual=200000,
+            avg_fine_individual=150000,
+            min_fine_organization=200000,
+            max_fine_organization=400000,
+            avg_fine_organization=300000,
+            version=1,
+        )
+
+        self.session.add_all([item_desc, item_kw, item_title])
+        await self.session.commit()
+
+        try:
+            params = PenaltySearchParams(query=unique_kw, limit=10)
+            result = await self.service.search_regulations(self.session, params)
+
+            self.assertEqual(result.total, 3)
+            # Kiểm tra thứ tự ưu tiên:
+            # 1. item_title (Hạng 1)
+            # 2. item_kw (Hạng 2)
+            # 3. item_desc (Hạng 3)
+            self.assertEqual(result.items[0].id, item_title.id, "Top 1 phải là bản ghi có từ khóa trong Title")
+            self.assertEqual(result.items[1].id, item_kw.id, "Top 2 phải là bản ghi có từ khóa trong Keywords")
+            self.assertEqual(result.items[2].id, item_desc.id, "Top 3 phải là bản ghi có từ khóa trong Description")
+        finally:
+            await self.session.delete(item_desc)
+            await self.session.delete(item_kw)
+            await self.session.delete(item_title)
+            await self.session.commit()
+
+
     async def test_quick_category_xa_rac(self):
         """Màn 1: Nhấp thẻ nhanh 'Xả rác' -> tự động lọc các hành vi thuộc nhóm Xả rác"""
         params = PenaltySearchParams(quick_category="Xả rác", page=1, limit=10)

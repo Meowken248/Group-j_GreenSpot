@@ -500,6 +500,9 @@ $pl-text-sub-dark: #94a3b8;
       gap: 8px;
 
       .domain-chip {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
         padding: 9px 12px;
         border-radius: 8px;
         font-size: 13px;
@@ -519,6 +522,23 @@ $pl-text-sub-dark: #94a3b8;
           background: $pl-primary;
           border-color: $pl-primary;
           color: #ffffff;
+
+          .domain-count-badge {
+            background: rgba(255, 255, 255, 0.28);
+            color: #ffffff;
+          }
+        }
+
+        .domain-count-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2px 7px;
+          border-radius: 9999px;
+          font-size: 11px;
+          font-weight: 700;
+          background: #e2e8f0;
+          color: #475569;
         }
       }
     }
@@ -974,6 +994,73 @@ $pl-text-sub-dark: #94a3b8;
       font-size: 14px;
       margin: 0;
     }
+
+    .empty-suggestion-box {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+
+      .empty-tip {
+        font-size: 14px;
+        color: $pl-text-sub-light;
+        margin: 0;
+
+        strong {
+          color: $pl-primary-dark;
+        }
+      }
+
+      .empty-suggestion-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 4px;
+
+        .btn-suggestion-action {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 18px;
+          border-radius: 9999px;
+          border: none;
+          background: $pl-primary;
+          color: #ffffff;
+          font-size: 13px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+
+          &:hover {
+            background: $pl-primary-dark;
+            transform: translateY(-1px);
+          }
+        }
+
+        .btn-suggestion-secondary {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 16px;
+          border-radius: 9999px;
+          border: 1px solid #cbd5e1;
+          background: #ffffff;
+          color: #475569;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+          }
+        }
+      }
+    }
   }
 
   .pl-error-state-card {
@@ -1197,10 +1284,26 @@ body.dark-mode .penalty-lookup-wrapper {
     border-color: $pl-border-dark !important;
     color: #cbd5e1 !important;
 
+    .domain-count-badge {
+      background: #1e293b !important;
+      color: #94a3b8 !important;
+    }
+
     &.active {
       background: $pl-primary !important;
       color: #ffffff !important;
+
+      .domain-count-badge {
+        background: rgba(255, 255, 255, 0.2) !important;
+        color: #ffffff !important;
+      }
     }
+  }
+
+  .btn-suggestion-secondary {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    color: #cbd5e1 !important;
   }
 
   .result-row-card {

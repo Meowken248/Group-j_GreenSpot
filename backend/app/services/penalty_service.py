@@ -6,7 +6,7 @@ Xử lý nghiệp vụ tra cứu văn bản pháp luật môi trường, bộ l�
 import math
 import uuid
 from typing import Optional, List, Dict, Any
-from sqlalchemy import select, func, or_, and_
+from sqlalchemy import select, func, or_, and_, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.penalty import PenaltyRegulation
@@ -77,12 +77,29 @@ class PenaltyRegulationService:
         total_result = await session.execute(count_stmt)
         total = total_result.scalar_one()
 
+        # Sắp xếp theo Độ liên quan Search Engine (Relevance Ranking):
+        # 🥇 Hạng 1: Từ khóa nằm ngay trong Tiêu đề (title)
+        # 🥈 Hạng 2: Từ khóa nằm trong Từ khóa mở rộng (keywords)
+        # 🥉 Hạng 3: Từ khóa nằm trong Mô tả chi tiết (description)
+        # Sau đó mới xếp phụ theo bảng chữ cái A-Z
+        if params.query and params.query.strip():
+            raw_query = params.query.strip()
+            relevance = case(
+                (PenaltyRegulation.title.ilike(f"%{raw_query}%"), 1),
+                (PenaltyRegulation.keywords.ilike(f"%{raw_query}%"), 2),
+                (PenaltyRegulation.description.ilike(f"%{raw_query}%"), 3),
+                else_=4,
+            )
+            order_criteria = [relevance.asc(), PenaltyRegulation.title.asc()]
+        else:
+            order_criteria = [PenaltyRegulation.title.asc()]
+
         # Phân trang
         offset = (params.page - 1) * params.limit
         stmt = (
             select(PenaltyRegulation)
             .where(and_(*filters))
-            .order_by(PenaltyRegulation.title.asc())
+            .order_by(*order_criteria)
             .offset(offset)
             .limit(params.limit)
         )
@@ -199,3 +216,18 @@ class PenaltyRegulationService:
         )
         domains = (await session.execute(stmt)).scalars().all()
         return list(domains)
+
+    async def get_domain_counts(
+        self,
+        session: AsyncSession,
+    ) -> Dict[str, int]:
+        """
+        Thống kê số lượng điều luật thực tế theo từng lĩnh vực chuyên đề
+        """
+        stmt = (
+            select(PenaltyRegulation.domain, func.count(PenaltyRegulation.id))
+            .where(PenaltyRegulation.deleted_at.is_(None))
+            .group_by(PenaltyRegulation.domain)
+        )
+        rows = (await session.execute(stmt)).all()
+        return {r[0]: int(r[1]) for r in rows}
