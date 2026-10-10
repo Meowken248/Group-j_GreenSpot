@@ -312,6 +312,10 @@ $pl-text-sub-dark: #94a3b8;
         grid-template-columns: 1fr;
       }
 
+      .quick-cat-card:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+      }
+
       .quick-cat-card {
         border: 1.5px solid $pl-border-light;
         border-radius: 14px;

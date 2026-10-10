@@ -157,11 +157,12 @@ export const PenaltyLookupContainer: React.FC<PenaltyLookupContainerProps> = ({
   };
 
   const handleSelectQuickCategory = (catName: string) => {
-    setQuickCategory(catName);
-    setDomain('ALL'); // Đặt lại về ALL khi chọn danh mục nhanh
+    // catName chính là tên Lĩnh vực (Domain): "Rác thải sinh hoạt", "Khí thải", "Nước thải",...
+    setDomain(catName);
+    setQuickCategory(null);
     setKeyword('');
     setScreenMode('LIST');
-    executeSearch('', 'ALL', catName, target, 1, false);
+    executeSearch('', catName, null, target, 1, false);
   };
 
   // Handlers Màn 2

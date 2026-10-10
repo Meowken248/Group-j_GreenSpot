@@ -185,13 +185,15 @@ class TestPenaltyRegulationsDomainTDD(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(item.quick_category, "Tiếng ồn")
 
     async def test_get_quick_category_summaries(self):
-        """Màn 1: API nạp 4 danh mục phổ biến kèm số lượng và mô tả"""
+        """Màn 1: API nạp 5 lĩnh vực môi trường kèm số lượng và mô tả"""
         categories = await self.service.get_quick_category_stats(self.session)
         cat_names = [c["category_name"] for c in categories]
 
-        self.assertIn("Xả rác", cat_names)
-        self.assertIn("Đốt rác", cat_names)
+        self.assertEqual(len(categories), 5)
+        self.assertIn("Rác thải sinh hoạt", cat_names)
+        self.assertIn("Rác công nghiệp/nguy hại", cat_names)
         self.assertIn("Nước thải", cat_names)
+        self.assertIn("Khí thải", cat_names)
         self.assertIn("Tiếng ồn", cat_names)
 
     # =========================================================================

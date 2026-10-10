@@ -5,22 +5,28 @@ import { penaltyService } from '../services/penaltyService';
 
 const mockCategories = [
   {
-    category_name: 'Xả rác',
+    category_name: 'Rác thải sinh hoạt',
     count: 3,
     icon: '🗑️',
     description: 'Vứt rác sinh hoạt bừa bãi tại vỉa hè, lòng đường.',
   },
   {
-    category_name: 'Đốt rác',
+    category_name: 'Rác công nghiệp/nguy hại',
     count: 2,
-    icon: '🔥',
-    description: 'Đốt chất thải rắn sinh hoạt lộ thiên.',
+    icon: '☢️',
+    description: 'Chôn lấp chất thải nguy hại trái phép.',
   },
   {
     category_name: 'Nước thải',
     count: 2,
     icon: '💧',
     description: 'Xả nước thải bẩn vào cống thoát nước mưa.',
+  },
+  {
+    category_name: 'Khí thải',
+    count: 2,
+    icon: '🌫️',
+    description: 'Thải khí thải công nghiệp nguy hại vượt chuẩn.',
   },
   {
     category_name: 'Tiếng ồn',
@@ -35,7 +41,7 @@ const mockSearchItems = [
     id: '11111111-1111-1111-1111-111111111111',
     title: 'Vứt, thải rác sinh hoạt trên vỉa hè, lòng đường',
     domain: 'Rác thải sinh hoạt',
-    quick_category: 'Xả rác',
+    quick_category: null,
     target: 'INDIVIDUAL' as const,
     displayed_min_fine: 1000000,
     displayed_max_fine: 2000000,
@@ -49,7 +55,7 @@ const mockDetailItem = {
   id: '11111111-1111-1111-1111-111111111111',
   title: 'Vứt, thải rác sinh hoạt trên vỉa hè, lòng đường',
   domain: 'Rác thải sinh hoạt',
-  quick_category: 'Xả rác',
+  quick_category: null,
   target: 'INDIVIDUAL' as const,
   min_fine: 1000000,
   max_fine: 2000000,
@@ -69,9 +75,18 @@ describe('PenaltyLookupContainer Feature Tests (STT 11: Màn 1 -> Màn 3)', () =
     vi.spyOn(penaltyService, 'getQuickCategories').mockResolvedValue(mockCategories);
     vi.spyOn(penaltyService, 'getDomains').mockResolvedValue([
       'Rác thải sinh hoạt',
+      'Rác công nghiệp/nguy hại',
       'Nước thải',
+      'Khí thải',
       'Tiếng ồn',
     ]);
+    vi.spyOn(penaltyService, 'getDomainCounts').mockResolvedValue({
+      'Rác thải sinh hoạt': 3,
+      'Rác công nghiệp/nguy hại': 2,
+      'Nước thải': 2,
+      'Khí thải': 2,
+      'Tiếng ồn': 2,
+    });
     vi.spyOn(penaltyService, 'searchPenalties').mockResolvedValue({
       items: mockSearchItems,
       total: 1,
@@ -84,18 +99,19 @@ describe('PenaltyLookupContainer Feature Tests (STT 11: Màn 1 -> Màn 3)', () =
   });
 
   // =========================================================================
-  // MÀN 1: TÌM KIẾM TỪ KHÓA & DANH MỤC PHỔ BIẾN
+  // MÀN 1: TÌM KIẾM TỪ KHÓA & LĨNH VỰC MÔI TRƯỜNG
   // =========================================================================
-  it('Màn 1: Hiển thị đầy đủ ô tìm kiếm và 4 danh mục phổ biến', async () => {
+  it('Màn 1: Hiển thị đầy đủ ô tìm kiếm và 5 lĩnh vực môi trường', async () => {
     render(<PenaltyLookupContainer />);
 
     expect(screen.getByText(/TÌM KIẾM QUY ĐỊNH/i)).toBeInTheDocument();
-    expect(screen.getByText(/DANH MỤC PHỔ BIẾN/i)).toBeInTheDocument();
+    expect(screen.getByText(/LĨNH VỰC MÔI TRƯỜNG/i)).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getByText('Xả rác')).toBeInTheDocument();
-      expect(screen.getByText('Đốt rác')).toBeInTheDocument();
+      expect(screen.getByText('Rác thải sinh hoạt')).toBeInTheDocument();
+      expect(screen.getByText('Rác công nghiệp/nguy hại')).toBeInTheDocument();
       expect(screen.getByText('Nước thải')).toBeInTheDocument();
+      expect(screen.getByText('Khí thải')).toBeInTheDocument();
       expect(screen.getByText('Tiếng ồn')).toBeInTheDocument();
     });
   });
@@ -128,16 +144,16 @@ describe('PenaltyLookupContainer Feature Tests (STT 11: Màn 1 -> Màn 3)', () =
     });
   });
 
-  it('Màn 1: Bấm vào thẻ danh mục nhanh Xả rác -> chuyển sang Màn 2 với bộ lọc tương ứng', async () => {
+  it('Màn 1: Bấm vào thẻ lĩnh vực Rác thải sinh hoạt -> chuyển sang Màn 2 với bộ lọc tương ứng', async () => {
     render(<PenaltyLookupContainer />);
 
-    const xaRacCard = await screen.findByText('Xả rác');
-    fireEvent.click(xaRacCard);
+    const card = await screen.findByText('Rác thải sinh hoạt');
+    fireEvent.click(card);
 
     await waitFor(() => {
       expect(screen.getByTestId('penalty-screen-list')).toBeInTheDocument();
       expect(penaltyService.searchPenalties).toHaveBeenCalledWith(
-        expect.objectContaining({ quick_category: 'Xả rác' })
+        expect.objectContaining({ domain: 'Rác thải sinh hoạt' })
       );
     });
   });
@@ -148,9 +164,9 @@ describe('PenaltyLookupContainer Feature Tests (STT 11: Màn 1 -> Màn 3)', () =
   it('Màn 2: Đổi đối tượng sang Tổ chức -> tự động yêu cầu nhân đôi mức phạt', async () => {
     render(<PenaltyLookupContainer />);
 
-    // Vào màn 2 qua danh mục
-    const xaRacCard = await screen.findByText('Xả rác');
-    fireEvent.click(xaRacCard);
+    // Vào màn 2 qua lĩnh vực
+    const card = await screen.findByText('Rác thải sinh hoạt');
+    fireEvent.click(card);
 
     await waitFor(() => {
       expect(screen.getByTestId('penalty-screen-list')).toBeInTheDocument();
@@ -173,8 +189,8 @@ describe('PenaltyLookupContainer Feature Tests (STT 11: Màn 1 -> Màn 3)', () =
   it('Màn 2 -> Màn 3: Bấm Xem chi tiết mở Màn 3 với đầy đủ 3 khối thông tin', async () => {
     render(<PenaltyLookupContainer />);
 
-    const xaRacCard = await screen.findByText('Xả rác');
-    fireEvent.click(xaRacCard);
+    const card = await screen.findByText('Rác thải sinh hoạt');
+    fireEvent.click(card);
 
     const viewDetailBtn = await screen.findByRole('button', {
       name: /Xem chi tiết Vứt, thải rác/i,
@@ -193,8 +209,8 @@ describe('PenaltyLookupContainer Feature Tests (STT 11: Màn 1 -> Màn 3)', () =
     render(<PenaltyLookupContainer currentUser={null} />);
 
     // Mở màn 3
-    const xaRacCard = await screen.findByText('Xả rác');
-    fireEvent.click(xaRacCard);
+    const card = await screen.findByText('Rác thải sinh hoạt');
+    fireEvent.click(card);
 
     const viewDetailBtn = await screen.findByRole('button', {
       name: /Xem chi tiết Vứt, thải rác/i,

@@ -114,18 +114,19 @@ export const PenaltySearchScreen: React.FC<PenaltySearchScreenProps> = ({
         </div>
       </div>
 
-      {/* KHỐI DANH MỤC PHỔ BIẾN (CỘT PHẢI) */}
+      {/* KHỐI LĨNH VỰC MÔI TRƯỜNG (CỘT PHẢI) */}
       <div className="pl-category-panel">
         <div className="category-heading-box">
           <h2 className="category-title">
             <span>📚</span>
-            <span>DANH MỤC PHỔ BIẾN</span>
+            <span>LĨNH VỰC MÔI TRƯỜNG</span>
           </h2>
-          <span className="category-tip">Chọn nhanh nhóm hành vi thường gặp</span>
+          <span className="category-tip">Chọn chuyên đề pháp luật cần tra cứu</span>
         </div>
 
         {isLoadingCategories ? (
           <div className="pl-skeleton-loader" data-testid="categories-skeleton">
+            <div className="skeleton-line" />
             <div className="skeleton-line" />
             <div className="skeleton-line" />
             <div className="skeleton-line" />

@@ -18,23 +18,27 @@ from app.schemas.penalty import (
     QuickCategoryStat,
 )
 
-# Cấu hình danh mục nhanh Màn 1 với icon và mô tả thân thiện
+# Cấu hình 5 Lĩnh vực chuyên đề pháp luật Môi trường Màn 1 với icon và mô tả
 QUICK_CATEGORY_METADATA = {
-    "Xả rác": {
+    "Rác thải sinh hoạt": {
         "icon": "🗑️",
-        "description": "Vứt rác sinh hoạt bừa bãi tại vỉa hè, lòng đường, công viên, kênh rạch.",
+        "description": "Vứt rác vỉa hè, lòng đường, vứt tàn thuốc lá, không phân loại rác tại nguồn.",
     },
-    "Đốt rác": {
-        "icon": "🔥",
-        "description": "Đốt chất thải rắn sinh hoạt, rác công nghiệp, phụ phẩm nông nghiệp gây khói bụi.",
+    "Rác công nghiệp/nguy hại": {
+        "icon": "☢️",
+        "description": "Chôn lấp chất thải nguy hại, đốt chất thải công nghiệp ngoài cơ sở được cấp phép.",
     },
     "Nước thải": {
         "icon": "💧",
-        "description": "Xả nước thải bẩn, dầu mỡ, hóa chất vào cống nước mưa hoặc sông suối.",
+        "description": "Xả nước thải sinh hoạt vào cống thoát nước mưa, xả trộm nước thải ra kênh rạch, sông suối.",
+    },
+    "Khí thải": {
+        "icon": "🌫️",
+        "description": "Thải khí thải công nghiệp nguy hại vượt chuẩn, đốt rác sinh hoạt lộ thiên gây khói bụi.",
     },
     "Tiếng ồn": {
         "icon": "📢",
-        "description": "Gây tiếng ồn vượt quy chuẩn kỹ thuật (karaoke loa kéo, máy móc thi công).",
+        "description": "Gây tiếng ồn vượt quy chuẩn (karaoke loa kéo sau 22h, thi công máy móc công trường).",
     },
 }
 
@@ -184,17 +188,17 @@ class PenaltyRegulationService:
         session: AsyncSession,
     ) -> List[Dict[str, Any]]:
         """
-        Lấy danh sách 4 danh mục phổ biến Màn 1 kèm số lượng điều khoản thực tế
+        Lấy danh sách 5 lĩnh vực chuyên đề Môi trường Màn 1 kèm số lượng điều khoản thực tế
         """
         results = []
-        for cat_name, meta in QUICK_CATEGORY_METADATA.items():
+        for domain_name, meta in QUICK_CATEGORY_METADATA.items():
             stmt = select(func.count(PenaltyRegulation.id)).where(
-                PenaltyRegulation.quick_category == cat_name,
+                PenaltyRegulation.domain == domain_name,
                 PenaltyRegulation.deleted_at.is_(None),
             )
             count = (await session.execute(stmt)).scalar_one()
             results.append({
-                "category_name": cat_name,
+                "category_name": domain_name,
                 "count": count,
                 "icon": meta["icon"],
                 "description": meta["description"],
