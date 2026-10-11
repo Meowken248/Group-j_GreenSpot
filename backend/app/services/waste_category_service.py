@@ -455,13 +455,14 @@ async def delete_category(
 
 async def check_code_unique(db: AsyncSession, code: str) -> ValidationCheckResponse:
     """Kiểm tra mã danh mục có bị trùng không"""
-    code_clean = code.strip().upper()
-    if not code_clean:
+    code_raw = (code or "").strip()
+    if not code_raw:
         return ValidationCheckResponse(is_valid=False, message="Vui lòng nhập mã danh mục")
     import re
-    if len(code_clean) > 20 or not re.match(r"^[A-Z0-9_]+$", code_clean):
+    if len(code_raw) > 20 or not re.match(r"^[A-Z0-9_]+$", code_raw):
         return ValidationCheckResponse(is_valid=False, message="Mã chỉ gồm chữ hoa, số, dấu gạch dưới (tối đa 20 ký tự)")
 
+    code_clean = code_raw.upper()
     stmt = select(WasteCategory.category_id).where(
         and_(WasteCategory.category_code == code_clean, WasteCategory.is_deleted == False)
     )

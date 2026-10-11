@@ -22,3 +22,4 @@ export const resolveMediaUrl = (url?: string | null): string => {
   const cleanPath = url.startsWith("/") ? url : `/${url}`;
   return `${backendBase}${cleanPath}`;
 };
+

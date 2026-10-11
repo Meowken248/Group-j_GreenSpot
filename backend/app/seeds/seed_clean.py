@@ -73,24 +73,24 @@ SELECT 6, '787', 'Huyện Cần Giờ', 'DISTRICT', 1, 704.45, 71500,
 WHERE NOT EXISTS (SELECT 1 FROM administrative_units WHERE unit_code = '787');
 
 -- 4. WASTE CATEGORIES
-INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, color_hex, icon_name, is_active)
-SELECT 1, 'DOMESTIC_WASTE', 'Rác thải sinh hoạt ứ đọng', 'Bãi rác tự phát, túi ni lông bốc mùi', 'MEDIUM', 24, '#EAB308', 'trash', TRUE
+INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, sla_warning_hours, color_hex, icon_name, is_active, is_deleted)
+SELECT 1, 'DOMESTIC_WASTE', 'Rác thải sinh hoạt ứ đọng', 'Bãi rác tự phát, túi ni lông bốc mùi', 'MEDIUM', 24, 4, '#EAB308', 'trash', TRUE, FALSE
 WHERE NOT EXISTS (SELECT 1 FROM waste_categories WHERE category_code = 'DOMESTIC_WASTE');
 
-INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, color_hex, icon_name, is_active)
-SELECT 2, 'HAZARDOUS_WASTE', 'Chất thải nguy hại & Pin cũ', 'Pin cũ, hóa chất, bóng đèn huỳnh quang', 'CRITICAL', 12, '#EF4444', 'alert-triangle', TRUE
+INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, sla_warning_hours, color_hex, icon_name, is_active, is_deleted)
+SELECT 2, 'HAZARDOUS_WASTE', 'Chất thải nguy hại & Pin cũ', 'Pin cũ, hóa chất, bóng đèn huỳnh quang', 'CRITICAL', 12, 2, '#EF4444', 'alert-triangle', TRUE, FALSE
 WHERE NOT EXISTS (SELECT 1 FROM waste_categories WHERE category_code = 'HAZARDOUS_WASTE');
 
-INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, color_hex, icon_name, is_active)
-SELECT 3, 'WATERWAY_POLLUTION', 'Ô nhiễm kênh rạch & Nguồn nước', 'Rác thải nổi lềnh bềnh, nước đen bốc mùi', 'HIGH', 36, '#3B82F6', 'droplets', TRUE
+INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, sla_warning_hours, color_hex, icon_name, is_active, is_deleted)
+SELECT 3, 'WATERWAY_POLLUTION', 'Ô nhiễm kênh rạch & Nguồn nước', 'Rác thải nổi lềnh bềnh, nước đen bốc mùi', 'HIGH', 36, 4, '#3B82F6', 'droplets', TRUE, FALSE
 WHERE NOT EXISTS (SELECT 1 FROM waste_categories WHERE category_code = 'WATERWAY_POLLUTION');
 
-INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, color_hex, icon_name, is_active)
-SELECT 4, 'DRAINAGE_BLOCK', 'Điểm nghẽn cống ngập úng', 'Miệng hố ga bị rác bịt kín gây ngập cục bộ', 'HIGH', 18, '#06B6D4', 'cloud-rain', TRUE
+INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, sla_warning_hours, color_hex, icon_name, is_active, is_deleted)
+SELECT 4, 'DRAINAGE_BLOCK', 'Điểm nghẽn cống ngập úng', 'Miệng hố ga bị rác bịt kín gây ngập cục bộ', 'HIGH', 18, 3, '#06B6D4', 'cloud-rain', TRUE, FALSE
 WHERE NOT EXISTS (SELECT 1 FROM waste_categories WHERE category_code = 'DRAINAGE_BLOCK');
 
-INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, color_hex, icon_name, is_active)
-SELECT 5, 'CONSTRUCTION_DEBRIS', 'Xà bần & Phế thải xây dựng', 'Gạch vữa phế thải lấn chiếm lòng lề đường', 'LOW', 72, '#78716C', 'truck', TRUE
+INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, sla_warning_hours, color_hex, icon_name, is_active, is_deleted)
+SELECT 5, 'CONSTRUCTION_DEBRIS', 'Xà bần & Phế thải xây dựng', 'Gạch vữa phế thải lấn chiếm lòng lề đường', 'LOW', 72, 12, '#78716C', 'truck', TRUE, FALSE
 WHERE NOT EXISTS (SELECT 1 FROM waste_categories WHERE category_code = 'CONSTRUCTION_DEBRIS');
 
 SELECT setval('waste_categories_category_id_seq', COALESCE((SELECT MAX(category_id) FROM waste_categories), 1));
