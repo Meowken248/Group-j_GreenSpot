@@ -1,4 +1,5 @@
 import api from "../../../api/client";
+import { reverseGeocodeOSM } from "../../../services/osmAdvancedService";
 import type {
   CreatePostPayload,
   PostDetail,
@@ -116,23 +117,53 @@ export const postService = {
   },
 
   /**
-   * Reverse Geocoding tự động chuyển toạ độ thành tên địa chỉ (Màn 2)
+   * Reverse Geocoding tự động chuyển toạ độ thành số nhà và tên đường thật (Màn 2)
    */
   async reverseGeocode(latitude: number, longitude: number): Promise<string> {
     try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&accept-language=vi`;
-      const res = await fetch(url, { headers: { "User-Agent": "GreenSpot-App/1.0" } });
+      // 1. Sử dụng engine OpenStreetMap / Photon Komoot chuyên sâu có cache
+      const osmRes = await reverseGeocodeOSM(latitude, longitude);
+      if (osmRes && osmRes.fullAddress && !osmRes.fullAddress.startsWith("Tọa độ:")) {
+        // Nếu có đầy đủ số nhà và tên đường
+        if (osmRes.houseNumber && osmRes.street) {
+          const parts = [`Số ${osmRes.houseNumber} ${osmRes.street}`];
+          if (osmRes.district) parts.push(osmRes.district);
+          if (osmRes.city && osmRes.city !== osmRes.district) parts.push(osmRes.city);
+          return parts.join(", ");
+        }
+        if (osmRes.street) {
+          const parts = [osmRes.street];
+          if (osmRes.district) parts.push(osmRes.district);
+          if (osmRes.city && osmRes.city !== osmRes.district) parts.push(osmRes.city);
+          return parts.join(", ");
+        }
+        return osmRes.fullAddress;
+      }
+    } catch (err) {
+      console.warn("Lỗi dịch địa chỉ từ osmAdvancedService:", err);
+    }
+
+    // 2. Dự phòng qua BigDataCloud API tiếng Việt
+    try {
+      const bdcUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=vi`;
+      const res = await fetch(bdcUrl);
       if (res.ok) {
         const data = await res.json();
-        if (data.display_name) {
-          const parts = data.display_name.split(",").map((s: string) => s.trim());
-          // Rút gọn địa chỉ lấy 3-4 thành phần chính
-          return parts.slice(0, 4).join(", ");
+        const parts: string[] = [];
+        if (data.locality) parts.push(data.locality);
+        if (data.city && data.city !== data.locality) parts.push(data.city);
+        if (data.principalSubdivision && !parts.includes(data.principalSubdivision)) {
+          parts.push(data.principalSubdivision);
+        }
+        if (parts.length > 0) {
+          return parts.join(", ");
         }
       }
     } catch {
-      // Fallback nếu ngoại tuyến
+      // Bỏ qua lỗi mạng
     }
-    return `Tọa độ: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+
+    // 3. Fallback vị trí gần nhất
+    return `Khu vực toạ độ (${latitude.toFixed(4)}, ${longitude.toFixed(4)}), TP. Hồ Chí Minh`;
   },
 };
