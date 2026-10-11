@@ -30,6 +30,7 @@ from app.models.incident import (
     Incident,
     IncidentMedia,
 )
+from app.models.deduplication import IncidentDuplicateCluster
 
 # 4. Trạm Quan trắc Cảm biến IoT & Dữ liệu Khí tượng
 from app.models.iot import (
@@ -69,6 +70,22 @@ from app.models.profile import (
     UserActivity,
     Post,
 )
+from app.models.post import PostTaggedFriend
+
+
+# 7. Kết bạn và theo dõi (Friends & Follows Domain)
+from app.models.friends import (
+    FriendRequest,
+    Friendship,
+    UserFollow,
+    FriendRequestStatus,
+)
+
+# 8. Cài đặt người dùng (User Settings Domain)
+from app.models.settings import UserSettings
+
+# 9. Tra cứu quy định xử phạt vi phạm hành chính (Penalty Regulations Domain)
+from app.models.penalty import PenaltyRegulation
 
 # 8. Nhật ký kiểm toán hệ thống (Audit Logs)
 from app.models.audit_log import AuditLog
@@ -93,6 +110,7 @@ __all__ = [
     "WasteCategory",
     "Incident",
     "IncidentMedia",
+    "IncidentDuplicateCluster",
     # IoT Sensors
     "IoTSensorStation",
     # Flood, Tide & Safe Navigation
@@ -121,4 +139,16 @@ __all__ = [
     "Post",
     # Audit Logs
     "AuditLog",
+    "PostTaggedFriend",
+
+    # Friends & Follows Domain
+    "FriendRequest",
+    "Friendship",
+    "UserFollow",
+    "FriendRequestStatus",
+    # User Settings Domain
+    "UserSettings",
+    # Penalty Regulations Domain
+    "PenaltyRegulation",
 ]
+

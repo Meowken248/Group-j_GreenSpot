@@ -14,14 +14,42 @@ import {
 import { RbacContainer, usePermissions, ModulePermissionGuard } from "./features/rbac";
 import { UserManagementContainer } from "./features/user_management";
 import { ProfileContainer } from "./features/profile";
-import { ReportContainer } from "./features/reports";
+import { ReportContainer, DeduplicationDashboard } from "./features/reports";
 import { IncidentManagementContainer } from "./features/incident_management";
 import { WasteCategoryContainer } from "./features/waste_categories";
 import { RecyclingFacilityContainer } from "./features/recycling_facilities";
+import { FriendsContainer } from "./features/friends";
+import { PenaltyLookupContainer } from "./features/penalties";
+import { PostCreatorContainer } from "./features/posts";
+
+import {
+  SettingsContainer,
+  applyThemeToDocument,
+  getLocalPreferences,
+  fetchPreferencesFromServer,
+  subscribeThemeChange,
+} from "./features/settings";
+import type { ThemeMode } from "./features/settings";
 import api from "./api/client";
 import "./App.css";
 
-type TabType = "map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "voice" | "report" | "incidents" | "waste_categories" | "recycling_facilities";
+type TabType =
+  | "map"
+  | "dashboard"
+  | "auth"
+  | "rbac"
+  | "users"
+  | "profile"
+  | "friends"
+  | "voice"
+  | "report"
+  | "incidents"
+  | "waste_categories"
+  | "recycling_facilities"
+  | "dedup"
+  | "settings"
+  | "penalties"
+  | "posts";
 
 // Hàm kiểm tra trạng thái đăng nhập thực tế của phiên hiện tại
 const checkIsLoggedIn = (): boolean => {
@@ -37,9 +65,16 @@ const checkIsLoggedIn = (): boolean => {
 function App() {
   const [authRedirectUrl, setAuthRedirectUrl] = useState<string | undefined>(() => {
     const hash = window.location.hash.toLowerCase();
+    const path = window.location.pathname.toLowerCase();
     const isLogged = checkIsLoggedIn();
-    if ((hash === "#profile" || window.location.pathname.toLowerCase() === "/profile") && !isLogged) {
-      return "/profile";
+    if (!isLogged) {
+      if (hash === "#profile" || path === "/profile") return "/profile";
+      if (hash === "#friends" || path === "/friends") return "/friends";
+      if (hash === "#dashboard" || path === "/dashboard") return "/dashboard";
+      if (hash === "#users" || path === "/users") return "/users";
+      if (hash === "#rbac" || path === "/rbac") return "/rbac";
+      if (hash === "#dedup" || path === "/dedup") return "/dedup";
+      if (hash === "#settings" || path === "/settings") return "/settings";
     }
     if ((hash === "#report" || window.location.pathname.toLowerCase() === "/report") && !isLogged) {
       return "/report";
@@ -54,42 +89,68 @@ function App() {
 
     if (hash === "#voice" || path === "/voice") return "voice";
     if (hash === "#map" || path === "/map") return "map";
-    if (hash === "#dashboard" || path === "/dashboard") return "dashboard";
+    if (hash === "#penalties" || path === "/penalties") {
+      if (!isLogged) return "auth";
+      return "penalties";
+    }
+    if (hash === "#posts" || hash === "#create-post" || path === "/posts" || path === "/create-post") {
+      if (!isLogged) return "auth";
+      return "posts";
+    }
     if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") return "auth";
-    if (hash === "#users" || path === "/users") return "users";
-    if (hash === "#rbac" || path === "/rbac") return "rbac";
+    if (hash === "#voice" || path === "/voice") {
+      if (!isLogged) return "auth";
+      return "voice";
+    }
+
+
+    // Khách vãng lai chưa đăng nhập: Không được phép vào các trang cài đặt, phân tích khí hậu, bạn bè, profile, quản trị, trùng lặp
+    if (hash === "#settings" || path === "/settings") {
+      if (!isLogged) return "auth";
+      return "settings";
+    }
+    if (hash === "#dashboard" || path === "/dashboard") {
+      if (!isLogged) return "auth";
+      return "dashboard";
+    }
+    if (hash === "#friends" || path === "/friends") {
+      if (!isLogged) return "auth";
+      return "friends";
+    }
     if (hash === "#profile" || path === "/profile") {
-      // Bắt buộc phải có cả token và thông tin user hợp lệ
-      if (!isLogged) {
-        return "auth";
-      }
+      if (!isLogged) return "auth";
       return "profile";
     }
     if (hash === "#report" || path === "/report") {
-      if (!isLogged) {
-        return "auth";
-      }
+      if (!isLogged) return "auth";
       return "report";
     }
     if (hash === "#incidents" || path === "/incidents") {
-      if (!isLogged) {
-        return "auth";
-      }
+      if (!isLogged) return "auth";
       return "incidents";
     }
     if (hash === "#waste-categories" || hash === "#waste_categories" || path === "/waste-categories") {
-      if (!isLogged) {
-        return "auth";
-      }
+      if (!isLogged) return "auth";
       return "waste_categories";
     }
     if (hash === "#recycling-facilities" || hash === "#recycling_facilities" || path === "/recycling-facilities") {
-      if (!isLogged) {
-        return "auth";
-      }
+      if (!isLogged) return "auth";
       return "recycling_facilities";
     }
-    // Mặc định: khi chưa đăng nhập, hiển thị Bản đồ WebGIS công cộng
+    if (hash === "#users" || path === "/users") {
+      if (!isLogged) return "auth";
+      return "users";
+    }
+    if (hash === "#rbac" || path === "/rbac") {
+      if (!isLogged) return "auth";
+      return "rbac";
+    }
+    if (hash === "#dedup" || path === "/dedup") {
+      if (!isLogged) return "auth";
+      return "dedup";
+    }
+
+    // Mặc định: khi chưa đăng nhập, chỉ hiển thị Bản đồ WebGIS công cộng
     if (!isLogged) return "map";
     return "profile";
   });
@@ -97,6 +158,35 @@ function App() {
   const [checkingBackend, setCheckingBackend] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
   const [sessionExpiredOpen, setSessionExpiredOpen] = useState(false);
+
+  // Quản lý theme thời gian thực từ LocalStorage và sự kiện thay đổi
+  const [currentTheme, setCurrentTheme] = useState<ThemeMode>(() => getLocalPreferences().theme);
+  const isDarkMode = currentTheme === "DARK";
+
+  useEffect(() => {
+    const localPrefs = getLocalPreferences();
+    applyThemeToDocument(localPrefs.theme);
+    setCurrentTheme(localPrefs.theme);
+
+    // Tự động đồng bộ cài đặt giao diện từ server nếu đã đăng nhập
+    if (checkIsLoggedIn()) {
+      fetchPreferencesFromServer()
+        .then((remotePrefs) => {
+          if (remotePrefs?.theme) {
+            setCurrentTheme(remotePrefs.theme);
+            applyThemeToDocument(remotePrefs.theme);
+          }
+        })
+        .catch(() => {
+          // Bỏ qua nếu lỗi kết nối
+        });
+    }
+
+    const unsubscribe = subscribeThemeChange((newTheme) => {
+      setCurrentTheme(newTheme);
+    });
+    return unsubscribe;
+  }, []);
 
   // Hook quản lý tài khoản và quyền hạn thời gian thực (RBAC Permission Guard)
   const { currentUser, canAccess } = usePermissions();
@@ -107,6 +197,13 @@ function App() {
   const hasIncidentMgmtAccess =
     currentUser?.role === "ADMIN" ||
     currentUser?.role === "DISTRICT_MANAGER" ||
+    canAccess("INCIDENTS");
+
+  const hasDedupAccess =
+    currentUser?.role === "ADMIN" ||
+    currentUser?.role === "OFFICER" ||
+    currentUser?.role === "DISTRICT_MANAGER" ||
+    currentUser?.role === "COORDINATOR" ||
     canAccess("INCIDENTS");
 
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -152,13 +249,75 @@ function App() {
       const hash = window.location.hash.toLowerCase();
       const isLogged = checkIsLoggedIn();
 
-      if (hash === "#voice") setActiveTab("voice");
-      else if (hash === "#map") setActiveTab("map");
-      else if (hash === "#dashboard") setActiveTab("dashboard");
-      else if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") setActiveTab("auth");
-      else if (hash === "#users") setActiveTab("users");
-      else if (hash === "#rbac") setActiveTab("rbac");
-      else if (hash === "#profile") {
+      if (hash === "#map") {
+        setActiveTab("map");
+      } else if (hash === "#dashboard") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/dashboard");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("dashboard");
+        }
+      } else if (hash === "#friends") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/friends");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("friends");
+        }
+      } else if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") {
+        setActiveTab("auth");
+      } else if (hash === "#users") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/users");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("users");
+        }
+      } else if (hash === "#rbac") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/rbac");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("rbac");
+        }
+      } else if (hash === "#voice") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/voice");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("voice");
+        }
+      } else if (hash === "#dedup" || window.location.pathname === "/dedup") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/dedup");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("dedup");
+        }
+      } else if (hash === "#penalties") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/penalties");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("penalties");
+        }
+      } else if (hash === "#posts" || hash === "#create-post") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/posts");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("posts");
+        }
+      } else if (hash === "#profile") {
         if (!isLogged) {
           setAuthRedirectUrl("/profile");
           setActiveTab("auth");
@@ -166,8 +325,7 @@ function App() {
         } else {
           setActiveTab("profile");
         }
-      }
-      else if (hash === "#report") {
+      } else if (hash === "#report") {
         if (!isLogged) {
           setAuthRedirectUrl("/report");
           setActiveTab("auth");
@@ -175,8 +333,7 @@ function App() {
         } else {
           setActiveTab("report");
         }
-      }
-      else if (hash === "#incidents") {
+      } else if (hash === "#incidents") {
         if (!isLogged) {
           setAuthRedirectUrl("/incidents");
           setActiveTab("auth");
@@ -184,8 +341,7 @@ function App() {
         } else {
           setActiveTab("incidents");
         }
-      }
-      else if (hash === "#waste-categories" || hash === "#waste_categories") {
+      } else if (hash === "#waste-categories" || hash === "#waste_categories") {
         if (!isLogged) {
           setAuthRedirectUrl("/waste-categories");
           setActiveTab("auth");
@@ -193,30 +349,76 @@ function App() {
         } else {
           setActiveTab("waste_categories");
         }
+      } else if (hash === "#recycling-facilities" || hash === "#recycling_facilities") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/recycling-facilities");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("recycling_facilities");
+        }
       }
     };
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
-  // Tự động đẩy người dùng về màn hình đăng nhập nếu ở tab profile hoặc report mà chưa có phiên đăng nhập hợp lệ
+  // Tự động đẩy người dùng về màn hình đăng nhập nếu ở các tab yêu cầu tài khoản mà chưa có currentUser
   useEffect(() => {
-    if (activeTab === "profile" && !currentUser) {
-      setAuthRedirectUrl("/profile");
-      setActiveTab("auth");
-      window.location.hash = "#login";
-    } else if (activeTab === "report" && !checkIsLoggedIn()) {
-      setAuthRedirectUrl("/report");
-      setActiveTab("auth");
-      window.location.hash = "#login";
-    } else if (activeTab === "incidents" && !checkIsLoggedIn()) {
-      setAuthRedirectUrl("/incidents");
-      setActiveTab("auth");
-      window.location.hash = "#login";
-    } else if (activeTab === "waste_categories" && !checkIsLoggedIn()) {
-      setAuthRedirectUrl("/waste-categories");
-      setActiveTab("auth");
-      window.location.hash = "#login";
+    if (!currentUser) {
+      if (activeTab === "profile") {
+        setAuthRedirectUrl("/profile");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "friends") {
+        setAuthRedirectUrl("/friends");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "dashboard") {
+        setAuthRedirectUrl("/dashboard");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "users") {
+        setAuthRedirectUrl("/users");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "rbac") {
+        setAuthRedirectUrl("/rbac");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "dedup") {
+        setAuthRedirectUrl("/dedup");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "posts") {
+        setAuthRedirectUrl("/posts");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "penalties") {
+        setAuthRedirectUrl("/penalties");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "voice") {
+        setAuthRedirectUrl("/voice");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "report") {
+        setAuthRedirectUrl("/report");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "incidents") {
+        setAuthRedirectUrl("/incidents");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "waste_categories") {
+        setAuthRedirectUrl("/waste-categories");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "recycling_facilities") {
+        setAuthRedirectUrl("/recycling-facilities");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      }
     }
   }, [activeTab, currentUser]);
 
@@ -292,7 +494,7 @@ function App() {
       />
 
       {/* THANH ĐIỀU HƯỚNG CHUYỂN ĐỔI CHẾ ĐỘ VIEW (TOP CENTER) */}
-      <nav className={`view-mode-switcher ${activeTab === "dashboard" || activeTab === "voice" ? "dark-mode" : ""}`} aria-label="Chế độ hiển thị">
+      <nav className={`view-mode-switcher ${isDarkMode || activeTab === "dashboard" || activeTab === "voice" ? "dark-mode" : ""}`} aria-label="Chế độ hiển thị">
         {currentUser ? (
           <div className="user-profile-nav-wrapper" ref={userMenuRef}>
             <button
@@ -309,7 +511,7 @@ function App() {
             </button>
 
             {userDropdownOpen && (
-              <div className={`user-nav-dropdown ${activeTab === "dashboard" || activeTab === "voice" ? "dark-mode" : ""}`} role="menu">
+              <div className={`user-nav-dropdown ${isDarkMode || activeTab === "dashboard" || activeTab === "voice" ? "dark-mode" : ""}`} role="menu">
                 <div className="dropdown-user-info">
                   <div className="dropdown-avatar">🌱</div>
                   <div className="dropdown-user-details">
@@ -334,6 +536,21 @@ function App() {
                 >
                   <span className="action-icon">🌿</span>
                   <span>Trang cá nhân & Green Passport</span>
+                </button>
+
+                <div className="dropdown-separator" />
+
+                <button
+                  type="button"
+                  className="dropdown-menu-action"
+                  onClick={() => {
+                    setUserDropdownOpen(false);
+                    setActiveTab("penalties");
+                    window.location.hash = "#penalties";
+                  }}
+                >
+                  <span className="action-icon">⚖️</span>
+                  <span>Tra cứu quy định xử phạt</span>
                 </button>
 
                 <div className="dropdown-separator" />
@@ -397,6 +614,37 @@ function App() {
                       <span>Danh mục rác & Quy chuẩn SLA</span>
                     </button>
                     <div className="dropdown-separator" />
+                    <button
+                      type="button"
+                      className="dropdown-menu-action"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        setActiveTab("recycling_facilities");
+                        window.location.hash = "#recycling-facilities";
+                      }}
+                    >
+                      <span className="action-icon">♻️</span>
+                      <span>Trạm thu gom tái chế</span>
+                    </button>
+                    <div className="dropdown-separator" />
+                  </>
+                )}
+
+                {hasDedupAccess && (
+                  <>
+                    <button
+                      type="button"
+                      className="dropdown-menu-action"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        setActiveTab("dedup");
+                        window.location.hash = "#dedup";
+                      }}
+                    >
+                      <span className="action-icon">📑</span>
+                      <span>Báo cáo trùng lặp (AI)</span>
+                    </button>
+                    <div className="dropdown-separator" />
                   </>
                 )}
 
@@ -412,6 +660,21 @@ function App() {
                 >
                   <span className="action-icon">💻</span>
                   <span>Quản lý thiết bị & Phiên</span>
+                </button>
+
+                <div className="dropdown-separator" />
+
+                <button
+                  type="button"
+                  className="dropdown-menu-action"
+                  onClick={() => {
+                    setUserDropdownOpen(false);
+                    setActiveTab("settings");
+                    window.location.hash = "#settings";
+                  }}
+                >
+                  <span className="action-icon">⚙️</span>
+                  <span>Cài đặt tài khoản</span>
                 </button>
 
                 <div className="dropdown-separator" />
@@ -522,6 +785,21 @@ function App() {
               </button>
             )}
 
+            {hasDedupAccess && (
+              <button
+                type="button"
+                className={`view-tab-btn ${activeTab === "dedup" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("dedup");
+                  window.location.hash = "#dedup";
+                }}
+                title="Bảng điều khiển AI gom cụm báo cáo trùng lặp"
+              >
+                <span>📑</span>
+                <span>Báo cáo trùng (AI)</span>
+              </button>
+            )}
+
             {hasMapAccess && (
               <button
                 type="button"
@@ -554,6 +832,32 @@ function App() {
 
             <button
               type="button"
+              className={`view-tab-btn ${activeTab === "posts" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("posts");
+                window.location.hash = "#create-post";
+              }}
+              title="Tạo bài viết, phản ánh sự cố & chia sẻ kinh nghiệm sống xanh (STT 9)"
+            >
+              <span>✍️</span>
+              <span>Đăng bài viết</span>
+            </button>
+
+            <button
+              type="button"
+              className={`view-tab-btn ${activeTab === "penalties" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("penalties");
+                window.location.hash = "#penalties";
+              }}
+              title="Tra cứu quy định xử phạt vi phạm hành chính (Nghị định 45/2022/NĐ-CP)"
+            >
+              <span>⚖️</span>
+              <span>Tra cứu xử phạt</span>
+            </button>
+
+            <button
+              type="button"
               className={`view-tab-btn ${activeTab === "voice" ? "active" : ""}`}
               onClick={() => {
                 setActiveTab("voice");
@@ -580,6 +884,19 @@ function App() {
 
             <button
               type="button"
+              className={`view-tab-btn ${activeTab === "friends" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("friends");
+                window.location.hash = "#friends";
+              }}
+              title="Kết bạn và theo dõi công dân xanh"
+            >
+              <span>🤝</span>
+              <span>Bạn bè & Kết nối</span>
+            </button>
+
+            <button
+              type="button"
               className={`view-tab-btn ${activeTab === "profile" ? "active" : ""}`}
               onClick={() => {
                 setActiveTab("profile");
@@ -589,6 +906,19 @@ function App() {
             >
               <span>🌿</span>
               <span>Hồ sơ xanh</span>
+            </button>
+
+            <button
+              type="button"
+              className={`view-tab-btn ${activeTab === "settings" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("settings");
+                window.location.hash = "#settings";
+              }}
+              title="Cài đặt giao diện, ngôn ngữ và bảo mật tài khoản"
+            >
+              <span>⚙️</span>
+              <span>Cài đặt</span>
             </button>
           </>
         ) : (
@@ -651,9 +981,9 @@ function App() {
         )}
       </nav>
 
-      {/* VIEW NỘI DUNG CHÍNH: AUTH, RBAC, USERS, PROFILE, VOICE, REPORT, MAP HOẶC DASHBOARD */}
+      {/* VIEW NỘI DUNG CHÍNH: TẤT CẢ CÁC MODULE */}
       {activeTab === "auth" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
           <AuthContainer
             initialView={
               authRedirectUrl === "/devices" || window.location.hash === "#devices"
@@ -694,7 +1024,7 @@ function App() {
         </div>
       ) : activeTab === "profile" ? (
         !currentUser ? (
-          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
             <AuthContainer
               initialView="login"
               redirectUrl="/profile"
@@ -705,7 +1035,7 @@ function App() {
             />
           </div>
         ) : (
-          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
             <ProfileContainer
               onBackToMap={() => {
                 setActiveTab("map");
@@ -724,7 +1054,7 @@ function App() {
           </div>
         )
       ) : activeTab === "rbac" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
           <RbacContainer
             onExit={() => {
               setActiveTab("map");
@@ -737,8 +1067,35 @@ function App() {
             }}
           />
         </div>
+      ) : activeTab === "friends" ? (
+        !currentUser ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/friends"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <FriendsContainer
+              currentUser={currentUser}
+              onBackToHome={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              onNavigateToProfile={() => {
+                setActiveTab("profile");
+                window.location.hash = "#profile";
+              }}
+            />
+          </div>
+        )
       ) : activeTab === "users" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
           <UserManagementContainer
             onBackToHome={() => {
               setActiveTab("map");
@@ -771,55 +1128,191 @@ function App() {
             }}
           />
         </div>
-      ) : activeTab === "voice" ? (
-        <VoiceAssistant
-          onClose={() => setActiveTab("map")}
-          onNavigateToFeature={(target) => {
-            if (target === "dashboard_aqi") {
-              setActiveTab("dashboard");
-            } else if (target === "/report-incident" || target === "report") {
-              setActiveTab("report");
-              window.location.hash = "#report";
-            } else {
+      ) : activeTab === "dedup" ? (
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+          <DeduplicationDashboard
+            currentUser={currentUser}
+            onBackToHome={() => {
               setActiveTab("map");
-            }
-          }}
-        />
-      ) : activeTab === "map" ? (
+              window.location.hash = "#map";
+            }}
+          />
+        </div>
+      ) : activeTab === "settings" ? (
+        !currentUser ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/settings"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <SettingsContainer
+              currentUser={currentUser}
+              onBackToMap={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              onNavigateToAuth={() => {
+                setAuthRedirectUrl("/settings");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+            />
+          </div>
+        )
+      ) : activeTab === "dashboard" ? (
+        !currentUser ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/dashboard"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <ModulePermissionGuard
+            moduleCode="AIR_QUALITY"
+            moduleName="Chỉ số chất lượng không khí AQI & Khí hậu"
+          >
+            <AirQualityDashboard
+              onBackToMap={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </ModulePermissionGuard>
+        )
+      ) : activeTab === "voice" ? (
+        !currentUser ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/voice"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <VoiceAssistant
+              onClose={() => setActiveTab("map")}
+              onNavigateToFeature={(target) => {
+                if (target === "dashboard_aqi") {
+                  setActiveTab("dashboard");
+                } else if (target === "/report-incident" || target === "report") {
+                  setActiveTab("report");
+                  window.location.hash = "#report";
+                } else {
+                  setActiveTab("map");
+                }
+              }}
+            />
+          </div>
+        )
+      ) : activeTab === "penalties" ? (
+        !currentUser ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/penalties"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <PenaltyLookupContainer
+              currentUser={currentUser}
+              onNavigateToAuth={() => {
+                setAuthRedirectUrl("/penalties");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+              onNavigateToReport={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        )
+      ) : activeTab === "posts" ? (
+        !currentUser ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/posts"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <PostCreatorContainer
+              onNavigateHome={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              onNavigateLogin={() => {
+                setAuthRedirectUrl("/posts");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+              onViewCreatedPost={(_postId) => {
+                setActiveTab("profile");
+                window.location.hash = "#profile";
+              }}
+            />
+          </div>
+        )
+      ) : (
+        /* Mặc định an toàn cho khách vãng lai và tab map: Bản đồ số WebGIS công cộng */
         <ModulePermissionGuard
           moduleCode="GIS_MAP"
           moduleName="Bản đồ số WebGIS"
         >
           <EcoMap />
         </ModulePermissionGuard>
-      ) : (
-        <ModulePermissionGuard
-          moduleCode="AIR_QUALITY"
-          moduleName="Chỉ số chất lượng không khí AQI & Khí hậu"
-        >
-          <AirQualityDashboard onBackToMap={() => setActiveTab("map")} />
-        </ModulePermissionGuard>
       )}
 
-      {/* NÚT TRỢ LÝ GIỌNG NÓI NHANH NỔI (FLOATING QUICK ACTION KHI Ở MAP HOẶC DASHBOARD) */}
-      {activeTab !== "voice" && (
-        <button
-          type="button"
-          className="floating-voice-quick-btn"
-          onClick={() => setActiveTab("voice")}
-          title="Bật Trợ lý giọng nói rảnh tay"
-          aria-label="Trợ lý giọng nói"
-        >
-          <span className="floating-mic-icon">🎙️</span>
-          <span className="floating-mic-label">Trợ lý ảo</span>
-        </button>
-      )}
+      {/* NÚT TRỢ LÝ GIỌNG NÓI NHANH NỔI (CHỈ HIỂN THỊ KHI ĐÃ ĐĂNG NHẬP VÀ KHÔNG Ở TAB VOICE) */}
+      {
+        currentUser && activeTab !== "voice" && (
+          <button
+            type="button"
+            className="floating-voice-quick-btn"
+            onClick={() => {
+              setActiveTab("voice");
+              window.location.hash = "#voice";
+            }}
+            title="Bật Trợ lý giọng nói rảnh tay"
+            aria-label="Trợ lý giọng nói"
+          >
+            <span className="floating-mic-icon">🎙️</span>
+            <span className="floating-mic-label">Trợ lý ảo</span>
+          </button>
+        )
+      }
 
       {/* NÚT KIỂM TRA MICROSERVICE BACKEND (GÓC TRÊN BÊN PHẢI) */}
       <div className="quick-status-badge">
         <button
           type="button"
-          className={`health-badge-btn ${activeTab === "dashboard" ? "dark-mode" : ""}`}
+          className={`health-badge-btn ${isDarkMode || activeTab === "dashboard" ? "dark-mode" : ""}`}
           onClick={() => {
             setShowDrawer((prev) => !prev);
             if (!backendStatus) checkHealth();
@@ -831,7 +1324,7 @@ function App() {
         </button>
 
         {showDrawer && (
-          <div className={`health-popover ${activeTab === "dashboard" ? "dark-mode" : ""}`}>
+          <div className={`health-popover ${isDarkMode || activeTab === "dashboard" ? "dark-mode" : ""}`}>
             <div className="popover-header">
               <strong>Backend Diagnostic</strong>
               <button
@@ -866,7 +1359,7 @@ function App() {
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 }
 

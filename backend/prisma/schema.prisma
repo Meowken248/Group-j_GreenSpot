@@ -1,0 +1,604 @@
+generator client {
+  provider                   = "prisma-client-py"
+  recursive_type_depth       = "5"
+  enable_experimental_decimal = true
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model administrative_units {
+  unit_id                     Int                           @id @default(autoincrement())
+  unit_code                   String                        @unique @db.VarChar(20)
+  name                        String                        @db.VarChar(150)
+  level                       String                        @db.VarChar(20)
+  parent_id                   Int?
+  boundary                    Unsupported("geometry")?
+  centroid                    Unsupported("geometry")?
+  area_km2                    Decimal?                      @db.Decimal(10, 2)
+  population                  Int?
+  created_at                  DateTime                      @default(now()) @db.Timestamptz(6)
+  updated_at                  DateTime                      @default(now()) @db.Timestamptz(6)
+  administrative_units        administrative_units?         @relation("administrative_unitsToadministrative_units", fields: [parent_id], references: [unit_id], onUpdate: NoAction)
+  other_administrative_units  administrative_units[]        @relation("administrative_unitsToadministrative_units")
+  essential_facilities        essential_facilities[]
+  incident_duplicate_clusters incident_duplicate_clusters[]
+  incidents                   incidents[]
+  iot_sensor_stations         iot_sensor_stations[]
+  recycling_facilities        recycling_facilities[]
+
+  @@index([boundary], map: "idx_administrative_units_boundary", type: Gist)
+  @@index([centroid], map: "idx_administrative_units_centroid", type: Gist)
+}
+
+model air_quality_records {
+  record_id       String   @id @db.Uuid
+  province        String   @db.VarChar(100)
+  location_name   String?  @db.VarChar(150)
+  timestamp       DateTime @db.Timestamp(6)
+  lat             Float
+  lon             Float
+  aqi             Float?
+  temp            Float?
+  humidity        Float?
+  rain            Float?
+  wind_speed      Float?
+  wind_dir        Float?
+  pressure        Float?
+  cloud           Float?
+  pm2_5           Float?
+  pm10            Float?
+  co              Float?
+  no2             Float?
+  o3              Float?
+  so2             Float?
+  pollution_level String?  @db.VarChar(50)
+  pollution_class Float?
+
+  @@index([location_name], map: "ix_air_quality_records_location_name")
+  @@index([province], map: "ix_air_quality_records_province")
+  @@index([timestamp], map: "ix_air_quality_records_timestamp")
+}
+
+model alembic_version {
+  version_num String @id(map: "alembic_version_pkc") @db.VarChar(32)
+}
+
+model badges {
+  badge_id         Int           @id @default(autoincrement())
+  badge_code       String        @unique @db.VarChar(50)
+  name             String        @db.VarChar(100)
+  description      String
+  icon_url         String        @db.VarChar(500)
+  unlock_condition String        @db.VarChar(255)
+  sort_order       Int
+  is_active        Boolean
+  deleted_at       DateTime?     @db.Timestamptz(6)
+  created_at       DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime      @default(now()) @db.Timestamptz(6)
+  user_badges      user_badges[]
+}
+
+model citizen_levels {
+  level_id       Int       @id @default(autoincrement())
+  level_name     String    @unique @db.VarChar(100)
+  min_points     Int       @unique
+  badge_icon_url String?   @db.VarChar(500)
+  sort_order     Int
+  deleted_at     DateTime? @db.Timestamptz(6)
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime  @default(now()) @db.Timestamptz(6)
+}
+
+model essential_facilities {
+  facility_id          Int                     @id @default(autoincrement())
+  facility_name        String                  @db.VarChar(200)
+  facility_type        String                  @db.VarChar(50)
+  address              String                  @db.VarChar(255)
+  unit_id              Int?
+  location             Unsupported("geometry")
+  contact_phone        String?                 @db.VarChar(20)
+  capacity_people      Int?
+  vulnerability_level  String                  @default("HIGH") @db.VarChar(20)
+  metadata             Json?
+  created_at           DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime                @default(now()) @db.Timestamptz(6)
+  administrative_units administrative_units?   @relation(fields: [unit_id], references: [unit_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([location], map: "idx_essential_facilities_location", type: Gist)
+}
+
+model flood_community_reports {
+  report_id           String                  @id @db.Uuid
+  hotspot_id          Int?
+  reporter_id         String?                 @db.Uuid
+  location            Unsupported("geometry")
+  address_description String                  @db.VarChar(255)
+  actual_depth_cm     Decimal?                @db.Decimal(5, 1)
+  severity_level      String                  @default("MINOR") @db.VarChar(20)
+  can_motorbike_pass  Boolean                 @default(true)
+  can_car_pass        Boolean                 @default(true)
+  image_url           String?                 @db.VarChar(500)
+  note                String?
+  upvotes             Int                     @default(1)
+  downvotes           Int                     @default(0)
+  is_verified         Boolean                 @default(false)
+  expires_at          DateTime                @db.Timestamptz(6)
+  created_at          DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime                @default(now()) @db.Timestamptz(6)
+  flood_hotspots      flood_hotspots?         @relation(fields: [hotspot_id], references: [hotspot_id], onUpdate: NoAction)
+  users               users?                  @relation(fields: [reporter_id], references: [user_id], onUpdate: NoAction)
+
+  @@index([location], map: "idx_flood_community_reports_location", type: Gist)
+  @@index([location], map: "idx_flood_report_loc", type: Gist)
+  @@index([hotspot_id], map: "ix_flood_community_reports_hotspot_id")
+  @@index([reporter_id], map: "ix_flood_community_reports_reporter_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model flood_hotspots {
+  hotspot_id                 Int                       @id @default(autoincrement())
+  hotspot_code               String                    @unique @db.VarChar(50)
+  street_name                String                    @db.VarChar(200)
+  ward_name                  String?                   @db.VarChar(100)
+  district_name              String?                   @db.VarChar(100)
+  location                   Unsupported("geometry")
+  road_corridor              Unsupported("geometry")?
+  elevation_meters           Decimal?                  @db.Decimal(5, 2)
+  primary_cause              String                    @default("COMBINED") @db.VarChar(20)
+  threshold_tide_meters      Decimal                   @default(1.50) @db.Decimal(4, 2)
+  threshold_rain_mm_per_hour Decimal                   @default(25.0) @db.Decimal(5, 2)
+  historical_max_depth_cm    Decimal?                  @default(30.0) @db.Decimal(5, 1)
+  drainage_system_rating     Int                       @default(3)
+  is_active                  Boolean                   @default(true)
+  created_at                 DateTime                  @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime                  @default(now()) @db.Timestamptz(6)
+  flood_community_reports    flood_community_reports[]
+  flood_risk_assessments     flood_risk_assessments[]
+
+  @@index([location], map: "idx_flood_hotspot_loc", type: Gist)
+  @@index([location], map: "idx_flood_hotspots_location", type: Gist)
+  @@index([road_corridor], map: "idx_flood_hotspots_road_corridor", type: Gist)
+  @@index([district_name], map: "ix_flood_hotspots_district_name")
+  @@index([street_name], map: "ix_flood_hotspots_street_name")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model flood_risk_assessments {
+  assessment_id           String         @id @db.Uuid
+  hotspot_id              Int
+  evaluated_at            DateTime       @db.Timestamptz(6)
+  current_rainfall_mmh    Decimal        @default(0.0) @db.Decimal(5, 2)
+  tide_water_level_m      Decimal        @default(1.0) @db.Decimal(5, 3)
+  calculated_risk_score   Decimal        @db.Decimal(4, 2)
+  predicted_depth_cm      Decimal        @default(0.0) @db.Decimal(5, 1)
+  severity_level          String         @default("SAFE") @db.VarChar(20)
+  is_impassable_for_bikes Boolean        @default(false)
+  is_impassable_for_cars  Boolean        @default(false)
+  advisory_notice         String?        @db.VarChar(255)
+  flood_hotspots          flood_hotspots @relation(fields: [hotspot_id], references: [hotspot_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([hotspot_id, evaluated_at], map: "idx_flood_assessment_time")
+  @@index([evaluated_at], map: "ix_flood_risk_assessments_evaluated_at")
+  @@index([hotspot_id], map: "ix_flood_risk_assessments_hotspot_id")
+}
+
+model incident_duplicate_clusters {
+  cluster_id                                                          String                @id @db.Uuid
+  cluster_code                                                        String                @unique @db.VarChar(50)
+  cluster_name                                                        String                @db.VarChar(150)
+  unit_id                                                             Int?
+  district_name                                                       String?               @db.VarChar(100)
+  incident_a_id                                                       String                @db.Uuid
+  incident_b_id                                                       String                @db.Uuid
+  report_count                                                        Int
+  similarity_rate                                                     Decimal               @db.Decimal(5, 2)
+  gps_distance_m                                                      Decimal               @db.Decimal(8, 2)
+  time_diff_hours                                                     Decimal               @db.Decimal(8, 2)
+  visual_similarity                                                   Decimal               @db.Decimal(5, 2)
+  ai_conclusion                                                       String?
+  status                                                              String                @db.VarChar(30)
+  master_incident_id                                                  String?               @db.Uuid
+  version                                                             Int
+  deleted_at                                                          DateTime?             @db.Timestamptz(6)
+  created_at                                                          DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at                                                          DateTime              @default(now()) @db.Timestamptz(6)
+  incidents_incident_duplicate_clusters_incident_a_idToincidents      incidents             @relation("incident_duplicate_clusters_incident_a_idToincidents", fields: [incident_a_id], references: [incident_id], onDelete: Cascade, onUpdate: NoAction)
+  incidents_incident_duplicate_clusters_incident_b_idToincidents      incidents             @relation("incident_duplicate_clusters_incident_b_idToincidents", fields: [incident_b_id], references: [incident_id], onDelete: Cascade, onUpdate: NoAction)
+  incidents_incident_duplicate_clusters_master_incident_idToincidents incidents?            @relation("incident_duplicate_clusters_master_incident_idToincidents", fields: [master_incident_id], references: [incident_id], onUpdate: NoAction)
+  administrative_units                                                administrative_units? @relation(fields: [unit_id], references: [unit_id], onUpdate: NoAction)
+}
+
+model incident_media {
+  media_id        String    @id @db.Uuid
+  incident_id     String    @db.Uuid
+  media_type      String    @db.VarChar(20)
+  phase           String    @default("BEFORE") @db.VarChar(20)
+  file_url        String    @db.VarChar(500)
+  thumbnail_url   String?   @db.VarChar(500)
+  file_size_bytes BigInt?
+  mime_type       String?   @db.VarChar(100)
+  uploader_id     String?   @db.Uuid
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  incidents       incidents @relation(fields: [incident_id], references: [incident_id], onDelete: Cascade, onUpdate: NoAction)
+  users           users?    @relation(fields: [uploader_id], references: [user_id], onUpdate: NoAction)
+}
+
+model incidents {
+  incident_id                                                                           String                        @id @db.Uuid
+  tracking_code                                                                         String                        @unique @db.VarChar(30)
+  reporter_id                                                                           String?                       @db.Uuid
+  category_id                                                                           Int
+  unit_id                                                                               Int?
+  title                                                                                 String                        @db.VarChar(255)
+  description                                                                           String
+  address_text                                                                          String                        @db.VarChar(500)
+  location                                                                              Unsupported("geometry")
+  latitude                                                                              Decimal                       @db.Decimal(10, 7)
+  longitude                                                                             Decimal                       @db.Decimal(10, 7)
+  severity                                                                              String                        @default("MEDIUM") @db.VarChar(20)
+  status                                                                                String                        @default("PENDING") @db.VarChar(30)
+  risk_score                                                                            Decimal                       @default(0.00) @db.Decimal(5, 2)
+  estimated_volume_m3                                                                   Decimal?                      @db.Decimal(8, 2)
+  is_anonymous                                                                          Boolean                       @default(false)
+  reporter_phone_masked                                                                 String?                       @db.VarChar(20)
+  upvotes_count                                                                         Int                           @default(0)
+  sla_deadline                                                                          DateTime?                     @db.Timestamptz(6)
+  resolved_at                                                                           DateTime?                     @db.Timestamptz(6)
+  closed_at                                                                             DateTime?                     @db.Timestamptz(6)
+  created_at                                                                            DateTime                      @default(now()) @db.Timestamptz(6)
+  updated_at                                                                            DateTime                      @default(now()) @db.Timestamptz(6)
+  version                                                                               Int                           @default(1)
+  deleted_at                                                                            DateTime?                     @db.Timestamptz(6)
+  master_incident_id                                                                    String?                       @db.Uuid
+  is_duplicate_merged                                                                   Boolean                       @default(false)
+  incident_duplicate_clusters_incident_duplicate_clusters_incident_a_idToincidents      incident_duplicate_clusters[] @relation("incident_duplicate_clusters_incident_a_idToincidents")
+  incident_duplicate_clusters_incident_duplicate_clusters_incident_b_idToincidents      incident_duplicate_clusters[] @relation("incident_duplicate_clusters_incident_b_idToincidents")
+  incident_duplicate_clusters_incident_duplicate_clusters_master_incident_idToincidents incident_duplicate_clusters[] @relation("incident_duplicate_clusters_master_incident_idToincidents")
+  incident_media                                                                        incident_media[]
+  waste_categories                                                                      waste_categories              @relation(fields: [category_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction)
+  incidents                                                                             incidents?                    @relation("incidentsToincidents", fields: [master_incident_id], references: [incident_id], onUpdate: NoAction)
+  other_incidents                                                                       incidents[]                   @relation("incidentsToincidents")
+  users                                                                                 users?                        @relation(fields: [reporter_id], references: [user_id], onUpdate: NoAction)
+  administrative_units                                                                  administrative_units?         @relation(fields: [unit_id], references: [unit_id], onUpdate: NoAction)
+
+  @@index([location], map: "idx_incidents_location", type: Gist)
+}
+
+model iot_sensor_stations {
+  station_id           Int                     @id @default(autoincrement())
+  station_code         String                  @unique @db.VarChar(50)
+  station_name         String                  @db.VarChar(150)
+  station_type         String                  @db.VarChar(50)
+  unit_id              Int?
+  location             Unsupported("geometry")
+  address              String                  @db.VarChar(255)
+  installation_date    DateTime?               @db.Date
+  firmware_version     String                  @default("v1.4.2") @db.VarChar(50)
+  battery_powered      Boolean                 @default(false)
+  solar_powered        Boolean                 @default(true)
+  status               String                  @default("ONLINE") @db.VarChar(30)
+  metadata             Json?
+  created_at           DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime                @default(now()) @db.Timestamptz(6)
+  administrative_units administrative_units?   @relation(fields: [unit_id], references: [unit_id], onUpdate: NoAction)
+
+  @@index([location], map: "idx_iot_sensor_stations_location", type: Gist)
+}
+
+model login_attempts {
+  email           String    @id @db.VarChar(255)
+  failed_count    Int
+  locked_until    DateTime? @db.Timestamptz(6)
+  last_attempt_at DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([email], map: "ix_login_attempts_email")
+}
+
+model permissions {
+  permission_id    Int                @id @default(autoincrement())
+  module           String             @db.VarChar(50)
+  action           String             @db.VarChar(50)
+  permission_code  String             @unique @db.VarChar(100)
+  description      String?
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  role_permissions role_permissions[]
+}
+
+model posts {
+  post_id         String    @id @db.Uuid
+  user_id         String    @db.Uuid
+  content         String
+  media_urls      String?
+  group_id        String?   @db.Uuid
+  visibility      String    @db.VarChar(20)
+  is_hidden       Boolean
+  reactions_count Int
+  comments_count  Int
+  deleted_at      DateTime? @db.Timestamptz(6)
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @default(now()) @db.Timestamptz(6)
+  users           users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "ix_posts_user_id")
+}
+
+model recycling_facilities {
+  facility_id          Int                     @id @default(autoincrement())
+  name                 String                  @db.VarChar(200)
+  facility_code        String?                 @unique @db.VarChar(50)
+  address              String                  @db.VarChar(255)
+  unit_id              Int?
+  location             Unsupported("geometry")
+  accepted_waste_types String[]
+  operating_hours      String?                 @db.VarChar(100)
+  contact_phone        String?                 @db.VarChar(20)
+  managing_org         String?                 @db.VarChar(150)
+  is_active            Boolean                 @default(true)
+  created_at           DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime                @default(now()) @db.Timestamptz(6)
+  administrative_units administrative_units?   @relation(fields: [unit_id], references: [unit_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([location], map: "idx_recycling_facilities_location", type: Gist)
+}
+
+model role_permissions {
+  role_id       Int
+  permission_id Int
+  created_at    DateTime    @default(now()) @db.Timestamptz(6)
+  permissions   permissions @relation(fields: [permission_id], references: [permission_id], onDelete: Cascade, onUpdate: NoAction)
+  roles         roles       @relation(fields: [role_id], references: [role_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([role_id, permission_id])
+}
+
+model roles {
+  role_id          Int                @id @default(autoincrement())
+  role_code        String             @unique @db.VarChar(50)
+  role_name        String             @db.VarChar(100)
+  description      String?
+  is_system        Boolean            @default(false)
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime           @default(now()) @db.Timestamptz(6)
+  scope            String?            @default("DISTRICT") @db.VarChar(20)
+  version          Int?               @default(1)
+  role_permissions role_permissions[]
+  users            users[]
+}
+
+model safe_navigation_routes {
+  route_id                     String                   @id @db.Uuid
+  user_id                      String?                  @db.Uuid
+  origin_point                 Unsupported("geometry")
+  destination_point            Unsupported("geometry")
+  default_route_geom           Unsupported("geometry")?
+  default_distance_meters      Decimal                  @default(0.0) @db.Decimal(10, 1)
+  default_duration_seconds     Int                      @default(0)
+  default_route_hazard_count   Int                      @default(0)
+  recommended_safe_geom        Unsupported("geometry")?
+  recommended_distance_meters  Decimal                  @default(0.0) @db.Decimal(10, 1)
+  recommended_duration_seconds Int                      @default(0)
+  safety_status                String                   @default("CLEAR") @db.VarChar(20)
+  avoided_hotspots_count       Int                      @default(0)
+  route_details_json           Json?
+  created_at                   DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at                   DateTime                 @default(now()) @db.Timestamptz(6)
+  users                        users?                   @relation(fields: [user_id], references: [user_id], onUpdate: NoAction)
+
+  @@index([destination_point], map: "idx_nav_dest", type: Gist)
+  @@index([origin_point], map: "idx_nav_origin", type: Gist)
+  @@index([default_route_geom], map: "idx_safe_navigation_routes_default_route_geom", type: Gist)
+  @@index([destination_point], map: "idx_safe_navigation_routes_destination_point", type: Gist)
+  @@index([origin_point], map: "idx_safe_navigation_routes_origin_point", type: Gist)
+  @@index([recommended_safe_geom], map: "idx_safe_navigation_routes_recommended_safe_geom", type: Gist)
+  @@index([user_id], map: "ix_safe_navigation_routes_user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model spatial_ref_sys {
+  srid      Int     @id
+  auth_name String? @db.VarChar(256)
+  auth_srid Int?
+  srtext    String? @db.VarChar(2048)
+  proj4text String? @db.VarChar(2048)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tide_harmonic_constituents {
+  constituent_id             Int           @id @default(autoincrement())
+  station_id                 Int
+  name                       String        @db.VarChar(10)
+  angular_speed_deg_per_hour Decimal       @db.Decimal(10, 6)
+  amplitude_meters           Decimal       @db.Decimal(6, 4)
+  phase_lag_degrees          Decimal       @db.Decimal(7, 3)
+  tide_stations              tide_stations @relation(fields: [station_id], references: [station_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([station_id, name], map: "uq_station_constituent")
+  @@index([station_id], map: "ix_tide_harmonic_constituents_station_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tide_stations {
+  station_id                 Int                          @id @default(autoincrement())
+  station_code               String                       @unique(map: "ix_tide_stations_station_code") @db.VarChar(30)
+  station_name               String                       @db.VarChar(150)
+  river_system               String                       @default("Sông Sài Gòn") @db.VarChar(100)
+  location                   Unsupported("geometry")
+  datum_offset_meters        Decimal                      @default(0.000) @db.Decimal(5, 3)
+  mean_sea_level_meters      Decimal                      @default(0.000) @db.Decimal(5, 3)
+  is_active                  Boolean                      @default(true)
+  created_at                 DateTime                     @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime                     @default(now()) @db.Timestamptz(6)
+  tide_harmonic_constituents tide_harmonic_constituents[]
+  tide_water_level_records   tide_water_level_records[]
+
+  @@index([location], map: "idx_tide_stations_location", type: Gist)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model tide_water_level_records {
+  record_id          String        @id @db.Uuid
+  station_id         Int
+  timestamp          DateTime      @db.Timestamptz(6)
+  water_level_meters Decimal       @db.Decimal(5, 3)
+  tide_state         String        @default("RISING") @db.VarChar(20)
+  alert_level        String        @default("NORMAL") @db.VarChar(20)
+  is_forecast        Boolean       @default(true)
+  created_at         DateTime      @default(now()) @db.Timestamptz(6)
+  tide_stations      tide_stations @relation(fields: [station_id], references: [station_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([station_id, timestamp], map: "idx_tide_station_time")
+  @@index([station_id], map: "ix_tide_water_level_records_station_id")
+  @@index([timestamp], map: "ix_tide_water_level_records_timestamp")
+}
+
+model user_activities {
+  activity_id   String    @id @db.Uuid
+  user_id       String    @db.Uuid
+  activity_type String    @db.VarChar(50)
+  title         String    @db.VarChar(255)
+  description   String?
+  points        Int
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at    DateTime? @db.Timestamptz(6)
+  users         users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([activity_type], map: "ix_user_activities_activity_type")
+  @@index([created_at], map: "ix_user_activities_created_at")
+  @@index([user_id], map: "ix_user_activities_user_id")
+}
+
+model user_badges {
+  user_badge_id String   @id @db.Uuid
+  user_id       String   @db.Uuid
+  badge_id      Int
+  earned_at     DateTime @default(now()) @db.Timestamptz(6)
+  badges        badges   @relation(fields: [badge_id], references: [badge_id], onDelete: Cascade, onUpdate: NoAction)
+  users         users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([badge_id], map: "ix_user_badges_badge_id")
+  @@index([user_id], map: "ix_user_badges_user_id")
+}
+
+model user_otps {
+  otp_id          String   @id @db.Uuid
+  email           String   @db.VarChar(255)
+  otp_code_hash   String   @db.VarChar(255)
+  otp_plain       String?  @db.VarChar(10)
+  expires_at      DateTime @db.Timestamptz(6)
+  failed_attempts Int
+  is_used         Boolean
+  purpose         String   @db.VarChar(50)
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([email], map: "ix_user_otps_email")
+}
+
+model user_sessions {
+  session_id         String    @id @db.Uuid
+  user_id            String    @db.Uuid
+  refresh_token_hash String    @db.VarChar(64)
+  device_name        String    @db.VarChar(150)
+  ip_address         String?   @db.VarChar(45)
+  user_agent         String?
+  expires_at         DateTime  @db.Timestamptz(6)
+  revoked_at         DateTime? @db.Timestamptz(6)
+  last_active_at     DateTime  @default(now()) @db.Timestamptz(6)
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime  @default(now()) @db.Timestamptz(6)
+  users              users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([refresh_token_hash], map: "ix_user_sessions_refresh_token_hash")
+  @@index([user_id], map: "ix_user_sessions_user_id")
+}
+
+model users {
+  user_id                 String                    @id @db.Uuid
+  email                   String                    @unique @db.VarChar(255)
+  phone_number            String?                   @unique @db.VarChar(20)
+  password_hash           String                    @db.VarChar(255)
+  full_name               String                    @db.VarChar(150)
+  avatar_url              String?                   @db.VarChar(500)
+  role_id                 Int
+  status                  String                    @default("ACTIVE") @db.VarChar(20)
+  citizen_id_card         String?                   @db.VarChar(20)
+  reputation_score        Int                       @default(100)
+  created_at              DateTime                  @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime                  @default(now()) @db.Timestamptz(6)
+  cover_image_url         String?                   @db.VarChar(500)
+  bio                     String?                   @db.VarChar(200)
+  date_of_birth           DateTime?                 @db.Date
+  activated_at            DateTime?                 @default(now()) @db.Timestamptz(6)
+  total_green_points      Int?                      @default(0)
+  friends_count           Int?                      @default(0)
+  version                 Int?                      @default(1)
+  deleted_at              DateTime?                 @db.Timestamptz(6)
+  flood_community_reports flood_community_reports[]
+  incident_media          incident_media[]
+  incidents               incidents[]
+  posts                   posts[]
+  safe_navigation_routes  safe_navigation_routes[]
+  user_activities         user_activities[]
+  user_badges             user_badges[]
+  user_sessions           user_sessions[]
+  roles                   roles                     @relation(fields: [role_id], references: [role_id], onDelete: NoAction, onUpdate: NoAction)
+  voice_interaction_logs  voice_interaction_logs[]
+}
+
+model voice_interaction_logs {
+  log_id             String   @id @db.Uuid
+  user_id            String?  @db.Uuid
+  raw_transcript     String
+  normalized_text    String
+  detected_intent    String?  @db.VarChar(50)
+  confidence_score   Float
+  action_type        String?  @db.VarChar(20)
+  response_text      String
+  is_success         Boolean
+  session_source     String   @db.VarChar(20)
+  processing_time_ms Int
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+  users              users?   @relation(fields: [user_id], references: [user_id], onUpdate: NoAction)
+
+  @@index([created_at], map: "idx_voice_log_created_at")
+  @@index([created_at], map: "ix_voice_interaction_logs_created_at")
+  @@index([detected_intent], map: "ix_voice_interaction_logs_detected_intent")
+  @@index([user_id], map: "ix_voice_interaction_logs_user_id")
+}
+
+model voice_sample_commands {
+  command_id       String   @id @db.Uuid
+  category         String   @db.VarChar(50)
+  command_text     String   @unique @db.VarChar(255)
+  intent_code      String   @db.VarChar(50)
+  action_type      String   @db.VarChar(20)
+  action_target    String?  @db.VarChar(100)
+  default_response String
+  is_active        Boolean
+  display_order    Int
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([is_active, display_order], map: "idx_voice_sample_active_order")
+  @@index([category], map: "ix_voice_sample_commands_category")
+  @@index([intent_code], map: "ix_voice_sample_commands_intent_code")
+}
+
+model waste_categories {
+  category_id      Int         @id @default(autoincrement())
+  category_code    String      @unique @db.VarChar(50)
+  name             String      @db.VarChar(150)
+  description      String?
+  default_severity String      @default("MEDIUM") @db.VarChar(20)
+  sla_hours        Int         @default(48)
+  color_hex        String      @default("#22C55E") @db.VarChar(10)
+  icon_name        String      @default("trash-2") @db.VarChar(50)
+  is_active        Boolean     @default(true)
+  created_at       DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime    @default(now()) @db.Timestamptz(6)
+  incidents        incidents[]
+}

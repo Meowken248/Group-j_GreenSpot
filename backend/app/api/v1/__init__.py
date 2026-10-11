@@ -12,12 +12,20 @@ from app.api.v1.voice_assistant import voice_router
 from app.api.v1.incidents import router as incidents_router
 from app.api.v1.waste_categories import router as waste_categories_router
 from app.api.v1.recycling_facilities import router as recycling_facilities_router
+from app.api.v1.friends import router as friends_router
+from app.api.v1.deduplication import router as deduplication_router
+from app.api.v1.settings import settings_router
+from app.api.v1.penalties import router as penalties_router
+from app.api.v1.posts import router as posts_router
 
 api_v1_router = APIRouter()
 api_v1_router.include_router(auth_router)
 api_v1_router.include_router(rbac_router)
 api_v1_router.include_router(user_management_router)
 api_v1_router.include_router(profile_router)
+api_v1_router.include_router(friends_router)
+api_v1_router.include_router(settings_router)
+api_v1_router.include_router(deduplication_router)
 api_v1_router.include_router(eco_locations_router)
 api_v1_router.include_router(spatial_router)
 api_v1_router.include_router(weather_router)
@@ -27,3 +35,5 @@ api_v1_router.include_router(voice_router)
 api_v1_router.include_router(incidents_router)
 api_v1_router.include_router(waste_categories_router)
 api_v1_router.include_router(recycling_facilities_router)
+api_v1_router.include_router(penalties_router)
+api_v1_router.include_router(posts_router)

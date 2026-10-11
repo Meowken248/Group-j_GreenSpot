@@ -97,3 +97,9 @@ Một số lệnh psql thường dùng:
 * `\dt`: Liệt kê tất cả các bảng trong schema hiện tại.
 * `\d <ten_bang>`: Xem chi tiết cấu trúc một bảng.
 * `\q`: Thoát khỏi psql.
+
+python scripts/db.py up       # Bật database Docker
+python scripts/db.py studio   # Mở giao diện xem bảng dữ liệu
+python scripts/db.py seed     # Nạp dữ liệu mẫu
+python scripts/db.py migrate  # Cập nhật cấu trúc bảng
+python scripts/db.py pull     # Kéo schema về Prisma

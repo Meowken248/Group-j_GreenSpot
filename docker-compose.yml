@@ -25,6 +25,7 @@ services:
     restart: always
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/ecoreport_db
+      WATCHFILES_FORCE_POLLING: "true"
       # =========================================================================
       # CẤU HÌNH GỬI EMAIL THẬT (GMAIL / OUTLOOK SMTP)
       # =========================================================================

@@ -46,6 +46,29 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
   const [resultData, setResultData] = useState<VoiceProcessResponse | null>(null);
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
 
+  // Quản lý trạng thái theme Sáng / Tối thời gian thực
+  const [themeMode, setThemeMode] = useState<"LIGHT" | "DARK">(() => {
+    try {
+      const savedTheme = localStorage.getItem("greenspot_user_theme");
+      if (savedTheme === "DARK") return "DARK";
+      if (document.body.classList.contains("dark-mode")) return "DARK";
+      return "LIGHT";
+    } catch {
+      return "LIGHT";
+    }
+  });
+
+  useEffect(() => {
+    const handleThemeChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ theme?: "LIGHT" | "DARK" }>;
+      if (customEvent.detail?.theme) {
+        setThemeMode(customEvent.detail.theme);
+      }
+    };
+    window.addEventListener("greenspot_theme_changed", handleThemeChange);
+    return () => window.removeEventListener("greenspot_theme_changed", handleThemeChange);
+  }, []);
+
   // Audio Stream & Web Speech Recognition Refs
   const [activeMediaStream, setActiveMediaStream] = useState<MediaStream | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -339,7 +362,10 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
   };
 
   return (
-    <div className="voice-assistant-fullscreen" data-testid="voice-assistant-container">
+    <div
+      className={`voice-assistant-fullscreen ${themeMode === "DARK" ? "dark-mode" : "light-mode"}`}
+      data-testid="voice-assistant-container"
+    >
       {/* KHUNG HEADER CHUNG */}
       <header className="voice-header" role="banner">
         <div className="voice-header-left">
