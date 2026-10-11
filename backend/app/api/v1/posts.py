@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.rbac import User
-from app.api.v1.auth import get_current_active_user
+from app.api.v1.rbac import get_current_active_user
 from app.services.post_service import PostService
 from app.schemas.post import (
     CreatePostRequest,
