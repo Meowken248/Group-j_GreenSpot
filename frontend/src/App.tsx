@@ -16,10 +16,11 @@ import { UserManagementContainer } from "./features/user_management";
 import { ProfileContainer } from "./features/profile";
 import { ReportContainer } from "./features/reports";
 import { IncidentManagementContainer } from "./features/incident_management";
+import { WasteCategoryContainer } from "./features/waste_categories";
 import api from "./api/client";
 import "./App.css";
 
-type TabType = "map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "voice" | "report" | "incidents";
+type TabType = "map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "voice" | "report" | "incidents" | "waste_categories";
 
 // Hàm kiểm tra trạng thái đăng nhập thực tế của phiên hiện tại
 const checkIsLoggedIn = (): boolean => {
@@ -74,6 +75,12 @@ function App() {
         return "auth";
       }
       return "incidents";
+    }
+    if (hash === "#waste-categories" || hash === "#waste_categories" || path === "/waste-categories") {
+      if (!isLogged) {
+        return "auth";
+      }
+      return "waste_categories";
     }
     // Mặc định: khi chưa đăng nhập, hiển thị Bản đồ WebGIS công cộng
     if (!isLogged) return "map";
@@ -171,6 +178,15 @@ function App() {
           setActiveTab("incidents");
         }
       }
+      else if (hash === "#waste-categories" || hash === "#waste_categories") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/waste-categories");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("waste_categories");
+        }
+      }
     };
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
@@ -188,6 +204,10 @@ function App() {
       window.location.hash = "#login";
     } else if (activeTab === "incidents" && !checkIsLoggedIn()) {
       setAuthRedirectUrl("/incidents");
+      setActiveTab("auth");
+      window.location.hash = "#login";
+    } else if (activeTab === "waste_categories" && !checkIsLoggedIn()) {
+      setAuthRedirectUrl("/waste-categories");
       setActiveTab("auth");
       window.location.hash = "#login";
     }
@@ -357,6 +377,19 @@ function App() {
                       <span>Phân quyền vai trò</span>
                     </button>
                     <div className="dropdown-separator" />
+                    <button
+                      type="button"
+                      className="dropdown-menu-action"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        setActiveTab("waste_categories");
+                        window.location.hash = "#waste-categories";
+                      }}
+                    >
+                      <span className="action-icon">🗑️</span>
+                      <span>Danh mục rác & Quy chuẩn SLA</span>
+                    </button>
+                    <div className="dropdown-separator" />
                   </>
                 )}
 
@@ -434,6 +467,21 @@ function App() {
               >
                 <span>🛡️</span>
                 <span>Phân quyền vai trò</span>
+              </button>
+            )}
+
+            {currentUser?.role === "ADMIN" && (
+              <button
+                type="button"
+                className={`view-tab-btn btn-waste-cat-nav ${activeTab === "waste_categories" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("waste_categories");
+                  window.location.hash = "#waste-categories";
+                }}
+                title="Quản trị Danh mục Rác thải Đô thị & Cấu hình Quy chuẩn SLA (Chức năng 22)"
+              >
+                <span>🗑️</span>
+                <span>Danh mục rác & SLA</span>
               </button>
             )}
 
@@ -678,6 +726,16 @@ function App() {
               setAuthRedirectUrl("/users");
               setActiveTab("auth");
               window.location.hash = "#login";
+            }}
+          />
+        </div>
+      ) : activeTab === "waste_categories" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <WasteCategoryContainer
+            currentUser={currentUser}
+            onNavigateHome={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
             }}
           />
         </div>

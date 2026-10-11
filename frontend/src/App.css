@@ -82,6 +82,21 @@
   box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);
 }
 
+.view-tab-btn.btn-waste-cat-nav {
+  color: #0d9488;
+  font-weight: 700;
+}
+
+.view-tab-btn.btn-waste-cat-nav:hover {
+  color: #0f766e;
+}
+
+.view-tab-btn.btn-waste-cat-nav.active {
+  background: #0f766e;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.3);
+}
+
 .view-tab-btn.permission-locked {
   opacity: 0.42;
   color: #94a3b8;
