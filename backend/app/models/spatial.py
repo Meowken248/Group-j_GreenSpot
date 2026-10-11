@@ -1,6 +1,7 @@
+from datetime import datetime
 from typing import List, Optional
 from geoalchemy2 import Geometry
-from sqlalchemy import ARRAY, Boolean, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import ARRAY, Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -51,6 +52,14 @@ class RecyclingFacility(Base, TimestampMixin):
     location = mapped_column(Geometry(geometry_type="POINT", srid=4326), nullable=False)
     accepted_waste_types: Mapped[List[str]] = mapped_column(ARRAY(Text), nullable=False)
     operating_hours: Mapped[Optional[str]] = mapped_column(String(100))
+    open_time: Mapped[Optional[str]] = mapped_column(String(10), default="07:30")
+    close_time: Mapped[Optional[str]] = mapped_column(String(10), default="17:00")
+    qr_code: Mapped[Optional[str]] = mapped_column(String(100), unique=True)
     contact_phone: Mapped[Optional[str]] = mapped_column(String(20))
     managing_org: Mapped[Optional[str]] = mapped_column(String(150))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    unit: Mapped[Optional["AdministrativeUnit"]] = relationship("AdministrativeUnit")
+

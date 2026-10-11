@@ -9,9 +9,9 @@ export interface WasteCategoryItem {
   description?: string;
   default_severity: string;
   sla_hours: number;
-  color_hex: string;
-  icon_name: string;
-  is_active: boolean;
+  color_hex?: string;
+  icon_name?: string;
+  is_active?: boolean;
 }
 
 export interface AttachedMedia {

@@ -17,10 +17,11 @@ import { ProfileContainer } from "./features/profile";
 import { ReportContainer } from "./features/reports";
 import { IncidentManagementContainer } from "./features/incident_management";
 import { WasteCategoryContainer } from "./features/waste_categories";
+import { RecyclingFacilityContainer } from "./features/recycling_facilities";
 import api from "./api/client";
 import "./App.css";
 
-type TabType = "map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "voice" | "report" | "incidents" | "waste_categories";
+type TabType = "map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "voice" | "report" | "incidents" | "waste_categories" | "recycling_facilities";
 
 // Hàm kiểm tra trạng thái đăng nhập thực tế của phiên hiện tại
 const checkIsLoggedIn = (): boolean => {
@@ -81,6 +82,12 @@ function App() {
         return "auth";
       }
       return "waste_categories";
+    }
+    if (hash === "#recycling-facilities" || hash === "#recycling_facilities" || path === "/recycling-facilities") {
+      if (!isLogged) {
+        return "auth";
+      }
+      return "recycling_facilities";
     }
     // Mặc định: khi chưa đăng nhập, hiển thị Bản đồ WebGIS công cộng
     if (!isLogged) return "map";
@@ -485,6 +492,21 @@ function App() {
               </button>
             )}
 
+            {currentUser?.role === "ADMIN" && (
+              <button
+                type="button"
+                className={`view-tab-btn btn-recycling-facilities-nav ${activeTab === "recycling_facilities" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("recycling_facilities");
+                  window.location.hash = "#recycling-facilities";
+                }}
+                title="Quản trị Mạng lưới Trạm Tái chế & Điểm Tiếp nhận"
+              >
+                <span>♻️</span>
+                <span>Trạm tái chế</span>
+              </button>
+            )}
+
             {hasIncidentMgmtAccess && (
               <button
                 type="button"
@@ -732,6 +754,16 @@ function App() {
       ) : activeTab === "waste_categories" ? (
         <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc", paddingTop: "76px" }}>
           <WasteCategoryContainer
+            currentUser={currentUser}
+            onNavigateHome={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
+          />
+        </div>
+      ) : activeTab === "recycling_facilities" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", overflowX: "hidden", background: "#f8fafc", paddingTop: "76px" }}>
+          <RecyclingFacilityContainer
             currentUser={currentUser}
             onNavigateHome={() => {
               setActiveTab("map");
