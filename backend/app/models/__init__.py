@@ -70,6 +70,8 @@ from app.models.profile import (
     UserActivity,
     Post,
 )
+from app.models.post import PostTaggedFriend
+
 
 # 7. Kết bạn và theo dõi (Friends & Follows Domain)
 from app.models.friends import (
@@ -132,6 +134,8 @@ __all__ = [
     "UserBadge",
     "UserActivity",
     "Post",
+    "PostTaggedFriend",
+
     # Friends & Follows Domain
     "FriendRequest",
     "Friendship",
