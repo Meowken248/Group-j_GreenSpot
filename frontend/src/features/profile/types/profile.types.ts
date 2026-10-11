@@ -45,8 +45,27 @@ export interface PostItem {
   reactions_count: number;
   comments_count: number;
   is_hidden: boolean;
+  is_edited?: boolean;
+  version?: number;
   created_at: string;
+  updated_at?: string;
   relative_time?: string;
+}
+
+export interface UpdatePostPayload {
+  content?: string;
+  media_urls?: Array<{ url: string; media_type: "IMAGE" | "VIDEO"; file_name: string; size_bytes: number }>;
+  latitude?: number | null;
+  longitude?: number | null;
+  address?: string | null;
+  version: number;
+}
+
+export interface ToggleHidePostResponse {
+  success: boolean;
+  post_id: string;
+  is_hidden: boolean;
+  message: string;
 }
 
 export interface PostListResponse {

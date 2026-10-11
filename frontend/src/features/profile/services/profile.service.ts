@@ -64,4 +64,42 @@ export const profileService = {
     const res = await api.put<UpdateProfileResponse>("/api/v1/profile/me", payload);
     return res.data;
   },
+
+  // =========================================================================
+  // CÁC THAO TÁC BÀI VIẾT (FEATURE STT 13: SỬA, XOÁ VÀ ẨN BÀI VIẾT)
+  // =========================================================================
+
+  // Cập nhật bài viết (Màn 2/5)
+  async updatePost(postId: string, payload: UpdatePostPayload): Promise<PostItem> {
+    const res = await api.patch<PostItem>(`/api/v1/posts/${postId}`, payload);
+    return res.data;
+  },
+
+  // Xoá mềm bài viết (Màn 3/5 & 4/5)
+  async deletePost(postId: string): Promise<{ success: boolean; message: string }> {
+    const res = await api.delete<{ success: boolean; message: string }>(`/api/v1/posts/${postId}`);
+    return res.data;
+  },
+
+  // Ẩn hoặc Hiện lại bài viết (Màn 5/5)
+  async toggleHidePost(postId: string, isHidden: boolean): Promise<ToggleHidePostResponse> {
+    const res = await api.patch<ToggleHidePostResponse>(`/api/v1/posts/${postId}/visibility`, {
+      is_hidden: isHidden,
+    });
+    return res.data;
+  },
+
+  // Tải lên tệp ảnh hoặc video đính kèm khi sửa bài
+  async uploadMedia(file: File): Promise<{ url: string; media_type: "IMAGE" | "VIDEO"; file_name: string; size_bytes: number }> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await api.post<{ url: string; media_type: "IMAGE" | "VIDEO"; file_name: string; size_bytes: number }>(
+      "/api/v1/posts/media",
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
+    return res.data;
+  },
 };
