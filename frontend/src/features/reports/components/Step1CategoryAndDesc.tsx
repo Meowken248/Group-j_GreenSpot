@@ -257,15 +257,15 @@ export const Step1CategoryAndDesc: React.FC<Step1Props> = ({
           })}
         </div>
 
-        {/* DANH SÁCH DANH MỤC QUY CHUẨN TỪ CSDL DO ADMIN QUẢN LÝ */}
+        {/* LỰA CHỌN CHI TIẾT KHI CÓ NHIỀU HƠN 1 LOẠI TRONG NHÓM */}
         {selectedCategoryKey && (() => {
           const matchedList = getMatchedSubCategories(selectedCategoryKey);
-          if (matchedList.length === 0) return null;
+          if (matchedList.length <= 1) return null;
           return (
             <div className="sub-categories-container">
               <div className="sub-section-header">
                 <span className="sub-section-title">
-                  📋 Quy chuẩn phân loại chi tiết do Admin thiết lập ({matchedList.length} loại):
+                  Phân loại cụ thể để hỗ trợ xử lý nhanh hơn:
                 </span>
               </div>
               <div className="sub-categories-grid">
@@ -281,23 +281,18 @@ export const Step1CategoryAndDesc: React.FC<Step1Props> = ({
                     >
                       <div className="sub-card-top">
                         <span className="sub-cat-name">{subCat.name}</span>
-                        <span className="sub-cat-sla">⏱️ SLA: {subCat.sla_hours}h</span>
+                        <span className="sub-cat-sla">⏱️ {subCat.sla_hours} giờ</span>
                       </div>
                       {subCat.description && (
                         <p className="sub-cat-desc">{subCat.description}</p>
                       )}
-                      <div className="sub-card-bottom">
-                        <span className={`sub-sev-badge sev-${subCat.default_severity.toLowerCase()}`}>
-                          {subCat.default_severity === "CRITICAL"
-                            ? "Khẩn cấp"
-                            : subCat.default_severity === "HIGH"
-                            ? "Cao"
-                            : subCat.default_severity === "MEDIUM"
-                            ? "Trung bình"
-                            : "Thấp"}
-                        </span>
-                        <span className="sub-cat-code">#{subCat.category_code}</span>
-                      </div>
+                      {subCat.default_severity === "CRITICAL" && (
+                        <div className="sub-card-bottom">
+                          <span className="sub-sev-badge sev-critical">
+                            ⚡ Ưu tiên xử lý khẩn cấp
+                          </span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -306,15 +301,15 @@ export const Step1CategoryAndDesc: React.FC<Step1Props> = ({
           );
         })()}
 
-        {/* THÔNG BÁO QUY CHUẨN ĐÃ CHỌN KÈM SLA */}
+        {/* CAM KẾT THỜI GIAN GIẢI QUYẾT CHO CÔNG DÂN */}
         {formData.category_name && (
-          <div className="selected-category-sla-bar">
-            <span className="sla-bar-icon">✅</span>
-            <div className="sla-bar-text">
-              <span>Đang áp dụng: <strong>{formData.category_name}</strong></span>
+          <div className="citizen-sla-commitment-banner">
+            <span className="commitment-icon">🛡️</span>
+            <div className="commitment-text">
+              <span>Đang chọn: <strong>{formData.category_name}</strong></span>
               {formData.sla_hours && (
-                <span className="sla-pill-tag">
-                  ⏱️ Cam kết thời hạn xử lý (SLA): <strong>{formData.sla_hours} giờ</strong>
+                <span className="commitment-time">
+                  • Cam kết tiếp nhận và xử lý trong vòng <strong>{formData.sla_hours} giờ</strong>
                 </span>
               )}
             </div>

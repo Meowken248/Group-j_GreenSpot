@@ -397,18 +397,19 @@
   }
 
   /* QUY CHUẨN DANH MỤC CON DO ADMIN QUẢN LÝ */
+  /* PHÂN LOẠI CHI TIẾT THÂN THIỆN VỚI NGƯỜI DÂN */
   .sub-categories-container {
     margin-top: 20px;
     padding-top: 18px;
-    border-top: 1px dashed #334155;
+    border-top: 1px dashed rgba(148, 163, 184, 0.2);
 
     .sub-section-header {
       margin-bottom: 12px;
       .sub-section-title {
-        font-size: 13px;
-        font-weight: 700;
-        color: #38bdf8;
-        letter-spacing: 0.3px;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: #94a3b8;
+        letter-spacing: 0.2px;
       }
     }
 
@@ -421,15 +422,16 @@
         background: #0f172a;
         border: 1.5px solid #334155;
         border-radius: 10px;
-        padding: 14px;
+        padding: 14px 16px;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         display: flex;
         flex-direction: column;
         justify-content: space-between;
 
         &:hover {
           border-color: #38bdf8;
+          background: #111e38;
           transform: translateY(-1px);
         }
 
@@ -447,21 +449,22 @@
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          gap: 8px;
+          gap: 10px;
           margin-bottom: 6px;
 
           .sub-cat-name {
-            font-size: 14px;
-            font-weight: 700;
+            font-size: 14.5px;
+            font-weight: 600;
             color: #f1f5f9;
             flex: 1;
+            line-height: 1.35;
           }
 
           .sub-cat-sla {
             font-size: 12px;
-            font-weight: 700;
-            color: #fbbf24;
-            background: rgba(245, 158, 11, 0.15);
+            font-weight: 600;
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.12);
             padding: 2px 8px;
             border-radius: 6px;
             white-space: nowrap;
@@ -469,86 +472,67 @@
         }
 
         .sub-cat-desc {
-          font-size: 12px;
+          font-size: 12.5px;
           color: #94a3b8;
-          line-height: 1.4;
-          margin: 0 0 10px 0;
+          line-height: 1.45;
+          margin: 0;
         }
 
         .sub-card-bottom {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
+          margin-top: 10px;
           padding-top: 8px;
-          border-top: 1px solid rgba(51, 65, 85, 0.5);
+          border-top: 1px solid rgba(51, 65, 85, 0.4);
 
           .sub-sev-badge {
             font-size: 11px;
             font-weight: 600;
-            padding: 2px 6px;
+            padding: 2px 8px;
             border-radius: 4px;
 
             &.sev-critical {
               background: rgba(239, 68, 68, 0.2);
               color: #f87171;
             }
-            &.sev-high {
-              background: rgba(249, 115, 22, 0.2);
-              color: #fb923c;
-            }
-            &.sev-medium {
-              background: rgba(234, 179, 8, 0.2);
-              color: #fde047;
-            }
-            &.sev-low {
-              background: rgba(148, 163, 184, 0.2);
-              color: #cbd5e1;
-            }
-          }
-
-          .sub-cat-code {
-            font-size: 11px;
-            color: #64748b;
-            font-family: monospace;
           }
         }
       }
     }
   }
 
-  /* THANH THÔNG BÁO QUY CHUẨN VÀ SLA ĐÃ CHỌN */
-  .selected-category-sla-bar {
+  /* THANH CAM KẾT THỜI GIAN TIẾP NHẬN & XỬ LÝ (CITIZEN-FIRST) */
+  .citizen-sla-commitment-banner {
     margin-top: 16px;
-    background: rgba(16, 185, 129, 0.12);
-    border: 1px solid rgba(16, 185, 129, 0.4);
-    border-radius: 8px;
-    padding: 10px 14px;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    border-radius: 10px;
+    padding: 12px 16px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 
-    .sla-bar-icon {
-      font-size: 16px;
+    .commitment-icon {
+      font-size: 18px;
+      flex-shrink: 0;
     }
 
-    .sla-bar-text {
+    .commitment-text {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 12px;
-      font-size: 13px;
+      gap: 10px;
+      font-size: 13.5px;
       color: #e2e8f0;
+      line-height: 1.4;
 
       strong {
         color: #34d399;
       }
 
-      .sla-pill-tag {
-        background: rgba(16, 185, 129, 0.25);
-        color: #a7f3d0;
-        padding: 3px 8px;
-        border-radius: 6px;
-        font-weight: 600;
+      .commitment-time {
+        color: #94a3b8;
+        strong {
+          color: #fde047;
+        }
       }
     }
   }
