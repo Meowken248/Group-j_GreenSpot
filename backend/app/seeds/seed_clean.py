@@ -93,6 +93,8 @@ INSERT INTO waste_categories (category_id, category_code, name, description, def
 SELECT 5, 'CONSTRUCTION_DEBRIS', 'Xà bần & Phế thải xây dựng', 'Gạch vữa phế thải lấn chiếm lòng lề đường', 'LOW', 72, '#78716C', 'truck', TRUE
 WHERE NOT EXISTS (SELECT 1 FROM waste_categories WHERE category_code = 'CONSTRUCTION_DEBRIS');
 
+SELECT setval('waste_categories_category_id_seq', COALESCE((SELECT MAX(category_id) FROM waste_categories), 1));
+
 -- 5. INCIDENTS (SỰ CỐ MÔI TRƯỜNG THỰC TẾ TP.HCM)
 DELETE FROM incidents WHERE tracking_code LIKE 'ECO-HCM-%';
 

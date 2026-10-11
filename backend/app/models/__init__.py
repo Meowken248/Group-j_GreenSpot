@@ -70,6 +70,9 @@ from app.models.profile import (
     Post,
 )
 
+# 8. Nhật ký kiểm toán hệ thống (Audit Logs)
+from app.models.audit_log import AuditLog
+
 __all__ = [
     "Base",
     "TimestampMixin",
@@ -116,4 +119,6 @@ __all__ = [
     "UserBadge",
     "UserActivity",
     "Post",
+    # Audit Logs
+    "AuditLog",
 ]

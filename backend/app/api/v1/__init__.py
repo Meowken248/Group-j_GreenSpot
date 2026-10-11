@@ -10,6 +10,7 @@ from app.api.v1.flood import router as flood_router
 from app.api.v1.air_quality import router as air_quality_router
 from app.api.v1.voice_assistant import voice_router
 from app.api.v1.incidents import router as incidents_router
+from app.api.v1.waste_categories import router as waste_categories_router
 
 api_v1_router = APIRouter()
 api_v1_router.include_router(auth_router)
@@ -23,3 +24,4 @@ api_v1_router.include_router(flood_router)
 api_v1_router.include_router(air_quality_router)
 api_v1_router.include_router(voice_router)
 api_v1_router.include_router(incidents_router)
+api_v1_router.include_router(waste_categories_router)
