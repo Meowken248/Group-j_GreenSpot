@@ -55,7 +55,10 @@ class PostItemResponse(BaseModel):
     reactions_count: int = 0
     comments_count: int = 0
     is_hidden: bool = False
+    is_edited: bool = False
+    version: int = 1
     created_at: datetime
+    updated_at: Optional[datetime] = None
     relative_time: Optional[str] = None
 
 

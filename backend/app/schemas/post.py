@@ -79,8 +79,8 @@ class CreatePostRequest(BaseModel):
 
 
 class UpdatePostRequest(BaseModel):
-    """Schema cập nhật bài viết có Optimistic Locking (Rule 7)"""
-    content: Optional[str] = Field(default=None, description="Nội dung bài viết cần sửa")
+    """Schema cập nhật bài viết có Optimistic Locking (Rule 7, Feature STT 13 Màn 2/5)"""
+    content: Optional[str] = Field(default=None, description="Nội dung bài viết cần sửa (tối đa 2.000 ký tự)")
     media_urls: Optional[List[MediaItemInput]] = Field(default=None, description="Danh sách media mới")
     latitude: Optional[float] = Field(default=None, description="Vĩ độ GPS mới")
     longitude: Optional[float] = Field(default=None, description="Kinh độ GPS mới")
@@ -89,9 +89,22 @@ class UpdatePostRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_update(self) -> "UpdatePostRequest":
-        if self.content is not None and len(self.content) > 3000:
-            raise ValueError("Nội dung bài viết tối đa 3000 ký tự")
+        if self.content is not None and len(self.content) > 2000:
+            raise ValueError("Nội dung bài viết tối đa 2000 ký tự")
         return self
+
+
+class ToggleHidePostRequest(BaseModel):
+    """Schema yêu cầu ẩn/hiện bài viết (Feature STT 13 Màn 5/5)"""
+    is_hidden: bool = Field(..., description="Trạng thái ẩn bài viết (True: Ẩn, False: Hiện lại)")
+
+
+class ToggleHidePostResponse(BaseModel):
+    """Schema phản hồi khi ẩn/hiện bài viết thành công"""
+    success: bool = True
+    post_id: uuid.UUID
+    is_hidden: bool
+    message: str
 
 
 class AuthorSummary(BaseModel):
@@ -125,6 +138,7 @@ class PostDetailResponse(BaseModel):
     group_id: Optional[uuid.UUID] = None
     visibility: str = "PUBLIC"
     is_hidden: bool = False
+    is_edited: bool = False
     reactions_count: int = 0
     comments_count: int = 0
     version: int = 1

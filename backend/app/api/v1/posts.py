@@ -14,6 +14,8 @@ from app.services.post_service import PostService
 from app.schemas.post import (
     CreatePostRequest,
     UpdatePostRequest,
+    ToggleHidePostRequest,
+    ToggleHidePostResponse,
     PostDetailResponse,
     MediaUploadResponse,
 )
@@ -102,9 +104,40 @@ async def update_post(
     return post_service.format_post_response(post)
 
 
+@router.patch(
+    "/{post_id}/visibility",
+    response_model=ToggleHidePostResponse,
+    summary="Ẩn hoặc hiện lại bài viết (Feature STT 13 Màn 5/5)",
+)
+async def toggle_post_visibility(
+    post_id: uuid.UUID,
+    payload: ToggleHidePostRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Ẩn hoặc hiện lại bài viết của chính mình:
+    - Bắt buộc đăng nhập
+    - Chỉ chính tác giả mới có quyền ẩn/hiện bài viết
+    """
+    post = await post_service.toggle_hide_post(
+        db=db,
+        post_id=post_id,
+        user_id=current_user.user_id,
+        is_hidden=payload.is_hidden,
+    )
+    msg = "Ẩn bài viết thành công. Chỉ bạn nhìn thấy bài này." if payload.is_hidden else "Đã hiển thị lại bài viết"
+    return ToggleHidePostResponse(
+        success=True,
+        post_id=post.post_id,
+        is_hidden=post.is_hidden,
+        message=msg,
+    )
+
+
 @router.delete(
     "/{post_id}",
-    summary="Xóa mềm bài viết (Soft delete)",
+    summary="Xóa mềm bài viết (Soft delete, Feature STT 13 Màn 3/5 & 4/5)",
 )
 async def delete_post(
     post_id: uuid.UUID,
@@ -117,7 +150,7 @@ async def delete_post(
         post_id=post_id,
         user_id=current_user.user_id,
     )
-    return {"success": success, "message": "Bài viết đã được xóa"}
+    return {"success": success, "message": "Đã xoá bài viết"}
 
 
 @router.get(

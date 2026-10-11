@@ -172,18 +172,20 @@ class PostService:
         if request.address is not None:
             post.address = request.address
 
+        post.updated_at = datetime.now(timezone.utc)
         post.version += 1
         await db.commit()
         await db.refresh(post)
         return await self.get_post_by_id(db, post.post_id)
 
-    async def soft_delete_post(
+    async def toggle_hide_post(
         self,
         db: AsyncSession,
         post_id: uuid.UUID,
         user_id: uuid.UUID,
-    ) -> bool:
-        """Xóa mềm bài viết (Rule 6: deleted_at)"""
+        is_hidden: bool,
+    ) -> Post:
+        """Ẩn hoặc hiện lại bài viết của chính mình (Feature STT 13 Màn 5/5)"""
         stmt = select(Post).where(
             and_(
                 Post.post_id == post_id,
@@ -196,7 +198,41 @@ class PostService:
         if not post:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail={"error_code": "POST_NOT_FOUND", "message": "Bài viết không tồn tại"}
+                detail={"error_code": "POST_NOT_FOUND", "message": "Bài viết không tồn tại hoặc đã bị xóa"}
+            )
+
+        if post.user_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={"error_code": "PERMISSION_DENIED", "message": "Bạn không có quyền ẩn/hiện bài viết này"}
+            )
+
+        post.is_hidden = is_hidden
+        post.updated_at = datetime.now(timezone.utc)
+        await db.commit()
+        await db.refresh(post)
+        return await self.get_post_by_id(db, post.post_id)
+
+    async def soft_delete_post(
+        self,
+        db: AsyncSession,
+        post_id: uuid.UUID,
+        user_id: uuid.UUID,
+    ) -> bool:
+        """Xóa mềm bài viết (Rule 6: deleted_at, Feature STT 13 Màn 3/5 & 4/5)"""
+        stmt = select(Post).where(
+            and_(
+                Post.post_id == post_id,
+                Post.deleted_at.is_(None),
+            )
+        )
+        res = await db.execute(stmt)
+        post = res.scalars().first()
+
+        if not post:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error_code": "POST_NOT_FOUND", "message": "Bài viết không tồn tại hoặc đã bị xóa"}
             )
 
         if post.user_id != user_id:
@@ -301,6 +337,15 @@ class PostService:
                 avatar_url=post.user.avatar_url,
             )
 
+        # Tính toán cờ is_edited nếu bài viết đã được cập nhật
+        is_edited = False
+        if post.updated_at and post.created_at:
+            try:
+                diff_sec = abs((post.updated_at - post.created_at).total_seconds())
+                is_edited = diff_sec > 2
+            except Exception:
+                is_edited = False
+
         return PostDetailResponse(
             post_id=post.post_id,
             user_id=post.user_id,
@@ -313,6 +358,7 @@ class PostService:
             group_id=post.group_id,
             visibility=post.visibility,
             is_hidden=post.is_hidden,
+            is_edited=is_edited,
             reactions_count=post.reactions_count,
             comments_count=post.comments_count,
             version=post.version,

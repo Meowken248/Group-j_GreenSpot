@@ -212,6 +212,14 @@ async def get_user_posts(
                 media_list = [p.media_urls]
                 thumb = p.media_urls
 
+        is_edited = False
+        if p.updated_at and p.created_at:
+            try:
+                diff_sec = abs((p.updated_at - p.created_at).total_seconds())
+                is_edited = diff_sec > 2
+            except Exception:
+                is_edited = False
+
         items.append(
             PostItemResponse(
                 post_id=p.post_id,
@@ -225,7 +233,10 @@ async def get_user_posts(
                 reactions_count=p.reactions_count,
                 comments_count=p.comments_count,
                 is_hidden=p.is_hidden,
-                created_at=p.created_at
+                is_edited=is_edited,
+                version=p.version,
+                created_at=p.created_at,
+                updated_at=p.updated_at,
             )
         )
 
