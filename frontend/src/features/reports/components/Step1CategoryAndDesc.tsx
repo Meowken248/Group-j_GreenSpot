@@ -88,17 +88,110 @@ export const Step1CategoryAndDesc: React.FC<Step1Props> = ({
   const getMatchedSubCategories = (key: string): WasteCategoryItem[] => {
     const card = FOUR_CATEGORIES.find((c) => c.key === key);
     if (!card) return [];
-    if (card.key === "OTHER") {
-      const allKnownCodes = [
-        "DOMESTIC_WASTE",
-        "CONSTRUCTION_DEBRIS",
-        "HAZARDOUS_WASTE",
-        "DRAINAGE_BLOCK",
-        "WATERWAY_POLLUTION",
+
+    if (card.key === "WASTE") {
+      const list = categories.filter(
+        (c) =>
+          card.matchingCodes.includes(c.category_code) ||
+          c.category_code.toUpperCase().includes("WASTE") ||
+          c.category_code.toUpperCase().includes("DEBRIS") ||
+          c.category_code.toUpperCase().includes("TRASH")
+      );
+      if (list.length > 0) return list;
+      return [
+        {
+          category_id: 1,
+          category_code: "DOMESTIC_WASTE",
+          name: "Rác thải sinh hoạt ứ đọng",
+          description: "Bãi rác tự phát, túi ni lông, thực phẩm hư hỏng bốc mùi",
+          sla_hours: 24,
+          default_severity: "MEDIUM",
+        },
       ];
-      return categories.filter((c) => !allKnownCodes.includes(c.category_code));
     }
-    return categories.filter((c) => card.matchingCodes.includes(c.category_code));
+
+    if (card.key === "FLOOD") {
+      const list = categories.filter(
+        (c) =>
+          card.matchingCodes.includes(c.category_code) ||
+          c.category_code.toUpperCase().includes("DRAIN") ||
+          c.category_code.toUpperCase().includes("FLOOD")
+      );
+      if (list.length > 0) return list;
+      return [
+        {
+          category_id: 4,
+          category_code: "DRAINAGE_BLOCK",
+          name: "Điểm nghẽn cống ngập úng",
+          description: "Miệng cống thoát nước bị rác lấp kín, gây ngập cục bộ khi mưa lớn",
+          sla_hours: 18,
+          default_severity: "HIGH",
+        },
+      ];
+    }
+
+    if (card.key === "POLLUTION") {
+      const list = categories.filter(
+        (c) =>
+          card.matchingCodes.includes(c.category_code) ||
+          c.category_code.toUpperCase().includes("POLLUT") ||
+          c.category_code.toUpperCase().includes("WATER") ||
+          c.category_code.toUpperCase().includes("AIR")
+      );
+      if (list.length > 0) return list;
+      return [
+        {
+          category_id: 3,
+          category_code: "WATERWAY_POLLUTION",
+          name: "Ô nhiễm kênh rạch & Nguồn nước",
+          description: "Rác thải nổi lềnh bềnh trên kênh, nước đen đổi màu hoặc bốc mùi",
+          sla_hours: 36,
+          default_severity: "HIGH",
+        },
+      ];
+    }
+
+    if (card.key === "OTHER") {
+      const knownWaste = categories.filter(
+        (c) =>
+          ["DOMESTIC_WASTE", "CONSTRUCTION_DEBRIS", "HAZARDOUS_WASTE"].includes(c.category_code) ||
+          c.category_code.toUpperCase().includes("WASTE") ||
+          c.category_code.toUpperCase().includes("DEBRIS") ||
+          c.category_code.toUpperCase().includes("TRASH")
+      );
+      const knownFlood = categories.filter(
+        (c) =>
+          ["DRAINAGE_BLOCK"].includes(c.category_code) ||
+          c.category_code.toUpperCase().includes("DRAIN") ||
+          c.category_code.toUpperCase().includes("FLOOD")
+      );
+      const knownPollution = categories.filter(
+        (c) =>
+          ["WATERWAY_POLLUTION"].includes(c.category_code) ||
+          c.category_code.toUpperCase().includes("POLLUT") ||
+          c.category_code.toUpperCase().includes("WATER") ||
+          c.category_code.toUpperCase().includes("AIR")
+      );
+      const assignedIds = new Set([
+        ...knownWaste.map((c) => c.category_id),
+        ...knownFlood.map((c) => c.category_id),
+        ...knownPollution.map((c) => c.category_id),
+      ]);
+      const customList = categories.filter((c) => !assignedIds.has(c.category_id));
+      if (customList.length > 0) return customList;
+      return [
+        {
+          category_id: 99,
+          category_code: "OTHER",
+          name: "Sự cố môi trường đô thị khác",
+          description: "Các sự cố môi trường chưa thuộc nhóm trên (ghi rõ trong phần mô tả)",
+          sla_hours: 24,
+          default_severity: "MEDIUM",
+        },
+      ];
+    }
+
+    return [];
   };
 
   // Xử lý chọn 1 trong 4 thẻ lớn
@@ -257,10 +350,10 @@ export const Step1CategoryAndDesc: React.FC<Step1Props> = ({
           })}
         </div>
 
-        {/* LỰA CHỌN CHI TIẾT KHI CÓ NHIỀU HƠN 1 LOẠI TRONG NHÓM */}
+        {/* PHÂN LOẠI CHI TIẾT & THỜI HẠN XỬ LÝ (SLA) */}
         {selectedCategoryKey && (() => {
           const matchedList = getMatchedSubCategories(selectedCategoryKey);
-          if (matchedList.length <= 1) return null;
+          if (matchedList.length === 0) return null;
           return (
             <div className="sub-categories-container">
               <div className="sub-section-header">
