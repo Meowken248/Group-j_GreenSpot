@@ -17,6 +17,8 @@ import { ProfileContainer } from "./features/profile";
 import { FriendsContainer } from "./features/friends";
 import { DeduplicationDashboard } from "./features/reports";
 import { PenaltyLookupContainer } from "./features/penalties";
+import { PostCreatorContainer } from "./features/posts";
+
 import {
   SettingsContainer,
   applyThemeToDocument,
@@ -56,15 +58,19 @@ function App() {
     return undefined;
   });
 
-  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "friends" | "voice" | "dedup" | "settings" | "penalties">(() => {
+  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "friends" | "voice" | "dedup" | "settings" | "penalties" | "posts">(() => {
     const hash = window.location.hash.toLowerCase();
     const path = window.location.pathname.toLowerCase();
     const isLogged = checkIsLoggedIn();
 
     if (hash === "#map" || path === "/map") return "map";
     if (hash === "#penalties" || path === "/penalties") return "penalties";
+    if (hash === "#posts" || hash === "#create-post" || path === "/posts" || path === "/create-post") {
+      return "posts";
+    }
     if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") return "auth";
     if (hash === "#voice" || path === "/voice") return "voice";
+
 
     // Khách vãng lai chưa đăng nhập: Không được phép vào các trang cài đặt, phân tích khí hậu, bạn bè, profile, quản trị, trùng lặp
     if (hash === "#settings" || path === "/settings") {
@@ -236,6 +242,10 @@ function App() {
         } else {
           setActiveTab("dedup");
         }
+      } else if (hash === "#penalties") {
+        setActiveTab("penalties");
+      } else if (hash === "#posts" || hash === "#create-post") {
+        setActiveTab("posts");
       } else if (hash === "#profile") {
         if (!isLogged) {
           setAuthRedirectUrl("/profile");
@@ -597,6 +607,19 @@ function App() {
 
             <button
               type="button"
+              className={`view-tab-btn ${activeTab === "posts" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("posts");
+                window.location.hash = "#create-post";
+              }}
+              title="Tạo bài viết, phản ánh sự cố & chia sẻ kinh nghiệm sống xanh (STT 9)"
+            >
+              <span>✍️</span>
+              <span>Đăng bài viết</span>
+            </button>
+
+            <button
+              type="button"
               className={`view-tab-btn ${activeTab === "penalties" ? "active" : ""}`}
               onClick={() => {
                 setActiveTab("penalties");
@@ -607,6 +630,7 @@ function App() {
               <span>⚖️</span>
               <span>Tra cứu xử phạt</span>
             </button>
+
             
             <button
               type="button"
@@ -673,6 +697,18 @@ function App() {
             >
               <span>🗺️</span>
               <span>Bản đồ WebGIS</span>
+            </button>
+            <button
+              type="button"
+              className={`view-tab-btn ${activeTab === "posts" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("posts");
+                window.location.hash = "#create-post";
+              }}
+              title="Tạo bài viết, phản ánh sự cố & chia sẻ kinh nghiệm sống xanh (STT 9)"
+            >
+              <span>✍️</span>
+              <span>Đăng bài viết</span>
             </button>
             <button
               type="button"
@@ -897,6 +933,26 @@ function App() {
             }}
           />
         </div>
+      ) : activeTab === "posts" ? (
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+          <PostCreatorContainer
+            onNavigateHome={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
+            onNavigateLogin={() => {
+              setAuthRedirectUrl("/posts");
+              setActiveTab("auth");
+              window.location.hash = "#login";
+            }}
+            onViewCreatedPost={(_postId) => {
+              // Điều hướng xem bài viết
+              setActiveTab("profile");
+              window.location.hash = "#profile";
+            }}
+          />
+        </div>
+
       ) : (
         /* Mặc định an toàn cho khách vãng lai và tab map: Bản đồ số WebGIS công cộng */
         <ModulePermissionGuard
