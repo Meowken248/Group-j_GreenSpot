@@ -10,6 +10,7 @@ import {
   checkNearbyDuplicates,
 } from "../services/reportService";
 import { DuplicateWarningModal } from "./DuplicateWarningModal";
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
 
 interface Step5Props {
   formData: ReportFormData;
@@ -259,8 +260,13 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
                   {formData.media.map((m, idx) => (
                     <div key={m.id} className="review-media-thumb">
                       <img
-                        src={m.thumbnail_url || m.file_url}
+                        src={resolveMediaUrl(m.thumbnail_url || m.file_url)}
                         alt={`Bằng chứng ${idx + 1}`}
+                        onError={(e) => {
+                          if (m.file) {
+                            (e.currentTarget as HTMLImageElement).src = URL.createObjectURL(m.file);
+                          }
+                        }}
                       />
                       <span className="review-wm-badge">
                         {m.media_type === "VIDEO" ? "🎥 Video (Watermarked)" : "🛡️ Watermark GPS"}

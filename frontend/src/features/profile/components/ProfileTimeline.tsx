@@ -1,5 +1,6 @@
 import React from "react";
 import type { UserProfile, PostListResponse } from "../types/profile.types";
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
 
 interface ProfileTimelineProps {
   profile: UserProfile | null;
@@ -196,7 +197,7 @@ export const ProfileTimeline: React.FC<ProfileTimelineProps> = ({
                   <div className="post-body-flex">
                     <p className="post-content-text">{post.content}</p>
                     {post.thumbnail_url && (
-                      <img src={post.thumbnail_url} alt="Thumbnail" className="post-thumb-img" />
+                      <img src={resolveMediaUrl(post.thumbnail_url)} alt="Thumbnail" className="post-thumb-img" />
                     )}
                   </div>
 

@@ -648,7 +648,7 @@ function App() {
           />
         </div>
       ) : activeTab === "report" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#090d16" }}>
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#090d16", paddingTop: "76px" }}>
           <ReportContainer
             onNavigateTab={(tab) => {
               setActiveTab(tab as TabType);
@@ -662,7 +662,7 @@ function App() {
           />
         </div>
       ) : activeTab === "incidents" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#0b1120" }}>
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#0b1120", paddingTop: "76px" }}>
           <IncidentManagementContainer
             onNavigateToMap={(_lat, _lng) => {
               setActiveTab("map");

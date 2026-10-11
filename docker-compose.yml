@@ -71,6 +71,7 @@ services:
     command: [ "sh", "-c", "pnpm install --prefer-offline --store-dir /root/.local/share/pnpm/store && pnpm dev --host 0.0.0.0" ]
     environment:
       VITE_API_URL: http://localhost:8000
+      BACKEND_PROXY_URL: http://backend:8000
     ports:
       - "5173:5173"
     volumes:

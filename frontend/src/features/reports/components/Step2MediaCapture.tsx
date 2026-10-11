@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import type { AttachedMedia, ReportFormData } from "../types/report.types";
 import { uploadMediaWithWatermark } from "../services/reportService";
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
 
 interface Step2Props {
   formData: ReportFormData;
@@ -27,6 +28,7 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
   const recordedChunksRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<number | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
+  const isMountedRef = useRef<boolean>(true);
 
   const currentMediaList = formData.media || [];
   const isMaxReached = currentMediaList.length >= 5;
@@ -60,12 +62,25 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
         video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       });
+
+      // Nếu component đã unmount trong lúc chờ cấp quyền camera -> Dừng stream ngay lập tức!
+      if (!isMountedRef.current) {
+        stream.getTracks().forEach((track) => {
+          try {
+            track.stop();
+            track.enabled = false;
+          } catch {}
+        });
+        return;
+      }
+
       cameraStreamRef.current = stream;
       setCameraStream(stream);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
     } catch (err) {
+      if (!isMountedRef.current) return;
       console.warn("Không mở được camera:", err);
       setCameraError(
         "Không truy cập được camera. Hãy cấp quyền hoặc chọn ảnh từ thư viện"
@@ -74,8 +89,10 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
   };
 
   useEffect(() => {
+    isMountedRef.current = true;
     startCamera();
     return () => {
+      isMountedRef.current = false;
       stopCamera();
       if (timerIntervalRef.current) {
         window.clearInterval(timerIntervalRef.current);
@@ -88,6 +105,13 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
       }
     };
   }, []);
+
+  // Tự động tắt camera khi đã đủ 5 tệp đính kèm tối đa
+  useEffect(() => {
+    if (isMaxReached) {
+      stopCamera();
+    }
+  }, [isMaxReached]);
 
   // Xử lý upload file lên server để đóng watermark
   const handleUploadFile = async (file: File) => {
@@ -154,7 +178,15 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
 
       // Cập nhật item với kết quả đã đóng watermark từ server
       const finalList = updatedList.map((m) =>
-        m.id === tempId ? { ...result, is_uploading: false } : m
+        m.id === tempId
+          ? {
+              ...result,
+              file_url: resolveMediaUrl(result.file_url),
+              thumbnail_url: resolveMediaUrl(result.thumbnail_url),
+              is_uploading: false,
+              file,
+            }
+          : m
       );
       onUpdateFormData({ media: finalList });
     } catch (error) {
@@ -462,16 +494,21 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
                   <div className="thumb-image-container">
                     {item.media_type === "VIDEO" ? (
                       <video
-                        src={item.file_url}
+                        src={resolveMediaUrl(item.file_url)}
                         className="thumb-media"
-                        poster={item.thumbnail_url}
+                        poster={resolveMediaUrl(item.thumbnail_url)}
                         controls={false}
                       />
                     ) : (
                       <img
-                        src={item.thumbnail_url || item.file_url}
+                        src={resolveMediaUrl(item.thumbnail_url || item.file_url)}
                         alt={`Bằng chứng ${index + 1}`}
                         className="thumb-media"
+                        onError={(e) => {
+                          if (item.file) {
+                            (e.currentTarget as HTMLImageElement).src = URL.createObjectURL(item.file);
+                          }
+                        }}
                       />
                     )}
 

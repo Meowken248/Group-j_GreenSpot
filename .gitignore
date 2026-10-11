@@ -47,3 +47,8 @@ dist-ssr/
 .DS_Store
 Thumbs.db
 
+# Uploads
+uploads/
+backend/uploads/
+
+
