@@ -1,6 +1,10 @@
-import React from "react";
-import type { UserProfile, PostListResponse } from "../types/profile.types";
+import React, { useState, useEffect } from "react";
+import type { UserProfile, PostListResponse, PostItem } from "../types/profile.types";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
+import { EditPostModal } from "./EditPostModal";
+import { DeletePostModal } from "./DeletePostModal";
+import { HidePostModal } from "./HidePostModal";
+import { profileService } from "../services/profile.service";
 
 interface ProfileTimelineProps {
   profile: UserProfile | null;
@@ -17,6 +21,8 @@ interface ProfileTimelineProps {
   onOpenPassport: () => void;
   onOpenHistory: () => void;
   onNavigateToFeed: () => void;
+  onShowToast?: (type: "success" | "error", message: string) => void;
+  onRefreshPosts?: () => void;
 }
 
 export const ProfileTimeline: React.FC<ProfileTimelineProps> = ({
@@ -34,6 +40,8 @@ export const ProfileTimeline: React.FC<ProfileTimelineProps> = ({
   onOpenPassport,
   onOpenHistory,
   onNavigateToFeed,
+  onShowToast,
+  onRefreshPosts,
 }) => {
   // Lấy chữ cái đầu của từ cuối cùng trong họ tên làm avatar fallback
   const getAvatarLetter = (fullName?: string) => {
@@ -90,6 +98,140 @@ export const ProfileTimeline: React.FC<ProfileTimelineProps> = ({
       }
       return part;
     });
+  };
+
+  // Đồng bộ danh sách bài viết cục bộ để cập nhật giao diện tức thì
+  const [localPosts, setLocalPosts] = useState<PostItem[]>(posts?.items || []);
+  const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
+  const [editingPost, setEditingPost] = useState<PostItem | null>(null);
+  const [deletingPost, setDeletingPost] = useState<PostItem | null>(null);
+  const [hidingPost, setHidingPost] = useState<PostItem | null>(null);
+  const [actionLoadingPostId, setActionLoadingPostId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (posts?.items) {
+      setLocalPosts(posts.items);
+    }
+  }, [posts?.items]);
+
+  // Đóng dropdown menu khi click ra ngoài hoặc bấm Escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest(".post-dropdown-container")) {
+        setActiveMenuPostId(null);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setActiveMenuPostId(null);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  // Xử lý bật/tắt ẩn bài viết từ Menu
+  const handleToggleHideFromMenu = async (post: PostItem) => {
+    setActiveMenuPostId(null);
+    if (actionLoadingPostId) return;
+    const nextState = !post.is_hidden;
+    setActionLoadingPostId(post.post_id);
+    try {
+      await profileService.toggleHidePost(post.post_id, nextState);
+      setLocalPosts((prev) =>
+        prev.map((item) =>
+          item.post_id === post.post_id ? { ...item, is_hidden: nextState } : item
+        )
+      );
+      if (nextState) {
+        // Mở popup Màn 5/5
+        setHidingPost(post);
+      } else {
+        onShowToast?.("success", "Đã hiện lại bài viết thành công");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Thao tác ẩn/hiện thất bại";
+      onShowToast?.("error", msg);
+    } finally {
+      setActionLoadingPostId(null);
+    }
+  };
+
+  // Nút [Hiện lại] nhanh trực tiếp trên thẻ bài viết
+  const handleQuickUnhide = async (post: PostItem) => {
+    if (actionLoadingPostId) return;
+    setActionLoadingPostId(post.post_id);
+    try {
+      await profileService.toggleHidePost(post.post_id, false);
+      setLocalPosts((prev) =>
+        prev.map((item) =>
+          item.post_id === post.post_id ? { ...item, is_hidden: false } : item
+        )
+      );
+      onShowToast?.("success", "Đã hiện lại bài viết thành công");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Không thể hiện lại bài viết";
+      onShowToast?.("error", msg);
+    } finally {
+      setActionLoadingPostId(null);
+    }
+  };
+
+  // Xử lý hoàn tác ẩn từ Màn 5/5
+  const handleUndoSuccess = (_unhiddenPost?: PostItem) => {
+    if (hidingPost) {
+      setLocalPosts((prev) =>
+        prev.map((item) =>
+          item.post_id === hidingPost.post_id ? { ...item, is_hidden: false } : item
+        )
+      );
+      onShowToast?.("success", "Đã hoàn tác ẩn bài viết");
+      setHidingPost(null);
+    }
+  };
+
+  // Cập nhật sau khi chỉnh sửa thành công (Màn 2/5)
+  const handleEditSuccess = (updatedPost: PostItem) => {
+    if (editingPost) {
+      setLocalPosts((prev) =>
+        prev.map((item) => {
+          if (item.post_id === editingPost.post_id) {
+            return {
+              ...item,
+              content: updatedPost.content,
+              media_urls: updatedPost.media_urls,
+              thumbnail_url: updatedPost.thumbnail_url || (updatedPost.media_urls && updatedPost.media_urls[0]) || null,
+              is_edited: true,
+              version: updatedPost.version ?? (item.version ? item.version + 1 : 1),
+              updated_at: updatedPost.updated_at || new Date().toISOString(),
+            };
+          }
+          return item;
+        })
+      );
+      onShowToast?.("success", "Chỉnh sửa bài viết thành công!");
+      setEditingPost(null);
+      onRefreshPosts?.();
+    }
+  };
+
+  // Cập nhật sau khi xoá thành công (Màn 3/5 -> Màn 4/5)
+  const handleDeleteSuccess = (deletedPostId: string) => {
+    setLocalPosts((prev) => prev.filter((item) => item.post_id !== deletedPostId));
+    setDeletingPost(null);
+    onShowToast?.("success", "Đã xoá bài viết thành công.");
+    onRefreshPosts?.();
+  };
+
+  // Báo cáo bài viết cho bài người khác
+  const handleReportPost = (_post: PostItem) => {
+    setActiveMenuPostId(null);
+    onShowToast?.("success", "Đã ghi nhận báo cáo bài viết của bạn.");
   };
 
   return (
@@ -188,7 +330,7 @@ export const ProfileTimeline: React.FC<ProfileTimelineProps> = ({
           <>
             <h3 className="posts-header-title">BÀI ĐĂNG ({posts.total})</h3>
 
-            {posts.items.length === 0 ? (
+            {localPosts.length === 0 ? (
               <div className="empty-posts-box">
                 {profile?.is_own_profile ? (
                   <>
@@ -202,38 +344,155 @@ export const ProfileTimeline: React.FC<ProfileTimelineProps> = ({
                 )}
               </div>
             ) : (
-              posts.items.map((post) => (
-                <article key={post.post_id} className="post-card">
-                  <div className="post-meta-row">
-                    <div className="post-meta-main">
-                      <span className="post-relative-time">{getRelativeTime(post.created_at)}</span>
-                      {post.address && (
-                        <div className="post-location-tag" title={post.address}>
-                          <span className="loc-bullet">•</span>
-                          <svg className="loc-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                            <circle cx="12" cy="10" r="3" />
-                          </svg>
-                          <span className="loc-text">{post.address}</span>
+              localPosts.map((post) => {
+                const isOwnPost = Boolean(profile?.is_own_profile || (profile?.user_id && post.user_id === profile.user_id));
+                const thumbUrl = post.thumbnail_url || (post.media_urls && post.media_urls[0]);
+
+                return (
+                  <article
+                    key={post.post_id}
+                    className={`post-card ${post.is_hidden ? "is-hidden-card" : ""}`}
+                  >
+                    <div className="post-meta-row">
+                      <div className="post-meta-main">
+                        <span className="post-relative-time">{getRelativeTime(post.created_at)}</span>
+
+                        {/* Nhãn Đã chỉnh sửa (Màn 1/5) */}
+                        {post.is_edited && (
+                          <span className="post-edited-tag" title="Bài viết đã qua chỉnh sửa">
+                            Đã chỉnh sửa
+                          </span>
+                        )}
+
+                        {post.address && (
+                          <div className="post-location-tag" title={post.address}>
+                            <span className="loc-bullet">•</span>
+                            <svg className="loc-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                              <circle cx="12" cy="10" r="3" />
+                            </svg>
+                            <span className="loc-text">{post.address}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="post-meta-actions">
+                        {/* Trạng thái đã ẩn & nút hiện lại (Màn 1/5) */}
+                        {post.is_hidden && (
+                          <div className="post-hidden-status-badge">
+                            <span className="post-hidden-tag">Đã ẩn</span>
+                            {isOwnPost && (
+                              <button
+                                type="button"
+                                className="btn-unhide-action"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleQuickUnhide(post);
+                                }}
+                                disabled={actionLoadingPostId === post.post_id}
+                                title="Hiện lại bài viết trên trang cá nhân"
+                              >
+                                {actionLoadingPostId === post.post_id ? "..." : "Hiện lại"}
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Menu ba chấm ⋯ (Màn 1/5) */}
+                        <div className="post-dropdown-container">
+                          <button
+                            type="button"
+                            className="btn-post-more-menu"
+                            aria-label="Tùy chọn bài viết"
+                            title="Tùy chọn bài viết"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMenuPostId(activeMenuPostId === post.post_id ? null : post.post_id);
+                            }}
+                          >
+                            ⋯
+                          </button>
+
+                          {activeMenuPostId === post.post_id && (
+                            <div className="post-dropdown-menu" onClick={(e) => e.stopPropagation()}>
+                              {isOwnPost ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    className="dropdown-item"
+                                    onClick={() => {
+                                      setActiveMenuPostId(null);
+                                      setEditingPost(post);
+                                    }}
+                                  >
+                                    <span className="dropdown-item-icon">✏️</span>
+                                    <span className="dropdown-item-label">Sửa bài viết</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    className="dropdown-item"
+                                    onClick={() => handleToggleHideFromMenu(post)}
+                                    disabled={actionLoadingPostId === post.post_id}
+                                  >
+                                    <span className="dropdown-item-icon">
+                                      {post.is_hidden ? "👁️‍🗨️" : "👁️"}
+                                    </span>
+                                    <span className="dropdown-item-label">
+                                      {post.is_hidden ? "Hiện bài viết" : "Ẩn bài viết"}
+                                    </span>
+                                  </button>
+
+                                  <div className="dropdown-divider" />
+
+                                  <button
+                                    type="button"
+                                    className="dropdown-item dropdown-item-danger"
+                                    onClick={() => {
+                                      setActiveMenuPostId(null);
+                                      setDeletingPost(post);
+                                    }}
+                                  >
+                                    <span className="dropdown-item-icon">🗑️</span>
+                                    <span className="dropdown-item-label">Xoá bài viết</span>
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="dropdown-item dropdown-item-report"
+                                  onClick={() => handleReportPost(post)}
+                                >
+                                  <span className="dropdown-item-icon">🚩</span>
+                                  <span className="dropdown-item-label">Báo cáo bài viết</span>
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </div>
+                      </div>
+                    </div>
+
+                    <div className="post-body-flex">
+                      <p className="post-content-text">{renderContentWithHashtags(post.content)}</p>
+                      {thumbUrl && (
+                        <img
+                          src={resolveMediaUrl(thumbUrl)}
+                          alt="Thumbnail"
+                          className="post-thumb-img"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).style.display = "none";
+                          }}
+                        />
                       )}
                     </div>
-                    {/* Nhãn xám 'Đã ẩn' (chỉ hiện cho chủ trang) */}
-                    {post.is_hidden && <span className="post-hidden-tag">Đã ẩn</span>}
-                  </div>
 
-                  <div className="post-body-flex">
-                    <p className="post-content-text">{renderContentWithHashtags(post.content)}</p>
-                    {post.thumbnail_url && (
-                      <img src={resolveMediaUrl(post.thumbnail_url)} alt="Thumbnail" className="post-thumb-img" />
-                    )}
-                  </div>
-
-                  <div className="post-footer-stats">
-                    {post.reactions_count} cảm xúc · {post.comments_count} bình luận
-                  </div>
-                </article>
-              ))
+                    <div className="post-footer-stats">
+                      {post.reactions_count} cảm xúc · {post.comments_count} bình luận
+                    </div>
+                  </article>
+                );
+              })
             )}
 
             {/* Nút Xem thêm */}
@@ -347,6 +606,40 @@ export const ProfileTimeline: React.FC<ProfileTimelineProps> = ({
           </>
         ) : null}
       </aside>
+
+      {/* =================================================================== */}
+      {/* CÁC POPUP MODAL CHỨC NĂNG 13 (MÀN 2/5, 3/5, 4/5, 5/5) */}
+      {/* =================================================================== */}
+      {/* Modal Sửa bài viết (Màn 2/5) */}
+      {editingPost && (
+        <EditPostModal
+          isOpen={Boolean(editingPost)}
+          post={editingPost}
+          onClose={() => setEditingPost(null)}
+          onSuccess={handleEditSuccess}
+        />
+      )}
+
+      {/* Modal Xoá bài viết & Thông báo đã xoá (Màn 3/5 & Màn 4/5) */}
+      {deletingPost && (
+        <DeletePostModal
+          isOpen={Boolean(deletingPost)}
+          post={deletingPost}
+          onClose={() => setDeletingPost(null)}
+          onDeleted={handleDeleteSuccess}
+        />
+      )}
+
+      {/* Modal Thông báo Đã ẩn & Đếm ngược hoàn tác 5s (Màn 5/5) */}
+      {hidingPost && (
+        <HidePostModal
+          isOpen={Boolean(hidingPost)}
+          post={hidingPost}
+          onClose={() => setHidingPost(null)}
+          onUndoSuccess={handleUndoSuccess}
+          onConfirmedHidden={() => setHidingPost(null)}
+        />
+      )}
     </div>
   );
 };

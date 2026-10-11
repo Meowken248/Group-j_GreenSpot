@@ -52,6 +52,8 @@ export interface PostItem {
   relative_time?: string;
 }
 
+export type PostItemResponse = PostItem;
+
 export interface UpdatePostPayload {
   content?: string;
   media_urls?: Array<{ url: string; media_type: "IMAGE" | "VIDEO"; file_name: string; size_bytes: number }>;

@@ -603,6 +603,11 @@ export const ProfileContainer: React.FC<ProfileContainerProps> = ({
             onOpenPassport={() => setCurrentView("passport")}
             onOpenHistory={() => setCurrentView("history")}
             onNavigateToFeed={() => showToast("success", "Đang chuyển đến Bảng tin chung...")}
+            onShowToast={showToast}
+            onRefreshPosts={() => {
+              const uid = profile?.user_id || profile?.id;
+              if (uid) fetchPosts(uid, 1, false);
+            }}
           />
         )}
 

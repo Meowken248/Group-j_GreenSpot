@@ -2,6 +2,9 @@ import api from "../../../api/client";
 import type {
   UserProfile,
   PostListResponse,
+  PostItem,
+  UpdatePostPayload,
+  ToggleHidePostResponse,
   GreenPassportData,
   UserBadgesData,
   ActivityListResponse,
