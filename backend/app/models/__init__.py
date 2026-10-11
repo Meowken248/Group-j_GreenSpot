@@ -82,6 +82,9 @@ from app.models.friends import (
 # 8. Cài đặt người dùng (User Settings Domain)
 from app.models.settings import UserSettings
 
+# 9. Tra cứu quy định xử phạt vi phạm hành chính (Penalty Regulations Domain)
+from app.models.penalty import PenaltyRegulation
+
 __all__ = [
     "Base",
     "TimestampMixin",
@@ -136,5 +139,7 @@ __all__ = [
     "FriendRequestStatus",
     # User Settings Domain
     "UserSettings",
+    # Penalty Regulations Domain
+    "PenaltyRegulation",
 ]
 

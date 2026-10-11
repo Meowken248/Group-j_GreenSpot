@@ -12,6 +12,7 @@ from app.api.v1.profile import router as profile_router
 from app.api.v1.friends import router as friends_router
 from app.api.v1.deduplication import router as deduplication_router
 from app.api.v1.settings import settings_router
+from app.api.v1.penalties import router as penalties_router
 
 api_v1_router = APIRouter()
 api_v1_router.include_router(auth_router)
@@ -27,3 +28,4 @@ api_v1_router.include_router(weather_router)
 api_v1_router.include_router(flood_router)
 api_v1_router.include_router(air_quality_router)
 api_v1_router.include_router(voice_router)
+api_v1_router.include_router(penalties_router)

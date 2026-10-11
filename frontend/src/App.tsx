@@ -16,6 +16,7 @@ import { UserManagementContainer } from "./features/user_management";
 import { ProfileContainer } from "./features/profile";
 import { FriendsContainer } from "./features/friends";
 import { DeduplicationDashboard } from "./features/reports";
+import { PenaltyLookupContainer } from "./features/penalties";
 import {
   SettingsContainer,
   applyThemeToDocument,
@@ -55,12 +56,13 @@ function App() {
     return undefined;
   });
 
-  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "friends" | "voice" | "dedup" | "settings">(() => {
+  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "friends" | "voice" | "dedup" | "settings" | "penalties">(() => {
     const hash = window.location.hash.toLowerCase();
     const path = window.location.pathname.toLowerCase();
     const isLogged = checkIsLoggedIn();
 
     if (hash === "#map" || path === "/map") return "map";
+    if (hash === "#penalties" || path === "/penalties") return "penalties";
     if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") return "auth";
     if (hash === "#voice" || path === "/voice") return "voice";
 
@@ -397,6 +399,21 @@ function App() {
 
                 <div className="dropdown-separator" />
 
+                <button
+                  type="button"
+                  className="dropdown-menu-action"
+                  onClick={() => {
+                    setUserDropdownOpen(false);
+                    setActiveTab("penalties");
+                    window.location.hash = "#penalties";
+                  }}
+                >
+                  <span className="action-icon">⚖️</span>
+                  <span>Tra cứu quy định xử phạt</span>
+                </button>
+
+                <div className="dropdown-separator" />
+
                 {currentUser?.role === "ADMIN" && (
                   <>
                     <button
@@ -577,6 +594,19 @@ function App() {
                 <span>Phân tích AQI & Khí hậu</span>
               </button>
             )}
+
+            <button
+              type="button"
+              className={`view-tab-btn ${activeTab === "penalties" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("penalties");
+                window.location.hash = "#penalties";
+              }}
+              title="Tra cứu quy định xử phạt vi phạm hành chính (Nghị định 45/2022/NĐ-CP)"
+            >
+              <span>⚖️</span>
+              <span>Tra cứu xử phạt</span>
+            </button>
             
             <button
               type="button"
@@ -643,6 +673,18 @@ function App() {
             >
               <span>🗺️</span>
               <span>Bản đồ WebGIS</span>
+            </button>
+            <button
+              type="button"
+              className={`view-tab-btn ${activeTab === "penalties" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("penalties");
+                window.location.hash = "#penalties";
+              }}
+              title="Tra cứu quy định xử phạt vi phạm hành chính (Nghị định 45/2022/NĐ-CP)"
+            >
+              <span>⚖️</span>
+              <span>Tra cứu xử phạt</span>
             </button>
             <button
               type="button"
@@ -837,6 +879,21 @@ function App() {
               } else {
                 setActiveTab("map");
               }
+            }}
+          />
+        </div>
+      ) : activeTab === "penalties" ? (
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+          <PenaltyLookupContainer
+            currentUser={currentUser}
+            onNavigateToAuth={() => {
+              setAuthRedirectUrl("/penalties");
+              setActiveTab("auth");
+              window.location.hash = "#login";
+            }}
+            onNavigateToReport={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
             }}
           />
         </div>
