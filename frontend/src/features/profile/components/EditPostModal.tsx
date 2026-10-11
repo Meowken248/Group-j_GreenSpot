@@ -374,3 +374,4 @@ export const EditPostModal: React.FC<EditPostModalProps> = ({
     </>
   );
 };
+
