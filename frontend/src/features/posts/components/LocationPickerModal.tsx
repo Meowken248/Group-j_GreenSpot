@@ -20,6 +20,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
+  const circleRef = useRef<L.Circle | null>(null);
 
   // Mặc định tọa độ trung tâm TP.HCM (Quận 1)
   const [currentLat, setCurrentLat] = useState<number>(initialLocation?.latitude || 10.7769);
@@ -30,6 +31,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
 
   const [isLocatingGPS, setIsLocatingGPS] = useState(false);
   const [isResolvingAddress, setIsResolvingAddress] = useState(false);
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
   const [gpsWarning, setGpsWarning] = useState<string | null>(null);
   const [boundsError, setBoundsError] = useState<string | null>(null);
 
@@ -70,6 +72,10 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
     if (mapInstanceRef.current) {
       mapInstanceRef.current.remove();
       mapInstanceRef.current = null;
+    }
+    if (circleRef.current) {
+      circleRef.current.remove();
+      circleRef.current = null;
     }
 
     const map = L.map(mapContainerRef.current).setView([startLat, startLng], 16);
@@ -124,6 +130,10 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
     setTimeout(() => map.invalidateSize(), 600);
 
     return () => {
+      if (circleRef.current) {
+        circleRef.current.remove();
+        circleRef.current = null;
+      }
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -147,14 +157,31 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
         setIsLocatingGPS(false);
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
+        const accuracy = Math.round(pos.coords.accuracy || 15);
 
         setCurrentLat(lat);
         setCurrentLng(lng);
+        setGpsAccuracy(accuracy);
 
         if (mapInstanceRef.current && markerRef.current) {
           // Bay tới vị trí GPS với độ phóng to 17 (thấy rõ từng số nhà và góc phố)
           mapInstanceRef.current.flyTo([lat, lng], 17, { duration: 1.2 });
           markerRef.current.setLatLng([lat, lng]);
+
+          // Vẽ vòng tròn bán kính sai số GPS (Accuracy Circle)
+          if (circleRef.current) {
+            circleRef.current.remove();
+            circleRef.current = null;
+          }
+          const accuracyCircle = L.circle([lat, lng], {
+            radius: accuracy,
+            color: "#2563eb",
+            fillColor: "#3b82f6",
+            fillOpacity: 0.15,
+            weight: 1.5,
+            dashArray: "4, 4",
+          }).addTo(mapInstanceRef.current);
+          circleRef.current = accuracyCircle;
         }
 
         await updateAddressForCoords(lat, lng);
@@ -203,15 +230,43 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
           {/* CỘT TRÁI: BẢN ĐỒ TƯƠNG TÁC */}
           <div className="col-map">
             <div ref={mapContainerRef} className="map-canvas" />
+
+            {/* Banner địa chỉ: Cho phép chỉnh sửa chữ trực tiếp & hiển thị toạ độ */}
             <div className="map-address-banner">
               <span className="pin-icon">{isInvalidBounds ? "⚠️" : isResolvingAddress ? "🔄" : "📍"}</span>
               <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
-                <span className="address-text" style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>
-                  {isResolvingAddress ? "Đang xác định số nhà & tên đường thực tế…" : address}
-                </span>
-                <span style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
-                  Toạ độ GPS: {currentLat.toFixed(5)}, {currentLng.toFixed(5)}
-                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <input
+                    type="text"
+                    value={address}
+                    disabled={isResolvingAddress}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Đang xác định số nhà, tên đường thực tế…"
+                    className="address-edit-input"
+                    title="Bạn có thể chỉnh sửa hoặc bổ sung số nhà/tên đường cụ thể tại đây"
+                    style={{
+                      width: "100%",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: 6,
+                      padding: "5px 10px",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: "#0f172a",
+                      backgroundColor: "#fff",
+                      boxShadow: "inset 0 1px 2px rgba(0,0,0,0.05)",
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+                  <span style={{ fontSize: 11, color: "#64748b" }}>
+                    Toạ độ GPS: {currentLat.toFixed(5)}, {currentLng.toFixed(5)}
+                  </span>
+                  {gpsAccuracy && (
+                    <span style={{ fontSize: 11, color: "#2563eb", fontWeight: 600 }}>
+                      Vùng sai số thiết bị: ~{gpsAccuracy}m
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -231,6 +286,11 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
 
               {gpsWarning && <div className="gps-warning-text">{gpsWarning}</div>}
               {boundsError && <div className="bounds-error-text">{boundsError}</div>}
+
+              {/* Hộp gợi ý thao tác chuẩn */}
+              <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 12px", fontSize: 12, color: "#1e40af", lineHeight: 1.5 }}>
+                💡 <strong>Gợi ý:</strong> Sau khi bấm <em>Dùng vị trí hiện tại</em>, bạn có thể click trực tiếp hoặc kéo ghim trên bản đồ để chỉnh vào đúng điểm đứng thật. Bạn cũng có thể sửa trực tiếp số nhà vào ô bên dưới.
+              </div>
             </div>
 
             <button
