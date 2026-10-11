@@ -120,3 +120,4 @@ export const CategoryDeleteConfirmModal: React.FC<Props> = ({
     </div>
   );
 };
+

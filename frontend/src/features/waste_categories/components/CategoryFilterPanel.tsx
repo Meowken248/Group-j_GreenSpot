@@ -137,3 +137,4 @@ export const CategoryFilterPanel: React.FC<Props> = ({
     </div>
   );
 };
+

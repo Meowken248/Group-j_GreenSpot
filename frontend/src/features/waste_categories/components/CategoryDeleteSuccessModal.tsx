@@ -64,3 +64,4 @@ export const CategoryDeleteSuccessModal: React.FC<Props> = ({
     </div>
   );
 };
+

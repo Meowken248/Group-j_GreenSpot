@@ -336,3 +336,4 @@ export const WasteCategoryContainer: React.FC<Props> = ({
     </div>
   );
 };
+

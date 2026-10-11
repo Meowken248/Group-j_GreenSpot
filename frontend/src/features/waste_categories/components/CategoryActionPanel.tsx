@@ -121,3 +121,4 @@ export const CategoryActionPanel: React.FC<Props> = ({
     </div>
   );
 };
+
