@@ -730,7 +730,7 @@ function App() {
           />
         </div>
       ) : activeTab === "waste_categories" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc", paddingTop: "76px" }}>
           <WasteCategoryContainer
             currentUser={currentUser}
             onNavigateHome={() => {
