@@ -94,7 +94,7 @@ describe("Waste Categories & SLA Management (Feature 22)", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText("22. Quản trị Danh mục Rác thải Đô thị & Cấu hình Quy chuẩn SLA")
+          screen.getByText("Quản trị Danh mục Rác thải Đô thị & Cấu hình Quy chuẩn SLA")
         ).toBeInTheDocument();
       });
 

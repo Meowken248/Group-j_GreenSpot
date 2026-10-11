@@ -478,7 +478,7 @@ function App() {
                   setActiveTab("waste_categories");
                   window.location.hash = "#waste-categories";
                 }}
-                title="Quản trị Danh mục Rác thải Đô thị & Cấu hình Quy chuẩn SLA (Chức năng 22)"
+                title="Quản trị Danh mục Rác thải Đô thị & Cấu hình Quy chuẩn SLA"
               >
                 <span>🗑️</span>
                 <span>Danh mục rác & SLA</span>
@@ -493,7 +493,7 @@ function App() {
                   setActiveTab("incidents");
                   window.location.hash = "#incidents";
                 }}
-                title="Quản lý & Duyệt phản ánh sự cố môi trường (Chức năng 18)"
+                title="Quản lý & Duyệt phản ánh sự cố môi trường"
               >
                 <span>📋</span>
                 <span>Quản lý sự cố</span>
@@ -550,7 +550,7 @@ function App() {
                 setActiveTab("report");
                 window.location.hash = "#report";
               }}
-              title="Tiếp nhận phản ánh đa phương tiện (Chức năng 18)"
+              title="Tiếp nhận phản ánh sự cố môi trường đa phương tiện"
             >
               <span>📢</span>
               <span>Gửi phản ánh</span>
@@ -584,7 +584,7 @@ function App() {
                   window.location.hash = "#report";
                 }
               }}
-              title="Tiếp nhận phản ánh đa phương tiện (Chức năng 18)"
+              title="Tiếp nhận phản ánh sự cố môi trường đa phương tiện"
             >
               <span>📢</span>
               <span>Gửi phản ánh</span>

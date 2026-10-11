@@ -246,7 +246,7 @@ export const WasteCategoryContainer: React.FC<Props> = ({
         <div className="header-title-bar">
           <h1 className="header-title">
             <span className="title-icon">🗑️</span>
-            22. Quản trị Danh mục Rác thải Đô thị & Cấu hình Quy chuẩn SLA
+            Quản trị Danh mục Rác thải Đô thị & Cấu hình Quy chuẩn SLA
           </h1>
           <div className="header-badge-group">
             <span className="admin-pill">Vai trò: Admin</span>
