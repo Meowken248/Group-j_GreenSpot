@@ -85,13 +85,30 @@ export const Step1CategoryAndDesc: React.FC<Step1Props> = ({
   const isTitleOver = titleLen > 100;
   const isDescOver = descLen > 500;
 
+  const getMatchedSubCategories = (key: string): WasteCategoryItem[] => {
+    const card = FOUR_CATEGORIES.find((c) => c.key === key);
+    if (!card) return [];
+    if (card.key === "OTHER") {
+      const allKnownCodes = [
+        "DOMESTIC_WASTE",
+        "CONSTRUCTION_DEBRIS",
+        "HAZARDOUS_WASTE",
+        "DRAINAGE_BLOCK",
+        "WATERWAY_POLLUTION",
+      ];
+      return categories.filter((c) => !allKnownCodes.includes(c.category_code));
+    }
+    return categories.filter((c) => card.matchingCodes.includes(c.category_code));
+  };
+
   // Xử lý chọn 1 trong 4 thẻ lớn
   const handleSelectCategory = (card: CategoryCardDef) => {
     setSelectedCategoryKey(card.key);
     setCategoryError(null);
 
     // Tìm danh mục tương ứng từ database để lấy SLA và category_id thật
-    let matchedDbCat = categories.find((c) => card.matchingCodes.includes(c.category_code));
+    const matchedList = getMatchedSubCategories(card.key);
+    let matchedDbCat = matchedList.length > 0 ? matchedList[0] : null;
     if (!matchedDbCat && categories.length > 0) {
       matchedDbCat = categories[0];
     }
@@ -101,12 +118,14 @@ export const Step1CategoryAndDesc: React.FC<Step1Props> = ({
         category_id: matchedDbCat.category_id,
         category_code: matchedDbCat.category_code,
         category_name: card.name,
+        sla_hours: matchedDbCat.sla_hours,
       });
     } else {
       onUpdateFormData({
         category_id: 1,
         category_code: card.key,
         category_name: card.name,
+        sla_hours: 24,
       });
     }
 
@@ -114,6 +133,15 @@ export const Step1CategoryAndDesc: React.FC<Step1Props> = ({
     if (card.key !== "OTHER") {
       setDescError(null);
     }
+  };
+
+  const handleSelectSubCategory = (subCat: WasteCategoryItem) => {
+    onUpdateFormData({
+      category_id: subCat.category_id,
+      category_code: subCat.category_code,
+      category_name: subCat.name,
+      sla_hours: subCat.sla_hours,
+    });
   };
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -228,6 +256,70 @@ export const Step1CategoryAndDesc: React.FC<Step1Props> = ({
             );
           })}
         </div>
+
+        {/* DANH SÁCH DANH MỤC QUY CHUẨN TỪ CSDL DO ADMIN QUẢN LÝ */}
+        {selectedCategoryKey && (() => {
+          const matchedList = getMatchedSubCategories(selectedCategoryKey);
+          if (matchedList.length === 0) return null;
+          return (
+            <div className="sub-categories-container">
+              <div className="sub-section-header">
+                <span className="sub-section-title">
+                  📋 Quy chuẩn phân loại chi tiết do Admin thiết lập ({matchedList.length} loại):
+                </span>
+              </div>
+              <div className="sub-categories-grid">
+                {matchedList.map((subCat) => {
+                  const isSubSelected = formData.category_id === subCat.category_id;
+                  return (
+                    <div
+                      key={subCat.category_id}
+                      className={`sub-category-card ${isSubSelected ? "selected" : ""}`}
+                      onClick={() => handleSelectSubCategory(subCat)}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <div className="sub-card-top">
+                        <span className="sub-cat-name">{subCat.name}</span>
+                        <span className="sub-cat-sla">⏱️ SLA: {subCat.sla_hours}h</span>
+                      </div>
+                      {subCat.description && (
+                        <p className="sub-cat-desc">{subCat.description}</p>
+                      )}
+                      <div className="sub-card-bottom">
+                        <span className={`sub-sev-badge sev-${subCat.default_severity.toLowerCase()}`}>
+                          {subCat.default_severity === "CRITICAL"
+                            ? "Khẩn cấp"
+                            : subCat.default_severity === "HIGH"
+                            ? "Cao"
+                            : subCat.default_severity === "MEDIUM"
+                            ? "Trung bình"
+                            : "Thấp"}
+                        </span>
+                        <span className="sub-cat-code">#{subCat.category_code}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* THÔNG BÁO QUY CHUẨN ĐÃ CHỌN KÈM SLA */}
+        {formData.category_name && (
+          <div className="selected-category-sla-bar">
+            <span className="sla-bar-icon">✅</span>
+            <div className="sla-bar-text">
+              <span>Đang áp dụng: <strong>{formData.category_name}</strong></span>
+              {formData.sla_hours && (
+                <span className="sla-pill-tag">
+                  ⏱️ Cam kết thời hạn xử lý (SLA): <strong>{formData.sla_hours} giờ</strong>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* KHUNG MÔ TẢ */}

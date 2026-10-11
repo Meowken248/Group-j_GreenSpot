@@ -396,6 +396,163 @@
     }
   }
 
+  /* QUY CHUẨN DANH MỤC CON DO ADMIN QUẢN LÝ */
+  .sub-categories-container {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px dashed #334155;
+
+    .sub-section-header {
+      margin-bottom: 12px;
+      .sub-section-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #38bdf8;
+        letter-spacing: 0.3px;
+      }
+    }
+
+    .sub-categories-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+
+      .sub-category-card {
+        background: #0f172a;
+        border: 1.5px solid #334155;
+        border-radius: 10px;
+        padding: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+
+        &:hover {
+          border-color: #38bdf8;
+          transform: translateY(-1px);
+        }
+
+        &.selected {
+          border-color: #10b981;
+          background: #062b21;
+          box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+
+          .sub-cat-name {
+            color: #34d399;
+          }
+        }
+
+        .sub-card-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 8px;
+          margin-bottom: 6px;
+
+          .sub-cat-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #f1f5f9;
+            flex: 1;
+          }
+
+          .sub-cat-sla {
+            font-size: 12px;
+            font-weight: 700;
+            color: #fbbf24;
+            background: rgba(245, 158, 11, 0.15);
+            padding: 2px 8px;
+            border-radius: 6px;
+            white-space: nowrap;
+          }
+        }
+
+        .sub-cat-desc {
+          font-size: 12px;
+          color: #94a3b8;
+          line-height: 1.4;
+          margin: 0 0 10px 0;
+        }
+
+        .sub-card-bottom {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding-top: 8px;
+          border-top: 1px solid rgba(51, 65, 85, 0.5);
+
+          .sub-sev-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+
+            &.sev-critical {
+              background: rgba(239, 68, 68, 0.2);
+              color: #f87171;
+            }
+            &.sev-high {
+              background: rgba(249, 115, 22, 0.2);
+              color: #fb923c;
+            }
+            &.sev-medium {
+              background: rgba(234, 179, 8, 0.2);
+              color: #fde047;
+            }
+            &.sev-low {
+              background: rgba(148, 163, 184, 0.2);
+              color: #cbd5e1;
+            }
+          }
+
+          .sub-cat-code {
+            font-size: 11px;
+            color: #64748b;
+            font-family: monospace;
+          }
+        }
+      }
+    }
+  }
+
+  /* THANH THÔNG BÁO QUY CHUẨN VÀ SLA ĐÃ CHỌN */
+  .selected-category-sla-bar {
+    margin-top: 16px;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .sla-bar-icon {
+      font-size: 16px;
+    }
+
+    .sla-bar-text {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: #e2e8f0;
+
+      strong {
+        color: #34d399;
+      }
+
+      .sla-pill-tag {
+        background: rgba(16, 185, 129, 0.25);
+        color: #a7f3d0;
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-weight: 600;
+      }
+    }
+  }
+
   /* MỨC KHẨN CẤP */
   .severity-options-row {
     display: flex;
