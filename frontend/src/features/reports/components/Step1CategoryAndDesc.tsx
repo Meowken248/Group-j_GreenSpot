@@ -350,10 +350,12 @@ export const Step1CategoryAndDesc: React.FC<Step1Props> = ({
           })}
         </div>
 
-        {/* PHÂN LOẠI CHI TIẾT & THỜI HẠN XỬ LÝ (SLA) */}
+        {/* PHÂN LOẠI CHI TIẾT KHI CÓ TỪ 2 DANH MỤC TRỞ LÊN (ADAPTIVE UX) */}
         {selectedCategoryKey && (() => {
           const matchedList = getMatchedSubCategories(selectedCategoryKey);
-          if (matchedList.length === 0) return null;
+          // Tự động thích ứng: Chỉ mở khung phân loại khi nhóm có từ 2 lựa chọn trở lên (như Rác thải).
+          // Nếu nhóm chỉ có 1 danh mục chuẩn (như Ngập úng, Ô nhiễm), hiển thị trực tiếp cam kết xử lý để giao diện gọn gàng.
+          if (matchedList.length <= 1) return null;
           return (
             <div className="sub-categories-container">
               <div className="sub-section-header">
