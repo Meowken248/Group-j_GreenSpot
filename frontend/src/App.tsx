@@ -64,12 +64,19 @@ function App() {
     const isLogged = checkIsLoggedIn();
 
     if (hash === "#map" || path === "/map") return "map";
-    if (hash === "#penalties" || path === "/penalties") return "penalties";
+    if (hash === "#penalties" || path === "/penalties") {
+      if (!isLogged) return "auth";
+      return "penalties";
+    }
     if (hash === "#posts" || hash === "#create-post" || path === "/posts" || path === "/create-post") {
+      if (!isLogged) return "auth";
       return "posts";
     }
     if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") return "auth";
-    if (hash === "#voice" || path === "/voice") return "voice";
+    if (hash === "#voice" || path === "/voice") {
+      if (!isLogged) return "auth";
+      return "voice";
+    }
 
 
     // Khách vãng lai chưa đăng nhập: Không được phép vào các trang cài đặt, phân tích khí hậu, bạn bè, profile, quản trị, trùng lặp
@@ -233,7 +240,13 @@ function App() {
           setActiveTab("rbac");
         }
       } else if (hash === "#voice") {
-        setActiveTab("voice");
+        if (!isLogged) {
+          setAuthRedirectUrl("/voice");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("voice");
+        }
       } else if (hash === "#dedup" || window.location.pathname === "/dedup") {
         if (!isLogged) {
           setAuthRedirectUrl("/dedup");
@@ -243,9 +256,21 @@ function App() {
           setActiveTab("dedup");
         }
       } else if (hash === "#penalties") {
-        setActiveTab("penalties");
+        if (!isLogged) {
+          setAuthRedirectUrl("/penalties");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("penalties");
+        }
       } else if (hash === "#posts" || hash === "#create-post") {
-        setActiveTab("posts");
+        if (!isLogged) {
+          setAuthRedirectUrl("/posts");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("posts");
+        }
       } else if (hash === "#profile") {
         if (!isLogged) {
           setAuthRedirectUrl("/profile");
@@ -285,6 +310,18 @@ function App() {
         window.location.hash = "#login";
       } else if (activeTab === "dedup") {
         setAuthRedirectUrl("/dedup");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "posts") {
+        setAuthRedirectUrl("/posts");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "penalties") {
+        setAuthRedirectUrl("/penalties");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "voice") {
+        setAuthRedirectUrl("/voice");
         setActiveTab("auth");
         window.location.hash = "#login";
       }
@@ -698,42 +735,6 @@ function App() {
               <span>🗺️</span>
               <span>Bản đồ WebGIS</span>
             </button>
-            <button
-              type="button"
-              className={`view-tab-btn ${activeTab === "posts" ? "active" : ""}`}
-              onClick={() => {
-                setActiveTab("posts");
-                window.location.hash = "#create-post";
-              }}
-              title="Tạo bài viết, phản ánh sự cố & chia sẻ kinh nghiệm sống xanh (STT 9)"
-            >
-              <span>✍️</span>
-              <span>Đăng bài viết</span>
-            </button>
-            <button
-              type="button"
-              className={`view-tab-btn ${activeTab === "penalties" ? "active" : ""}`}
-              onClick={() => {
-                setActiveTab("penalties");
-                window.location.hash = "#penalties";
-              }}
-              title="Tra cứu quy định xử phạt vi phạm hành chính (Nghị định 45/2022/NĐ-CP)"
-            >
-              <span>⚖️</span>
-              <span>Tra cứu xử phạt</span>
-            </button>
-            <button
-              type="button"
-              className={`view-tab-btn ${activeTab === "voice" ? "active" : ""}`}
-              onClick={() => {
-                setActiveTab("voice");
-                window.location.hash = "#voice";
-              }}
-              title="Trợ lý giọng nói rảnh tay (Hands-free Voice Assistant)"
-            >
-              <span>🎙️</span>
-              <span>Trợ lý Giọng nói</span>
-            </button>
           </>
         )}
       </nav>
@@ -906,52 +907,91 @@ function App() {
           </ModulePermissionGuard>
         )
       ) : activeTab === "voice" ? (
-        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-          <VoiceAssistant
-            onClose={() => setActiveTab("map")}
-            onNavigateToFeature={(target) => {
-              if (target === "dashboard_aqi") {
-                setActiveTab("dashboard");
-              } else {
+        !currentUser ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/voice"
+              onExitAuth={() => {
                 setActiveTab("map");
-              }
-            }}
-          />
-        </div>
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <VoiceAssistant
+              onClose={() => setActiveTab("map")}
+              onNavigateToFeature={(target) => {
+                if (target === "dashboard_aqi") {
+                  setActiveTab("dashboard");
+                } else {
+                  setActiveTab("map");
+                }
+              }}
+            />
+          </div>
+        )
       ) : activeTab === "penalties" ? (
-        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-          <PenaltyLookupContainer
-            currentUser={currentUser}
-            onNavigateToAuth={() => {
-              setAuthRedirectUrl("/penalties");
-              setActiveTab("auth");
-              window.location.hash = "#login";
-            }}
-            onNavigateToReport={() => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
-          />
-        </div>
+        !currentUser ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/penalties"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <PenaltyLookupContainer
+              currentUser={currentUser}
+              onNavigateToAuth={() => {
+                setAuthRedirectUrl("/penalties");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+              onNavigateToReport={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        )
       ) : activeTab === "posts" ? (
-        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-          <PostCreatorContainer
-            onNavigateHome={() => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
-            onNavigateLogin={() => {
-              setAuthRedirectUrl("/posts");
-              setActiveTab("auth");
-              window.location.hash = "#login";
-            }}
-            onViewCreatedPost={(_postId) => {
-              // Điều hướng xem bài viết
-              setActiveTab("profile");
-              window.location.hash = "#profile";
-            }}
-          />
-        </div>
+        !currentUser ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/posts"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <PostCreatorContainer
+              onNavigateHome={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              onNavigateLogin={() => {
+                setAuthRedirectUrl("/posts");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+              onViewCreatedPost={(_postId) => {
+                // Điều hướng xem bài viết
+                setActiveTab("profile");
+                window.location.hash = "#profile";
+              }}
+            />
+          </div>
+        )
 
       ) : (
         /* Mặc định an toàn cho khách vãng lai và tab map: Bản đồ số WebGIS công cộng */
@@ -963,13 +1003,16 @@ function App() {
         </ModulePermissionGuard>
       )}
 
-      {/* NÚT TRỢ LÝ GIỌNG NÓI NHANH NỔI (FLOATING QUICK ACTION KHI Ở MAP HOẶC DASHBOARD) */}
+      {/* NÚT TRỢ LÝ GIỌNG NÓI NHANH NỔI (CHỈ HIỂN THỊ KHI ĐÃ ĐĂNG NHẬP VÀ KHÔNG Ở TAB VOICE) */}
       {
-        activeTab !== "voice" && (
+        currentUser && activeTab !== "voice" && (
           <button
             type="button"
             className="floating-voice-quick-btn"
-            onClick={() => setActiveTab("voice")}
+            onClick={() => {
+              setActiveTab("voice");
+              window.location.hash = "#voice";
+            }}
             title="Bật Trợ lý giọng nói rảnh tay"
             aria-label="Trợ lý giọng nói"
           >
