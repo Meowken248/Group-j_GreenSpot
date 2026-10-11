@@ -49,6 +49,9 @@ class PostItemResponse(BaseModel):
     content: str
     media_urls: Optional[List[str]] = None
     thumbnail_url: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    address: Optional[str] = None
     reactions_count: int = 0
     comments_count: int = 0
     is_hidden: bool = False
