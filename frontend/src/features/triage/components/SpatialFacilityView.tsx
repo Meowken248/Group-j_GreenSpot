@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import type {
   TriageEvaluationData,
   SpatialScreenStep,
@@ -12,6 +14,57 @@ interface SpatialFacilityViewProps {
   incidentData: TriageEvaluationData;
   onBackToTriage: () => void;
 }
+
+const MAP_TILES = {
+  roadmap: "https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
+  satellite: "https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+};
+
+// Dữ liệu cơ sở mẫu fallback khi chưa kết nối CSDL hoặc đang tải
+const FALLBACK_FACILITIES: FacilityItem[] = [
+  {
+    facility_id: 26,
+    facility_name: "Trường Tiểu học Lê Lợi",
+    facility_type: "Trường học",
+    address: "128 Lê Lợi, P. Bến Nghé, Quận 1",
+    distance_meters: 45,
+    distance_display: "Cách 45m",
+    is_danger_proximity: true,
+    is_immediate_risk: true,
+    contact_phone: "028 3829 4567",
+    vulnerability_level: "RẤT CAO",
+    latitude: 10.77265,
+    longitude: 106.69835,
+  },
+  {
+    facility_id: 27,
+    facility_name: "Bệnh viện Quận 1 (Cơ sở 1)",
+    facility_type: "Bệnh viện",
+    address: "338 Hai Bà Trưng, P. Tân Định, Quận 1",
+    distance_meters: 140,
+    distance_display: "Cách 140m",
+    is_danger_proximity: true,
+    is_immediate_risk: false,
+    contact_phone: "028 3820 1234",
+    vulnerability_level: "CAO",
+    latitude: 10.7734,
+    longitude: 106.6972,
+  },
+  {
+    facility_id: 28,
+    facility_name: "Trường THCS Chu Văn An",
+    facility_type: "Trường học",
+    address: "115 Cống Quỳnh, P. Nguyễn Cư Trinh, Quận 1",
+    distance_meters: 180,
+    distance_display: "Cách 180m",
+    is_danger_proximity: true,
+    is_immediate_risk: false,
+    contact_phone: "028 3836 7890",
+    vulnerability_level: "CAO",
+    latitude: 10.7711,
+    longitude: 106.6988,
+  },
+];
 
 export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
   incidentData,
@@ -40,6 +93,13 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
   const [isLoadingDetail, setIsLoadingDetail] = useState<boolean>(false);
   const [isSendingAlert, setIsSendingAlert] = useState<boolean>(false);
 
+  // Leaflet Map state & refs
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const layersGroupRef = useRef<L.FeatureGroup | null>(null);
+  const [mapType, setMapType] = useState<"roadmap" | "satellite">("roadmap");
+
   // Toast thông báo 3 giây
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<"success" | "error">("success");
@@ -51,6 +111,196 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
       setToastMessage(null);
     }, 3000);
   };
+
+  // Tự động nạp danh sách cơ sở ban đầu khi mở màn hình
+  useEffect(() => {
+    if (incidentData?.incident_id) {
+      triageService
+        .queryFacilitiesInBuffer(incidentData.incident_id, radiusMeters, selectedTypes)
+        .then((res) => {
+          setSearchResponse(res);
+        })
+        .catch(() => {
+          // Bỏ qua lỗi ngầm định, sử dụng dữ liệu fallback nếu chưa có DB
+        });
+    }
+  }, [incidentData?.incident_id]);
+
+  // Khởi tạo bản đồ Leaflet khi ở SCREEN_1_MAP_BUFFER
+  useEffect(() => {
+    if (currentStep !== "SCREEN_1_MAP_BUFFER") {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+      return;
+    }
+
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    try {
+      const centerLat = incidentData.latitude || 10.7725;
+      const centerLng = incidentData.longitude || 106.698;
+
+      const map = L.map(mapContainerRef.current, {
+        center: [centerLat, centerLng],
+        zoom: 15,
+        zoomControl: false,
+        attributionControl: false,
+      });
+
+      L.control.zoom({ position: "topright" }).addTo(map);
+
+      const tileLayer = L.tileLayer(MAP_TILES[mapType], {
+        subdomains: ["0", "1", "2", "3"],
+        maxZoom: 21,
+      }).addTo(map);
+
+      tileLayerRef.current = tileLayer;
+
+      const layersGroup = L.featureGroup().addTo(map);
+      layersGroupRef.current = layersGroup;
+
+      mapRef.current = map;
+
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 150);
+    } catch (err) {
+      console.warn("Leaflet map initialization skipped or not supported:", err);
+    }
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, [currentStep]);
+
+  // Thay đổi kiểu bản đồ (Đường phố / Vệ tinh)
+  useEffect(() => {
+    if (!tileLayerRef.current) return;
+    tileLayerRef.current.setUrl(MAP_TILES[mapType]);
+  }, [mapType]);
+
+  // Cập nhật Ghim tâm sự cố, Vòng đệm bán kính (Buffer Circle) và các cơ sở thiết yếu
+  useEffect(() => {
+    const map = mapRef.current;
+    const layersGroup = layersGroupRef.current;
+    if (!map || !layersGroup || currentStep !== "SCREEN_1_MAP_BUFFER") return;
+
+    layersGroup.clearLayers();
+
+    const centerLat = incidentData.latitude || 10.7725;
+    const centerLng = incidentData.longitude || 106.698;
+    const centerLatLng: L.LatLngTuple = [centerLat, centerLng];
+
+    // 1. Ghim Tâm sự cố đỏ nhấp nháy
+    const incidentIcon = L.divIcon({
+      className: "spatial-incident-badge",
+      html: `
+        <div class="pin-halo"></div>
+        <div class="pin-badge">🚨</div>
+      `,
+      iconSize: [38, 38],
+      iconAnchor: [19, 19],
+    });
+
+    L.marker(centerLatLng, { icon: incidentIcon })
+      .bindPopup(`
+        <div style="font-size: 13px; line-height: 1.4; color: #0f172a;">
+          <strong style="color: #ef4444; font-size: 14px;">🚨 TÂM SỰ CỐ MÔI TRƯỜNG</strong><br/>
+          <span style="font-weight: 600; color: #1e293b;">${incidentData.tracking_code}</span>: ${incidentData.title}<br/>
+          <span style="color: #64748b; font-size: 12px;">📍 ${incidentData.address_text}</span>
+        </div>
+      `)
+      .addTo(layersGroup);
+
+    // 2. Vòng tròn bán kính vùng đệm (Buffer Zone)
+    const bufferCircle = L.circle(centerLatLng, {
+      radius: radiusMeters,
+      color: "#ef4444",
+      fillColor: "#ef4444",
+      fillOpacity: 0.12,
+      dashArray: "6, 6",
+      weight: 2,
+    }).addTo(layersGroup);
+
+    // 3. Hiển thị các cơ sở thiết yếu xung quanh tâm
+    const rawFacilities = searchResponse?.facilities?.length
+      ? searchResponse.facilities
+      : FALLBACK_FACILITIES;
+
+    // Lọc theo các loại được chọn
+    const activeFacilities = rawFacilities.filter((f) =>
+      selectedTypes.includes(f.facility_type)
+    );
+
+    activeFacilities.forEach((fac) => {
+      const facLat = fac.latitude || centerLat + 0.0005;
+      const facLng = fac.longitude || centerLng + 0.0005;
+
+      const isSchool = fac.facility_type === "Trường học";
+      const isHospital = fac.facility_type === "Bệnh viện";
+      const badgeClass = isSchool
+        ? "facility-school"
+        : isHospital
+        ? "facility-hospital"
+        : "facility-clinic";
+      const badgeIcon = isSchool ? "🏫" : isHospital ? "🏥" : "🩺";
+
+      const facMarkerIcon = L.divIcon({
+        className: "custom-fac-pin",
+        html: `
+          <div class="spatial-facility-badge ${badgeClass}" title="${fac.facility_name}">
+            ${badgeIcon}
+          </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+      });
+
+      const popupHtml = document.createElement("div");
+      popupHtml.style.cssText = "font-size: 13px; line-height: 1.4; color: #0f172a; min-width: 180px;";
+      popupHtml.innerHTML = `
+        <strong style="color: #0f172a; font-size: 13.5px;">${badgeIcon} ${fac.facility_name}</strong><br/>
+        <span style="color: #64748b; font-size: 12px;">${fac.address}</span><br/>
+        <div style="margin: 4px 0;">
+          <span style="color: ${fac.is_danger_proximity ? "#ef4444" : "#10b981"}; font-weight: 700;">
+            ${fac.distance_display}
+          </span>
+          ${fac.is_immediate_risk ? ' <span style="background: #fee2e2; color: #b91c1c; font-size: 10px; padding: 1px 4px; border-radius: 4px; font-weight: 700;">RẤT GẦN &lt;100m</span>' : ""}
+        </div>
+        ${fac.contact_phone ? `<span style="font-size: 11.5px; color: #475569;">📞 ${fac.contact_phone}</span><br/>` : ""}
+        <button id="view-fac-btn-${fac.facility_id}" style="margin-top: 6px; width: 100%; background: #2563eb; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: 600;">
+          Xem hồ sơ chi tiết →
+        </button>
+      `;
+
+      const marker = L.marker([facLat, facLng], { icon: facMarkerIcon })
+        .bindPopup(popupHtml)
+        .addTo(layersGroup);
+
+      marker.on("popupopen", () => {
+        const btn = document.getElementById(`view-fac-btn-${fac.facility_id}`);
+        if (btn) {
+          btn.onclick = () => {
+            handleOpenDetail(fac.facility_id);
+          };
+        }
+      });
+    });
+
+    // Căn chỉnh khung nhìn vừa khít vòng đệm bán kính
+    map.fitBounds(bufferCircle.getBounds(), { padding: [35, 35], maxZoom: 18 });
+  }, [
+    incidentData,
+    radiusMeters,
+    selectedTypes,
+    searchResponse,
+    currentStep,
+  ]);
 
   // Toggle checkbox loại cơ sở (Màn 1/3)
   const handleToggleType = (typeStr: string) => {
@@ -79,7 +329,7 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
       setSearchResponse(res);
       setActiveFilterType("ALL");
       setCurrentStep("SCREEN_2_FACILITY_LIST");
-    } catch (err: any) {
+    } catch {
       showToast("Lỗi truy vấn cơ sở dữ liệu. Vui lòng thử lại", "error");
     } finally {
       setIsSearching(false);
@@ -93,7 +343,7 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
       const detail = await triageService.getFacilityDetail(facilityId, incidentData.incident_id);
       setSelectedFacilityDetail(detail);
       setCurrentStep("SCREEN_3_FACILITY_DETAIL");
-    } catch (err: any) {
+    } catch {
       showToast("Không thể tải hồ sơ chi tiết cơ sở. Vui lòng thử lại", "error");
     } finally {
       setIsLoadingDetail(false);
@@ -116,7 +366,7 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
         `Cảnh báo ô nhiễm môi trường gần cơ sở: ${incidentData.title} tại ${incidentData.address_text}. Đề nghị đóng cửa sổ và hạn chế hoạt động ngoài trời.`
       );
       showToast(res.message, "success");
-    } catch (err: any) {
+    } catch {
       showToast("Không thể gửi tin nhắn cảnh báo. Vui lòng thử lại", "error");
     } finally {
       setIsSendingAlert(false);
@@ -160,93 +410,53 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
           <div className="col-map-view">
             <div className="map-header-bar">
               <span>🗺️ BẢN ĐỒ PHÂN TÍCH VÙNG ĐỆM (BUFFER RADIUS GIS)</span>
-              <span className="map-radius-badge">
-                Bán kính: {radiusMeters >= 1000 ? `${radiusMeters / 1000} km` : `${radiusMeters} m`}
-              </span>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                {/* Nút chuyển đổi Đường phố / Vệ tinh */}
+                <div style={{ display: "flex", gap: "3px" }}>
+                  <button
+                    type="button"
+                    style={{
+                      background: mapType === "roadmap" ? "#2563eb" : "#334155",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "4px",
+                      padding: "2px 7px",
+                      cursor: "pointer",
+                      fontSize: "0.72rem",
+                    }}
+                    onClick={() => setMapType("roadmap")}
+                  >
+                    🗺️ Đường phố
+                  </button>
+                  <button
+                    type="button"
+                    style={{
+                      background: mapType === "satellite" ? "#2563eb" : "#334155",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "4px",
+                      padding: "2px 7px",
+                      cursor: "pointer",
+                      fontSize: "0.72rem",
+                    }}
+                    onClick={() => setMapType("satellite")}
+                  >
+                    🛰️ Vệ tinh
+                  </button>
+                </div>
+                <span className="map-radius-badge">
+                  Bán kính: {radiusMeters >= 1000 ? `${radiusMeters / 1000} km` : `${radiusMeters} m`}
+                </span>
+              </div>
             </div>
 
             <div className="map-canvas-container">
-              {/* Bản đồ SVG trực quan mô phỏng tâm sự cố và vòng đệm co giãn */}
-              <svg width="100%" height="100%" viewBox="0 0 600 460" preserveAspectRatio="xMidYMid slice">
-                <defs>
-                  {/* Lưới tọa độ bản đồ */}
-                  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#334155" strokeWidth="0.5" />
-                  </pattern>
-                  {/* Hiệu ứng gradient vùng đệm */}
-                  <radialGradient id="bufferGradient" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor="#ef4444" stopOpacity="0.4" />
-                    <stop offset="70%" stopColor="#f97316" stopOpacity="0.15" />
-                    <stop offset="100%" stopColor="#10b981" stopOpacity="0.05" />
-                  </radialGradient>
-                </defs>
-
-                <rect width="600" height="460" fill="#0f172a" />
-                <rect width="600" height="460" fill="url(#grid)" />
-
-                {/* Các con đường đô thị mô phỏng */}
-                <path d="M 0 230 Q 300 210 600 230" stroke="#475569" strokeWidth="12" fill="none" />
-                <path d="M 300 0 Q 320 230 300 460" stroke="#475569" strokeWidth="10" fill="none" />
-                <path d="M 120 80 L 480 380" stroke="#334155" strokeWidth="6" fill="none" />
-
-                {/* Vòng tròn bán kính vùng đệm (Buffer zone) co giãn theo thời gian thực */}
-                {/* 500m -> r=80, 1000m -> r=150, 2000m -> r=220 */}
-                {(() => {
-                  const circleR = radiusMeters === 500 ? 80 : radiusMeters === 1000 ? 150 : 220;
-                  return (
-                    <g>
-                      <circle
-                        cx="300"
-                        cy="230"
-                        r={circleR}
-                        fill="url(#bufferGradient)"
-                        stroke="#ef4444"
-                        strokeWidth="2"
-                        strokeDasharray="6,4"
-                      />
-                      <circle cx="300" cy="230" r={circleR} fill="none" stroke="#f97316" strokeWidth="1" opacity="0.6">
-                        <animate attributeName="r" values={`${circleR - 5};${circleR + 5};${circleR - 5}`} dur="3s" repeatCount="indefinite" />
-                      </circle>
-                    </g>
-                  );
-                })()}
-
-                {/* Ghim sự cố đỏ ở tâm */}
-                <g transform="translate(300, 230)">
-                  <circle cx="0" cy="0" r="16" fill="rgba(239, 68, 68, 0.3)" />
-                  <circle cx="0" cy="0" r="8" fill="#ef4444" />
-                  <path d="M 0 0 L 0 -18" stroke="#ef4444" strokeWidth="3" />
-                  <circle cx="0" cy="-18" r="6" fill="#ef4444" stroke="#ffffff" strokeWidth="2" />
-                  <text x="0" y="24" fill="#fca5a5" fontSize="11" fontWeight="bold" textAnchor="middle">
-                    TÂM SỰ CỐ
-                  </text>
-                </g>
-
-                {/* Các điểm cơ sở thiết yếu mô phỏng */}
-                {/* 1. Trường Tiểu học Lê Lợi (~45m) */}
-                <g transform="translate(325, 215)">
-                  <circle cx="0" cy="0" r="5" fill="#3b82f6" stroke="#ffffff" strokeWidth="1.5" />
-                  <text x="8" y="4" fill="#93c5fd" fontSize="10" fontWeight="bold">
-                    Trường Lê Lợi (45m)
-                  </text>
-                </g>
-
-                {/* 2. Bệnh viện Quận 1 (~140m) */}
-                <g transform="translate(250, 180)">
-                  <circle cx="0" cy="0" r="5" fill="#ef4444" stroke="#ffffff" strokeWidth="1.5" />
-                  <text x="-90" y="4" fill="#fca5a5" fontSize="10" fontWeight="bold">
-                    BV Quận 1 (140m)
-                  </text>
-                </g>
-
-                {/* 3. Trường Chu Văn An (~180m) */}
-                <g transform="translate(370, 280)">
-                  <circle cx="0" cy="0" r="5" fill="#3b82f6" stroke="#ffffff" strokeWidth="1.5" />
-                  <text x="8" y="4" fill="#93c5fd" fontSize="10">
-                    THCS Chu Văn An (180m)
-                  </text>
-                </g>
-              </svg>
+              {/* Bản đồ Leaflet tương tác thực tế với lớp gạch Google Maps & PostGIS Buffer */}
+              <div
+                ref={mapContainerRef}
+                className="spatial-leaflet-map"
+                style={{ width: "100%", height: "100%", minHeight: "440px" }}
+              />
             </div>
           </div>
 
@@ -448,17 +658,17 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
 
                     <button
                       type="button"
-                      className="btn-view-fac-detail"
+                      className="btn-open-profile"
                       onClick={() => handleOpenDetail(fac.facility_id)}
                       disabled={isLoadingDetail}
                     >
-                      Xem chi tiết →
+                      {isLoadingDetail ? "Đang tải…" : "Xem chi tiết →"}
                     </button>
                   </div>
                 ))
               ) : (
-                <div className="empty-green-message">
-                  ✅ Không có cơ sở thiết yếu nào trong bán kính đã chọn
+                <div className="empty-facilities-view">
+                  Không tìm thấy cơ sở thiết yếu nào trong bán kính đã chọn.
                 </div>
               )}
             </div>
@@ -467,15 +677,22 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
       )}
 
       {/* =========================================================================
-          MÀN 3/3: HỒ SƠ CHI TIẾT MỨC ĐỘ PHƠI NHIỄM & LIÊN HỆ KHẨN CẤP (HÌNH 4.40)
-          2 KHỐI THEO CHIỀU NGANG: THÔNG TIN (Trái) | HÀNH ĐỘNG (Phải)
+          MÀN 3/3: HỒ SƠ CHI TIẾT CƠ SỞ & CÔNG CỤ ĐIỀU HÀNH (HÌNH 4.40)
+          2 KHỐI: THÔNG TIN CƠ SỞ (Trái) | HÀNH ĐỘNG (Phải)
          ========================================================================= */}
       {currentStep === "SCREEN_3_FACILITY_DETAIL" && selectedFacilityDetail && (
         <div className="spatial-screen-3-grid">
-          {/* CỘT TRÁI: KHỐI "THÔNG TIN" */}
-          <div className="col-facility-info">
+          {/* CỘT TRÁI: KHỐI "THÔNG TIN CƠ SỞ" */}
+          <div className="col-facility-detail-card">
             <div className="panel-heading">
-              <span>🏢 HỒ SƠ TIẾP XÚC MÔI TRƯỜNG CƠ SỞ</span>
+              <span>🏥 HỒ SƠ CƠ SỞ THIẾT YẾU</span>
+              <button
+                type="button"
+                className="btn-back-to-list-link"
+                onClick={() => setCurrentStep("SCREEN_2_FACILITY_LIST")}
+              >
+                ← Quay lại danh sách
+              </button>
             </div>
 
             <div className="detail-card-body">
@@ -548,28 +765,18 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
                 {/* Nút 3: Gửi cảnh báo SMS / Email */}
                 <button
                   type="button"
-                  className="btn-action-alert"
+                  className="btn-action-send-alert"
                   onClick={handleSendAlert}
                   disabled={isSendingAlert || !selectedFacilityDetail.can_alert}
                 >
-                  {isSendingAlert ? "Đang gửi cảnh báo…" : "📢 Gửi cảnh báo môi trường khẩn"}
+                  {isSendingAlert ? "Đang gửi cảnh báo khẩn…" : "📢 Gửi cảnh báo khẩn cấp"}
                 </button>
-
-                {!selectedFacilityDetail.can_call && (
-                  <div className="no-contact-hint">
-                    ⚠️ Chưa có thông tin liên hệ của cơ sở này (Nút bị làm mờ)
-                  </div>
-                )}
               </div>
             </div>
 
-            <button
-              type="button"
-              className="btn-back-to-list"
-              onClick={() => setCurrentStep("SCREEN_2_FACILITY_LIST")}
-            >
-              ← Quay lại danh sách cơ sở
-            </button>
+            <div className="action-hint-note">
+              ℹ️ Các thao tác liên hệ và chỉ đường đều được ghi tự động vào Nhật ký kiểm toán hệ thống.
+            </div>
           </div>
         </div>
       )}
