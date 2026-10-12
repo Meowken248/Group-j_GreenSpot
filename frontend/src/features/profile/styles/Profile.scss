@@ -1887,6 +1887,12 @@ $info-500: #3b82f6;
   }
 }
 
+// Đảm bảo Modal Vị trí và Gắn thẻ luôn nổi trên EditPostModal khi mở từ Profile
+.location-modal-backdrop,
+.tag-modal-backdrop {
+  z-index: 10050 !important;
+}
+
 // 2. KHUNG THẺ CHÍNH (DOUBLE-BEZEL SURFACE)
 .modal-double-bezel {
   background: #ffffff;

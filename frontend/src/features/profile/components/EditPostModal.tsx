@@ -11,6 +11,7 @@ import type {
 import { LocationPickerModal } from "../../posts/components/LocationPickerModal";
 import { TagFriendsAndGroupModal } from "../../posts/components/TagFriendsAndGroupModal";
 import { postService } from "../../posts/services/postService";
+import "../../posts/styles/PostCreator.scss";
 
 interface MediaItem {
   url: string;

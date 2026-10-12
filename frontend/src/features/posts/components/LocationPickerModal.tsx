@@ -67,6 +67,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
 
     setCurrentLat(startLat);
     setCurrentLng(startLng);
+    setAddress(initialLocation?.address || "Đang xác định địa chỉ…");
 
     // Dọn dẹp map cũ nếu có
     if (mapInstanceRef.current) {
@@ -139,7 +140,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
         mapInstanceRef.current = null;
       }
     };
-  }, [isOpen]);
+  }, [isOpen, initialLocation]);
 
   // 3. Xử lý nút "Dùng vị trí hiện tại" (GPS chuẩn xác cao)
   const handleUseCurrentLocation = () => {
