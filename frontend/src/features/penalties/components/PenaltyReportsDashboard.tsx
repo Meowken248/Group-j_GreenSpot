@@ -13,7 +13,7 @@ interface PenaltyReportsDashboardProps {
 }
 
 export const PenaltyReportsDashboard: React.FC<PenaltyReportsDashboardProps> = ({
-  currentUser,
+  currentUser: _currentUser,
   onBackToPenalties,
 }) => {
   // Bộ lọc danh sách

@@ -85,6 +85,9 @@ from app.models.settings import UserSettings
 # 9. Tra cứu quy định xử phạt vi phạm hành chính (Penalty Regulations Domain)
 from app.models.penalty import PenaltyRegulation, PenaltyReport
 
+# 10. Thông báo hệ thống (Notification Domain)
+from app.models.notification import Notification
+
 __all__ = [
     "Base",
     "TimestampMixin",
@@ -142,5 +145,7 @@ __all__ = [
     # Penalty Regulations Domain
     "PenaltyRegulation",
     "PenaltyReport",
+    # Notification Domain
+    "Notification",
 ]
 

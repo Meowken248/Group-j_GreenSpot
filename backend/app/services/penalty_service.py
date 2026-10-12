@@ -26,6 +26,9 @@ import string
 from datetime import datetime, timezone
 
 from app.models.penalty import PenaltyRegulation, PenaltyReport
+from app.models.profile import UserActivity
+from app.models.rbac import User
+from app.models.notification import Notification
 from app.schemas.penalty import (
     PenaltySearchParams,
     PenaltySummaryItem,
@@ -332,6 +335,22 @@ class PenaltyRegulationService:
             version=1,
         )
         session.add(report)
+
+        # Nếu gửi bằng tài khoản (có saved_reporter_id), ghi nhận vào Lịch sử hoạt động đóng góp (user_activities) với 0 điểm (chờ xác minh)
+        if saved_reporter_id:
+            try:
+                activity = UserActivity(
+                    activity_id=uuid.uuid4(),
+                    user_id=saved_reporter_id,
+                    activity_type="REPORT_INCIDENT",
+                    title=f"Báo cáo vi phạm: {data.violation_title[:200]}",
+                    description=f"Hồ sơ #{tracking_code} | Địa điểm: {data.address_text} | Trạng thái: Chờ xác minh",
+                    points=0,
+                )
+                session.add(activity)
+            except Exception:
+                pass
+
         await session.commit()
         await session.refresh(report)
 
@@ -445,6 +464,77 @@ class PenaltyRegulationService:
             report.resolved_at = datetime.now(timezone.utc)
 
         report.version += 1
+
+        # Nếu báo cáo có reporter_id (người dùng gửi bằng tài khoản), cập nhật điểm & thông báo
+        if report.reporter_id:
+            try:
+                # 1. Cập nhật hoạt động đóng góp (UserActivity) và điểm xanh tích lũy theo Cách 1:
+                # Chỉ cộng +20 điểm khi cán bộ xác minh hợp lệ (VERIFIED hoặc RESOLVED)
+                # Khi từ chối (REJECTED) hoặc chờ xử lý (PENDING): 0 điểm
+                act_stmt = select(UserActivity).where(
+                    UserActivity.user_id == report.reporter_id,
+                    UserActivity.description.ilike(f"%{report.tracking_code}%"),
+                    UserActivity.deleted_at.is_(None),
+                )
+                activity = (await session.execute(act_stmt)).scalars().first()
+
+                user_stmt = select(User).where(User.user_id == report.reporter_id)
+                user = (await session.execute(user_stmt)).scalar_one_or_none()
+
+                if data.status in ("VERIFIED", "RESOLVED"):
+                    if activity:
+                        if activity.points == 0:
+                            activity.points = 20
+                            activity.description = f"Hồ sơ #{report.tracking_code} | Địa điểm: {report.address_text} | Đã xác minh (+20 điểm)"
+                            if user:
+                                user.total_green_points += 20
+                    elif user:
+                        activity = UserActivity(
+                            activity_id=uuid.uuid4(),
+                            user_id=report.reporter_id,
+                            activity_type="REPORT_INCIDENT",
+                            title=f"Báo cáo vi phạm: {report.violation_title[:200]}",
+                            description=f"Hồ sơ #{report.tracking_code} | Địa điểm: {report.address_text} | Đã xác minh (+20 điểm)",
+                            points=20,
+                        )
+                        session.add(activity)
+                        user.total_green_points += 20
+                elif data.status == "REJECTED":
+                    if activity:
+                        if activity.points > 0 and user:
+                            user.total_green_points = max(0, user.total_green_points - activity.points)
+                        activity.points = 0
+                        activity.description = f"Hồ sơ #{report.tracking_code} | Địa điểm: {report.address_text} | Bị từ chối (0 điểm)"
+                elif data.status == "PENDING":
+                    if activity:
+                        if activity.points > 0 and user:
+                            user.total_green_points = max(0, user.total_green_points - activity.points)
+                        activity.points = 0
+                        activity.description = f"Hồ sơ #{report.tracking_code} | Địa điểm: {report.address_text} | Trạng thái: Chờ xác minh"
+
+                # 2. Tự động tạo thông báo gửi qua chuông thông báo
+                status_text_map = {
+                    "PENDING": "chuyển sang 'Chờ xác minh hiện trường'",
+                    "VERIFIED": "được cán bộ địa bàn 'Xác minh đúng vi phạm' (+20 điểm xanh)",
+                    "RESOLVED": "được cơ quan chức năng 'Lập biên bản / Xử phạt hành chính hoàn tất' (+20 điểm xanh)",
+                    "REJECTED": "bị 'Từ chối / Không đủ căn cứ xử lý' (Không cộng điểm)",
+                }
+                status_desc = status_text_map.get(data.status, f"cập nhật sang trạng thái '{data.status}'")
+                note_suffix = f" (Ghi chú cán bộ: {data.officer_note})" if data.officer_note else ""
+
+                notif = Notification(
+                    notification_id=uuid.uuid4(),
+                    user_id=report.reporter_id,
+                    title=f"Cập nhật phản ánh vi phạm #{report.tracking_code}",
+                    message=f"Hồ sơ phản ánh vi phạm #{report.tracking_code} của bạn đã {status_desc}.{note_suffix}",
+                    notification_type="PENALTY_REPORT",
+                    reference_id=report.tracking_code,
+                    is_read=False,
+                )
+                session.add(notif)
+            except Exception:
+                pass
+
         await session.commit()
         await session.refresh(report)
 
