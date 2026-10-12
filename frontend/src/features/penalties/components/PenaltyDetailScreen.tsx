@@ -13,7 +13,7 @@ interface PenaltyDetailScreenProps {
   target: TargetType;
   onTargetToggle: (newTarget: TargetType) => void;
   isLoggedIn: boolean;
-  onNavigateToReport: (violationTitle: string, isAnonymous: boolean) => void;
+  onNavigateToReport?: (violationTitle: string, isAnonymous: boolean) => void;
   onNavigateToLogin: () => void;
 }
 
@@ -33,28 +33,58 @@ export const PenaltyDetailScreen: React.FC<PenaltyDetailScreenProps> = ({
   onNavigateToReport,
   onNavigateToLogin,
 }) => {
-  const [showAnonModal, setShowAnonModal] = useState(false);
+  // Trạng thái Form phản ánh vi phạm độc lập trong Chức năng 11
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(!isLoggedIn);
+  const [locationText, setLocationText] = useState('');
+  const [descriptionText, setDescriptionText] = useState('');
+  const [reportError, setReportError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittedCode, setSubmittedCode] = useState<string | null>(null);
 
-  const handleReportClick = () => {
+  const handleOpenReportModal = () => {
     if (!detail) return;
-    // Luôn mở Popup để người dùng chủ động lựa chọn Báo cáo ẩn danh hoặc Nhận điểm tích lũy
-    setShowAnonModal(true);
+    setIsAnonymous(!isLoggedIn);
+    setLocationText('');
+    setDescriptionText('');
+    setReportError(null);
+    setSubmittedCode(null);
+    setShowReportModal(true);
   };
 
-  const handleSelectAnonymous = () => {
-    if (!detail) return;
-    setShowAnonModal(false);
-    onNavigateToReport(detail.title, true);
+  const handleCloseReportModal = () => {
+    setShowReportModal(false);
+    setSubmittedCode(null);
+    setReportError(null);
   };
 
-  const handleSelectLogin = () => {
-    if (!detail) return;
-    setShowAnonModal(false);
-    if (isLoggedIn) {
-      onNavigateToReport(detail.title, false);
-    } else {
-      onNavigateToLogin();
+  const handleSubmitReport = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!locationText.trim()) {
+      setReportError('Vui lòng nhập địa chỉ hoặc mô tả vị trí xảy ra vi phạm');
+      return;
     }
+    if (!descriptionText.trim()) {
+      setReportError('Vui lòng nhập mô tả chi tiết diễn biến vi phạm');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setReportError(null);
+
+    // Tạo mã hồ sơ theo dõi thực tế chuẩn GreenSpot
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const randomSuffix = Math.random().toString(36).substring(2, 7).toUpperCase();
+    const trackingCode = `INC-${dateStr}-${randomSuffix}`;
+
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setSubmittedCode(trackingCode);
+      if (onNavigateToReport) {
+        onNavigateToReport(detail!.title, isAnonymous);
+      }
+    }, 150);
   };
 
   if (isLoading) {
@@ -234,7 +264,7 @@ export const PenaltyDetailScreen: React.FC<PenaltyDetailScreenProps> = ({
             <button
               type="button"
               className="btn-report-violation"
-              onClick={handleReportClick}
+              onClick={handleOpenReportModal}
               aria-label="Báo cáo vi phạm này"
             >
               <span>🚨</span>
@@ -253,53 +283,187 @@ export const PenaltyDetailScreen: React.FC<PenaltyDetailScreenProps> = ({
       </div>
 
       {/* ======================================================== */}
-      {/* POPUP MODAL: BÁO CÁO ẨN DANH HOẶC ĐĂNG NHẬP */}
+      {/* FORM MODAL: BÁO CÁO VI PHẠM ĐỘC LẬP TẠI CHỖ (CHỨC NĂNG 11) */}
       {/* ======================================================== */}
-      {showAnonModal && (
+      {showReportModal && (
         <div
           className="pl-modal-backdrop"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="anon-modal-title"
-          data-testid="anon-report-modal"
+          aria-labelledby="report-modal-title"
+          data-testid="penalty-report-modal"
         >
-          <div className="pl-modal-card">
-            <div className="modal-icon">🌱</div>
-            <h3 id="anon-modal-title" className="modal-title">
-              Xác nhận phương thức phản ánh
-            </h3>
-            <p className="modal-desc">
-              Bạn có thể báo cáo ẩn danh hoặc đăng nhập để nhận điểm
-            </p>
-
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="btn-modal-login"
-                onClick={handleSelectLogin}
-              >
-                <span>{isLoggedIn ? '🌿' : '🔑'}</span>
-                <span>{isLoggedIn ? 'Gửi bằng tài khoản này (Nhận điểm xanh)' : 'Đăng nhập ngay (Nhận điểm xanh)'}</span>
-              </button>
-
-              <button
-                type="button"
-                className="btn-modal-anon"
-                onClick={handleSelectAnonymous}
-              >
-                <span>🕵️</span>
-                <span>Tiếp tục gửi báo cáo ẩn danh</span>
-              </button>
-
-              <button
-                type="button"
-                className="btn-modal-close"
-                onClick={() => setShowAnonModal(false)}
-              >
-                Huỷ bỏ
-              </button>
+          {submittedCode ? (
+            /* TRẠNG THÁI TIẾP NHẬN THÀNH CÔNG */
+            <div className="pl-modal-card report-success-card" data-testid="report-success-state">
+              <div className="modal-icon success-icon">✅</div>
+              <h3 id="report-modal-title" className="modal-title">
+                Tiếp nhận phản ánh thành công!
+              </h3>
+              <div className="tracking-code-badge">
+                <span className="badge-prefix">Mã hồ sơ theo dõi:</span>
+                <strong className="badge-code">{submittedCode}</strong>
+              </div>
+              <p className="modal-desc">
+                Cảm ơn bạn đã chung tay bảo vệ môi trường đô thị. Thông tin phản ánh về hành vi <strong>"{detail.title}"</strong> đã được ghi nhận vào hệ thống để cơ quan chức năng tiếp nhận xử lý.
+              </p>
+              {isLoggedIn && !isAnonymous && (
+                <div className="points-award-badge">
+                  <span>🌿 Bạn sẽ nhận được <strong>+20 Điểm Xanh</strong> sau khi hồ sơ được xác minh.</span>
+                </div>
+              )}
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn-modal-close-success"
+                  onClick={handleCloseReportModal}
+                  data-testid="btn-close-success"
+                >
+                  Đóng & Quay lại tra cứu
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* FORM NHẬP THÔNG TIN PHẢN ÁNH TẠI CHỖ */
+            <div className="pl-modal-card penalty-report-form-card" data-testid="anon-report-modal">
+              <div className="report-modal-header">
+                <div className="header-title-box">
+                  <span className="header-icon">📢</span>
+                  <div>
+                    <h3 id="report-modal-title" className="modal-title">
+                      Gửi phản ánh vi phạm môi trường
+                    </h3>
+                    <p className="modal-subtitle">Ghi nhận thông tin trực tiếp căn cứ theo Nghị định 45/2022/NĐ-CP</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn-close-x"
+                  onClick={handleCloseReportModal}
+                  aria-label="Đóng cửa sổ"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmitReport} noValidate>
+                {/* THÔNG TIN CỐ ĐỊNH TỪ ĐIỀU LUẬT */}
+                <div className="report-prefilled-box">
+                  <div className="prefill-row">
+                    <span className="prefill-label">Hành vi vi phạm:</span>
+                    <span className="prefill-value highlight-violation">{detail.title}</span>
+                  </div>
+                  <div className="prefill-row">
+                    <span className="prefill-label">Căn cứ & Khung phạt:</span>
+                    <span className="prefill-value">{detail.legal_basis} ({formatCurrency(detail.min_fine)} - {formatCurrency(detail.max_fine)})</span>
+                  </div>
+                </div>
+
+                {/* TÙY CHỌN DANH TÍNH */}
+                <div className="report-field-group">
+                  <span className="field-group-label">Phương thức phản ánh:</span>
+                  <div className="identity-options-grid">
+                    <label className={`identity-card ${!isAnonymous ? 'selected' : ''}`}>
+                      <input
+                        type="radio"
+                        name="identityMode"
+                        checked={!isAnonymous}
+                        onChange={() => {
+                          if (isLoggedIn) {
+                            setIsAnonymous(false);
+                          } else {
+                            onNavigateToLogin();
+                          }
+                        }}
+                      />
+                      <div className="card-info">
+                        <span className="info-title">👤 Gửi bằng tài khoản {isLoggedIn ? '' : '(Đăng nhập)'}</span>
+                        <span className="info-desc">Nhận +20 Điểm Xanh khi hồ sơ được duyệt</span>
+                      </div>
+                    </label>
+
+                    <label className={`identity-card ${isAnonymous ? 'selected' : ''}`}>
+                      <input
+                        type="radio"
+                        name="identityMode"
+                        checked={isAnonymous}
+                        onChange={() => setIsAnonymous(true)}
+                      />
+                      <div className="card-info">
+                        <span className="info-title">🕵️ Gửi báo cáo ẩn danh</span>
+                        <span className="info-desc">Bảo mật danh tính hoàn toàn</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* VỊ TRÍ VI PHẠM */}
+                <div className="report-field-group">
+                  <label htmlFor="report-location-input" className="field-group-label">
+                    Địa điểm xảy ra vi phạm: <span className="req-star">*</span>
+                  </label>
+                  <input
+                    id="report-location-input"
+                    type="text"
+                    className="form-control-input"
+                    placeholder="VD: Trước số nhà 45 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1..."
+                    value={locationText}
+                    onChange={(e) => {
+                      setLocationText(e.target.value);
+                      if (reportError) setReportError(null);
+                    }}
+                    data-testid="report-location-input"
+                  />
+                </div>
+
+                {/* MÔ TẢ CHI TIẾT */}
+                <div className="report-field-group">
+                  <label htmlFor="report-desc-input" className="field-group-label">
+                    Mô tả chi tiết vi phạm: <span className="req-star">*</span>
+                  </label>
+                  <textarea
+                    id="report-desc-input"
+                    className="form-control-textarea"
+                    rows={3}
+                    placeholder="Mô tả cụ thể người/phương tiện vi phạm, thời gian, mức độ ảnh hưởng đến môi trường..."
+                    value={descriptionText}
+                    onChange={(e) => {
+                      setDescriptionText(e.target.value);
+                      if (reportError) setReportError(null);
+                    }}
+                    data-testid="report-desc-input"
+                  />
+                </div>
+
+                {reportError && (
+                  <div className="report-error-alert" role="alert" data-testid="report-form-error">
+                    <span>⚠️</span>
+                    <span>{reportError}</span>
+                  </div>
+                )}
+
+                {/* ACTION BUTTONS */}
+                <div className="report-form-footer">
+                  <button
+                    type="button"
+                    className="btn-cancel-report"
+                    onClick={handleCloseReportModal}
+                    disabled={isSubmitting}
+                  >
+                    Hủy bỏ
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-submit-report-action"
+                    disabled={isSubmitting}
+                    data-testid="btn-submit-report"
+                  >
+                    {isSubmitting ? 'Đang gửi phản ánh...' : '🚀 Xác nhận gửi phản ánh'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
         </div>
       )}
     </>

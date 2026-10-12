@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { PenaltyLookupContainer } from '../PenaltyLookupContainer';
 import { penaltyService } from '../services/penaltyService';
 
@@ -205,7 +205,45 @@ describe('PenaltyLookupContainer Feature Tests (STT 11: Màn 1 -> Màn 3)', () =
     });
   });
 
-  it('Màn 3: Bấm Báo cáo vi phạm khi chưa đăng nhập -> hiển thị Popup ẩn danh / đăng nhập', async () => {
+  it('Màn 3: Bấm Báo cáo vi phạm -> mở Form phản ánh tại chỗ với thông tin điền sẵn từ điều luật', async () => {
+    render(<PenaltyLookupContainer currentUser={null} />);
+
+    // Mở màn 3
+    const card = await screen.findByText('Rác thải sinh hoạt');
+    fireEvent.click(card);
+
+    const viewDetailBtn = await screen.findByRole('button', {
+      name: /Xem chi tiết Vứt, thải rác/i,
+    });
+    fireEvent.click(viewDetailBtn);
+
+    const reportBtn = await screen.findByRole('button', {
+      name: /Báo cáo vi phạm này/i,
+    });
+    fireEvent.click(reportBtn);
+
+    // Kiểm tra Form phản ánh tại chỗ hiển thị
+    const modal = await screen.findByTestId('anon-report-modal');
+    expect(modal).toBeInTheDocument();
+    expect(
+      within(modal).getByRole('heading', { name: /Gửi phản ánh vi phạm môi trường/i })
+    ).toBeInTheDocument();
+
+    // Điền sẵn thông tin hành vi vi phạm & căn cứ pháp lý bên trong modal
+    expect(within(modal).getByText('Vứt, thải rác sinh hoạt trên vỉa hè, lòng đường')).toBeInTheDocument();
+    expect(within(modal).getByText(/Khoản 2 Điều 25 Nghị định 45\/2022\/NĐ-CP/i)).toBeInTheDocument();
+
+    // Tùy chọn danh tính
+    expect(within(modal).getByText(/Gửi báo cáo ẩn danh/i)).toBeInTheDocument();
+    expect(within(modal).getByText(/Gửi bằng tài khoản/i)).toBeInTheDocument();
+
+    // Các trường nhập liệu
+    expect(within(modal).getByTestId('report-location-input')).toBeInTheDocument();
+    expect(within(modal).getByTestId('report-desc-input')).toBeInTheDocument();
+    expect(within(modal).getByTestId('btn-submit-report')).toBeInTheDocument();
+  });
+
+  it('Màn 3: Nhập vị trí & mô tả -> Xác nhận gửi thành công, hiển thị mã hồ sơ và đóng modal quay lại tra cứu', async () => {
     render(<PenaltyLookupContainer currentUser={null} />);
 
     // Mở màn 3
@@ -223,8 +261,35 @@ describe('PenaltyLookupContainer Feature Tests (STT 11: Màn 1 -> Màn 3)', () =
     fireEvent.click(reportBtn);
 
     expect(await screen.findByTestId('anon-report-modal')).toBeInTheDocument();
-    expect(
-      screen.getByText(/Bạn có thể báo cáo ẩn danh hoặc đăng nhập để nhận điểm/i)
-    ).toBeInTheDocument();
+
+    // Nhập địa chỉ & mô tả vi phạm
+    fireEvent.change(screen.getByTestId('report-location-input'), {
+      target: { value: 'Trước số nhà 12 Đường ABC, Phường X' },
+    });
+    fireEvent.change(screen.getByTestId('report-desc-input'), {
+      target: { value: 'Hộ gia đình xả rác bừa bãi ra vỉa hè gây nghẽn cống' },
+    });
+
+    // Bấm gửi phản ánh
+    fireEvent.click(screen.getByTestId('btn-submit-report'));
+
+    // Hiển thị thông báo tiếp nhận phản ánh thành công
+    await waitFor(() => {
+      expect(screen.getByTestId('report-success-state')).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: /Tiếp nhận phản ánh thành công!/i })
+      ).toBeInTheDocument();
+    });
+
+    // Kiểm tra có mã hồ sơ theo dõi
+    expect(screen.getByText(/Mã hồ sơ theo dõi:/i)).toBeInTheDocument();
+
+    // Bấm Đóng & Quay lại tra cứu -> Người dùng vẫn ở Màn 3 chi tiết điều luật
+    fireEvent.click(screen.getByTestId('btn-close-success'));
+
+    expect(screen.queryByTestId('anon-report-modal')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('report-success-state')).not.toBeInTheDocument();
+    expect(screen.getByTestId('penalty-screen-detail')).toBeInTheDocument();
   });
 });
+

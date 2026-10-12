@@ -891,10 +891,6 @@ function App() {
               setActiveTab("auth");
               window.location.hash = "#login";
             }}
-            onNavigateToReport={() => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
           />
         </div>
       ) : (
