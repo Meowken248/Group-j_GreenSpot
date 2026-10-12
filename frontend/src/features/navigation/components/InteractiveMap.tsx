@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import type {
   DualRouteResponse,
   GeoLocationPoint,
@@ -21,6 +23,13 @@ interface InteractiveMapProps {
   flashingHazardId?: string | null;
 }
 
+// Lớp bản đồ Google Maps và OpenStreetMap chính hãng tốc độ cao
+const MAP_TILES = {
+  roadmap: 'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+  satellite: 'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+  osm: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+};
+
 export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   currentStep,
   origin,
@@ -36,62 +45,231 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   onRetryMapLoad,
   flashingHazardId,
 }) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const layersGroupRef = useRef<L.FeatureGroup | null>(null);
+
+  const [mapType, setMapType] = useState<'roadmap' | 'satellite'>('roadmap');
   const [pickMode, setPickMode] = useState<'origin' | 'destination'>('origin');
 
-  // Chuyển đổi tọa độ GPS (lat, lng) sang phần trăm Viewport (x%, y%)
-  const minLat = 10.72;
-  const maxLat = 10.83;
-  const minLng = 106.63;
-  const maxLng = 106.75;
+  // Khởi tạo bản đồ Leaflet
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return;
 
-  const latToY = (lat: number) => 100 - ((lat - minLat) / (maxLat - minLat)) * 100;
-  const lngToX = (lng: number) => ((lng - minLng) / (maxLng - minLng)) * 100;
+    try {
+      // Tọa độ mặc định trung tâm TP. Hồ Chí Minh
+      const defaultCenter: L.LatLngTuple =
+        origin.latitude && origin.longitude
+          ? [origin.latitude, origin.longitude]
+          : [10.7769, 106.7009];
 
-  const originX = lngToX(origin.longitude);
-  const originY = latToY(origin.latitude);
-  const destX = lngToX(destination.longitude);
-  const destY = latToY(destination.latitude);
+      const map = L.map(containerRef.current, {
+        center: defaultCenter,
+        zoom: 13,
+        zoomControl: false,
+        attributionControl: false,
+      });
 
-  const handleMapClick = (e: React.MouseEvent<SVGSVGElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = ((e.clientX - rect.left) / rect.width) * 100;
-    const clickY = ((e.clientY - rect.top) / rect.height) * 100;
+      // Thêm nút zoom ở góc trên phải
+      L.control.zoom({ position: 'topright' }).addTo(map);
 
-    const clickedLng = minLng + (clickX / 100) * (maxLng - minLng);
-    const clickedLat = maxLat - (clickY / 100) * (maxLat - minLat);
+      // Nạp tile layer Google Maps sắc nét
+      const tileLayer = L.tileLayer(MAP_TILES[mapType], {
+        subdomains: ['0', '1', '2', '3'],
+        maxZoom: 21,
+      }).addTo(map);
 
-    if (pickMode === 'origin') {
-      onOriginMapPick(clickedLat, clickedLng);
-      setPickMode('destination');
-    } else {
-      onDestinationMapPick(clickedLat, clickedLng);
-      setPickMode('origin');
+      tileLayerRef.current = tileLayer;
+
+      // Group chứa các marker, polyline, vùng ngập
+      const layersGroup = L.featureGroup().addTo(map);
+      layersGroupRef.current = layersGroup;
+
+      // Xử lý sự kiện click trên bản đồ để chọn tọa độ
+      map.on('click', (e: L.LeafletMouseEvent) => {
+        const { lat, lng } = e.latlng;
+        if (pickMode === 'origin') {
+          onOriginMapPick(lat, lng);
+          setPickMode('destination');
+        } else {
+          onDestinationMapPick(lat, lng);
+          setPickMode('origin');
+        }
+      });
+
+      mapRef.current = map;
+
+      // Cập nhật lại kích thước hiển thị sau khi mount
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 150);
+    } catch (err) {
+      console.warn('Leaflet map initialization skipped or not supported:', err);
     }
-  };
 
-  const renderRoutePolyline = (
-    coords: [number, number][],
-    strokeColor: string,
-    strokeWidth: number,
-    dash?: string
-  ) => {
-    if (!coords || coords.length === 0) return null;
-    const pointsStr = coords
-      .map(([lng, lat]) => `${lngToX(lng)},${latToY(lat)}`)
-      .join(' ');
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
 
-    return (
-      <polyline
-        points={pointsStr}
-        fill="none"
-        stroke={strokeColor}
-        strokeWidth={strokeWidth}
-        strokeDasharray={dash}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    );
-  };
+  // Thay đổi loại bản đồ (Đường phố / Vệ tinh)
+  useEffect(() => {
+    if (!tileLayerRef.current) return;
+    tileLayerRef.current.setUrl(MAP_TILES[mapType]);
+  }, [mapType]);
+
+  // Cập nhật các marker, polyline và vùng ngập khi dữ liệu thay đổi
+  useEffect(() => {
+    const map = mapRef.current;
+    const layersGroup = layersGroupRef.current;
+    if (!map || !layersGroup) return;
+
+    layersGroup.clearLayers();
+    const boundsCoords: L.LatLngTuple[] = [];
+
+    // 1. Ghim Điểm đi (A - Xanh lá)
+    if (origin.latitude && origin.longitude) {
+      const originLatLng: L.LatLngTuple = [origin.latitude, origin.longitude];
+      boundsCoords.push(originLatLng);
+
+      const pinIconA = L.divIcon({
+        className: 'leaflet-custom-pin-a',
+        html: `
+          <div class="map-pin-pulse-wrapper pin-origin">
+            <div class="pin-halo pin-halo-green"></div>
+            <div class="pin-badge pin-badge-green">A</div>
+          </div>
+        `,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18],
+      });
+
+      L.marker(originLatLng, { icon: pinIconA })
+        .bindPopup(`<strong>Điểm đi (A):</strong><br/>${origin.name || 'Tọa độ GPS'}`)
+        .addTo(layersGroup);
+    }
+
+    // 2. Ghim Điểm đến (B - Đỏ)
+    if (destination.latitude && destination.longitude) {
+      const destLatLng: L.LatLngTuple = [destination.latitude, destination.longitude];
+      boundsCoords.push(destLatLng);
+
+      const pinIconB = L.divIcon({
+        className: 'leaflet-custom-pin-b',
+        html: `
+          <div class="map-pin-pulse-wrapper pin-dest">
+            <div class="pin-halo pin-halo-red"></div>
+            <div class="pin-badge pin-badge-red">B</div>
+          </div>
+        `,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18],
+      });
+
+      L.marker(destLatLng, { icon: pinIconB })
+        .bindPopup(`<strong>Điểm đến (B):</strong><br/>${destination.name || 'Tọa độ GPS'}`)
+        .addTo(layersGroup);
+    }
+
+    // 3. Vẽ 2 tuyến đường & Điểm ngập nước khi đã có dữ liệu planData
+    if (planData) {
+      // Tuyến nhanh nhất: Màu cam/đỏ nét đứt
+      if (planData.fastest_route.coordinates && planData.fastest_route.coordinates.length > 0) {
+        const fastPoints: L.LatLngTuple[] = planData.fastest_route.coordinates.map(
+          ([lng, lat]) => [lat, lng]
+        );
+        fastPoints.forEach((p) => boundsCoords.push(p));
+
+        const isFastSelected = selectedRouteType === 'FASTEST';
+        const fastPolyline = L.polyline(fastPoints, {
+          color: isFastSelected ? '#ef4444' : '#f97316',
+          weight: isFastSelected ? 7 : 5,
+          opacity: isFastSelected ? 0.95 : 0.65,
+          dashArray: planData.fastest_route.hazard_count > 0 ? '8, 8' : undefined,
+          lineCap: 'round',
+          lineJoin: 'round',
+        }).addTo(layersGroup);
+
+        fastPolyline.bindTooltip(
+          `⚡ Tuyến nhanh nhất: ${planData.fastest_route.duration_formatted} (${planData.fastest_route.hazard_count} điểm ngập)`,
+          { sticky: true }
+        );
+      }
+
+      // Tuyến an toàn nhất: Màu xanh lá cây đậm
+      if (planData.safest_route.coordinates && planData.safest_route.coordinates.length > 0) {
+        const safePoints: L.LatLngTuple[] = planData.safest_route.coordinates.map(
+          ([lng, lat]) => [lat, lng]
+        );
+        safePoints.forEach((p) => boundsCoords.push(p));
+
+        const isSafeSelected = selectedRouteType === 'SAFEST';
+        const safePolyline = L.polyline(safePoints, {
+          color: '#10b981',
+          weight: isSafeSelected ? 7 : 5,
+          opacity: isSafeSelected ? 1.0 : 0.7,
+          lineCap: 'round',
+          lineJoin: 'round',
+        }).addTo(layersGroup);
+
+        safePolyline.bindTooltip(
+          `🛡️ Tuyến an toàn nhất: ${planData.safest_route.duration_formatted} (0 điểm ngập)`,
+          { sticky: true }
+        );
+      }
+
+      // Các điểm ngập nước cảnh báo trên tuyến nhanh
+      planData.fastest_route.hazards_on_route.forEach((hazard) => {
+        const hazardPoint: L.LatLngTuple = [hazard.latitude, hazard.longitude];
+        boundsCoords.push(hazardPoint);
+
+        const isFlashing = flashingHazardId === hazard.hazard_id;
+
+        // Vòng nguy hiểm bán kính 60m
+        L.circle(hazardPoint, {
+          radius: 70,
+          color: '#ef4444',
+          fillColor: '#ef4444',
+          fillOpacity: isFlashing ? 0.45 : 0.25,
+          weight: 2,
+        }).addTo(layersGroup);
+
+        // Icon tam giác cảnh báo
+        const hazardIcon = L.divIcon({
+          className: 'leaflet-hazard-marker',
+          html: `
+            <div class="map-hazard-badge ${isFlashing ? 'hazard-flash' : ''}">
+              ⚠️
+            </div>
+          `,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+        });
+
+        L.marker(hazardPoint, { icon: hazardIcon })
+          .bindPopup(`
+            <div style="font-size: 13px; line-height: 1.4; color: #0f172a;">
+              <strong style="color: #ef4444; font-size: 14px;">⚠️ ${hazard.street_name}</strong><br/>
+              <span>Mực nước ngập ước tính: <strong>${hazard.predicted_depth_cm} cm</strong></span><br/>
+              <span style="color: #64748b; font-size: 11px;">Mức độ rủi ro: ${hazard.severity_level}</span>
+            </div>
+          `)
+          .addTo(layersGroup);
+      });
+    }
+
+    // Tự động căn chỉnh bản đồ vừa khít toàn bộ tuyến đường và điểm mốc
+    if (boundsCoords.length >= 2) {
+      const bounds = L.latLngBounds(boundsCoords);
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 });
+    } else if (boundsCoords.length === 1) {
+      map.setView(boundsCoords[0], 15);
+    }
+  }, [origin, destination, planData, selectedRouteType, flashingHazardId]);
 
   return (
     <div className="map-block">
@@ -106,159 +284,112 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         </div>
       ) : (
         <div className="map-canvas-wrapper">
-          {/* Tooltip hướng dẫn chọn tọa độ trên bản đồ */}
-          {currentStep === 1 && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 12,
-                left: 12,
-                zIndex: 20,
-                background: 'rgba(15, 23, 42, 0.85)',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '0.78rem',
-                border: '1px solid #334155',
-                color: '#cbd5e1',
-                display: 'flex',
-                gap: '8px',
-                alignItems: 'center',
-              }}
-            >
-              <span>Chạm bản đồ để đổi:</span>
-              <button
-                type="button"
-                style={{
-                  background: pickMode === 'origin' ? '#10b981' : '#334155',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  padding: '2px 8px',
-                  cursor: 'pointer',
-                  fontSize: '0.75rem',
-                }}
-                onClick={() => setPickMode('origin')}
-              >
-                Ghim Điểm đi (Xanh)
-              </button>
-              <button
-                type="button"
-                style={{
-                  background: pickMode === 'destination' ? '#ef4444' : '#334155',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  padding: '2px 8px',
-                  cursor: 'pointer',
-                  fontSize: '0.75rem',
-                }}
-                onClick={() => setPickMode('destination')}
-              >
-                Ghim Điểm đến (Đỏ)
-              </button>
-            </div>
-          )}
-
-          {/* SVG Map Canvas */}
-          <svg
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            style={{ width: '100%', height: '100%', cursor: 'crosshair', display: 'block' }}
-            onClick={handleMapClick}
+          {/* Thanh công cụ bản đồ: Chế độ chọn ghim & Chuyển loại bản đồ */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 12,
+              left: 12,
+              zIndex: 1000,
+              background: 'rgba(15, 23, 42, 0.88)',
+              backdropFilter: 'blur(8px)',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              fontSize: '0.8rem',
+              border: '1px solid #334155',
+              color: '#cbd5e1',
+              display: 'flex',
+              gap: '8px',
+              alignItems: 'center',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+            }}
           >
-            {/* Sông Sài Gòn & Kênh rạch thủy văn */}
-            <path
-              d="M 50,0 Q 65,30 55,60 T 70,100"
-              fill="none"
-              stroke="#1e3a8a"
-              strokeWidth="4"
-              opacity="0.4"
-            />
-            <path
-              d="M 20,40 Q 40,55 55,60 T 90,80"
-              fill="none"
-              stroke="#1e3a8a"
-              strokeWidth="2.5"
-              opacity="0.3"
-            />
-
-            {/* Mạng lưới đường phố cơ bản */}
-            <line x1="10" y1="30" x2="90" y2="30" stroke="#1e293b" strokeWidth="1" />
-            <line x1="10" y1="60" x2="90" y2="60" stroke="#1e293b" strokeWidth="1" />
-            <line x1="35" y1="5" x2="35" y2="95" stroke="#1e293b" strokeWidth="1" />
-            <line x1="70" y1="5" x2="70" y2="95" stroke="#1e293b" strokeWidth="1" />
-
-            {/* Render 2 tuyến đường trên bản đồ (Screen 2 & Screen 3) */}
-            {planData && (
+            {currentStep === 1 && (
               <>
-                {/* Tuyến nhanh nhất: Màu cam/đỏ */}
-                {renderRoutePolyline(
-                  planData.fastest_route.coordinates,
-                  '#f97316',
-                  selectedRouteType === 'FASTEST' ? 2.5 : 1.5,
-                  planData.fastest_route.hazard_count > 0 ? '3, 2' : undefined
-                )}
-
-                {/* Tuyến an toàn nhất: Tô dải màu xanh lá cây đậm */}
-                {renderRoutePolyline(
-                  planData.safest_route.coordinates,
-                  '#059669',
-                  selectedRouteType === 'SAFEST' ? 3.0 : 2.0
-                )}
-
-                {/* Điểm vũng ngập cảnh báo (Tô màu cam/đỏ trên tuyến nhanh) */}
-                {planData.fastest_route.hazards_on_route.map((hz, idx) => {
-                  const hx = lngToX(hz.longitude);
-                  const hy = latToY(hz.latitude);
-                  const isFlashing = flashingHazardId === hz.hazard_id;
-
-                  return (
-                    <g key={idx}>
-                      <circle
-                        cx={hx}
-                        cy={hy}
-                        r={isFlashing ? 3.5 : 2.5}
-                        fill="#ef4444"
-                        opacity="0.9"
-                      >
-                        {isFlashing && (
-                          <animate
-                            attributeName="opacity"
-                            values="0.3;1;0.3"
-                            dur="1s"
-                            repeatCount="indefinite"
-                          />
-                        )}
-                      </circle>
-                      <circle cx={hx} cy={hy} r="1" fill="#ffffff" />
-                    </g>
-                  );
-                })}
+                <span style={{ fontWeight: 600 }}>Chạm bản đồ:</span>
+                <button
+                  type="button"
+                  style={{
+                    background: pickMode === 'origin' ? '#10b981' : '#334155',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '3px 10px',
+                    cursor: 'pointer',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                  }}
+                  onClick={() => setPickMode('origin')}
+                >
+                  🟢 Điểm đi (A)
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    background: pickMode === 'destination' ? '#ef4444' : '#334155',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '3px 10px',
+                    cursor: 'pointer',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                  }}
+                  onClick={() => setPickMode('destination')}
+                >
+                  🔴 Điểm đến (B)
+                </button>
+                <span style={{ color: '#475569' }}>|</span>
               </>
             )}
 
-            {/* Ghim điểm đi: Màu xanh lá */}
-            {origin.latitude && (
-              <g>
-                <circle cx={originX} cy={originY} r="3" fill="#10b981" stroke="#ffffff" strokeWidth="0.8" />
-                <circle cx={originX} cy={originY} r="1" fill="#ffffff" />
-                <text x={originX + 2.5} y={originY - 2.5} fill="#34d399" fontSize="2.8" fontWeight="bold">
-                  A (Đi)
-                </text>
-              </g>
-            )}
+            {/* Chuyển loại bản đồ Google Maps / Vệ tinh */}
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <button
+                type="button"
+                style={{
+                  background: mapType === 'roadmap' ? '#2563eb' : '#1e293b',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '2px 8px',
+                  cursor: 'pointer',
+                  fontSize: '0.72rem',
+                }}
+                onClick={() => setMapType('roadmap')}
+              >
+                🗺️ Đường phố
+              </button>
+              <button
+                type="button"
+                style={{
+                  background: mapType === 'satellite' ? '#2563eb' : '#1e293b',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '2px 8px',
+                  cursor: 'pointer',
+                  fontSize: '0.72rem',
+                }}
+                onClick={() => setMapType('satellite')}
+              >
+                🛰️ Vệ tinh
+              </button>
+            </div>
+          </div>
 
-            {/* Ghim điểm đến: Màu đỏ */}
-            {destination.latitude && (
-              <g>
-                <circle cx={destX} cy={destY} r="3" fill="#ef4444" stroke="#ffffff" strokeWidth="0.8" />
-                <circle cx={destX} cy={destY} r="1" fill="#ffffff" />
-                <text x={destX + 2.5} y={destY - 2.5} fill="#f87171" fontSize="2.8" fontWeight="bold">
-                  B (Đến)
-                </text>
-              </g>
-            )}
-          </svg>
+          {/* Container Leaflet Map tương tác thực tế */}
+          <div
+            ref={containerRef}
+            className="real-leaflet-map"
+            style={{
+              width: '100%',
+              height: '100%',
+              minHeight: '480px',
+              backgroundColor: '#0b1329',
+              cursor: currentStep === 1 ? 'crosshair' : 'grab',
+            }}
+          />
 
           {/* Nút tác vụ nổi phía dưới bản đồ */}
           <div className="map-bottom-cta">
