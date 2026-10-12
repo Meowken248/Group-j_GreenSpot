@@ -96,6 +96,17 @@ export const PenaltyReportsDashboard: React.FC<PenaltyReportsDashboardProps> = (
     setUpdateSuccessMsg(null);
   };
 
+  // Lắng nghe phím ESC để đóng Modal chi tiết
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectedReport) {
+        handleCloseDetailModal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedReport]);
+
   // 3. Xử lý cập nhật trạng thái phản ánh
   const handleSaveStatus = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -433,21 +444,36 @@ export const PenaltyReportsDashboard: React.FC<PenaltyReportsDashboardProps> = (
 
         {/* MODAL CHI TIẾT & CẬP NHẬT TRẠNG THÁI */}
         {selectedReport && (
-          <div className="pl-modal-overlay" role="dialog" aria-modal="true">
-            <div className="pl-modal-card report-officer-modal-card" data-testid="report-officer-modal">
+          <div
+            className="pl-modal-backdrop report-officer-modal-backdrop"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="officer-modal-title"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) handleCloseDetailModal();
+            }}
+          >
+            <div
+              className="pl-modal-card report-officer-modal-card"
+              data-testid="report-officer-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="report-modal-header">
                 <div className="header-title-box">
                   <span className="header-icon">📑</span>
                   <div>
-                    <h3 className="modal-title">Hồ sơ phản ánh #{selectedReport.tracking_code}</h3>
+                    <h3 id="officer-modal-title" className="modal-title">
+                      Hồ sơ phản ánh #{selectedReport.tracking_code}
+                    </h3>
                     <p className="modal-subtitle">Ghi nhận lúc: {formatDate(selectedReport.created_at)}</p>
                   </div>
                 </div>
                 <button
                   type="button"
-                  className="btn-close-x"
+                  className="btn-close-circle"
                   onClick={handleCloseDetailModal}
                   aria-label="Đóng cửa sổ"
+                  title="Đóng (Esc)"
                 >
                   ✕
                 </button>
@@ -457,42 +483,46 @@ export const PenaltyReportsDashboard: React.FC<PenaltyReportsDashboardProps> = (
               <div className="report-detail-body">
                 <div className="detail-meta-grid">
                   <div className="meta-item">
-                    <span className="meta-label">Hành vi vi phạm:</span>
+                    <span className="meta-label">HÀNH VI PHẢN ÁNH:</span>
                     <strong className="meta-val highlight">{selectedReport.violation_title}</strong>
                   </div>
                   <div className="meta-item">
-                    <span className="meta-label">Căn cứ pháp lý:</span>
+                    <span className="meta-label">CĂN CỨ PHÁP LÝ:</span>
                     <span className="meta-val">{selectedReport.legal_basis}</span>
                   </div>
                   <div className="meta-item">
-                    <span className="meta-label">Khung tiền phạt:</span>
+                    <span className="meta-label">MỨC PHẠT DỰ KIẾN:</span>
                     <span className="meta-val fine-highlight">{selectedReport.fine_range}</span>
                   </div>
                   <div className="meta-item">
-                    <span className="meta-label">Người phản ánh:</span>
+                    <span className="meta-label">NGƯỜI PHẢN ÁNH:</span>
                     <span className="meta-val">
-                      {selectedReport.is_anonymous ? '🕵️ Ẩn danh (Bảo mật)' : `👤 ${selectedReport.reporter_name || 'Tài khoản công dân'}`}
+                      {selectedReport.is_anonymous ? (
+                        <span className="reporter-chip anon">🕵️ Ẩn danh (Bảo mật)</span>
+                      ) : (
+                        <span className="reporter-chip account">👤 {selectedReport.reporter_name || 'Tài khoản công dân'}</span>
+                      )}
                     </span>
                   </div>
                 </div>
 
                 <div className="detail-section">
-                  <div className="section-label">📍 Địa điểm xảy ra vi phạm:</div>
+                  <div className="section-label">📍 VỊ TRÍ PHÁT HIỆN:</div>
                   <div className="section-content address-content">{selectedReport.address_text}</div>
                 </div>
 
                 <div className="detail-section">
-                  <div className="section-label">📝 Diễn biến / Tình tiết phản ánh:</div>
+                  <div className="section-label">📝 NỘI DUNG MÔ TẢ VI PHẠM TỪ CÔNG DÂN:</div>
                   <div className="section-content desc-content">{selectedReport.description}</div>
                 </div>
 
                 {/* FORM CÁN BỘ XỬ LÝ */}
                 <form onSubmit={handleSaveStatus} className="officer-action-form">
-                  <h4 className="form-heading">⚖️ Quyết định xử lý của Cán bộ tiếp nhận:</h4>
+                  <h4 className="form-heading">⚖️ TIẾP NHẬN & XỬ LÝ</h4>
 
                   <div className="form-row">
                     <label htmlFor="select-new-status" className="field-group-label">
-                      Trạng thái giải quyết:
+                      Cập nhật trạng thái phản ánh:
                     </label>
                     <select
                       id="select-new-status"
@@ -510,7 +540,7 @@ export const PenaltyReportsDashboard: React.FC<PenaltyReportsDashboardProps> = (
 
                   <div className="form-row">
                     <label htmlFor="officer-note-input" className="field-group-label">
-                      Ghi chú / Số hiệu biên bản xử lý:
+                      Ghi chú xử lý của cán bộ tiếp nhận (Dành cho nội bộ / phản hồi):
                     </label>
                     <textarea
                       id="officer-note-input"
