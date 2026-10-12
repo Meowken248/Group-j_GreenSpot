@@ -39,6 +39,9 @@ export interface PostItem {
   content: string;
   media_urls?: string[] | null;
   thumbnail_url?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  address?: string | null;
   reactions_count: number;
   comments_count: number;
   is_hidden: boolean;

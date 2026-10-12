@@ -71,6 +71,8 @@ from app.models.profile import (
     UserActivity,
     Post,
 )
+from app.models.post import PostTaggedFriend
+
 
 # 7. Kết bạn và theo dõi (Friends & Follows Domain)
 from app.models.friends import (
@@ -79,6 +81,12 @@ from app.models.friends import (
     UserFollow,
     FriendRequestStatus,
 )
+
+# 8. Cài đặt người dùng (User Settings Domain)
+from app.models.settings import UserSettings
+
+# 9. Tra cứu quy định xử phạt vi phạm hành chính (Penalty Regulations Domain)
+from app.models.penalty import PenaltyRegulation
 
 __all__ = [
     "Base",
@@ -128,10 +136,16 @@ __all__ = [
     "UserBadge",
     "UserActivity",
     "Post",
+    "PostTaggedFriend",
+
     # Friends & Follows Domain
     "FriendRequest",
     "Friendship",
     "UserFollow",
     "FriendRequestStatus",
+    # User Settings Domain
+    "UserSettings",
+    # Penalty Regulations Domain
+    "PenaltyRegulation",
 ]
 

@@ -75,6 +75,22 @@ export const ProfileTimeline: React.FC<ProfileTimelineProps> = ({
     }
   };
 
+  // Tô màu nổi bật và định dạng các Hashtag môi trường (#SaiGonXanh, #PhânLoạiRác...)
+  const renderContentWithHashtags = (content: string) => {
+    if (!content) return null;
+    const parts = content.split(/(#[^\s#.,!?:;]+)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith("#")) {
+        return (
+          <span key={index} className="post-hashtag-pill">
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
   return (
     <div className="profile-timeline-layout">
       {/* =================================================================== */}
@@ -188,13 +204,25 @@ export const ProfileTimeline: React.FC<ProfileTimelineProps> = ({
               posts.items.map((post) => (
                 <article key={post.post_id} className="post-card">
                   <div className="post-meta-row">
-                    <span className="post-relative-time">{getRelativeTime(post.created_at)}</span>
+                    <div className="post-meta-main">
+                      <span className="post-relative-time">{getRelativeTime(post.created_at)}</span>
+                      {post.address && (
+                        <div className="post-location-tag" title={post.address}>
+                          <span className="loc-bullet">•</span>
+                          <svg className="loc-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                            <circle cx="12" cy="10" r="3" />
+                          </svg>
+                          <span className="loc-text">{post.address}</span>
+                        </div>
+                      )}
+                    </div>
                     {/* Nhãn xám 'Đã ẩn' (chỉ hiện cho chủ trang) */}
                     {post.is_hidden && <span className="post-hidden-tag">Đã ẩn</span>}
                   </div>
 
                   <div className="post-body-flex">
-                    <p className="post-content-text">{post.content}</p>
+                    <p className="post-content-text">{renderContentWithHashtags(post.content)}</p>
                     {post.thumbnail_url && (
                       <img src={post.thumbnail_url} alt="Thumbnail" className="post-thumb-img" />
                     )}
