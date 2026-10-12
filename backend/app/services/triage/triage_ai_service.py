@@ -5,18 +5,58 @@ Tuân thủ đầy đủ SLA, XAI Explainability, Optimistic Locking (Quy tắc 
 """
 
 import math
+import os
 import re
 import uuid
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
+import httpx
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 
+from app.core.config import settings
 from app.models.incident import Incident, WasteCategory
 from app.models.spatial import EssentialFacility
 from app.models.audit_log import IncidentAuditLog
+
+
+async def call_kira_ai(messages: list, timeout: Optional[float] = None) -> Optional[str]:
+    """
+    Gọi mô hình ngôn ngữ lớn Kira AI (hoặc bất kỳ LLM nào hỗ trợ chuẩn OpenAI).
+    Toàn bộ các biến: API Key, API URL, Model Name, Timeout đều đọc động từ file .env.
+    """
+    api_key = settings.KIRA_API_KEY or os.getenv("KIRA_API_KEY", "")
+    api_url = settings.KIRA_API_URL or os.getenv("KIRA_API_URL", "https://kiraai.vn/api/v1/chat/completions")
+    model_name = settings.KIRA_MODEL or os.getenv("KIRA_MODEL", "kira-mini-1.0")
+    req_timeout = timeout or settings.KIRA_TIMEOUT_SECONDS or float(os.getenv("KIRA_TIMEOUT_SECONDS", "45.0"))
+
+    if not api_key:
+        return None
+
+    try:
+        async with httpx.AsyncClient(timeout=req_timeout) as client:
+            resp = await client.post(
+                api_url,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model_name,
+                    "messages": messages,
+                },
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                if content and len(content.strip()) > 0:
+                    return content.strip()
+    except Exception:
+        # Fallback an toàn nếu có lỗi kết nối hoặc timeout
+        pass
+    return None
 
 
 class TriageEvaluationResult(BaseModel):
@@ -153,6 +193,53 @@ class AITriageService:
         return summary, False
 
     @classmethod
+    async def generate_summary_ai(
+        cls,
+        description: str,
+        address_text: str = "",
+        category_name: str = ""
+    ) -> Tuple[str, bool]:
+        """
+        Abstractive Summarization Pipeline qua Kira AI (kira-mini-1.0):
+        - Nếu < 10 ký tự: Báo lỗi "Mô tả sự cố quá ngắn để AI tóm tắt", giữ nguyên nguyên văn.
+        - Gọi Kira AI sinh bản tóm tắt 2-3 câu cô đọng (< 50 từ).
+        - Tự động fallback về thuật toán heuristic nếu API timeout hoặc mạng chậm.
+        """
+        clean_desc = (description or "").strip()
+        if len(clean_desc) < 10:
+            return f"{clean_desc} (Ghi chú: Mô tả sự cố quá ngắn để AI tóm tắt)", True
+
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "Bạn là trợ lý AI thẩm định môi trường của nền tảng GreenSpot. "
+                    "Nhiệm vụ của bạn là đọc hiểu báo cáo phản ánh sự cố môi trường của công dân "
+                    "và tóm tắt thành 2-3 câu cô đọng (dưới 50 từ). "
+                    "Nêu rõ: 1. Loại rác/chất thải chính, 2. Quy mô ước tính, "
+                    "3. Tác động môi trường hoặc cản trở giao thông và đề xuất hướng xử lý. "
+                    "Viết bằng tiếng Việt súc tích, văn phong hiện trường, không mở đầu rườm rà."
+                )
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"Báo cáo sự cố: {clean_desc}\n"
+                    f"Địa chỉ: {address_text or 'Chưa rõ'}\n"
+                    f"Phân loại: {category_name or 'Chưa phân loại'}\n"
+                    "Hãy tóm tắt ngắn gọn 2-3 câu:"
+                )
+            }
+        ]
+
+        kira_result = await call_kira_ai(messages, timeout=35.0)
+        if kira_result:
+            cleaned = re.sub(r"\s*\*\(\d+\s*từ\)\*", "", kira_result, flags=re.IGNORECASE).strip()
+            return cleaned, False
+
+        return cls.generate_summary(description, address_text, category_name)
+
+    @classmethod
     async def evaluate_incident(cls, db: AsyncSession, incident_id: uuid.UUID) -> TriageEvaluationResult:
         """
         Thực hiện đánh giá toàn diện AI Triage và Explainable AI (XAI) cho một sự cố.
@@ -256,8 +343,16 @@ class AITriageService:
         if not risk_factors:
             risk_factors.append("Không phát hiện yếu tố rủi ro đặc biệt")
 
-        # 7. Summary
-        summary, is_short = cls.generate_summary(inc.description, inc.address_text)
+        # 7. Summary qua Kira AI
+        cat_name = ""
+        if inc.category_id:
+            cat_stmt = select(WasteCategory).where(WasteCategory.category_id == inc.category_id)
+            cat_res = await db.execute(cat_stmt)
+            cat = cat_res.scalars().first()
+            if cat:
+                cat_name = cat.name
+
+        summary, is_short = await cls.generate_summary_ai(inc.description, inc.address_text, cat_name)
 
         # Màu hiển thị
         color_map = {
@@ -304,7 +399,7 @@ class AITriageService:
     @classmethod
     async def regenerate_summary(cls, db: AsyncSession, incident_id: uuid.UUID) -> str:
         """
-        Nút "Tạo lại tóm tắt": Làm mới bản tóm tắt AI.
+        Nút "Tạo lại tóm tắt": Làm mới bản tóm tắt AI qua Kira AI.
         """
         stmt = select(Incident).where(
             Incident.incident_id == incident_id,
@@ -319,10 +414,29 @@ class AITriageService:
         if len(desc.strip()) < 10:
             summary = f"{desc} (Ghi chú: Mô tả sự cố quá ngắn để AI tóm tắt)"
         else:
-            summary = (
-                f"Hiện trường ghi nhận: {desc.strip()[:120]}... Đã phân loại mức độ rủi ro "
-                f"{inc.ai_suggested_priority or 'ưu tiên'}. Đội điều phối cần sớm bố trí phương tiện thu gom."
-            )
+            messages = [
+                {
+                    "role": "system",
+                    "content": (
+                        "Bạn là trợ lý AI thẩm định môi trường của nền tảng GreenSpot. "
+                        "Cán bộ tiếp nhận yêu cầu bạn TẠO LẠI BẢN TÓM TẮT AI theo góc nhìn điều hành tác nghiệp khẩn. "
+                        "Hãy viết đoạn tóm tắt 2-3 câu (dưới 50 từ), nhấn mạnh vào rủi ro môi trường, an toàn cộng đồng "
+                        "và yêu cầu phân công phương tiện thu gom dọn rác đúng thời hạn SLA."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": f"Báo cáo sự cố: {desc.strip()}\nĐịa chỉ: {inc.address_text or ''}\nHãy viết lại bản tóm tắt mới:"
+                }
+            ]
+            kira_result = await call_kira_ai(messages, timeout=35.0)
+            if kira_result:
+                summary = re.sub(r"\s*\*\(\d+\s*từ\)\*", "", kira_result, flags=re.IGNORECASE).strip()
+            else:
+                summary = (
+                    f"Hiện trường ghi nhận: {desc.strip()[:120]}... Đã phân loại mức độ rủi ro "
+                    f"{inc.ai_suggested_priority or 'ưu tiên'}. Đội điều phối cần sớm bố trí phương tiện thu gom."
+                )
 
         inc.ai_summary = summary
         inc.ai_generated_at = datetime.utcnow()

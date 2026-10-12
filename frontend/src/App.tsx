@@ -106,6 +106,12 @@ function App() {
     currentUser?.role === "DISTRICT_MANAGER" ||
     currentUser?.role === "COORDINATOR" ||
     canAccess("INCIDENTS");
+  const hasTriageAccess =
+    currentUser?.role === "ADMIN" ||
+    currentUser?.role === "OFFICER" ||
+    currentUser?.role === "DISTRICT_MANAGER" ||
+    currentUser?.role === "COORDINATOR" ||
+    canAccess("INCIDENTS");
 
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
@@ -407,7 +413,11 @@ function App() {
                       <span className="action-icon">📑</span>
                       <span>Báo cáo trùng lặp (AI)</span>
                     </button>
-                    <div className="dropdown-separator" />
+                  </>
+                )}
+
+                {hasTriageAccess && (
+                  <>
                     <button
                       type="button"
                       className="dropdown-menu-action"
