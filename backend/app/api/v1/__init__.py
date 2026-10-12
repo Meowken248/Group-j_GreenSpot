@@ -15,6 +15,7 @@ from app.api.v1.triage import triage_composite_router
 from app.api.v1.settings import settings_router
 from app.api.v1.penalties import router as penalties_router
 from app.api.v1.posts import router as posts_router
+from app.api.v1.navigation import navigation_router
 
 api_v1_router = APIRouter()
 api_v1_router.include_router(auth_router)
@@ -33,4 +34,5 @@ api_v1_router.include_router(air_quality_router)
 api_v1_router.include_router(voice_router)
 api_v1_router.include_router(penalties_router)
 api_v1_router.include_router(posts_router)
+api_v1_router.include_router(navigation_router)
 

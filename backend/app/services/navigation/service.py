@@ -174,7 +174,7 @@ class SafeNavigationService(ISafeNavigationService):
         coordinates: List[List[float]],
         hotspots: List[Dict[str, Any]],
         threshold_cm: float,
-        buffer_meters: float = 120.0,
+        buffer_meters: float = 250.0,
     ) -> List[FloodHazardInfo]:
         """Phát hiện các điểm ngập nằm trong hành lang lộ trình (buffer 120m)."""
         hazards: List[FloodHazardInfo] = []
@@ -579,7 +579,7 @@ class SafeNavigationService(ISafeNavigationService):
                 step_number=2,
                 instruction="Tiếp tục lưu thông trên tuyến đường cao ráo đã bẻ lái",
                 distance_meters=round(detour_data["distance_meters"] - 250.0, 1),
-                duration_seconds=detour_data["duration_seconds"] - 45,
+                duration_seconds=int(detour_data["duration_seconds"] - 45),
                 street_name="Tuyến mới",
                 maneuver="straight",
             ),

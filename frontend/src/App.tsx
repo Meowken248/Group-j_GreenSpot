@@ -19,6 +19,7 @@ import { DeduplicationDashboard } from "./features/reports";
 import { TriageAppDashboard } from "./features/triage";
 import { PenaltyLookupContainer } from "./features/penalties";
 import { PostCreatorContainer } from "./features/posts";
+import { FloodNavigationContainer } from "./features/navigation";
 
 import {
   SettingsContainer,
@@ -73,11 +74,13 @@ function App() {
     | "penalties"
     | "posts"
     | "triage"
+    | "navigation"
   >(() => {
     const hash = window.location.hash.toLowerCase();
     const path = window.location.pathname.toLowerCase();
     const isLogged = checkIsLoggedIn();
 
+    if (hash === "#navigation" || path === "/navigation") return "navigation";
     if (hash === "#map" || path === "/map") return "map";
     if (hash === "#penalties" || path === "/penalties") {
       if (!isLogged) return "auth";
@@ -288,6 +291,8 @@ function App() {
         } else {
           setActiveTab("triage");
         }
+      } else if (hash === "#navigation" || window.location.pathname === "/navigation") {
+        setActiveTab("navigation");
       } else if (hash === "#penalties") {
         if (!isLogged) {
           setAuthRedirectUrl("/penalties");
@@ -694,6 +699,19 @@ function App() {
 
             <button
               type="button"
+              className={`view-tab-btn ${activeTab === "navigation" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("navigation");
+                window.location.hash = "#navigation";
+              }}
+              title="Tìm tuyến đường an toàn tránh ngập (STT 41)"
+            >
+              <span>🧭</span>
+              <span>Tránh ngập</span>
+            </button>
+
+            <button
+              type="button"
               className={`view-tab-btn ${activeTab === "posts" ? "active" : ""}`}
               onClick={() => {
                 setActiveTab("posts");
@@ -905,6 +923,10 @@ function App() {
       ) : activeTab === "triage" ? (
         <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#0f172a" }}>
           <TriageAppDashboard />
+        </div>
+      ) : activeTab === "navigation" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#0f172a" }}>
+          <FloodNavigationContainer />
         </div>
       ) : activeTab === "settings" ? (
         !currentUser ? (
