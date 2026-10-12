@@ -59,13 +59,27 @@ class PenaltyRegulationService:
         # 1. Lọc theo từ khóa tìm kiếm (Full text search / Keyword matching)
         if params.query and params.query.strip():
             raw_query = params.query.strip()
-            # Tách từ khóa và tìm kiếm trên tiêu đề, mô tả, từ khóa và căn cứ
-            query_filter = or_(
+            # So khớp chuỗi nguyên vẹn (Exact phrase match)
+            exact_match = or_(
                 PenaltyRegulation.title.ilike(f"%{raw_query}%"),
                 PenaltyRegulation.description.ilike(f"%{raw_query}%"),
                 PenaltyRegulation.keywords.ilike(f"%{raw_query}%"),
                 PenaltyRegulation.legal_basis.ilike(f"%{raw_query}%"),
             )
+
+            # Tách từ khóa (Token-based matching trong cùng một trường)
+            stop_words = {"và", "hoặc", "là", "bị", "do", "vào", "ra", "cho", "của", "các", "những", "nơi", "ở", "tại"}
+            tokens = [t.strip() for t in raw_query.split() if t.strip() and t.strip().lower() not in stop_words]
+
+            if len(tokens) >= 2:
+                in_title = and_(*[PenaltyRegulation.title.ilike(f"%{t}%") for t in tokens])
+                in_desc = and_(*[PenaltyRegulation.description.ilike(f"%{t}%") for t in tokens])
+                in_kw = and_(*[PenaltyRegulation.keywords.ilike(f"%{t}%") for t in tokens])
+                token_match = or_(in_title, in_desc, in_kw)
+                query_filter = or_(exact_match, token_match)
+            else:
+                query_filter = exact_match
+
             filters.append(query_filter)
 
         # 2. Lọc theo mảng chuyên đề / Lĩnh vực môi trường (Màn 2)

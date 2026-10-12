@@ -40,7 +40,7 @@ class TestPenaltyRegulationsDomainTDD(unittest.IsolatedAsyncioTestCase):
 
     async def test_search_by_keyword_vut_tan_thuoc(self):
         """Màn 1 -> 2: Tìm kiếm từ khóa 'vứt tàn thuốc' trả về đúng hành vi hút thuốc vứt tàn"""
-        params = PenaltySearchParams(query="tàn thuốc", page=1, limit=10)
+        params = PenaltySearchParams(query="vứt tàn thuốc", page=1, limit=10)
         result = await self.service.search_regulations(self.session, params)
 
         self.assertGreaterEqual(result.total, 1)
@@ -49,7 +49,7 @@ class TestPenaltyRegulationsDomainTDD(unittest.IsolatedAsyncioTestCase):
 
     async def test_search_by_keyword_do_rac_via_he(self):
         """Màn 1 -> 2: Tìm kiếm từ khóa 'đổ rác vỉa hè' trả về hành vi vứt rác trên vỉa hè, lòng đường"""
-        params = PenaltySearchParams(query="vỉa hè", page=1, limit=10)
+        params = PenaltySearchParams(query="đổ rác vỉa hè", page=1, limit=10)
         result = await self.service.search_regulations(self.session, params)
 
         self.assertGreaterEqual(result.total, 1)
