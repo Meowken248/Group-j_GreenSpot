@@ -1271,7 +1271,7 @@ function App() {
           </div>
         )
       ) : activeTab === "posts" ? (
-        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`} style={{ paddingTop: "76px" }}>
           <FeedContainer
             onNavigateTab={(tab) => {
               setActiveTab(tab as TabType);

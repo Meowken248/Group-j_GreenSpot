@@ -113,7 +113,7 @@ export const FeedLeftSidebar: React.FC<FeedLeftSidebarProps> = ({
 
         <button
           type="button"
-          className="shortcut-nav-item"
+          className="feed-shortcut-item shortcut-nav-item"
           onClick={() => onNavigate("map")}
         >
           <span className="shortcut-icon">🗺️</span>
@@ -122,7 +122,7 @@ export const FeedLeftSidebar: React.FC<FeedLeftSidebarProps> = ({
 
         <button
           type="button"
-          className="shortcut-nav-item"
+          className="feed-shortcut-item shortcut-nav-item"
           onClick={() => onNavigate("report")}
         >
           <span className="shortcut-icon">🚨</span>
@@ -131,7 +131,7 @@ export const FeedLeftSidebar: React.FC<FeedLeftSidebarProps> = ({
 
         <button
           type="button"
-          className="shortcut-nav-item"
+          className="feed-shortcut-item shortcut-nav-item"
           onClick={() => onNavigate("penalties")}
         >
           <span className="shortcut-icon">⚖️</span>
@@ -140,7 +140,7 @@ export const FeedLeftSidebar: React.FC<FeedLeftSidebarProps> = ({
 
         <button
           type="button"
-          className="shortcut-nav-item"
+          className="feed-shortcut-item shortcut-nav-item"
           onClick={() => onNavigate("profile")}
         >
           <span className="shortcut-icon">🌿</span>

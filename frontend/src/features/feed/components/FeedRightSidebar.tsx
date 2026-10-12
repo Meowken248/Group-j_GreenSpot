@@ -102,24 +102,24 @@ export const FeedRightSidebar: React.FC<FeedRightSidebarProps> = ({
       {/* =================================================================== */}
       {/* 3. KHỐI BỘ LỌC CHỦ ĐỀ RÁC THẢI (SRS PP. 100) */}
       {/* =================================================================== */}
-      <div className="category-filter-card">
+      <div className="feed-categories-card category-filter-card">
         <div className="card-header-sub">
           <span className="card-eyebrow">CHỦ ĐỀ MÔI TRƯỜNG</span>
           <h5 className="card-title-sm">Lọc theo sự cố & hoạt động</h5>
         </div>
 
-        <div className="categories-list-group">
+        <div className="category-chips-wrap categories-list-group">
           {FEED_CATEGORIES.map((cat) => (
             <button
               key={cat.key}
               type="button"
-              className={`category-chip-item ${
+              className={`category-chip-btn category-chip-item ${
                 selectedCategory === cat.key ? "active" : ""
               }`}
               onClick={() => onSelectCategory(cat.key)}
             >
-              <span className="cat-icon">{cat.icon}</span>
-              <span className="cat-label">{cat.label}</span>
+              <span className="chip-icon cat-icon">{cat.icon}</span>
+              <span className="chip-label cat-label">{cat.label}</span>
               {selectedCategory === cat.key && <span className="cat-check">✓</span>}
             </button>
           ))}
@@ -129,9 +129,12 @@ export const FeedRightSidebar: React.FC<FeedRightSidebarProps> = ({
       {/* =================================================================== */}
       {/* 4. WIDGET THÔNG ĐIỆP SỐNG XANH */}
       {/* =================================================================== */}
-      <div className="eco-tips-card">
-        <div className="eco-tips-badge">MẸO SỐNG XANH 🌱</div>
-        <p className="eco-tips-text">
+      <div className="feed-tips-card eco-tips-card">
+        <div className="tips-header eco-tips-badge">
+          <span>🌱</span>
+          <span>MẸO SỐNG XANH</span>
+        </div>
+        <p className="tips-text eco-tips-text">
           Chụp ảnh hiện trường rõ ràng và bật định vị GPS giúp cơ quan chức năng tiếp nhận và điều phối xử lý nhanh gấp 2 lần!
         </p>
       </div>

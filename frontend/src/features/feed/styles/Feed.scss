@@ -100,11 +100,19 @@ $info-500: #3b82f6;
   min-height: 100%;
   max-width: 1380px;
   margin: 0 auto;
-  padding: 24px 20px 60px;
+  padding: 16px 20px 60px;
   position: relative;
   box-sizing: border-box;
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   color: $neutral-800;
+
+  // Triệt tiêu viền và style mặc định thô kệch của trình duyệt cho các nút trong Bảng tin
+  button {
+    font-family: inherit;
+    border: none;
+    outline: none;
+    background: transparent;
+  }
 
   // Toast Queue
   .feed-toasts-queue {
@@ -351,13 +359,15 @@ $info-500: #3b82f6;
     gap: 4px;
     box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.04);
 
-    .feed-shortcut-item {
+    .feed-shortcut-item,
+    .shortcut-nav-item {
       display: flex;
       align-items: center;
       gap: 12px;
       width: 100%;
       padding: 10px 14px;
       border: none;
+      outline: none;
       background: transparent;
       border-radius: 10px;
       font-size: 14px;
@@ -1387,7 +1397,8 @@ $info-500: #3b82f6;
   }
 
   // Category Filter Card
-  .feed-categories-card {
+  .feed-categories-card,
+  .category-filter-card {
     background: #ffffff;
     border: 1px solid $neutral-200;
     border-radius: 18px;
@@ -1410,12 +1421,14 @@ $info-500: #3b82f6;
       }
     }
 
-    .category-chips-wrap {
+    .category-chips-wrap,
+    .categories-list-group {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
 
-      .category-chip-btn {
+      .category-chip-btn,
+      .category-chip-item {
         display: inline-flex;
         align-items: center;
         gap: 5px;
@@ -1427,10 +1440,23 @@ $info-500: #3b82f6;
         font-weight: 500;
         color: $neutral-700;
         cursor: pointer;
+        outline: none;
         transition: all 0.18s ease;
 
-        .chip-icon {
+        .chip-icon,
+        .cat-icon {
           font-size: 13px;
+        }
+
+        .chip-label,
+        .cat-label {
+          font-size: 12.5px;
+        }
+
+        .cat-check {
+          font-size: 11px;
+          color: $primary-600;
+          font-weight: 700;
         }
 
         &:hover {
@@ -1490,13 +1516,15 @@ $info-500: #3b82f6;
   }
 
   // Tips Card
-  .feed-tips-card {
+  .feed-tips-card,
+  .eco-tips-card {
     background: #f0fdf4;
     border: 1px solid #bbf7d0;
     border-radius: 16px;
     padding: 14px 16px;
 
-    .tips-header {
+    .tips-header,
+    .eco-tips-badge {
       display: flex;
       align-items: center;
       gap: 6px;
@@ -1506,7 +1534,8 @@ $info-500: #3b82f6;
       margin-bottom: 6px;
     }
 
-    .tips-text {
+    .tips-text,
+    .eco-tips-text {
       margin: 0;
       font-size: 12px;
       line-height: 1.45;
@@ -1958,7 +1987,10 @@ $info-500: #3b82f6;
 }
 
 // Dark Mode Support
-body.dark-theme {
+body.dark-theme,
+body.dark-mode,
+.dark-theme,
+[data-theme="dark"] {
   .greenspot-feed-container {
     color: #f1f5f9;
 
@@ -1970,6 +2002,9 @@ body.dark-theme {
     .radar-radius-card,
     .feed-sort-card,
     .feed-categories-card,
+    .category-filter-card,
+    .feed-tips-card,
+    .eco-tips-card,
     .feed-district-card,
     .feed-modal-content {
       background: #1e293b;
