@@ -1,12 +1,99 @@
-# Python
+# =========================================================================
+# 🔒 ENVIRONMENT & SENSITIVE SECRETS (BẢO VỆ MẬT KHẨU & KHÓA BÍ MẬT)
+# =========================================================================
+.env
+.env.*
+*.env
+**/.env
+**/.env.*
+**/*.env
+*.local
+**/*.local
+# Cho phép lưu trữ các file mẫu cấu hình không chứa mật khẩu:
+!.env.example
+!**/.env.example
+!.env.template
+!**/.env.template
+
+# =========================================================================
+# 💻 HỆ ĐIỀU HÀNH (OPERATING SYSTEM FILES: WINDOWS, MACOS, LINUX)
+# =========================================================================
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.stackdump
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# =========================================================================
+# 🛠️ IDE & TRÌNH SOẠN THẢO (IDEs, EDITORS, AI WORKSPACE)
+# =========================================================================
+# JetBrains (PyCharm, WebStorm, IntelliJ IDEA)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Visual Studio Code & Visual Studio
+.vscode/
+*.code-workspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Eclipse & NetBeans
+.project
+.classpath
+.settings/
+
+# AI IDE & Agent Tooling Cache
+.agents/
+.codegraph/
+.gemini/
+
+# =========================================================================
+# 🐍 PYTHON RUNTIME, VIRTUAL ENV & TESTING CACHE
+# =========================================================================
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+
+# Virtual Environments
 env/
 venv/
 .venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Packaging & Distribution
 build/
 develop-eggs/
 dist/
@@ -22,28 +109,41 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-.pytest_cache/
 
-# Node
+# Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+
+# =========================================================================
+# 📦 NODE.JS, FRONTEND & BUNDLERS
+# =========================================================================
 node_modules/
+dist/
+dist-ssr/
+.turbo/
+.parcel-cache/
+
+# Logs
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-dist/
-dist-ssr/
-*.local
+lerna-debug.log*
 
-# Environment files
-.env
-.env*.local
-!.env.example
-
-# IDE
-.idea/
-.vscode/
-*.sublime-project
-*.sublime-workspace
-.DS_Store
-Thumbs.db
-
+# =========================================================================
+# 📁 UPLOADS & RUNTIME TEMPORARY FILES
+# =========================================================================
+*.tmp
+*.temp
+BackEnd/uploads/*
+!BackEnd/uploads/.gitkeep
+uploads/*
+!uploads/.gitkeep

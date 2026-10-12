@@ -1,7 +1,7 @@
 generator client {
-  provider                   = "prisma-client-py"
-  recursive_type_depth       = "5"
-  enable_experimental_decimal = true
+  provider                    = "prisma-client-py"
+  recursive_type_depth        = "5"
+  enable_experimental_decimal = "true"
 }
 
 datasource db {
@@ -101,10 +101,14 @@ model essential_facilities {
   location             Unsupported("geometry")
   contact_phone        String?                 @db.VarChar(20)
   capacity_people      Int?
-  vulnerability_level  String                  @default("HIGH") @db.VarChar(20)
+  vulnerability_level  String                  @default("HIGH") @db.VarChar(255)
   metadata             Json?
   created_at           DateTime                @default(now()) @db.Timestamptz(6)
   updated_at           DateTime                @default(now()) @db.Timestamptz(6)
+  contact_person       String?                 @db.VarChar(100)
+  contact_email        String?                 @db.VarChar(100)
+  version              Int                     @default(1)
+  deleted_at           DateTime?               @db.Timestamptz(6)
   administrative_units administrative_units?   @relation(fields: [unit_id], references: [unit_id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([location], map: "idx_essential_facilities_location", type: Gist)
@@ -255,6 +259,16 @@ model incidents {
   deleted_at                                                                            DateTime?                     @db.Timestamptz(6)
   master_incident_id                                                                    String?                       @db.Uuid
   is_duplicate_merged                                                                   Boolean                       @default(false)
+  ai_summary                                                                            String?
+  ai_triage_score                                                                       Decimal?                      @db.Decimal(5, 2)
+  ai_suggested_priority                                                                 String?                       @db.VarChar(30)
+  ai_factors                                                                            Json?
+  ai_generated_at                                                                       DateTime?                     @db.Timestamptz(6)
+  priority_modified_by                                                                  String?                       @db.Uuid
+  priority_modified_reason                                                              String?                       @db.VarChar(255)
+  priority_modified_at                                                                  DateTime?                     @db.Timestamptz(6)
+  sla_response_deadline                                                                 DateTime?                     @db.Timestamptz(6)
+  incident_audit_logs                                                                   incident_audit_logs[]
   incident_duplicate_clusters_incident_duplicate_clusters_incident_a_idToincidents      incident_duplicate_clusters[] @relation("incident_duplicate_clusters_incident_a_idToincidents")
   incident_duplicate_clusters_incident_duplicate_clusters_incident_b_idToincidents      incident_duplicate_clusters[] @relation("incident_duplicate_clusters_incident_b_idToincidents")
   incident_duplicate_clusters_incident_duplicate_clusters_master_incident_idToincidents incident_duplicate_clusters[] @relation("incident_duplicate_clusters_master_incident_idToincidents")
@@ -262,6 +276,7 @@ model incidents {
   waste_categories                                                                      waste_categories              @relation(fields: [category_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction)
   incidents                                                                             incidents?                    @relation("incidentsToincidents", fields: [master_incident_id], references: [incident_id], onUpdate: NoAction)
   other_incidents                                                                       incidents[]                   @relation("incidentsToincidents")
+  users_incidents_priority_modified_byTousers                                           users?                        @relation("incidents_priority_modified_byTousers", fields: [priority_modified_by], references: [user_id], onUpdate: NoAction)
   users                                                                                 users?                        @relation(fields: [reporter_id], references: [user_id], onUpdate: NoAction)
   administrative_units                                                                  administrative_units?         @relation(fields: [unit_id], references: [unit_id], onUpdate: NoAction)
 
@@ -517,36 +532,44 @@ model user_sessions {
 }
 
 model users {
-  user_id                 String                    @id @db.Uuid
-  email                   String                    @unique @db.VarChar(255)
-  phone_number            String?                   @unique @db.VarChar(20)
-  password_hash           String                    @db.VarChar(255)
-  full_name               String                    @db.VarChar(150)
-  avatar_url              String?                   @db.VarChar(500)
-  role_id                 Int
-  status                  String                    @default("ACTIVE") @db.VarChar(20)
-  citizen_id_card         String?                   @db.VarChar(20)
-  reputation_score        Int                       @default(100)
-  created_at              DateTime                  @default(now()) @db.Timestamptz(6)
-  updated_at              DateTime                  @default(now()) @db.Timestamptz(6)
-  cover_image_url         String?                   @db.VarChar(500)
-  bio                     String?                   @db.VarChar(200)
-  date_of_birth           DateTime?                 @db.Date
-  activated_at            DateTime?                 @default(now()) @db.Timestamptz(6)
-  total_green_points      Int?                      @default(0)
-  friends_count           Int?                      @default(0)
-  version                 Int?                      @default(1)
-  deleted_at              DateTime?                 @db.Timestamptz(6)
-  flood_community_reports flood_community_reports[]
-  incident_media          incident_media[]
-  incidents               incidents[]
-  posts                   posts[]
-  safe_navigation_routes  safe_navigation_routes[]
-  user_activities         user_activities[]
-  user_badges             user_badges[]
-  user_sessions           user_sessions[]
-  roles                   roles                     @relation(fields: [role_id], references: [role_id], onDelete: NoAction, onUpdate: NoAction)
-  voice_interaction_logs  voice_interaction_logs[]
+  user_id                                            String                    @id @db.Uuid
+  email                                              String                    @unique @db.VarChar(255)
+  phone_number                                       String?                   @unique @db.VarChar(20)
+  password_hash                                      String                    @db.VarChar(255)
+  full_name                                          String                    @db.VarChar(150)
+  avatar_url                                         String?                   @db.VarChar(500)
+  role_id                                            Int
+  status                                             String                    @default("ACTIVE") @db.VarChar(20)
+  citizen_id_card                                    String?                   @db.VarChar(20)
+  reputation_score                                   Int                       @default(100)
+  created_at                                         DateTime                  @default(now()) @db.Timestamptz(6)
+  updated_at                                         DateTime                  @default(now()) @db.Timestamptz(6)
+  cover_image_url                                    String?                   @db.VarChar(500)
+  bio                                                String?                   @db.VarChar(200)
+  date_of_birth                                      DateTime?                 @db.Date
+  activated_at                                       DateTime?                 @default(now()) @db.Timestamptz(6)
+  total_green_points                                 Int?                      @default(0)
+  friends_count                                      Int?                      @default(0)
+  version                                            Int?                      @default(1)
+  deleted_at                                         DateTime?                 @db.Timestamptz(6)
+  flood_community_reports                            flood_community_reports[]
+  friend_requests_friend_requests_receiver_idTousers friend_requests[]         @relation("friend_requests_receiver_idTousers")
+  friend_requests_friend_requests_sender_idTousers   friend_requests[]         @relation("friend_requests_sender_idTousers")
+  friendships_friendships_user_id_1Tousers           friendships[]             @relation("friendships_user_id_1Tousers")
+  friendships_friendships_user_id_2Tousers           friendships[]             @relation("friendships_user_id_2Tousers")
+  incident_audit_logs                                incident_audit_logs[]
+  incident_media                                     incident_media[]
+  incidents_incidents_priority_modified_byTousers    incidents[]               @relation("incidents_priority_modified_byTousers")
+  incidents                                          incidents[]
+  posts                                              posts[]
+  safe_navigation_routes                             safe_navigation_routes[]
+  user_activities                                    user_activities[]
+  user_badges                                        user_badges[]
+  user_follows_user_follows_follower_idTousers       user_follows[]            @relation("user_follows_follower_idTousers")
+  user_follows_user_follows_following_idTousers      user_follows[]            @relation("user_follows_following_idTousers")
+  user_sessions                                      user_sessions[]
+  roles                                              roles                     @relation(fields: [role_id], references: [role_id], onDelete: NoAction, onUpdate: NoAction)
+  voice_interaction_logs                             voice_interaction_logs[]
 }
 
 model voice_interaction_logs {
@@ -601,4 +624,76 @@ model waste_categories {
   created_at       DateTime    @default(now()) @db.Timestamptz(6)
   updated_at       DateTime    @default(now()) @db.Timestamptz(6)
   incidents        incidents[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model friend_requests {
+  request_id                               String    @id @db.Uuid
+  sender_id                                String    @db.Uuid
+  receiver_id                              String    @db.Uuid
+  status                                   String    @db.VarChar(20)
+  deleted_at                               DateTime? @db.Timestamptz(6)
+  created_at                               DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                               DateTime  @default(now()) @db.Timestamptz(6)
+  users_friend_requests_receiver_idTousers users     @relation("friend_requests_receiver_idTousers", fields: [receiver_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  users_friend_requests_sender_idTousers   users     @relation("friend_requests_sender_idTousers", fields: [sender_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([receiver_id, status, deleted_at], map: "idx_friend_requests_receiver_status")
+  @@index([sender_id, status, deleted_at], map: "idx_friend_requests_sender_status")
+  @@index([receiver_id], map: "ix_friend_requests_receiver_id")
+  @@index([sender_id], map: "ix_friend_requests_sender_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model friendships {
+  friendship_id                      String    @id @db.Uuid
+  user_id_1                          String    @db.Uuid
+  user_id_2                          String    @db.Uuid
+  created_at                         DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at                         DateTime? @db.Timestamptz(6)
+  users_friendships_user_id_1Tousers users     @relation("friendships_user_id_1Tousers", fields: [user_id_1], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  users_friendships_user_id_2Tousers users     @relation("friendships_user_id_2Tousers", fields: [user_id_2], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id_1, user_id_2], map: "uq_friendships_user1_user2")
+  @@index([user_id_1, deleted_at], map: "idx_friendships_user_id_1")
+  @@index([user_id_2, deleted_at], map: "idx_friendships_user_id_2")
+  @@index([user_id_1], map: "ix_friendships_user_id_1")
+  @@index([user_id_2], map: "ix_friendships_user_id_2")
+}
+
+model incident_audit_logs {
+  log_id       String    @id @db.Uuid
+  incident_id  String    @db.Uuid
+  action       String    @db.VarChar(50)
+  old_priority String?   @db.VarChar(30)
+  new_priority String?   @db.VarChar(30)
+  risk_score   Int?
+  reason       String?   @db.VarChar(255)
+  performed_by String?   @db.Uuid
+  metadata     Json?
+  version      Int
+  deleted_at   DateTime? @db.Timestamptz(6)
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime  @default(now()) @db.Timestamptz(6)
+  incidents    incidents @relation(fields: [incident_id], references: [incident_id], onDelete: Cascade, onUpdate: NoAction)
+  users        users?    @relation(fields: [performed_by], references: [user_id], onUpdate: NoAction)
+
+  @@index([incident_id], map: "ix_incident_audit_logs_incident_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model user_follows {
+  follow_id                              String    @id @db.Uuid
+  follower_id                            String    @db.Uuid
+  following_id                           String    @db.Uuid
+  created_at                             DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at                             DateTime? @db.Timestamptz(6)
+  users_user_follows_follower_idTousers  users     @relation("user_follows_follower_idTousers", fields: [follower_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  users_user_follows_following_idTousers users     @relation("user_follows_following_idTousers", fields: [following_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([follower_id, following_id], map: "uq_user_follows_pair")
+  @@index([follower_id, deleted_at], map: "idx_user_follows_follower")
+  @@index([following_id, deleted_at], map: "idx_user_follows_following")
+  @@index([follower_id], map: "ix_user_follows_follower_id")
+  @@index([following_id], map: "ix_user_follows_following_id")
 }

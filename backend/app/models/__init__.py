@@ -24,12 +24,13 @@ from app.models.spatial import (
     RecyclingFacility,
 )
 
-# 3. Sự cố Môi trường Đô thị (Incidents & Media)
+# 3. Sự cố Môi trường Đô thị (Incidents, Media & Audit Logs)
 from app.models.incident import (
     WasteCategory,
     Incident,
     IncidentMedia,
 )
+from app.models.audit_log import IncidentAuditLog
 from app.models.deduplication import IncidentDuplicateCluster
 
 # 4. Trạm Quan trắc Cảm biến IoT & Dữ liệu Khí tượng
@@ -99,6 +100,7 @@ __all__ = [
     "WasteCategory",
     "Incident",
     "IncidentMedia",
+    "IncidentAuditLog",
     "IncidentDuplicateCluster",
     # IoT Sensors
     "IoTSensorStation",

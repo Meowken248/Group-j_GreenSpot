@@ -1,6 +1,7 @@
 from typing import List, Optional
 from geoalchemy2 import Geometry
-from sqlalchemy import ARRAY, Boolean, ForeignKey, Integer, Numeric, String, Text
+from datetime import datetime
+from sqlalchemy import ARRAY, Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -35,9 +36,15 @@ class EssentialFacility(Base, TimestampMixin):
     unit_id: Mapped[Optional[int]] = mapped_column(ForeignKey("administrative_units.unit_id"))
     location = mapped_column(Geometry(geometry_type="POINT", srid=4326), nullable=False)
     contact_phone: Mapped[Optional[str]] = mapped_column(String(20))
+    contact_person: Mapped[Optional[str]] = mapped_column(String(100))
+    contact_email: Mapped[Optional[str]] = mapped_column(String(100))
     capacity_people: Mapped[Optional[int]] = mapped_column(Integer)
-    vulnerability_level: Mapped[str] = mapped_column(String(20), default="HIGH")
+    vulnerability_level: Mapped[str] = mapped_column(String(50), default="HIGH")
     metadata_json: Mapped[Optional[dict]] = mapped_column("metadata", JSONB)
+
+    # Optimistic locking & Soft delete (Tuân thủ Quy tắc 6 & 7)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class RecyclingFacility(Base, TimestampMixin):

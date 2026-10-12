@@ -49,9 +49,10 @@ def db_studio():
 
 
 def db_seed():
-    print("🌱 Nạp toàn bộ dữ liệu mẫu (Admin + 3 cụm AI Deduplication)...")
+    print("🌱 Nạp toàn bộ dữ liệu mẫu (Admin + 3 cụm AI Deduplication + STT 39 & 40 Triage & Spatial)...")
     run_cmd("python app/seeds/seed_admin.py", cwd=backend_dir)
     run_cmd("python app/seeds/deduplication/seed_data.py", cwd=backend_dir)
+    run_cmd("python -m app.seeds.triage_spatial_seed", cwd=backend_dir)
 
 
 def db_migrate():
