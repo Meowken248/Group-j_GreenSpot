@@ -417,6 +417,8 @@ async def get_green_citizen_suggestions(
 # ENDPOINTS MÀN 2: QUẢN LÝ BẠN BÈ & ĐANG THEO DÕI
 # =========================================================================
 
+@router.get("", response_model=List[FriendItemResponse])
+@router.get("/", response_model=List[FriendItemResponse], include_in_schema=False)
 @router.get("/list", response_model=List[FriendItemResponse])
 async def get_my_friends_list(
     query: Optional[str] = Query(None, description="Tìm kiếm realtime họ tên hoặc quận/huyện"),
