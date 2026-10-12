@@ -49,9 +49,8 @@ def db_studio():
 
 
 def db_seed():
-    print("🌱 Nạp toàn bộ dữ liệu mẫu (Admin + 3 cụm AI Deduplication)...")
-    run_cmd("python app/seeds/seed_admin.py", cwd=backend_dir)
-    run_cmd("python app/seeds/deduplication/seed_data.py", cwd=backend_dir)
+    print("🌱 Nạp toàn bộ dữ liệu mẫu hệ thống (RBAC, GIS, Công dân, Bạn bè, Bảng tin, Xử phạt, Cài đặt, Báo cáo trùng AI)...")
+    run_cmd("python -m app.seeds.seed_all", cwd=backend_dir)
 
 
 def db_migrate():
