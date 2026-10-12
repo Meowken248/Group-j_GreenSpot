@@ -1,8 +1,9 @@
 import re
 import uuid
 from datetime import datetime, date
-from typing import List, Optional
+from typing import List, Optional, Union, Dict, Any
 from pydantic import BaseModel, Field, field_validator
+from app.schemas.post import TaggedFriendInfo
 
 
 # =========================================================================
@@ -47,11 +48,14 @@ class PostItemResponse(BaseModel):
     post_id: uuid.UUID
     user_id: uuid.UUID
     content: str
-    media_urls: Optional[List[str]] = None
+    media_urls: Optional[List[Union[str, Dict[str, Any]]]] = None
     thumbnail_url: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     address: Optional[str] = None
+    group_id: Optional[uuid.UUID] = None
+    visibility: Optional[str] = "PUBLIC"
+    tagged_friends: Optional[List[TaggedFriendInfo]] = None
     reactions_count: int = 0
     comments_count: int = 0
     is_hidden: bool = False
