@@ -164,6 +164,7 @@ class SafeNavigationService(ISafeNavigationService):
             risk["hotspot_id"] = str(r["hotspot_id"])
             risk["hotspot_code"] = r["hotspot_code"]
             risk["street_name"] = r["street_name"]
+            risk["historical_max_depth_cm"] = float(r["historical_max_depth_cm"] or 30.0)
             risk["lat"] = r["lat"]
             risk["lng"] = r["lng"]
             evaluated.append(risk)
@@ -507,12 +508,16 @@ class SafeNavigationService(ISafeNavigationService):
             s_lng = spot["lng"]
             depth_cm = spot.get("predicted_depth_cm", 0.0)
 
-            # Chỉ cảnh báo nếu vượt ngưỡng chịu tải của xe hoặc ngập sâu >= 20cm
+            # Cảnh báo dựa trên mức ngập thực tế hoặc nguy cơ ngập lịch sử cao
             if depth_cm < 18.0:
-                continue
+                hist_max = spot.get("historical_max_depth_cm") or 0.0
+                if hist_max >= 25.0:
+                    depth_cm = float(hist_max) * 0.75
+                else:
+                    continue
 
             dist = haversine_distance_meters(cur_lat, cur_lng, s_lat, s_lng)
-            if dist <= 500.0 and dist < min_dist:
+            if dist <= 1000.0 and dist < min_dist:
                 min_dist = dist
                 depth_m = depth_cm / 100.0
                 closest_hazard = FloodHazardInfo(

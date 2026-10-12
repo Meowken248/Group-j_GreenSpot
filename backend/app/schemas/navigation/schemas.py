@@ -99,7 +99,9 @@ class EarlyWarningCheckRequest(BaseModel):
     current_latitude: float
     current_longitude: float
     heading: Optional[float] = None
-    route_coordinates: List[List[float]] = Field(..., description="Mảng [lng, lat] của tuyến đang đi")
+    route_coordinates: Optional[List[List[float]]] = Field(
+        default_factory=list, description="Mảng [lng, lat] của tuyến đang đi (tùy chọn)"
+    )
     vehicle_type: VehicleType = Field(VehicleType.MOTORBIKE)
 
 
