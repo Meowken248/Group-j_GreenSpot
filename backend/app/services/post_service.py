@@ -66,16 +66,24 @@ class PostService:
         db.add(post)
         await db.flush()
 
-        # Lưu danh sách bạn bè được gắn thẻ
+        # Lưu danh sách bạn bè được gắn thẻ (lọc an toàn chỉ các user thật sự tồn tại)
         if request.tagged_friend_ids:
+            valid_users_stmt = select(User.user_id).where(
+                User.user_id.in_(request.tagged_friend_ids),
+                User.deleted_at.is_(None)
+            )
+            valid_users_res = await db.execute(valid_users_stmt)
+            valid_user_ids = set(valid_users_res.scalars().all())
+
             for friend_id in request.tagged_friend_ids:
-                tag = PostTaggedFriend(
-                    tag_id=uuid.uuid4(),
-                    post_id=post.post_id,
-                    friend_user_id=friend_id,
-                    deleted_at=None,
-                )
-                db.add(tag)
+                if friend_id in valid_user_ids:
+                    tag = PostTaggedFriend(
+                        tag_id=uuid.uuid4(),
+                        post_id=post.post_id,
+                        friend_user_id=friend_id,
+                        deleted_at=None,
+                    )
+                    db.add(tag)
 
         await db.commit()
 
@@ -184,19 +192,28 @@ class PostService:
         if request.visibility is not None:
             post.visibility = request.visibility
 
-        # Cập nhật danh sách bạn bè được gắn thẻ nếu có gửi lên
+        # Cập nhật danh sách bạn bè được gắn thẻ nếu có gửi lên (lọc an toàn chỉ các user thật sự tồn tại)
         if request.tagged_friend_ids is not None:
             await db.execute(
                 delete(PostTaggedFriend).where(PostTaggedFriend.post_id == post.post_id)
             )
-            for friend_id in request.tagged_friend_ids:
-                tag = PostTaggedFriend(
-                    tag_id=uuid.uuid4(),
-                    post_id=post.post_id,
-                    friend_user_id=friend_id,
-                    deleted_at=None,
+            if request.tagged_friend_ids:
+                valid_users_stmt = select(User.user_id).where(
+                    User.user_id.in_(request.tagged_friend_ids),
+                    User.deleted_at.is_(None)
                 )
-                db.add(tag)
+                valid_users_res = await db.execute(valid_users_stmt)
+                valid_user_ids = set(valid_users_res.scalars().all())
+
+                for friend_id in request.tagged_friend_ids:
+                    if friend_id in valid_user_ids:
+                        tag = PostTaggedFriend(
+                            tag_id=uuid.uuid4(),
+                            post_id=post.post_id,
+                            friend_user_id=friend_id,
+                            deleted_at=None,
+                        )
+                        db.add(tag)
 
         post.updated_at = datetime.now(timezone.utc)
         post.version += 1
