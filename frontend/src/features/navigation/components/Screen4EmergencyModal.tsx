@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { EarlyWarningAlert } from '../types/navigation.types';
+import type { EarlyWarningAlert } from '../types/navigation.types';
 import { playEmergencyBeep, speakVietnamese } from '../services/navigationApi';
 
 interface Screen4EmergencyModalProps {

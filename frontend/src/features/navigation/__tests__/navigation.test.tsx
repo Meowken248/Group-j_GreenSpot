@@ -245,4 +245,109 @@ describe('Flood-Aware Navigation Routing (STT 41) UI Tests', () => {
     fireEvent.click(contBtn);
     expect(onContinue).toHaveBeenCalledTimes(1);
   });
+
+  it('Màn 2/4 Kịch bản khô ráo: Gộp 2 tuyến làm một, ưu tiên tuyến ngắn nhất', () => {
+    const allClearPlan: DualRouteResponse = {
+      origin: { name: 'A', latitude: 10.7, longitude: 106.6 },
+      destination: { name: 'B', latitude: 10.8, longitude: 106.7 },
+      vehicle_type: 'MOTORBIKE',
+      vehicle_threshold_cm: 25,
+      fastest_route: {
+        route_id: 'R1',
+        route_type: 'FASTEST',
+        duration_minutes: 20,
+        distance_km: 6.0,
+        duration_formatted: '20 phút | 6.0 km',
+        hazard_count: 0,
+        max_depth_cm: 0,
+        status: 'CLEAR',
+        coordinates: [],
+        turn_steps: [],
+        hazards_on_route: [],
+        avoided_hazards: [],
+      },
+      safest_route: {
+        route_id: 'R1',
+        route_type: 'SAFEST',
+        duration_minutes: 20,
+        distance_km: 6.0,
+        duration_formatted: '20 phút | 6.0 km',
+        hazard_count: 0,
+        max_depth_cm: 0,
+        status: 'CLEAR',
+        coordinates: [],
+        turn_steps: [],
+        hazards_on_route: [],
+        avoided_hazards: [],
+      },
+      all_clear: true,
+      all_flooded: false,
+    };
+
+    render(
+      <Screen2Compare
+        planData={allClearPlan}
+        selectedRouteType="SAFEST"
+        onSelectRouteType={vi.fn()}
+        isLoadingTide={false}
+        onBackToInput={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/Tất cả các tuyến đường đều an toàn, không có ngập/i)).toBeInTheDocument();
+    expect(screen.getByText(/Hai tuyến gộp làm một, ưu tiên tuyến ngắn nhất/i)).toBeInTheDocument();
+  });
+
+  it('Màn 2/4 Kịch bản tất cả bị ngập: Hiển thị cảnh báo toàn bộ ngập sâu và lời khuyên hoãn chuyến', () => {
+    const allFloodedPlan: DualRouteResponse = {
+      origin: { name: 'A', latitude: 10.7, longitude: 106.6 },
+      destination: { name: 'B', latitude: 10.8, longitude: 106.7 },
+      vehicle_type: 'MOTORBIKE',
+      vehicle_threshold_cm: 25,
+      fastest_route: {
+        route_id: 'R1',
+        route_type: 'FASTEST',
+        duration_minutes: 25,
+        distance_km: 7.2,
+        duration_formatted: '25 phút | 7.2 km',
+        hazard_count: 3,
+        max_depth_cm: 50,
+        status: 'IMPASSABLE',
+        coordinates: [],
+        turn_steps: [],
+        hazards_on_route: [],
+        avoided_hazards: [],
+      },
+      safest_route: {
+        route_id: 'R2',
+        route_type: 'SAFEST',
+        duration_minutes: 35,
+        distance_km: 9.5,
+        duration_formatted: '35 phút | 9.5 km',
+        hazard_count: 1,
+        max_depth_cm: 40,
+        status: 'AVOID',
+        coordinates: [],
+        turn_steps: [],
+        hazards_on_route: [],
+        avoided_hazards: [],
+      },
+      all_clear: false,
+      all_flooded: true,
+      advisory_recommendation: 'Khuyến nghị hoãn chuyến đi do ngập sâu',
+    };
+
+    render(
+      <Screen2Compare
+        planData={allFloodedPlan}
+        selectedRouteType="SAFEST"
+        onSelectRouteType={vi.fn()}
+        isLoadingTide={false}
+        onBackToInput={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/Cảnh báo: Toàn bộ lộ trình đều có điểm ngập sâu/i)).toBeInTheDocument();
+    expect(screen.getByText(/Khuyến nghị hoãn chuyến đi do ngập sâu/i)).toBeInTheDocument();
+  });
 });

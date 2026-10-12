@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavigationRoutePlan } from '../types/navigation.types';
+import type { NavigationRoutePlan } from '../types/navigation.types';
 
 interface Screen3DirectionsProps {
   routePlan: NavigationRoutePlan;
