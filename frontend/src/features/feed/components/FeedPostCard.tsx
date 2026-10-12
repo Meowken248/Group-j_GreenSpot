@@ -171,6 +171,23 @@ export const FeedPostCard: React.FC<FeedPostCardProps> = ({
             <div className="post-sub-meta">
               <span className="post-time">{getRelativeTime(post.created_at)}</span>
 
+              {/* Nhãn Quyền riêng tư (STT 08 & 09) */}
+              {(post.visibility === "PUBLIC" || !post.visibility) && (
+                <span className="post-visibility-badge is-public" title="Bài viết công khai với toàn cộng đồng">
+                  • 🌍 Công khai
+                </span>
+              )}
+              {post.visibility === "FRIENDS" && (
+                <span className="post-visibility-badge is-friends" title="Chỉ bạn bè mới có thể xem">
+                  • 👥 Bạn bè
+                </span>
+              )}
+              {(post.visibility === "ONLY_ME" || post.visibility === "PRIVATE") && (
+                <span className="post-visibility-badge is-private" title="Chỉ mình tôi mới có thể xem">
+                  • 🔒 Chỉ mình tôi
+                </span>
+              )}
+
               {/* Nhãn Đã chỉnh sửa (STT 13) */}
               {post.is_edited && (
                 <span className="post-edited-badge" title="Bài viết đã qua chỉnh sửa">

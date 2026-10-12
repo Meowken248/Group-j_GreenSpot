@@ -537,7 +537,10 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
               </button>
             </div>
             <PostCreatorContainer
-              onNavigateHome={() => setShowCreateModal(false)}
+              onNavigateHome={() => {
+                setShowCreateModal(false);
+                fetchFeed(1, false);
+              }}
               onNavigateLogin={() => {
                 setShowCreateModal(false);
                 onNavigateLogin?.();

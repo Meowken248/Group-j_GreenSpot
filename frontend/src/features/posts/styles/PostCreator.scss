@@ -127,6 +127,75 @@ $shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.15);
   // CỘT TRÁI: KHỐI "NỘI DUNG"
   // ==========================================
   .col-content {
+    .creator-author-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #f3f4f6;
+
+      .creator-avatar-wrap {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        overflow: hidden;
+        flex-shrink: 0;
+
+        .creator-user-avatar {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .creator-avatar-fallback {
+          width: 100%;
+          height: 100%;
+          background: #e0f2fe;
+          color: #0284c7;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 18px;
+        }
+      }
+
+      .creator-meta-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+
+        .creator-user-name {
+          font-size: 15px;
+          font-weight: 600;
+          color: $text-main;
+
+          .group-posting-label {
+            font-size: 13px;
+            color: $text-secondary;
+            font-weight: normal;
+
+            strong {
+              color: $primary-green-hover;
+            }
+          }
+        }
+
+        .creator-privacy-badge {
+          display: inline-flex;
+          align-items: center;
+          background: #f1f5f9;
+          color: #475569;
+          padding: 2px 8px;
+          border-radius: 12px;
+          font-size: 11px;
+          font-weight: 600;
+          width: fit-content;
+        }
+      }
+    }
+
     .textarea-wrapper {
       position: relative;
       margin-bottom: 16px;
@@ -376,6 +445,74 @@ $shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.15);
 
           &:hover {
             color: $danger-red;
+          }
+        }
+      }
+
+      .privacy-selector-card {
+        margin-top: 10px;
+        padding-top: 14px;
+        border-top: 1px dashed $border-color;
+
+        .privacy-selector-title {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+          font-weight: 700;
+          color: $text-main;
+          margin-bottom: 10px;
+
+          .p-icon {
+            font-size: 15px;
+          }
+        }
+
+        .visibility-segmented-control {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+
+          .visibility-option-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #374151;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            text-align: left;
+
+            .vis-icon {
+              font-size: 16px;
+            }
+
+            .vis-text {
+              flex: 1;
+            }
+
+            &:hover:not(:disabled) {
+              background: #f3f4f6;
+              border-color: #d1d5db;
+            }
+
+            &.is-selected {
+              background: #ecfdf5;
+              border-color: #10b981;
+              color: #065f46;
+              font-weight: 700;
+              box-shadow: 0 1px 3px rgba(16, 185, 129, 0.15);
+            }
+
+            &:disabled {
+              opacity: 0.6;
+              cursor: not-allowed;
+            }
           }
         }
       }

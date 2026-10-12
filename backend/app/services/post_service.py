@@ -442,8 +442,47 @@ class PostService:
         conditions = [
             Post.deleted_at.is_(None),
             Post.is_hidden.is_(False),
-            Post.visibility.in_(["PUBLIC", "COMMUNITY", "FRIENDS", "GROUP"]),
         ]
+
+        friend_subquery = None
+        if current_user:
+            friend_subquery = select(
+                case(
+                    (Friendship.user_id_1 == current_user.user_id, Friendship.user_id_2),
+                    else_=Friendship.user_id_1
+                )
+            ).where(
+                and_(
+                    or_(
+                        Friendship.user_id_1 == current_user.user_id,
+                        Friendship.user_id_2 == current_user.user_id
+                    ),
+                    Friendship.deleted_at.is_(None)
+                )
+            )
+            # Người dùng xem được bài viết:
+            # - PUBLIC, COMMUNITY, GROUP
+            # - Bài FRIENDS nếu chính mình là tác giả hoặc tác giả là bạn bè
+            # - Bài PRIVATE nếu chính mình là tác giả
+            conditions.append(
+                or_(
+                    Post.visibility.in_(["PUBLIC", "COMMUNITY", "GROUP"]),
+                    and_(
+                        Post.visibility == "FRIENDS",
+                        or_(
+                            Post.user_id == current_user.user_id,
+                            Post.user_id.in_(friend_subquery),
+                        )
+                    ),
+                    and_(
+                        Post.visibility.in_(["PRIVATE", "ONLY_ME"]),
+                        Post.user_id == current_user.user_id,
+                    )
+                )
+            )
+        else:
+            # Khách vãng lai chỉ xem được bài công khai
+            conditions.append(Post.visibility.in_(["PUBLIC", "COMMUNITY"]))
 
         has_user_coords = (user_lat is not None and user_lon is not None)
         if has_user_coords:
@@ -456,9 +495,33 @@ class PostService:
 
         if tab == "nearby":
             if has_user_coords:
-                conditions.append(Post.latitude.is_not(None))
-                conditions.append(Post.longitude.is_not(None))
-                conditions.append(distance_expr <= (radius_km * 1000.0))
+                # Ưu tiên các bài viết trong bán kính GPS.
+                # Đồng thời luôn hiển thị:
+                # - Bài viết của chính người dùng (để tác giả luôn thấy bài viết mình vừa đăng)
+                # - Bài viết không gắn GPS (chia sẻ chung toàn thành phố / cộng đồng)
+                if current_user:
+                    conditions.append(
+                        or_(
+                            and_(
+                                Post.latitude.is_not(None),
+                                Post.longitude.is_not(None),
+                                distance_expr <= (radius_km * 1000.0)
+                            ),
+                            Post.latitude.is_(None),
+                            Post.user_id == current_user.user_id
+                        )
+                    )
+                else:
+                    conditions.append(
+                        or_(
+                            and_(
+                                Post.latitude.is_not(None),
+                                Post.longitude.is_not(None),
+                                distance_expr <= (radius_km * 1000.0)
+                            ),
+                            Post.latitude.is_(None)
+                        )
+                    )
         elif tab == "district":
             target_district = (district or "").strip()
             if target_district:
@@ -479,21 +542,13 @@ class PostService:
                     category=category,
                     sort_by=sort_by,
                 )
-            friend_subquery = select(
-                case(
-                    (Friendship.user_id_1 == current_user.user_id, Friendship.user_id_2),
-                    else_=Friendship.user_id_1
-                )
-            ).where(
-                and_(
-                    or_(
-                        Friendship.user_id_1 == current_user.user_id,
-                        Friendship.user_id_2 == current_user.user_id
-                    ),
-                    Friendship.deleted_at.is_(None)
+            # Người dùng xem được bài của bạn bè VÀ bài của chính mình
+            conditions.append(
+                or_(
+                    Post.user_id == current_user.user_id,
+                    Post.user_id.in_(friend_subquery)
                 )
             )
-            conditions.append(Post.user_id.in_(friend_subquery))
         elif tab == "groups":
             if not current_user:
                 return FeedListResponse(

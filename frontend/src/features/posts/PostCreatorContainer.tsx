@@ -13,6 +13,7 @@ import { TagFriendsAndGroupModal } from "./components/TagFriendsAndGroupModal";
 import { PostSuccessModal } from "./components/PostSuccessModal";
 import { DiscardConfirmModal } from "./components/DiscardConfirmModal";
 import { AUTH_STORAGE_KEYS } from "../auth/types/auth.types";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 import "./styles/PostCreator.scss";
 
 interface PostCreatorContainerProps {
@@ -26,10 +27,21 @@ export const PostCreatorContainer: React.FC<PostCreatorContainerProps> = ({
   onNavigateLogin,
   onViewCreatedPost,
 }) => {
-  // 1. Kiểm tra trạng thái đăng nhập
+  // 1. Kiểm tra trạng thái đăng nhập & thông tin người dùng
+  const [currentUser, setCurrentUser] = useState<any>(() => {
+    try {
+      const userStr = localStorage.getItem(AUTH_STORAGE_KEYS.USER_INFO);
+      return userStr ? JSON.parse(userStr) : null;
+    } catch {
+      return null;
+    }
+  });
+
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     try {
-      const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+      const token =
+        localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN) ||
+        localStorage.getItem("access_token");
       return Boolean(token);
     } catch {
       return false;
@@ -39,10 +51,15 @@ export const PostCreatorContainer: React.FC<PostCreatorContainerProps> = ({
   useEffect(() => {
     const handleAuthChange = () => {
       try {
-        const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+        const token =
+          localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN) ||
+          localStorage.getItem("access_token");
         setIsLoggedIn(Boolean(token));
+        const userStr = localStorage.getItem(AUTH_STORAGE_KEYS.USER_INFO);
+        setCurrentUser(userStr ? JSON.parse(userStr) : null);
       } catch {
         setIsLoggedIn(false);
+        setCurrentUser(null);
       }
     };
     window.addEventListener("storage", handleAuthChange);
@@ -59,6 +76,7 @@ export const PostCreatorContainer: React.FC<PostCreatorContainerProps> = ({
   const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(null);
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [visibility, setVisibility] = useState<"PUBLIC" | "FRIENDS" | "ONLY_ME">("PUBLIC");
 
   // 3. Danh sách bạn bè & nhóm
   const [friendsList, setFriendsList] = useState<FriendOption[]>([]);
@@ -192,7 +210,7 @@ export const PostCreatorContainer: React.FC<PostCreatorContainerProps> = ({
         address: selectedLocation?.address || null,
         tagged_friend_ids: selectedFriendIds,
         group_id: selectedGroupId || null,
-        visibility: "PUBLIC",
+        visibility: visibility,
       };
 
       const newPost = await postService.createPost(payload);
@@ -234,6 +252,38 @@ export const PostCreatorContainer: React.FC<PostCreatorContainerProps> = ({
           <div className="card-title">
             <span className="icon">✍️</span>
             <span>Khối Nội dung</span>
+          </div>
+
+          {/* Thông tin tác giả & Quyền riêng tư (Facebook-style) */}
+          <div className="creator-author-row">
+            <div className="creator-avatar-wrap">
+              {currentUser?.avatar_url ? (
+                <img
+                  src={resolveMediaUrl(currentUser.avatar_url)}
+                  alt={currentUser.full_name || "Bạn"}
+                  className="creator-user-avatar"
+                />
+              ) : (
+                <div className="creator-avatar-fallback">
+                  {(currentUser?.full_name || "B").charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+            <div className="creator-meta-wrap">
+              <span className="creator-user-name">
+                {currentUser?.full_name || "Công dân sinh thái"}
+                {selectedGroupObj && (
+                  <span className="group-posting-label">
+                    {" "}▶ 🏢 <strong>{selectedGroupObj.name}</strong>
+                  </span>
+                )}
+              </span>
+              <div className="creator-privacy-badge">
+                {visibility === "PUBLIC" && <span>🌍 Công khai</span>}
+                {visibility === "FRIENDS" && <span>👥 Bạn bè</span>}
+                {visibility === "ONLY_ME" && <span>🔒 Chỉ mình tôi</span>}
+              </div>
+            </div>
           </div>
 
           <div className="textarea-wrapper">
@@ -371,6 +421,46 @@ export const PostCreatorContainer: React.FC<PostCreatorContainerProps> = ({
                 </button>
               </div>
             )}
+
+            {/* Mục 4: Quyền riêng tư (Công khai / Bạn bè / Chỉ mình tôi) */}
+            <div className="privacy-selector-card">
+              <div className="privacy-selector-title">
+                <span className="p-icon">🛡️</span>
+                <span>Quyền riêng tư</span>
+              </div>
+              <div className="visibility-segmented-control">
+                <button
+                  type="button"
+                  className={`visibility-option-btn ${visibility === "PUBLIC" ? "is-selected" : ""}`}
+                  onClick={() => setVisibility("PUBLIC")}
+                  disabled={isSubmitting}
+                  title="Công khai: Mọi người đều có thể nhìn thấy bài viết này"
+                >
+                  <span className="vis-icon">🌍</span>
+                  <span className="vis-text">Công khai</span>
+                </button>
+                <button
+                  type="button"
+                  className={`visibility-option-btn ${visibility === "FRIENDS" ? "is-selected" : ""}`}
+                  onClick={() => setVisibility("FRIENDS")}
+                  disabled={isSubmitting}
+                  title="Bạn bè: Chỉ bạn bè của bạn mới nhìn thấy bài viết"
+                >
+                  <span className="vis-icon">👥</span>
+                  <span className="vis-text">Bạn bè</span>
+                </button>
+                <button
+                  type="button"
+                  className={`visibility-option-btn ${visibility === "ONLY_ME" ? "is-selected" : ""}`}
+                  onClick={() => setVisibility("ONLY_ME")}
+                  disabled={isSubmitting}
+                  title="Chỉ mình tôi: Chỉ một mình bạn mới nhìn thấy bài viết"
+                >
+                  <span className="vis-icon">🔒</span>
+                  <span className="vis-text">Chỉ mình tôi</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -460,7 +550,11 @@ export const PostCreatorContainer: React.FC<PostCreatorContainerProps> = ({
         }}
         onClose={() => {
           setShowSuccessModal(false);
-          if (onNavigateHome) onNavigateHome();
+          if (onViewCreatedPost && createdPost) {
+            onViewCreatedPost(createdPost.post_id);
+          } else if (onNavigateHome) {
+            onNavigateHome();
+          }
         }}
       />
 

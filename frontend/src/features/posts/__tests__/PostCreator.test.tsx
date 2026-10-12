@@ -63,6 +63,7 @@ vi.mock("../services/postService", () => ({
 describe("Feature STT 9: Đăng bài kèm toạ độ, ảnh, video, gắn thẻ bạn bè", () => {
   beforeEach(() => {
     localStorage.setItem("access_token", "fake-token");
+    localStorage.setItem("greenspot_access_token", "fake-token");
   });
 
   // =========================================================================
@@ -194,5 +195,59 @@ describe("Feature STT 9: Đăng bài kèm toạ độ, ảnh, video, gắn thẻ
     const closeBtn = screen.getByRole("button", { name: "Đóng" });
     fireEvent.click(closeBtn);
     expect(onCloseMock).toHaveBeenCalled();
+  });
+
+  // =========================================================================
+  // V. KIỂM THỬ QUYỀN RIÊNG TƯ (CÔNG KHAI / BẠN BÈ / CHỈ MÌNH TÔI)
+  // =========================================================================
+  it("Màn 1: Hiển thị bộ chọn quyền riêng tư và cho phép chuyển đổi Công khai, Bạn bè, Chỉ mình tôi", () => {
+    render(<PostCreatorContainer />);
+
+    expect(screen.getByText("Quyền riêng tư")).toBeInTheDocument();
+    const publicBtn = screen.getByRole("button", { name: /🌍\s*Công khai/i });
+    const friendsBtn = screen.getByRole("button", { name: /👥\s*Bạn bè/i });
+    const onlyMeBtn = screen.getByRole("button", { name: /🔒\s*Chỉ mình tôi/i });
+
+    expect(publicBtn).toBeInTheDocument();
+    expect(friendsBtn).toBeInTheDocument();
+    expect(onlyMeBtn).toBeInTheDocument();
+
+    // Mặc định là Công khai
+    expect(publicBtn).toHaveClass("is-selected");
+
+    // Chuyển sang Bạn bè
+    fireEvent.click(friendsBtn);
+    expect(friendsBtn).toHaveClass("is-selected");
+    expect(publicBtn).not.toHaveClass("is-selected");
+
+    // Chuyển sang Chỉ mình tôi
+    fireEvent.click(onlyMeBtn);
+    expect(onlyMeBtn).toHaveClass("is-selected");
+    expect(friendsBtn).not.toHaveClass("is-selected");
+  });
+
+  it("Màn 1: Khi chọn quyền riêng tư 'Chỉ mình tôi', payload đăng bài gửi lên chứa visibility: ONLY_ME", async () => {
+    const { postService } = await import("../services/postService");
+    render(<PostCreatorContainer />);
+
+    const textarea = screen.getByPlaceholderText(/Chia sẻ trải nghiệm sống xanh/i);
+    fireEvent.change(textarea, { target: { value: "Nhật ký sống xanh cá nhân" } });
+
+    // Chọn Chỉ mình tôi
+    const onlyMeBtn = screen.getByRole("button", { name: /Chỉ mình tôi/i });
+    fireEvent.click(onlyMeBtn);
+
+    // Bấm đăng bài
+    const submitBtn = screen.getByRole("button", { name: /Đăng bài/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(postService.createPost).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: "Nhật ký sống xanh cá nhân",
+          visibility: "ONLY_ME",
+        })
+      );
+    });
   });
 });
