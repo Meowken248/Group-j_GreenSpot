@@ -73,6 +73,34 @@ class TestPenaltyRegulationsDomainTDD(unittest.IsolatedAsyncioTestCase):
         for item in result.items:
             self.assertEqual(item.domain, "Nước thải")
 
+    async def test_search_by_unaccented_keyword_nuoc(self):
+        """Tìm kiếm từ khóa không dấu 'nuoc' trả về kết quả tương đương 'nước'"""
+        params_acc = PenaltySearchParams(query="nước", page=1, limit=10)
+        params_unacc = PenaltySearchParams(query="nuoc", page=1, limit=10)
+        res_acc = await self.service.search_regulations(self.session, params_acc)
+        res_unacc = await self.service.search_regulations(self.session, params_unacc)
+
+        self.assertGreaterEqual(res_unacc.total, 1)
+        self.assertEqual(res_acc.total, res_unacc.total)
+        self.assertEqual([i.title for i in res_acc.items], [i.title for i in res_unacc.items])
+
+    async def test_search_by_unaccented_keyword_vut_tan_thuoc(self):
+        """Tìm kiếm từ khóa không dấu 'vut tan thuoc' trả về đúng điều khoản thuốc lá"""
+        params = PenaltySearchParams(query="vut tan thuoc", page=1, limit=10)
+        result = await self.service.search_regulations(self.session, params)
+
+        self.assertGreaterEqual(result.total, 1)
+        self.assertTrue(any("thuốc lá" in item.title.lower() for item in result.items))
+
+    async def test_search_by_unaccented_keyword_do_rac_via_he(self):
+        """Tìm kiếm từ khóa không dấu 'do rac via he' trả về đúng điều khoản vỉa hè"""
+        params = PenaltySearchParams(query="do rac via he", page=1, limit=10)
+        result = await self.service.search_regulations(self.session, params)
+
+        self.assertGreaterEqual(result.total, 1)
+        self.assertTrue(any("vỉa hè" in item.title.lower() for item in result.items))
+
+
     async def test_search_engine_relevance_ranking_priority_order(self):
         """Kiểm thử thuật toán sắp xếp Search Engine theo độ liên quan (Relevance Ranking):
         🥇 Hạng 1: Từ khóa nằm ngay trong Title

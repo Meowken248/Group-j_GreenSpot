@@ -5,9 +5,21 @@ Xử lý nghiệp vụ tra cứu văn bản pháp luật môi trường, bộ l�
 
 import math
 import uuid
+import unicodedata
+import re
 from typing import Optional, List, Dict, Any
 from sqlalchemy import select, func, or_, and_, case
 from sqlalchemy.ext.asyncio import AsyncSession
+
+
+def remove_vietnamese_accents(text: str) -> str:
+    """Loại bỏ dấu tiếng Việt để phục vụ so khớp tìm kiếm không dấu"""
+    if not text:
+        return ""
+    text = text.replace("đ", "d").replace("Đ", "D")
+    text = unicodedata.normalize("NFD", text)
+    text = re.sub(r"[\u0300-\u036f]", "", text)
+    return unicodedata.normalize("NFC", text).strip()
 
 from app.models.penalty import PenaltyRegulation
 from app.schemas.penalty import (
@@ -59,23 +71,36 @@ class PenaltyRegulationService:
         # 1. Lọc theo từ khóa tìm kiếm (Full text search / Keyword matching)
         if params.query and params.query.strip():
             raw_query = params.query.strip()
-            # So khớp chuỗi nguyên vẹn (Exact phrase match)
-            exact_match = or_(
+            unaccent_query = remove_vietnamese_accents(raw_query)
+
+            # So khớp chuỗi nguyên vẹn (Hỗ trợ cả Tiếng Việt có dấu và không dấu)
+            exact_match_accented = or_(
                 PenaltyRegulation.title.ilike(f"%{raw_query}%"),
                 PenaltyRegulation.description.ilike(f"%{raw_query}%"),
                 PenaltyRegulation.keywords.ilike(f"%{raw_query}%"),
                 PenaltyRegulation.legal_basis.ilike(f"%{raw_query}%"),
             )
+            exact_match_unaccented = or_(
+                func.unaccent(PenaltyRegulation.title).ilike(f"%{unaccent_query}%"),
+                func.unaccent(PenaltyRegulation.description).ilike(f"%{unaccent_query}%"),
+                func.unaccent(PenaltyRegulation.keywords).ilike(f"%{unaccent_query}%"),
+                func.unaccent(PenaltyRegulation.legal_basis).ilike(f"%{unaccent_query}%"),
+            )
+            exact_match = or_(exact_match_accented, exact_match_unaccented)
 
             # Tách từ khóa (Token-based matching trong cùng một trường)
             stop_words = {"và", "hoặc", "là", "bị", "do", "vào", "ra", "cho", "của", "các", "những", "nơi", "ở", "tại"}
             tokens = [t.strip() for t in raw_query.split() if t.strip() and t.strip().lower() not in stop_words]
+            unaccent_tokens = [remove_vietnamese_accents(t) for t in tokens if remove_vietnamese_accents(t)]
 
             if len(tokens) >= 2:
-                in_title = and_(*[PenaltyRegulation.title.ilike(f"%{t}%") for t in tokens])
-                in_desc = and_(*[PenaltyRegulation.description.ilike(f"%{t}%") for t in tokens])
-                in_kw = and_(*[PenaltyRegulation.keywords.ilike(f"%{t}%") for t in tokens])
-                token_match = or_(in_title, in_desc, in_kw)
+                in_title_acc = and_(*[PenaltyRegulation.title.ilike(f"%{t}%") for t in tokens])
+                in_kw_acc = and_(*[PenaltyRegulation.keywords.ilike(f"%{t}%") for t in tokens])
+
+                in_title_unacc = and_(*[func.unaccent(PenaltyRegulation.title).ilike(f"%{t}%") for t in unaccent_tokens])
+                in_kw_unacc = and_(*[func.unaccent(PenaltyRegulation.keywords).ilike(f"%{t}%") for t in unaccent_tokens])
+
+                token_match = or_(in_title_acc, in_kw_acc, in_title_unacc, in_kw_unacc)
                 query_filter = or_(exact_match, token_match)
             else:
                 query_filter = exact_match
@@ -96,16 +121,31 @@ class PenaltyRegulationService:
         total = total_result.scalar_one()
 
         # Sắp xếp theo Độ liên quan Search Engine (Relevance Ranking):
-        # 🥇 Hạng 1: Từ khóa nằm ngay trong Tiêu đề (title)
-        # 🥈 Hạng 2: Từ khóa nằm trong Từ khóa mở rộng (keywords)
-        # 🥉 Hạng 3: Từ khóa nằm trong Mô tả chi tiết (description)
+        # 🥇 Hạng 1: Từ khóa nằm ngay trong Tiêu đề (title) - Có dấu HOẶC Không dấu
+        # 🥈 Hạng 2: Từ khóa nằm trong Từ khóa mở rộng (keywords) - Có dấu HOẶC Không dấu
+        # 🥉 Hạng 3: Từ khóa nằm trong Mô tả chi tiết (description) - Có dấu HOẶC Không dấu
         # Sau đó mới xếp phụ theo bảng chữ cái A-Z
         if params.query and params.query.strip():
             raw_query = params.query.strip()
+            unaccent_query = remove_vietnamese_accents(raw_query)
+
+            title_hit = or_(
+                PenaltyRegulation.title.ilike(f"%{raw_query}%"),
+                func.unaccent(PenaltyRegulation.title).ilike(f"%{unaccent_query}%"),
+            )
+            keywords_hit = or_(
+                PenaltyRegulation.keywords.ilike(f"%{raw_query}%"),
+                func.unaccent(PenaltyRegulation.keywords).ilike(f"%{unaccent_query}%"),
+            )
+            desc_hit = or_(
+                PenaltyRegulation.description.ilike(f"%{raw_query}%"),
+                func.unaccent(PenaltyRegulation.description).ilike(f"%{unaccent_query}%"),
+            )
+
             relevance = case(
-                (PenaltyRegulation.title.ilike(f"%{raw_query}%"), 1),
-                (PenaltyRegulation.keywords.ilike(f"%{raw_query}%"), 2),
-                (PenaltyRegulation.description.ilike(f"%{raw_query}%"), 3),
+                (title_hit, 1),
+                (keywords_hit, 2),
+                (desc_hit, 3),
                 else_=4,
             )
             order_criteria = [relevance.asc(), PenaltyRegulation.title.asc()]
