@@ -16,9 +16,7 @@ import { UserManagementContainer } from "./features/user_management";
 import { ProfileContainer } from "./features/profile";
 import { FriendsContainer } from "./features/friends";
 import { DeduplicationDashboard } from "./features/reports";
-<<<<<<< HEAD
 import { TriageAppDashboard } from "./features/triage";
-=======
 import { PenaltyLookupContainer } from "./features/penalties";
 import { PostCreatorContainer } from "./features/posts";
 
@@ -30,7 +28,6 @@ import {
   subscribeThemeChange,
 } from "./features/settings";
 import type { ThemeMode } from "./features/settings";
->>>>>>> origin/master
 import api from "./api/client";
 import "./App.css";
 
@@ -62,11 +59,21 @@ function App() {
     return undefined;
   });
 
-<<<<<<< HEAD
-  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "friends" | "voice" | "dedup" | "triage">(() => {
-=======
-  const [activeTab, setActiveTab] = useState<"map" | "dashboard" | "auth" | "rbac" | "users" | "profile" | "friends" | "voice" | "dedup" | "settings" | "penalties" | "posts">(() => {
->>>>>>> origin/master
+  const [activeTab, setActiveTab] = useState<
+    | "map"
+    | "dashboard"
+    | "auth"
+    | "rbac"
+    | "users"
+    | "profile"
+    | "friends"
+    | "voice"
+    | "dedup"
+    | "settings"
+    | "penalties"
+    | "posts"
+    | "triage"
+  >(() => {
     const hash = window.location.hash.toLowerCase();
     const path = window.location.pathname.toLowerCase();
     const isLogged = checkIsLoggedIn();
@@ -273,7 +280,6 @@ function App() {
         } else {
           setActiveTab("dedup");
         }
-<<<<<<< HEAD
       } else if (hash === "#triage" || window.location.pathname === "/triage") {
         if (!isLogged) {
           setAuthRedirectUrl("/triage");
@@ -281,7 +287,7 @@ function App() {
           window.location.hash = "#login";
         } else {
           setActiveTab("triage");
-=======
+        }
       } else if (hash === "#penalties") {
         if (!isLogged) {
           setAuthRedirectUrl("/penalties");
@@ -297,7 +303,6 @@ function App() {
           window.location.hash = "#login";
         } else {
           setActiveTab("posts");
->>>>>>> origin/master
         }
       } else if (hash === "#profile") {
         if (!isLogged) {
@@ -687,8 +692,6 @@ function App() {
               </button>
             )}
 
-<<<<<<< HEAD
-=======
             <button
               type="button"
               className={`view-tab-btn ${activeTab === "posts" ? "active" : ""}`}
@@ -715,8 +718,6 @@ function App() {
               <span>Tra cứu xử phạt</span>
             </button>
 
-            
->>>>>>> origin/master
             <button
               type="button"
               className={`view-tab-btn ${activeTab === "voice" ? "active" : ""}`}
@@ -901,12 +902,10 @@ function App() {
             }}
           />
         </div>
-<<<<<<< HEAD
       ) : activeTab === "triage" ? (
         <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#0f172a" }}>
           <TriageAppDashboard />
         </div>
-=======
       ) : activeTab === "settings" ? (
         !currentUser ? (
           <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
@@ -935,7 +934,6 @@ function App() {
             />
           </div>
         )
->>>>>>> origin/master
       ) : activeTab === "dashboard" ? (
         !currentUser ? (
           <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
@@ -962,29 +960,6 @@ function App() {
           </ModulePermissionGuard>
         )
       ) : activeTab === "voice" ? (
-<<<<<<< HEAD
-        <VoiceAssistant
-          onClose={() => {
-            setActiveTab("map");
-            window.location.hash = "#map";
-          }}
-          onNavigateToFeature={(target) => {
-            if (target === "dashboard_aqi") {
-              setActiveTab("dashboard");
-              window.location.hash = "#dashboard";
-            } else if (target === "/report-incident") {
-              setActiveTab("triage");
-              window.location.hash = "#triage";
-            } else if (target === "/wallet") {
-              setActiveTab("profile");
-              window.location.hash = "#profile";
-            } else {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }
-          }}
-        />
-=======
         !currentUser ? (
           <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
             <AuthContainer
@@ -999,12 +974,23 @@ function App() {
         ) : (
           <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
             <VoiceAssistant
-              onClose={() => setActiveTab("map")}
+              onClose={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
               onNavigateToFeature={(target) => {
                 if (target === "dashboard_aqi") {
                   setActiveTab("dashboard");
+                  window.location.hash = "#dashboard";
+                } else if (target === "/report-incident") {
+                  setActiveTab("triage");
+                  window.location.hash = "#triage";
+                } else if (target === "/wallet") {
+                  setActiveTab("profile");
+                  window.location.hash = "#profile";
                 } else {
                   setActiveTab("map");
+                  window.location.hash = "#map";
                 }
               }}
             />
@@ -1070,8 +1056,6 @@ function App() {
             />
           </div>
         )
-
->>>>>>> origin/master
       ) : (
         /* Mặc định an toàn cho khách vãng lai và tab map: Bản đồ số WebGIS công cộng */
         <ModulePermissionGuard
