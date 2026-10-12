@@ -18,6 +18,20 @@ vi.mock('../services/profile.service', () => ({
   },
 }));
 
+vi.mock('../../posts/services/postService', () => ({
+  postService: {
+    getFriends: vi.fn().mockResolvedValue([
+      { user_id: 'friend-1', full_name: 'Bạn A', email: 'a@gmail.com' },
+    ]),
+    getVolunteerGroups: vi.fn().mockResolvedValue([
+      { group_id: 'group-1', name: 'Nhóm Xanh', requires_approval: false },
+    ]),
+    uploadMedia: vi.fn(),
+    createPost: vi.fn(),
+    getPostById: vi.fn(),
+  },
+}));
+
 describe('Feature 13: Sửa, Xoá và Ẩn Bài Viết (SRS pp. 123-127)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -259,6 +273,51 @@ describe('Feature 13: Sửa, Xoá và Ẩn Bài Viết (SRS pp. 123-127)', () =>
 
       expect(screen.getByText('Bạn có thay đổi chưa lưu. Bạn muốn thoát?')).toBeInTheDocument();
       expect(screen.getByText(/Mọi nội dung chỉnh sửa chưa được lưu sẽ bị hủy bỏ/i)).toBeInTheDocument();
+    });
+
+    it('cho phép thêm hashtag nhanh và đổi chế độ hiển thị bài viết', async () => {
+      vi.mocked(profileService.updatePost).mockResolvedValueOnce({
+        ...mockOwnPost,
+        content: mockOwnPost.content + ' #ZeroWaste',
+        visibility: 'FRIENDS',
+        is_edited: true,
+        version: 3,
+      });
+      const handleSuccess = vi.fn();
+
+      render(
+        <EditPostModal
+          isOpen={true}
+          post={mockOwnPost}
+          onClose={vi.fn()}
+          onSuccess={handleSuccess}
+        />
+      );
+
+      // Thêm hashtag nhanh
+      const hashtagBtn = screen.getByRole('button', { name: '#ZeroWaste' });
+      fireEvent.click(hashtagBtn);
+      expect(screen.getByDisplayValue(new RegExp('#ZeroWaste'))).toBeInTheDocument();
+
+      // Đổi chế độ hiển thị sang Bạn bè
+      const friendsVisibilityBtn = screen.getByRole('button', { name: /^👥\s*Bạn bè$/i });
+      fireEvent.click(friendsVisibilityBtn);
+
+      // Nhấn Cập nhật
+      const submitBtn = screen.getByRole('button', { name: 'Cập nhật' });
+      expect(submitBtn).not.toBeDisabled();
+      fireEvent.click(submitBtn);
+
+      await waitFor(() => {
+        expect(profileService.updatePost).toHaveBeenCalledWith(
+          mockOwnPost.post_id,
+          expect.objectContaining({
+            visibility: 'FRIENDS',
+            version: mockOwnPost.version,
+          })
+        );
+        expect(handleSuccess).toHaveBeenCalledTimes(1);
+      });
     });
 
     it('DiscardEditConfirmModal hoạt động độc lập chính xác', () => {

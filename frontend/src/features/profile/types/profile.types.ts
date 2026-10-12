@@ -50,6 +50,9 @@ export interface PostItem {
   created_at: string;
   updated_at?: string;
   relative_time?: string;
+  visibility?: string;
+  group_id?: string | null;
+  tagged_friends?: Array<{ user_id: string; full_name: string; avatar_url?: string | null; email?: string }>;
 }
 
 export type PostItemResponse = PostItem;
@@ -60,6 +63,10 @@ export interface UpdatePostPayload {
   latitude?: number | null;
   longitude?: number | null;
   address?: string | null;
+  clear_location?: boolean;
+  tagged_friend_ids?: string[];
+  group_id?: string | null;
+  visibility?: string;
   version: number;
 }
 

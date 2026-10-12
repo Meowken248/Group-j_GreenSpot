@@ -27,7 +27,7 @@ export const DiscardEditConfirmModal: React.FC<DiscardEditConfirmModalProps> = (
 
   return (
     <div
-      className="modal-backdrop-overlay"
+      className="modal-backdrop-overlay discard-confirm-overlay"
       onClick={onStay}
       role="dialog"
       aria-modal="true"
