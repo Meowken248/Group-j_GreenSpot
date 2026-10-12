@@ -59,6 +59,21 @@
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);
 }
 
+.view-tab-btn.btn-social-feed-nav {
+  color: #059669;
+  font-weight: 700;
+}
+
+.view-tab-btn.btn-social-feed-nav:hover {
+  color: #10b981;
+}
+
+.view-tab-btn.btn-social-feed-nav.active {
+  background: #059669;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+
 .view-tab-btn.btn-report-nav {
   color: #10b981;
   font-weight: 700;

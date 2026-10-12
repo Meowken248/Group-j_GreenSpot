@@ -534,6 +534,21 @@ function App() {
                   className="dropdown-menu-action"
                   onClick={() => {
                     setUserDropdownOpen(false);
+                    setActiveTab("posts");
+                    window.location.hash = "#posts";
+                  }}
+                >
+                  <span className="action-icon">🌐</span>
+                  <span>Bảng tin Mạng xã hội (Trang tổng)</span>
+                </button>
+
+                <div className="dropdown-separator" />
+
+                <button
+                  type="button"
+                  className="dropdown-menu-action"
+                  onClick={() => {
+                    setUserDropdownOpen(false);
                     setActiveTab("penalties");
                     window.location.hash = "#penalties";
                   }}
@@ -699,96 +714,7 @@ function App() {
 
         {currentUser ? (
           <>
-            {hasUserMgmtAccess && (
-              <button
-                type="button"
-                className={`view-tab-btn ${activeTab === "users" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveTab("users");
-                  window.location.hash = "#users";
-                }}
-                title="Quản lý người dùng & Cấp tài khoản"
-              >
-                <span>👥</span>
-                <span>Quản lý người dùng</span>
-              </button>
-            )}
-
-            {hasRbacAccess && (
-              <button
-                type="button"
-                className={`view-tab-btn ${activeTab === "rbac" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveTab("rbac");
-                  window.location.hash = "#rbac";
-                }}
-                title="Quản lý phân quyền vai trò RBAC & Ma trận quyền"
-              >
-                <span>🛡️</span>
-                <span>Phân quyền vai trò</span>
-              </button>
-            )}
-
-            {currentUser?.role === "ADMIN" && (
-              <button
-                type="button"
-                className={`view-tab-btn btn-waste-cat-nav ${activeTab === "waste_categories" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveTab("waste_categories");
-                  window.location.hash = "#waste-categories";
-                }}
-                title="Quản trị Danh mục Rác thải Đô thị & Cấu hình Quy chuẩn SLA"
-              >
-                <span>🗑️</span>
-                <span>Danh mục rác & SLA</span>
-              </button>
-            )}
-
-            {currentUser?.role === "ADMIN" && (
-              <button
-                type="button"
-                className={`view-tab-btn btn-recycling-facilities-nav ${activeTab === "recycling_facilities" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveTab("recycling_facilities");
-                  window.location.hash = "#recycling-facilities";
-                }}
-                title="Quản trị Mạng lưới Trạm Tái chế & Điểm Tiếp nhận"
-              >
-                <span>♻️</span>
-                <span>Trạm tái chế</span>
-              </button>
-            )}
-
-            {hasIncidentMgmtAccess && (
-              <button
-                type="button"
-                className={`view-tab-btn btn-incidents-nav ${activeTab === "incidents" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveTab("incidents");
-                  window.location.hash = "#incidents";
-                }}
-                title="Quản lý & Duyệt phản ánh sự cố môi trường"
-              >
-                <span>📋</span>
-                <span>Quản lý sự cố</span>
-              </button>
-            )}
-
-            {hasDedupAccess && (
-              <button
-                type="button"
-                className={`view-tab-btn ${activeTab === "dedup" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveTab("dedup");
-                  window.location.hash = "#dedup";
-                }}
-                title="Bảng điều khiển AI gom cụm báo cáo trùng lặp"
-              >
-                <span>📑</span>
-                <span>Báo cáo trùng (AI)</span>
-              </button>
-            )}
-
+            {/* 1. KHỐI TÍNH NĂNG CỐT LÕI & CỘNG ĐỒNG SỐNG XANH */}
             {hasMapAccess && (
               <button
                 type="button"
@@ -804,6 +730,19 @@ function App() {
               </button>
             )}
 
+            <button
+              type="button"
+              className={`view-tab-btn btn-social-feed-nav ${activeTab === "posts" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("posts");
+                window.location.hash = "#posts";
+              }}
+              title="Trang chủ Bảng tin Mạng xã hội Geo-Feed (STT 08)"
+            >
+              <span>🌐</span>
+              <span>Bảng tin Mạng xã hội</span>
+            </button>
+
             {hasAqiAccess && (
               <button
                 type="button"
@@ -818,45 +757,6 @@ function App() {
                 <span>Phân tích AQI & Khí hậu</span>
               </button>
             )}
-
-            <button
-              type="button"
-              className={`view-tab-btn ${activeTab === "posts" ? "active" : ""}`}
-              onClick={() => {
-                setActiveTab("posts");
-                window.location.hash = "#posts";
-              }}
-              title="Bảng tin Geo-Feed cộng đồng & Mạng xã hội sống xanh (STT 08)"
-            >
-              <span>📰</span>
-              <span>Bảng tin</span>
-            </button>
-
-            <button
-              type="button"
-              className={`view-tab-btn ${activeTab === "penalties" ? "active" : ""}`}
-              onClick={() => {
-                setActiveTab("penalties");
-                window.location.hash = "#penalties";
-              }}
-              title="Tra cứu quy định xử phạt vi phạm hành chính (Nghị định 45/2022/NĐ-CP)"
-            >
-              <span>⚖️</span>
-              <span>Tra cứu xử phạt</span>
-            </button>
-
-            <button
-              type="button"
-              className={`view-tab-btn ${activeTab === "voice" ? "active" : ""}`}
-              onClick={() => {
-                setActiveTab("voice");
-                window.location.hash = "#voice";
-              }}
-              title="Trợ lý giọng nói rảnh tay (Hands-free Voice Assistant)"
-            >
-              <span>🎙️</span>
-              <span>Trợ lý Giọng nói</span>
-            </button>
 
             <button
               type="button"
@@ -899,6 +799,123 @@ function App() {
 
             <button
               type="button"
+              className={`view-tab-btn ${activeTab === "penalties" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("penalties");
+                window.location.hash = "#penalties";
+              }}
+              title="Tra cứu quy định xử phạt vi phạm hành chính (Nghị định 45/2022/NĐ-CP)"
+            >
+              <span>⚖️</span>
+              <span>Tra cứu xử phạt</span>
+            </button>
+
+            <button
+              type="button"
+              className={`view-tab-btn ${activeTab === "voice" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("voice");
+                window.location.hash = "#voice";
+              }}
+              title="Trợ lý giọng nói rảnh tay (Hands-free Voice Assistant)"
+            >
+              <span>🎙️</span>
+              <span>Trợ lý Giọng nói</span>
+            </button>
+
+            {/* 2. KHỐI QUẢN TRỊ NGHIỆP VỤ & HỆ THỐNG */}
+            {hasIncidentMgmtAccess && (
+              <button
+                type="button"
+                className={`view-tab-btn btn-incidents-nav ${activeTab === "incidents" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("incidents");
+                  window.location.hash = "#incidents";
+                }}
+                title="Quản lý & Duyệt phản ánh sự cố môi trường"
+              >
+                <span>📋</span>
+                <span>Quản lý sự cố</span>
+              </button>
+            )}
+
+            {hasDedupAccess && (
+              <button
+                type="button"
+                className={`view-tab-btn ${activeTab === "dedup" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("dedup");
+                  window.location.hash = "#dedup";
+                }}
+                title="Bảng điều khiển AI gom cụm báo cáo trùng lặp"
+              >
+                <span>📑</span>
+                <span>Báo cáo trùng (AI)</span>
+              </button>
+            )}
+
+            {currentUser?.role === "ADMIN" && (
+              <button
+                type="button"
+                className={`view-tab-btn btn-recycling-facilities-nav ${activeTab === "recycling_facilities" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("recycling_facilities");
+                  window.location.hash = "#recycling-facilities";
+                }}
+                title="Quản trị Mạng lưới Trạm Tái chế & Điểm Tiếp nhận"
+              >
+                <span>♻️</span>
+                <span>Trạm tái chế</span>
+              </button>
+            )}
+
+            {currentUser?.role === "ADMIN" && (
+              <button
+                type="button"
+                className={`view-tab-btn btn-waste-cat-nav ${activeTab === "waste_categories" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("waste_categories");
+                  window.location.hash = "#waste-categories";
+                }}
+                title="Quản trị Danh mục Rác thải Đô thị & Cấu hình Quy chuẩn SLA"
+              >
+                <span>🗑️</span>
+                <span>Danh mục rác & SLA</span>
+              </button>
+            )}
+
+            {hasUserMgmtAccess && (
+              <button
+                type="button"
+                className={`view-tab-btn ${activeTab === "users" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("users");
+                  window.location.hash = "#users";
+                }}
+                title="Quản lý người dùng & Cấp tài khoản"
+              >
+                <span>👥</span>
+                <span>Quản lý người dùng</span>
+              </button>
+            )}
+
+            {hasRbacAccess && (
+              <button
+                type="button"
+                className={`view-tab-btn ${activeTab === "rbac" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("rbac");
+                  window.location.hash = "#rbac";
+                }}
+                title="Quản lý phân quyền vai trò RBAC & Ma trận quyền"
+              >
+                <span>🛡️</span>
+                <span>Phân quyền vai trò</span>
+              </button>
+            )}
+
+            <button
+              type="button"
               className={`view-tab-btn ${activeTab === "settings" ? "active" : ""}`}
               onClick={() => {
                 setActiveTab("settings");
@@ -912,6 +929,42 @@ function App() {
           </>
         ) : (
           <>
+            <button
+              type="button"
+              className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              title="Bản đồ không gian xanh, ngập lụt & trạm IoT"
+            >
+              <span>🗺️</span>
+              <span>Bản đồ WebGIS</span>
+            </button>
+            <button
+              type="button"
+              className={`view-tab-btn btn-social-feed-nav ${activeTab === "posts" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("posts");
+                window.location.hash = "#posts";
+              }}
+              title="Trang chủ Bảng tin Mạng xã hội Geo-Feed (STT 08)"
+            >
+              <span>🌐</span>
+              <span>Bảng tin Mạng xã hội</span>
+            </button>
+            <button
+              type="button"
+              className={`view-tab-btn ${activeTab === "dashboard" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("dashboard");
+                window.location.hash = "#dashboard";
+              }}
+              title="Bảng điều khiển phân tích chất lượng không khí & khí tượng toàn quốc"
+            >
+              <span>📊</span>
+              <span>Phân tích AQI & Khí hậu</span>
+            </button>
             <button
               type="button"
               className={`view-tab-btn btn-report-nav ${activeTab === "report" ? "active" : ""}`}
@@ -932,30 +985,6 @@ function App() {
             </button>
             <button
               type="button"
-              className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
-              onClick={() => {
-                setActiveTab("map");
-                window.location.hash = "#map";
-              }}
-              title="Bản đồ không gian xanh, ngập lụt & trạm IoT"
-            >
-              <span>🗺️</span>
-              <span>Bản đồ WebGIS</span>
-            </button>
-            <button
-              type="button"
-              className={`view-tab-btn ${activeTab === "dashboard" ? "active" : ""}`}
-              onClick={() => {
-                setActiveTab("dashboard");
-                window.location.hash = "#dashboard";
-              }}
-              title="Bảng điều khiển phân tích chất lượng không khí & khí tượng toàn quốc"
-            >
-              <span>📊</span>
-              <span>Phân tích AQI & Khí hậu</span>
-            </button>
-            <button
-              type="button"
               className={`view-tab-btn ${activeTab === "voice" ? "active" : ""}`}
               onClick={() => {
                 setActiveTab("voice");
@@ -965,18 +994,6 @@ function App() {
             >
               <span>🎙️</span>
               <span>Trợ lý Giọng nói</span>
-            </button>
-            <button
-              type="button"
-              className={`view-tab-btn ${activeTab === "posts" ? "active" : ""}`}
-              onClick={() => {
-                setActiveTab("posts");
-                window.location.hash = "#posts";
-              }}
-              title="Bảng tin Geo-Feed cộng đồng & Mạng xã hội sống xanh (STT 08)"
-            >
-              <span>📰</span>
-              <span>Bảng tin</span>
             </button>
           </>
         )}
