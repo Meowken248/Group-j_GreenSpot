@@ -85,12 +85,23 @@ class UpdatePostRequest(BaseModel):
     latitude: Optional[float] = Field(default=None, description="Vĩ độ GPS mới")
     longitude: Optional[float] = Field(default=None, description="Kinh độ GPS mới")
     address: Optional[str] = Field(default=None, max_length=500, description="Địa chỉ mới")
+    clear_location: Optional[bool] = Field(default=False, description="Xoá thông tin vị trí đã gắn")
+    tagged_friend_ids: Optional[List[uuid.UUID]] = Field(default=None, description="Danh sách bạn bè gắn thẻ mới")
+    group_id: Optional[uuid.UUID] = Field(default=None, description="ID nhóm tình nguyện")
+    visibility: Optional[str] = Field(default=None, description="Chế độ hiển thị: PUBLIC, FRIENDS, ONLY_ME")
     version: int = Field(..., description="Phiên bản OCC hiện tại của bài viết")
 
     @model_validator(mode="after")
     def validate_update(self) -> "UpdatePostRequest":
         if self.content is not None and len(self.content) > 2000:
             raise ValueError("Nội dung bài viết tối đa 2000 ký tự")
+        if self.tagged_friend_ids is not None:
+            unique_friend_ids = list(dict.fromkeys(self.tagged_friend_ids))
+            if len(unique_friend_ids) > 10:
+                raise ValueError("Chỉ được gắn thẻ tối đa 10 bạn bè")
+            self.tagged_friend_ids = unique_friend_ids
+        if self.visibility is not None and self.visibility not in ("PUBLIC", "FRIENDS", "ONLY_ME"):
+            raise ValueError("Chế độ hiển thị không hợp lệ")
         return self
 
 

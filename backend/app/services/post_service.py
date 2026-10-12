@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional, List, Tuple
 from fastapi import HTTPException, UploadFile, status
-from sqlalchemy import select, update, and_, func
+from sqlalchemy import select, update, delete, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -165,12 +165,38 @@ class PostService:
             post.content = request.content
         if request.media_urls is not None:
             post.media_urls = json.dumps([m.model_dump() for m in request.media_urls])
-        if request.latitude is not None:
-            post.latitude = request.latitude
-        if request.longitude is not None:
-            post.longitude = request.longitude
-        if request.address is not None:
-            post.address = request.address
+        
+        # Cập nhật hoặc gỡ bỏ vị trí
+        if request.clear_location:
+            post.latitude = None
+            post.longitude = None
+            post.address = None
+        else:
+            if request.latitude is not None:
+                post.latitude = request.latitude
+            if request.longitude is not None:
+                post.longitude = request.longitude
+            if request.address is not None:
+                post.address = request.address
+
+        if request.group_id is not None:
+            post.group_id = request.group_id
+        if request.visibility is not None:
+            post.visibility = request.visibility
+
+        # Cập nhật danh sách bạn bè được gắn thẻ nếu có gửi lên
+        if request.tagged_friend_ids is not None:
+            await db.execute(
+                delete(PostTaggedFriend).where(PostTaggedFriend.post_id == post.post_id)
+            )
+            for friend_id in request.tagged_friend_ids:
+                tag = PostTaggedFriend(
+                    tag_id=uuid.uuid4(),
+                    post_id=post.post_id,
+                    friend_user_id=friend_id,
+                    deleted_at=None,
+                )
+                db.add(tag)
 
         post.updated_at = datetime.now(timezone.utc)
         post.version += 1

@@ -134,6 +134,59 @@ class TestFeature13PostManagement(unittest.IsolatedAsyncioTestCase):
         formatted = self.service.format_post_response(updated)
         self.assertTrue(formatted.is_edited or (updated.updated_at != updated.created_at))
 
+    async def test_update_post_full_fields(self):
+        """Kiểm thử sửa bài với đầy đủ các trường: vị trí, gắn thẻ bạn bè, chế độ hiển thị"""
+        old_version = self.test_post.version
+        update_req = UpdatePostRequest(
+            content="Cập nhật toàn diện bài viết kèm toạ độ và bạn bè",
+            latitude=10.7769,
+            longitude=106.7009,
+            address="Đường Lê Lợi, Bến Nghé, Quận 1, TP.HCM",
+            tagged_friend_ids=[self.stranger_id],
+            visibility="FRIENDS",
+            version=old_version,
+        )
+        updated = await self.service.update_post(
+            db=self.session,
+            post_id=self.test_post.post_id,
+            user_id=self.author_id,
+            request=update_req,
+        )
+        self.assertEqual(updated.latitude, 10.7769)
+        self.assertEqual(updated.address, "Đường Lê Lợi, Bến Nghé, Quận 1, TP.HCM")
+        self.assertEqual(updated.visibility, "FRIENDS")
+        self.assertEqual(len(updated.tagged_friends), 1)
+        self.assertEqual(updated.tagged_friends[0].friend_user_id, self.stranger_id)
+
+    async def test_update_post_clear_location(self):
+        """Kiểm thử gỡ bỏ vị trí khi cập nhật bài viết"""
+        old_version = self.test_post.version
+        # Bước 1: Gắn vị trí trước
+        await self.service.update_post(
+            db=self.session,
+            post_id=self.test_post.post_id,
+            user_id=self.author_id,
+            request=UpdatePostRequest(
+                latitude=10.8231,
+                longitude=106.6297,
+                address="Hẻm 85 Võ Văn Ngân, Thủ Đức",
+                version=old_version,
+            ),
+        )
+        # Bước 2: Gỡ vị trí
+        cleared = await self.service.update_post(
+            db=self.session,
+            post_id=self.test_post.post_id,
+            user_id=self.author_id,
+            request=UpdatePostRequest(
+                clear_location=True,
+                version=old_version + 1,
+            ),
+        )
+        self.assertIsNone(cleared.latitude)
+        self.assertIsNone(cleared.longitude)
+        self.assertIsNone(cleared.address)
+
     def test_update_post_exceeds_2000_chars(self):
         """Nội dung bài viết vượt quá 2.000 ký tự phải bị chặn bởi Schema validation"""
         too_long = "A" * 2001
