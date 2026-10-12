@@ -50,7 +50,7 @@ export function loadGoogleMaps(): Promise<typeof google.maps> {
 
   // Nếu đã nạp thành công trước đó, trả về ngay lập tức (0ms)
   if (isGoogleMapsLoaded()) {
-    return Promise.resolve(window.google.maps);
+    return Promise.resolve(window.google!.maps);
   }
 
   // Nếu đang có tiến trình nạp dở, chia sẻ chung Promise (idempotent)

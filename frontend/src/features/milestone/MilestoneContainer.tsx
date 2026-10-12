@@ -11,7 +11,6 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { milestoneApi } from "./milestoneApi";
 import type {
   MilestoneProgressionResponse,
-  TierDetailItem,
   MilestonePostItem,
   CreateMilestonePostRequest,
 } from "./types";
@@ -540,9 +539,16 @@ export function MilestoneContainer({ onBackToHome, onNavigateLogin, onNavigateFe
       ) : error ? (
         <div className="ms-error-block">
           <p>{error}</p>
-          <button className="ms-retry-btn" onClick={fetchProgression}>
-            🔄 Thử lại
-          </button>
+          <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
+            <button className="ms-retry-btn" onClick={fetchProgression}>
+              🔄 Thử lại
+            </button>
+            {onNavigateLogin && (
+              <button className="ms-retry-btn" onClick={onNavigateLogin}>
+                🔐 Đăng nhập
+              </button>
+            )}
+          </div>
         </div>
       ) : progression ? (
         <>

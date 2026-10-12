@@ -1,5 +1,3 @@
-/* Ambient declarations for Google Maps JavaScript API */
-
 declare namespace google {
   export namespace maps {
     export interface MapTypeStyle {
@@ -15,6 +13,11 @@ declare namespace google {
   }
 }
 
+declare const google: {
+  maps: any;
+};
+
 declare interface Window {
   google?: typeof google;
 }
+
