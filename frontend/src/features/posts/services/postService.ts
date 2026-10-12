@@ -46,8 +46,8 @@ export const postService = {
    */
   async getFriends(): Promise<FriendOption[]> {
     try {
-      const response = await api.get("/api/v1/friends");
-      const friendsData = response.data?.friends || response.data || [];
+      const response = await api.get("/api/v1/friends/list");
+      const friendsData = Array.isArray(response.data) ? response.data : response.data?.friends || [];
       return friendsData.map((f: any) => ({
         user_id: f.user_id || f.id,
         full_name: f.full_name || f.name || "Bạn bè",
@@ -55,27 +55,7 @@ export const postService = {
         email: f.email || "",
       }));
     } catch {
-      // Fallback danh sách bạn bè mẫu nếu chưa có dữ liệu kết bạn
-      return [
-        {
-          user_id: "66666666-0001-0000-0000-000000000001",
-          full_name: "Nguyễn Văn An",
-          avatar_url: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
-          email: "req_an@ecoreport.gov.vn",
-        },
-        {
-          user_id: "66666666-0002-0000-0000-000000000002",
-          full_name: "Trần Thị Mai",
-          avatar_url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
-          email: "req_mai@ecoreport.gov.vn",
-        },
-        {
-          user_id: "66666666-0003-0000-0000-000000000003",
-          full_name: "Lê Hoàng Phúc",
-          avatar_url: null,
-          email: "req_phuc@ecoreport.gov.vn",
-        },
-      ];
+      return [];
     }
   },
 

@@ -140,7 +140,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
         mapInstanceRef.current = null;
       }
     };
-  }, [isOpen, initialLocation]);
+  }, [isOpen]);
 
   // 3. Xử lý nút "Dùng vị trí hiện tại" (GPS chuẩn xác cao)
   const handleUseCurrentLocation = () => {
