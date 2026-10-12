@@ -13,9 +13,13 @@ from datetime import datetime, timezone, date
 from sqlalchemy import select
 
 from app.database import AsyncSessionLocal, engine
-from app.models.penalty import PenaltyRegulation
+from app.models.penalty import PenaltyRegulation, PenaltyReport
 from app.services.penalty_service import PenaltyRegulationService
-from app.schemas.penalty import PenaltySearchParams
+from app.schemas.penalty import (
+    PenaltySearchParams,
+    CreatePenaltyReportRequest,
+    UpdatePenaltyReportStatusRequest,
+)
 
 
 class TestPenaltyRegulationsDomainTDD(unittest.IsolatedAsyncioTestCase):
@@ -347,6 +351,103 @@ class TestPenaltyRegulationsDomainTDD(unittest.IsolatedAsyncioTestCase):
         await self.session.delete(test_deleted)
         await self.session.commit()
 
+    # =========================================================================
+    # V. KIỂM THỬ QUẢN LÝ PHẢN ÁNH VI PHẠM (PENALTY REPORTS DOMAIN)
+    # =========================================================================
+
+    async def test_create_penalty_report_flow(self):
+        """Kiểm thử gửi phản ánh vi phạm môi trường: sinh mã INC-, status PENDING, OCC version=1"""
+        req = CreatePenaltyReportRequest(
+            violation_title="Xả nước thải chưa qua xử lý",
+            legal_basis="Điều 18 Nghị định 45/2022/NĐ-CP",
+            fine_range="10.000.000đ - 30.000.000đ",
+            address_text="123 Đường Nam Kỳ Khởi Nghĩa, Phường Bến Nghé, Quận 1",
+            description="Cơ sở xả nước thải bọt trắng đục trực tiếp ra cống đô thị",
+            is_anonymous=True,
+        )
+        report = await self.service.create_penalty_report(self.session, req)
+
+        self.assertIsNotNone(report.id)
+        self.assertTrue(report.tracking_code.startswith("INC-"))
+        self.assertEqual(report.status, "PENDING")
+        self.assertTrue(report.is_anonymous)
+        self.assertEqual(report.reporter_name, "Ẩn danh")
+
+        # Cleanup
+        stmt = select(PenaltyReport).where(PenaltyReport.id == report.id)
+        db_rep = (await self.session.execute(stmt)).scalar_one_or_none()
+        if db_rep:
+            await self.session.delete(db_rep)
+            await self.session.commit()
+
+    async def test_get_penalty_reports_and_filters(self):
+        """Kiểm thử danh sách phản ánh vi phạm: phân trang và lọc theo trạng thái, từ khóa"""
+        # Lấy danh sách tất cả
+        res_all = await self.service.get_penalty_reports(self.session, page=1, limit=10)
+        self.assertGreaterEqual(res_all.total, 1)
+
+        # Lọc trạng thái PENDING
+        res_pending = await self.service.get_penalty_reports(
+            self.session, status_filter="PENDING", page=1, limit=10
+        )
+        for item in res_pending.items:
+            self.assertEqual(item.status, "PENDING")
+
+        # Tìm kiếm theo địa chỉ
+        res_search = await self.service.get_penalty_reports(
+            self.session, query="Nguyễn Huệ", page=1, limit=10
+        )
+        self.assertGreaterEqual(res_search.total, 1)
+        self.assertTrue(any("Nguyễn Huệ" in item.address_text for item in res_search.items))
+
+    async def test_penalty_report_stats(self):
+        """Kiểm thử thống kê tổng hợp số lượng phản ánh vi phạm theo các trạng thái"""
+        stats = await self.service.get_penalty_report_stats(self.session)
+        self.assertGreaterEqual(stats.total, 1)
+        self.assertGreaterEqual(stats.pending, 0)
+        self.assertGreaterEqual(stats.verified, 0)
+        self.assertGreaterEqual(stats.resolved, 0)
+        self.assertEqual(
+            stats.total,
+            stats.pending + stats.verified + stats.resolved + stats.rejected,
+        )
+
+    async def test_update_penalty_report_status_and_version(self):
+        """Kiểm thử cán bộ cập nhật trạng thái phản ánh vi phạm: status chuyển VERIFIED, OCC version tăng"""
+        # Tạo bản ghi test
+        req = CreatePenaltyReportRequest(
+            violation_title="Vứt rác sinh hoạt",
+            legal_basis="Điều 25",
+            fine_range="1tr - 2tr",
+            address_text="Vỉa hè Quận 1",
+            description="Mô tả vi phạm test update",
+            is_anonymous=False,
+        )
+        rep = await self.service.create_penalty_report(
+            self.session, req, reporter_name="Cán bộ Test"
+        )
+
+        # Cập nhật thành VERIFIED
+        update_req = UpdatePenaltyReportStatusRequest(
+            status="VERIFIED",
+            officer_note="Đã xác minh đúng hành vi vi phạm tại hiện trường",
+        )
+        updated = await self.service.update_penalty_report_status(
+            self.session, rep.id, update_req
+        )
+
+        self.assertIsNotNone(updated)
+        self.assertEqual(updated.status, "VERIFIED")
+        self.assertEqual(updated.officer_note, "Đã xác minh đúng hành vi vi phạm tại hiện trường")
+
+        # Cleanup
+        stmt = select(PenaltyReport).where(PenaltyReport.id == rep.id)
+        db_rep = (await self.session.execute(stmt)).scalar_one_or_none()
+        if db_rep:
+            await self.session.delete(db_rep)
+            await self.session.commit()
+
 
 if __name__ == "__main__":
     unittest.main()
+

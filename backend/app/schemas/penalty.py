@@ -3,7 +3,7 @@ Pydantic Schemas for Penalty Regulations Domain (Chức năng 11: Tra cứu quy 
 """
 
 import uuid
-from datetime import date
+from datetime import date, datetime
 from typing import Optional, List, Literal
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -83,3 +83,61 @@ class QuickCategoryStat(BaseModel):
     count: int
     icon: str
     description: str
+
+
+class CreatePenaltyReportRequest(BaseModel):
+    """Yêu cầu gửi phản ánh vi phạm môi trường từ công dân"""
+    penalty_id: Optional[uuid.UUID] = Field(default=None, description="ID điều luật liên quan")
+    violation_title: str = Field(..., description="Tên hành vi vi phạm")
+    legal_basis: str = Field(..., description="Căn cứ pháp lý theo Nghị định")
+    fine_range: str = Field(..., description="Khung tiền phạt quy định")
+    address_text: str = Field(..., min_length=3, description="Địa điểm xảy ra vi phạm")
+    description: str = Field(..., min_length=5, description="Mô tả chi tiết vi phạm")
+    is_anonymous: bool = Field(default=False, description="Gửi ẩn danh hay bằng tài khoản")
+
+
+class UpdatePenaltyReportStatusRequest(BaseModel):
+    """Yêu cầu cán bộ/admin cập nhật trạng thái phản ánh"""
+    status: Literal["PENDING", "VERIFIED", "RESOLVED", "REJECTED"] = Field(..., description="Trạng thái mới")
+    officer_note: Optional[str] = Field(default=None, description="Ghi chú / lý do của cán bộ")
+
+
+class PenaltyReportItem(BaseModel):
+    """Thông tin chi tiết một phản ánh vi phạm môi trường"""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    tracking_code: str
+    penalty_id: Optional[uuid.UUID] = None
+    violation_title: str
+    legal_basis: str
+    fine_range: str
+    address_text: str
+    description: str
+    is_anonymous: bool
+    reporter_id: Optional[uuid.UUID] = None
+    reporter_name: Optional[str] = None
+    status: str
+    officer_note: Optional[str] = None
+    resolved_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class PenaltyReportListResponse(BaseModel):
+    """Danh sách phản ánh vi phạm môi trường kèm phân trang"""
+    items: List[PenaltyReportItem]
+    total: int
+    page: int
+    limit: int
+    total_pages: int
+
+
+class PenaltyReportStatsResponse(BaseModel):
+    """Thống kê số lượng phản ánh vi phạm theo từng trạng thái"""
+    total: int
+    pending: int
+    verified: int
+    resolved: int
+    rejected: int
+

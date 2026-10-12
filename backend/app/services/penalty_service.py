@@ -21,13 +21,22 @@ def remove_vietnamese_accents(text: str) -> str:
     text = re.sub(r"[\u0300-\u036f]", "", text)
     return unicodedata.normalize("NFC", text).strip()
 
-from app.models.penalty import PenaltyRegulation
+import random
+import string
+from datetime import datetime, timezone
+
+from app.models.penalty import PenaltyRegulation, PenaltyReport
 from app.schemas.penalty import (
     PenaltySearchParams,
     PenaltySummaryItem,
     PenaltySearchResponse,
     PenaltyDetailResponse,
     QuickCategoryStat,
+    CreatePenaltyReportRequest,
+    UpdatePenaltyReportStatusRequest,
+    PenaltyReportItem,
+    PenaltyReportListResponse,
+    PenaltyReportStatsResponse,
 )
 
 # Cấu hình 5 Lĩnh vực chuyên đề pháp luật Môi trường Màn 1 với icon và mô tả
@@ -289,3 +298,155 @@ class PenaltyRegulationService:
         )
         rows = (await session.execute(stmt)).all()
         return {r[0]: int(r[1]) for r in rows}
+
+    async def create_penalty_report(
+        self,
+        session: AsyncSession,
+        data: CreatePenaltyReportRequest,
+        reporter_id: Optional[uuid.UUID] = None,
+        reporter_name: Optional[str] = None,
+    ) -> PenaltyReportItem:
+        """
+        Tạo mới hồ sơ phản ánh vi phạm môi trường từ công dân
+        """
+        date_str = datetime.now(timezone.utc).strftime("%Y%m%d")
+        random_suffix = "".join(random.choices(string.ascii_uppercase + string.digits, k=5))
+        tracking_code = f"INC-{date_str}-{random_suffix}"
+
+        is_anon = data.is_anonymous or (reporter_id is None)
+        saved_reporter_id = None if is_anon else reporter_id
+        saved_reporter_name = "Ẩn danh" if is_anon else (reporter_name or "Công dân")
+
+        report = PenaltyReport(
+            tracking_code=tracking_code,
+            penalty_id=data.penalty_id,
+            violation_title=data.violation_title,
+            legal_basis=data.legal_basis,
+            fine_range=data.fine_range,
+            address_text=data.address_text,
+            description=data.description,
+            is_anonymous=is_anon,
+            reporter_id=saved_reporter_id,
+            reporter_name=saved_reporter_name,
+            status="PENDING",
+            version=1,
+        )
+        session.add(report)
+        await session.commit()
+        await session.refresh(report)
+
+        return PenaltyReportItem.model_validate(report)
+
+    async def get_penalty_reports(
+        self,
+        session: AsyncSession,
+        status_filter: Optional[str] = None,
+        query: Optional[str] = None,
+        is_anonymous: Optional[bool] = None,
+        page: int = 1,
+        limit: int = 10,
+    ) -> PenaltyReportListResponse:
+        """
+        Lấy danh sách phản ánh vi phạm môi trường có phân trang và bộ lọc (Dành cho Admin / Cán bộ)
+        """
+        conditions = [PenaltyReport.deleted_at.is_(None)]
+
+        if status_filter and status_filter.upper() != "ALL":
+            conditions.append(PenaltyReport.status == status_filter.upper())
+
+        if is_anonymous is not None:
+            conditions.append(PenaltyReport.is_anonymous == is_anonymous)
+
+        if query and query.strip():
+            raw_q = query.strip()
+            conditions.append(
+                or_(
+                    PenaltyReport.tracking_code.ilike(f"%{raw_q}%"),
+                    PenaltyReport.violation_title.ilike(f"%{raw_q}%"),
+                    PenaltyReport.address_text.ilike(f"%{raw_q}%"),
+                    PenaltyReport.legal_basis.ilike(f"%{raw_q}%"),
+                    PenaltyReport.reporter_name.ilike(f"%{raw_q}%"),
+                )
+            )
+
+        count_stmt = select(func.count(PenaltyReport.id)).where(and_(*conditions))
+        total = (await session.execute(count_stmt)).scalar() or 0
+
+        offset = (page - 1) * limit
+        stmt = (
+            select(PenaltyReport)
+            .where(and_(*conditions))
+            .order_by(PenaltyReport.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        reports = (await session.execute(stmt)).scalars().all()
+        total_pages = math.ceil(total / limit) if total > 0 else 1
+
+        items = [PenaltyReportItem.model_validate(r) for r in reports]
+
+        return PenaltyReportListResponse(
+            items=items,
+            total=total,
+            page=page,
+            limit=limit,
+            total_pages=total_pages,
+        )
+
+    async def get_penalty_report_stats(
+        self,
+        session: AsyncSession,
+    ) -> PenaltyReportStatsResponse:
+        """
+        Thống kê tổng hợp số lượng phản ánh theo từng trạng thái
+        """
+        stmt = (
+            select(
+                func.count(PenaltyReport.id).label("total"),
+                func.count(case((PenaltyReport.status == "PENDING", 1))).label("pending"),
+                func.count(case((PenaltyReport.status == "VERIFIED", 1))).label("verified"),
+                func.count(case((PenaltyReport.status == "RESOLVED", 1))).label("resolved"),
+                func.count(case((PenaltyReport.status == "REJECTED", 1))).label("rejected"),
+            )
+            .where(PenaltyReport.deleted_at.is_(None))
+        )
+        row = (await session.execute(stmt)).one()
+
+        return PenaltyReportStatsResponse(
+            total=row.total or 0,
+            pending=row.pending or 0,
+            verified=row.verified or 0,
+            resolved=row.resolved or 0,
+            rejected=row.rejected or 0,
+        )
+
+    async def update_penalty_report_status(
+        self,
+        session: AsyncSession,
+        report_id: uuid.UUID,
+        data: UpdatePenaltyReportStatusRequest,
+    ) -> Optional[PenaltyReportItem]:
+        """
+        Cập nhật trạng thái xử lý phản ánh (VERIFIED, RESOLVED, REJECTED) kèm ghi chú cán bộ
+        """
+        stmt = select(PenaltyReport).where(
+            PenaltyReport.id == report_id,
+            PenaltyReport.deleted_at.is_(None)
+        )
+        report = (await session.execute(stmt)).scalar_one_or_none()
+        if not report:
+            return None
+
+        report.status = data.status
+        if data.officer_note is not None:
+            report.officer_note = data.officer_note
+
+        if data.status in ("RESOLVED", "REJECTED"):
+            report.resolved_at = datetime.now(timezone.utc)
+
+        report.version += 1
+        await session.commit()
+        await session.refresh(report)
+
+        return PenaltyReportItem.model_validate(report)
+

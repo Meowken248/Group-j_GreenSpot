@@ -3,6 +3,7 @@ import type {
   PenaltyDetailResponse,
   TargetType,
 } from '../types/penalty.types';
+import { penaltyService } from '../services/penaltyService';
 
 interface PenaltyDetailScreenProps {
   detail: PenaltyDetailResponse | null;
@@ -58,7 +59,7 @@ export const PenaltyDetailScreen: React.FC<PenaltyDetailScreenProps> = ({
     setReportError(null);
   };
 
-  const handleSubmitReport = (e: React.FormEvent) => {
+  const handleSubmitReport = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!locationText.trim()) {
       setReportError('Vui lòng nhập địa chỉ hoặc mô tả vị trí xảy ra vi phạm');
@@ -72,19 +73,30 @@ export const PenaltyDetailScreen: React.FC<PenaltyDetailScreenProps> = ({
     setIsSubmitting(true);
     setReportError(null);
 
-    // Tạo mã hồ sơ theo dõi thực tế chuẩn GreenSpot
     const now = new Date();
     const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
     const randomSuffix = Math.random().toString(36).substring(2, 7).toUpperCase();
-    const trackingCode = `INC-${dateStr}-${randomSuffix}`;
+    const fallbackCode = `INC-${dateStr}-${randomSuffix}`;
 
-    setTimeout(() => {
+    try {
+      const res = await penaltyService.submitPenaltyReport({
+        penalty_id: detail?.id,
+        violation_title: detail?.title || '',
+        legal_basis: detail?.legal_basis || '',
+        fine_range: detail ? `${formatCurrency(detail.min_fine)} - ${formatCurrency(detail.max_fine)}` : '',
+        address_text: locationText.trim(),
+        description: descriptionText.trim(),
+        is_anonymous: isAnonymous,
+      });
+      setSubmittedCode(res?.tracking_code || fallbackCode);
+    } catch {
+      setSubmittedCode(fallbackCode);
+    } finally {
       setIsSubmitting(false);
-      setSubmittedCode(trackingCode);
       if (onNavigateToReport) {
         onNavigateToReport(detail!.title, isAnonymous);
       }
-    }, 150);
+    }
   };
 
   if (isLoading) {

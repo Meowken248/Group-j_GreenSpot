@@ -83,7 +83,7 @@ from app.models.friends import (
 from app.models.settings import UserSettings
 
 # 9. Tra cứu quy định xử phạt vi phạm hành chính (Penalty Regulations Domain)
-from app.models.penalty import PenaltyRegulation
+from app.models.penalty import PenaltyRegulation, PenaltyReport
 
 __all__ = [
     "Base",
@@ -141,5 +141,6 @@ __all__ = [
     "UserSettings",
     # Penalty Regulations Domain
     "PenaltyRegulation",
+    "PenaltyReport",
 ]
 
