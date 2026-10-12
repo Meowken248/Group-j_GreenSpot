@@ -209,8 +209,51 @@ async def run_rbac_migration():
                         ON CONFLICT DO NOTHING
                     """), {"r_id": cit_role_id, "p_id": all_perms[p_code]})
 
+        # 4.5 OFFICER: Cán bộ Môi trường / Điều phối viên
+        officer_role_id = role_map.get("OFFICER")
+        if officer_role_id:
+            officer_perms = [
+                "GIS_MAP:ACCESS", "GIS_MAP:VIEW",
+                "INCIDENTS:ACCESS", "INCIDENTS:VIEW", "INCIDENTS:UPDATE",
+                "DISPATCH_TASKS:ACCESS", "DISPATCH_TASKS:VIEW", "DISPATCH_TASKS:CREATE", "DISPATCH_TASKS:UPDATE",
+                "RECYCLING_FACILITIES:ACCESS", "RECYCLING_FACILITIES:VIEW", "RECYCLING_FACILITIES:UPDATE",
+                "GREEN_SPOTS:ACCESS", "GREEN_SPOTS:VIEW",
+                "IOT_SENSORS:ACCESS", "IOT_SENSORS:VIEW",
+                "FLOOD_WARNINGS:ACCESS", "FLOOD_WARNINGS:VIEW",
+                "AIR_QUALITY:ACCESS", "AIR_QUALITY:VIEW",
+                "WEATHER:ACCESS", "WEATHER:VIEW",
+                "CITIZEN_FEEDBACK:ACCESS", "CITIZEN_FEEDBACK:VIEW",
+                "STATISTICS:ACCESS", "STATISTICS:VIEW",
+                "CAMPAIGNS:ACCESS", "CAMPAIGNS:VIEW"
+            ]
+            for p_code in officer_perms:
+                if p_code in all_perms:
+                    await session.execute(text("""
+                        INSERT INTO role_permissions (role_id, permission_id)
+                        VALUES (:r_id, :p_id)
+                        ON CONFLICT DO NOTHING
+                    """), {"r_id": officer_role_id, "p_id": all_perms[p_code]})
+
+        # 4.6 COLLECTOR: Đội Thu gom & Xử lý Hiện trường
+        collector_role_id = role_map.get("COLLECTOR")
+        if collector_role_id:
+            collector_perms = [
+                "GIS_MAP:VIEW", "INCIDENTS:VIEW", "INCIDENTS:UPDATE",
+                "DISPATCH_TASKS:VIEW", "DISPATCH_TASKS:UPDATE",
+                "RECYCLING_FACILITIES:VIEW", "RECYCLING_FACILITIES:UPDATE",
+                "CITIZEN_FEEDBACK:VIEW", "FLOOD_WARNINGS:VIEW",
+                "AIR_QUALITY:VIEW", "WEATHER:VIEW"
+            ]
+            for p_code in collector_perms:
+                if p_code in all_perms:
+                    await session.execute(text("""
+                        INSERT INTO role_permissions (role_id, permission_id)
+                        VALUES (:r_id, :p_id)
+                        ON CONFLICT DO NOTHING
+                    """), {"r_id": collector_role_id, "p_id": all_perms[p_code]})
+
         await session.commit()
-        print("✅ [4/5] Đã gán ma trận quyền mặc định cho 4 vai trò hệ thống.")
+        print("✅ [4/5] Đã gán ma trận quyền mặc định cho các vai trò hệ thống.")
 
         # 5. Đảm bảo tài khoản kiểm thử ddatmguyen2023+test@gmail.com có quyền ADMIN
         if admin_role_id:
