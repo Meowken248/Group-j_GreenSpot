@@ -22,8 +22,12 @@ import { Screen2Compare } from '../components/Screen2Compare';
 import { Screen3Directions } from '../components/Screen3Directions';
 import { Screen4EmergencyModal } from '../components/Screen4EmergencyModal';
 import { InteractiveMap } from '../components/InteractiveMap';
+import { LiveDriveRadar } from '../components/LiveDriveRadar';
 
 export const FloodNavigationContainer: React.FC = () => {
+  // Chế độ: 'LIVE_DRIVE_RADAR' (Quét GPS lái xe Google Maps) hoặc 'ROUTE_PLANNING' (Lập lộ trình A -> B)
+  const [navigationMode, setNavigationMode] = useState<'LIVE_DRIVE_RADAR' | 'ROUTE_PLANNING'>('LIVE_DRIVE_RADAR');
+
   // Navigation State
   const [currentStep, setCurrentStep] = useState<ScreenStep>(1);
 
@@ -317,6 +321,28 @@ export const FloodNavigationContainer: React.FC = () => {
       </header>
 
       {/* ------------------------------------------------------------------ */}
+      {/* THANH CHUYỂN ĐỔI CHẾ ĐỘ: LÁI XE GPS RADAR vs LẬP LỘ TRÌNH A -> B */}
+      {/* ------------------------------------------------------------------ */}
+      <div className="navigation-mode-switcher-bar">
+        <button
+          type="button"
+          className={`mode-tab-btn ${navigationMode === 'LIVE_DRIVE_RADAR' ? 'active' : ''}`}
+          onClick={() => setNavigationMode('LIVE_DRIVE_RADAR')}
+        >
+          <span>🚗</span>
+          <span>Lái xe & Quét ngập GPS (Live Radar)</span>
+        </button>
+        <button
+          type="button"
+          className={`mode-tab-btn ${navigationMode === 'ROUTE_PLANNING' ? 'active' : ''}`}
+          onClick={() => setNavigationMode('ROUTE_PLANNING')}
+        >
+          <span>🗺️</span>
+          <span>Lập lộ trình (A ➔ B)</span>
+        </button>
+      </div>
+
+      {/* ------------------------------------------------------------------ */}
       {/* PHẦN GIỮA: NỘI DUNG TỪNG MÀN HÌNH */}
       {/* ------------------------------------------------------------------ */}
       <main className="nav-main-content">
@@ -328,85 +354,100 @@ export const FloodNavigationContainer: React.FC = () => {
           </div>
         )}
 
-        {/* MÀN 1: NHẬP ĐIỂM ĐI / ĐẾN */}
-        {currentStep === 1 && (
-          <div className="two-column-layout">
-            <Screen1Input
-              origin={origin}
-              destination={destination}
-              selectedVehicle={selectedVehicle}
-              onOriginChange={setOrigin}
-              onDestinationChange={setDestination}
-              onVehicleChange={setSelectedVehicle}
-              validationError={validationError}
-              gpsWarning={gpsWarning}
-              onClearErrors={() => {
-                setValidationError(null);
-                setGpsWarning(null);
-              }}
-              onGpsRequested={handleGpsRequest}
-            />
-
-            <InteractiveMap
-              currentStep={1}
-              origin={origin}
-              destination={destination}
-              planData={null}
-              selectedRouteType={selectedRouteType}
-              onOriginMapPick={(lat, lng) =>
-                setOrigin({ name: `Tọa độ (${lat.toFixed(4)}, ${lng.toFixed(4)})`, latitude: lat, longitude: lng })
-              }
-              onDestinationMapPick={(lat, lng) =>
-                setDestination({ name: `Tọa độ (${lat.toFixed(4)}, ${lng.toFixed(4)})`, latitude: lat, longitude: lng })
-              }
-              onFindRouteClick={handleFindRoute}
-              onSelectRouteClick={() => {}}
-              isCalculating={isCalculating}
-              mapNetworkError={mapNetworkError}
-              onRetryMapLoad={() => setMapNetworkError(false)}
-            />
-          </div>
-        )}
-
-        {/* MÀN 2: SO SÁNH 2 TUYẾN (3 KHỐI THEO CHIỀU NGANG) */}
-        {currentStep === 2 && planData && (
-          <div className="three-column-layout">
-            <Screen2Compare
-              planData={planData}
-              selectedRouteType={selectedRouteType}
-              onSelectRouteType={setSelectedRouteType}
-              isLoadingTide={isLoadingTide}
-              onBackToInput={() => setCurrentStep(1)}
-            />
-
-            <InteractiveMap
-              currentStep={2}
-              origin={origin}
-              destination={destination}
-              planData={planData}
-              selectedRouteType={selectedRouteType}
-              onOriginMapPick={() => {}}
-              onDestinationMapPick={() => {}}
-              onFindRouteClick={() => {}}
-              onSelectRouteClick={handleSelectRoute}
-              isCalculating={false}
-              mapNetworkError={mapNetworkError}
-              onRetryMapLoad={() => setMapNetworkError(false)}
-              flashingHazardId={flashingHazardId}
-            />
-          </div>
-        )}
-
-        {/* MÀN 3: CHI TIẾT TUYẾN AN TOÀN */}
-        {currentStep === 3 && activeRoutePlan && (
-          <Screen3Directions
-            routePlan={activeRoutePlan}
-            isNavigating={isNavigating}
-            onStartNavigation={handleStartNavigation}
-            onShareRoute={handleShareRoute}
-            onSimulateOffRoute={handleSimulateOffRoute}
-            onBackToCompare={() => setCurrentStep(2)}
+        {/* CHẾ ĐỘ 1: LÁI XE THỜI GIAN THỰC NHƯ GOOGLE MAPS (KHÔNG CẦN CHỌN A/B) */}
+        {navigationMode === 'LIVE_DRIVE_RADAR' && (
+          <LiveDriveRadar
+            selectedVehicle={selectedVehicle}
+            onVehicleChange={setSelectedVehicle}
+            onSwitchToRoutePlanning={() => setNavigationMode('ROUTE_PLANNING')}
           />
+        )}
+
+        {/* CHẾ ĐỘ 2: LẬP KẾ HOẠCH LỘ TRÌNH TỪ ĐIỂM A ĐẾN ĐIỂM B */}
+        {navigationMode === 'ROUTE_PLANNING' && (
+          <>
+            {/* MÀN 1: NHẬP ĐIỂM ĐI / ĐẾN */}
+            {currentStep === 1 && (
+              <div className="two-column-layout">
+                <Screen1Input
+                  origin={origin}
+                  destination={destination}
+                  selectedVehicle={selectedVehicle}
+                  onOriginChange={setOrigin}
+                  onDestinationChange={setDestination}
+                  onVehicleChange={setSelectedVehicle}
+                  validationError={validationError}
+                  gpsWarning={gpsWarning}
+                  onClearErrors={() => {
+                    setValidationError(null);
+                    setGpsWarning(null);
+                  }}
+                  onGpsRequested={handleGpsRequest}
+                  onSwitchToLiveDrive={() => setNavigationMode('LIVE_DRIVE_RADAR')}
+                />
+
+                <InteractiveMap
+                  currentStep={1}
+                  origin={origin}
+                  destination={destination}
+                  planData={null}
+                  selectedRouteType={selectedRouteType}
+                  onOriginMapPick={(lat, lng) =>
+                    setOrigin({ name: `Tọa độ (${lat.toFixed(4)}, ${lng.toFixed(4)})`, latitude: lat, longitude: lng })
+                  }
+                  onDestinationMapPick={(lat, lng) =>
+                    setDestination({ name: `Tọa độ (${lat.toFixed(4)}, ${lng.toFixed(4)})`, latitude: lat, longitude: lng })
+                  }
+                  onFindRouteClick={handleFindRoute}
+                  onSelectRouteClick={() => {}}
+                  isCalculating={isCalculating}
+                  mapNetworkError={mapNetworkError}
+                  onRetryMapLoad={() => setMapNetworkError(false)}
+                />
+              </div>
+            )}
+
+            {/* MÀN 2: SO SÁNH 2 TUYẾN (3 KHỐI THEO CHIỀU NGANG) */}
+            {currentStep === 2 && planData && (
+              <div className="three-column-layout">
+                <Screen2Compare
+                  planData={planData}
+                  selectedRouteType={selectedRouteType}
+                  onSelectRouteType={setSelectedRouteType}
+                  isLoadingTide={isLoadingTide}
+                  onBackToInput={() => setCurrentStep(1)}
+                />
+
+                <InteractiveMap
+                  currentStep={2}
+                  origin={origin}
+                  destination={destination}
+                  planData={planData}
+                  selectedRouteType={selectedRouteType}
+                  onOriginMapPick={() => {}}
+                  onDestinationMapPick={() => {}}
+                  onFindRouteClick={() => {}}
+                  onSelectRouteClick={handleSelectRoute}
+                  isCalculating={false}
+                  mapNetworkError={mapNetworkError}
+                  onRetryMapLoad={() => setMapNetworkError(false)}
+                  flashingHazardId={flashingHazardId}
+                />
+              </div>
+            )}
+
+            {/* MÀN 3: CHI TIẾT TUYẾN AN TOÀN */}
+            {currentStep === 3 && activeRoutePlan && (
+              <Screen3Directions
+                routePlan={activeRoutePlan}
+                isNavigating={isNavigating}
+                onStartNavigation={handleStartNavigation}
+                onShareRoute={handleShareRoute}
+                onSimulateOffRoute={handleSimulateOffRoute}
+                onBackToCompare={() => setCurrentStep(2)}
+              />
+            )}
+          </>
         )}
       </main>
 
