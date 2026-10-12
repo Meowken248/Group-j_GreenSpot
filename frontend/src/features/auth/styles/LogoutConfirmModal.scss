@@ -1,0 +1,167 @@
+@use './variables' as *;
+@use './mixins' as *;
+
+.logout-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(6px);
+  z-index: 1050;
+  @include flex-center;
+  padding: 1.25rem;
+  animation: fadeIn 0.2s ease-out;
+
+  .logout-modal-container {
+    background-color: #ffffff;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-xl;
+    width: 100%;
+    max-width: 440px;
+    padding: 2rem 1.75rem;
+    position: relative;
+    box-sizing: border-box;
+    text-align: center;
+    border: 1px solid $neutral-200;
+    animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+    .modal-tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: $neutral-400;
+      margin-bottom: 0.6rem;
+    }
+
+    .modal-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: $neutral-900;
+      margin: 0 0 0.75rem 0;
+      letter-spacing: -0.01em;
+    }
+
+    .modal-desc {
+      font-size: 0.95rem;
+      color: $neutral-600;
+      line-height: 1.5;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .modal-device-meta {
+      font-size: 0.85rem;
+      color: $neutral-500;
+      background-color: $neutral-100;
+      padding: 6px 12px;
+      border-radius: $radius-sm;
+      display: inline-block;
+      margin: 0.5rem 0;
+      word-break: break-word;
+    }
+
+    .modal-warning-highlight {
+      font-size: 0.88rem;
+      color: $error-600;
+      font-weight: 600;
+      margin: 0.5rem 0 0 0;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 1.75rem;
+
+      .btn-cancel {
+        flex: 1;
+        height: 44px;
+        background-color: $neutral-100;
+        color: $neutral-700;
+        font-family: $font-family;
+        font-size: 0.95rem;
+        font-weight: 600;
+        border: 1px solid $neutral-300;
+        border-radius: $radius-md;
+        cursor: pointer;
+        transition: $transition-fast;
+        @include flex-center;
+
+        &:hover:not(:disabled) {
+          background-color: $neutral-200;
+          color: $neutral-900;
+        }
+
+        &:focus {
+          outline: none;
+          box-shadow: 0 0 0 3px rgba($neutral-400, 0.4);
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+
+      .btn-confirm-logout {
+        flex: 1;
+        height: 44px;
+        background-color: $error-600;
+        color: #ffffff;
+        font-family: $font-family;
+        font-size: 0.95rem;
+        font-weight: 600;
+        border: none;
+        border-radius: $radius-md;
+        cursor: pointer;
+        transition: $transition-fast;
+        box-shadow: 0 2px 8px rgba($error-600, 0.35);
+        @include flex-center;
+        gap: 8px;
+
+        &:hover:not(:disabled) {
+          background-color: $error-700;
+          box-shadow: 0 4px 12px rgba($error-600, 0.45);
+        }
+
+        &:focus {
+          outline: none;
+          box-shadow: 0 0 0 3px rgba($error-500, 0.4);
+        }
+
+        &:disabled {
+          opacity: 0.65;
+          cursor: not-allowed;
+        }
+
+        .btn-spinner {
+          width: 16px;
+          height: 16px;
+          border: 2px solid rgba(255, 255, 255, 0.4);
+          border-top-color: #ffffff;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+      }
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
