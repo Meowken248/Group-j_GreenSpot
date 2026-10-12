@@ -360,7 +360,8 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
     
     if (target && onNavigateToFeature) {
       onNavigateToFeature(target, payload);
-    } else if (onClose) {
+    }
+    if (onClose) {
       onClose();
     }
   };
