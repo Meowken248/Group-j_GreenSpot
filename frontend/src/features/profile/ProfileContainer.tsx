@@ -26,12 +26,14 @@ interface ProfileContainerProps {
   onBackToMap?: () => void;
   onNavigateToAqi?: () => void;
   onNavigateToAuth?: () => void;
+  onNavigateToFeed?: () => void;
 }
 
 export const ProfileContainer: React.FC<ProfileContainerProps> = ({
   onBackToMap,
   onNavigateToAqi,
   onNavigateToAuth,
+  onNavigateToFeed,
 }) => {
   // Trạng thái kiểm tra quyền truy cập (chưa đăng nhập / phiên hết hạn)
   const [isUnauthorized, setIsUnauthorized] = useState<boolean>(() => {
@@ -602,7 +604,13 @@ export const ProfileContainer: React.FC<ProfileContainerProps> = ({
             onOpenEditProfile={() => setCurrentView("edit")}
             onOpenPassport={() => setCurrentView("passport")}
             onOpenHistory={() => setCurrentView("history")}
-            onNavigateToFeed={() => showToast("success", "Đang chuyển đến Bảng tin chung...")}
+            onNavigateToFeed={() => {
+              if (onNavigateToFeed) {
+                onNavigateToFeed();
+              } else {
+                window.location.hash = "#posts";
+              }
+            }}
             onShowToast={showToast}
             onRefreshPosts={() => {
               const uid = profile?.user_id || profile?.id;

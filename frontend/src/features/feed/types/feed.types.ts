@@ -94,3 +94,4 @@ export interface CategoryOption {
   icon: string;
   color: string;
 }
+

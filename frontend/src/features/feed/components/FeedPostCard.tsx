@@ -433,3 +433,4 @@ export const FeedPostCard: React.FC<FeedPostCardProps> = ({
     </article>
   );
 };
+

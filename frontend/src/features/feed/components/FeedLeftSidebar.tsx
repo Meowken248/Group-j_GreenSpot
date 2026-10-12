@@ -150,3 +150,4 @@ export const FeedLeftSidebar: React.FC<FeedLeftSidebarProps> = ({
     </aside>
   );
 };
+

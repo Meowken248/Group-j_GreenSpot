@@ -4,8 +4,9 @@ export type {
   FeedTab,
   FeedSortBy,
   FeedQueryParams,
-  FeedPostAuthor,
-  FeedPostMedia,
+  FeedAuthor,
+  FeedMediaItem,
+  FeedTaggedFriend,
   FeedPostItem,
   FeedListResponse,
 } from "./types/feed.types";

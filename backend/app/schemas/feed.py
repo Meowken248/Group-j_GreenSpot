@@ -50,3 +50,4 @@ class FeedListResponse(BaseModel):
     district: Optional[str] = None
     category: Optional[str] = None
     sort_by: str = "newest"
+

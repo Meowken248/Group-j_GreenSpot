@@ -71,3 +71,4 @@ export const FeedComposerBox: React.FC<FeedComposerBoxProps> = ({
     </div>
   );
 };
+

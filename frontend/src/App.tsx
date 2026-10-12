@@ -20,7 +20,7 @@ import { WasteCategoryContainer } from "./features/waste_categories";
 import { RecyclingFacilityContainer } from "./features/recycling_facilities";
 import { FriendsContainer } from "./features/friends";
 import { PenaltyLookupContainer } from "./features/penalties";
-import { PostCreatorContainer } from "./features/posts";
+import { FeedContainer } from "./features/feed";
 
 import {
   SettingsContainer,
@@ -93,8 +93,7 @@ function App() {
       if (!isLogged) return "auth";
       return "penalties";
     }
-    if (hash === "#posts" || hash === "#create-post" || path === "/posts" || path === "/create-post") {
-      if (!isLogged) return "auth";
+    if (hash === "#posts" || hash === "#feed" || hash === "#create-post" || path === "/posts" || path === "/feed" || path === "/create-post") {
       return "posts";
     }
     if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") return "auth";
@@ -309,14 +308,8 @@ function App() {
         } else {
           setActiveTab("penalties");
         }
-      } else if (hash === "#posts" || hash === "#create-post") {
-        if (!isLogged) {
-          setAuthRedirectUrl("/posts");
-          setActiveTab("auth");
-          window.location.hash = "#login";
-        } else {
-          setActiveTab("posts");
-        }
+      } else if (hash === "#posts" || hash === "#feed" || hash === "#create-post") {
+        setActiveTab("posts");
       } else if (hash === "#profile") {
         if (!isLogged) {
           setAuthRedirectUrl("/profile");
@@ -388,10 +381,6 @@ function App() {
         window.location.hash = "#login";
       } else if (activeTab === "dedup") {
         setAuthRedirectUrl("/dedup");
-        setActiveTab("auth");
-        window.location.hash = "#login";
-      } else if (activeTab === "posts") {
-        setAuthRedirectUrl("/posts");
         setActiveTab("auth");
         window.location.hash = "#login";
       } else if (activeTab === "penalties") {
@@ -835,12 +824,12 @@ function App() {
               className={`view-tab-btn ${activeTab === "posts" ? "active" : ""}`}
               onClick={() => {
                 setActiveTab("posts");
-                window.location.hash = "#create-post";
+                window.location.hash = "#posts";
               }}
-              title="Tạo bài viết, phản ánh sự cố & chia sẻ kinh nghiệm sống xanh (STT 9)"
+              title="Bảng tin Geo-Feed cộng đồng & Mạng xã hội sống xanh (STT 08)"
             >
-              <span>✍️</span>
-              <span>Đăng bài viết</span>
+              <span>📰</span>
+              <span>Bảng tin</span>
             </button>
 
             <button
@@ -977,6 +966,18 @@ function App() {
               <span>🎙️</span>
               <span>Trợ lý Giọng nói</span>
             </button>
+            <button
+              type="button"
+              className={`view-tab-btn ${activeTab === "posts" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("posts");
+                window.location.hash = "#posts";
+              }}
+              title="Bảng tin Geo-Feed cộng đồng & Mạng xã hội sống xanh (STT 08)"
+            >
+              <span>📰</span>
+              <span>Bảng tin</span>
+            </button>
           </>
         )}
       </nav>
@@ -1049,6 +1050,10 @@ function App() {
                 setAuthRedirectUrl("/profile");
                 setActiveTab("auth");
                 window.location.hash = "#login";
+              }}
+              onNavigateToFeed={() => {
+                setActiveTab("posts");
+                window.location.hash = "#posts";
               }}
             />
           </div>
@@ -1249,36 +1254,19 @@ function App() {
           </div>
         )
       ) : activeTab === "posts" ? (
-        !currentUser ? (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-            <AuthContainer
-              initialView="login"
-              redirectUrl="/posts"
-              onExitAuth={() => {
-                setActiveTab("map");
-                window.location.hash = "#map";
-              }}
-            />
-          </div>
-        ) : (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-            <PostCreatorContainer
-              onNavigateHome={() => {
-                setActiveTab("map");
-                window.location.hash = "#map";
-              }}
-              onNavigateLogin={() => {
-                setAuthRedirectUrl("/posts");
-                setActiveTab("auth");
-                window.location.hash = "#login";
-              }}
-              onViewCreatedPost={(_postId) => {
-                setActiveTab("profile");
-                window.location.hash = "#profile";
-              }}
-            />
-          </div>
-        )
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+          <FeedContainer
+            onNavigateTab={(tab) => {
+              setActiveTab(tab as TabType);
+              window.location.hash = `#${tab}`;
+            }}
+            onNavigateLogin={() => {
+              setAuthRedirectUrl("/posts");
+              setActiveTab("auth");
+              window.location.hash = "#login";
+            }}
+          />
+        </div>
       ) : (
         /* Mặc định an toàn cho khách vãng lai và tab map: Bản đồ số WebGIS công cộng */
         <ModulePermissionGuard

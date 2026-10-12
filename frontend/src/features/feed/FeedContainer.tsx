@@ -4,7 +4,7 @@
  * Kiến trúc 3 cột mạng xã hội Facebook/Threads cao cấp
  */
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import type {
   FeedTab,
   FeedSortBy,
@@ -49,6 +49,19 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
     }
   });
 
+  useEffect(() => {
+    const handleAuthChange = () => {
+      try {
+        const userStr = localStorage.getItem(AUTH_STORAGE_KEYS.USER_INFO);
+        setCurrentUser(userStr ? JSON.parse(userStr) : null);
+      } catch {
+        setCurrentUser(null);
+      }
+    };
+    window.addEventListener("auth_change", handleAuthChange);
+    return () => window.removeEventListener("auth_change", handleAuthChange);
+  }, []);
+
   const isLoggedIn = Boolean(
     currentUser && localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN)
   );
@@ -70,7 +83,7 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
 
   // 4. Dữ liệu bài viết
   const [posts, setPosts] = useState<FeedPostItem[]>([]);
-  const [totalPosts, setTotalPosts] = useState<number>(0);
+  const [, setTotalPosts] = useState<number>(0);
   const [hasMore, setHasMore] = useState<boolean>(false);
   const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
@@ -613,3 +626,4 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
     </div>
   );
 };
+

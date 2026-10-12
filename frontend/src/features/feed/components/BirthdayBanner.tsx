@@ -50,3 +50,4 @@ export const BirthdayBanner: React.FC<BirthdayBannerProps> = ({ onSendWish }) =>
     </div>
   );
 };
+
