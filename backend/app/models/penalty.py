@@ -18,6 +18,8 @@ from sqlalchemy import (
     Date,
     DateTime,
     Index,
+    Boolean,
+    ForeignKey,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -149,3 +151,112 @@ class PenaltyRegulation(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     __table_args__ = (
         Index("ix_penalty_search_composite", "deleted_at", "domain", "quick_category"),
     )
+
+
+class PenaltyReport(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """
+    Bảng lưu trữ thông tin phản ánh vi phạm môi trường gửi từ công dân
+    liên kết với Quy định xử phạt (Nghị định 45/2022/NĐ-CP)
+    """
+    __tablename__ = "penalty_reports"
+
+    # Mã hồ sơ theo dõi thực tế chuẩn GreenSpot (VD: INC-20261012-ABCDE)
+    tracking_code: Mapped[str] = mapped_column(
+        String(30),
+        unique=True,
+        nullable=False,
+        index=True
+    )
+
+    # Khóa ngoại liên kết quy định xử phạt (nếu có)
+    penalty_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("penalty_regulations.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )
+
+    # Tên hành vi vi phạm trích xuất
+    violation_title: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False
+    )
+
+    # Căn cứ pháp lý theo Nghị định
+    legal_basis: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False
+    )
+
+    # Khung tiền phạt quy định
+    fine_range: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False
+    )
+
+    # Địa chỉ / Khu vực xảy ra vi phạm
+    address_text: Mapped[str] = mapped_column(
+        String(500),
+        nullable=False
+    )
+
+    # Mô tả chi tiết tình huống, diễn biến vi phạm
+    description: Mapped[str] = mapped_column(
+        Text,
+        nullable=False
+    )
+
+    # Hình thức: Ẩn danh (True) hoặc Bằng tài khoản (False)
+    is_anonymous: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
+
+    # Người gửi phản ánh (null nếu ẩn danh)
+    reporter_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("users.user_id", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )
+
+    # Tên hiển thị người phản ánh
+    reporter_name: Mapped[Optional[str]] = mapped_column(
+        String(150),
+        nullable=True
+    )
+
+    # Trạng thái phản ánh:
+    # PENDING (Chờ xác minh), VERIFIED (Đã xác minh vi phạm), RESOLVED (Đã xử phạt/hoàn tất), REJECTED (Từ chối)
+    status: Mapped[str] = mapped_column(
+        String(30),
+        default="PENDING",
+        nullable=False,
+        index=True
+    )
+
+    # Ghi chú phản hồi / lý do xử lý của cán bộ
+    officer_note: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True
+    )
+
+    # Thời điểm giải quyết / xử lý xong
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+
+    # Soft Delete & Optimistic Concurrency Control
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+        default=None
+    )
+
+    version: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1
+    )
+

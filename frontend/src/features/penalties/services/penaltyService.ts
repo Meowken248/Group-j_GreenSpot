@@ -76,4 +76,66 @@ export const penaltyService = {
     });
     return res.data;
   },
+
+  /**
+   * Gửi phản ánh vi phạm môi trường từ công dân
+   */
+  async submitPenaltyReport(
+    data: import('../types/penalty.types').CreatePenaltyReportRequest
+  ): Promise<import('../types/penalty.types').PenaltyReportItem> {
+    const res = await api.post<import('../types/penalty.types').PenaltyReportItem>(
+      '/api/v1/penalties/reports',
+      data
+    );
+    return res.data;
+  },
+
+  /**
+   * Lấy danh sách phản ánh vi phạm môi trường (Dành cho Admin / Cán bộ)
+   */
+  async getPenaltyReports(params: {
+    status?: string;
+    query?: string;
+    is_anonymous?: boolean;
+    page?: number;
+    limit?: number;
+  }): Promise<import('../types/penalty.types').PenaltyReportListResponse> {
+    const cleanParams: Record<string, string | number | boolean> = {};
+    if (params.status && params.status !== 'ALL') cleanParams.status_filter = params.status;
+    if (params.query?.trim()) cleanParams.query = params.query.trim();
+    if (params.is_anonymous !== undefined) cleanParams.is_anonymous = params.is_anonymous;
+    if (params.page) cleanParams.page = params.page;
+    if (params.limit) cleanParams.limit = params.limit;
+
+    const res = await api.get<import('../types/penalty.types').PenaltyReportListResponse>(
+      '/api/v1/penalties/reports',
+      { params: cleanParams }
+    );
+    return res.data;
+  },
+
+  /**
+   * Thống kê số lượng phản ánh vi phạm môi trường theo các trạng thái
+   */
+  async getPenaltyReportStats(): Promise<import('../types/penalty.types').PenaltyReportStatsResponse> {
+    const res = await api.get<import('../types/penalty.types').PenaltyReportStatsResponse>(
+      '/api/v1/penalties/reports/stats'
+    );
+    return res.data;
+  },
+
+  /**
+   * Cập nhật trạng thái xử lý phản ánh vi phạm kèm ghi chú cán bộ
+   */
+  async updatePenaltyReportStatus(
+    reportId: string,
+    data: import('../types/penalty.types').UpdatePenaltyReportStatusRequest
+  ): Promise<import('../types/penalty.types').PenaltyReportItem> {
+    const res = await api.patch<import('../types/penalty.types').PenaltyReportItem>(
+      `/api/v1/penalties/reports/${reportId}/status`,
+      data
+    );
+    return res.data;
+  },
 };
+

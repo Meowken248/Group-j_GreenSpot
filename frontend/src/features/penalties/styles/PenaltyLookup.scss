@@ -1200,6 +1200,311 @@ $pl-text-sub-dark: #94a3b8;
           }
         }
       }
+
+      // ========================================================
+      // STYLING FORM BÁO CÁO VI PHẠM TẠI CHỖ (CHỨC NĂNG 11)
+      // ========================================================
+      &.penalty-report-form-card {
+        max-width: 560px;
+        text-align: left;
+        padding: 24px 28px;
+
+        .report-modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 20px;
+          padding-bottom: 14px;
+          border-bottom: 1px solid $pl-border-light;
+
+          .header-title-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+
+            .header-icon {
+              font-size: 28px;
+            }
+
+            .modal-title {
+              font-size: 18px;
+              font-weight: 800;
+              margin: 0;
+              text-align: left;
+              color: $pl-text-main-light;
+            }
+
+            .modal-subtitle {
+              font-size: 12px;
+              color: $pl-text-sub-light;
+              margin: 2px 0 0;
+            }
+          }
+
+          .btn-close-x {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 4px;
+            transition: color 0.2s;
+
+            &:hover {
+              color: #0f172a;
+            }
+          }
+        }
+
+        .report-prefilled-box {
+          background: #f0fdf4;
+          border: 1px solid #bbf7d0;
+          border-radius: 12px;
+          padding: 12px 16px;
+          margin-bottom: 18px;
+
+          .prefill-row {
+            display: flex;
+            gap: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-bottom: 4px;
+
+            &:last-child {
+              margin-bottom: 0;
+            }
+
+            .prefill-label {
+              font-weight: 700;
+              color: #166534;
+              flex-shrink: 0;
+            }
+
+            .prefill-value {
+              color: #1e293b;
+
+              &.highlight-violation {
+                font-weight: 700;
+                color: #047857;
+              }
+            }
+          }
+        }
+
+        .report-field-group {
+          margin-bottom: 16px;
+
+          .field-group-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: $pl-text-main-light;
+            margin-bottom: 8px;
+
+            .req-star {
+              color: #ef4444;
+            }
+          }
+
+          .identity-options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+
+            @media (max-width: 600px) {
+              grid-template-columns: 1fr;
+            }
+
+            .identity-card {
+              border: 1.5px solid $pl-border-light;
+              border-radius: 10px;
+              padding: 10px 12px;
+              display: flex;
+              align-items: flex-start;
+              gap: 10px;
+              cursor: pointer;
+              transition: all 0.2s ease;
+
+              input[type="radio"] {
+                margin-top: 3px;
+                accent-color: $pl-primary;
+              }
+
+              .card-info {
+                display: flex;
+                flex-direction: column;
+
+                .info-title {
+                  font-size: 13px;
+                  font-weight: 700;
+                  color: $pl-text-main-light;
+                }
+
+                .info-desc {
+                  font-size: 11px;
+                  color: $pl-text-sub-light;
+                }
+              }
+
+              &.selected {
+                border-color: $pl-primary;
+                background: #f0fdf4;
+              }
+            }
+          }
+
+          .form-control-input,
+          .form-control-textarea {
+            width: 100%;
+            border: 1.5px solid $pl-border-light;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-family: inherit;
+            color: $pl-text-main-light;
+            background: #ffffff;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+
+            &:focus {
+              outline: none;
+              border-color: $pl-primary;
+              box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+            }
+
+            &::placeholder {
+              color: #94a3b8;
+              font-size: 13px;
+            }
+          }
+
+          .form-control-textarea {
+            resize: vertical;
+            min-height: 70px;
+          }
+        }
+
+        .report-error-alert {
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          color: #b91c1c;
+          padding: 8px 12px;
+          border-radius: 8px;
+          font-size: 13px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-bottom: 16px;
+        }
+
+        .report-form-footer {
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+          margin-top: 20px;
+          padding-top: 14px;
+          border-top: 1px solid $pl-border-light;
+
+          .btn-cancel-report {
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+
+            &:hover {
+              background: #e2e8f0;
+            }
+          }
+
+          .btn-submit-report-action {
+            padding: 10px 22px;
+            border-radius: 10px;
+            border: none;
+            background: #dc2626;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+            transition: all 0.2s;
+
+            &:hover:not(:disabled) {
+              background: #b91c1c;
+              transform: translateY(-1px);
+            }
+
+            &:disabled {
+              opacity: 0.7;
+              cursor: not-allowed;
+            }
+          }
+        }
+      }
+
+      // TRẠNG THÁI TIẾP NHẬN THÀNH CÔNG
+      &.report-success-card {
+        max-width: 460px;
+        text-align: center;
+
+        .success-icon {
+          font-size: 48px;
+          margin-bottom: 8px;
+        }
+
+        .tracking-code-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: #f0fdf4;
+          border: 1px solid #86efac;
+          padding: 6px 14px;
+          border-radius: 20px;
+          margin-bottom: 16px;
+          font-size: 13px;
+
+          .badge-prefix {
+            color: #166534;
+          }
+
+          .badge-code {
+            color: #047857;
+            font-size: 15px;
+            letter-spacing: 0.5px;
+          }
+        }
+
+        .points-award-badge {
+          background: #ecfdf5;
+          border: 1px dashed #34d399;
+          border-radius: 10px;
+          padding: 8px 12px;
+          font-size: 13px;
+          color: #065f46;
+          margin-bottom: 20px;
+        }
+
+        .btn-modal-close-success {
+          width: 100%;
+          height: 44px;
+          border-radius: 10px;
+          border: none;
+          background: $pl-primary;
+          color: #ffffff;
+          font-size: 14px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: background 0.2s;
+
+          &:hover {
+            background: $pl-primary-dark;
+          }
+        }
+      }
     }
   }
 
@@ -1340,3 +1645,1059 @@ body.dark-mode .penalty-lookup-wrapper {
     }
   }
 }
+
+// =========================================================================
+// TRANG QUẢN TRỊ & GIÁM SÁT PHẢN ÁNH VI PHẠM (PENALTY REPORTS DASHBOARD)
+// =========================================================================
+.penalty-reports-dashboard {
+  .reports-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+
+    .kpi-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      }
+
+      &.active-kpi {
+        border-color: #059669;
+        background: #ecfdf5;
+      }
+
+      .kpi-icon {
+        font-size: 26px;
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        background: #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .kpi-content {
+        display: flex;
+        flex-direction: column;
+
+        .kpi-value {
+          font-size: 22px;
+          font-weight: 800;
+          color: #0f172a;
+          line-height: 1.2;
+        }
+
+        .kpi-label {
+          font-size: 13px;
+          font-weight: 600;
+          color: #64748b;
+        }
+      }
+
+      &.kpi-pending .kpi-icon { background: #fef3c7; }
+      &.kpi-verified .kpi-icon { background: #e0f2fe; }
+      &.kpi-resolved .kpi-icon { background: #dcfce7; }
+      &.kpi-rejected .kpi-icon { background: #fee2e2; }
+    }
+  }
+
+  .reports-toolbar-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+    .toolbar-search-box {
+      flex: 1;
+      min-width: 280px;
+      position: relative;
+      display: flex;
+      align-items: center;
+
+      .search-icon {
+        position: absolute;
+        left: 14px;
+        font-size: 16px;
+        color: #94a3b8;
+        pointer-events: none;
+      }
+
+      .toolbar-search-input {
+        width: 100%;
+        padding: 10px 36px 10px 40px;
+        border-radius: 10px;
+        border: 1.5px solid #cbd5e1;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.2s;
+
+        &:focus {
+          border-color: #059669;
+          box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+        }
+      }
+
+      .btn-clear-search {
+        position: absolute;
+        right: 12px;
+        background: none;
+        border: none;
+        color: #94a3b8;
+        cursor: pointer;
+        font-size: 14px;
+      }
+    }
+
+    .toolbar-filters-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+
+      .filter-select {
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 1.5px solid #cbd5e1;
+        background: #ffffff;
+        font-size: 13px;
+        font-weight: 600;
+        color: #1e293b;
+        cursor: pointer;
+        outline: none;
+
+        &:focus {
+          border-color: #059669;
+        }
+      }
+
+      .btn-refresh-data {
+        padding: 10px 16px;
+        border-radius: 10px;
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        font-size: 13px;
+        font-weight: 700;
+        color: #334155;
+        cursor: pointer;
+        transition: background 0.2s;
+
+        &:hover {
+          background: #e2e8f0;
+        }
+      }
+    }
+  }
+
+  .reports-table-container {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+    .reports-loading-box,
+    .reports-empty-box {
+      text-align: center;
+      padding: 60px 20px;
+      color: #64748b;
+
+      .empty-icon { font-size: 44px; margin-bottom: 12px; }
+      h3 { font-size: 18px; color: #1e293b; margin: 0 0 6px; }
+    }
+
+    .table-responsive-wrapper {
+      overflow-x: auto;
+    }
+
+    .reports-data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+
+      th {
+        background: #f8fafc;
+        padding: 14px 16px;
+        text-align: left;
+        font-weight: 700;
+        color: #475569;
+        border-bottom: 2px solid #e2e8f0;
+        white-space: nowrap;
+
+        &.th-action { text-align: right; }
+      }
+
+      td {
+        padding: 16px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+      }
+
+      .report-row:hover {
+        background: #f8fafc;
+      }
+
+      .col-code .code-text {
+        font-family: monospace;
+        font-size: 13px;
+        color: #0369a1;
+        background: #e0f2fe;
+        padding: 3px 8px;
+        border-radius: 6px;
+      }
+
+      .col-violation {
+        max-width: 280px;
+
+        .violation-title {
+          font-weight: 700;
+          color: #0f172a;
+          margin-bottom: 3px;
+        }
+
+        .legal-basis-sub {
+          font-size: 12px;
+          color: #64748b;
+        }
+
+        .fine-badge {
+          display: inline-block;
+          font-size: 11px;
+          font-weight: 700;
+          color: #b45309;
+          background: #fef3c7;
+          padding: 2px 6px;
+          border-radius: 4px;
+          margin-top: 4px;
+        }
+      }
+
+      .col-address {
+        max-width: 220px;
+        color: #334155;
+        font-size: 13px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .reporter-tag {
+        font-size: 12px;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 6px;
+
+        &.anon { background: #f1f5f9; color: #475569; }
+        &.account { background: #ecfdf5; color: #047857; }
+      }
+
+      .status-badge {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 20px;
+        white-space: nowrap;
+
+        &.badge-pending { background: #fef3c7; color: #92400e; }
+        &.badge-verified { background: #e0f2fe; color: #0369a1; }
+        &.badge-resolved { background: #dcfce7; color: #15803d; }
+        &.badge-rejected { background: #fee2e2; color: #b91c1c; }
+      }
+
+      .col-action {
+        text-align: right;
+
+        .btn-view-report-detail {
+          padding: 6px 14px;
+          border-radius: 8px;
+          border: 1px solid #cbd5e1;
+          background: #ffffff;
+          color: #0f172a;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+
+          &:hover {
+            background: #059669;
+            color: #ffffff;
+            border-color: #059669;
+          }
+        }
+      }
+    }
+
+    .reports-pagination-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid #f1f5f9;
+
+      .page-indicator {
+        font-size: 13px;
+        color: #64748b;
+      }
+
+      .btn-page-nav {
+        padding: 7px 14px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        font-size: 13px;
+        font-weight: 600;
+        color: #334155;
+        cursor: pointer;
+
+        &:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+
+        &:not(:disabled):hover {
+          background: #f1f5f9;
+        }
+      }
+    }
+  }
+
+  // =========================================================================
+  // MODAL CÁN BỘ TIẾP NHẬN & XỬ LÝ PHẢN ÁNH (CHỨC NĂNG 11 - ADMIN/OFFICER)
+  // =========================================================================
+  .report-officer-modal-backdrop,
+  .pl-modal-backdrop,
+  .pl-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(15, 23, 42, 0.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    animation: fadeInBackdrop 0.2s ease-out;
+  }
+
+  .report-officer-modal-card {
+    width: 100%;
+    max-width: 720px;
+    max-height: 90vh;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    animation: modalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+
+    .report-modal-header {
+      padding: 20px 26px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #ffffff;
+
+      .header-title-box {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+
+        .header-icon {
+          font-size: 26px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 46px;
+          height: 46px;
+          background: #ecfdf5;
+          border-radius: 12px;
+          flex-shrink: 0;
+        }
+
+        .modal-title {
+          font-size: 18px;
+          font-weight: 800;
+          color: #0f172a;
+          margin: 0 0 4px;
+          line-height: 1.3;
+        }
+
+        .modal-subtitle {
+          font-size: 13px;
+          color: #64748b;
+          margin: 0;
+        }
+      }
+
+      .btn-close-circle,
+      .btn-close-x {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+
+        &:hover {
+          background: #fee2e2;
+          color: #ef4444;
+          border-color: #fca5a5;
+          transform: rotate(90deg);
+        }
+      }
+    }
+
+    .report-detail-body {
+      padding: 22px 26px;
+      overflow-y: auto;
+      max-height: calc(90vh - 84px);
+
+      .detail-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 16px 18px;
+        margin-bottom: 18px;
+
+        @media (max-width: 640px) {
+          grid-template-columns: 1fr;
+        }
+
+        .meta-item {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+
+          .meta-label {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+          }
+
+          .meta-val {
+            font-size: 14px;
+            color: #1e293b;
+            line-height: 1.4;
+
+            &.highlight {
+              color: #059669;
+              font-weight: 800;
+            }
+
+            &.fine-highlight {
+              color: #d97706;
+              font-weight: 800;
+              background: #fef3c7;
+              padding: 2px 8px;
+              border-radius: 6px;
+              display: inline-block;
+              width: fit-content;
+            }
+
+            .reporter-chip {
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              font-size: 12px;
+              font-weight: 700;
+              padding: 3px 10px;
+              border-radius: 20px;
+
+              &.anon {
+                background: #f1f5f9;
+                color: #475569;
+              }
+
+              &.account {
+                background: #ecfdf5;
+                color: #047857;
+              }
+            }
+          }
+        }
+      }
+
+      .detail-section {
+        margin-bottom: 18px;
+
+        .section-label {
+          font-size: 12px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          color: #475569;
+          margin-bottom: 8px;
+        }
+
+        .section-content {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 12px 16px;
+          font-size: 14px;
+          line-height: 1.6;
+          color: #1e293b;
+
+          &.address-content {
+            font-weight: 600;
+            color: #0f172a;
+          }
+
+          &.desc-content {
+            white-space: pre-wrap;
+          }
+        }
+      }
+
+      .officer-action-form {
+        margin-top: 22px;
+        padding-top: 18px;
+        border-top: 2px dashed #e2e8f0;
+
+        .form-heading {
+          font-size: 15px;
+          font-weight: 800;
+          color: #0f172a;
+          margin: 0 0 16px;
+        }
+
+        .form-row {
+          margin-bottom: 16px;
+
+          .field-group-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 8px;
+          }
+
+          .form-control-input,
+          .form-control-textarea {
+            width: 100%;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-family: inherit;
+            color: #0f172a !important;
+            background: #ffffff !important;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+
+            &:focus {
+              outline: none;
+              border-color: #059669;
+              box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+            }
+
+            &::placeholder {
+              color: #94a3b8;
+            }
+          }
+
+          .form-control-textarea {
+            resize: vertical;
+            min-height: 80px;
+            line-height: 1.5;
+          }
+        }
+
+        .officer-success-alert {
+          background: #ecfdf5;
+          border: 1px solid #a7f3d0;
+          color: #065f46;
+          padding: 12px 16px;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 16px;
+        }
+
+        .report-form-footer {
+          display: flex;
+          justify-content: flex-end;
+          align-items: center;
+          gap: 12px;
+          margin-top: 20px;
+          padding-top: 16px;
+          border-top: 1px solid #f1f5f9;
+
+          .btn-cancel-report {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 1.5px solid #cbd5e1;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+
+            &:hover {
+              background: #e2e8f0;
+              color: #1e293b;
+            }
+          }
+
+          .btn-submit-report-action {
+            padding: 10px 24px;
+            border-radius: 10px;
+            border: none;
+            background: #059669;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(5, 150, 105, 0.3);
+            transition: all 0.2s ease;
+
+            &:hover:not(:disabled) {
+              background: #047857;
+              transform: translateY(-1px);
+              box-shadow: 0 6px 18px rgba(5, 150, 105, 0.4);
+            }
+
+            &:disabled {
+              opacity: 0.6;
+              cursor: not-allowed;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// =============================================================================
+// KEYFRAME ANIMATIONS
+// =============================================================================
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes fadeInBackdrop {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+// =============================================================================
+// ĐỒNG BỘ DARK THEME CHO PENALTY REPORTS DASHBOARD & MODAL (CHỨC NĂNG 11)
+// =============================================================================
+.dark-theme .penalty-reports-dashboard,
+[data-theme="dark"] .penalty-reports-dashboard,
+body.dark-mode .penalty-reports-dashboard {
+  background-color: #0b0f19 !important;
+  color: #f8fafc !important;
+
+  .pl-header-bar {
+    .pl-breadcrumb {
+      color: #94a3b8 !important;
+      .current {
+        color: #f8fafc !important;
+      }
+    }
+    .pl-main-title {
+      color: #f8fafc !important;
+    }
+    .pl-sub-desc {
+      color: #94a3b8 !important;
+    }
+  }
+
+  .reports-kpi-grid {
+    .kpi-card {
+      background: #1e293b !important;
+      border-color: #334155 !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+
+      .kpi-icon {
+        background: #0f172a !important;
+      }
+
+      .kpi-value {
+        color: #f8fafc !important;
+      }
+
+      .kpi-label {
+        color: #94a3b8 !important;
+      }
+
+      &.active-kpi {
+        border-color: #10b981 !important;
+        background: rgba(5, 150, 105, 0.18) !important;
+      }
+    }
+  }
+
+  .reports-toolbar-card {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+
+    .toolbar-search-box {
+      .toolbar-search-input {
+        background: #0f172a !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+
+        &:focus {
+          border-color: #10b981 !important;
+          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2) !important;
+        }
+
+        &::placeholder {
+          color: #64748b !important;
+        }
+      }
+    }
+
+    .toolbar-filters-group {
+      .filter-select {
+        background: #0f172a !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+
+        &:focus {
+          border-color: #10b981 !important;
+        }
+      }
+
+      .btn-refresh-data {
+        background: #0f172a !important;
+        border-color: #334155 !important;
+        color: #cbd5e1 !important;
+
+        &:hover {
+          background: #334155 !important;
+          color: #ffffff !important;
+        }
+      }
+    }
+  }
+
+  .reports-table-container {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+
+    .reports-loading-box,
+    .reports-empty-box {
+      color: #94a3b8 !important;
+      h3 {
+        color: #f8fafc !important;
+      }
+    }
+
+    .reports-data-table {
+      th {
+        background: #0f172a !important;
+        border-bottom-color: #334155 !important;
+        color: #94a3b8 !important;
+      }
+
+      td {
+        border-bottom-color: #334155 !important;
+        color: #e2e8f0 !important;
+      }
+
+      .report-row:hover {
+        background: rgba(255, 255, 255, 0.04) !important;
+      }
+
+      .col-code .code-text {
+        background: rgba(3, 105, 161, 0.25) !important;
+        color: #38bdf8 !important;
+      }
+
+      .col-violation {
+        .violation-title {
+          color: #f8fafc !important;
+        }
+        .legal-basis-sub {
+          color: #94a3b8 !important;
+        }
+        .fine-badge {
+          background: rgba(245, 158, 11, 0.2) !important;
+          color: #fbbf24 !important;
+        }
+      }
+
+      .col-address {
+        color: #cbd5e1 !important;
+      }
+
+      .reporter-tag {
+        &.anon {
+          background: #334155 !important;
+          color: #cbd5e1 !important;
+        }
+        &.account {
+          background: rgba(16, 185, 129, 0.2) !important;
+          color: #34d399 !important;
+        }
+      }
+
+      .status-badge {
+        &.badge-pending {
+          background: rgba(245, 158, 11, 0.2) !important;
+          color: #fbbf24 !important;
+        }
+        &.badge-verified {
+          background: rgba(56, 189, 248, 0.2) !important;
+          color: #38bdf8 !important;
+        }
+        &.badge-resolved {
+          background: rgba(16, 185, 129, 0.2) !important;
+          color: #34d399 !important;
+        }
+        &.badge-rejected {
+          background: rgba(239, 68, 68, 0.2) !important;
+          color: #f87171 !important;
+        }
+      }
+
+      .col-action {
+        .btn-view-report-detail {
+          background: #0f172a !important;
+          border-color: #334155 !important;
+          color: #f8fafc !important;
+
+          &:hover {
+            background: #059669 !important;
+            border-color: #059669 !important;
+            color: #ffffff !important;
+          }
+        }
+      }
+    }
+
+    .reports-pagination-bar {
+      border-top-color: #334155 !important;
+
+      .page-indicator {
+        color: #94a3b8 !important;
+      }
+
+      .btn-page-nav {
+        background: #0f172a !important;
+        border-color: #334155 !important;
+        color: #e2e8f0 !important;
+
+        &:disabled {
+          opacity: 0.3 !important;
+        }
+
+        &:not(:disabled):hover {
+          background: #334155 !important;
+        }
+      }
+    }
+  }
+
+  // MODAL DARK THEME
+  .report-officer-modal-backdrop,
+  .pl-modal-backdrop,
+  .pl-modal-overlay {
+    background: rgba(11, 15, 25, 0.85) !important;
+  }
+
+  .report-officer-modal-card {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+
+    .report-modal-header {
+      background: #1e293b !important;
+      border-bottom-color: #334155 !important;
+
+      .header-title-box {
+        .header-icon {
+          background: rgba(5, 150, 105, 0.2) !important;
+        }
+        .modal-title {
+          color: #f8fafc !important;
+        }
+        .modal-subtitle {
+          color: #94a3b8 !important;
+        }
+      }
+
+      .btn-close-circle,
+      .btn-close-x {
+        background: #0f172a !important;
+        border-color: #334155 !important;
+        color: #94a3b8 !important;
+
+        &:hover {
+          background: rgba(239, 68, 68, 0.2) !important;
+          border-color: #ef4444 !important;
+          color: #f87171 !important;
+        }
+      }
+    }
+
+    .report-detail-body {
+      .detail-meta-grid {
+        background: #0f172a !important;
+        border-color: #334155 !important;
+
+        .meta-item {
+          .meta-label {
+            color: #94a3b8 !important;
+          }
+          .meta-val {
+            color: #f8fafc !important;
+
+            &.highlight {
+              color: #34d399 !important;
+            }
+
+            &.fine-highlight {
+              color: #fbbf24 !important;
+              background: rgba(245, 158, 11, 0.2) !important;
+            }
+
+            .reporter-chip {
+              &.anon {
+                background: #1e293b !important;
+                color: #cbd5e1 !important;
+              }
+              &.account {
+                background: rgba(16, 185, 129, 0.2) !important;
+                color: #34d399 !important;
+              }
+            }
+          }
+        }
+      }
+
+      .detail-section {
+        .section-label {
+          color: #cbd5e1 !important;
+        }
+
+        .section-content {
+          background: #0f172a !important;
+          border-color: #334155 !important;
+          color: #e2e8f0 !important;
+
+          &.address-content {
+            color: #f8fafc !important;
+          }
+        }
+      }
+
+      .officer-action-form {
+        border-top-color: #334155 !important;
+
+        .form-heading {
+          color: #f8fafc !important;
+        }
+
+        .form-row {
+          .field-group-label {
+            color: #cbd5e1 !important;
+          }
+
+          .form-control-input,
+          .form-control-textarea {
+            background: #0f172a !important;
+            border-color: #334155 !important;
+            color: #f8fafc !important;
+
+            &:focus {
+              border-color: #10b981 !important;
+              box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2) !important;
+            }
+
+            &::placeholder {
+              color: #64748b !important;
+            }
+          }
+        }
+
+        .officer-success-alert {
+          background: rgba(16, 185, 129, 0.15) !important;
+          border-color: rgba(16, 185, 129, 0.3) !important;
+          color: #34d399 !important;
+        }
+
+        .report-form-footer {
+          border-top-color: #334155 !important;
+
+          .btn-cancel-report {
+            background: #0f172a !important;
+            border-color: #334155 !important;
+            color: #cbd5e1 !important;
+
+            &:hover {
+              background: #334155 !important;
+              color: #ffffff !important;
+            }
+          }
+
+          .btn-submit-report-action {
+            background: #059669 !important;
+            color: #ffffff !important;
+
+            &:hover:not(:disabled) {
+              background: #047857 !important;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
