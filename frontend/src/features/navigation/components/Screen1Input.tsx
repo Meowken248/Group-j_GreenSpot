@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
+import type {
   GeoLocationPoint,
   VehicleCategory,
   VehicleOption,
@@ -89,13 +89,22 @@ export const Screen1Input: React.FC<Screen1InputProps> = ({
     setDestInput(destination.name);
   }, [destination.name]);
 
-  const handleDestChange = async (val: string) => {
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleDestChange = (val: string) => {
     setDestInput(val);
     onClearErrors();
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
     if (val.trim().length >= 2) {
-      const results = await fetchRouteAutocomplete(val);
-      setDestSuggestions(results);
-      setShowDestSuggestions(true);
+      debounceTimerRef.current = setTimeout(async () => {
+        const results = await fetchRouteAutocomplete(val);
+        setDestSuggestions(results);
+        setShowDestSuggestions(true);
+      }, 250);
     } else {
       setDestSuggestions([]);
       setShowDestSuggestions(false);
@@ -109,11 +118,11 @@ export const Screen1Input: React.FC<Screen1InputProps> = ({
   };
 
   const isOriginError =
-    validationError?.includes('đầy đủ điểm đi') && !origin.name.trim() ||
+    (validationError?.includes('đầy đủ điểm đi') && !origin.name.trim()) ||
     validationError?.includes('trùng nhau');
 
   const isDestError =
-    validationError?.includes('đầy đủ điểm đi') && !destination.name.trim() ||
+    (validationError?.includes('đầy đủ điểm đi') && !destination.name.trim()) ||
     validationError?.includes('trùng nhau');
 
   return (
@@ -146,7 +155,7 @@ export const Screen1Input: React.FC<Screen1InputProps> = ({
             title="Tự động bắt tọa độ GPS thiết bị"
             onClick={onGpsRequested}
           >
-            <span>🎯 Vị trí hiện tại</span>
+            <span>🎯 Vị trí hiện tại của tôi</span>
           </button>
         </div>
 

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import {
+import type {
   DualRouteResponse,
-  FloodHazardDetail,
   GeoLocationPoint,
   ScreenStep,
 } from '../types/navigation.types';

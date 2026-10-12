@@ -1,5 +1,5 @@
 import React from 'react';
-import { DualRouteResponse } from '../types/navigation.types';
+import type { DualRouteResponse } from '../types/navigation.types';
 
 interface Screen2CompareProps {
   planData: DualRouteResponse;
@@ -16,10 +16,92 @@ export const Screen2Compare: React.FC<Screen2CompareProps> = ({
   isLoadingTide,
   onBackToInput,
 }) => {
-  const { fastest_route, safest_route, all_clear, all_flooded, summary_message } = planData;
+  const { fastest_route, safest_route, all_clear, all_flooded, advisory_recommendation } =
+    planData;
 
+  // =========================================================================
+  // KỊCH BẢN 1: CẢ 2 TUYẾN ĐỀU KHÔ RÁO, KHÔNG BỊ NGẬP
+  // "Hai tuyến gộp làm một, ưu tiên tuyến ngắn nhất"
+  // =========================================================================
+  if (all_clear) {
+    return (
+      <div
+        className="route-compare-card safest-card selected"
+        style={{ gridColumn: 'span 2' }}
+        onClick={() => onSelectRouteType('SAFEST')}
+      >
+        <div className="card-header-badge badge-safe">
+          <span>🌟 TUYẾN AN TOÀN DUY NHẤT (GỘP TUYẾN)</span>
+        </div>
+
+        <div style={{ color: '#34d399', fontWeight: 700, fontSize: '1.05rem', marginBottom: '0.4rem' }}>
+          Tất cả các tuyến đường đều an toàn, không có ngập
+        </div>
+        <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0 0 1rem 0' }}>
+          Hai tuyến gộp làm một, ưu tiên tuyến ngắn nhất để tối ưu thời gian lưu thông.
+        </p>
+
+        <div className="stat-main">{fastest_route.duration_formatted}</div>
+
+        <div className="hazard-stat-box hazard-safe">
+          <strong>Số điểm ngập: 0</strong>
+          <div style={{ marginTop: '0.35rem', fontSize: '0.85rem' }}>
+            ✓ Toàn bộ mặt đường cao ráo, lưu thông thông suốt.
+          </div>
+        </div>
+
+        <button
+          type="button"
+          style={{
+            marginTop: 'auto',
+            background: 'none',
+            border: 'none',
+            color: '#94a3b8',
+            fontSize: '0.85rem',
+            cursor: 'pointer',
+            paddingTop: '1.25rem',
+            textDecoration: 'underline',
+            textAlign: 'left',
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onBackToInput();
+          }}
+        >
+          ← Chỉnh sửa điểm đi / đến
+        </button>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // KỊCH BẢN TIÊU CHUẨN HOẶC TẤT CẢ TUYẾN ĐỀU BỊ NGẬP DO MƯA LỚN
+  // =========================================================================
   return (
     <>
+      {all_flooded && (
+        <div
+          style={{
+            gridColumn: 'span 2',
+            background: 'rgba(239, 68, 68, 0.15)',
+            border: '1px solid rgba(239, 68, 68, 0.4)',
+            borderRadius: '10px',
+            padding: '0.85rem 1.25rem',
+            color: '#fca5a5',
+            fontSize: '0.88rem',
+            marginBottom: '0.25rem',
+          }}
+        >
+          <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#ef4444', marginBottom: '0.3rem' }}>
+            ⚠️ Cảnh báo: Toàn bộ lộ trình đều có điểm ngập sâu
+          </div>
+          <div>
+            {advisory_recommendation ||
+              'Hiển thị phương án có mực ngập thấp nhất kèm lời khuyên hoãn chuyến đi.'}
+          </div>
+        </div>
+      )}
+
       {/* CỘT TRÁI: TUYẾN NHANH NHẤT */}
       <div
         className={`route-compare-card fastest-card ${
@@ -47,7 +129,8 @@ export const Screen2Compare: React.FC<Screen2CompareProps> = ({
               <strong>Số điểm ngập: {fastest_route.hazard_count}</strong>
               {fastest_route.hazard_count > 0 ? (
                 <div style={{ marginTop: '0.35rem', fontSize: '0.8rem' }}>
-                  ⚠️ Cảnh báo có {fastest_route.hazard_count} đoạn ngập nước (mức ngập sâu tới {fastest_route.max_depth_cm}cm, nguy cơ chết máy cao).
+                  ⚠️ Cảnh báo có {fastest_route.hazard_count} đoạn ngập nước (mức ngập sâu tới{' '}
+                  {fastest_route.max_depth_cm}cm, nguy cơ chết máy cao).
                 </div>
               ) : (
                 <div style={{ marginTop: '0.35rem', fontSize: '0.8rem' }}>
@@ -91,7 +174,9 @@ export const Screen2Compare: React.FC<Screen2CompareProps> = ({
             <div className="hazard-stat-box hazard-safe">
               <strong>Số điểm ngập: {safest_route.hazard_count}</strong>
               <div style={{ marginTop: '0.35rem', fontSize: '0.8rem' }}>
-                ✓ Đảm bảo mặt đường cao ráo, hoàn toàn né tránh các vùng ngập úng.
+                {safest_route.hazard_count === 0
+                  ? '✓ Đảm bảo mặt đường cao ráo, hoàn toàn né tránh các vùng ngập úng.'
+                  : `Phương án có mực ngập thấp nhất (${safest_route.max_depth_cm}cm).`}
               </div>
             </div>
 
