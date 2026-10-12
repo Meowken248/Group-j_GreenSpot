@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/navigation.scss';
 
-import {
+import type {
   DualRouteResponse,
   EarlyWarningAlert,
   GeoLocationPoint,
@@ -192,6 +192,12 @@ export const FloodNavigationContainer: React.FC = () => {
           selectedVehicle
         );
 
+        const alertMsg = warning.alert_message || 'Cảnh báo: Phía trước 300m có điểm ngập sâu';
+        setToastMessage({
+          text: alertMsg,
+          type: 'warning',
+        });
+
         // Kích hoạt Popup khẩn cấp
         setEmergencyAlert(
           warning.has_hazard_ahead
@@ -200,7 +206,7 @@ export const FloodNavigationContainer: React.FC = () => {
                 has_hazard_ahead: true,
                 distance_ahead_meters: 300,
                 alert_title: 'CẢNH BÁO NGẬP',
-                alert_message: 'Phía trước 300m có điểm ngập sâu',
+                alert_message: alertMsg,
                 water_level_display: 'Mực nước: 0.45m - Nguy cơ chết máy cao',
                 voice_announcement:
                   'Cảnh báo, phía trước ba trăm mét có điểm ngập sâu, bạn có muốn đổi tuyến?',
@@ -223,11 +229,13 @@ export const FloodNavigationContainer: React.FC = () => {
         text: 'Đã sao chép liên kết lộ trình an toàn',
         type: 'success',
       });
+      setTimeout(() => setToastMessage(null), 2000);
     } catch {
       setToastMessage({
         text: 'Đã sao chép liên kết lộ trình an toàn',
         type: 'success',
       });
+      setTimeout(() => setToastMessage(null), 2000);
     }
   };
 

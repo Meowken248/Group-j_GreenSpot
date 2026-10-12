@@ -1,4 +1,4 @@
-export * from './types/navigation.types';
+export type * from './types/navigation.types';
 export * from './services/navigationApi';
 export { FloodNavigationContainer } from './pages/FloodNavigationContainer';
 export { Screen1Input } from './components/Screen1Input';

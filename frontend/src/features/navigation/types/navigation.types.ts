@@ -81,3 +81,6 @@ export interface EarlyWarningAlert {
 }
 
 export type ScreenStep = 1 | 2 | 3 | 4;
+
+export const NAVIGATION_VERSION = '1.0.0';
+

@@ -3,7 +3,7 @@
  * Communicates with backend endpoints and provides audio/TTS synthesis helpers.
  */
 
-import {
+import type {
   DualRouteResponse,
   EarlyWarningAlert,
   GeoLocationPoint,
@@ -129,6 +129,10 @@ export function playEmergencyBeep(): void {
 
     osc1.start();
     osc1.stop(ctx.currentTime + 0.5);
+
+    setTimeout(() => {
+      ctx.close().catch(() => {});
+    }, 600);
   } catch (e) {
     console.warn('Audio playback error', e);
   }
