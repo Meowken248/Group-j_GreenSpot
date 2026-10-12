@@ -4,7 +4,7 @@ FastAPI Router for Posts Domain (Chức năng STT 9: Đăng bài kèm toạ đ�
 
 import uuid
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException, status
+from fastapi import APIRouter, Depends, Query, UploadFile, File, Header, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -19,9 +19,23 @@ from app.schemas.post import (
     PostDetailResponse,
     MediaUploadResponse,
 )
+from app.schemas.feed import FeedListResponse
 
 router = APIRouter(prefix="/posts", tags=["Bài đăng cộng đồng (Posts)"])
 post_service = PostService()
+
+
+async def get_optional_current_user(
+    authorization: Optional[str] = Header(None),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[User]:
+    """Dependency xác thực tùy chọn (cho phép cả khách vãng lai và user đã đăng nhập)"""
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    try:
+        return await get_current_active_user(authorization=authorization, db=db)
+    except Exception:
+        return None
 
 
 @router.post(
@@ -67,6 +81,79 @@ async def upload_post_media(
     - Video: MP4, MOV (tối đa 50MB, thời lượng khuyến nghị < 60s)
     """
     return await post_service.save_uploaded_media(file)
+
+
+@router.get(
+    "/feed",
+    response_model=FeedListResponse,
+    summary="Bảng tin Geo-Feed theo bán kính và phân vùng (Feature STT 8 Màn 1 -> Màn 3)",
+)
+async def get_geo_feed_endpoint(
+    tab: str = Query("nearby", description="Tab: nearby (Gần tôi), district (Quận của tôi), friends (Bạn bè), groups (Nhóm)"),
+    latitude: Optional[float] = Query(None, description="Vĩ độ GPS của người dùng"),
+    longitude: Optional[float] = Query(None, description="Kinh độ GPS của người dùng"),
+    radius_km: float = Query(2.0, ge=0.5, le=10.0, description="Bán kính quét (0.5km - 10km)"),
+    district: Optional[str] = Query(None, description="Tên quận lọc khi tab=district"),
+    category: Optional[str] = Query(None, description="Chủ đề lọc rác thải"),
+    sort_by: str = Query("newest", description="Sắp xếp: newest, popular, nearest"),
+    page: int = Query(1, ge=1, description="Số trang hiện tại"),
+    limit: int = Query(10, ge=1, le=50, description="Số bài viết mỗi trang"),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Truy vấn Bảng tin Geo-Feed theo đặc tả STT 08 (Trang 97 - 102):
+    - Màn 1: Tab 'Gần tôi' theo bán kính GPS (mặc định 2km)
+    - Màn 2: Tab 'Quận của tôi', 'Bạn bè', 'Nhóm' kèm bộ lọc chủ đề
+    - Màn 3: Tích hợp chọn bán kính Slider (0.5km - 10km)
+    """
+    return await post_service.get_geo_feed(
+        db=db,
+        current_user=current_user,
+        tab=tab,
+        user_lat=latitude,
+        user_lon=longitude,
+        radius_km=radius_km,
+        district=district,
+        category=category,
+        sort_by=sort_by,
+        page=page,
+        limit=limit,
+    )
+
+
+@router.get(
+    "",
+    response_model=FeedListResponse,
+    summary="Bảng tin Geo-Feed (alias đường dẫn gốc /posts)",
+)
+async def get_posts_feed_root(
+    tab: str = Query("nearby"),
+    latitude: Optional[float] = Query(None),
+    longitude: Optional[float] = Query(None),
+    radius_km: float = Query(2.0, ge=0.5, le=10.0),
+    district: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),
+    sort_by: str = Query("newest"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=50),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Alias cho /api/v1/posts/feed"""
+    return await get_geo_feed_endpoint(
+        tab=tab,
+        latitude=latitude,
+        longitude=longitude,
+        radius_km=radius_km,
+        district=district,
+        category=category,
+        sort_by=sort_by,
+        page=page,
+        limit=limit,
+        current_user=current_user,
+        db=db,
+    )
 
 
 @router.get(

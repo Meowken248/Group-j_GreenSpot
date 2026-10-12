@@ -4,12 +4,13 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional, List, Tuple
 from fastapi import HTTPException, UploadFile, status
-from sqlalchemy import select, update, delete, and_, func
+from sqlalchemy import select, update, delete, and_, or_, func, desc, asc, case, literal
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.config import UPLOAD_DIR
 from app.models.post import Post, PostTaggedFriend
+from app.models.friends import Friendship
 from app.models.rbac import User
 from app.schemas.post import (
     CreatePostRequest,
@@ -21,6 +22,7 @@ from app.schemas.post import (
     TaggedFriendInfo,
     MediaUploadResponse,
 )
+from app.schemas.feed import FeedPostItem, FeedListResponse
 
 
 class PostService:
@@ -408,4 +410,249 @@ class PostService:
             created_at=post.created_at,
             updated_at=post.updated_at,
             tagged_friends=tagged_list,
+        )
+
+    async def get_geo_feed(
+        self,
+        db: AsyncSession,
+        current_user: Optional[User] = None,
+        tab: str = "nearby",
+        user_lat: Optional[float] = None,
+        user_lon: Optional[float] = None,
+        radius_km: float = 2.0,
+        district: Optional[str] = None,
+        category: Optional[str] = None,
+        sort_by: str = "newest",
+        page: int = 1,
+        limit: int = 10,
+    ) -> FeedListResponse:
+        """
+        Truy vấn Bảng tin Geo-Feed theo đặc tả STT 08:
+        - tab "nearby": Lọc theo bán kính GPS (PostGIS ST_DistanceSphere)
+        - tab "district": Lọc theo quận của người dùng
+        - tab "friends": Lọc bài viết từ bạn bè (bảng friendships)
+        - tab "groups": Lọc bài viết từ các nhóm tình nguyện
+        - Hỗ trợ bộ lọc chủ đề môi trường và sắp xếp (newest / popular / nearest)
+        """
+        page = max(1, page)
+        limit = min(50, max(1, limit))
+        radius_km = min(10.0, max(0.5, radius_km))
+        offset = (page - 1) * limit
+
+        conditions = [
+            Post.deleted_at.is_(None),
+            Post.is_hidden.is_(False),
+            Post.visibility.in_(["PUBLIC", "COMMUNITY", "FRIENDS", "GROUP"]),
+        ]
+
+        has_user_coords = (user_lat is not None and user_lon is not None)
+        if has_user_coords:
+            distance_expr = func.ST_DistanceSphere(
+                func.ST_MakePoint(Post.longitude, Post.latitude),
+                func.ST_MakePoint(user_lon, user_lat)
+            )
+        else:
+            distance_expr = None
+
+        if tab == "nearby":
+            if has_user_coords:
+                conditions.append(Post.latitude.is_not(None))
+                conditions.append(Post.longitude.is_not(None))
+                conditions.append(distance_expr <= (radius_km * 1000.0))
+        elif tab == "district":
+            target_district = (district or "").strip()
+            if target_district:
+                conditions.append(Post.address.ilike(f"%{target_district}%"))
+        elif tab == "friends":
+            if not current_user:
+                return FeedListResponse(
+                    items=[],
+                    total=0,
+                    has_more=False,
+                    page=page,
+                    limit=limit,
+                    tab=tab,
+                    radius_km=radius_km,
+                    user_lat=user_lat,
+                    user_lon=user_lon,
+                    district=district,
+                    category=category,
+                    sort_by=sort_by,
+                )
+            friend_subquery = select(
+                case(
+                    (Friendship.user_id_1 == current_user.user_id, Friendship.user_id_2),
+                    else_=Friendship.user_id_1
+                )
+            ).where(
+                and_(
+                    or_(
+                        Friendship.user_id_1 == current_user.user_id,
+                        Friendship.user_id_2 == current_user.user_id
+                    ),
+                    Friendship.deleted_at.is_(None)
+                )
+            )
+            conditions.append(Post.user_id.in_(friend_subquery))
+        elif tab == "groups":
+            if not current_user:
+                return FeedListResponse(
+                    items=[],
+                    total=0,
+                    has_more=False,
+                    page=page,
+                    limit=limit,
+                    tab=tab,
+                    radius_km=radius_km,
+                    user_lat=user_lat,
+                    user_lon=user_lon,
+                    district=district,
+                    category=category,
+                    sort_by=sort_by,
+                )
+            conditions.append(Post.group_id.is_not(None))
+
+        if category and category.lower() != "all":
+            conditions.append(Post.content.ilike(f"%{category}%"))
+
+        count_stmt = select(func.count(Post.post_id)).where(and_(*conditions))
+        total_res = await db.execute(count_stmt)
+        total_count = total_res.scalar() or 0
+
+        if sort_by == "nearest" and distance_expr is not None:
+            order_clauses = [asc(distance_expr)]
+        elif sort_by == "popular":
+            order_clauses = [desc(Post.reactions_count + Post.comments_count), desc(Post.created_at)]
+        else:
+            if tab == "nearby" and distance_expr is not None and sort_by != "newest":
+                order_clauses = [asc(distance_expr), desc(Post.created_at)]
+            else:
+                order_clauses = [desc(Post.created_at)]
+
+        select_cols = [Post]
+        if distance_expr is not None:
+            select_cols.append(distance_expr.label("dist_meters"))
+        else:
+            select_cols.append(literal(None).label("dist_meters"))
+
+        feed_stmt = (
+            select(*select_cols)
+            .where(and_(*conditions))
+            .options(
+                selectinload(Post.user),
+                selectinload(Post.tagged_friends).selectinload(PostTaggedFriend.friend)
+            )
+            .order_by(*order_clauses)
+            .offset(offset)
+            .limit(limit)
+        )
+        feed_res = await db.execute(feed_stmt)
+        rows = feed_res.all()
+
+        items: List[FeedPostItem] = []
+        for row in rows:
+            post_obj: Post = row[0]
+            dist_val = row[1]
+
+            parsed_media: List[MediaItemInput] = []
+            thumb_url: Optional[str] = None
+            if post_obj.media_urls:
+                try:
+                    raw_items = json.loads(post_obj.media_urls)
+                    if isinstance(raw_items, list):
+                        for m in raw_items:
+                            if isinstance(m, dict):
+                                parsed_media.append(MediaItemInput(**m))
+                            elif isinstance(m, str):
+                                parsed_media.append(MediaItemInput(url=m, media_type=MediaTypeEnum.IMAGE))
+                    elif isinstance(raw_items, str):
+                        parsed_media.append(MediaItemInput(url=raw_items, media_type=MediaTypeEnum.IMAGE))
+                    if parsed_media:
+                        thumb_url = parsed_media[0].url
+                except Exception:
+                    parsed_media = []
+
+            tagged_list: List[TaggedFriendInfo] = []
+            if hasattr(post_obj, "tagged_friends") and post_obj.tagged_friends:
+                for tf in post_obj.tagged_friends:
+                    if tf.deleted_at is None and tf.friend:
+                        tagged_list.append(
+                            TaggedFriendInfo(
+                                user_id=tf.friend.user_id,
+                                full_name=tf.friend.full_name or "Bạn bè",
+                                avatar_url=tf.friend.avatar_url,
+                                email=tf.friend.email or "",
+                            )
+                        )
+
+            author_info = None
+            if hasattr(post_obj, "user") and post_obj.user:
+                author_info = AuthorSummary(
+                    user_id=post_obj.user.user_id,
+                    email=post_obj.user.email,
+                    full_name=post_obj.user.full_name or "Công dân sinh thái",
+                    avatar_url=post_obj.user.avatar_url,
+                )
+
+            dist_meters = None
+            dist_text = None
+            if dist_val is not None:
+                try:
+                    dist_meters = round(float(dist_val), 1)
+                    if dist_meters < 1000:
+                        dist_text = f"Cách bạn {int(round(dist_meters))}m"
+                    else:
+                        dist_text = f"Cách bạn {round(dist_meters / 1000.0, 1)}km"
+                except Exception:
+                    dist_meters = None
+                    dist_text = None
+
+            is_edited = False
+            if post_obj.updated_at and post_obj.created_at:
+                try:
+                    is_edited = abs((post_obj.updated_at - post_obj.created_at).total_seconds()) > 2
+                except Exception:
+                    is_edited = False
+
+            items.append(
+                FeedPostItem(
+                    post_id=post_obj.post_id,
+                    user_id=post_obj.user_id,
+                    author=author_info,
+                    content=post_obj.content,
+                    media_urls=parsed_media,
+                    thumbnail_url=thumb_url,
+                    latitude=post_obj.latitude,
+                    longitude=post_obj.longitude,
+                    address=post_obj.address,
+                    group_id=post_obj.group_id,
+                    visibility=post_obj.visibility,
+                    is_hidden=post_obj.is_hidden,
+                    is_edited=is_edited,
+                    reactions_count=post_obj.reactions_count,
+                    comments_count=post_obj.comments_count,
+                    version=post_obj.version,
+                    created_at=post_obj.created_at,
+                    updated_at=post_obj.updated_at,
+                    tagged_friends=tagged_list,
+                    distance_meters=dist_meters,
+                    distance_text=dist_text,
+                    user_reaction=None,
+                )
+            )
+
+        has_more = (offset + len(items)) < total_count
+        return FeedListResponse(
+            items=items,
+            total=total_count,
+            has_more=has_more,
+            page=page,
+            limit=limit,
+            tab=tab,
+            radius_km=radius_km,
+            user_lat=user_lat,
+            user_lon=user_lon,
+            district=district,
+            category=category,
+            sort_by=sort_by,
         )
