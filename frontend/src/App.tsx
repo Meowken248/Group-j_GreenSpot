@@ -661,7 +661,7 @@ function App() {
                 <span>Quản lý vi phạm</span>
               </button>
             )}
-            
+
             <button
               type="button"
               className={`view-tab-btn ${activeTab === "voice" ? "active" : ""}`}
@@ -764,8 +764,8 @@ function App() {
               authRedirectUrl === "/devices" || window.location.hash === "#devices"
                 ? "devices"
                 : authRedirectUrl
-                ? "login"
-                : undefined
+                  ? "login"
+                  : undefined
             }
             redirectUrl={authRedirectUrl}
             onExitAuth={() => {
