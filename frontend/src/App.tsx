@@ -17,10 +17,9 @@ import { ProfileContainer } from "./features/profile";
 import { FriendsContainer } from "./features/friends";
 import { DeduplicationDashboard } from "./features/reports";
 import { TriageAppDashboard } from "./features/triage";
-import { PenaltyLookupContainer } from "./features/penalties";
+import { PenaltyLookupContainer, PenaltyReportsDashboard } from "./features/penalties";
 import { PostCreatorContainer } from "./features/posts";
 import { FloodNavigationContainer } from "./features/navigation";
-
 import {
   SettingsContainer,
   applyThemeToDocument,
@@ -56,6 +55,7 @@ function App() {
       if (hash === "#rbac" || path === "/rbac") return "/rbac";
       if (hash === "#dedup" || path === "/dedup") return "/dedup";
       if (hash === "#settings" || path === "/settings") return "/settings";
+      if (hash === "#penalty-reports" || path === "/penalty-reports") return "/penalty-reports";
     }
     return undefined;
   });
@@ -72,6 +72,7 @@ function App() {
     | "dedup"
     | "settings"
     | "penalties"
+    | "penalty-reports"
     | "posts"
     | "triage"
     | "navigation"
@@ -98,6 +99,10 @@ function App() {
 
 
     // Khách vãng lai chưa đăng nhập: Không được phép vào các trang cài đặt, phân tích khí hậu, bạn bè, profile, quản trị, trùng lặp
+    if (hash === "#penalty-reports" || path === "/penalty-reports") {
+      if (!isLogged) return "auth";
+      return "penalty-reports";
+    }
     if (hash === "#settings" || path === "/settings") {
       if (!isLogged) return "auth";
       return "settings";
@@ -186,6 +191,15 @@ function App() {
     currentUser?.role === "OFFICER" ||
     currentUser?.role === "DISTRICT_MANAGER" ||
     currentUser?.role === "COORDINATOR" ||
+    canAccess("INCIDENTS");
+
+  const hasPenaltyReportsAccess =
+    currentUser?.role === "ADMIN" ||
+    currentUser?.role === "OFFICER" ||
+    currentUser?.role === "DISTRICT_MANAGER" ||
+    currentUser?.role === "RESPONDER" ||
+    currentUser?.role === "COORDINATOR" ||
+    canAccess("CITIZEN_FEEDBACK") ||
     canAccess("INCIDENTS");
 
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -294,13 +308,7 @@ function App() {
       } else if (hash === "#navigation" || window.location.pathname === "/navigation") {
         setActiveTab("navigation");
       } else if (hash === "#penalties") {
-        if (!isLogged) {
-          setAuthRedirectUrl("/penalties");
-          setActiveTab("auth");
-          window.location.hash = "#login";
-        } else {
-          setActiveTab("penalties");
-        }
+        setActiveTab("penalties");
       } else if (hash === "#posts" || hash === "#create-post") {
         if (!isLogged) {
           setAuthRedirectUrl("/posts");
@@ -308,6 +316,14 @@ function App() {
           window.location.hash = "#login";
         } else {
           setActiveTab("posts");
+        }
+      } else if (hash === "#penalty-reports" || window.location.pathname === "/penalty-reports") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/penalty-reports");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("penalty-reports");
         }
       } else if (hash === "#profile") {
         if (!isLogged) {
@@ -354,12 +370,12 @@ function App() {
         setAuthRedirectUrl("/posts");
         setActiveTab("auth");
         window.location.hash = "#login";
-      } else if (activeTab === "penalties") {
-        setAuthRedirectUrl("/penalties");
+      } else if (activeTab === "triage") {
+        setAuthRedirectUrl("/triage");
         setActiveTab("auth");
         window.location.hash = "#login";
-      } else if (activeTab === "voice") {
-        setAuthRedirectUrl("/voice");
+      } else if (activeTab === "penalty-reports") {
+        setAuthRedirectUrl("/penalty-reports");
         setActiveTab("auth");
         window.location.hash = "#login";
       }
@@ -557,6 +573,19 @@ function App() {
                       <span>Thẩm định AI & GIS</span>
                     </button>
                     <div className="dropdown-separator" />
+                    <button
+                      type="button"
+                      className="dropdown-menu-action"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        setActiveTab("penalty-reports");
+                        window.location.hash = "#penalty-reports";
+                      }}
+                    >
+                      <span className="action-icon">📢</span>
+                      <span>Quản lý vi phạm</span>
+                    </button>
+                    <div className="dropdown-separator" />
                   </>
                 )}
 
@@ -696,7 +725,6 @@ function App() {
                 <span>Phân tích AQI & Khí hậu</span>
               </button>
             )}
-
             <button
               type="button"
               className={`view-tab-btn ${activeTab === "navigation" ? "active" : ""}`}
@@ -736,6 +764,21 @@ function App() {
               <span>Tra cứu xử phạt</span>
             </button>
 
+            {hasPenaltyReportsAccess && (
+              <button
+                type="button"
+                className={`view-tab-btn ${activeTab === "penalty-reports" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("penalty-reports");
+                  window.location.hash = "#penalty-reports";
+                }}
+                title="Giám sát & Xử lý phản ánh vi phạm môi trường từ công dân"
+                data-testid="tab-btn-penalty-reports"
+              >
+                <span>📢</span>
+                <span>Quản lý vi phạm</span>
+              </button>
+            )}
             <button
               type="button"
               className={`view-tab-btn ${activeTab === "voice" ? "active" : ""}`}
@@ -1018,34 +1061,36 @@ function App() {
             />
           </div>
         )
-      ) : activeTab === "penalties" ? (
-        !currentUser ? (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-            <AuthContainer
-              initialView="login"
-              redirectUrl="/penalties"
-              onExitAuth={() => {
-                setActiveTab("map");
-                window.location.hash = "#map";
-              }}
-            />
-          </div>
-        ) : (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-            <PenaltyLookupContainer
+      ) : activeTab === "penalty-reports" ? (
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+          <ModulePermissionGuard
+            moduleCode="CITIZEN_FEEDBACK"
+            moduleName="Quản lý Phản ánh Vi phạm Môi trường"
+          >
+            <PenaltyReportsDashboard
               currentUser={currentUser}
-              onNavigateToAuth={() => {
-                setAuthRedirectUrl("/penalties");
-                setActiveTab("auth");
-                window.location.hash = "#login";
-              }}
-              onNavigateToReport={() => {
-                setActiveTab("map");
-                window.location.hash = "#map";
+              onBackToPenalties={() => {
+                setActiveTab("penalties");
+                window.location.hash = "#penalties";
               }}
             />
-          </div>
-        )
+          </ModulePermissionGuard>
+        </div>
+      ) : activeTab === "penalties" ? (
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+          <PenaltyLookupContainer
+            currentUser={currentUser}
+            onNavigateToAuth={() => {
+              setAuthRedirectUrl("/penalties");
+              setActiveTab("auth");
+              window.location.hash = "#login";
+            }}
+            onNavigateToReport={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
+          />
+        </div>
       ) : activeTab === "posts" ? (
         !currentUser ? (
           <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
@@ -1071,7 +1116,6 @@ function App() {
                 window.location.hash = "#login";
               }}
               onViewCreatedPost={(_postId) => {
-                // Điều hướng xem bài viết
                 setActiveTab("profile");
                 window.location.hash = "#profile";
               }}

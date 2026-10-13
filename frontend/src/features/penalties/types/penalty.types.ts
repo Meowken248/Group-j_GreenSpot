@@ -52,3 +52,55 @@ export interface QuickCategoryStat {
 }
 
 export type PenaltyScreenMode = 'SEARCH' | 'LIST' | 'DETAIL';
+
+export type PenaltyReportStatus = 'PENDING' | 'VERIFIED' | 'RESOLVED' | 'REJECTED';
+
+export interface CreatePenaltyReportRequest {
+  penalty_id?: string | null;
+  violation_title: string;
+  legal_basis: string;
+  fine_range: string;
+  address_text: string;
+  description: string;
+  is_anonymous: boolean;
+}
+
+export interface UpdatePenaltyReportStatusRequest {
+  status: PenaltyReportStatus;
+  officer_note?: string | null;
+}
+
+export interface PenaltyReportItem {
+  id: string;
+  tracking_code: string;
+  penalty_id?: string | null;
+  violation_title: string;
+  legal_basis: string;
+  fine_range: string;
+  address_text: string;
+  description: string;
+  is_anonymous: boolean;
+  reporter_id?: string | null;
+  reporter_name?: string | null;
+  status: PenaltyReportStatus;
+  officer_note?: string | null;
+  resolved_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PenaltyReportListResponse {
+  items: PenaltyReportItem[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+}
+
+export interface PenaltyReportStatsResponse {
+  total: number;
+  pending: number;
+  verified: number;
+  resolved: number;
+  rejected: number;
+}

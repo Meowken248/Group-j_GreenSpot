@@ -50,7 +50,7 @@ REGULATION_SEEDS = [
         "legal_basis": "Khoản 2 Điều 25 Nghị định 45/2022/NĐ-CP",
         "effective_date": date(2022, 8, 25),
         "amendment_warning": None,
-        "keywords": "vứt rác vỉa hè, đổ rác lòng đường, xả rác bừa bãi, rác sinh hoạt, bao ni lông, cống rãnh, tắc cống",
+        "keywords": "vứt rác vỉa hè, đổ rác vỉa hè, đổ rác lòng đường, vứt rác lòng đường, xả rác bừa bãi, rác sinh hoạt, bao ni lông, cống rãnh, tắc cống, đổ rác, vứt rác",
     },
     {
         "title": "Vứt tàn, mẩu thuốc lá không đúng nơi quy định",
@@ -68,7 +68,7 @@ REGULATION_SEEDS = [
         "legal_basis": "Khoản 1 Điều 25 Nghị định 45/2022/NĐ-CP",
         "effective_date": date(2022, 8, 25),
         "amendment_warning": None,
-        "keywords": "tàn thuốc, mẩu thuốc lá, hút thuốc vứt tàn, nơi công cộng, xả rác, công viên",
+        "keywords": "vứt tàn thuốc, tàn thuốc, mẩu thuốc lá, vứt tàn thuốc lá, hút thuốc vứt tàn, hút thuốc, nơi công cộng, xả rác, công viên",
     },
     {
         "title": "Không phân loại chất thải rắn sinh hoạt tại nguồn theo quy định",
