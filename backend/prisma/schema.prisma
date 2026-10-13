@@ -324,19 +324,20 @@ model permissions {
 }
 
 model posts {
-  post_id         String    @id @db.Uuid
-  user_id         String    @db.Uuid
-  content         String
-  media_urls      String?
-  group_id        String?   @db.Uuid
-  visibility      String    @db.VarChar(20)
-  is_hidden       Boolean
-  reactions_count Int
-  comments_count  Int
-  deleted_at      DateTime? @db.Timestamptz(6)
-  created_at      DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime  @default(now()) @db.Timestamptz(6)
-  users           users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  post_id             String                @id @db.Uuid
+  user_id             String                @db.Uuid
+  content             String
+  media_urls          String?
+  group_id            String?               @db.Uuid
+  visibility          String                @db.VarChar(20)
+  is_hidden           Boolean
+  reactions_count     Int
+  comments_count      Int
+  deleted_at          DateTime?             @db.Timestamptz(6)
+  created_at          DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime              @default(now()) @db.Timestamptz(6)
+  post_tagged_friends post_tagged_friends[]
+  users               users                 @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([user_id], map: "ix_posts_user_id")
 }
@@ -561,6 +562,9 @@ model users {
   incident_media                                     incident_media[]
   incidents_incidents_priority_modified_byTousers    incidents[]               @relation("incidents_priority_modified_byTousers")
   incidents                                          incidents[]
+  notifications                                      notifications[]
+  penalty_reports                                    penalty_reports[]
+  post_tagged_friends                                post_tagged_friends[]
   posts                                              posts[]
   safe_navigation_routes                             safe_navigation_routes[]
   user_activities                                    user_activities[]
@@ -568,6 +572,7 @@ model users {
   user_follows_user_follows_follower_idTousers       user_follows[]            @relation("user_follows_follower_idTousers")
   user_follows_user_follows_following_idTousers      user_follows[]            @relation("user_follows_following_idTousers")
   user_sessions                                      user_sessions[]
+  user_settings                                      user_settings?
   roles                                              roles                     @relation(fields: [role_id], references: [role_id], onDelete: NoAction, onUpdate: NoAction)
   voice_interaction_logs                             voice_interaction_logs[]
 }
@@ -696,4 +701,107 @@ model user_follows {
   @@index([following_id, deleted_at], map: "idx_user_follows_following")
   @@index([follower_id], map: "ix_user_follows_follower_id")
   @@index([following_id], map: "ix_user_follows_following_id")
+}
+
+model notifications {
+  notification_id   String   @id @db.Uuid
+  user_id           String   @db.Uuid
+  title             String   @db.VarChar(255)
+  message           String
+  notification_type String   @db.VarChar(50)
+  reference_id      String?  @db.VarChar(100)
+  is_read           Boolean
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+  users             users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([created_at], map: "ix_notifications_created_at")
+  @@index([is_read], map: "ix_notifications_is_read")
+  @@index([notification_type], map: "ix_notifications_notification_type")
+  @@index([user_id], map: "ix_notifications_user_id")
+}
+
+model penalty_regulations {
+  title                     String            @db.VarChar(255)
+  domain                    String            @db.VarChar(100)
+  quick_category            String?           @db.VarChar(50)
+  min_fine_individual       BigInt
+  max_fine_individual       BigInt
+  avg_fine_individual       BigInt
+  min_fine_organization     BigInt
+  max_fine_organization     BigInt
+  avg_fine_organization     BigInt
+  description               String
+  aggravating_circumstances String?
+  supplementary_measures    String?
+  legal_basis               String            @db.VarChar(255)
+  effective_date            DateTime?         @db.Date
+  amendment_warning         String?           @db.VarChar(255)
+  keywords                  String?
+  deleted_at                DateTime?         @db.Timestamptz(6)
+  version                   Int
+  id                        String            @id @db.Uuid
+  created_at                DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime          @default(now()) @db.Timestamptz(6)
+  penalty_reports           penalty_reports[]
+
+  @@index([deleted_at], map: "ix_penalty_regulations_deleted_at")
+  @@index([domain], map: "ix_penalty_regulations_domain")
+  @@index([legal_basis], map: "ix_penalty_regulations_legal_basis")
+  @@index([quick_category], map: "ix_penalty_regulations_quick_category")
+  @@index([title], map: "ix_penalty_regulations_title")
+  @@index([deleted_at, domain, quick_category], map: "ix_penalty_search_composite")
+}
+
+model penalty_reports {
+  tracking_code       String               @unique(map: "ix_penalty_reports_tracking_code") @db.VarChar(30)
+  penalty_id          String?              @db.Uuid
+  violation_title     String               @db.VarChar(255)
+  legal_basis         String               @db.VarChar(255)
+  fine_range          String               @db.VarChar(100)
+  address_text        String               @db.VarChar(500)
+  description         String
+  is_anonymous        Boolean
+  reporter_id         String?              @db.Uuid
+  reporter_name       String?              @db.VarChar(150)
+  status              String               @db.VarChar(30)
+  officer_note        String?
+  resolved_at         DateTime?            @db.Timestamptz(6)
+  deleted_at          DateTime?            @db.Timestamptz(6)
+  version             Int
+  id                  String               @id @db.Uuid
+  created_at          DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime             @default(now()) @db.Timestamptz(6)
+  penalty_regulations penalty_regulations? @relation(fields: [penalty_id], references: [id], onUpdate: NoAction)
+  users               users?               @relation(fields: [reporter_id], references: [user_id], onUpdate: NoAction)
+
+  @@index([deleted_at], map: "ix_penalty_reports_deleted_at")
+  @@index([penalty_id], map: "ix_penalty_reports_penalty_id")
+  @@index([reporter_id], map: "ix_penalty_reports_reporter_id")
+  @@index([status], map: "ix_penalty_reports_status")
+}
+
+model post_tagged_friends {
+  tag_id         String    @id @db.Uuid
+  post_id        String    @db.Uuid
+  friend_user_id String    @db.Uuid
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at     DateTime? @db.Timestamptz(6)
+  users          users     @relation(fields: [friend_user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  posts          posts     @relation(fields: [post_id], references: [post_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([post_id, friend_user_id], map: "uq_post_tagged_friend")
+  @@index([friend_user_id], map: "ix_post_tagged_friends_friend_user_id")
+  @@index([post_id], map: "ix_post_tagged_friends_post_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model user_settings {
+  setting_id String   @id @db.Uuid
+  user_id    String   @unique(map: "ix_user_settings_user_id") @db.Uuid
+  theme      String   @db.VarChar(10)
+  language   String   @db.VarChar(10)
+  version    Int
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  users      users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 }

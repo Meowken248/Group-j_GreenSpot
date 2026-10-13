@@ -1078,6 +1078,157 @@ body.dark-mode,
       }
     }
   }
+
+    /* -------------------------------------------------------------------------
+       7. ĐĂNG NHẬP, ĐĂNG KÝ & QUẢN LÝ THIẾT BỊ (AUTH & DEVICES)
+       ------------------------------------------------------------------------- */
+    .login-card,
+    .register-card,
+    .device-card,
+    .device-management-card,
+    .session-card {
+      background-color: #151e2e !important;
+      border-color: #26334d !important;
+      color: #f9fafb !important;
+
+      .card-title, .device-name, .auth-title, h1, h2, h3 {
+        color: #f9fafb !important;
+      }
+
+      .card-subtitle, .device-meta, .auth-subtitle, p, span {
+        color: #94a3b8 !important;
+      }
+
+      .form-group label, .form-label, label {
+        color: #cbd5e1 !important;
+      }
+
+      input {
+        background-color: #0f172a !important;
+        border-color: #334155 !important;
+        color: #f9fafb !important;
+
+        &:focus {
+          border-color: #10b981 !important;
+        }
+      }
+
+      .switch-auth-action, .auth-footer-nav {
+        color: #94a3b8 !important;
+        a, button {
+          color: #34d399 !important;
+        }
+      }
+    }
+
+    /* -------------------------------------------------------------------------
+       8. ĐĂNG BÀI VIẾT & PHẢN ÁNH (POST CREATOR)
+       ------------------------------------------------------------------------- */
+    .post-creator-wrapper,
+    .post-creator-card,
+    .create-post-container {
+      background-color: #151e2e !important;
+      border-color: #26334d !important;
+      color: #f9fafb !important;
+
+      h1, h2, h3, h4, strong {
+        color: #f9fafb !important;
+      }
+
+      p, .text-muted {
+        color: #94a3b8 !important;
+      }
+
+      textarea, input {
+        background-color: #0f172a !important;
+        border-color: #334155 !important;
+        color: #f9fafb !important;
+      }
+    }
+
+    /* -------------------------------------------------------------------------
+       9. THẨM ĐỊNH SỰ CỐ & GIS BUFFER (STT 39 & STT 40)
+       ------------------------------------------------------------------------- */
+    .triage-app-container {
+      background-color: #0b0f19 !important;
+      color: #f9fafb !important;
+
+      .triage-global-header {
+        background: #151e2e !important;
+        border-bottom: 1px solid #26334d !important;
+
+        .brand-title {
+          color: #f9fafb !important;
+        }
+      }
+
+      .panel-card,
+      .triage-incident-card,
+      .ai-reasoning-box,
+      .buffer-analysis-card {
+        background: #151e2e !important;
+        border: 1px solid #26334d !important;
+        color: #f9fafb !important;
+
+        h1, h2, h3, h4, strong {
+          color: #f9fafb !important;
+        }
+
+        p, .text-muted {
+          color: #94a3b8 !important;
+        }
+      }
+
+      .triage-global-footer {
+        background: #151e2e !important;
+        border-top: 1px solid #26334d !important;
+        color: #94a3b8 !important;
+      }
+    }
+  }
+
+/* =========================================================================
+   CHẾ ĐỘ SÁNG CHO CÁC MODULE ĐẶC THÙ (TRIAGE, POSTS)
+   ========================================================================= */
+[data-theme="light"],
+body.light-mode {
+  .triage-app-container {
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+
+    .triage-global-header {
+      background-color: rgba(255, 255, 255, 0.96) !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+
+      .brand-title {
+        color: #0f172a !important;
+      }
+    }
+
+    .panel-card,
+    .triage-incident-card,
+    .ai-reasoning-box,
+    .buffer-analysis-card {
+      background-color: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      color: #0f172a !important;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
+
+      h1, h2, h3, h4, strong {
+        color: #0f172a !important;
+      }
+
+      p, .text-muted {
+        color: #64748b !important;
+      }
+    }
+
+    .triage-global-footer {
+      background-color: rgba(255, 255, 255, 0.96) !important;
+      border-top: 1px solid #e2e8f0 !important;
+      color: #64748b !important;
+    }
+  }
 }
 
 /* =========================================================================

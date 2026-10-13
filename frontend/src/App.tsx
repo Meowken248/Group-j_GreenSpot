@@ -17,12 +17,15 @@ import { ProfileContainer } from "./features/profile";
 import { FriendsContainer } from "./features/friends";
 import { DeduplicationDashboard } from "./features/reports";
 import { TriageAppDashboard } from "./features/triage";
-import { PostCreatorContainer } from "./features/posts";
 import { PenaltyLookupContainer, PenaltyReportsDashboard } from "./features/penalties";
+import { PostCreatorContainer } from "./features/posts";
+import { FloodNavigationContainer } from "./features/navigation";
 import {
   SettingsContainer,
   applyThemeToDocument,
   getLocalPreferences,
+  saveLocalPreferences,
+  updatePreferencesOnServer,
   fetchPreferencesFromServer,
   subscribeThemeChange,
 } from "./features/settings";
@@ -74,11 +77,13 @@ function App() {
     | "penalty-reports"
     | "posts"
     | "triage"
+    | "navigation"
   >(() => {
     const hash = window.location.hash.toLowerCase();
     const path = window.location.pathname.toLowerCase();
     const isLogged = checkIsLoggedIn();
 
+    if (hash === "#navigation" || path === "/navigation") return "navigation";
     if (hash === "#map" || path === "/map") return "map";
     if (hash === "#penalties" || path === "/penalties") {
       if (!isLogged) return "auth";
@@ -170,6 +175,27 @@ function App() {
     });
     return unsubscribe;
   }, []);
+
+  const handleToggleTheme = () => {
+    const nextTheme: ThemeMode = currentTheme === "DARK" ? "LIGHT" : "DARK";
+    try {
+      const prefs = getLocalPreferences();
+      const updated = { ...prefs, theme: nextTheme };
+      saveLocalPreferences(updated);
+      applyThemeToDocument(nextTheme);
+      setCurrentTheme(nextTheme);
+      if (checkIsLoggedIn()) {
+        updatePreferencesOnServer({
+          theme: nextTheme,
+          language: updated.language,
+          version: updated.version,
+        }).catch(() => {});
+      }
+    } catch {
+      applyThemeToDocument(nextTheme);
+      setCurrentTheme(nextTheme);
+    }
+  };
 
   // Hook quản lý tài khoản và quyền hạn thời gian thực (RBAC Permission Guard)
   const { currentUser, canAccess } = usePermissions();
@@ -302,6 +328,8 @@ function App() {
         } else {
           setActiveTab("triage");
         }
+      } else if (hash === "#navigation" || window.location.pathname === "/navigation") {
+        setActiveTab("navigation");
       } else if (hash === "#penalties") {
         setActiveTab("penalties");
       } else if (hash === "#posts" || hash === "#create-post") {
@@ -720,6 +748,18 @@ function App() {
                 <span>Phân tích AQI & Khí hậu</span>
               </button>
             )}
+            <button
+              type="button"
+              className={`view-tab-btn ${activeTab === "navigation" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("navigation");
+                window.location.hash = "#navigation";
+              }}
+              title="Tìm tuyến đường an toàn tránh ngập (STT 41)"
+            >
+              <span>🧭</span>
+              <span>Tránh ngập</span>
+            </button>
 
             <button
               type="button"
@@ -833,6 +873,18 @@ function App() {
             </button>
           </>
         )}
+
+        {/* Nút chuyển đổi nhanh Giao diện Sáng / Tối */}
+        <button
+          type="button"
+          className={`view-tab-btn theme-tab-toggle ${isDarkMode ? "active" : ""}`}
+          onClick={handleToggleTheme}
+          title={isDarkMode ? "Đang là Chế độ Tối. Bấm để chuyển sang Chế độ Sáng" : "Đang là Chế độ Sáng. Bấm để chuyển sang Chế độ Tối"}
+          aria-label="Chuyển chế độ sáng tối"
+        >
+          <span>{isDarkMode ? "☀️" : "🌙"}</span>
+          <span>{isDarkMode ? "Sáng" : "Tối"}</span>
+        </button>
       </nav>
 
       {/* VIEW NỘI DUNG CHÍNH: AUTH, RBAC, PROFILE, MAP, DASHBOARD HOẶC VOICE */}
@@ -950,8 +1002,12 @@ function App() {
           />
         </div>
       ) : activeTab === "triage" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#0f172a" }}>
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
           <TriageAppDashboard />
+        </div>
+      ) : activeTab === "navigation" ? (
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+          <FloodNavigationContainer />
         </div>
       ) : activeTab === "settings" ? (
         !currentUser ? (
@@ -1007,29 +1063,42 @@ function App() {
           </ModulePermissionGuard>
         )
       ) : activeTab === "voice" ? (
-        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-          <VoiceAssistant
-            onClose={() => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
-            onNavigateToFeature={(target) => {
-              if (target === "dashboard_aqi") {
-                setActiveTab("dashboard");
-                window.location.hash = "#dashboard";
-              } else if (target === "/report-incident") {
-                setActiveTab("triage");
-                window.location.hash = "#triage";
-              } else if (target === "/wallet") {
-                setActiveTab("profile");
-                window.location.hash = "#profile";
-              } else {
+        !currentUser ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/voice"
+              onExitAuth={() => {
                 setActiveTab("map");
                 window.location.hash = "#map";
-              }
-            }}
-          />
-        </div>
+              }}
+            />
+          </div>
+        ) : (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <VoiceAssistant
+              onClose={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              onNavigateToFeature={(target) => {
+                if (target === "dashboard_aqi") {
+                  setActiveTab("dashboard");
+                  window.location.hash = "#dashboard";
+                } else if (target === "/report-incident") {
+                  setActiveTab("triage");
+                  window.location.hash = "#triage";
+                } else if (target === "/wallet") {
+                  setActiveTab("profile");
+                  window.location.hash = "#profile";
+                } else {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }
+              }}
+            />
+          </div>
+        )
       ) : activeTab === "penalty-reports" ? (
         <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
           <ModulePermissionGuard
@@ -1120,8 +1189,19 @@ function App() {
         )
       }
 
-      {/* NÚT KIỂM TRA MICROSERVICE BACKEND (GÓC TRÊN BÊN PHẢI) */}
-      <div className="quick-status-badge">
+      {/* NÚT ĐỔI GIAO DIỆN SÁNG / TỐI & KIỂM TRA MICROSERVICE BACKEND (GÓC TRÊN BÊN PHẢI) */}
+      <div className="quick-top-actions">
+        <button
+          type="button"
+          className={`theme-mode-toggle-btn ${isDarkMode || activeTab === "dashboard" ? "dark-mode" : ""}`}
+          onClick={handleToggleTheme}
+          title={isDarkMode ? "Chuyển sang giao diện Sáng" : "Chuyển sang giao diện Tối"}
+          aria-label="Chuyển chế độ giao diện sáng tối"
+        >
+          <span className="theme-toggle-icon">{isDarkMode ? "☀️" : "🌙"}</span>
+          <span className="theme-toggle-text">{isDarkMode ? "Giao diện Sáng" : "Giao diện Tối"}</span>
+        </button>
+
         <button
           type="button"
           className={`health-badge-btn ${isDarkMode || activeTab === "dashboard" ? "dark-mode" : ""}`}
