@@ -22,12 +22,8 @@ import { Screen2Compare } from '../components/Screen2Compare';
 import { Screen3Directions } from '../components/Screen3Directions';
 import { Screen4EmergencyModal } from '../components/Screen4EmergencyModal';
 import { InteractiveMap } from '../components/InteractiveMap';
-import { LiveDriveRadar } from '../components/LiveDriveRadar';
 
 export const FloodNavigationContainer: React.FC = () => {
-  // Chế độ: 'LIVE_DRIVE_RADAR' (Quét GPS lái xe Google Maps) hoặc 'ROUTE_PLANNING' (Lập lộ trình A -> B)
-  const [navigationMode, setNavigationMode] = useState<'LIVE_DRIVE_RADAR' | 'ROUTE_PLANNING'>('LIVE_DRIVE_RADAR');
-
   // Navigation State
   const [currentStep, setCurrentStep] = useState<ScreenStep>(1);
 
@@ -321,29 +317,7 @@ export const FloodNavigationContainer: React.FC = () => {
       </header>
 
       {/* ------------------------------------------------------------------ */}
-      {/* THANH CHUYỂN ĐỔI CHẾ ĐỘ: LÁI XE GPS RADAR vs LẬP LỘ TRÌNH A -> B */}
-      {/* ------------------------------------------------------------------ */}
-      <div className="navigation-mode-switcher-bar">
-        <button
-          type="button"
-          className={`mode-tab-btn ${navigationMode === 'LIVE_DRIVE_RADAR' ? 'active' : ''}`}
-          onClick={() => setNavigationMode('LIVE_DRIVE_RADAR')}
-        >
-          <span>🚗</span>
-          <span>Lái xe & Quét ngập GPS (Live Radar)</span>
-        </button>
-        <button
-          type="button"
-          className={`mode-tab-btn ${navigationMode === 'ROUTE_PLANNING' ? 'active' : ''}`}
-          onClick={() => setNavigationMode('ROUTE_PLANNING')}
-        >
-          <span>🗺️</span>
-          <span>Lập lộ trình (A ➔ B)</span>
-        </button>
-      </div>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* PHẦN GIỮA: NỘI DUNG TỪNG MÀN HÌNH */}
+      {/* PHẦN GIỮA: NỘI DUNG TỪNG MÀN HÌNH (MÀN 1 -> MÀN 3) */}
       {/* ------------------------------------------------------------------ */}
       <main className="nav-main-content">
         {/* Banner thông báo trạng thái */}
@@ -354,37 +328,24 @@ export const FloodNavigationContainer: React.FC = () => {
           </div>
         )}
 
-        {/* CHẾ ĐỘ 1: LÁI XE THỜI GIAN THỰC NHƯ GOOGLE MAPS (KHÔNG CẦN CHỌN A/B) */}
-        {navigationMode === 'LIVE_DRIVE_RADAR' && (
-          <LiveDriveRadar
-            selectedVehicle={selectedVehicle}
-            onVehicleChange={setSelectedVehicle}
-            onSwitchToRoutePlanning={() => setNavigationMode('ROUTE_PLANNING')}
-          />
-        )}
-
-        {/* CHẾ ĐỘ 2: LẬP KẾ HOẠCH LỘ TRÌNH TỪ ĐIỂM A ĐẾN ĐIỂM B */}
-        {navigationMode === 'ROUTE_PLANNING' && (
-          <>
-            {/* MÀN 1: NHẬP ĐIỂM ĐI / ĐẾN */}
-            {currentStep === 1 && (
-              <div className="two-column-layout">
-                <Screen1Input
-                  origin={origin}
-                  destination={destination}
-                  selectedVehicle={selectedVehicle}
-                  onOriginChange={setOrigin}
-                  onDestinationChange={setDestination}
-                  onVehicleChange={setSelectedVehicle}
-                  validationError={validationError}
-                  gpsWarning={gpsWarning}
-                  onClearErrors={() => {
-                    setValidationError(null);
-                    setGpsWarning(null);
-                  }}
-                  onGpsRequested={handleGpsRequest}
-                  onSwitchToLiveDrive={() => setNavigationMode('LIVE_DRIVE_RADAR')}
-                />
+        {/* MÀN 1: NHẬP ĐIỂM ĐI / ĐẾN */}
+        {currentStep === 1 && (
+          <div className="two-column-layout">
+            <Screen1Input
+              origin={origin}
+              destination={destination}
+              selectedVehicle={selectedVehicle}
+              onOriginChange={setOrigin}
+              onDestinationChange={setDestination}
+              onVehicleChange={setSelectedVehicle}
+              validationError={validationError}
+              gpsWarning={gpsWarning}
+              onClearErrors={() => {
+                setValidationError(null);
+                setGpsWarning(null);
+              }}
+              onGpsRequested={handleGpsRequest}
+            />
 
                 <InteractiveMap
                   currentStep={1}
@@ -447,8 +408,6 @@ export const FloodNavigationContainer: React.FC = () => {
                 onBackToCompare={() => setCurrentStep(2)}
               />
             )}
-          </>
-        )}
       </main>
 
       {/* ------------------------------------------------------------------ */}

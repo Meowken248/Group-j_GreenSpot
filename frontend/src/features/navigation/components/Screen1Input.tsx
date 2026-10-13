@@ -17,7 +17,6 @@ interface Screen1InputProps {
   gpsWarning: string | null;
   onClearErrors: () => void;
   onGpsRequested: () => void;
-  onSwitchToLiveDrive?: () => void;
 }
 
 const VEHICLES: VehicleOption[] = [
@@ -62,7 +61,6 @@ export const Screen1Input: React.FC<Screen1InputProps> = ({
   gpsWarning,
   onClearErrors,
   onGpsRequested,
-  onSwitchToLiveDrive,
 }) => {
   const [destInput, setDestInput] = useState(destination.name);
   const [originInput, setOriginInput] = useState(origin.name);
@@ -133,27 +131,6 @@ export const Screen1Input: React.FC<Screen1InputProps> = ({
         <span>📍 LỘ TRÌNH</span>
         <span className="panel-badge">Màn 1/4</span>
       </h2>
-
-      {/* Chuyển nhanh sang chế độ Lái xe Live GPS không cần A/B */}
-      {onSwitchToLiveDrive && (
-        <div className="live-drive-quick-switch-card">
-          <div className="quick-switch-content">
-            <span className="switch-icon">🚗</span>
-            <div className="switch-text">
-              <strong>Bạn đang lái xe trên đường?</strong>
-              <span>Không cần nhập A/B. Tự động quét &amp; cảnh báo ngập theo GPS.</span>
-            </div>
-          </div>
-          <button
-            type="button"
-            className="btn-quick-switch"
-            onClick={onSwitchToLiveDrive}
-            title="Chuyển sang chế độ lái xe Live Radar"
-          >
-            Bật Quét GPS
-          </button>
-        </div>
-      )}
 
       {/* Điểm đi */}
       <div className="form-group">
