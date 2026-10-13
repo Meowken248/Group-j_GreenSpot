@@ -762,6 +762,9 @@ function App() {
                 <span>Quản lý vi phạm</span>
               </button>
             )}
+
+
+
             <button
               type="button"
               className={`view-tab-btn ${activeTab === "voice" ? "active" : ""}`}
