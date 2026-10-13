@@ -22,6 +22,12 @@ import { Screen2Compare } from '../components/Screen2Compare';
 import { Screen3Directions } from '../components/Screen3Directions';
 import { Screen4EmergencyModal } from '../components/Screen4EmergencyModal';
 import { InteractiveMap } from '../components/InteractiveMap';
+import {
+  getLocalPreferences,
+  saveLocalPreferences,
+  applyThemeToDocument,
+  subscribeThemeChange,
+} from '../../settings';
 
 export const FloodNavigationContainer: React.FC = () => {
   // Navigation State
@@ -58,6 +64,38 @@ export const FloodNavigationContainer: React.FC = () => {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [gpsWarning, setGpsWarning] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'info' | 'success' | 'warning' } | null>(null);
+
+  // Quản lý Giao diện Sáng / Tối (Light / Dark Theme)
+  const [currentTheme, setCurrentTheme] = useState<'LIGHT' | 'DARK'>(() => {
+    try {
+      return getLocalPreferences().theme;
+    } catch {
+      return 'LIGHT';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      const unsub = subscribeThemeChange((newTheme) => {
+        setCurrentTheme(newTheme);
+      });
+      return unsub;
+    } catch {
+      return undefined;
+    }
+  }, []);
+
+  const handleToggleTheme = () => {
+    const nextTheme = currentTheme === 'DARK' ? 'LIGHT' : 'DARK';
+    try {
+      const prefs = getLocalPreferences();
+      saveLocalPreferences({ ...prefs, theme: nextTheme });
+      applyThemeToDocument(nextTheme);
+    } catch {
+      // ignore
+    }
+    setCurrentTheme(nextTheme);
+  };
 
   // Màn 4/4: Popup khẩn cấp
   const [emergencyAlert, setEmergencyAlert] = useState<EarlyWarningAlert | null>(null);
@@ -286,9 +324,9 @@ export const FloodNavigationContainer: React.FC = () => {
   };
 
   return (
-    <div className="flood-navigation-container">
+    <div className={`flood-navigation-container ${currentTheme === 'DARK' ? 'dark-theme dark-mode' : 'light-theme light-mode'}`}>
       {/* ------------------------------------------------------------------ */}
-      {/* HEADER: logo | menu | chuông | avatar */}
+      {/* HEADER: logo | menu | theme toggle | chuông | avatar */}
       {/* ------------------------------------------------------------------ */}
       <header className="nav-header">
         <div className="header-left">
@@ -307,6 +345,16 @@ export const FloodNavigationContainer: React.FC = () => {
         </nav>
 
         <div className="header-right">
+          <button
+            type="button"
+            className="theme-nav-toggle-btn"
+            onClick={handleToggleTheme}
+            title={currentTheme === 'DARK' ? 'Chuyển sang Giao diện Sáng' : 'Chuyển sang Giao diện Tối'}
+            aria-label="Đổi giao diện sáng tối"
+          >
+            <span>{currentTheme === 'DARK' ? '☀️' : '🌙'}</span>
+            <span>{currentTheme === 'DARK' ? 'Sáng' : 'Tối'}</span>
+          </button>
           <button type="button" className="icon-btn" title="Thông báo khẩn cấp">
             <span style={{ fontSize: '1.2rem' }}>🔔</span>
           </button>

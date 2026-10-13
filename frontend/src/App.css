@@ -89,12 +89,60 @@
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-/* Quick Status Badge (Top Right) */
-.quick-status-badge {
+/* Quick Top Actions: Theme Switcher + Diagnostic Status (Top Right) */
+.quick-top-actions {
   position: absolute;
   top: 16px;
   right: 16px;
   z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.theme-mode-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 9999px;
+  color: #0f172a;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(15, 23, 42, 0.04);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.theme-mode-toggle-btn:hover {
+  background: #ffffff;
+  border-color: #10b981;
+  color: #059669;
+  transform: translateY(-1px);
+}
+
+.theme-mode-toggle-btn.dark-mode,
+[data-theme="dark"] .theme-mode-toggle-btn,
+body.dark-mode .theme-mode-toggle-btn {
+  background: rgba(26, 26, 30, 0.85);
+  backdrop-filter: saturate(190%) blur(24px);
+  -webkit-backdrop-filter: saturate(190%) blur(24px);
+  border: 0.5px solid rgba(255, 255, 255, 0.14);
+  color: #f5f5f7;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.12);
+}
+
+.theme-mode-toggle-btn.dark-mode:hover,
+[data-theme="dark"] .theme-mode-toggle-btn:hover,
+body.dark-mode .theme-mode-toggle-btn:hover {
+  background: rgba(38, 38, 44, 0.95);
+  border-color: #34d399;
+  color: #34d399;
 }
 
 .health-badge-btn {
@@ -121,7 +169,9 @@
   border-color: #10b981;
 }
 
-.health-badge-btn.dark-mode {
+.health-badge-btn.dark-mode,
+[data-theme="dark"] .health-badge-btn,
+body.dark-mode .health-badge-btn {
   background: rgba(26, 26, 30, 0.85);
   backdrop-filter: saturate(190%) blur(24px);
   -webkit-backdrop-filter: saturate(190%) blur(24px);
@@ -130,7 +180,9 @@
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.12);
 }
 
-.health-badge-btn.dark-mode:hover {
+.health-badge-btn.dark-mode:hover,
+[data-theme="dark"] .health-badge-btn:hover,
+body.dark-mode .health-badge-btn:hover {
   background: rgba(38, 38, 44, 0.95);
   border-color: #30d158;
 }
