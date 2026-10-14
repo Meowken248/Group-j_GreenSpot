@@ -126,25 +126,9 @@ class SafeNavigationService(ISafeNavigationService):
         tide_m: float,
         rain_mmh: float,
     ) -> List[Dict[str, Any]]:
-        """Lấy danh sách các điểm ngập thực tế từ cơ sở dữ liệu kèm đánh giá rủi ro."""
-        query = text("""
-            SELECT
-                h.hotspot_id,
-                h.hotspot_code,
-                h.street_name,
-                h.district_name,
-                h.threshold_tide_meters,
-                h.threshold_rain_mm_per_hour,
-                h.historical_max_depth_cm,
-                h.drainage_system_rating,
-                h.primary_cause,
-                ST_X(h.location)::float as lng,
-                ST_Y(h.location)::float as lat
-            FROM flood_hotspots h
-            WHERE h.is_active = TRUE;
-        """)
-        res = await db.execute(query)
-        rows = res.mappings().all()
+        """Lấy danh sách các điểm ngập thực tế từ Repository CSDL kèm đánh giá rủi ro."""
+        from app.crud.navigation.navigation_repository import navigation_repository
+        rows = await navigation_repository.get_active_flood_hotspots(db)
 
         evaluated: List[Dict[str, Any]] = []
         for r in rows:
