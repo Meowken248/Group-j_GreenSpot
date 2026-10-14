@@ -81,9 +81,11 @@ Module tự động gom cụm các sự cố môi trường gửi về từ ngư
 - **Tầng CSDL (Domain Models):**
   - Model Cụm trùng lặp: [`BackEnd/app/models/deduplication/cluster.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/deduplication/cluster.py) (`IncidentDuplicateCluster`).
   - Model Sự cố & Phương tiện: [`BackEnd/app/models/incident.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/incident.py) (`Incident`, `IncidentMedia`).
-- **Tầng Truy vấn CSDL (Database Queries):**
-  - **Vị trí viết truy vấn:** Không tách tầng CRUD riêng mà viết trực tiếp trong router [`BackEnd/app/api/v1/deduplication/router.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/deduplication/router.py).
-  - Các truy vấn chính: `select(IncidentDuplicateCluster)` lọc theo quận và soft delete (`deleted_at IS NULL`), `select(Incident)` nạp eager-loading `options(selectinload(Incident.media))`.
+- **Tầng Hợp đồng Interface (Contracts & Abstraction):**
+  - [`BackEnd/app/interface/deduplication/deduplication_interface.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/interface/deduplication/deduplication_interface.py): Định nghĩa hợp đồng trừu tượng `IDeduplicationRepository` tuân thủ nguyên lý Dependency Inversion (SOLID).
+- **Tầng Truy vấn CSDL (Repository Layer):**
+  - **Vị trí viết truy vấn:** Toàn bộ truy vấn CSDL được đóng gói trong `DeduplicationRepository` tại [`BackEnd/app/crud/deduplication/deduplication_repository.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/crud/deduplication/deduplication_repository.py).
+  - Các truy vấn chính: `list_clusters` lọc theo quận, % tương đồng và soft delete (`deleted_at IS NULL`), `get_incident_with_media_and_reporter` nạp eager-loading `options(selectinload(Incident.media), selectinload(Incident.reporter))`, `mark_cluster_distinct`, `merge_cluster_incidents`.
 - **Tầng Dịch vụ (Service Layer):**
   - [`BackEnd/app/services/deduplication/ai_engine.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/deduplication/ai_engine.py) (`AIDeduplicationService`) chịu trách nhiệm tính toán khoảng cách đại cầu Haversine, độ tương đồng Cosine trên embedding ảnh 512-chiều và chấm điểm tương đồng 3 yếu tố.
 - **Tầng DTO / Schemas:**
