@@ -14,6 +14,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 
+from app.interface.triage.spatial_facility_interface import ISpatialFacilityService
+from app.crud.triage.spatial_facility_repository import spatial_facility_repository
 from app.models.incident import Incident
 from app.models.spatial import EssentialFacility
 from app.models.audit_log import IncidentAuditLog
@@ -79,7 +81,7 @@ class FacilityAlertResponse(BaseModel):
     sent_at: datetime
 
 
-class SpatialFacilityService:
+class SpatialFacilityService(ISpatialFacilityService):
 
     @staticmethod
     def haversine_distance_meters(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -102,13 +104,9 @@ class SpatialFacilityService:
         """
         Tìm kiếm các cơ sở thiết yếu nằm trong bán kính vùng đệm (Buffer Zone).
         Sắp xếp từ gần nhất đến xa nhất.
+        Ủy thác truy vấn PostGIS Bounding Box cho SpatialFacilityRepository.
         """
-        stmt_inc = select(Incident).where(
-            Incident.incident_id == query.incident_id,
-            Incident.deleted_at.is_(None)
-        )
-        res_inc = await db.execute(stmt_inc)
-        inc = res_inc.scalars().first()
+        inc = await spatial_facility_repository.get_incident_by_id(db, query.incident_id)
         if not inc:
             raise HTTPException(status_code=404, detail="Không tìm thấy sự cố hoặc sự cố đã bị xóa")
 
@@ -120,32 +118,19 @@ class SpatialFacilityService:
         cos_lat = max(0.2, math.cos(math.radians(inc_lat)))
         delta_lng = (query.radius_meters / (111000.0 * cos_lat)) * 1.15
 
-        # Lấy danh sách cơ sở khớp với loại hình trong bounding box
-        stmt_fac = select(
-            EssentialFacility.facility_id,
-            EssentialFacility.facility_name,
-            EssentialFacility.facility_type,
-            EssentialFacility.address,
-            EssentialFacility.contact_phone,
-            EssentialFacility.vulnerability_level,
-            func.ST_Y(EssentialFacility.location).label("lat"),
-            func.ST_X(EssentialFacility.location).label("lng"),
-        ).where(
-            EssentialFacility.deleted_at.is_(None),
-            EssentialFacility.facility_type.in_(query.facility_types),
-            func.ST_Y(EssentialFacility.location) >= inc_lat - delta_lat,
-            func.ST_Y(EssentialFacility.location) <= inc_lat + delta_lat,
-            func.ST_X(EssentialFacility.location) >= inc_lng - delta_lng,
-            func.ST_X(EssentialFacility.location) <= inc_lng + delta_lng,
+        # Lấy danh sách cơ sở khớp với loại hình trong bounding box qua Repository
+        rows = await spatial_facility_repository.get_facilities_in_bounding_box(
+            db=db,
+            facility_types=query.facility_types,
+            min_lat=inc_lat - delta_lat,
+            max_lat=inc_lat + delta_lat,
+            min_lng=inc_lng - delta_lng,
+            max_lng=inc_lng + delta_lng,
         )
-        res_fac = await db.execute(stmt_fac)
-        rows = res_fac.all()
 
         results = []
         for r in rows:
             fac_id, name, ftype, addr, phone, vuln, f_lat, f_lng = r
-            if f_lat is None or f_lng is None:
-                continue
 
             dist = cls.haversine_distance_meters(inc_lat, inc_lng, float(f_lat), float(f_lng))
             if dist <= query.radius_meters:
@@ -205,29 +190,16 @@ class SpatialFacilityService:
         """
         Màn 3/3: Hồ sơ chi tiết mức độ phơi nhiễm môi trường và liên hệ khẩn cấp của cơ sở.
         """
-        stmt = select(
-            EssentialFacility,
-            func.ST_Y(EssentialFacility.location).label("lat"),
-            func.ST_X(EssentialFacility.location).label("lng"),
-        ).where(
-            EssentialFacility.facility_id == facility_id,
-            EssentialFacility.deleted_at.is_(None)
-        )
-        res = await db.execute(stmt)
-        row = res.first()
+        row = await spatial_facility_repository.get_facility_with_coords(db, facility_id)
         if not row:
             raise HTTPException(status_code=404, detail="Không tìm thấy thông tin cơ sở")
 
         fac, f_lat, f_lng = row
-        f_lat = float(f_lat)
-        f_lng = float(f_lng)
 
         dist_m = None
         dist_disp = None
         if incident_id:
-            stmt_inc = select(Incident).where(Incident.incident_id == incident_id)
-            res_inc = await db.execute(stmt_inc)
-            inc = res_inc.scalars().first()
+            inc = await spatial_facility_repository.get_incident_by_id(db, incident_id)
             if inc:
                 dist_m = cls.haversine_distance_meters(float(inc.latitude), float(inc.longitude), f_lat, f_lng)
                 dist_disp = f"Cách {int(dist_m)}m" if dist_m < 1000 else f"Cách {round(dist_m/1000.0, 1)}km"
@@ -263,19 +235,14 @@ class SpatialFacilityService:
         """
         Nút "Gửi cảnh báo": Gửi thông báo khẩn qua SMS/Email cảnh báo cơ sở, ghi vào Audit Log.
         """
-        stmt_fac = select(EssentialFacility).where(
-            EssentialFacility.facility_id == req.facility_id,
-            EssentialFacility.deleted_at.is_(None)
-        )
-        res_fac = await db.execute(stmt_fac)
-        fac = res_fac.scalars().first()
+        fac = await spatial_facility_repository.get_facility_by_id(db, req.facility_id)
         if not fac:
             raise HTTPException(status_code=404, detail="Không tìm thấy cơ sở cần gửi cảnh báo")
 
         if not fac.contact_phone and not fac.contact_email:
             raise HTTPException(status_code=400, detail="Chưa có thông tin liên hệ của cơ sở này")
 
-        # Ghi nhận vào Nhật ký kiểm toán (Audit Log)
+        # Ghi nhận vào Nhật ký kiểm toán (Audit Log) qua Repository
         audit = IncidentAuditLog(
             incident_id=req.incident_id,
             action="FACILITY_ALERT_SENT",
@@ -290,8 +257,7 @@ class SpatialFacilityService:
                 "message": req.message_text,
             }
         )
-        db.add(audit)
-        await db.commit()
+        await spatial_facility_repository.save_audit_log(db, audit)
 
         return FacilityAlertResponse(
             success=True,
