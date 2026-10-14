@@ -78,6 +78,12 @@ class Post(Base, TimestampMixin):
         cascade="all, delete-orphan",
         lazy="selectin"
     )
+    reactions: Mapped[List["PostReaction"]] = relationship(
+        "PostReaction",
+        back_populates="post",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
 
 
 class PostTaggedFriend(Base):
@@ -112,3 +118,38 @@ class PostTaggedFriend(Base):
     __table_args__ = (
         UniqueConstraint("post_id", "friend_user_id", name="uq_post_tagged_friend"),
     )
+
+
+class PostReaction(Base):
+    """
+    Cảm xúc sinh thái (Eco-Reactions - Feature STT 10):
+    - reaction_type: 'TREE' | 'EARTH' | 'RECYCLE' | 'CLAP' | 'CONCERN'
+    - Mỗi người chỉ thả 01 cảm xúc trên 01 bài viết tại một thời điểm
+    """
+    __tablename__ = "post_reactions"
+
+    reaction_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    post_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("posts.post_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    reaction_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False
+    )
+
+    post: Mapped["Post"] = relationship("Post", back_populates="reactions")
+    user: Mapped["User"] = relationship("User", foreign_keys=[user_id], lazy="selectin")
+
+    __table_args__ = (
+        UniqueConstraint("post_id", "user_id", name="uq_post_user_reaction"),
+    )
+

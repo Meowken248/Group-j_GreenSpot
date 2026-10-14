@@ -1030,6 +1030,22 @@ $info-500: #3b82f6;
       display: flex;
       align-items: center;
       gap: 6px;
+      background: transparent;
+      border: none;
+      padding: 0;
+      color: $neutral-500;
+      font-family: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      transition: color 0.15s ease;
+
+      &:hover {
+        color: $primary-700;
+
+        .stats-number {
+          text-decoration: underline;
+        }
+      }
 
       .reaction-emojis-cluster {
         letter-spacing: -3px;
@@ -1042,7 +1058,22 @@ $info-500: #3b82f6;
     }
 
     .stats-comments {
+      display: inline-flex;
+      align-items: center;
+      background: transparent;
+      border: none;
+      padding: 0;
+      color: $neutral-500;
+      font-family: inherit;
+      font-size: 13px;
       font-weight: 500;
+      cursor: pointer;
+      transition: color 0.15s ease;
+
+      &:hover {
+        color: $primary-700;
+        text-decoration: underline;
+      }
     }
   }
 
@@ -1065,7 +1096,7 @@ $info-500: #3b82f6;
 
       .eco-reactions-popover {
         position: absolute;
-        bottom: 46px;
+        bottom: 42px;
         left: 0;
         background: #ffffff;
         border: 1px solid $neutral-200;
@@ -1077,6 +1108,17 @@ $info-500: #3b82f6;
         box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15), 0 4px 10px rgba(0, 0, 0, 0.08);
         z-index: 120;
         animation: popoverIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+        // Cầu đệm chuột (Mouse bridge) chống mất hover khi lia chuột từ nút lên popover
+        &::after {
+          content: "";
+          position: absolute;
+          bottom: -16px;
+          left: 0;
+          right: 0;
+          height: 18px;
+          background: transparent;
+        }
 
         .reaction-pop-item {
           display: flex;
@@ -1710,7 +1752,75 @@ $info-500: #3b82f6;
 
 .feed-pagination-footer {
   text-align: center;
-  padding: 16px 0 24px;
+  padding: 16px 0 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+
+  .feed-infinite-scroll-sentinel {
+    height: 10px;
+    width: 100%;
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  .infinite-scroll-loading-spinner {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 10px 24px;
+    background: #ffffff;
+    border: 1px solid $neutral-200;
+    border-radius: 9999px;
+    box-shadow: 0 4px 14px -3px rgba(0, 0, 0, 0.06);
+    font-size: 14px;
+    font-weight: 500;
+    color: $neutral-600;
+
+    .spinner-icon {
+      width: 18px;
+      height: 18px;
+      border: 2.5px solid rgba(16, 185, 129, 0.2);
+      border-top-color: $primary-600;
+      border-radius: 50%;
+      animation: feedSpin 0.75s linear infinite;
+    }
+
+    .spinner-text {
+      letter-spacing: -0.01em;
+    }
+  }
+
+  .infinite-scroll-error {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 18px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 9999px;
+    font-size: 13px;
+    color: #dc2626;
+
+    .btn-retry-load-more {
+      padding: 4px 14px;
+      background: #dc2626;
+      color: #ffffff;
+      border: none;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+
+      &:hover {
+        background: #b91c1c;
+      }
+    }
+  }
 
   .btn-load-more-feed {
     padding: 11px 28px;
@@ -1738,9 +1848,31 @@ $info-500: #3b82f6;
   }
 
   .all-posts-loaded-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-size: 13px;
     color: $neutral-400;
-    font-style: italic;
+    font-weight: 500;
+
+    .end-feed-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: $neutral-100;
+      color: $primary-600;
+      font-size: 11px;
+      font-weight: 700;
+    }
+  }
+}
+
+@keyframes feedSpin {
+  to {
+    transform: rotate(360deg);
   }
 }
 

@@ -23,7 +23,7 @@ export const commentService = {
     page: number = 1,
     limit: number = 10
   ): Promise<CommentListResponse> {
-    const res = await api.get<CommentListResponse>(`/posts/${postId}/comments`, {
+    const res = await api.get<CommentListResponse>(`/api/v1/posts/${postId}/comments`, {
       params: { page, limit },
     });
     return res.data;
@@ -33,7 +33,7 @@ export const commentService = {
    * Đăng bình luận cấp 1 (Màn 1)
    */
   async createComment(postId: string, content: string): Promise<CommentItem> {
-    const res = await api.post<CommentItem>(`/posts/${postId}/comments`, {
+    const res = await api.post<CommentItem>(`/api/v1/posts/${postId}/comments`, {
       content,
     });
     return res.data;
@@ -43,7 +43,7 @@ export const commentService = {
    * Lấy toàn bộ câu trả lời của một bình luận gốc (Màn 2)
    */
   async getCommentReplies(commentId: string): Promise<ReplyListResponse> {
-    const res = await api.get<ReplyListResponse>(`/comments/${commentId}/replies`);
+    const res = await api.get<ReplyListResponse>(`/api/v1/comments/${commentId}/replies`);
     return res.data;
   },
 
@@ -55,7 +55,7 @@ export const commentService = {
     content: string,
     replyToUserId?: string
   ): Promise<ReplyItem> {
-    const res = await api.post<ReplyItem>(`/comments/${commentId}/replies`, {
+    const res = await api.post<ReplyItem>(`/api/v1/comments/${commentId}/replies`, {
       content,
       reply_to_user_id: replyToUserId || null,
     });
@@ -66,7 +66,7 @@ export const commentService = {
    * Xóa mềm bình luận
    */
   async deleteComment(commentId: string): Promise<{ success: boolean; message: string }> {
-    const res = await api.delete<{ success: boolean; message: string }>(`/comments/${commentId}`);
+    const res = await api.delete<{ success: boolean; message: string }>(`/api/v1/comments/${commentId}`);
     return res.data;
   },
 
@@ -74,7 +74,7 @@ export const commentService = {
    * Chia sẻ bài viết (Màn 3)
    */
   async sharePost(postId: string, payload: SharePostRequest): Promise<SharePostResponse> {
-    const res = await api.post<SharePostResponse>(`/posts/${postId}/share`, payload);
+    const res = await api.post<SharePostResponse>(`/api/v1/posts/${postId}/share`, payload);
     return res.data;
   },
 
@@ -83,7 +83,7 @@ export const commentService = {
    */
   async getFriendsForShare(query?: string): Promise<ShareFriendOption[]> {
     try {
-      const res = await api.get<any[]>("/friends/list", {
+      const res = await api.get<any[]>("/api/v1/friends/list", {
         params: query ? { query } : undefined,
       });
       return (res.data || []).map((f) => ({
@@ -102,7 +102,7 @@ export const commentService = {
    */
   async getGroupsForShare(): Promise<ShareGroupOption[]> {
     try {
-      const res = await api.get<any[]>("/posts/groups/joined");
+      const res = await api.get<any[]>("/api/v1/posts/groups/joined");
       return (res.data || []).map((g) => ({
         group_id: g.group_id,
         name: g.name,

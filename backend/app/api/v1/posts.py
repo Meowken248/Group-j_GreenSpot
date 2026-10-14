@@ -18,6 +18,8 @@ from app.schemas.post import (
     ToggleHidePostResponse,
     PostDetailResponse,
     MediaUploadResponse,
+    ReactPostRequest,
+    PostReactionsSummaryResponse,
 )
 from app.schemas.feed import FeedListResponse
 
@@ -278,3 +280,53 @@ async def get_joined_volunteer_groups(
         },
     ]
     return sample_groups
+
+
+@router.post(
+    "/{post_id}/reactions",
+    summary="Thả hoặc cập nhật cảm xúc sinh thái cho bài viết (Feature STT 10)",
+)
+async def react_to_post_endpoint(
+    post_id: uuid.UUID,
+    payload: ReactPostRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Thả hoặc huỷ cảm xúc sinh thái:
+    - Bắt buộc đăng nhập
+    - Hỗ trợ 5 loại: TREE, EARTH, RECYCLE, CLAP, CONCERN
+    - Tự động huỷ nếu bấm lại cảm xúc cũ, tự động đổi loại nếu bấm cảm xúc mới
+    """
+    return await post_service.react_to_post(
+        db=db,
+        post_id=post_id,
+        user_id=current_user.user_id,
+        reaction_type=payload.reaction_type,
+    )
+
+
+@router.get(
+    "/{post_id}/reactions",
+    response_model=PostReactionsSummaryResponse,
+    summary="Lấy danh sách người đã bày tỏ cảm xúc theo loại (Feature STT 10)",
+)
+async def get_post_reactions_endpoint(
+    post_id: uuid.UUID,
+    reaction_type: Optional[str] = Query(None, description="Lọc theo 'TREE', 'EARTH', 'RECYCLE', 'CLAP', 'CONCERN' hoặc None/ALL"),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Truy vấn danh sách người đã thả cảm xúc:
+    - Cho phép cả khách vãng lai và user đăng nhập
+    - Trả về số lượng từng loại cảm xúc để hiển thị tab Facebook-style
+    - Kèm trạng thái quan hệ bạn bè để hiển thị nút Thêm bạn bè / Theo dõi
+    """
+    return await post_service.get_post_reactions(
+        db=db,
+        post_id=post_id,
+        reaction_type=reaction_type,
+        current_user_id=current_user.user_id if current_user else None,
+    )
+

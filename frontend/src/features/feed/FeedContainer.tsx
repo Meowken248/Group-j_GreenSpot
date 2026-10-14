@@ -4,7 +4,7 @@
  * Kiến trúc 3 cột mạng xã hội Facebook/Threads cao cấp
  */
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import type {
   FeedTab,
   FeedSortBy,
@@ -21,7 +21,7 @@ import { PostCreatorContainer } from "../posts/PostCreatorContainer";
 import { EditPostModal } from "../profile/components/EditPostModal";
 import { DeletePostModal } from "../profile/components/DeletePostModal";
 import { HidePostModal } from "../profile/components/HidePostModal";
-import { PostCommentsView, SharePostModal } from "../comments";
+import { PostCommentsModal, SharePostModal } from "../comments";
 import api from "../../api/client";
 import { AUTH_STORAGE_KEYS } from "../auth/types/auth.types";
 import "./styles/Feed.scss";
@@ -91,6 +91,8 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   // 5. Quản lý Modal
   const [showRadiusModal, setShowRadiusModal] = useState<boolean>(false);
@@ -165,9 +167,11 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
     ) => {
       if (append) {
         setLoadingMore(true);
+        setLoadMoreError(null);
       } else {
         setLoading(true);
         setError(null);
+        setLoadMoreError(null);
       }
 
       try {
@@ -193,7 +197,11 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
         setPage(targetPage);
       } catch (err: any) {
         const msg = err?.response?.data?.detail || "Không thể tải bảng tin. Vui lòng thử lại";
-        setError(msg);
+        if (append) {
+          setLoadMoreError(msg);
+        } else {
+          setError(msg);
+        }
       } finally {
         setLoading(false);
         setLoadingMore(false);
@@ -232,14 +240,63 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
   };
 
   // Nạp thêm bài viết
-  const handleLoadMore = () => {
-    if (loadingMore || !hasMore) return;
+  const handleLoadMore = useCallback(() => {
+    if (loadingMore || !hasMore || loading) return;
     fetchFeed(page + 1, true);
-  };
+  }, [loadingMore, hasMore, loading, fetchFeed, page]);
+
+  // Cuộn vô tận (Infinite Scroll) - Tự động nạp trang kế tiếp khi lướt tới sentinel
+  useEffect(() => {
+    if (!sentinelRef.current || !hasMore || loadingMore || loading) return;
+
+    if (typeof IntersectionObserver === "undefined") {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasMore && !loadingMore && !loading) {
+          fetchFeed(page + 1, true);
+        }
+      },
+      {
+        root: null,
+        rootMargin: "300px",
+        threshold: 0.1,
+      }
+    );
+
+    const target = sentinelRef.current;
+    observer.observe(target);
+
+    return () => {
+      if (target) {
+        observer.unobserve(target);
+      }
+      observer.disconnect();
+    };
+  }, [hasMore, loadingMore, loading, page, fetchFeed]);
 
   // Thả cảm xúc
   const handleReactPost = async (postId: string, type: string) => {
-    await feedService.reactToPost(postId, type);
+    try {
+      const res = await feedService.reactToPost(postId, type);
+      if (res && typeof res.reactions_count === "number") {
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.post_id === postId
+              ? {
+                  ...p,
+                  reactions_count: res.reactions_count,
+                  user_reaction: res.reaction_type,
+                }
+              : p
+          )
+        );
+      }
+    } catch {
+      // Ignored
+    }
   };
 
   // Điều hướng ngoài
@@ -301,7 +358,7 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
             setSelectedPostForComments(found);
           } else {
             api
-              .get(`/posts/${targetId}`)
+              .get(`/api/v1/posts/${targetId}`)
               .then((res) => {
                 if (res.data) setSelectedPostForComments(res.data);
               })
@@ -325,30 +382,6 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
     return () => window.removeEventListener("hashchange", handleHash);
   }, [posts, selectedPostForComments, showToast]);
 
-  // Nếu đang mở xem bình luận bài viết (Màn 1 & Màn 2 - STT 14)
-  if (selectedPostForComments) {
-    return (
-      <PostCommentsView
-        post={selectedPostForComments}
-        onBackToFeed={() => {
-          setSelectedPostForComments(null);
-          if (
-            window.location.hash.includes("post-comments") ||
-            window.location.hash.includes("comments")
-          ) {
-            window.location.hash = "#posts";
-          }
-        }}
-        onNavigateLogin={onNavigateLogin}
-        onPostUpdated={(updatedPost) => {
-          setPosts((prev) =>
-            prev.map((p) => (p.post_id === updatedPost.post_id ? updatedPost : p))
-          );
-          setSelectedPostForComments(updatedPost);
-        }}
-      />
-    );
-  }
 
   return (
     <div className="greenspot-feed-container">
@@ -541,21 +574,51 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
             )}
           </div>
 
-          {/* 5. Nút Xem thêm / Infinite Scroll (SRS pp. 100) */}
+          {/* 5. Bộ điều hướng cuộn vô tận (Infinite Scroll SRS pp. 100) */}
           {!loading && !error && posts.length > 0 && (
             <div className="feed-pagination-footer">
-              {hasMore ? (
+              {/* Điểm chốt kích hoạt tải thêm khi người dùng cuộn đến */}
+              {hasMore && (
+                <div
+                  ref={sentinelRef}
+                  className="feed-infinite-scroll-sentinel"
+                  aria-hidden="true"
+                />
+              )}
+
+              {loadingMore && (
+                <div className="infinite-scroll-loading-spinner" role="status" aria-live="polite">
+                  <span className="spinner-icon" />
+                  <span className="spinner-text">Đang tải thêm bài viết...</span>
+                </div>
+              )}
+
+              {loadMoreError && (
+                <div className="infinite-scroll-error">
+                  <span className="error-text">{loadMoreError}</span>
+                  <button
+                    type="button"
+                    className="btn-retry-load-more"
+                    onClick={handleLoadMore}
+                  >
+                    Thử lại
+                  </button>
+                </div>
+              )}
+
+              {typeof IntersectionObserver === "undefined" && hasMore && !loadingMore && !loadMoreError && (
                 <button
                   type="button"
                   className="btn-load-more-feed"
                   onClick={handleLoadMore}
-                  disabled={loadingMore}
                 >
-                  {loadingMore ? "Đang tải thêm bài viết..." : "Xem thêm"}
+                  Xem thêm
                 </button>
-              ) : (
+              )}
+
+              {!hasMore && (
                 <div className="all-posts-loaded-text">
-                  Bạn đã xem hết bài viết
+                  <span className="end-feed-icon">✓</span> Bạn đã xem hết bài viết
                 </div>
               )}
             </div>
@@ -703,6 +766,8 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
         <SharePostModal
           isOpen={Boolean(sharingPost)}
           postId={sharingPost.post_id}
+          postContent={sharingPost.content}
+          authorName={sharingPost.author?.full_name}
           onClose={() => setSharingPost(null)}
           onShareSuccess={(message) => {
             showToast("success", message);
@@ -716,6 +781,30 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
             );
           }}
           onShowToast={showToast}
+        />
+      )}
+
+      {/* 7. Modal Bình luận bài viết dạng Overlay (Facebook Modal - STT 14) */}
+      {selectedPostForComments && (
+        <PostCommentsModal
+          isOpen={Boolean(selectedPostForComments)}
+          post={selectedPostForComments}
+          onClose={() => {
+            setSelectedPostForComments(null);
+            if (
+              window.location.hash.includes("post-comments") ||
+              window.location.hash.includes("comments")
+            ) {
+              window.location.hash = "#posts";
+            }
+          }}
+          onNavigateLogin={onNavigateLogin}
+          onPostUpdated={(updatedPost) => {
+            setPosts((prev) =>
+              prev.map((p) => (p.post_id === updatedPost.post_id ? updatedPost : p))
+            );
+            setSelectedPostForComments(updatedPost);
+          }}
         />
       )}
     </div>

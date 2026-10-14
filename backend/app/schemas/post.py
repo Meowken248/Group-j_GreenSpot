@@ -1,7 +1,7 @@
 import json
 import uuid
 from enum import Enum
-from typing import Optional, List, Any
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, model_validator, ConfigDict
 from datetime import datetime
 
@@ -184,3 +184,31 @@ class MediaUploadResponse(BaseModel):
     media_type: MediaTypeEnum
     file_name: str
     size_bytes: int
+
+
+class ReactPostRequest(BaseModel):
+    """Yêu cầu thả hoặc hủy cảm xúc sinh thái (Feature STT 10)"""
+    reaction_type: str = Field(..., description="'TREE' | 'EARTH' | 'RECYCLE' | 'CLAP' | 'CONCERN'")
+
+
+class PostReactionUser(BaseModel):
+    """Thông tin người dùng bày tỏ cảm xúc sinh thái (Màn 3 Facebook Style)"""
+    user_id: uuid.UUID
+    full_name: str
+    avatar_url: Optional[str] = None
+    role: Optional[str] = None
+    reaction_type: str
+    created_at: datetime
+    friendship_status: str = "NONE"  # 'SELF' | 'FRIENDS' | 'REQUEST_SENT' | 'REQUEST_RECEIVED' | 'NONE'
+    is_following: bool = False
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PostReactionsSummaryResponse(BaseModel):
+    """Tổng hợp danh sách cảm xúc bài viết kèm số đếm theo tab"""
+    post_id: uuid.UUID
+    total_count: int
+    counts_by_type: Dict[str, int]
+    items: List[PostReactionUser]
+

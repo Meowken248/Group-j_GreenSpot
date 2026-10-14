@@ -173,7 +173,7 @@ describe('Feature STT 08: Bảng tin Geo-Feed theo bán kính (SRS pp. 97-102)',
       const handleReact = vi.fn();
       const handleToast = vi.fn();
 
-      render(
+      const { container } = render(
         <FeedPostCard
           post={mockPost}
           currentUserId="user-other"
@@ -183,7 +183,8 @@ describe('Feature STT 08: Bảng tin Geo-Feed theo bán kính (SRS pp. 97-102)',
       );
 
       // Bấm nút Cảm xúc
-      const reactBtn = screen.getByRole('button', { name: /Cảm xúc/i });
+      const reactBtn = container.querySelector('.reaction-trigger-btn') as HTMLButtonElement;
+      expect(reactBtn).toBeInTheDocument();
       fireEvent.click(reactBtn);
 
       expect(handleReact).toHaveBeenCalledWith('post-test-01', 'TREE');
@@ -277,6 +278,40 @@ describe('Feature STT 08: Bảng tin Geo-Feed theo bán kính (SRS pp. 97-102)',
       // Phải xuất hiện modal yêu cầu đăng nhập theo SRS Màn 2
       expect(await screen.findByText('Vui lòng đăng nhập')).toBeInTheDocument();
       expect(screen.getByText(/Bạn cần đăng nhập tài khoản để xem bài viết từ bạn bè/i)).toBeInTheDocument();
+    });
+
+    it('hiển thị sentinel cuộn vô tận khi còn bài viết (has_more: true)', async () => {
+      (feedService.getGeoFeed as any).mockResolvedValueOnce({
+        items: [mockPost],
+        total: 15,
+        page: 1,
+        limit: 10,
+        has_more: true,
+      });
+
+      const { container } = render(<FeedContainer />);
+
+      await waitFor(() => {
+        expect(feedService.getGeoFeed).toHaveBeenCalled();
+      });
+
+      // Có phần tử sentinel để IntersectionObserver theo dõi
+      const sentinel = container.querySelector('.feed-infinite-scroll-sentinel');
+      expect(sentinel).toBeInTheDocument();
+    });
+
+    it('hiển thị thông báo khi đã nạp hết bài viết (has_more: false)', async () => {
+      (feedService.getGeoFeed as any).mockResolvedValueOnce({
+        items: [mockPost],
+        total: 1,
+        page: 1,
+        limit: 10,
+        has_more: false,
+      });
+
+      render(<FeedContainer />);
+
+      expect(await screen.findByText(/Bạn đã xem hết bài viết/i)).toBeInTheDocument();
     });
   });
 });

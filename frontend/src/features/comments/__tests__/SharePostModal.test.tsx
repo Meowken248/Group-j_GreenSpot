@@ -160,5 +160,85 @@ describe('Feature STT 14: Popup Chia sẻ bài viết (Màn 3)', () => {
       ).toBeInTheDocument();
     });
   });
+
+  it('5. Hiển thị các nút mạng xã hội (Facebook, Zalo, X, Telegram, LinkedIn) và mở cửa sổ chia sẻ khi bấm vào', async () => {
+    const mockWindowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const mockOnShareSuccess = vi.fn();
+    const mockClose = vi.fn();
+
+    render(
+      <SharePostModal
+        isOpen={true}
+        postId="post-test-14"
+        onClose={mockClose}
+        onShareSuccess={mockOnShareSuccess}
+        onShowToast={vi.fn()}
+      />
+    );
+
+    // Kiểm tra hiển thị các nút mạng xã hội
+    expect(screen.getByRole('button', { name: 'Chia sẻ lên Facebook' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Chia sẻ qua Zalo' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Chia sẻ lên X (Twitter)' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Chia sẻ qua Telegram' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Chia sẻ lên LinkedIn' })).toBeInTheDocument();
+
+    // Bấm nút Facebook
+    fireEvent.click(screen.getByRole('button', { name: 'Chia sẻ lên Facebook' }));
+    await waitFor(() => {
+      expect(mockWindowOpen).toHaveBeenCalledWith(
+        expect.stringContaining('facebook.com/sharer'),
+        '_blank',
+        expect.any(String)
+      );
+      expect(mockOnShareSuccess).toHaveBeenCalledWith(expect.stringContaining('Facebook'));
+      expect(mockClose).toHaveBeenCalled();
+    });
+
+    mockWindowOpen.mockRestore();
+  });
+
+  it('6. Khi chia sẻ sang app khác, nội dung bài viết và tên tác giả được lấy đầy đủ', async () => {
+    const mockWindowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const mockShare = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { share: mockShare });
+
+    render(
+      <SharePostModal
+        isOpen={true}
+        postId="post-test-14"
+        postContent="Hôm nay đội mình vừa dọn sạch rạch rác Linh Trung, trả lại dòng nước xanh mát!"
+        authorName="Nguyễn Thành Đạt"
+        onClose={vi.fn()}
+        onShareSuccess={vi.fn()}
+        onShowToast={vi.fn()}
+      />
+    );
+
+    // Bấm nút Twitter/X -> Kiểm tra URL có chứa nội dung bài viết và tên tác giả
+    fireEvent.click(screen.getByRole('button', { name: 'Chia sẻ lên X (Twitter)' }));
+    await waitFor(() => {
+      expect(mockWindowOpen).toHaveBeenCalledWith(
+        expect.stringContaining('Nguy%E1%BB%85n%20Th%C3%A0nh%20%C4%90%E1%BA%A1t'),
+        '_blank',
+        expect.any(String)
+      );
+    });
+
+    // Bấm nút Ứng dụng khác... (Web Share API)
+    const otherAppBtn = screen.getByRole('button', { name: 'Mở menu chia sẻ hệ thống' });
+    fireEvent.click(otherAppBtn);
+
+    await waitFor(() => {
+      expect(mockShare).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: expect.stringContaining('Nguyễn Thành Đạt'),
+          text: expect.stringContaining('dọn sạch rạch rác Linh Trung'),
+        })
+      );
+    });
+
+    mockWindowOpen.mockRestore();
+  });
 });
 

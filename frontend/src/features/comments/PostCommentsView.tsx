@@ -345,6 +345,8 @@ export const PostCommentsView: React.FC<PostCommentsViewProps> = ({
       <SharePostModal
         isOpen={showShareModal}
         postId={post.post_id}
+        postContent={post.content}
+        authorName={post.author?.full_name}
         onClose={() => setShowShareModal(false)}
         onShareSuccess={handleShareSuccess}
         onShowToast={showToast}

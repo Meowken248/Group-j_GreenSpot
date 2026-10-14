@@ -9,9 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.config import UPLOAD_DIR
-from app.models.post import Post, PostTaggedFriend
-from app.models.friends import Friendship
-from app.models.rbac import User
+from app.models.post import Post, PostTaggedFriend, PostReaction
+from app.models.comment import Comment
+from app.models.friends import Friendship, FriendRequest, UserFollow
+from app.models.rbac import User, Role
 from app.schemas.post import (
     CreatePostRequest,
     UpdatePostRequest,
@@ -21,8 +22,11 @@ from app.schemas.post import (
     AuthorSummary,
     TaggedFriendInfo,
     MediaUploadResponse,
+    PostReactionUser,
+    PostReactionsSummaryResponse,
 )
 from app.schemas.feed import FeedPostItem, FeedListResponse
+
 
 
 class PostService:
@@ -576,17 +580,35 @@ class PostService:
         total_res = await db.execute(count_stmt)
         total_count = total_res.scalar() or 0
 
+        # Truy vấn đếm số lượng cảm xúc & bình luận thực tế trực tiếp từ bảng dữ liệu
+        real_rx_subquery = (
+            select(func.count(PostReaction.reaction_id))
+            .where(PostReaction.post_id == Post.post_id)
+            .scalar_subquery()
+            .label("real_reactions_count")
+        )
+        real_cm_subquery = (
+            select(func.count(Comment.comment_id))
+            .where(Comment.post_id == Post.post_id, Comment.deleted_at.is_(None))
+            .scalar_subquery()
+            .label("real_comments_count")
+        )
+
         if sort_by == "nearest" and distance_expr is not None:
             order_clauses = [asc(distance_expr)]
         elif sort_by == "popular":
-            order_clauses = [desc(Post.reactions_count + Post.comments_count), desc(Post.created_at)]
+            order_clauses = [desc(real_rx_subquery + real_cm_subquery), desc(Post.created_at)]
         else:
             if tab == "nearby" and distance_expr is not None and sort_by != "newest":
                 order_clauses = [asc(distance_expr), desc(Post.created_at)]
             else:
                 order_clauses = [desc(Post.created_at)]
 
-        select_cols = [Post]
+        select_cols = [
+            Post,
+            real_rx_subquery,
+            real_cm_subquery,
+        ]
         if distance_expr is not None:
             select_cols.append(distance_expr.label("dist_meters"))
         else:
@@ -606,10 +628,22 @@ class PostService:
         feed_res = await db.execute(feed_stmt)
         rows = feed_res.all()
 
+        user_rx_map = {}
+        if current_user and rows:
+            post_ids = [row[0].post_id for row in rows]
+            urx_stmt = select(PostReaction.post_id, PostReaction.reaction_type).where(
+                PostReaction.user_id == current_user.user_id,
+                PostReaction.post_id.in_(post_ids)
+            )
+            urx_res = await db.execute(urx_stmt)
+            user_rx_map = {r[0]: r[1] for r in urx_res.fetchall()}
+
         items: List[FeedPostItem] = []
         for row in rows:
             post_obj: Post = row[0]
-            dist_val = row[1]
+            real_rx_count = int(row[1] or 0)
+            real_cm_count = int(row[2] or 0)
+            dist_val = row[3]
 
             parsed_media: List[MediaItemInput] = []
             thumb_url: Optional[str] = None
@@ -686,8 +720,8 @@ class PostService:
                     visibility=post_obj.visibility,
                     is_hidden=post_obj.is_hidden,
                     is_edited=is_edited,
-                    reactions_count=post_obj.reactions_count,
-                    comments_count=post_obj.comments_count,
+                    reactions_count=real_rx_count,
+                    comments_count=real_cm_count,
                     shares_count=getattr(post_obj, "shares_count", 0),
                     shared_post_id=getattr(post_obj, "shared_post_id", None),
                     version=post_obj.version,
@@ -696,7 +730,7 @@ class PostService:
                     tagged_friends=tagged_list,
                     distance_meters=dist_meters,
                     distance_text=dist_text,
-                    user_reaction=None,
+                    user_reaction=user_rx_map.get(post_obj.post_id),
                 )
             )
 
@@ -715,3 +749,193 @@ class PostService:
             category=category,
             sort_by=sort_by,
         )
+
+    async def react_to_post(
+        self,
+        db: AsyncSession,
+        post_id: uuid.UUID,
+        user_id: uuid.UUID,
+        reaction_type: str,
+    ) -> dict:
+        """
+        Thả hoặc cập nhật cảm xúc sinh thái cho bài viết (Feature STT 10):
+        - Nếu thả cảm xúc cùng loại -> huỷ cảm xúc (toggle off), giảm reactions_count
+        - Nếu đổi loại cảm xúc -> cập nhật reaction_type
+        - Nếu chưa thả -> tạo mới PostReaction, tăng reactions_count
+        """
+        valid_types = {"TREE", "EARTH", "RECYCLE", "CLAP", "CONCERN"}
+        clean_type = reaction_type.upper().strip()
+        if clean_type not in valid_types:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Loại cảm xúc không hợp lệ. Hỗ trợ: {', '.join(valid_types)}"
+            )
+
+        stmt = select(Post).where(Post.post_id == post_id, Post.deleted_at.is_(None))
+        res = await db.execute(stmt)
+        post = res.scalar_one_or_none()
+        if not post:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Bài viết không tồn tại hoặc đã bị xóa"
+            )
+
+        rx_stmt = select(PostReaction).where(
+            PostReaction.post_id == post_id,
+            PostReaction.user_id == user_id
+        )
+        rx_res = await db.execute(rx_stmt)
+        existing_rx = rx_res.scalar_one_or_none()
+
+        action = "ADDED"
+        current_reaction = clean_type
+
+        if existing_rx:
+            if existing_rx.reaction_type == clean_type:
+                # Bấm lại lần nữa để hủy cảm xúc
+                await db.delete(existing_rx)
+                post.reactions_count = max(0, post.reactions_count - 1)
+                action = "REMOVED"
+                current_reaction = None
+            else:
+                # Đổi sang loại cảm xúc khác
+                existing_rx.reaction_type = clean_type
+                action = "UPDATED"
+                current_reaction = clean_type
+        else:
+            new_rx = PostReaction(
+                post_id=post_id,
+                user_id=user_id,
+                reaction_type=clean_type
+            )
+            db.add(new_rx)
+            post.reactions_count += 1
+            action = "ADDED"
+            current_reaction = clean_type
+
+        await db.commit()
+        await db.refresh(post)
+
+        return {
+            "success": True,
+            "action": action,
+            "reaction_type": current_reaction,
+            "reactions_count": post.reactions_count,
+        }
+
+    async def get_post_reactions(
+        self,
+        db: AsyncSession,
+        post_id: uuid.UUID,
+        reaction_type: Optional[str] = None,
+        current_user_id: Optional[uuid.UUID] = None,
+    ) -> PostReactionsSummaryResponse:
+        """
+        Lấy danh sách người dùng bày tỏ cảm xúc theo loại (Facebook-style modal):
+        - Hỗ trợ lọc theo từng reaction_type hoặc 'ALL'
+        - Trả về số lượng từng loại cảm xúc
+        - Kèm trạng thái bạn bè / follow để hiển thị nút hành động
+        """
+        post_stmt = select(Post).where(Post.post_id == post_id, Post.deleted_at.is_(None))
+        post_res = await db.execute(post_stmt)
+        post = post_res.scalar_one_or_none()
+        if not post:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Bài viết không tồn tại hoặc đã bị xóa"
+            )
+
+        # Đếm số lượng theo từng loại
+        all_rx_stmt = (
+            select(PostReaction.reaction_type, func.count(PostReaction.reaction_id))
+            .where(PostReaction.post_id == post_id)
+            .group_by(PostReaction.reaction_type)
+        )
+        all_rx_res = await db.execute(all_rx_stmt)
+        type_counts = {r[0]: r[1] for r in all_rx_res.fetchall()}
+        total_count = sum(type_counts.values())
+
+        # Truy vấn danh sách người dùng
+        query = (
+            select(PostReaction, User, Role.role_name)
+            .join(User, PostReaction.user_id == User.user_id)
+            .outerjoin(Role, User.role_id == Role.role_id)
+            .where(PostReaction.post_id == post_id)
+            .order_by(PostReaction.created_at.desc())
+        )
+        if reaction_type and reaction_type.upper().strip() != "ALL":
+            query = query.where(PostReaction.reaction_type == reaction_type.upper().strip())
+
+        items_res = await db.execute(query)
+        rows = items_res.all()
+        user_ids = [u.user_id for _, u, _ in rows]
+
+        friend_ids = set()
+        sent_req_ids = set()
+        received_req_ids = set()
+        following_ids = set()
+
+        if current_user_id and user_ids:
+            f_stmt = select(Friendship.friend_id).where(
+                Friendship.user_id == current_user_id,
+                Friendship.friend_id.in_(user_ids)
+            )
+            f_res = await db.execute(f_stmt)
+            friend_ids = {r[0] for r in f_res.fetchall()}
+
+            req_sent_stmt = select(FriendRequest.receiver_id).where(
+                FriendRequest.sender_id == current_user_id,
+                FriendRequest.receiver_id.in_(user_ids),
+                FriendRequest.status == "PENDING"
+            )
+            req_sent_res = await db.execute(req_sent_stmt)
+            sent_req_ids = {r[0] for r in req_sent_res.fetchall()}
+
+            req_recv_stmt = select(FriendRequest.sender_id).where(
+                FriendRequest.receiver_id == current_user_id,
+                FriendRequest.sender_id.in_(user_ids),
+                FriendRequest.status == "PENDING"
+            )
+            req_recv_res = await db.execute(req_recv_stmt)
+            received_req_ids = {r[0] for r in req_recv_res.fetchall()}
+
+            fol_stmt = select(UserFollow.following_id).where(
+                UserFollow.follower_id == current_user_id,
+                UserFollow.following_id.in_(user_ids)
+            )
+            fol_res = await db.execute(fol_stmt)
+            following_ids = {r[0] for r in fol_res.fetchall()}
+
+        result_items: List[PostReactionUser] = []
+        for rx, u, role_name in rows:
+            if current_user_id and u.user_id == current_user_id:
+                f_status = "SELF"
+            elif u.user_id in friend_ids:
+                f_status = "FRIENDS"
+            elif u.user_id in sent_req_ids:
+                f_status = "REQUEST_SENT"
+            elif u.user_id in received_req_ids:
+                f_status = "REQUEST_RECEIVED"
+            else:
+                f_status = "NONE"
+
+            result_items.append(
+                PostReactionUser(
+                    user_id=u.user_id,
+                    full_name=u.full_name or "Người dùng",
+                    avatar_url=getattr(u, "avatar_url", None),
+                    role=role_name or "Công dân",
+                    reaction_type=rx.reaction_type,
+                    created_at=rx.created_at,
+                    friendship_status=f_status,
+                    is_following=u.user_id in following_ids,
+                )
+            )
+
+        return PostReactionsSummaryResponse(
+            post_id=post_id,
+            total_count=total_count,
+            counts_by_type=type_counts,
+            items=result_items,
+        )
+

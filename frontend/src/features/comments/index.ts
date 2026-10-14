@@ -7,4 +7,5 @@ export * from "./components/StickyCommentInputBar";
 export * from "./components/LoginPromptModal";
 export * from "./components/SharePostModal";
 export * from "./PostCommentsView";
+export * from "./PostCommentsModal";
 

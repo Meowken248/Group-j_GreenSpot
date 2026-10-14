@@ -3,9 +3,10 @@
  * Tích hợp STT 08 (Khoảng cách GPS), STT 10 (Eco-Reactions), STT 13 (Sửa/Xóa/Ẩn), STT 14 (Bình luận/Chia sẻ)
  */
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import type { FeedPostItem } from "../types/feed.types";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
+import { PostReactionsModal } from "./PostReactionsModal";
 
 interface FeedPostCardProps {
   post: FeedPostItem;
@@ -40,6 +41,7 @@ export const FeedPostCard: React.FC<FeedPostCardProps> = ({
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [showReactionsModal, setShowReactionsModal] = useState(false);
   const [selectedReaction, setSelectedReaction] = useState<string | null>(
     post.user_reaction || null
   );
@@ -48,7 +50,40 @@ export const FeedPostCard: React.FC<FeedPostCardProps> = ({
   const [commentText, setCommentText] = useState("");
   const [commentsList, setCommentsList] = useState<Array<{ id: string; author: string; text: string; time: string }>>([]);
 
+  useEffect(() => {
+    setReactionsCount(post.reactions_count || 0);
+    setSelectedReaction(post.user_reaction || null);
+  }, [post.reactions_count, post.user_reaction]);
+
+  const reactionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleReactionMouseEnter = () => {
+    if (reactionTimerRef.current) {
+      clearTimeout(reactionTimerRef.current);
+      reactionTimerRef.current = null;
+    }
+    setShowReactionPicker(true);
+  };
+
+  const handleReactionMouseLeave = () => {
+    if (reactionTimerRef.current) {
+      clearTimeout(reactionTimerRef.current);
+    }
+    reactionTimerRef.current = setTimeout(() => {
+      setShowReactionPicker(false);
+    }, 280);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (reactionTimerRef.current) {
+        clearTimeout(reactionTimerRef.current);
+      }
+    };
+  }, []);
+
   const isOwnPost = Boolean(currentUserId && post.user_id === currentUserId);
+
 
   // Tính thời gian hiển thị tương đối
   const getRelativeTime = (isoString?: string) => {
@@ -366,13 +401,23 @@ export const FeedPostCard: React.FC<FeedPostCardProps> = ({
       {/* 3. FOOTER: CHỈ SỐ TƯƠNG TÁC & THANH ECO-REACTIONS, BÌNH LUẬN, CHIA SẺ */}
       {/* =================================================================== */}
       <div className="post-stats-row">
-        <div className="stats-reactions">
+        <button
+          type="button"
+          className="stats-reactions btn-stats-interactive"
+          onClick={() => setShowReactionsModal(true)}
+          title="Xem danh sách người đã bày tỏ cảm xúc"
+        >
           <span className="reaction-emojis-cluster">🌲🌍♻️</span>
           <span className="stats-number">{reactionsCount} cảm xúc</span>
-        </div>
-        <div className="stats-comments">
-          <span>{post.comments_count + commentsList.length} bình luận</span>
-        </div>
+        </button>
+        <button
+          type="button"
+          className="stats-comments btn-stats-interactive"
+          onClick={handleOpenComments}
+          title="Xem danh sách bình luận"
+        >
+          <span>{post.comments_count || 0} bình luận</span>
+        </button>
       </div>
 
       <div className="post-interaction-divider" />
@@ -381,8 +426,8 @@ export const FeedPostCard: React.FC<FeedPostCardProps> = ({
         {/* Nút Cảm xúc sinh thái (STT 10) */}
         <div
           className="reaction-button-container"
-          onMouseEnter={() => setShowReactionPicker(true)}
-          onMouseLeave={() => setShowReactionPicker(false)}
+          onMouseEnter={handleReactionMouseEnter}
+          onMouseLeave={handleReactionMouseLeave}
         >
           {showReactionPicker && (
             <div className="eco-reactions-popover">
@@ -479,6 +524,16 @@ export const FeedPostCard: React.FC<FeedPostCardProps> = ({
             </div>
           )}
         </div>
+      )}
+
+      {/* 5. MODAL DANH SÁCH NGƯỜI BÀY TỎ CẢM XÚC (STYLE FACEBOOK - ẢNH 3) */}
+      {showReactionsModal && (
+        <PostReactionsModal
+          isOpen={showReactionsModal}
+          postId={post.post_id}
+          onClose={() => setShowReactionsModal(false)}
+          onShowToast={onShowToast}
+        />
       )}
     </article>
   );

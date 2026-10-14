@@ -91,5 +91,32 @@ export const feedService = {
       return { success: true, reaction_type: reactionType };
     }
   },
+
+  /**
+   * Lấy danh sách người đã bày tỏ cảm xúc theo loại (STT 10 Màn 3 - Facebook Style)
+   */
+  async getPostReactions(postId: string, reactionType?: string): Promise<{
+    post_id: string;
+    total_count: number;
+    counts_by_type: Record<string, number>;
+    items: Array<{
+      user_id: string;
+      full_name: string;
+      avatar_url?: string;
+      role?: string;
+      reaction_type: string;
+      created_at: string;
+      friendship_status: string;
+      is_following: boolean;
+    }>;
+  }> {
+    const params: Record<string, any> = {};
+    if (reactionType && reactionType !== "ALL") {
+      params.reaction_type = reactionType;
+    }
+    const response = await api.get(`/api/v1/posts/${postId}/reactions`, { params });
+    return response.data;
+  },
 };
+
 

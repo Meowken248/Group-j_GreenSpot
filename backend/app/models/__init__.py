@@ -70,7 +70,7 @@ from app.models.profile import (
     UserActivity,
     Post,
 )
-from app.models.post import PostTaggedFriend
+from app.models.post import PostTaggedFriend, PostReaction
 from app.models.comment import Comment, PostShare
 
 
@@ -141,6 +141,7 @@ __all__ = [
     # Audit Logs
     "AuditLog",
     "PostTaggedFriend",
+    "PostReaction",
     "Comment",
     "PostShare",
 
