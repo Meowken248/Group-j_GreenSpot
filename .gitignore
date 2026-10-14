@@ -1,6 +1,9 @@
 # Python
 __pycache__/
+**/__pycache__/
 *.py[cod]
+*.pyc
+**/*.pyc
 *$py.class
 *.so
 .Python
@@ -24,15 +27,19 @@ wheels/
 *.egg
 .pytest_cache/
 
-# Node
+# Node & Frontend
 node_modules/
+**/node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 dist/
 dist-ssr/
+frontend/dist/
 *.local
+*.tsbuildinfo
+.vite/
 
 # Environment files
 .env
