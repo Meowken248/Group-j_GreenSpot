@@ -24,6 +24,7 @@ from app.schemas.spatial_facility import (
     SendEmergencyAlertRequest,
     SendEmergencyAlertResponse,
 )
+from app.crud.triage.spatial_facility_repository import spatial_facility_repository
 from app.services.spatial_facility_service import (
     SpatialFacilityService,
     FacilityBufferQueryFilter,
@@ -41,12 +42,7 @@ async def analyze_facilities_in_buffer(
     """
     Màn 1/3 & Màn 2/3: Quét vùng đệm bán kính (500m, 1km, 2km) và trả về danh sách cơ sở sắp xếp theo khoảng cách
     """
-    stmt = select(Incident).where(
-        Incident.incident_id == payload.incident_id,
-        Incident.deleted_at.is_(None)
-    )
-    res = await db.execute(stmt)
-    inc = res.scalars().first()
+    inc = await spatial_facility_repository.get_incident_by_id(db, payload.incident_id)
     if not inc:
         raise HTTPException(status_code=404, detail="Không tìm thấy sự cố")
 
@@ -170,9 +166,7 @@ async def log_call_initiated(
     user_res = await db.execute(user_stmt)
     operator = user_res.scalars().first()
 
-    fac_stmt = select(EssentialFacility).where(EssentialFacility.facility_id == facility_id)
-    fac_res = await db.execute(fac_stmt)
-    fac = fac_res.scalars().first()
+    fac = await spatial_facility_repository.get_facility_by_id(db, facility_id)
 
     audit = IncidentAuditLog(
         incident_id=incident_id,
@@ -185,6 +179,5 @@ async def log_call_initiated(
             "phone": fac.contact_phone if fac else None,
         }
     )
-    db.add(audit)
-    await db.commit()
+    await spatial_facility_repository.save_audit_log(db, audit)
     return {"success": True, "message": "Đã ghi nhận nhật ký cuộc gọi"}
