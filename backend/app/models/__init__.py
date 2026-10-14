@@ -71,6 +71,7 @@ from app.models.profile import (
     Post,
 )
 from app.models.post import PostTaggedFriend
+from app.models.comment import Comment, PostShare
 
 
 # 7. Kết bạn và theo dõi (Friends & Follows Domain)
@@ -140,6 +141,8 @@ __all__ = [
     # Audit Logs
     "AuditLog",
     "PostTaggedFriend",
+    "Comment",
+    "PostShare",
 
     # Friends & Follows Domain
     "FriendRequest",

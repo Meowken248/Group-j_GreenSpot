@@ -21,6 +21,8 @@ import { PostCreatorContainer } from "../posts/PostCreatorContainer";
 import { EditPostModal } from "../profile/components/EditPostModal";
 import { DeletePostModal } from "../profile/components/DeletePostModal";
 import { HidePostModal } from "../profile/components/HidePostModal";
+import { PostCommentsView, SharePostModal } from "../comments";
+import api from "../../api/client";
 import { AUTH_STORAGE_KEYS } from "../auth/types/auth.types";
 import "./styles/Feed.scss";
 
@@ -97,6 +99,8 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
   const [deletingPost, setDeletingPost] = useState<FeedPostItem | null>(null);
   const [hidingPost, setHidingPost] = useState<FeedPostItem | null>(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState<boolean>(false);
+  const [selectedPostForComments, setSelectedPostForComments] = useState<FeedPostItem | null>(null);
+  const [sharingPost, setSharingPost] = useState<FeedPostItem | null>(null);
 
   // 6. Quản lý Toast thông báo
   const [toasts, setToasts] = useState<FeedToast[]>([]);
@@ -284,6 +288,68 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
     showToast("info", "Đã ẩn bài viết. Chỉ bạn nhìn thấy bài này.");
   };
 
+  // Điều hướng xem bình luận bài viết qua URL Hash (#post-comments?id=...)
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash;
+      if (hash.includes("post-comments") || hash.includes("comments")) {
+        const idMatch = hash.match(/[?&]id=([a-fA-F0-9-]+)/);
+        if (idMatch && idMatch[1]) {
+          const targetId = idMatch[1];
+          const found = posts.find((p) => p.post_id === targetId);
+          if (found) {
+            setSelectedPostForComments(found);
+          } else {
+            api
+              .get(`/posts/${targetId}`)
+              .then((res) => {
+                if (res.data) setSelectedPostForComments(res.data);
+              })
+              .catch(() => {
+                showToast("error", "Bài viết không còn tồn tại");
+                window.location.hash = "#posts";
+              });
+          }
+        }
+      } else if (
+        !hash.includes("post-comments") &&
+        !hash.includes("comments") &&
+        selectedPostForComments
+      ) {
+        setSelectedPostForComments(null);
+      }
+    };
+
+    handleHash();
+    window.addEventListener("hashchange", handleHash);
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, [posts, selectedPostForComments, showToast]);
+
+  // Nếu đang mở xem bình luận bài viết (Màn 1 & Màn 2 - STT 14)
+  if (selectedPostForComments) {
+    return (
+      <PostCommentsView
+        post={selectedPostForComments}
+        onBackToFeed={() => {
+          setSelectedPostForComments(null);
+          if (
+            window.location.hash.includes("post-comments") ||
+            window.location.hash.includes("comments")
+          ) {
+            window.location.hash = "#posts";
+          }
+        }}
+        onNavigateLogin={onNavigateLogin}
+        onPostUpdated={(updatedPost) => {
+          setPosts((prev) =>
+            prev.map((p) => (p.post_id === updatedPost.post_id ? updatedPost : p))
+          );
+          setSelectedPostForComments(updatedPost);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="greenspot-feed-container">
       {/* Toast notifications */}
@@ -464,6 +530,11 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
                   onHidePost={(p) => setHidingPost(p)}
                   onDeletePost={(p) => setDeletingPost(p)}
                   onReactPost={handleReactPost}
+                  onOpenComments={(p) => {
+                    setSelectedPostForComments(p);
+                    window.location.hash = `#post-comments?id=${p.post_id}`;
+                  }}
+                  onOpenShare={(p) => setSharingPost(p)}
                   onShowToast={showToast}
                 />
               ))
@@ -625,6 +696,27 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* 6. Modal Chia sẻ bài viết (STT 14 Màn 3) */}
+      {sharingPost && (
+        <SharePostModal
+          isOpen={Boolean(sharingPost)}
+          postId={sharingPost.post_id}
+          onClose={() => setSharingPost(null)}
+          onShareSuccess={(message) => {
+            showToast("success", message);
+            const newShares = (sharingPost.shares_count || 0) + 1;
+            setPosts((prev) =>
+              prev.map((p) =>
+                p.post_id === sharingPost.post_id
+                  ? { ...p, shares_count: newShares }
+                  : p
+              )
+            );
+          }}
+          onShowToast={showToast}
+        />
       )}
     </div>
   );

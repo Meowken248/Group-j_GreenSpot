@@ -1150,6 +1150,15 @@ $info-500: #3b82f6;
     .comment-trigger-btn,
     .share-trigger-btn {
       flex: 1;
+
+      &.is-disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+
+        &:hover {
+          background: transparent;
+        }
+      }
     }
   }
 

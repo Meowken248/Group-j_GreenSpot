@@ -168,6 +168,8 @@ class PostDetailResponse(BaseModel):
     is_edited: bool = False
     reactions_count: int = 0
     comments_count: int = 0
+    shares_count: int = 0
+    shared_post_id: Optional[uuid.UUID] = None
     version: int = 1
     created_at: datetime
     updated_at: datetime

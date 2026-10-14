@@ -45,6 +45,8 @@ export interface FeedPostItem {
   is_edited: boolean;
   reactions_count: number;
   comments_count: number;
+  shares_count?: number;
+  shared_post_id?: string | null;
   version: number;
   created_at: string;
   updated_at: string;

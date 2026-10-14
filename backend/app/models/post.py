@@ -10,16 +10,19 @@ from app.models.base import TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.rbac import User
+    from app.models.comment import Comment
 
 
 class Post(Base, TimestampMixin):
     """
-    Bài viết cộng đồng & dòng thời gian (Feature STT 9):
+    Bài viết cộng đồng & dòng thời gian (Feature STT 9, 13, 14):
     - content: Nội dung soạn thảo (tối đa 3000 ký tự)
     - media_urls: Danh sách URL ảnh/video (tối đa 5 ảnh hoặc 1 video) lưu dưới dạng JSON string
     - latitude, longitude: Tọa độ GPS gắn từ bản đồ số Màn 2
     - address: Tên số nhà, đường, quận/phường (Reverse Geocoding)
     - group_id: ID nhóm tình nguyện (tùy chọn)
+    - shared_post_id: ID bài viết gốc nếu là bài chia sẻ (Feature STT 14)
+    - shares_count: Tổng số lượt chia sẻ
     - version: Optimistic locking (Rule 7)
     - deleted_at: Soft delete (Rule 6)
     """
@@ -38,6 +41,14 @@ class Post(Base, TimestampMixin):
     is_hidden: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     reactions_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     comments_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    shares_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    # Chia sẻ bài viết (Feature STT 14 Màn 3)
+    shared_post_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("posts.post_id", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )
 
     # Các trường định vị không gian địa lý (Màn 2)
     latitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
@@ -49,8 +60,20 @@ class Post(Base, TimestampMixin):
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     user: Mapped["User"] = relationship("User", foreign_keys=[user_id])
+    shared_post: Mapped[Optional["Post"]] = relationship(
+        "Post",
+        remote_side=[post_id],
+        foreign_keys=[shared_post_id],
+        lazy="selectin"
+    )
     tagged_friends: Mapped[List["PostTaggedFriend"]] = relationship(
         "PostTaggedFriend",
+        back_populates="post",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
+    comments: Mapped[List["Comment"]] = relationship(
+        "Comment",
         back_populates="post",
         cascade="all, delete-orphan",
         lazy="selectin"

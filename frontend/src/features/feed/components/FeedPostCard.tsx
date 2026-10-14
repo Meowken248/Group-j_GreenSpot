@@ -14,6 +14,8 @@ interface FeedPostCardProps {
   onHidePost?: (post: FeedPostItem) => void;
   onDeletePost?: (post: FeedPostItem) => void;
   onReactPost?: (postId: string, reactionType: string) => void;
+  onOpenComments?: (post: FeedPostItem) => void;
+  onOpenShare?: (post: FeedPostItem) => void;
   onShowToast?: (type: "success" | "error" | "info", msg: string) => void;
 }
 
@@ -32,6 +34,8 @@ export const FeedPostCard: React.FC<FeedPostCardProps> = ({
   onHidePost,
   onDeletePost,
   onReactPost,
+  onOpenComments,
+  onOpenShare,
   onShowToast,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
@@ -102,12 +106,36 @@ export const FeedPostCard: React.FC<FeedPostCardProps> = ({
     }
   };
 
-  // Chia sẻ bài viết
+  // Chia sẻ bài viết (SRS Màn 3)
+  const isShareDisabled =
+    post.visibility === "ONLY_ME" ||
+    post.visibility === "PRIVATE" ||
+    post.visibility === "FRIENDS";
+
   const handleShare = () => {
-    const url = `${window.location.origin}/#/posts?id=${post.post_id}`;
-    navigator.clipboard?.writeText(url);
-    if (onShowToast) {
-      onShowToast("success", "Đã sao chép liên kết bài viết vào bộ nhớ tạm!");
+    if (isShareDisabled) {
+      if (onShowToast) {
+        onShowToast("error", "Bài viết này không thể chia sẻ");
+      }
+      return;
+    }
+
+    if (onOpenShare) {
+      onOpenShare(post);
+    } else {
+      const url = `${window.location.origin}/#post-comments?id=${post.post_id}`;
+      navigator.clipboard?.writeText(url);
+      if (onShowToast) {
+        onShowToast("success", "Đã sao chép liên kết");
+      }
+    }
+  };
+
+  const handleOpenComments = () => {
+    if (onOpenComments) {
+      onOpenComments(post);
+    } else {
+      setShowCommentBox(!showCommentBox);
     }
   };
 
@@ -395,7 +423,7 @@ export const FeedPostCard: React.FC<FeedPostCardProps> = ({
         <button
           type="button"
           className="btn-feed-action comment-trigger-btn"
-          onClick={() => setShowCommentBox(!showCommentBox)}
+          onClick={handleOpenComments}
         >
           <span className="action-icon">💬</span>
           <span className="action-label">Bình luận</span>
@@ -404,8 +432,13 @@ export const FeedPostCard: React.FC<FeedPostCardProps> = ({
         {/* Nút Chia sẻ (STT 14) */}
         <button
           type="button"
-          className="btn-feed-action share-trigger-btn"
+          className={`btn-feed-action share-trigger-btn ${isShareDisabled ? "is-disabled" : ""}`}
           onClick={handleShare}
+          title={
+            isShareDisabled
+              ? "Bài viết này không thể chia sẻ"
+              : "Chia sẻ bài viết"
+          }
         >
           <span className="action-icon">↗️</span>
           <span className="action-label">Chia sẻ</span>

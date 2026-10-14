@@ -17,6 +17,7 @@ from app.api.v1.deduplication import router as deduplication_router
 from app.api.v1.settings import settings_router
 from app.api.v1.penalties import router as penalties_router
 from app.api.v1.posts import router as posts_router
+from app.api.v1.comments import router as comments_router
 
 api_v1_router = APIRouter()
 api_v1_router.include_router(auth_router)
@@ -37,3 +38,4 @@ api_v1_router.include_router(waste_categories_router)
 api_v1_router.include_router(recycling_facilities_router)
 api_v1_router.include_router(penalties_router)
 api_v1_router.include_router(posts_router)
+api_v1_router.include_router(comments_router)

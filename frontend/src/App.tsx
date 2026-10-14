@@ -93,7 +93,7 @@ function App() {
       if (!isLogged) return "auth";
       return "penalties";
     }
-    if (hash === "#posts" || hash === "#feed" || hash === "#create-post" || path === "/posts" || path === "/feed" || path === "/create-post") {
+    if (hash === "#posts" || hash === "#feed" || hash === "#create-post" || path === "/posts" || path === "/feed" || path === "/create-post" || hash.startsWith("#post-comments") || path.startsWith("/post-comments")) {
       return "posts";
     }
     if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") return "auth";
@@ -308,7 +308,7 @@ function App() {
         } else {
           setActiveTab("penalties");
         }
-      } else if (hash === "#posts" || hash === "#feed" || hash === "#create-post") {
+      } else if (hash === "#posts" || hash === "#feed" || hash === "#create-post" || hash.startsWith("#post-comments") || window.location.pathname.startsWith("/post-comments")) {
         setActiveTab("posts");
       } else if (hash === "#profile") {
         if (!isLogged) {
