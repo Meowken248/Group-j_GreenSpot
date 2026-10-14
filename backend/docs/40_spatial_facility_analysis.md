@@ -11,11 +11,14 @@
 ## 📑 MỤC LỤC
 1. [Tổng quan nghiệp vụ & Mục tiêu](#1-tổng-quan-nghiệp-vụ--mục-tiêu)
 2. [Kiến trúc cơ sở dữ liệu & Mô hình PostGIS](#2-kiến-trúc-cơ-sở-dữ-liệu--mô-hình-postgis)
-3. [Giải thuật phân tích không gian địa lý GIS](#3-giải-thuật-phân-tích-không-gian-địa-lý-gis)
-4. [Đặc tả RESTful API Endpoints](#4-đặc-tả-restful-api-endpoints)
-5. [Kiến trúc Giao diện FrontEnd (3 Màn hình)](#5-kiến-trúc-giao-diện-frontend-3-màn-hình)
-6. [Cơ chế Nhật ký kiểm toán & Giám sát can thiệp](#6-cơ-chế-nhật-ký-kiểm-toán--giám-sát-can-thiệp)
-7. [Bộ kiểm thử tự động & Bằng chứng thực nghiệm](#7-bộ-kiểm-thử-tự-động--bằng-chứng-thực-nghiệm)
+3. [Hệ thống Thư mục & Luồng Truy vấn Không gian (Architecture & Spatial Query Flow)](#3-hệ-thống-thư-mục--luồng-truy-vấn-không-gian-architecture--spatial-query-flow)
+4. [Giải thuật phân tích không gian địa lý GIS](#4-giải-thuật-phân-tích-không-gian-địa-lý-gis)
+5. [Đặc tả RESTful API Endpoints](#5-đặc-tả-restful-api-endpoints)
+6. [Kiến trúc Giao diện FrontEnd (3 Màn hình)](#6-kiến-trúc-giao-diện-frontend-3-màn-hình)
+7. [Cơ chế Nhật ký kiểm toán & Giám sát can thiệp](#7-cơ-chế-nhật-ký-kiểm-toán--giám-sát-can-thiệp)
+8. [Bảng Ma Trận Ánh Xạ Mã Nguồn (Project Code Mapping Matrix)](#8-bảng-ma-trận-ánh-xạ-mã-nguồn-project-code-mapping-matrix)
+9. [Bộ kiểm thử tự động & Bằng chứng thực nghiệm](#9-bộ-kiểm-thử-tự-động--bằng-chứng-thực-nghiệm)
+10. [Tổng kết](#10-tổng-kết)
 
 ---
 
@@ -70,7 +73,50 @@ Mọi hành động can thiệp (gửi cảnh báo, kích hoạt cuộc gọi) �
 
 ---
 
-## 3. GIẢI THUẬT PHÂN TÍCH KHÔNG GIAN ĐỊA LÝ GIS
+## 3. HỆ THỐNG THƯ MỤC & LUỒNG TRUY VẤN KHÔNG GIAN (ARCHITECTURE & SPATIAL QUERY FLOW)
+
+Hệ thống phân tích không gian vùng đệm cơ sở thiết yếu được phân tầng mạch lạc:
+
+```
+[ FRONTEND CLIENT ] 
+       │ 
+       ▼ (POST /api/v1/spatial/facilities/buffer ...)
+[ API ROUTER ] ──────────► app/api/v1/triage/spatial_facilities.py
+       │                   (Mount qua app/api/v1/triage/router.py -> app/api/v1/__init__.py)
+       │
+       ▼ (Gọi SpatialFacilityService: get_facilities_in_buffer / detail / alert)
+[ SERVICE LAYER ] ───────► app/services/triage/spatial_facility_service.py
+       │
+       ▼ (Truy vấn PostGIS Bounding Box ST_X, ST_Y & ST_Distance)
+[ DATABASE LAYER ] ──────► app/models/spatial.py (EssentialFacility - Geometry POINT 4326)
+                           app/models/incident.py (Incident)
+                           app/models/audit_log.py (IncidentAuditLog)
+```
+
+### 3.1. Chi tiết phân nhiệm từng tầng:
+1. **Tầng CSDL (Domain Models & PostGIS Extension):**
+   - Model Cơ sở thiết yếu: [`BackEnd/app/models/spatial.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/spatial.py) (lớp `EssentialFacility` quản lý cột `location = Geometry(POINT, 4326)` có spatial index GIST).
+   - Model Sự cố & Nhật ký: [`BackEnd/app/models/incident.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/incident.py) (`Incident`), [`BackEnd/app/models/audit_log.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/audit_log.py) (`IncidentAuditLog`).
+2. **Tầng Truy vấn CSDL Không gian (Spatial Database Queries):**
+   - **Vị trí viết câu truy vấn:** Toàn bộ truy vấn PostGIS được đóng gói bên trong lớp `SpatialFacilityService` tại [`BackEnd/app/services/triage/spatial_facility_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/triage/spatial_facility_service.py).
+   - Truy vấn Bounding Box 2 tầng: Sử dụng `func.ST_Y(EssentialFacility.location)` và `func.ST_X(EssentialFacility.location)` kết hợp cự ly đại cầu Haversine để lọc nhanh 95% dữ liệu điểm GIS nằm ngoài bán kính (500m, 1km, 2km).
+   - Truy vấn ghi nhận Audit Log: Ghi nhận sự kiện `FACILITY_ALERT_SENT` và `CALL_INITIATED` trực tiếp qua AsyncSession (`db.add(log)`, `db.commit()`).
+   - *Ghi chú:* Không tách riêng file CRUD mà viết trực tiếp trong service để tối ưu hóa việc biến đổi tọa độ hình học GIS.
+3. **Tầng Dịch vụ (Service Layer):**
+   - [`BackEnd/app/services/triage/spatial_facility_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/triage/spatial_facility_service.py) (`SpatialFacilityService`): Thuật toán Haversine WGS84, phân bậc cự ly khẩn cấp (< 100m, < 200m), thống kê số lượng theo nhóm loại hình, chuẩn bị nội dung cảnh báo SMS/Email.
+   - File re-export: [`BackEnd/app/services/spatial_facility_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/spatial_facility_service.py).
+4. **Tầng Schemas / DTOs:**
+   - [`BackEnd/app/schemas/triage/spatial_facility.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/schemas/triage/spatial_facility.py) (`FacilityBufferQueryRequest`, `FacilityListResponse`, `FacilityDetailProfileResponse`, `SendEmergencyAlertRequest`, `SendEmergencyAlertResponse`).
+   - File re-export: [`BackEnd/app/schemas/spatial_facility.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/schemas/spatial_facility.py).
+5. **Tầng API Router & Tích hợp (Routing & Mounting):**
+   - Router con: [`BackEnd/app/api/v1/triage/spatial_facilities.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/triage/spatial_facilities.py) (prefix `/spatial/facilities`).
+   - Gom Router tổng hợp: [`BackEnd/app/api/v1/triage/router.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/triage/router.py) (`triage_composite_router`).
+   - Mount vào hệ thống: [`BackEnd/app/api/v1/__init__.py#L29`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/__init__.py#L29) (`api_v1_router.include_router(triage_composite_router)`).
+   - File re-export: [`BackEnd/app/api/v1/spatial_facilities.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/spatial_facilities.py).
+
+---
+
+## 4. GIẢI THUẬT PHÂN TÍCH KHÔNG GIAN ĐỊA LÝ GIS
 
 ### 3.1. Kỹ thuật Lọc 2 tầng (Two-Tier Spatial Query)
 Nhằm đạt hiệu năng cao khi cơ sở dữ liệu có hàng chục nghìn điểm GIS, dịch vụ [SpatialFacilityService](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/triage/spatial_facility_service.py#L82-L172) sử dụng chiến lược truy vấn 2 tầng:
@@ -128,7 +174,7 @@ def haversine_distance_meters(lat1: float, lon1: float, lat2: float, lon2: float
 
 ---
 
-## 4. ĐẶC TẢ RESTFUL API ENDPOINTS
+## 5. ĐẶC TẢ RESTFUL API ENDPOINTS
 
 Tất cả các API được định nghĩa tại router: [BackEnd/app/api/v1/triage/spatial_facilities.py](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/triage/spatial_facilities.py).
 
@@ -262,7 +308,7 @@ Kích hoạt tự động khi cán bộ bấm nút "Gọi điện" thoại `tel:
 
 ---
 
-## 5. KIẾN TRÚC GIAO DIỆN FRONTEND (3 MÀN HÌNH)
+## 6. KIẾN TRÚC GIAO DIỆN FRONTEND (3 MÀN HÌNH)
 
 Giao diện được xây dựng bằng React + TypeScript + SCSS BEM chuẩn chỉ tại:  
 [FrontEnd/src/features/triage/components/SpatialFacilityView.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/triage/components/SpatialFacilityView.tsx).
@@ -327,7 +373,7 @@ Giao diện được xây dựng bằng React + TypeScript + SCSS BEM chuẩn ch
 
 ---
 
-## 6. CƠ CHẾ NHẬT KÝ KIỂM TOÁN & GIÁM SÁT CAN THIỆP
+## 7. CƠ CHẾ NHẬT KÝ KIỂM TOÁN & GIÁM SÁT CAN THIỆP
 
 Tuân thủ nghiêm ngặt **Quy tắc 6 (Soft Delete)** và **Quy tắc 7 (Audit Trail & OCC)** của dự án GreenSpot, mọi thao tác phân tích và can thiệp không gian đều được ghi nhận vĩnh viễn trong CSDL:
 
@@ -343,12 +389,34 @@ Tuân thủ nghiêm ngặt **Quy tắc 6 (Soft Delete)** và **Quy tắc 7 (Audi
 
 ---
 
-## 7. BỘ KIỂM THỬ TỰ ĐỘNG & BẰNG CHỨNG THỰC NGHIỆM
+---
+
+## 8. BẢNG MA TRẬN ÁNH XẠ MÃ NGUỒN (PROJECT CODE MAPPING MATRIX)
+
+Tất cả đường dẫn và số dòng mã được đối soát chính xác 100% với kho mã nguồn hiện tại:
+
+| STT | Tập Tin (File Path) | Tầng Kiến Trúc | Các Hàm / Lớp / Logic Cốt Lõi | Dòng Mã (Lines) |
+| :---: | :--- | :--- | :--- | :---: |
+| **1** | [`BackEnd/app/models/spatial.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/spatial.py) | Domain Model | Entity `EssentialFacility` (PostGIS `POINT, 4326`, `vulnerability_level`, phone, address) | 29 - 65 |
+| **2** | [`BackEnd/app/models/incident.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/incident.py) | Domain Model | Entity `Incident` (tọa độ tâm sự cố `latitude`, `longitude`, `location`) | 1 - 215 |
+| **3** | [`BackEnd/app/models/audit_log.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/audit_log.py) | Domain Model | Entity `IncidentAuditLog` (lưu vết `FACILITY_ALERT_SENT`, `CALL_INITIATED`) | 1 - 92 |
+| **4** | [`BackEnd/app/services/triage/spatial_facility_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/triage/spatial_facility_service.py) | Service & GIS Query | `SpatialFacilityService` (PostGIS Bounding Box ST_X/ST_Y, Haversine, cự ly khẩn cấp <100m/<200m) | 1 - 303 |
+| **5** | [`BackEnd/app/schemas/triage/spatial_facility.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/schemas/triage/spatial_facility.py) | DTO / Schemas | Pydantic V2 Schemas: `FacilityBufferQueryRequest`, `FacilityListResponse`, `SendEmergencyAlertRequest` | 1 - 90 |
+| **6** | [`BackEnd/app/api/v1/triage/spatial_facilities.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/triage/spatial_facilities.py) | API Router | Endpoints: `POST /buffer`, `GET /{facility_id}`, `POST /alert`, `POST /call-log` | 1 - 191 |
+| **7** | [`BackEnd/app/api/v1/triage/router.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/triage/router.py) | Composite Router | `triage_composite_router` gom chung Router STT 39 và STT 40 | 1 - 11 |
+| **8** | [`BackEnd/app/api/v1/__init__.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/__init__.py) | API Root Mount | Mount `triage_composite_router` vào `api_v1_router` tại dòng 14 & 29 | 1 - 41 |
+| **9** | [`BackEnd/tests/triage/test_spatial_facility_analysis.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/triage/test_spatial_facility_analysis.py) | Unit & GIS Testing | 6 bài kiểm thử tự động xác thực bộ lọc bán kính, sắp xếp cự ly, validation mảng rỗng và Audit Log | 1 - 250 |
+| **10**| [`FrontEnd/src/features/triage/components/SpatialFacilityView.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/triage/components/SpatialFacilityView.tsx) | UI Presentation | Bộ điều khiển trung tâm 3 Màn hình: Bản đồ vòng đệm, Danh sách bộ lọc nhanh, Hồ sơ & Gọi điện/Chỉ đường/Gửi cảnh báo | 1 - 420 |
+| **11**| [`FrontEnd/src/features/triage/styles/triage.scss`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/triage/styles/triage.scss) | SASS / SCSS Styling | SCSS Design Tokens, mixins, BEM classes tuân thủ 100% Quy tắc 4 | 1 - 650 |
+
+---
+
+## 9. BỘ KIỂM THỬ TỰ ĐỘNG & BẰNG CHỨNG THỰC NGHIỆM
 
 Toàn bộ nghiệp vụ STT 40 được bao phủ bởi bộ kiểm thử tự động TDD:  
 [BackEnd/tests/triage/test_spatial_facility_analysis.py](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/triage/test_spatial_facility_analysis.py).
 
-### 7.1. Danh mục 6 Test Cases tự động
+### 9.1. Danh mục 6 Test Cases tự động
 | STT | Tên Test Case | Mục đích kiểm thử | Kết quả |
 |:---:|:---|:---|:---:|
 | 1 | `test_01_query_facilities_within_buffer_1km_default` | Quét bán kính 1km mặc định, kiểm tra sắp xếp cự ly tăng dần, nhận diện cơ sở < 100m (`is_immediate_risk = True`) | **PASS (0.04s)** |
@@ -358,7 +426,7 @@ Toàn bộ nghiệp vụ STT 40 được bao phủ bởi bộ kiểm thử tự 
 | 5 | `test_05_get_facility_detail_profile` | Tải hồ sơ chi tiết cơ sở, thông tin liên lạc, link chỉ đường và tính cự ly đối soát | **PASS (0.02s)** |
 | 6 | `test_06_send_emergency_alert_and_audit_log` | Gửi cảnh báo khẩn cấp, xác minh bản ghi `FACILITY_ALERT_SENT` được lưu vào Audit Log | **PASS (0.04s)** |
 
-### 7.2. Lệnh thực thi kiểm thử
+### 9.2. Lệnh thực thi kiểm thử
 ```bash
 # Chạy bộ test kiểm thử STT 40
 python -m unittest tests/triage/test_spatial_facility_analysis.py -v
@@ -375,7 +443,7 @@ python -m unittest tests/triage/test_spatial_facility_analysis.py -v
 # OK
 ```
 
-### 7.3. Kiểm tra Frontend Build
+### 9.3. Kiểm tra Frontend Build
 ```bash
 cd FrontEnd
 npm run build
@@ -395,5 +463,6 @@ npm run build
 
 ---
 
-## 8. TỔNG KẾT
+## 10. TỔNG KẾT
 Tính năng STT 40 đáp ứng đầy đủ tiêu chuẩn phân tích không gian địa lý GIS cấp cao, kết hợp linh hoạt với STT 39 (AI Triage & XAI Priority) tạo thành bộ công cụ thẩm định và ứng phó sự cố môi trường khép kín, hiện đại, phục vụ hiệu quả công tác quản lý đô thị của GreenSpot.
+

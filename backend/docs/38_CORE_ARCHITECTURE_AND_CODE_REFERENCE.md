@@ -77,6 +77,21 @@ Module tự động gom cụm các sự cố môi trường gửi về từ ngư
 - **Đánh dấu không trùng lặp (False Positive) (Dòng 262 - 304):** `POST /api/v1/deduplication/mark-distinct`. Kiểm tra OCC locking version ($409$ tại Dòng 288 - 292), chuyển trạng thái sang `SEPARATED`.
 - **Gộp báo cáo & Bảo lưu điểm thưởng (Dòng 306 - 374):** `POST /api/v1/deduplication/merge`. Kiểm tra OCC locking ($409$ tại Dòng 332 - 336), gán `master_incident_id`, soft-delete cụm, bảo lưu điểm thưởng và kích hoạt thông báo push cho người báo cáo phụ.
 
+### 1.3. Hệ Thống Thư Mục & Luồng Luân Chuyển Truy Vấn (Layered Architecture Flow)
+- **Tầng CSDL (Domain Models):**
+  - Model Cụm trùng lặp: [`BackEnd/app/models/deduplication/cluster.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/deduplication/cluster.py) (`IncidentDuplicateCluster`).
+  - Model Sự cố & Phương tiện: [`BackEnd/app/models/incident.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/incident.py) (`Incident`, `IncidentMedia`).
+- **Tầng Truy vấn CSDL (Database Queries):**
+  - **Vị trí viết truy vấn:** Không tách tầng CRUD riêng mà viết trực tiếp trong router [`BackEnd/app/api/v1/deduplication/router.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/deduplication/router.py).
+  - Các truy vấn chính: `select(IncidentDuplicateCluster)` lọc theo quận và soft delete (`deleted_at IS NULL`), `select(Incident)` nạp eager-loading `options(selectinload(Incident.media))`.
+- **Tầng Dịch vụ (Service Layer):**
+  - [`BackEnd/app/services/deduplication/ai_engine.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/deduplication/ai_engine.py) (`AIDeduplicationService`) chịu trách nhiệm tính toán khoảng cách đại cầu Haversine, độ tương đồng Cosine trên embedding ảnh 512-chiều và chấm điểm tương đồng 3 yếu tố.
+- **Tầng DTO / Schemas:**
+  - [`BackEnd/app/schemas/deduplication/schemas.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/schemas/deduplication/schemas.py) (`ClusterListResponse`, `ClusterCompareResponse`, `MergeClusterRequest`, `MarkDistinctRequest`).
+- **Tầng API Router & Tích hợp Hệ thống (Routing & Mounting):**
+  - Router: [`BackEnd/app/api/v1/deduplication/router.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/deduplication/router.py) (prefix `/deduplication`).
+  - Tích hợp vào Router tổng: [`BackEnd/app/api/v1/__init__.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/__init__.py#L28) thông qua `api_v1_router.include_router(deduplication_router)`.
+
 ---
 
 ## CORE BE 2: PHÂN QUYỀN VAI TRÒ RBAC & MA TRẬN PHÂN QUYỀN ĐỘNG (DYNAMIC PERMISSION MATRIX)
