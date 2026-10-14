@@ -25,6 +25,7 @@ from app.schemas.triage import (
     OverridePriorityRequest,
     TriageActionResponse,
 )
+from app.crud.triage.triage_repository import triage_repository
 from app.services.triage_ai_service import AITriageService
 
 router = APIRouter(prefix="/incidents/triage", tags=["AI Incident Triage & Priority (STT 39)"])
@@ -49,20 +50,8 @@ async def get_triage_incidents_list(
     db: AsyncSession = Depends(get_db),
     limit: int = Query(20, ge=1, le=100),
 ):
-    """Lấy danh sách các sự cố cần thẩm định AI Triage"""
-    stmt = (
-        select(Incident)
-        .options(
-            selectinload(Incident.category),
-            selectinload(Incident.media),
-            selectinload(Incident.unit),
-        )
-        .where(Incident.deleted_at.is_(None))
-        .order_by(desc(Incident.created_at))
-        .limit(limit)
-    )
-    res = await db.execute(stmt)
-    incidents = res.scalars().all()
+    """Lấy danh sách các sự cố cần thẩm định AI Triage qua TriageRepository"""
+    incidents = await triage_repository.get_triage_incidents_list(db, limit)
 
     output = []
     for inc in incidents:
@@ -94,17 +83,7 @@ async def get_incident_triage_detail(
     """
     Màn 1/3 & Màn 2/3: Lấy thông tin chi tiết sự cố, tóm tắt AI và bảng giải trình XAI
     """
-    stmt = (
-        select(Incident)
-        .options(
-            selectinload(Incident.category),
-            selectinload(Incident.media),
-            selectinload(Incident.reporter),
-        )
-        .where(Incident.incident_id == incident_id, Incident.deleted_at.is_(None))
-    )
-    res = await db.execute(stmt)
-    inc = res.scalars().first()
+    inc = await triage_repository.get_incident_detail_with_relations(db, incident_id)
     if not inc:
         raise HTTPException(status_code=404, detail="Không tìm thấy sự cố")
 
@@ -235,18 +214,8 @@ async def get_incident_audit_logs(
     incident_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
 ):
-    """Lấy toàn bộ nhật ký kiểm toán Human-in-the-loop của sự cố"""
-    stmt = (
-        select(IncidentAuditLog)
-        .options(selectinload(IncidentAuditLog.operator))
-        .where(
-            IncidentAuditLog.incident_id == incident_id,
-            IncidentAuditLog.deleted_at.is_(None),
-        )
-        .order_by(desc(IncidentAuditLog.created_at))
-    )
-    res = await db.execute(stmt)
-    logs = res.scalars().all()
+    """Lấy toàn bộ nhật ký kiểm toán Human-in-the-loop của sự cố qua TriageRepository"""
+    logs = await triage_repository.get_incident_audit_logs(db, incident_id)
 
     return [
         {

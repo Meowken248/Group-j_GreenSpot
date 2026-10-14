@@ -17,6 +17,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 
 from app.core.config import settings
+from app.interface.triage.triage_interface import IAITriageService
+from app.crud.triage.triage_repository import triage_repository
 from app.models.incident import Incident, WasteCategory
 from app.models.spatial import EssentialFacility
 from app.models.audit_log import IncidentAuditLog
@@ -161,7 +163,7 @@ def determine_sla_and_priority(tps: float) -> Tuple[str, str, int, int]:
         return "Thấp", "LOW", 480, 48
 
 
-class AITriageService:
+class AITriageService(IAITriageService):
 
     @staticmethod
     def generate_summary(description: str, address_text: str = "", category_name: str = "") -> Tuple[str, bool]:
@@ -243,22 +245,16 @@ class AITriageService:
     async def evaluate_incident(cls, db: AsyncSession, incident_id: uuid.UUID) -> TriageEvaluationResult:
         """
         Thực hiện đánh giá toàn diện AI Triage và Explainable AI (XAI) cho một sự cố.
+        Ủy thác toàn bộ thao tác truy xuất dữ liệu cho TriageRepository theo Clean Architecture.
         """
-        stmt = select(Incident).where(
-            Incident.incident_id == incident_id,
-            Incident.deleted_at.is_(None)
-        )
-        res = await db.execute(stmt)
-        inc = res.scalars().first()
+        inc = await triage_repository.get_incident_by_id(db, incident_id)
         if not inc:
             raise HTTPException(status_code=404, detail="Không tìm thấy sự cố")
 
         # 1. BaseSeverity
         base_severity = 50.0
         if inc.category_id:
-            cat_stmt = select(WasteCategory).where(WasteCategory.category_id == inc.category_id)
-            cat_res = await db.execute(cat_stmt)
-            cat = cat_res.scalars().first()
+            cat = await triage_repository.get_waste_category_by_id(db, inc.category_id)
             if cat:
                 code = (cat.category_code or "").upper()
                 if "HAZARD" in code or "CHEM" in code:
@@ -270,46 +266,19 @@ class AITriageService:
                 elif "ORGANIC" in code or "DRY" in code:
                     base_severity = 25.0
 
-        # 2. ProximityRisk: Tìm cơ sở thiết yếu gần nhất qua PostGIS
+        # 2. ProximityRisk: Tìm cơ sở thiết yếu gần nhất qua TriageRepository (PostGIS ST_Distance)
         proximity_risk = 0.0
         nearest_fac_name = None
         min_distance = None
 
         if inc.location is not None:
-            # Bounding box 3km tối ưu hóa truy vấn PostGIS ST_Distance
             inc_lat = float(inc.latitude) if inc.latitude else 10.7769
             inc_lng = float(inc.longitude) if inc.longitude else 106.7009
-            delta_lat = 3000.0 / 111000.0
-            delta_lng = 3000.0 / (111000.0 * max(0.2, math.cos(math.radians(inc_lat))))
-
-            fac_stmt = (
-                select(
-                    EssentialFacility.facility_name,
-                    func.ST_Distance(
-                        func.ST_Transform(EssentialFacility.location, 3857),
-                        func.ST_Transform(inc.location, 3857)
-                    ).label("dist_m")
-                )
-                .where(
-                    EssentialFacility.deleted_at.is_(None),
-                    func.ST_Y(EssentialFacility.location) >= inc_lat - delta_lat,
-                    func.ST_Y(EssentialFacility.location) <= inc_lat + delta_lat,
-                    func.ST_X(EssentialFacility.location) >= inc_lng - delta_lng,
-                    func.ST_X(EssentialFacility.location) <= inc_lng + delta_lng,
-                )
-                .order_by("dist_m")
-                .limit(1)
+            nearest_fac_name, min_distance = await triage_repository.get_nearest_sensitive_facility(
+                db, inc_lat, inc_lng
             )
-            try:
-                fac_res = await db.execute(fac_stmt)
-                row = fac_res.first()
-                if row:
-                    nearest_fac_name = row[0]
-                    min_distance = float(row[1])
-                    proximity_risk = calculate_proximity_risk(min_distance)
-            except Exception:
-                # Fallback khoảng cách nếu PostGIS transform chưa hỗ trợ
-                proximity_risk = 0.0
+            if min_distance is not None:
+                proximity_risk = calculate_proximity_risk(min_distance)
 
         # 3. ScaleFactor
         area_m2 = 10.0
@@ -346,9 +315,7 @@ class AITriageService:
         # 7. Summary qua Kira AI
         cat_name = ""
         if inc.category_id:
-            cat_stmt = select(WasteCategory).where(WasteCategory.category_id == inc.category_id)
-            cat_res = await db.execute(cat_stmt)
-            cat = cat_res.scalars().first()
+            cat = await triage_repository.get_waste_category_by_id(db, inc.category_id)
             if cat:
                 cat_name = cat.name
 
@@ -376,7 +343,7 @@ class AITriageService:
             "min_distance_m": min_distance
         }
         inc.ai_generated_at = datetime.utcnow()
-        await db.commit()
+        await triage_repository.commit_changes(db)
 
         return TriageEvaluationResult(
             incident_id=inc.incident_id,
@@ -401,12 +368,7 @@ class AITriageService:
         """
         Nút "Tạo lại tóm tắt": Làm mới bản tóm tắt AI qua Kira AI.
         """
-        stmt = select(Incident).where(
-            Incident.incident_id == incident_id,
-            Incident.deleted_at.is_(None)
-        )
-        res = await db.execute(stmt)
-        inc = res.scalars().first()
+        inc = await triage_repository.get_incident_by_id(db, incident_id)
         if not inc:
             raise HTTPException(status_code=404, detail="Không tìm thấy sự cố")
 
@@ -441,7 +403,7 @@ class AITriageService:
         inc.ai_summary = summary
         inc.ai_generated_at = datetime.utcnow()
 
-        # Ghi log kiểm toán
+        # Ghi log kiểm toán qua Repository
         audit = IncidentAuditLog(
             incident_id=inc.incident_id,
             action="AI_TRIAGE_REGENERATED",
@@ -450,8 +412,7 @@ class AITriageService:
             reason="Cán bộ yêu cầu làm mới tóm tắt AI",
             version=inc.version,
         )
-        db.add(audit)
-        await db.commit()
+        await triage_repository.save_audit_log(db, audit)
         return summary
 
     @classmethod
@@ -466,12 +427,7 @@ class AITriageService:
         Nút "Chấp nhận": Đồng thuận với đề xuất AI, gán trực tiếp vào phiếu việc và kích hoạt SLA.
         Kiểm tra Optimistic Locking (Quy tắc 7).
         """
-        stmt = select(Incident).where(
-            Incident.incident_id == incident_id,
-            Incident.deleted_at.is_(None)
-        )
-        res = await db.execute(stmt)
-        inc = res.scalars().first()
+        inc = await triage_repository.get_incident_by_id(db, incident_id)
         if not inc:
             raise HTTPException(status_code=404, detail="Không tìm thấy sự cố")
 
@@ -494,7 +450,7 @@ class AITriageService:
         inc.sla_deadline = now + timedelta(hours=sla_hours)
         inc.version += 1
 
-        # Ghi Audit Log
+        # Ghi Audit Log qua Repository
         audit = IncidentAuditLog(
             incident_id=inc.incident_id,
             action="PRIORITY_ACCEPTED",
@@ -505,8 +461,7 @@ class AITriageService:
             reason="Cán bộ đồng thuận với mức đề xuất của AI",
             version=inc.version,
         )
-        db.add(audit)
-        await db.commit()
+        await triage_repository.save_audit_log(db, audit)
         await db.refresh(inc)
         return inc
 
@@ -530,12 +485,7 @@ class AITriageService:
         if len(clean_reason) > 200:
             raise ValueError("Lý do thay đổi mức ưu tiên không được vượt quá 200 ký tự")
 
-        stmt = select(Incident).where(
-            Incident.incident_id == incident_id,
-            Incident.deleted_at.is_(None)
-        )
-        res = await db.execute(stmt)
-        inc = res.scalars().first()
+        inc = await triage_repository.get_incident_by_id(db, incident_id)
         if not inc:
             raise HTTPException(status_code=404, detail="Không tìm thấy sự cố")
 
@@ -558,7 +508,7 @@ class AITriageService:
         inc.sla_deadline = now + timedelta(hours=sla_hours)
         inc.version += 1
 
-        # Ghi Audit Log
+        # Ghi Audit Log qua Repository
         audit = IncidentAuditLog(
             incident_id=inc.incident_id,
             action="PRIORITY_OVERRIDDEN",
@@ -569,7 +519,6 @@ class AITriageService:
             performed_by=operator_id,
             version=inc.version,
         )
-        db.add(audit)
-        await db.commit()
+        await triage_repository.save_audit_log(db, audit)
         await db.refresh(inc)
         return inc
