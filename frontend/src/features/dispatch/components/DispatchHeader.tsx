@@ -1,7 +1,8 @@
 import React from "react";
 
 interface DispatchHeaderProps {
-  currentScreen: number; // 1 to 6
+  currentScreen?: number; // 1 to 6
+  activeTab?: string;
   onBackToHome?: () => void;
   onNavigateScreen?: (screen: number) => void;
   unreadAlertsCount?: number;
@@ -9,6 +10,7 @@ interface DispatchHeaderProps {
 
 export const DispatchHeader: React.FC<DispatchHeaderProps> = ({
   currentScreen,
+  activeTab,
   onBackToHome,
   onNavigateScreen,
   unreadAlertsCount = 2,
@@ -45,7 +47,7 @@ export const DispatchHeader: React.FC<DispatchHeaderProps> = ({
       {/* 2. CHỈ BÁO MÀN HÌNH ĐANG THAO TÁC */}
       <div className="header-center">
         <span className="screen-indicator-badge">
-          {screenTitles[currentScreen] || "Điều phối tác nghiệp"}
+          {activeTab || (currentScreen ? screenTitles[currentScreen] : undefined) || "Điều phối tác nghiệp"}
         </span>
         {currentScreen !== 1 && onNavigateScreen && (
           <button

@@ -182,6 +182,7 @@ export const Screen1DispatchList: React.FC<Screen1DispatchListProps> = ({
                     return (
                       <tr
                         key={order.order_id}
+                        data-testid={`order-row-${order.order_id}`}
                         className={`${isSelected ? "selected-row" : ""} ${isNew ? "highlight-new" : ""}`}
                         onClick={() => onSelectOrder(order)}
                         onDoubleClick={() => onOpenTracking(order)}

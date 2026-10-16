@@ -89,7 +89,7 @@ export const Screen6FieldTracking: React.FC<Screen6FieldTrackingProps> = ({
                 <span className="badge bg-danger text-uppercase">{priority}</span>
               </div>
               <p className="text-muted small mb-0">
-                Theo dõi định vị GPS thời gian thực, tiến độ xử lý và hình ảnh nghiệm thu thực địa
+                <strong>Sự cố:</strong> {incident_title} — <i className="bi bi-geo-alt text-danger me-1"></i>{incident_address}
               </p>
             </div>
           </div>
