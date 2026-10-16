@@ -4,7 +4,7 @@ import { HotspotFooter } from "../components/HotspotFooter";
 import { Screen1HotspotMap } from "../components/Screen1HotspotMap";
 import { Screen2ForecastDashboard } from "../components/Screen2ForecastDashboard";
 import { Screen3HotspotDetailModal } from "../components/Screen3HotspotDetailModal";
-import { hotspotApi } from "../services/hotspotApi";
+import { hotspotApi, FALLBACK_CLUSTERS, FALLBACK_TOP5 } from "../services/hotspotApi";
 import type {
   HotspotCluster,
   TopHotspotItem,
@@ -94,9 +94,9 @@ export const HotspotContainer: React.FC<HotspotContainerProps> = ({
         showToast("Không phát hiện cụm điểm nóng nào trong khoảng thời gian đã chọn.", "info");
       }
     } catch {
-      setClusters([]);
-      setTop5([]);
-      showToast("Không thể kết nối đến máy chủ bản đồ GIS. Vui lòng kiểm tra lại đường truyền.", "error");
+      setClusters(FALLBACK_CLUSTERS);
+      setTop5(FALLBACK_TOP5);
+      showToast("Đang hiển thị bản đồ dự phòng GIS do kết nối máy chủ gián đoạn.", "warning");
     } finally {
       setIsMapLoading(false);
     }
