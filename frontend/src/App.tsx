@@ -21,6 +21,7 @@ import { PenaltyLookupContainer, PenaltyReportsDashboard } from "./features/pena
 import { PostCreatorContainer } from "./features/posts";
 import { FloodNavigationContainer } from "./features/navigation";
 import { RiskDashboardContainer } from "./features/risk_dashboard";
+import { DispatchContainer } from "./features/dispatch";
 import {
   SettingsContainer,
   applyThemeToDocument,
@@ -60,6 +61,7 @@ function App() {
       if (hash === "#settings" || path === "/settings") return "/settings";
       if (hash === "#penalty-reports" || path === "/penalty-reports") return "/penalty-reports";
       if (hash === "#risk-dashboard" || hash === "#urban-risk" || path === "/risk-dashboard") return "/risk-dashboard";
+      if (hash === "#dispatch" || hash === "#operations-dispatch" || path === "/dispatch") return "/dispatch";
     }
     return undefined;
   });
@@ -81,11 +83,16 @@ function App() {
     | "triage"
     | "navigation"
     | "risk-dashboard"
+    | "dispatch"
   >(() => {
     const hash = window.location.hash.toLowerCase();
     const path = window.location.pathname.toLowerCase();
     const isLogged = checkIsLoggedIn();
 
+    if (hash === "#dispatch" || hash === "#operations-dispatch" || path === "/dispatch") {
+      if (!isLogged) return "auth";
+      return "dispatch";
+    }
     if (hash === "#risk-dashboard" || hash === "#urban-risk" || path === "/risk-dashboard") {
       if (!isLogged) return "auth";
       return "risk-dashboard";
@@ -231,6 +238,14 @@ function App() {
     canAccess("STATISTICS") ||
     canAccess("INCIDENTS");
 
+  const hasDispatchAccess =
+    currentUser?.role === "ADMIN" ||
+    currentUser?.role === "OFFICER" ||
+    currentUser?.role === "DISTRICT_MANAGER" ||
+    currentUser?.role === "COORDINATOR" ||
+    currentUser?.role === "RESPONDER" ||
+    canAccess("INCIDENTS");
+
   const hasPenaltyReportsAccess =
     currentUser?.role === "ADMIN" ||
     currentUser?.role === "OFFICER" ||
@@ -363,6 +378,14 @@ function App() {
         } else {
           setActiveTab("penalty-reports");
         }
+      } else if (hash === "#dispatch" || hash === "#operations-dispatch" || window.location.pathname === "/dispatch") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/dispatch");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("dispatch");
+        }
       } else if (hash === "#profile") {
         if (!isLogged) {
           setAuthRedirectUrl("/profile");
@@ -414,6 +437,10 @@ function App() {
         window.location.hash = "#login";
       } else if (activeTab === "penalty-reports") {
         setAuthRedirectUrl("/penalty-reports");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "dispatch") {
+        setAuthRedirectUrl("/dispatch");
         setActiveTab("auth");
         window.location.hash = "#login";
       }
@@ -627,6 +654,24 @@ function App() {
                   </>
                 )}
 
+                {hasDispatchAccess && (
+                  <>
+                    <button
+                      type="button"
+                      className="dropdown-menu-action"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        setActiveTab("dispatch");
+                        window.location.hash = "#dispatch";
+                      }}
+                    >
+                      <span className="action-icon">🚨</span>
+                      <span>Điều phối tác nghiệp</span>
+                    </button>
+                    <div className="dropdown-separator" />
+                  </>
+                )}
+
                 <button
                   type="button"
                   className="dropdown-menu-action"
@@ -789,6 +834,22 @@ function App() {
               >
                 <span>🏙️</span>
                 <span>Rủi ro đô thị</span>
+              </button>
+            )}
+
+            {hasDispatchAccess && (
+              <button
+                type="button"
+                className={`view-tab-btn ${activeTab === "dispatch" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("dispatch");
+                  window.location.hash = "#dispatch";
+                }}
+                title="Trung tâm điều phối tác nghiệp và phân công lệnh xử lý hiện trường"
+                data-testid="tab-btn-dispatch"
+              >
+                <span>🚨</span>
+                <span>Điều phối tác nghiệp</span>
               </button>
             )}
 
@@ -1065,6 +1126,23 @@ function App() {
                 window.location.hash = `#map?lat=${lat}&lng=${lng}&district=${encodeURIComponent(districtName)}`;
               }}
             />
+          </div>
+        )
+      ) : activeTab === "dispatch" ? (
+        !currentUser ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/dispatch"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+            <DispatchContainer />
           </div>
         )
       ) : activeTab === "settings" ? (
