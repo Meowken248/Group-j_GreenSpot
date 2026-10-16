@@ -25,6 +25,32 @@ interface ToastMessage {
   message: string;
 }
 
+export type SortOptionKey = "relevant" | "newest" | "all";
+
+interface SortOption {
+  key: SortOptionKey;
+  label: string;
+  desc: string;
+}
+
+const SORT_OPTIONS: SortOption[] = [
+  {
+    key: "relevant",
+    label: "Phù hợp nhất",
+    desc: "Hiển thị bình luận có nhiều lượt thích và phản hồi nhất trước.",
+  },
+  {
+    key: "newest",
+    label: "Mới nhất",
+    desc: "Hiển thị bình luận mới nhất trước.",
+  },
+  {
+    key: "all",
+    label: "Tất cả bình luận",
+    desc: "Hiển thị tất cả bình luận theo thứ tự thời gian.",
+  },
+];
+
 export const PostCommentsModal: React.FC<PostCommentsModalProps> = ({
   isOpen,
   post,
@@ -55,6 +81,11 @@ export const PostCommentsModal: React.FC<PostCommentsModalProps> = ({
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
+  // Bộ lọc sắp xếp bình luận
+  const [sortBy, setSortBy] = useState<SortOptionKey>("relevant");
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState<boolean>(false);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
+
   // 3. Quản lý việc gửi bình luận mới
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
@@ -78,16 +109,40 @@ export const PostCommentsModal: React.FC<PostCommentsModalProps> = ({
     []
   );
 
-  // Nhấn phím Escape để đóng modal
+  // Nhấn phím Escape để đóng modal hoặc dropdown
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        if (isFilterDropdownOpen) {
+          setIsFilterDropdownOpen(false);
+        } else {
+          onClose();
+        }
+      }
     };
     if (isOpen) {
       window.addEventListener("keydown", handleKeyDown);
     }
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isFilterDropdownOpen]);
+
+  // Đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        filterDropdownRef.current &&
+        !filterDropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsFilterDropdownOpen(false);
+      }
+    };
+    if (isFilterDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isFilterDropdownOpen]);
 
   // Bộ đếm lùi Cooldown chống spam
   useEffect(() => {
@@ -98,35 +153,46 @@ export const PostCommentsModal: React.FC<PostCommentsModalProps> = ({
     return () => clearInterval(timer);
   }, [cooldownSeconds]);
 
-  // Tải danh sách bình luận
-  const fetchComments = useCallback(async () => {
-    if (!isOpen) return;
-    try {
-      setIsLoading(true);
-      setFetchError(null);
-      const res = await commentService.getPostComments(post.post_id, 1, 10);
-      setComments(res.items);
-      setTotalComments(res.total);
-      setHasMore(res.has_more);
-      setPage(1);
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || "Không thể tải bình luận";
-      if (msg.includes("Bài viết không còn tồn tại")) {
-        showToast("error", "Bài viết không còn tồn tại");
-        setTimeout(() => onClose(), 1800);
-      } else {
-        setFetchError(msg);
+  // Tải danh sách bình luận theo sort
+  const fetchComments = useCallback(
+    async (targetSort: SortOptionKey = sortBy) => {
+      if (!isOpen) return;
+      try {
+        setIsLoading(true);
+        setFetchError(null);
+        const res = await commentService.getPostComments(post.post_id, 1, 10, targetSort);
+        setComments(res.items);
+        setTotalComments(res.total);
+        setHasMore(res.has_more);
+        setPage(1);
+      } catch (err: any) {
+        const msg = err?.response?.data?.detail || "Không thể tải bình luận";
+        if (msg.includes("Bài viết không còn tồn tại")) {
+          showToast("error", "Bài viết không còn tồn tại");
+          setTimeout(() => onClose(), 1800);
+        } else {
+          setFetchError(msg);
+        }
+      } finally {
+        setIsLoading(false);
       }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isOpen, post.post_id, onClose, showToast]);
+    },
+    [isOpen, post.post_id, onClose, showToast, sortBy]
+  );
 
   useEffect(() => {
     if (isOpen) {
-      fetchComments();
+      fetchComments(sortBy);
     }
-  }, [isOpen, fetchComments]);
+  }, [isOpen, sortBy]);
+
+  // Xử lý khi chọn kiểu sắp xếp
+  const handleSelectSort = (key: SortOptionKey) => {
+    setIsFilterDropdownOpen(false);
+    if (key !== sortBy) {
+      setSortBy(key);
+    }
+  };
 
   // Tải thêm bình luận
   const handleLoadMore = async () => {
@@ -134,7 +200,7 @@ export const PostCommentsModal: React.FC<PostCommentsModalProps> = ({
     try {
       setIsLoadingMore(true);
       const nextPage = page + 1;
-      const res = await commentService.getPostComments(post.post_id, nextPage, 10);
+      const res = await commentService.getPostComments(post.post_id, nextPage, 10, sortBy);
       setComments((prev) => [...prev, ...res.items]);
       setHasMore(res.has_more);
       setPage(nextPage);
@@ -310,8 +376,43 @@ export const PostCommentsModal: React.FC<PostCommentsModalProps> = ({
             <div className="stream-title">
               <h4>Bình luận ({totalComments})</h4>
             </div>
-            <div className="stream-filter-badge">
-              <span>Phù hợp nhất ▾</span>
+
+            <div className="stream-filter-container" ref={filterDropdownRef}>
+              <button
+                type="button"
+                className="stream-filter-btn"
+                onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
+                aria-expanded={isFilterDropdownOpen}
+                aria-haspopup="listbox"
+                title="Sắp xếp bình luận"
+              >
+                <span>{SORT_OPTIONS.find((o) => o.key === sortBy)?.label || "Phù hợp nhất"}</span>
+                <span className={`filter-caret ${isFilterDropdownOpen ? "open" : ""}`}>▾</span>
+              </button>
+
+              {isFilterDropdownOpen && (
+                <div className="stream-filter-dropdown-menu" role="listbox">
+                  <div className="filter-dropdown-header">Sắp xếp bình luận</div>
+                  {SORT_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      role="option"
+                      aria-selected={sortBy === opt.key}
+                      className={`filter-dropdown-item ${sortBy === opt.key ? "active" : ""}`}
+                      onClick={() => handleSelectSort(opt.key)}
+                    >
+                      <div className="item-text-wrap">
+                        <span className="item-title">{opt.label}</span>
+                        <span className="item-desc">{opt.desc}</span>
+                      </div>
+                      {sortBy === opt.key && (
+                        <span className="item-check">✓</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -325,7 +426,7 @@ export const PostCommentsModal: React.FC<PostCommentsModalProps> = ({
             ) : fetchError ? (
               <div className="comments-error-banner">
                 <span>⚠️ {fetchError}</span>
-                <button type="button" onClick={fetchComments} className="btn-retry">
+                <button type="button" onClick={() => fetchComments(sortBy)} className="btn-retry">
                   Thử lại
                 </button>
               </div>

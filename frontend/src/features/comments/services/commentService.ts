@@ -21,10 +21,11 @@ export const commentService = {
   async getPostComments(
     postId: string,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
+    sort: string = "relevant"
   ): Promise<CommentListResponse> {
     const res = await api.get<CommentListResponse>(`/api/v1/posts/${postId}/comments`, {
-      params: { page, limit },
+      params: { page, limit, sort },
     });
     return res.data;
   },

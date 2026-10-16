@@ -77,11 +77,15 @@ class CommentService:
         post_id: uuid.UUID,
         page: int = 1,
         limit: int = 10,
+        sort: str = "relevant",
     ) -> CommentListResponse:
         """
         Lấy danh sách bình luận cấp 1 theo đặc tả Màn 1:
         - Kiểm tra bài viết tồn tại và chưa bị xóa mềm
-        - Sắp xếp mới nhất ở trên (created_at DESC)
+        - Sắp xếp theo sort:
+            + "relevant": Phù hợp nhất (tổng tương tác likes_count + replies_count và mới nhất)
+            + "newest": Mới nhất ở trên (created_at DESC)
+            + "all": Tất cả bình luận theo thứ tự thời gian (created_at ASC)
         - Phân trang 10 bình luận mỗi lần tải
         - Kèm theo tối đa 3 câu trả lời ban đầu (cũ nhất ở trên ASC)
         """
@@ -104,8 +108,18 @@ class CommentService:
         total_res = await db.execute(count_stmt)
         total_count = total_res.scalar_one() or 0
 
-        # 3. Lấy danh sách bình luận cấp 1 (mới nhất trước)
+        # 3. Lấy danh sách bình luận cấp 1 theo thứ tự sắp xếp
         offset = (page - 1) * limit
+        if sort == "newest":
+            order_clause = [desc(Comment.created_at)]
+        elif sort == "all":
+            order_clause = [asc(Comment.created_at)]
+        else:  # "relevant" (mặc định)
+            order_clause = [
+                desc(Comment.likes_count + Comment.replies_count),
+                desc(Comment.created_at),
+            ]
+
         comments_stmt = (
             select(Comment)
             .options(selectinload(Comment.user))
@@ -114,7 +128,7 @@ class CommentService:
                 Comment.parent_id.is_(None),
                 Comment.deleted_at.is_(None),
             )
-            .order_by(desc(Comment.created_at))
+            .order_by(*order_clause)
             .offset(offset)
             .limit(limit)
         )

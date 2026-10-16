@@ -39,12 +39,13 @@ async def get_post_comments_endpoint(
     post_id: uuid.UUID,
     page: int = Query(1, ge=1, description="Số trang (10 bình luận/lần tải)"),
     limit: int = Query(10, ge=1, le=50, description="Số lượng bình luận mỗi lần tải"),
+    sort: str = Query("relevant", description="Sắp xếp: relevant (phù hợp nhất), newest (mới nhất), all (tất cả bình luận)"),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Truy vấn bình luận cấp 1:
     - Không bắt buộc đăng nhập (Khách vãng lai đọc được)
-    - Sắp xếp mới nhất ở trên (DESC)
+    - Sắp xếp theo sort: relevant (Phù hợp nhất), newest (Mới nhất), all (Tất cả bình luận)
     - Kèm theo tối đa 3 câu trả lời ban đầu (cũ nhất ở trên ASC)
     - Phân trang 10 bình luận mỗi lần
     """
@@ -53,6 +54,7 @@ async def get_post_comments_endpoint(
         post_id=post_id,
         page=page,
         limit=limit,
+        sort=sort,
     )
 
 

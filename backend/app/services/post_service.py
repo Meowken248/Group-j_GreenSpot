@@ -876,9 +876,20 @@ class PostService:
         following_ids = set()
 
         if current_user_id and user_ids:
-            f_stmt = select(Friendship.friend_id).where(
-                Friendship.user_id == current_user_id,
-                Friendship.friend_id.in_(user_ids)
+            f_stmt = (
+                select(
+                    case(
+                        (Friendship.user_id_1 == current_user_id, Friendship.user_id_2),
+                        else_=Friendship.user_id_1
+                    )
+                )
+                .where(
+                    or_(
+                        and_(Friendship.user_id_1 == current_user_id, Friendship.user_id_2.in_(user_ids)),
+                        and_(Friendship.user_id_2 == current_user_id, Friendship.user_id_1.in_(user_ids))
+                    ),
+                    Friendship.deleted_at.is_(None)
+                )
             )
             f_res = await db.execute(f_stmt)
             friend_ids = {r[0] for r in f_res.fetchall()}

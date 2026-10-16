@@ -249,21 +249,157 @@
       }
     }
 
-    .stream-filter-badge {
-      font-size: 12.5px;
-      font-weight: 600;
-      color: #64748b;
-      cursor: pointer;
+    .stream-filter-container {
+      position: relative;
 
-      &:hover {
-        color: #0f172a;
-      }
+      .stream-filter-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: transparent;
+        border: none;
+        padding: 5px 8px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.18s ease;
 
-      [data-theme="dark"] & {
-        color: #94a3b8;
+        .filter-caret {
+          font-size: 11px;
+          transition: transform 0.2s ease;
+          display: inline-block;
+
+          &.open {
+            transform: rotate(180deg);
+          }
+        }
 
         &:hover {
-          color: #ffffff;
+          background: rgba(0, 0, 0, 0.04);
+          color: #0f172a;
+        }
+
+        [data-theme="dark"] & {
+          color: #94a3b8;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+          }
+        }
+      }
+
+      .stream-filter-dropdown-menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        min-width: 290px;
+        max-width: 340px;
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 6px;
+        box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        animation: fbDropdownPop 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+        [data-theme="dark"] & {
+          background: #242b38;
+          border-color: rgba(255, 255, 255, 0.1);
+          box-shadow: 0 14px 36px -4px rgba(0, 0, 0, 0.65), 0 4px 14px rgba(0, 0, 0, 0.35);
+        }
+
+        .filter-dropdown-header {
+          padding: 8px 12px 4px;
+          font-size: 11.5px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: #94a3b8;
+
+          [data-theme="dark"] & {
+            color: #64748b;
+          }
+        }
+
+        .filter-dropdown-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          width: 100%;
+          padding: 9px 12px;
+          background: transparent;
+          border: none;
+          border-radius: 8px;
+          text-align: left;
+          cursor: pointer;
+          transition: background 0.15s ease;
+
+          .item-text-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+
+            .item-title {
+              font-size: 13.5px;
+              font-weight: 600;
+              color: #1e293b;
+
+              [data-theme="dark"] & {
+                color: #f1f5f9;
+              }
+            }
+
+            .item-desc {
+              font-size: 11.5px;
+              color: #64748b;
+              line-height: 1.35;
+
+              [data-theme="dark"] & {
+                color: #94a3b8;
+              }
+            }
+          }
+
+          .item-check {
+            color: #10b981;
+            font-size: 16px;
+            font-weight: 700;
+            flex-shrink: 0;
+          }
+
+          &:hover {
+            background: rgba(0, 0, 0, 0.05);
+          }
+
+          &.active {
+            background: rgba(16, 185, 129, 0.08);
+
+            .item-title {
+              color: #059669;
+
+              [data-theme="dark"] & {
+                color: #34d399;
+              }
+            }
+          }
+
+          [data-theme="dark"] & {
+            &:hover {
+              background: rgba(255, 255, 255, 0.08);
+            }
+
+            &.active {
+              background: rgba(16, 185, 129, 0.16);
+            }
+          }
         }
       }
     }
@@ -347,5 +483,16 @@
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes fbDropdownPop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
