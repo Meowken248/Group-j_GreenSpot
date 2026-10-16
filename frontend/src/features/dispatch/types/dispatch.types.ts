@@ -67,7 +67,7 @@ export interface DispatchListFilter {
 
 export interface DispatchListResponse {
   orders: DispatchOrderItem[];
-  total_count: int;
+  total_count: number;
   has_results: boolean;
   empty_message?: string | null;
 }
