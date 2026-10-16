@@ -18,6 +18,7 @@ import { Screen3EditOrder } from "../components/Screen3EditOrder";
 import { Screen4CancelModal } from "../components/Screen4CancelModal";
 import { Screen5CancelSuccessModal } from "../components/Screen5CancelSuccessModal";
 import { Screen6FieldTracking } from "../components/Screen6FieldTracking";
+import "../styles/dispatch.scss";
 
 type ScreenMode = "LIST" | "CREATE" | "EDIT" | "TRACKING";
 
@@ -496,7 +497,7 @@ export const DispatchContainer: React.FC = () => {
   };
 
   return (
-    <div className="dispatch-module-wrapper d-flex flex-column min-vh-100">
+    <div className="dispatch-center-wrapper dispatch-module-wrapper">
       {/* Toast Notification Container */}
       <div
         className="toast-container position-fixed top-0 end-0 p-3"

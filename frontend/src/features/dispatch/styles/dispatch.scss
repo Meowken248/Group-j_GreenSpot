@@ -17,16 +17,19 @@ $light-bg: #f8fafc;
 $light-card: #ffffff;
 $light-border: #e2e8f0;
 
-.dispatch-center-wrapper {
+.dispatch-center-wrapper,
+.dispatch-module-wrapper {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  width: 100%;
   background: $light-bg;
   color: #1e293b;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   position: relative;
 
-  &.dark-theme {
+  &.dark-theme,
+  .dark-theme & {
     background: $dark-bg;
     color: #f1f5f9;
 
@@ -209,6 +212,14 @@ $light-border: #e2e8f0;
       font-size: 0.8rem;
       font-weight: 700;
     }
+  }
+
+  .dispatch-main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 0;
   }
 
   /* KHU VỰC LÀM VIỆC CHÍNH (MAIN WORKSPACE 3 KHỐI NGANG) */
@@ -613,6 +624,44 @@ $light-border: #e2e8f0;
         background: $primary-green;
         color: white;
         &:hover { background: $primary-green-dark; }
+      }
+    }
+  }
+
+  /* TOAST NOTIFICATION STYLING */
+  .toast-container {
+    position: fixed;
+    top: 76px;
+    right: 24px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    .toast {
+      min-width: 280px;
+      max-width: 420px;
+      padding: 12px 18px;
+      border-radius: 10px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+      animation: slide-in-toast 0.25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      &.bg-success { background: #10b981; color: white; }
+      &.bg-warning { background: #f59e0b; color: white; }
+      &.bg-danger { background: #ef4444; color: white; }
+      &.bg-info { background: #3b82f6; color: white; }
+
+      .btn-close {
+        background: transparent;
+        border: none;
+        color: white;
+        font-size: 1.1rem;
+        cursor: pointer;
+        opacity: 0.8;
+        &:hover { opacity: 1; }
       }
     }
   }
