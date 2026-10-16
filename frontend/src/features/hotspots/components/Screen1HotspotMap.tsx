@@ -177,7 +177,7 @@ export const Screen1HotspotMap: React.FC<Screen1HotspotMapProps> = ({
             <div className="tile-error-fallback" data-testid="tile-error-fallback">
               <span className="error-icon">⚠️</span>
               <p className="error-text">
-                Lỗi kết nối máy chủ bản đồ tile GIS - Vui lòng thử tải lại
+                Không thể kết nối đến máy chủ bản đồ GIS. Vui lòng kiểm tra lại đường truyền.
               </p>
               <button
                 type="button"
@@ -186,14 +186,14 @@ export const Screen1HotspotMap: React.FC<Screen1HotspotMapProps> = ({
                 data-testid="btn-retry-tiles"
               >
                 <span>🔄</span>
-                <span>Thử tải lại</span>
+                <span>Thử tải lại bản đồ</span>
               </button>
             </div>
           ) : clusters.length === 0 && !isLoading ? (
             <div className="empty-hotspot-state" data-testid="empty-hotspot-state">
               <span className="empty-icon">🍃</span>
               <p className="empty-msg">
-                Không phát hiện cụm điểm nóng nào trong bộ lọc đã chọn
+                Không phát hiện cụm điểm nóng nào trong khoảng thời gian đã chọn.
               </p>
             </div>
           ) : (
@@ -216,6 +216,7 @@ export const Screen1HotspotMap: React.FC<Screen1HotspotMapProps> = ({
                     key={cluster.id}
                     onClick={() => {
                       onSelectCluster(cluster.id);
+                      onOpenDetailModal();
                     }}
                     style={{ cursor: "pointer" }}
                     data-testid={`hotspot-circle-${cluster.id}`}
@@ -279,37 +280,47 @@ export const Screen1HotspotMap: React.FC<Screen1HotspotMapProps> = ({
         </div>
 
         <div className="top5-list" data-testid="top5-list">
-          {top5.map((item) => {
-            const isSelected = selectedClusterId === item.id;
-            return (
-              <div
-                key={item.id}
-                className={`top-item ${isSelected ? "selected" : ""}`}
-                onClick={() => onSelectCluster(item.id)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    onSelectCluster(item.id);
-                  }
-                }}
-                data-testid={`top5-item-${item.rank}`}
-              >
-                <div className={`top-rank-badge rank-${item.rank}`}>{item.rank}</div>
-                <div className="top-info">
-                  <div className="top-item-title" title={item.title}>
-                    {item.title}
+          {top5.length === 0 ? (
+            <div
+              className="empty-top5-msg"
+              data-testid="empty-top5-msg"
+              style={{ padding: "20px 12px", textAlign: "center", color: "#64748b", fontSize: "13.5px", fontWeight: 500 }}
+            >
+              Không có điểm nóng
+            </div>
+          ) : (
+            top5.map((item) => {
+              const isSelected = selectedClusterId === item.id;
+              return (
+                <div
+                  key={item.id}
+                  className={`top-item ${isSelected ? "selected" : ""}`}
+                  onClick={() => onSelectCluster(item.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      onSelectCluster(item.id);
+                    }
+                  }}
+                  data-testid={`top5-item-${item.rank}`}
+                >
+                  <div className={`top-rank-badge rank-${item.rank}`}>{item.rank}</div>
+                  <div className="top-info">
+                    <div className="top-item-title" title={item.title}>
+                      {item.title}
+                    </div>
+                    <div className="top-item-sub">
+                      {item.district} • {item.trend}
+                    </div>
                   </div>
-                  <div className="top-item-sub">
-                    {item.district} • {item.trend}
+                  <div className="top-count-badge" title="Số lượng sự cố ghi nhận">
+                    {item.incident_count} sự cố
                   </div>
                 </div>
-                <div className="top-count-badge" title="Số lượng sự cố ghi nhận">
-                  {item.incident_count} sự cố
-                </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </aside>
     </div>

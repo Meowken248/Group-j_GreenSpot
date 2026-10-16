@@ -34,9 +34,14 @@ export const Screen3HotspotDetailModal: React.FC<Screen3HotspotDetailModalProps>
         data-testid="hotspot-detail-modal"
       >
         <div className="modal-head">
-          <h2 id="hotspot-detail-title" className="modal-title">
-            Chi tiết điểm nóng
-          </h2>
+          <div>
+            <h2 id="hotspot-detail-title" className="modal-title">
+              CHI TIẾT ĐIỂM NÓNG
+            </h2>
+            <div style={{ fontSize: "12px", color: "#64748b", marginTop: "3px", fontWeight: 500 }}>
+              Số sự cố | Xu hướng | Dự báo 48h
+            </div>
+          </div>
           <button
             type="button"
             className="modal-close-icon"
@@ -109,8 +114,8 @@ export const Screen3HotspotDetailModal: React.FC<Screen3HotspotDetailModalProps>
                 <div className="active-order-notice" data-testid="active-order-notice">
                   <span>🚨</span>
                   <span>
-                    Điểm nóng này đã có lệnh điều động xử lý hiện trường đang triển khai (Mã:{" "}
-                    <strong>{detail.active_dispatch_order_id}</strong>)
+                    Điểm nóng này hiện đã có lệnh xử lý đang thực thi (
+                    <strong>{detail.active_dispatch_order_id}</strong>). Bạn có muốn xem tiến độ?
                   </span>
                 </div>
               )}
