@@ -91,8 +91,10 @@ class AuditService:
                 detail="Ngày bắt đầu phải trước ngày kết thúc"
             )
 
-        # Allow slight clock tolerance (5 minutes)
-        if start_date > now + timedelta(minutes=5) or end_date > now + timedelta(minutes=5):
+        # Allow selecting dates up to the end of tomorrow in UTC to accommodate local timezones (UTC+7)
+        # and end-of-day queries (23:59:59). Reject only if date is strictly in the future.
+        max_allowed_future = (now + timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=999999)
+        if start_date > max_allowed_future or end_date > max_allowed_future:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Không thể chọn ngày trong tương lai"

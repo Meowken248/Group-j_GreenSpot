@@ -175,14 +175,14 @@ export const RbacContainer: React.FC<RbacContainerProps> = ({
               </p>
 
               <div className="gate-credentials-box">
-                <div className="box-title">🔑 Thông tin tài khoản Quản trị viên thử nghiệm:</div>
+                <div className="box-title">🔑 Thông tin tài khoản Quản trị viên (Admin):</div>
                 <div className="cred-line">
-                  <span className="cred-label">Email:</span>
-                  <code className="cred-val">ddatmguyen2023+test@gmail.com</code>
+                  <span className="cred-label">Tài khoản:</span>
+                  <code className="cred-val">admin</code>
                 </div>
                 <div className="cred-line">
                   <span className="cred-label">Mật khẩu:</span>
-                  <code className="cred-val">Dat123123,</code>
+                  <code className="cred-val">admin123</code>
                 </div>
               </div>
 

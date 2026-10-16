@@ -3,7 +3,7 @@ import type { WeeklyChallengesData, ChallengeSubmitPayload, ChallengeCompletionR
 
 export const challengesApi = {
   getWeeklyChallenges: async (): Promise<WeeklyChallengesData> => {
-    const res = await api.get<WeeklyChallengesData>("/challenges/weekly");
+    const res = await api.get<WeeklyChallengesData>("/api/v1/challenges/weekly");
     return res.data;
   },
 
@@ -11,7 +11,7 @@ export const challengesApi = {
     challengeId: string,
     payload: ChallengeSubmitPayload
   ): Promise<ChallengeCompletionResult> => {
-    const res = await api.post<ChallengeCompletionResult>(`/challenges/${challengeId}/submit`, payload);
+    const res = await api.post<ChallengeCompletionResult>(`/api/v1/challenges/${challengeId}/submit`, payload);
     return res.data;
   },
 };

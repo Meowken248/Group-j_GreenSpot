@@ -7,7 +7,7 @@ import type {
 
 export const handbookApi = {
   getOverview: async (): Promise<WasteHandbookOverview> => {
-    const res = await api.get<WasteHandbookOverview>("/waste-handbook/overview");
+    const res = await api.get<WasteHandbookOverview>("/api/v1/waste-handbook/overview");
     return res.data;
   },
 
@@ -16,12 +16,12 @@ export const handbookApi = {
     category?: string;
     limit?: number;
   }): Promise<WasteItemSummary[]> => {
-    const res = await api.get<WasteItemSummary[]>("/waste-handbook/search", { params });
+    const res = await api.get<WasteItemSummary[]>("/api/v1/waste-handbook/search", { params });
     return res.data;
   },
 
   getItemDetail: async (itemId: string): Promise<WasteItemDetail> => {
-    const res = await api.get<WasteItemDetail>(`/waste-handbook/items/${itemId}`);
+    const res = await api.get<WasteItemDetail>(`/api/v1/waste-handbook/items/${itemId}`);
     return res.data;
   },
 };

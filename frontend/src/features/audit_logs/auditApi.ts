@@ -15,17 +15,17 @@ export const auditApi = {
     page?: number;
     limit?: number;
   }): Promise<AuditLogListResult> => {
-    const res = await api.get<AuditLogListResult>("/system/audit-logs", { params });
+    const res = await api.get<AuditLogListResult>("/api/v1/system/audit-logs", { params });
     return res.data;
   },
 
   getAuditLogDetail: async (logId: number): Promise<AuditLogDetail> => {
-    const res = await api.get<AuditLogDetail>(`/system/audit-logs/${logId}`);
+    const res = await api.get<AuditLogDetail>(`/api/v1/system/audit-logs/${logId}`);
     return res.data;
   },
 
   exportAuditLogs: async (payload: AuditExportPayload): Promise<AuditExportResult> => {
-    const res = await api.post<AuditExportResult>("/system/audit-logs/export", payload);
+    const res = await api.post<AuditExportResult>("/api/v1/system/audit-logs/export", payload);
     return res.data;
   },
 };

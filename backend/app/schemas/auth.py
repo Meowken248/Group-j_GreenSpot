@@ -30,8 +30,8 @@ class UserSummary(BaseModel):
 
 
 class CitizenLoginRequest(BaseModel):
-    """Payload gửi lên từ Màn hình Đăng nhập"""
-    email: EmailStr = Field(..., description="Địa chỉ email đăng nhập")
+    """Payload gửi lên từ Màn hình Đăng nhập (hỗ trợ Email hoặc Tên tài khoản admin)"""
+    email: str = Field(..., min_length=1, max_length=254, description="Địa chỉ email hoặc tài khoản đăng nhập")
     password: str = Field(..., min_length=1, max_length=128, description="Mật khẩu tài khoản")
 
 

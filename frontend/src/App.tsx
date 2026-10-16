@@ -125,7 +125,9 @@ function App() {
 
   const handleRelogin = (redirectUrl?: string) => {
     setSessionExpiredOpen(false);
-    setAuthRedirectUrl(redirectUrl);
+    const target = redirectUrl || window.location.hash || `#${activeTab}`;
+    sessionStorage.setItem("greenspot_target_hash", target);
+    setAuthRedirectUrl(target);
     localStorage.removeItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
     localStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
     localStorage.removeItem(AUTH_STORAGE_KEYS.USER_INFO);
@@ -133,6 +135,107 @@ function App() {
     resetSessionExpired();
     window.dispatchEvent(new Event("auth_change"));
     setActiveTab("auth");
+  };
+
+  const handleLoginSuccess = (targetRedirect?: string) => {
+    // 1. Lấy thông tin đích chuyển hướng từ param, state, sessionStorage hoặc hash hiện tại
+    const stored = sessionStorage.getItem("greenspot_target_hash");
+    sessionStorage.removeItem("greenspot_target_hash");
+
+    let raw = targetRedirect || authRedirectUrl || stored || "";
+    if (
+      !raw &&
+      window.location.hash &&
+      !["#auth", "#login", "#register", "#devices"].includes(window.location.hash.toLowerCase())
+    ) {
+      raw = window.location.hash;
+    }
+
+    setAuthRedirectUrl(undefined);
+    const target = raw.trim().toLowerCase();
+
+    // 2. Chuyển hướng chính xác về chức năng đích tương ứng
+    if (target.includes("challenges")) {
+      setActiveTab("challenges");
+      window.location.hash = "#challenges";
+    } else if (target.includes("audit")) {
+      setActiveTab("audit-logs");
+      window.location.hash = "#audit-logs";
+    } else if (target.includes("handbook") || target.includes("guide")) {
+      setActiveTab("handbook");
+      window.location.hash = "#handbook";
+    } else if (target.includes("wallet") || target.includes("rewards")) {
+      setActiveTab("rewards");
+      window.location.hash = "#wallet";
+    } else if (target.includes("policy")) {
+      setActiveTab("rewards");
+      window.location.hash = "#policy";
+    } else if (target.includes("catalog")) {
+      setActiveTab("rewards");
+      window.location.hash = "#catalog";
+    } else if (target.includes("voucher")) {
+      setActiveTab("rewards");
+      window.location.hash = "#vouchers";
+    } else if (target.includes("leaderboard") || target.includes("ranking")) {
+      setActiveTab("leaderboard");
+      window.location.hash = "#leaderboard";
+    } else if (target.includes("heatmap") || target.includes("climate")) {
+      setActiveTab("heatmap");
+      window.location.hash = "#heatmap";
+    } else if (target.includes("qr")) {
+      setActiveTab("qr-scan");
+      window.location.hash = "#qr-scan";
+    } else if (target.includes("wheel") || target.includes("lucky") || target.includes("spin")) {
+      setActiveTab("lucky-wheel");
+      window.location.hash = "#lucky-wheel";
+    } else if (target.includes("milestone") || target.includes("tier")) {
+      setActiveTab("milestone");
+      window.location.hash = "#milestone";
+    } else if (target.includes("users")) {
+      setActiveTab("users");
+      window.location.hash = "#users";
+    } else if (target.includes("rbac")) {
+      setActiveTab("rbac");
+      window.location.hash = "#rbac";
+    } else if (target.includes("dashboard")) {
+      setActiveTab("dashboard");
+      window.location.hash = "#dashboard";
+    } else if (target.includes("devices")) {
+      setAuthRedirectUrl("/devices");
+      setActiveTab("auth");
+      window.location.hash = "#devices";
+    } else if (target.includes("map")) {
+      setActiveTab("map");
+      window.location.hash = "#map";
+    } else {
+      // Nếu không có bất kỳ URL nào được chỉ định trước đó:
+      // Phân quyền theo vai trò vừa đăng nhập: ADMIN -> #users, CITIZEN -> #challenges
+      try {
+        const userRaw = localStorage.getItem(AUTH_STORAGE_KEYS.USER_INFO);
+        const u = userRaw ? JSON.parse(userRaw) : null;
+        if (u?.role === "ADMIN") {
+          setActiveTab("users");
+          window.location.hash = "#users";
+        } else {
+          setActiveTab("challenges");
+          window.location.hash = "#challenges";
+        }
+      } catch {
+        setActiveTab("challenges");
+        window.location.hash = "#challenges";
+      }
+    }
+  };
+
+  const handleExitAuth = () => {
+    const stored = sessionStorage.getItem("greenspot_target_hash");
+    sessionStorage.removeItem("greenspot_target_hash");
+    if (stored) {
+      handleLoginSuccess(stored);
+    } else {
+      setActiveTab("map");
+      window.location.hash = "#map";
+    }
   };
 
   const handleConfirmLogout = async () => {
@@ -413,8 +516,11 @@ function App() {
             type="button"
             className={`view-tab-btn ${activeTab === "auth" ? "active" : ""}`}
             onClick={() => {
-              setAuthRedirectUrl(undefined);
+              const currentTarget = window.location.hash || `#${activeTab}`;
+              sessionStorage.setItem("greenspot_target_hash", currentTarget);
+              setAuthRedirectUrl(currentTarget);
               setActiveTab("auth");
+              window.location.hash = "#login";
             }}
             title="Đăng nhập hoặc đăng ký tài khoản công dân"
           >
@@ -730,10 +836,8 @@ function App() {
                 : undefined
             }
             redirectUrl={authRedirectUrl}
-            onExitAuth={() => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
+            onLoginSuccess={handleLoginSuccess}
+            onExitAuth={handleExitAuth}
           />
         </div>
       ) : activeTab === "rbac" ? (
@@ -744,6 +848,7 @@ function App() {
               window.location.hash = "#map";
             }}
             onNavigateToAuth={() => {
+              sessionStorage.setItem("greenspot_target_hash", "#rbac");
               setAuthRedirectUrl("/rbac");
               setActiveTab("auth");
               window.location.hash = "#login";
@@ -758,6 +863,7 @@ function App() {
               window.location.hash = "#map";
             }}
             onNavigateToAuth={() => {
+              sessionStorage.setItem("greenspot_target_hash", "#users");
               setAuthRedirectUrl("/users");
               setActiveTab("auth");
               window.location.hash = "#login";
@@ -772,7 +878,9 @@ function App() {
               window.location.hash = "#map";
             }}
             onNavigateToAuth={() => {
-              setAuthRedirectUrl("/wallet");
+              const currentH = window.location.hash || "#wallet";
+              sessionStorage.setItem("greenspot_target_hash", currentH);
+              setAuthRedirectUrl(currentH);
               setActiveTab("auth");
               window.location.hash = "#login";
             }}
@@ -786,6 +894,7 @@ function App() {
               window.location.hash = "#map";
             }}
             onNavigateToAuth={() => {
+              sessionStorage.setItem("greenspot_target_hash", "#challenges");
               setAuthRedirectUrl("/challenges");
               setActiveTab("auth");
               window.location.hash = "#login";
@@ -804,6 +913,7 @@ function App() {
               window.location.hash = "#map";
             }}
             onNavigateToAuth={() => {
+              sessionStorage.setItem("greenspot_target_hash", "#audit-logs");
               setAuthRedirectUrl("/audit-logs");
               setActiveTab("auth");
               window.location.hash = "#login";
@@ -827,6 +937,7 @@ function App() {
         <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
           <LeaderboardContainer
             onNavigateLogin={() => {
+              sessionStorage.setItem("greenspot_target_hash", "#leaderboard");
               setAuthRedirectUrl("/leaderboard");
               setActiveTab("auth");
               window.location.hash = "#login";
@@ -858,6 +969,7 @@ function App() {
               window.location.hash = "#wallet";
             }}
             onNavigateLogin={() => {
+              sessionStorage.setItem("greenspot_target_hash", "#qr-scan");
               setAuthRedirectUrl("/qr-scan");
               setActiveTab("auth");
               window.location.hash = "#login";
@@ -872,6 +984,7 @@ function App() {
               window.location.hash = "#map";
             }}
             onNavigateLogin={() => {
+              sessionStorage.setItem("greenspot_target_hash", "#lucky-wheel");
               setAuthRedirectUrl("/lucky-wheel");
               setActiveTab("auth");
               window.location.hash = "#login";
@@ -886,6 +999,7 @@ function App() {
               window.location.hash = "#map";
             }}
             onNavigateLogin={() => {
+              sessionStorage.setItem("greenspot_target_hash", "#milestone");
               setAuthRedirectUrl("/milestone");
               setActiveTab("auth");
               window.location.hash = "#login";
