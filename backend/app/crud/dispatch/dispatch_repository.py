@@ -340,7 +340,9 @@ class DispatchRepository(IDispatchRepository):
         try:
             sql_check = text("SELECT COUNT(*) AS cnt FROM dispatch_orders WHERE deleted_at IS NULL")
             res_check = await db.execute(sql_check)
-            cnt = res_check.scalar_one_or_none() or 0
+            cnt = res_check.scalar_one_or_none()
+            if not isinstance(cnt, int):
+                cnt = 0
         except Exception:
             # Nếu bảng chưa được migrate trên DB hiện tại, sử dụng dữ liệu bộ nhớ ban đầu
             cnt = 0

@@ -20,15 +20,18 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
-from app.models.base import TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import TimestampMixin
 
 
-class DispatchOrder(Base, TimestampMixin, UUIDPrimaryKeyMixin):
+class DispatchOrder(Base, TimestampMixin):
     """
     Thực thể Lệnh điều phối tác nghiệp xử lý hiện trường (Operations Dispatch Order).
     Liên kết sự cố ô nhiễm/ngập úng với đội phản ứng cơ động hiện trường.
     """
     __tablename__ = "dispatch_orders"
+
+    # Khóa chính UUID
+    order_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # Mã định danh lệnh nghiệp vụ (VD: LX-1042, LX-1043)
     order_code: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)

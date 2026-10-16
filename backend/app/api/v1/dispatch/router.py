@@ -24,7 +24,8 @@ from app.schemas.dispatch.schemas import (
     FieldTrackingResponse,
     DispatchActionResult,
 )
-from app.utils.auth_middleware import get_current_user_optional
+from app.utils.security import decode_access_token
+from fastapi import Header
 
 router = APIRouter(prefix="/dispatch", tags=["Operations Dispatch Center (STT 43)"])
 
@@ -34,23 +35,34 @@ def get_dispatch_service() -> DispatchService:
     return DispatchService(repo)
 
 
-def verify_dispatch_access(current_user: Optional[dict] = Depends(get_current_user_optional)):
+def verify_dispatch_access(authorization: Optional[str] = Header(None)):
     """Kiểm tra phân quyền: Chỉ Quản trị viên, Cán bộ điều phối, Cán bộ quận được thao tác"""
-    if not current_user:
+    if not authorization:
         return None
 
-    role = current_user.get("role")
-    permissions = current_user.get("permissions", [])
+    try:
+        scheme, token = authorization.split()
+        if scheme.lower() != "bearer":
+            return None
+        payload = decode_access_token(token)
+        if not payload:
+            return None
+        role = payload.get("role")
+        permissions = payload.get("permissions", [])
 
-    allowed_roles = {"ADMIN", "OFFICER", "COORDINATOR", "DISTRICT_MANAGER"}
-    has_perm = "INCIDENTS" in permissions or "STATISTICS" in permissions
+        allowed_roles = {"ADMIN", "OFFICER", "COORDINATOR", "DISTRICT_MANAGER"}
+        has_perm = "INCIDENTS" in permissions or "STATISTICS" in permissions
 
-    if role not in allowed_roles and not has_perm:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Chỉ Quản trị viên và Cán bộ điều phối tác nghiệp mới có quyền truy cập chức năng này.",
-        )
-    return current_user
+        if role not in allowed_roles and not has_perm:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Chỉ Quản trị viên và Cán bộ điều phối tác nghiệp mới có quyền truy cập chức năng này.",
+            )
+        return payload
+    except HTTPException:
+        raise
+    except Exception:
+        return None
 
 
 @router.get("/orders", response_model=DispatchListResponse)
