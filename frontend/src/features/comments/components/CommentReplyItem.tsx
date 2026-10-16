@@ -5,11 +5,13 @@ import { resolveMediaUrl } from "../../../utils/mediaUrl";
 interface CommentReplyItemProps {
   reply: ReplyItem;
   onTriggerReply: (targetName: string, replyToUserId?: string) => void;
+  onImageClick?: (url: string) => void;
 }
 
 export const CommentReplyItem: React.FC<CommentReplyItemProps> = ({
   reply,
   onTriggerReply,
+  onImageClick,
 }) => {
   const authorName = reply.author.full_name || "Công dân sinh thái";
   const avatarUrl = reply.author.avatar_url;
@@ -59,7 +61,20 @@ export const CommentReplyItem: React.FC<CommentReplyItemProps> = ({
               </span>
             )}
           </div>
-          <p className="reply-body-text">{reply.content}</p>
+          {reply.content && <p className="reply-body-text">{reply.content}</p>}
+
+          {/* Hiển thị ảnh đính kèm câu trả lời (nếu có) */}
+          {reply.media_url && (
+            <div className="reply-attached-media">
+              <img
+                src={resolveMediaUrl(reply.media_url)}
+                alt="Ảnh đính kèm"
+                className="reply-media-img"
+                onClick={() => onImageClick?.(reply.media_url!)}
+                loading="lazy"
+              />
+            </div>
+          )}
         </div>
 
         <div className="reply-footer-meta">
@@ -76,4 +91,3 @@ export const CommentReplyItem: React.FC<CommentReplyItemProps> = ({
     </div>
   );
 };
-

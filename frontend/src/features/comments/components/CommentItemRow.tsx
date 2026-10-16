@@ -3,6 +3,8 @@ import type { CommentItem, ReplyItem } from "../types/commentTypes";
 import { CommentReplyItem } from "./CommentReplyItem";
 import { commentService } from "../services/commentService";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
+import { CommentEmojiPicker } from "./CommentEmojiPicker";
+import { CommentImageModal } from "./CommentImageModal";
 
 interface CommentItemRowProps {
   comment: CommentItem;
@@ -29,6 +31,15 @@ export const CommentItemRow: React.FC<CommentItemRowProps> = ({
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
   const [replyError, setReplyError] = useState<string | null>(null);
 
+  // File đính kèm và emoji cho câu trả lời
+  const [selectedReplyFile, setSelectedReplyFile] = useState<File | null>(null);
+  const [previewReplyUrl, setPreviewReplyUrl] = useState<string | null>(null);
+  const [isUploadingReplyMedia, setIsUploadingReplyMedia] = useState(false);
+  const [isReplyEmojiPickerOpen, setIsReplyEmojiPickerOpen] = useState(false);
+
+  // Xem ảnh phóng to (Lightbox)
+  const [lightboxImageUrl, setLightboxImageUrl] = useState<string | null>(null);
+
   // Danh sách replies và xem thêm
   const [repliesList, setRepliesList] = useState<ReplyItem[]>(
     comment.initial_replies || []
@@ -39,6 +50,7 @@ export const CommentItemRow: React.FC<CommentItemRowProps> = ({
   );
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const replyFileInputRef = useRef<HTMLInputElement>(null);
 
   // Tự động focus vào ô nhập khi mở trả lời (Màn 2 SRS)
   useEffect(() => {
@@ -46,6 +58,15 @@ export const CommentItemRow: React.FC<CommentItemRowProps> = ({
       textareaRef.current.focus();
     }
   }, [showReplyBox]);
+
+  // Thu hồi ObjectURL khi đổi hoặc unmount
+  useEffect(() => {
+    return () => {
+      if (previewReplyUrl && previewReplyUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(previewReplyUrl);
+      }
+    };
+  }, [previewReplyUrl]);
 
   const authorName = comment.author.full_name || "Công dân sinh thái";
   const avatarUrl = comment.author.avatar_url;
@@ -81,6 +102,8 @@ export const CommentItemRow: React.FC<CommentItemRowProps> = ({
   const handleCancelReply = () => {
     setShowReplyBox(false);
     setReplyText("");
+    handleRemoveReplyImage();
+    setIsReplyEmojiPickerOpen(false);
     setReplyError(null);
   };
 
@@ -98,6 +121,63 @@ export const CommentItemRow: React.FC<CommentItemRowProps> = ({
     }
   };
 
+  // Xử lý chọn emoji trong câu trả lời
+  const handleSelectReplyEmoji = (emoji: string) => {
+    if (!textareaRef.current) {
+      setReplyText((prev) => prev + emoji);
+      return;
+    }
+
+    const start = textareaRef.current.selectionStart || 0;
+    const end = textareaRef.current.selectionEnd || 0;
+    const nextText = replyText.slice(0, start) + emoji + replyText.slice(end);
+    setReplyText(nextText);
+
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        const cursorPosition = start + emoji.length;
+        textareaRef.current.setSelectionRange(cursorPosition, cursorPosition);
+      }
+    }, 0);
+  };
+
+  // Xử lý đính kèm ảnh cho câu trả lời
+  const handleReplyFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!validTypes.includes(file.type)) {
+      setReplyError("Chỉ chấp nhận tệp ảnh (JPG, PNG, WEBP, GIF)");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setReplyError("Kích thước ảnh tối đa 10MB");
+      return;
+    }
+
+    setReplyError(null);
+    setSelectedReplyFile(file);
+
+    if (previewReplyUrl && previewReplyUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(previewReplyUrl);
+    }
+    setPreviewReplyUrl(URL.createObjectURL(file));
+  };
+
+  const handleRemoveReplyImage = () => {
+    if (previewReplyUrl && previewReplyUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(previewReplyUrl);
+    }
+    setSelectedReplyFile(null);
+    setPreviewReplyUrl(null);
+    if (replyFileInputRef.current) {
+      replyFileInputRef.current.value = "";
+    }
+  };
+
   // Gửi câu trả lời (Màn 2)
   const handleSubmitReply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,7 +187,7 @@ export const CommentItemRow: React.FC<CommentItemRowProps> = ({
     }
 
     const text = replyText.trim();
-    if (!text) return;
+    if ((!text && !selectedReplyFile) || isSubmittingReply || isUploadingReplyMedia) return;
 
     if (text.length > 500) {
       setReplyError("Bình luận tối đa 500 ký tự");
@@ -118,15 +198,32 @@ export const CommentItemRow: React.FC<CommentItemRowProps> = ({
       setIsSubmittingReply(true);
       setReplyError(null);
 
+      let uploadedUrl: string | null = null;
+      if (selectedReplyFile) {
+        setIsUploadingReplyMedia(true);
+        try {
+          uploadedUrl = await commentService.uploadMedia(selectedReplyFile);
+        } catch {
+          setReplyError("Tải ảnh thất bại. Vui lòng thử lại");
+          setIsUploadingReplyMedia(false);
+          setIsSubmittingReply(false);
+          return;
+        }
+        setIsUploadingReplyMedia(false);
+      }
+
       const newReply = await commentService.createReply(
         comment.comment_id,
         text,
-        replyingToTarget.userId
+        replyingToTarget.userId,
+        uploadedUrl
       );
 
       // Chèn câu trả lời mới vào cuối danh sách (SRS Màn 2)
       setRepliesList((prev) => [...prev, newReply]);
       setReplyText("");
+      handleRemoveReplyImage();
+      setIsReplyEmojiPickerOpen(false);
       setShowReplyBox(false);
 
       onReplySuccess(comment.comment_id, newReply);
@@ -141,11 +238,17 @@ export const CommentItemRow: React.FC<CommentItemRowProps> = ({
       }
     } finally {
       setIsSubmittingReply(false);
+      setIsUploadingReplyMedia(false);
     }
   };
 
   const isTextOverLimit = replyText.length > 500;
-  const isSendDisabled = !replyText.trim() || isTextOverLimit || isSubmittingReply;
+  const hasReplyContentOrImage = Boolean(replyText.trim() || selectedReplyFile);
+  const isSendDisabled =
+    !hasReplyContentOrImage ||
+    isTextOverLimit ||
+    isSubmittingReply ||
+    isUploadingReplyMedia;
 
   return (
     <article className="comment-item-row" id={`comment-${comment.comment_id}`}>
@@ -171,7 +274,20 @@ export const CommentItemRow: React.FC<CommentItemRowProps> = ({
         <div className="comment-body-col">
           <div className="comment-bubble">
             <span className="comment-author-name">{authorName}</span>
-            <p className="comment-content-text">{comment.content}</p>
+            {comment.content && <p className="comment-content-text">{comment.content}</p>}
+
+            {/* Hiển thị ảnh đính kèm bình luận cấp 1 (nếu có) */}
+            {comment.media_url && (
+              <div className="comment-attached-media">
+                <img
+                  src={resolveMediaUrl(comment.media_url)}
+                  alt="Ảnh đính kèm"
+                  className="comment-media-img"
+                  onClick={() => setLightboxImageUrl(comment.media_url || null)}
+                  loading="lazy"
+                />
+              </div>
+            )}
           </div>
 
           <div className="comment-meta-actions">
@@ -199,6 +315,7 @@ export const CommentItemRow: React.FC<CommentItemRowProps> = ({
               onTriggerReply={(targetName, userId) =>
                 handleTriggerReply(targetName, userId)
               }
+              onImageClick={(url) => setLightboxImageUrl(url)}
             />
           ))}
 
@@ -241,6 +358,28 @@ export const CommentItemRow: React.FC<CommentItemRowProps> = ({
           </div>
 
           <form onSubmit={handleSubmitReply} className="reply-form">
+            {/* Xem trước ảnh đính kèm câu trả lời (nếu có) */}
+            {previewReplyUrl && (
+              <div className="composer-media-preview-container reply-media-preview">
+                <div className="composer-media-thumbnail-box">
+                  <img
+                    src={previewReplyUrl}
+                    alt="Ảnh xem trước"
+                    className="composer-media-thumbnail-img"
+                  />
+                  <button
+                    type="button"
+                    className="btn-remove-media-preview"
+                    onClick={handleRemoveReplyImage}
+                    title="Xóa ảnh này"
+                    aria-label="Xóa ảnh"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="reply-input-wrapper">
               <textarea
                 ref={textareaRef}
@@ -256,16 +395,59 @@ export const CommentItemRow: React.FC<CommentItemRowProps> = ({
               />
 
               <div className="reply-form-footer">
-                <span className={`char-counter ${isTextOverLimit ? "is-over" : ""}`}>
-                  {replyText.length}/500
-                </span>
-                <button
-                  type="submit"
-                  disabled={isSendDisabled}
-                  className="btn-send-reply"
-                >
-                  {isSubmittingReply ? "Đang gửi..." : "Gửi"}
-                </button>
+                {/* Công cụ đính kèm ảnh & Emoji */}
+                <div className="reply-action-tools">
+                  <input
+                    type="file"
+                    ref={replyFileInputRef}
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    onChange={handleReplyFileChange}
+                    style={{ display: "none" }}
+                    aria-hidden="true"
+                  />
+                  <button
+                    type="button"
+                    className={`btn-tool-icon ${selectedReplyFile ? "is-attached" : ""}`}
+                    onClick={() => replyFileInputRef.current?.click()}
+                    title="Đính kèm ảnh"
+                    aria-label="Đính kèm ảnh trả lời"
+                  >
+                    📷
+                  </button>
+
+                  <div className="emoji-picker-anchor">
+                    <button
+                      type="button"
+                      className={`btn-tool-icon ${isReplyEmojiPickerOpen ? "is-active" : ""}`}
+                      onClick={() => setIsReplyEmojiPickerOpen((prev) => !prev)}
+                      title="Biểu tượng cảm xúc"
+                      aria-label="Bảng biểu tượng cảm xúc"
+                    >
+                      😊
+                    </button>
+
+                    <CommentEmojiPicker
+                      isOpen={isReplyEmojiPickerOpen}
+                      onClose={() => setIsReplyEmojiPickerOpen(false)}
+                      onSelectEmoji={handleSelectReplyEmoji}
+                    />
+                  </div>
+                </div>
+
+                <div className="reply-footer-right">
+                  <span className={`char-counter ${isTextOverLimit ? "is-over" : ""}`}>
+                    {replyText.length}/500
+                  </span>
+                  <button
+                    type="submit"
+                    disabled={isSendDisabled}
+                    className="btn-send-reply"
+                  >
+                    {isSubmittingReply || isUploadingReplyMedia
+                      ? "Đang gửi..."
+                      : "Gửi"}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -273,7 +455,12 @@ export const CommentItemRow: React.FC<CommentItemRowProps> = ({
           </form>
         </div>
       )}
+
+      {/* Modal xem ảnh phóng to */}
+      <CommentImageModal
+        imageUrl={lightboxImageUrl}
+        onClose={() => setLightboxImageUrl(null)}
+      />
     </article>
   );
 };
-

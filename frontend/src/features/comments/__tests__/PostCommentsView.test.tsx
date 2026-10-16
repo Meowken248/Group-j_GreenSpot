@@ -18,6 +18,7 @@ vi.mock('../services/commentService', () => ({
     sharePost: vi.fn(),
     getFriendsForShare: vi.fn(),
     getGroupsForShare: vi.fn(),
+    uploadMedia: vi.fn(),
   },
 }));
 
@@ -63,6 +64,7 @@ describe('Feature STT 14: Bình luận và Trả lời bình luận (Màn 1 & M�
         role: 'CITIZEN',
       },
       content: 'Hoạt động ý nghĩa quá, mình muốn đăng ký tham gia vào tuần tới!',
+      media_url: 'https://example.com/clean-up.jpg',
       replies_count: 1,
       likes_count: 4,
       created_at: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
@@ -279,5 +281,145 @@ describe('Feature STT 14: Bình luận và Trả lời bình luận (Màn 1 & M�
     const cancelBtn = screen.getByRole('button', { name: 'Hủy trả lời' });
     fireEvent.click(cancelBtn);
     expect(screen.queryByText(/Đang trả lời/)).not.toBeInTheDocument();
+  });
+
+  it('6. Hỗ trợ chọn biểu tượng cảm xúc Emoji và chèn vào bình luận', async () => {
+    localStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, 'mock-jwt-token');
+    localStorage.setItem(
+      AUTH_STORAGE_KEYS.USER_INFO,
+      JSON.stringify({ user_id: 'user-01', full_name: 'Người dùng Thử nghiệm' })
+    );
+
+    vi.mocked(commentService.getPostComments).mockResolvedValue({
+      items: mockComments,
+      total: 2,
+      page: 1,
+      limit: 10,
+      has_more: false,
+    });
+
+    render(
+      <PostCommentsView
+        post={mockPost}
+        onBackToFeed={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Trần Thị Thảo')).toBeInTheDocument();
+    });
+
+    const textarea = screen.getByPlaceholderText('Viết bình luận công khai của bạn...');
+    const emojiTriggerBtn = screen.getByRole('button', { name: 'Mở bảng biểu tượng cảm xúc' });
+
+    // Bấm mở bảng emoji
+    fireEvent.click(emojiTriggerBtn);
+    expect(screen.getByRole('dialog', { name: 'Chọn biểu tượng cảm xúc' })).toBeInTheDocument();
+
+    // Chọn emoji 🌱
+    const emojiPlantBtn = screen.getByRole('button', { name: 'Chọn biểu tượng 🌱' });
+    fireEvent.click(emojiPlantBtn);
+
+    // Kiểm tra ô nhập đã nhận emoji
+    expect(textarea).toHaveValue('🌱');
+  });
+
+  it('7. Hiển thị ảnh đính kèm trong bình luận và mở lightbox modal khi click vào ảnh', async () => {
+    vi.mocked(commentService.getPostComments).mockResolvedValue({
+      items: mockComments,
+      total: 2,
+      page: 1,
+      limit: 10,
+      has_more: false,
+    });
+
+    render(
+      <PostCommentsView
+        post={mockPost}
+        onBackToFeed={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Trần Thị Thảo')).toBeInTheDocument();
+    });
+
+    // Bình luận có ảnh đính kèm
+    const attachedImg = screen.getByAltText('Ảnh đính kèm');
+    expect(attachedImg).toBeInTheDocument();
+
+    // Bấm vào ảnh -> Mở modal lightbox
+    fireEvent.click(attachedImg);
+    expect(screen.getByRole('dialog', { name: 'Xem ảnh phóng to' })).toBeInTheDocument();
+
+    // Bấm nút đóng ✕
+    const closeLightboxBtn = screen.getByRole('button', { name: 'Đóng xem ảnh' });
+    fireEvent.click(closeLightboxBtn);
+    expect(screen.queryByRole('dialog', { name: 'Xem ảnh phóng to' })).not.toBeInTheDocument();
+  });
+
+  it('8. Hỗ trợ đính kèm ảnh, hiển thị preview và gọi uploadMedia khi gửi bình luận', async () => {
+    localStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, 'mock-jwt-token');
+    localStorage.setItem(
+      AUTH_STORAGE_KEYS.USER_INFO,
+      JSON.stringify({ user_id: 'user-01', full_name: 'Người dùng Thử nghiệm' })
+    );
+
+    window.URL.createObjectURL = vi.fn().mockReturnValue('blob:http://localhost/mock-preview.png');
+    window.URL.revokeObjectURL = vi.fn();
+
+    vi.mocked(commentService.getPostComments).mockResolvedValue({
+      items: mockComments,
+      total: 2,
+      page: 1,
+      limit: 10,
+      has_more: false,
+    });
+
+    vi.mocked(commentService.uploadMedia).mockResolvedValue('/uploads/comments/test-pic.png');
+    vi.mocked(commentService.createComment).mockResolvedValue({
+      ...mockComments[0],
+      comment_id: 'comment-photo-01',
+      content: 'Ảnh hiện trường sáng nay',
+      media_url: '/uploads/comments/test-pic.png',
+    });
+
+    render(
+      <PostCommentsView
+        post={mockPost}
+        onBackToFeed={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Trần Thị Thảo')).toBeInTheDocument();
+    });
+
+    const textarea = screen.getByPlaceholderText('Viết bình luận công khai của bạn...');
+    fireEvent.change(textarea, { target: { value: 'Ảnh hiện trường sáng nay' } });
+
+    // Đính kèm tệp ảnh qua input file
+    const file = new File(['fake-image-bytes'], 'test.png', { type: 'image/png' });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(fileInput).toBeInTheDocument();
+
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    // Hiển thị ảnh xem trước và nút xóa
+    expect(screen.getByAltText('Ảnh xem trước')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Xóa ảnh đính kèm' })).toBeInTheDocument();
+
+    // Bấm gửi bình luận
+    const sendBtn = screen.getByRole('button', { name: 'Gửi' });
+    fireEvent.click(sendBtn);
+
+    await waitFor(() => {
+      expect(commentService.uploadMedia).toHaveBeenCalled();
+      expect(commentService.createComment).toHaveBeenCalledWith(
+        'post-test-14',
+        'Ảnh hiện trường sáng nay',
+        '/uploads/comments/test-pic.png'
+      );
+    });
   });
 });

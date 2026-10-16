@@ -14,7 +14,8 @@ export interface ReplyItem {
   parent_id: string;
   author: AuthorSummary;
   reply_to_user?: AuthorSummary | null;
-  content: string;
+  content?: string;
+  media_url?: string | null;
   likes_count: number;
   created_at: string;
 }
@@ -23,7 +24,8 @@ export interface CommentItem {
   comment_id: string;
   post_id: string;
   author: AuthorSummary;
-  content: string;
+  content?: string;
+  media_url?: string | null;
   replies_count: number;
   likes_count: number;
   created_at: string;

@@ -8,6 +8,7 @@ import { LoginPromptModal } from "./components/LoginPromptModal";
 import { SharePostModal } from "./components/SharePostModal";
 import { AUTH_STORAGE_KEYS } from "../auth/types/auth.types";
 import { resolveMediaUrl } from "../../utils/mediaUrl";
+import "./styles/PostComments.scss";
 import "./styles/PostCommentsModal.scss";
 import "./styles/ShareModal.scss";
 
@@ -212,12 +213,19 @@ export const PostCommentsModal: React.FC<PostCommentsModalProps> = ({
   };
 
   // Gửi bình luận cấp 1
-  const handleSubmitMainComment = async (content: string): Promise<boolean> => {
+  const handleSubmitMainComment = async (
+    content: string,
+    mediaUrl?: string | null
+  ): Promise<boolean> => {
     try {
       setIsSubmitting(true);
       setInputErrorMessage(null);
 
-      const newComment = await commentService.createComment(post.post_id, content);
+      const newComment = await commentService.createComment(
+        post.post_id,
+        content,
+        mediaUrl
+      );
       setComments((prev) => [newComment, ...prev]);
       const newTotal = totalComments + 1;
       setTotalComments(newTotal);

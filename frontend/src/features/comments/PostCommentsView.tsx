@@ -134,12 +134,19 @@ export const PostCommentsView: React.FC<PostCommentsViewProps> = ({
   };
 
   // Gửi bình luận cấp 1 (Màn 1)
-  const handleSubmitMainComment = async (content: string): Promise<boolean> => {
+  const handleSubmitMainComment = async (
+    content: string,
+    mediaUrl?: string | null
+  ): Promise<boolean> => {
     try {
       setIsSubmitting(true);
       setInputErrorMessage(null);
 
-      const newComment = await commentService.createComment(post.post_id, content);
+      const newComment = await commentService.createComment(
+        post.post_id,
+        content,
+        mediaUrl
+      );
 
       // Bình luận mới chèn lên đầu danh sách (Màn 1 SRS)
       setComments((prev) => [newComment, ...prev]);

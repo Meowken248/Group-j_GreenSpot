@@ -31,11 +31,30 @@ export const commentService = {
   },
 
   /**
+   * Tải ảnh đính kèm bình luận (tái sử dụng endpoint chuẩn của hệ thống /api/v1/posts/media)
+   */
+  async uploadMedia(file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await api.post<{ url: string }>("/api/v1/posts/media", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return res.data.url;
+  },
+
+  /**
    * Đăng bình luận cấp 1 (Màn 1)
    */
-  async createComment(postId: string, content: string): Promise<CommentItem> {
+  async createComment(
+    postId: string,
+    content?: string,
+    mediaUrl?: string | null
+  ): Promise<CommentItem> {
     const res = await api.post<CommentItem>(`/api/v1/posts/${postId}/comments`, {
-      content,
+      content: content || "",
+      media_url: mediaUrl || null,
     });
     return res.data;
   },
@@ -53,12 +72,14 @@ export const commentService = {
    */
   async createReply(
     commentId: string,
-    content: string,
-    replyToUserId?: string
+    content?: string,
+    replyToUserId?: string,
+    mediaUrl?: string | null
   ): Promise<ReplyItem> {
     const res = await api.post<ReplyItem>(`/api/v1/comments/${commentId}/replies`, {
-      content,
+      content: content || "",
       reply_to_user_id: replyToUserId || null,
+      media_url: mediaUrl || null,
     });
     return res.data;
   },

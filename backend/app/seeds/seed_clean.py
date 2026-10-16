@@ -32,7 +32,7 @@ INSERT INTO users (
 VALUES
   ('11111111-1111-1111-1111-111111111111', 'admin@ecoreport.gov.vn', '0901000001', '1c17534bf8bef4f5904e8252c14edeee$5ac2e327d162f4cd6e98e774a09b74559e0c164e52fad60f642bdbd4ad82c0d5', 'Quản trị viên Hệ thống', 1, 'ACTIVE', 100, 500, 10, 1, NOW()),
   ('22222222-2222-2222-2222-222222222222', 'officer@ecoreport.gov.vn', '0901000002', '1c17534bf8bef4f5904e8252c14edeee$5ac2e327d162f4cd6e98e774a09b74559e0c164e52fad60f642bdbd4ad82c0d5', 'Cán bộ Phòng TN&MT', 2, 'ACTIVE', 100, 300, 5, 1, NOW()),
-  ('44444444-4444-4444-4444-444444444444', 'citizen@ecoreport.gov.vn', '0901000004', '1c17534bf8bef4f5904e8252c14edeee$5ac2e327d162f4cd6e98e774a09b74559e0c164e52fad60f642bdbd4ad82c0d5', 'Nguyễn Thành Đạt (Công dân)', 4, 'ACTIVE', 100, 200, 12, 1, NOW())
+  ('44444444-4444-4444-4444-444444444444', 'citizen@ecoreport.gov.vn', '0901000004', '8c328560dc6d21b268265d056242dd22$96b8e9682ca31eac8805421330f7434f8dafe868c71cee72d8c47b30a9218f18', 'Nguyễn Thành Đạt (Công dân)', 4, 'ACTIVE', 100, 200, 12, 1, NOW())
 ON CONFLICT (email) DO UPDATE
 SET password_hash = EXCLUDED.password_hash, status = 'ACTIVE';
 

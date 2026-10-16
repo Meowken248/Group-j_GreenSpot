@@ -14,33 +14,39 @@ class AuthorSummary(BaseModel):
 
 
 class CreateCommentRequest(BaseModel):
-    """Schema tạo bình luận cấp 1 (Tối đa 500 ký tự theo đặc tả)"""
-    content: str = Field(..., max_length=500, description="Nội dung bình luận")
+    """Schema tạo bình luận cấp 1 (Tối đa 500 ký tự theo đặc tả, hỗ trợ ảnh đính kèm)"""
+    content: Optional[str] = Field(default="", max_length=500, description="Nội dung bình luận")
+    media_url: Optional[str] = Field(default=None, max_length=1000, description="URL ảnh đính kèm bình luận")
 
     @model_validator(mode="after")
-    def validate_content(self) -> "CreateCommentRequest":
-        text = self.content.strip()
-        if not text:
-            raise ValueError("Nội dung bình luận không được để trống")
+    def validate_content_or_media(self) -> "CreateCommentRequest":
+        text = (self.content or "").strip()
+        media = (self.media_url or "").strip() or None
+        if not text and not media:
+            raise ValueError("Bình luận phải có nội dung hoặc ảnh đính kèm")
         if len(text) > 500:
             raise ValueError("Bình luận tối đa 500 ký tự")
         self.content = text
+        self.media_url = media
         return self
 
 
 class CreateReplyRequest(BaseModel):
-    """Schema tạo phản hồi bình luận (Tối đa 500 ký tự)"""
-    content: str = Field(..., max_length=500, description="Nội dung câu trả lời")
+    """Schema tạo phản hồi bình luận (Tối đa 500 ký tự, hỗ trợ ảnh đính kèm)"""
+    content: Optional[str] = Field(default="", max_length=500, description="Nội dung câu trả lời")
+    media_url: Optional[str] = Field(default=None, max_length=1000, description="URL ảnh đính kèm câu trả lời")
     reply_to_user_id: Optional[uuid.UUID] = Field(default=None, description="ID người dùng được trả lời/tag")
 
     @model_validator(mode="after")
-    def validate_content(self) -> "CreateReplyRequest":
-        text = self.content.strip()
-        if not text:
-            raise ValueError("Nội dung câu trả lời không được để trống")
+    def validate_content_or_media(self) -> "CreateReplyRequest":
+        text = (self.content or "").strip()
+        media = (self.media_url or "").strip() or None
+        if not text and not media:
+            raise ValueError("Câu trả lời phải có nội dung hoặc ảnh đính kèm")
         if len(text) > 500:
             raise ValueError("Bình luận tối đa 500 ký tự")
         self.content = text
+        self.media_url = media
         return self
 
 
@@ -50,7 +56,8 @@ class ReplyItemResponse(BaseModel):
     parent_id: uuid.UUID
     author: AuthorSummary
     reply_to_user: Optional[AuthorSummary] = None
-    content: str
+    content: Optional[str] = ""
+    media_url: Optional[str] = None
     likes_count: int = 0
     created_at: datetime
 
@@ -62,7 +69,8 @@ class CommentItemResponse(BaseModel):
     comment_id: uuid.UUID
     post_id: uuid.UUID
     author: AuthorSummary
-    content: str
+    content: Optional[str] = ""
+    media_url: Optional[str] = None
     replies_count: int = 0
     likes_count: int = 0
     created_at: datetime

@@ -51,7 +51,8 @@ class Comment(Base, TimestampMixin):
         ForeignKey("users.user_id", ondelete="SET NULL"),
         nullable=True
     )
-    content: Mapped[str] = mapped_column(String(500), nullable=False)
+    content: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, default="")
+    media_url: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
     replies_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     likes_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
