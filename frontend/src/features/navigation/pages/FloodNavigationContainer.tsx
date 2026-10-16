@@ -334,7 +334,7 @@ export const FloodNavigationContainer: React.FC = () => {
             <span className="logo-icon">🌿</span>
             <span>GreenSpot SafeNav</span>
           </div>
-          <span className="feature-tag">STT 41: Tránh Ngập Đô Thị</span>
+          <span className="feature-tag">Tránh Ngập Đô Thị</span>
         </div>
 
         <nav className="header-nav">

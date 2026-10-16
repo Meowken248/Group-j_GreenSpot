@@ -770,7 +770,7 @@ function App() {
                 setActiveTab("navigation");
                 window.location.hash = "#navigation";
               }}
-              title="Tìm tuyến đường an toàn tránh ngập (STT 41)"
+              title="Tìm tuyến đường an toàn tránh ngập"
             >
               <span>🧭</span>
               <span>Tránh ngập</span>
@@ -784,7 +784,7 @@ function App() {
                   setActiveTab("risk-dashboard");
                   window.location.hash = "#risk-dashboard";
                 }}
-                title="Bảng điều khiển phân tích rủi ro đô thị toàn thành phố (STT 42)"
+                title="Bảng điều khiển phân tích rủi ro đô thị toàn thành phố"
                 data-testid="tab-btn-risk-dashboard"
               >
                 <span>🏙️</span>
@@ -799,7 +799,7 @@ function App() {
                 setActiveTab("posts");
                 window.location.hash = "#create-post";
               }}
-              title="Tạo bài viết, phản ánh sự cố & chia sẻ kinh nghiệm sống xanh (STT 9)"
+              title="Tạo bài viết, phản ánh sự cố & chia sẻ kinh nghiệm sống xanh"
             >
               <span>✍️</span>
               <span>Đăng bài viết</span>

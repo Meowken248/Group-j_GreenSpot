@@ -659,7 +659,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                         <div className="action-payload-details">
                           {resultData.detected_intent === "REPORT_INCIDENT" && (
                             <div className="prefilled-form-preview">
-                              <strong>Form Báo cáo sự cố (STT 01):</strong>
+                              <strong>Form Báo cáo sự cố:</strong>
                               <p>• Phân loại: {resultData.action_payload.incident_type}</p>
                               <p>• Tiêu đề: {resultData.action_payload.title}</p>
                               <p>• Vị trí: {resultData.action_payload.location_text}</p>
