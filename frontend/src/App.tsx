@@ -22,6 +22,7 @@ import { PostCreatorContainer } from "./features/posts";
 import { FloodNavigationContainer } from "./features/navigation";
 import { RiskDashboardContainer } from "./features/risk_dashboard";
 import { DispatchContainer } from "./features/dispatch";
+import { HotspotContainer } from "./features/hotspots";
 import {
   SettingsContainer,
   applyThemeToDocument,
@@ -62,6 +63,7 @@ function App() {
       if (hash === "#penalty-reports" || path === "/penalty-reports") return "/penalty-reports";
       if (hash === "#risk-dashboard" || hash === "#urban-risk" || path === "/risk-dashboard") return "/risk-dashboard";
       if (hash === "#dispatch" || hash === "#operations-dispatch" || path === "/dispatch") return "/dispatch";
+      if (hash === "#hotspots" || hash === "#hotspot-analytics" || path === "/hotspots") return "/hotspots";
     }
     return undefined;
   });
@@ -84,11 +86,16 @@ function App() {
     | "navigation"
     | "risk-dashboard"
     | "dispatch"
+    | "hotspots"
   >(() => {
     const hash = window.location.hash.toLowerCase();
     const path = window.location.pathname.toLowerCase();
     const isLogged = checkIsLoggedIn();
 
+    if (hash === "#hotspots" || hash === "#hotspot-analytics" || path === "/hotspots") {
+      if (!isLogged) return "auth";
+      return "hotspots";
+    }
     if (hash === "#dispatch" || hash === "#operations-dispatch" || path === "/dispatch") {
       if (!isLogged) return "auth";
       return "dispatch";
@@ -246,6 +253,14 @@ function App() {
     currentUser?.role === "RESPONDER" ||
     canAccess("INCIDENTS");
 
+  const hasHotspotsAccess =
+    currentUser?.role === "ADMIN" ||
+    currentUser?.role === "OFFICER" ||
+    currentUser?.role === "DISTRICT_MANAGER" ||
+    currentUser?.role === "COORDINATOR" ||
+    canAccess("STATISTICS") ||
+    canAccess("INCIDENTS");
+
   const hasPenaltyReportsAccess =
     currentUser?.role === "ADMIN" ||
     currentUser?.role === "OFFICER" ||
@@ -386,6 +401,14 @@ function App() {
         } else {
           setActiveTab("dispatch");
         }
+      } else if (hash === "#hotspots" || hash === "#hotspot-analytics" || window.location.pathname === "/hotspots") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/hotspots");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("hotspots");
+        }
       } else if (hash === "#profile") {
         if (!isLogged) {
           setAuthRedirectUrl("/profile");
@@ -441,6 +464,10 @@ function App() {
         window.location.hash = "#login";
       } else if (activeTab === "dispatch") {
         setAuthRedirectUrl("/dispatch");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "hotspots") {
+        setAuthRedirectUrl("/hotspots");
         setActiveTab("auth");
         window.location.hash = "#login";
       }
@@ -672,6 +699,24 @@ function App() {
                   </>
                 )}
 
+                {hasHotspotsAccess && (
+                  <>
+                    <button
+                      type="button"
+                      className="dropdown-menu-action"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        setActiveTab("hotspots");
+                        window.location.hash = "#hotspots";
+                      }}
+                    >
+                      <span className="action-icon">🔥</span>
+                      <span>Điểm nóng & Dự báo</span>
+                    </button>
+                    <div className="dropdown-separator" />
+                  </>
+                )}
+
                 <button
                   type="button"
                   className="dropdown-menu-action"
@@ -892,6 +937,22 @@ function App() {
               >
                 <span>📢</span>
                 <span>Quản lý vi phạm</span>
+              </button>
+            )}
+
+            {hasHotspotsAccess && (
+              <button
+                type="button"
+                className={`view-tab-btn ${activeTab === "hotspots" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("hotspots");
+                  window.location.hash = "#hotspots";
+                }}
+                title="Phân tích không gian điểm nóng ô nhiễm & chuỗi dự báo 7 ngày"
+                data-testid="tab-btn-hotspots"
+              >
+                <span>🔥</span>
+                <span>Điểm nóng & Dự báo</span>
               </button>
             )}
 
@@ -1143,6 +1204,41 @@ function App() {
         ) : (
           <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
             <DispatchContainer />
+          </div>
+        )
+      ) : activeTab === "hotspots" ? (
+        !currentUser ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/hotspots"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+            <HotspotContainer
+              currentUser={currentUser}
+              onNavigateToDispatch={(prefill, activeOrderId) => {
+                if (activeOrderId) {
+                  setActiveTab("dispatch");
+                  window.location.hash = `#dispatch?order_id=${encodeURIComponent(activeOrderId)}`;
+                } else {
+                  if (prefill) {
+                    try {
+                      localStorage.setItem("greenspot_prefill_dispatch", JSON.stringify(prefill));
+                    } catch {
+                      // Ignored
+                    }
+                  }
+                  setActiveTab("dispatch");
+                  window.location.hash = "#dispatch?action=create";
+                }
+              }}
+            />
           </div>
         )
       ) : activeTab === "settings" ? (

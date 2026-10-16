@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import type {
   HotspotCluster,
   TopHotspotItem,
@@ -43,8 +43,6 @@ export const Screen1HotspotMap: React.FC<Screen1HotspotMapProps> = ({
   onRetryTiles,
   isLoading,
 }) => {
-  const [mapZoom, setMapZoom] = useState(12);
-
   // Tính toạ độ SVG ảo tương đối với toạ độ TP.HCM (lat: 10.74 - 10.82, lng: 106.60 - 106.74)
   const getSvgCoordinates = (lat: number, lng: number) => {
     const minLat = 10.72;
