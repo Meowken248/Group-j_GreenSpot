@@ -221,12 +221,12 @@ describe("Urban Environmental Risk Dashboard (STT 42) UI Tests", () => {
     expect(screen.getByText(/5 trường học, 2 trạm y tế nằm trong vùng nguy cơ/i)).toBeInTheDocument();
 
     // Nút "Xem bản đồ"
-    const mapBtn = screen.getByText(/button: Xem bản đồ/i);
+    const mapBtn = screen.getByRole("button", { name: /xem bản đồ/i });
     fireEvent.click(mapBtn);
     expect(handleNavigate).toHaveBeenCalledWith(MOCK_DISTRICT_DETAIL);
 
     // Nút "Đóng"
-    const closeBtn = screen.getByText(/button: Đóng/i);
+    const closeBtn = screen.getByRole("button", { name: /^đóng$/i });
     fireEvent.click(closeBtn);
     expect(handleClose).toHaveBeenCalled();
   });

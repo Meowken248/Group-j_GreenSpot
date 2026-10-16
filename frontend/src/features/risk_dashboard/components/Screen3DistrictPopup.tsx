@@ -102,10 +102,10 @@ export const Screen3DistrictPopup: React.FC<Screen3DistrictPopupProps> = ({
             type="button"
             className="btn-map-view"
             onClick={() => onNavigateToMap(districtData)}
-            title="Điều hướng sang Bản đồ nhiệt không gian GIS (STT 33) hoặc EcoMap"
+            title="Điều hướng sang Bản đồ nhiệt không gian GIS hoặc EcoMap"
           >
             <span>🗺️</span>
-            <span>button: Xem bản đồ</span>
+            <span>Xem bản đồ</span>
           </button>
 
           {/* Nút "Đóng" */}
@@ -115,7 +115,7 @@ export const Screen3DistrictPopup: React.FC<Screen3DistrictPopupProps> = ({
             onClick={onClose}
             title="Đóng popup và quay về giao diện Dashboard (Esc)"
           >
-            button: Đóng
+            Đóng
           </button>
         </div>
       </div>
