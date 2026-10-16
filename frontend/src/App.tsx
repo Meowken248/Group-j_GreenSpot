@@ -20,6 +20,7 @@ import { TriageAppDashboard } from "./features/triage";
 import { PenaltyLookupContainer, PenaltyReportsDashboard } from "./features/penalties";
 import { PostCreatorContainer } from "./features/posts";
 import { FloodNavigationContainer } from "./features/navigation";
+import { RiskDashboardContainer } from "./features/risk_dashboard";
 import {
   SettingsContainer,
   applyThemeToDocument,
@@ -58,6 +59,7 @@ function App() {
       if (hash === "#dedup" || path === "/dedup") return "/dedup";
       if (hash === "#settings" || path === "/settings") return "/settings";
       if (hash === "#penalty-reports" || path === "/penalty-reports") return "/penalty-reports";
+      if (hash === "#risk-dashboard" || hash === "#urban-risk" || path === "/risk-dashboard") return "/risk-dashboard";
     }
     return undefined;
   });
@@ -78,11 +80,16 @@ function App() {
     | "posts"
     | "triage"
     | "navigation"
+    | "risk-dashboard"
   >(() => {
     const hash = window.location.hash.toLowerCase();
     const path = window.location.pathname.toLowerCase();
     const isLogged = checkIsLoggedIn();
 
+    if (hash === "#risk-dashboard" || hash === "#urban-risk" || path === "/risk-dashboard") {
+      if (!isLogged) return "auth";
+      return "risk-dashboard";
+    }
     if (hash === "#navigation" || path === "/navigation") return "navigation";
     if (hash === "#map" || path === "/map") return "map";
     if (hash === "#penalties" || path === "/penalties") {
@@ -214,6 +221,14 @@ function App() {
     currentUser?.role === "OFFICER" ||
     currentUser?.role === "DISTRICT_MANAGER" ||
     currentUser?.role === "COORDINATOR" ||
+    canAccess("INCIDENTS");
+
+  const hasRiskDashboardAccess =
+    currentUser?.role === "ADMIN" ||
+    currentUser?.role === "OFFICER" ||
+    currentUser?.role === "DISTRICT_MANAGER" ||
+    currentUser?.role === "COORDINATOR" ||
+    canAccess("STATISTICS") ||
     canAccess("INCIDENTS");
 
   const hasPenaltyReportsAccess =
@@ -761,6 +776,22 @@ function App() {
               <span>Tránh ngập</span>
             </button>
 
+            {hasRiskDashboardAccess && (
+              <button
+                type="button"
+                className={`view-tab-btn ${activeTab === "risk-dashboard" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveTab("risk-dashboard");
+                  window.location.hash = "#risk-dashboard";
+                }}
+                title="Bảng điều khiển phân tích rủi ro đô thị toàn thành phố (STT 42)"
+                data-testid="tab-btn-risk-dashboard"
+              >
+                <span>🏙️</span>
+                <span>Rủi ro đô thị</span>
+              </button>
+            )}
+
             <button
               type="button"
               className={`view-tab-btn ${activeTab === "posts" ? "active" : ""}`}
@@ -1009,6 +1040,33 @@ function App() {
         <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
           <FloodNavigationContainer />
         </div>
+      ) : activeTab === "risk-dashboard" ? (
+        !currentUser ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/risk-dashboard"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+            <RiskDashboardContainer
+              currentUser={currentUser}
+              onBackToHome={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              onNavigateToMap={(lat, lng, districtName) => {
+                setActiveTab("map");
+                window.location.hash = `#map?lat=${lat}&lng=${lng}&district=${encodeURIComponent(districtName)}`;
+              }}
+            />
+          </div>
+        )
       ) : activeTab === "settings" ? (
         !currentUser ? (
           <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
