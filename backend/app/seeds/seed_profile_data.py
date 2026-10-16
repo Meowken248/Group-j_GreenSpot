@@ -288,8 +288,8 @@ async def seed_profile_data():
             p_id = uuid.uuid4()
             created_time = datetime.now(timezone.utc) - timedelta(days=days_ago, hours=3)
             await conn.execute("""
-                INSERT INTO posts (post_id, user_id, content, media_urls, visibility, is_hidden, reactions_count, comments_count, created_at, updated_at, version)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9, 1)
+                INSERT INTO posts (post_id, user_id, content, media_urls, visibility, is_hidden, reactions_count, comments_count, shares_count, created_at, updated_at, version)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, $9, $9, 1)
             """, p_id, target_u, content, media, vis, hidden, reacts, comms, created_time)
 
     await conn.close()

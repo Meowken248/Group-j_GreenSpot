@@ -98,11 +98,11 @@ async def seed_posts_data():
             await conn.execute("""
                 INSERT INTO posts (
                     post_id, user_id, content, media_urls, group_id, visibility,
-                    is_hidden, reactions_count, comments_count,
+                    is_hidden, reactions_count, comments_count, shares_count,
                     latitude, longitude, address, version, created_at, updated_at
                 ) VALUES (
                     $1, $2, $3, $4, $5, $6,
-                    $7, $8, $9,
+                    $7, $8, $9, 0,
                     $10, $11, $12, $13, now() - INTERVAL '2 hours', now() - INTERVAL '2 hours'
                 );
             """,
