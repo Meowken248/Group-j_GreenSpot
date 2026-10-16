@@ -224,8 +224,9 @@ describe("Spatial Hotspot Analytics & 7-Day Forecasting (STT 44)", () => {
       );
 
       expect(screen.getByTestId("empty-hotspot-state")).toHaveTextContent(
-        "Không phát hiện cụm điểm nóng nào trong bộ lọc đã chọn"
+        "Không phát hiện cụm điểm nóng nào trong khoảng thời gian đã chọn."
       );
+      expect(screen.getByTestId("empty-top5-msg")).toHaveTextContent("Không có điểm nóng");
     });
 
     it("Hiển thị lỗi máy chủ tile GIS và kích hoạt thử tải lại", () => {
@@ -248,7 +249,7 @@ describe("Spatial Hotspot Analytics & 7-Day Forecasting (STT 44)", () => {
       );
 
       expect(screen.getByTestId("tile-error-fallback")).toHaveTextContent(
-        "Lỗi kết nối máy chủ bản đồ tile GIS - Vui lòng thử tải lại"
+        "Không thể kết nối đến máy chủ bản đồ GIS. Vui lòng kiểm tra lại đường truyền."
       );
       fireEvent.click(screen.getByTestId("btn-retry-tiles"));
       expect(onRetry).toHaveBeenCalledTimes(1);
