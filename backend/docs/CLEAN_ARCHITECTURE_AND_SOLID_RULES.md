@@ -218,6 +218,8 @@ Bảng đối chiếu đảm bảo **tính nhất quán 100%** giữa tài liệ
 | **40** | Spatial Facility Analysis (Buffer Zone) | `docs/40_spatial_facility_analysis.md` | `app/interface/triage/spatial_facility_interface.py` | `app/crud/triage/spatial_facility_repository.py` | `app/services/triage/spatial_facility_service.py` | `app/api/v1/triage/router.py` (tích hợp) |
 | **41** | Flood-Aware Safe Navigation | `docs/41_flood_aware_safe_navigation.md` | `app/interface/navigation/navigation_interface.py` | `app/crud/navigation/navigation_repository.py` | `app/services/navigation/navigation_service.py` | `app/api/v1/navigation/router.py` |
 | **42** | Urban Environmental Risk Dashboard | `docs/42_urban_risk_dashboard.md` | `app/interface/risk_dashboard/risk_dashboard_interface.py` | `app/crud/risk_dashboard/risk_dashboard_repository.py` | `app/services/risk_dashboard/risk_dashboard_service.py` | `app/api/v1/risk_dashboard/router.py` |
+| **43** | Operations Dispatch Center | `docs/43_operations_dispatch.md` | `app/interface/dispatch/dispatch_interface.py` | `app/crud/dispatch/dispatch_repository.py` | `app/services/dispatch/dispatch_service.py` | `app/api/v1/dispatch/router.py` |
+
 
 ---
 
