@@ -206,7 +206,7 @@ Mọi bảng nghiệp vụ trong hệ thống phải tuân thủ nghiêm ngặt 
 
 ---
 
-## 7. MA TRẬN ĐỐI CHIẾU 6 TÍNH NĂNG ĐÃ CHUẨN HÓA (STT 37 - 42)
+## 7. MA TRẬN ĐỐI CHIẾU 7 TÍNH NĂNG ĐÃ CHUẨN HÓA (STT 37 - 43)
 
 Bảng đối chiếu đảm bảo **tính nhất quán 100%** giữa tài liệu đặc tả kỹ thuật và cấu trúc mã nguồn Backend:
 
