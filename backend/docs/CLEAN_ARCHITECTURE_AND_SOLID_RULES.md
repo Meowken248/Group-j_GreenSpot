@@ -206,7 +206,7 @@ Mọi bảng nghiệp vụ trong hệ thống phải tuân thủ nghiêm ngặt 
 
 ---
 
-## 7. MA TRẬN ĐỐI CHIẾU 5 TÍNH NĂNG ĐÃ CHUẨN HÓA (STT 37 - 41)
+## 7. MA TRẬN ĐỐI CHIẾU 6 TÍNH NĂNG ĐÃ CHUẨN HÓA (STT 37 - 42)
 
 Bảng đối chiếu đảm bảo **tính nhất quán 100%** giữa tài liệu đặc tả kỹ thuật và cấu trúc mã nguồn Backend:
 
@@ -217,6 +217,7 @@ Bảng đối chiếu đảm bảo **tính nhất quán 100%** giữa tài liệ
 | **39** | AI Incident Triage & XAI Priority Scoring | `docs/39_ai_incident_triage_priority.md` | `app/interface/triage/triage_interface.py` | `app/crud/triage/triage_repository.py` | `app/services/triage/triage_service.py` | `app/api/v1/triage/router.py` |
 | **40** | Spatial Facility Analysis (Buffer Zone) | `docs/40_spatial_facility_analysis.md` | `app/interface/triage/spatial_facility_interface.py` | `app/crud/triage/spatial_facility_repository.py` | `app/services/triage/spatial_facility_service.py` | `app/api/v1/triage/router.py` (tích hợp) |
 | **41** | Flood-Aware Safe Navigation | `docs/41_flood_aware_safe_navigation.md` | `app/interface/navigation/navigation_interface.py` | `app/crud/navigation/navigation_repository.py` | `app/services/navigation/navigation_service.py` | `app/api/v1/navigation/router.py` |
+| **42** | Urban Environmental Risk Dashboard | `docs/42_urban_risk_dashboard.md` | `app/interface/risk_dashboard/risk_dashboard_interface.py` | `app/crud/risk_dashboard/risk_dashboard_repository.py` | `app/services/risk_dashboard/risk_dashboard_service.py` | `app/api/v1/risk_dashboard/router.py` |
 
 ---
 
