@@ -88,6 +88,16 @@ from app.models.settings import UserSettings
 # 9. Tra cứu quy định xử phạt vi phạm hành chính (Penalty Regulations Domain)
 from app.models.penalty import PenaltyRegulation
 
+# 10. Nhắn tin 1-1, Chat nhóm & Chat quận (Chat Domain - Feature 15)
+from app.models.chat import (
+    Conversation,
+    ConversationMember,
+    Message,
+    UserBlock,
+    ConversationType,
+    MemberRole,
+)
+
 # 8. Nhật ký kiểm toán hệ thống (Audit Logs)
 from app.models.audit_log import AuditLog
 
@@ -154,5 +164,12 @@ __all__ = [
     "UserSettings",
     # Penalty Regulations Domain
     "PenaltyRegulation",
+    # Chat Domain (Feature 15)
+    "Conversation",
+    "ConversationMember",
+    "Message",
+    "UserBlock",
+    "ConversationType",
+    "MemberRole",
 ]
 

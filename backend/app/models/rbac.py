@@ -76,6 +76,7 @@ class User(Base, TimestampMixin):
     status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
     citizen_id_card: Mapped[Optional[str]] = mapped_column(String(20))
     reputation_score: Mapped[int] = mapped_column(Integer, default=100)
+    district: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
     role: Mapped["Role"] = relationship(back_populates="users")
     sessions: Mapped[List["UserSession"]] = relationship(back_populates="user", cascade="all, delete-orphan")
