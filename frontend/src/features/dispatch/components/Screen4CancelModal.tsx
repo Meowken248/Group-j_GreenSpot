@@ -86,18 +86,10 @@ export const Screen4CancelModal: React.FC<Screen4CancelModalProps> = ({
             <div className="form-text">Bắt buộc nhập lý do huỷ để lưu vết nhật ký hệ thống.</div>
           </div>
 
-          <div className="d-flex justify-content-end gap-2 pt-2 border-top">
-            <button
-              type="button"
-              className="btn btn-outline-secondary px-4"
-              onClick={onClose}
-              disabled={isLoading}
-            >
-              Giữ lại
-            </button>
+          <div className="d-flex flex-column gap-2 pt-2 border-top">
             <button
               type="submit"
-              className="btn btn-danger px-4 d-flex align-items-center"
+              className="btn btn-danger btn-pill-lg"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -110,6 +102,14 @@ export const Screen4CancelModal: React.FC<Screen4CancelModalProps> = ({
                   <i className="bi bi-trash-fill me-1"></i>Huỷ lệnh
                 </>
               )}
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline-secondary btn-pill-secondary mt-0"
+              onClick={onClose}
+              disabled={isLoading}
+            >
+              Giữ lại
             </button>
           </div>
         </form>

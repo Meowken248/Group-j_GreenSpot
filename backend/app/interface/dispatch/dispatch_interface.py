@@ -83,3 +83,26 @@ class IDispatchRepository(ABC):
     ) -> Optional[FieldTrackingResponse]:
         """Truy vấn dữ liệu định vị GPS và tiến trình hiện trường thời gian thực (Màn 6/6)"""
         pass
+
+    @abstractmethod
+    async def update_team_location(
+        self, db: AsyncSession, order_id: uuid.UUID, lat: float, lng: float
+    ) -> bool:
+        """Cập nhật tọa độ định vị GPS của đội hiện trường"""
+        pass
+
+    @abstractmethod
+    async def accept_order(
+        self, db: AsyncSession, order_id: uuid.UUID
+    ) -> DispatchOrder:
+        """Đội phản ứng hiện trường xác nhận tiếp nhận lệnh (ASSIGNED -> EN_ROUTE)"""
+        pass
+
+    @abstractmethod
+    async def arrive_order(
+        self, db: AsyncSession, order_id: uuid.UUID
+    ) -> DispatchOrder:
+        """Đội phản ứng hiện trường xác nhận đã đến nơi (EN_ROUTE -> IN_PROGRESS)"""
+        pass
+
+

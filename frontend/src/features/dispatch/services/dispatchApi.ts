@@ -83,4 +83,33 @@ export const dispatchApi = {
     const res = await api.get<FieldTrackingResponse>(`${BASE_URL}/orders/${orderId}/tracking`);
     return res.data;
   },
+
+  /**
+   * Màn 6/6: Cập nhật toạ độ GPS thời gian thực của đội hiện trường
+   */
+  async updateTeamGpsLocation(orderId: string, lat: number, lng: number): Promise<DispatchActionResult> {
+    const res = await api.post<DispatchActionResult>(`${BASE_URL}/orders/${orderId}/gps`, {
+      team_latitude: lat,
+      team_longitude: lng,
+    });
+    return res.data;
+  },
+
+  /**
+   * Đội phản ứng hiện trường xác nhận tiếp nhận lệnh điều phối (ASSIGNED -> EN_ROUTE)
+   */
+  async acceptDispatchOrder(orderId: string): Promise<DispatchActionResult> {
+    const res = await api.post<DispatchActionResult>(`${BASE_URL}/orders/${orderId}/accept`);
+    return res.data;
+  },
+
+  /**
+   * Đội phản ứng hiện trường xác nhận đã đến nơi sự cố (EN_ROUTE -> IN_PROGRESS)
+   */
+  async arriveDispatchOrder(orderId: string): Promise<DispatchActionResult> {
+    const res = await api.post<DispatchActionResult>(`${BASE_URL}/orders/${orderId}/arrive`);
+    return res.data;
+  },
 };
+
+

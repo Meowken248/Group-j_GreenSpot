@@ -275,3 +275,10 @@ def test_07_http_endpoints_and_rbac_guard():
     resp_track = client.get(f"/api/v1/dispatch/orders/{tracking_id}/tracking", headers=headers_admin)
     assert resp_track.status_code == 200
     assert resp_track.json()["order_code"] == "LX-1042"
+
+    # POST /orders/{order_id}/accept
+    resp_acc = client.post(f"/api/v1/dispatch/orders/{tracking_id}/accept", headers=headers_admin)
+    assert resp_acc.status_code == 200
+    assert resp_acc.json()["success"] is True
+    assert "tiếp nhận" in resp_acc.json()["message"]
+

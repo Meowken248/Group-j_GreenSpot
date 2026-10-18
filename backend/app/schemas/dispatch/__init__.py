@@ -11,6 +11,7 @@ from app.schemas.dispatch.schemas import (
     StepperStage,
     FieldTrackingResponse,
     DispatchActionResult,
+    UpdateTeamLocationRequest,
 )
 
 __all__ = [
@@ -26,4 +27,6 @@ __all__ = [
     "StepperStage",
     "FieldTrackingResponse",
     "DispatchActionResult",
+    "UpdateTeamLocationRequest",
 ]
+

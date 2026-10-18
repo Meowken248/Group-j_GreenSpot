@@ -23,7 +23,9 @@ from app.schemas.dispatch.schemas import (
     CloseDispatchOrderRequest,
     FieldTrackingResponse,
     DispatchActionResult,
+    UpdateTeamLocationRequest,
 )
+
 from app.utils.security import decode_access_token
 from fastapi import Header
 
@@ -155,3 +157,39 @@ async def get_field_tracking_data(
 ):
     """Màn 6/6: Dữ liệu giám sát thực địa theo thời gian thực (GPS, lộ trình, stepper, ảnh)"""
     return await service.get_field_tracking_data(db, order_id)
+
+
+@router.post("/orders/{order_id}/gps", response_model=DispatchActionResult)
+async def update_team_location(
+    order_id: uuid.UUID,
+    request: UpdateTeamLocationRequest,
+    db: AsyncSession = Depends(get_db),
+    service: DispatchService = Depends(get_dispatch_service),
+    _user: Optional[dict] = Depends(verify_dispatch_access),
+):
+    """Màn 6/6: Cập nhật tọa độ định vị GPS của đội hiện trường đang di chuyển"""
+    return await service.update_team_location(db, order_id, request)
+
+
+@router.post("/orders/{order_id}/accept", response_model=DispatchActionResult)
+async def accept_dispatch_order(
+    order_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    service: DispatchService = Depends(get_dispatch_service),
+    _user: Optional[dict] = Depends(verify_dispatch_access),
+):
+    """Màn 6/6: Đội phản ứng hiện trường xác nhận tiếp nhận lệnh điều phối"""
+    return await service.accept_dispatch_order(db, order_id)
+
+
+@router.post("/orders/{order_id}/arrive", response_model=DispatchActionResult)
+async def arrive_dispatch_order(
+    order_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    service: DispatchService = Depends(get_dispatch_service),
+    _user: Optional[dict] = Depends(verify_dispatch_access),
+):
+    """Màn 6/6: Đội phản ứng hiện trường xác nhận đã đến nơi sự cố"""
+    return await service.arrive_dispatch_order(db, order_id)
+
+

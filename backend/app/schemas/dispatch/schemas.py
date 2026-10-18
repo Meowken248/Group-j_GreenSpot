@@ -157,3 +157,12 @@ class DispatchActionResult(BaseModel):
     order_code: Optional[str] = None
     order_id: Optional[uuid.UUID] = None
     version: Optional[int] = None
+
+
+class UpdateTeamLocationRequest(BaseModel):
+    """Cập nhật vị trí GPS thời gian thực của đội phản ứng cơ động"""
+    team_latitude: float = Field(..., ge=-90.0, le=90.0)
+    team_longitude: float = Field(..., ge=-180.0, le=180.0)
+    speed_kmh: Optional[float] = Field(None, ge=0)
+    heading_deg: Optional[float] = Field(None, ge=0, le=360)
+

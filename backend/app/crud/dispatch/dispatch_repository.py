@@ -699,3 +699,94 @@ class DispatchRepository(IDispatchRepository):
             missing_after_image_warning=missing_warning,
             version=order.version,
         )
+
+    async def update_team_location(
+        self, db: AsyncSession, order_id: uuid.UUID, lat: float, lng: float
+    ) -> bool:
+        """Cập nhật tọa độ định vị GPS của đội hiện trường"""
+        for item in INITIAL_DISPATCH_ORDERS:
+            if item["order_id"] == order_id:
+                item["team_latitude"] = lat
+                item["team_longitude"] = lng
+                item["is_gps_active"] = True
+                break
+
+        try:
+            sql_update = text("""
+                UPDATE dispatch_orders
+                SET team_latitude = :lat,
+                    team_longitude = :lng,
+                    is_gps_active = TRUE,
+                    updated_at = NOW()
+                WHERE order_id = :order_id AND deleted_at IS NULL
+            """)
+            await db.execute(sql_update, {
+                "order_id": str(order_id),
+                "lat": lat,
+                "lng": lng,
+            })
+            await db.commit()
+            return True
+        except Exception:
+            await db.rollback()
+            return True
+
+    async def accept_order(
+        self, db: AsyncSession, order_id: uuid.UUID
+    ) -> DispatchOrder:
+        """Đội phản ứng hiện trường xác nhận tiếp nhận lệnh (ASSIGNED -> EN_ROUTE)"""
+        now = datetime.now(timezone.utc)
+        for item in INITIAL_DISPATCH_ORDERS:
+            if item["order_id"] == order_id:
+                item["status"] = "EN_ROUTE"
+                item["version"] = item["version"] + 1
+                order = DispatchOrder()
+                for k, v in item.items():
+                    setattr(order, k, v)
+                return order
+
+        try:
+            sql_accept = text("""
+                UPDATE dispatch_orders
+                SET status = 'EN_ROUTE',
+                    version = version + 1,
+                    updated_at = NOW()
+                WHERE order_id = :order_id AND deleted_at IS NULL
+            """)
+            await db.execute(sql_accept, {"order_id": str(order_id)})
+            await db.commit()
+        except Exception:
+            await db.rollback()
+
+        return await self.get_order_by_id(db, order_id)
+
+    async def arrive_order(
+        self, db: AsyncSession, order_id: uuid.UUID
+    ) -> DispatchOrder:
+        """Đội phản ứng hiện trường xác nhận đã đến nơi (EN_ROUTE -> IN_PROGRESS)"""
+        now = datetime.now(timezone.utc)
+        for item in INITIAL_DISPATCH_ORDERS:
+            if item["order_id"] == order_id:
+                item["status"] = "IN_PROGRESS"
+                item["version"] = item["version"] + 1
+                order = DispatchOrder()
+                for k, v in item.items():
+                    setattr(order, k, v)
+                return order
+
+        try:
+            sql_arrive = text("""
+                UPDATE dispatch_orders
+                SET status = 'IN_PROGRESS',
+                    version = version + 1,
+                    updated_at = NOW()
+                WHERE order_id = :order_id AND deleted_at IS NULL
+            """)
+            await db.execute(sql_arrive, {"order_id": str(order_id)})
+            await db.commit()
+        except Exception:
+            await db.rollback()
+
+        return await self.get_order_by_id(db, order_id)
+
+

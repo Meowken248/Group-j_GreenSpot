@@ -10,7 +10,7 @@ import type {
   CloseDispatchOrderRequest,
 } from "../types/dispatch.types";
 import { dispatchApi } from "../services/dispatchApi";
-import { DispatchHeader } from "../components/DispatchHeader";
+import { DispatchHeader, type HeaderNotificationItem } from "../components/DispatchHeader";
 import { DispatchFooter } from "../components/DispatchFooter";
 import { Screen1DispatchList } from "../components/Screen1DispatchList";
 import { Screen2CreateOrder } from "../components/Screen2CreateOrder";
@@ -18,6 +18,7 @@ import { Screen3EditOrder } from "../components/Screen3EditOrder";
 import { Screen4CancelModal } from "../components/Screen4CancelModal";
 import { Screen5CancelSuccessModal } from "../components/Screen5CancelSuccessModal";
 import { Screen6FieldTracking } from "../components/Screen6FieldTracking";
+import { ScreenAcceptOrderModal } from "../components/ScreenAcceptOrderModal";
 import "../styles/dispatch.scss";
 
 type ScreenMode = "LIST" | "CREATE" | "EDIT" | "TRACKING";
@@ -30,6 +31,17 @@ interface ToastNotification {
 
 // Canonical fallback data for resilient frontend experience
 const FALLBACK_TEAMS: TeamOptionItem[] = [
+  {
+    team_id: "team-003",
+    team_name: "Đội tuần tra môi trường 3 (Đội Cơ động số 3)",
+    phone: "0934567890",
+    current_status: "AVAILABLE",
+    distance_km: 1.8,
+    distance_label: "Cách 1.8km",
+    is_busy_with_urgent: false,
+    latitude: 10.8522,
+    longitude: 106.6186,
+  },
   {
     team_id: "team-001",
     team_name: "Đội phản ứng nhanh 1",
@@ -52,20 +64,21 @@ const FALLBACK_TEAMS: TeamOptionItem[] = [
     latitude: 10.7621,
     longitude: 106.6823,
   },
-  {
-    team_id: "team-003",
-    team_name: "Đội tuần tra môi trường 3",
-    phone: "0934567890",
-    current_status: "AVAILABLE",
-    distance_km: 6.2,
-    distance_label: "Cách 6.2km",
-    is_busy_with_urgent: false,
-    latitude: 10.8231,
-    longitude: 106.6912,
-  },
 ];
 
 const FALLBACK_INCIDENTS: IncidentComboboxItem[] = [
+  {
+    incident_id: "inc-1044",
+    incident_code: "SC-2026-1044",
+    title: "Ùn ứ rác thải y tế & ô nhiễm ngã tư Nguyễn Văn Quá",
+    category: "Rác thải nguy hại",
+    urgency: "KHẨN",
+    location_address: "Ngã tư Nguyễn Văn Quá - Tô Ký, Phường Đông Hưng Thuận, Quận 12",
+    district: "Quận 12",
+    ward: "Đông Hưng Thuận",
+    latitude: 10.8415,
+    longitude: 106.6335,
+  },
   {
     incident_id: "inc-001",
     incident_code: "SC-2026-001",
@@ -93,6 +106,26 @@ const FALLBACK_INCIDENTS: IncidentComboboxItem[] = [
 ];
 
 const FALLBACK_ORDERS: DispatchOrderItem[] = [
+  {
+    order_id: "ord-1044",
+    order_code: "DP-2026-1044",
+    incident_id: "inc-1044",
+    incident_title: "Ùn ứ rác thải y tế & ô nhiễm ngã tư Nguyễn Văn Quá",
+    incident_type: "Rác thải nguy hại",
+    team_id: "team-003",
+    team_name: "Đội tuần tra môi trường 3 (Đội Cơ động số 3)",
+    team_phone: "0934567890",
+    status: "ASSIGNED",
+    status_label: "Chờ tiếp nhận",
+    status_color: "#f59e0b",
+    priority: "URGENT",
+    priority_label: "Khẩn cấp",
+    deadline: new Date(Date.now() + 3 * 3600 * 1000).toISOString(),
+    assigned_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+    location_address: "Ngã tư Nguyễn Văn Quá - Tô Ký, Phường Đông Hưng Thuận, Quận 12",
+    district: "Quận 12",
+    version: 1,
+  },
   {
     order_id: "ord-001",
     order_code: "DP-2026-001",
@@ -140,7 +173,7 @@ const FALLBACK_ORDERS: DispatchOrderItem[] = [
     incident_title: "Tràn dầu loang cục bộ kênh Nhiêu Lộc",
     incident_type: "Ô nhiễm nước",
     team_id: "team-003",
-    team_name: "Đội tuần tra môi trường 3",
+    team_name: "Đội tuần tra môi trường 3 (Đội Cơ động số 3)",
     team_phone: "0934567890",
     status: "COMPLETED",
     status_label: "Hoàn tất",
@@ -159,14 +192,39 @@ export const DispatchContainer: React.FC = () => {
   // Navigation & Screen Modes
   const [currentScreen, setCurrentScreen] = useState<ScreenMode>("LIST");
 
+  // Multi-actor Roles: Admin vs Field Response Team
+  const [userRole, setUserRole] = useState<"ADMIN" | "TEAM">("ADMIN");
+
   // Data States
   const [orders, setOrders] = useState<DispatchOrderItem[]>(FALLBACK_ORDERS);
   const [incidents, setIncidents] = useState<IncidentComboboxItem[]>(FALLBACK_INCIDENTS);
   const [teams, setTeams] = useState<TeamOptionItem[]>(FALLBACK_TEAMS);
   const [filters, setFilters] = useState<DispatchListFilter>({ status: "ALL" });
 
+  // Notifications
+  const [notifications, setNotifications] = useState<HeaderNotificationItem[]>([
+    {
+      id: "notif-1044",
+      title: "🚨 Lệnh điều phối mới: DP-2026-1044",
+      body: "Sự cố rác thải khẩn cấp tại Ngã tư Nguyễn Văn Quá - Tô Ký, Q.12. Yêu cầu Đội Cơ động số 3 xác nhận tiếp nhận lệnh!",
+      time: "Vừa xong",
+      orderId: "ord-1044",
+      type: "urgent",
+      unread: true,
+    },
+    {
+      id: "notif-001",
+      title: "📋 Lệnh điều phối DP-2026-001",
+      body: "142 Lê Văn Sỹ, P.13, Q.3 - Đội phản ứng nhanh 1 đang trên đường di chuyển.",
+      time: "15 phút trước",
+      orderId: "ord-001",
+      type: "info",
+      unread: false,
+    },
+  ]);
+
   // Selection & Active Item States
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>("ord-001");
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>("ord-1044");
   const [editingOrder, setEditingOrder] = useState<DispatchOrderItem | null>(null);
   const [cancellingOrder, setCancellingOrder] = useState<DispatchOrderItem | null>(null);
   const [newlyCreatedCode, setNewlyCreatedCode] = useState<string | null>(null);
@@ -178,6 +236,7 @@ export const DispatchContainer: React.FC = () => {
   const [isCancelModalOpen, setIsCancelModalOpen] = useState<boolean>(false);
   const [isCancelSuccessOpen, setIsCancelSuccessOpen] = useState<boolean>(false);
   const [cancelledCodeForSuccess, setCancelledCodeForSuccess] = useState<string | null>(null);
+  const [pendingAcceptOrder, setPendingAcceptOrder] = useState<DispatchOrderItem | null>(null);
 
   // Loading & Toasts
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -189,7 +248,7 @@ export const DispatchContainer: React.FC = () => {
       setToasts((prev) => [...prev, { id, type, message }]);
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
-      }, 4000);
+      }, 4500);
     },
     []
   );
@@ -200,9 +259,9 @@ export const DispatchContainer: React.FC = () => {
       setIsLoading(true);
       try {
         const res = await dispatchApi.getDispatchOrders(appliedFilters);
-        if (res && res.orders) {
+        if (res && res.orders && res.orders.length > 0) {
           setOrders(res.orders);
-          if (res.orders.length > 0 && !selectedOrderId) {
+          if (!selectedOrderId) {
             setSelectedOrderId(res.orders[0].order_id);
           }
         }
@@ -248,6 +307,20 @@ export const DispatchContainer: React.FC = () => {
     } catch {
       // Create rich fallback tracking state
       const isDone = order.status === "COMPLETED";
+      const isEnRoute = order.status === "EN_ROUTE";
+      const isInProgress = order.status === "IN_PROGRESS";
+      const isAssigned = order.status === "ASSIGNED";
+
+      const isDistrict12 =
+        order.order_code.includes("1044") ||
+        order.location_address.includes("Quận 12") ||
+        order.location_address.includes("Nguyễn Văn Quá");
+
+      const incidentLat = isDistrict12 ? 10.8415 : 10.7915;
+      const incidentLng = isDistrict12 ? 106.6335 : 106.6775;
+      const teamLat = isDistrict12 ? 10.8522 : 10.785;
+      const teamLng = isDistrict12 ? 106.6186 : 106.672;
+
       const fallbackTracking: FieldTrackingResponse = {
         order_id: order.order_id,
         order_code: order.order_code,
@@ -257,37 +330,37 @@ export const DispatchContainer: React.FC = () => {
         deadline: order.deadline,
         incident_title: order.incident_title,
         incident_address: order.location_address,
-        incident_lat: 10.7915,
-        incident_lng: 106.6775,
+        incident_lat: incidentLat,
+        incident_lng: incidentLng,
         incident_radius_meters: 50,
         team_name: order.team_name,
         team_phone: order.team_phone,
-        team_lat: 10.785,
-        team_lng: 106.672,
-        eta_minutes: 8,
-        is_gps_active: true,
+        team_lat: teamLat,
+        team_lng: teamLng,
+        eta_minutes: isAssigned ? 15 : isEnRoute ? 8 : 0,
+        is_gps_active: isEnRoute || isInProgress,
         gps_lost_warning: null,
         stepper: [
           {
             key: "ASSIGNED",
             label: "Đã giao lệnh",
-            is_current: false,
-            is_passed: true,
+            is_current: isAssigned,
+            is_passed: !isAssigned,
             timestamp: "14:15 - 16/10/2026",
           },
           {
             key: "EN_ROUTE",
             label: "Đang đến hiện trường",
-            is_current: order.status === "EN_ROUTE",
-            is_passed: order.status === "IN_PROGRESS" || isDone,
-            timestamp: "14:22 - 16/10/2026",
+            is_current: isEnRoute,
+            is_passed: isInProgress || isDone,
+            timestamp: isEnRoute || isInProgress || isDone ? "14:22 - 16/10/2026" : null,
           },
           {
             key: "IN_PROGRESS",
             label: "Đang tiến hành xử lý",
-            is_current: order.status === "IN_PROGRESS",
+            is_current: isInProgress,
             is_passed: isDone,
-            timestamp: order.status === "IN_PROGRESS" || isDone ? "14:35 - 16/10/2026" : null,
+            timestamp: isInProgress || isDone ? "14:35 - 16/10/2026" : null,
           },
           {
             key: "COMPLETED",
@@ -345,6 +418,40 @@ export const DispatchContainer: React.FC = () => {
     setIsCancelModalOpen(true);
   };
 
+  // Switch role between Admin and Field Team
+  const handleSwitchRole = (newRole: "ADMIN" | "TEAM") => {
+    setUserRole(newRole);
+    if (newRole === "TEAM") {
+      addToast("info", "🚛 Chuyển sang tài khoản Đội Cơ động số 3 (Hiện trường).");
+      // Tự động kiểm tra nếu có lệnh ASSIGNED cần tiếp nhận
+      const pending = orders.find((o) => o.status === "ASSIGNED");
+      if (pending) {
+        setPendingAcceptOrder(pending);
+      }
+    } else {
+      addToast("info", "🏢 Chuyển sang tài khoản Cán bộ Quản trị Điều phối (Sở TN&MT).");
+    }
+  };
+
+  // Notification selection
+  const handleSelectNotification = (item: HeaderNotificationItem) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === item.id ? { ...n, unread: false } : n))
+    );
+
+    if (item.orderId) {
+      const target = orders.find((o) => o.order_id === item.orderId);
+      if (target) {
+        setSelectedOrderId(target.order_id);
+        if (target.status === "ASSIGNED") {
+          setPendingAcceptOrder(target);
+        } else {
+          loadTrackingData(target);
+        }
+      }
+    }
+  };
+
   // Handler for Màn 2/6: Submit Create
   const handleCreateOrder = async (payload: CreateDispatchOrderRequest) => {
     setIsLoading(true);
@@ -353,25 +460,41 @@ export const DispatchContainer: React.FC = () => {
       addToast("success", res.message || "Tạo và giao lệnh điều động thành công!");
       const code = res.order_code || "DP-2026-MỚI";
       setNewlyCreatedCode(code);
+
+      const incidentInfo = incidents.find((i) => i.incident_id === payload.incident_id);
+      const teamInfo = teams.find((t) => t.team_id === payload.team_id);
+      const newNotif: HeaderNotificationItem = {
+        id: `notif-${Date.now()}`,
+        title: `🚨 Lệnh điều phối mới: ${code}`,
+        body: `Sự cố: ${incidentInfo?.title || "Sự cố môi trường"}. Giao ${teamInfo?.team_name || "Đội phản ứng"} tiếp nhận!`,
+        time: "Vừa xong",
+        orderId: res.order_id || undefined,
+        type: "urgent",
+        unread: true,
+      };
+      setNotifications((prev) => [newNotif, ...prev]);
+
       setCurrentScreen("LIST");
       await loadOrders(filters);
     } catch {
       // Local simulated fallback
+      const fakeOrderId = `ord-${Date.now()}`;
+      const fakeOrderCode = `DP-2026-${Math.floor(100 + Math.random() * 900)}`;
+      const incidentInfo = incidents.find((i) => i.incident_id === payload.incident_id);
+      const teamInfo = teams.find((t) => t.team_id === payload.team_id);
+
       const fakeOrder: DispatchOrderItem = {
-        order_id: `ord-${Date.now()}`,
-        order_code: `DP-2026-${Math.floor(100 + Math.random() * 900)}`,
+        order_id: fakeOrderId,
+        order_code: fakeOrderCode,
         incident_id: payload.incident_id,
-        incident_title:
-          incidents.find((i) => i.incident_id === payload.incident_id)?.title ||
-          "Sự cố môi trường mới tiếp nhận",
-        incident_type: "Môi trường",
+        incident_title: incidentInfo?.title || "Sự cố môi trường mới tiếp nhận",
+        incident_type: incidentInfo?.category || "Môi trường",
         team_id: payload.team_id,
-        team_name:
-          teams.find((t) => t.team_id === payload.team_id)?.team_name || "Đội phản ứng",
-        team_phone: "0908123456",
+        team_name: teamInfo?.team_name || "Đội phản ứng nhanh",
+        team_phone: teamInfo?.phone || "0908123456",
         status: "ASSIGNED",
-        status_label: "Đã giao",
-        status_color: "#6b7280",
+        status_label: "Chờ tiếp nhận",
+        status_color: "#f59e0b",
         priority: payload.priority,
         priority_label:
           payload.priority === "URGENT"
@@ -381,14 +504,27 @@ export const DispatchContainer: React.FC = () => {
             : "Trung bình",
         deadline: payload.deadline,
         assigned_at: new Date().toISOString(),
-        location_address: "Khu vực đô thị trọng điểm",
-        district: "Quận 3",
+        location_address: incidentInfo?.location_address || "Khu vực đô thị trọng điểm",
+        district: incidentInfo?.district || "Quận 3",
         version: 1,
       };
+
       setOrders((prev) => [fakeOrder, ...prev]);
       setSelectedOrderId(fakeOrder.order_id);
       setNewlyCreatedCode(fakeOrder.order_code);
-      addToast("success", `Tạo và giao lệnh ${fakeOrder.order_code} thành công!`);
+
+      const newNotif: HeaderNotificationItem = {
+        id: `notif-${Date.now()}`,
+        title: `🚨 Lệnh điều phối mới: ${fakeOrder.order_code}`,
+        body: `Sự cố: ${fakeOrder.incident_title} tại ${fakeOrder.location_address}. Giao ${fakeOrder.team_name} tiếp nhận!`,
+        time: "Vừa xong",
+        orderId: fakeOrderId,
+        type: "urgent",
+        unread: true,
+      };
+      setNotifications((prev) => [newNotif, ...prev]);
+
+      addToast("success", `Tạo và giao lệnh ${fakeOrder.order_code} thành công! Đã gửi thông báo tới ${fakeOrder.team_name}.`);
       setCurrentScreen("LIST");
     } finally {
       setIsLoading(false);
@@ -423,6 +559,105 @@ export const DispatchContainer: React.FC = () => {
       addToast("success", `Cập nhật phân bổ lệnh ${editingOrder.order_code} thành công!`);
       setCurrentScreen("LIST");
     } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handler for Tiếp nhận lệnh (Đội xử lý xác nhận tiếp nhận: ASSIGNED -> EN_ROUTE)
+  const handleAcceptOrder = async (orderId: string) => {
+    setIsLoading(true);
+    try {
+      const res = await dispatchApi.acceptDispatchOrder(orderId);
+      addToast("success", res.message || "✅ Đội xử lý đã xác nhận tiếp nhận lệnh điều phối!");
+    } catch {
+      addToast("success", "✅ Đội xử lý đã xác nhận tiếp nhận lệnh điều phối!");
+    } finally {
+      // 1. Cập nhật trạng thái lệnh trong danh sách
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.order_id === orderId
+            ? {
+                ...o,
+                status: "EN_ROUTE",
+                status_label: "Đang đến",
+                status_color: "#f59e0b",
+              }
+            : o
+        )
+      );
+
+      // 2. Đánh dấu đã đọc thông báo liên quan
+      setNotifications((prev) =>
+        prev.map((n) => (n.orderId === orderId ? { ...n, unread: false } : n))
+      );
+
+      // 3. Đóng modal tiếp nhận nếu đang mở
+      setPendingAcceptOrder(null);
+
+      // 4. Mở trực tiếp màn hình Theo dõi hiện trường (Screen 6) với GPS và lộ trình kích hoạt
+      const targetOrder = orders.find((o) => o.order_id === orderId) || {
+        order_id: orderId,
+        order_code: "DP-2026-1044",
+        status: "EN_ROUTE",
+        status_label: "Đang đến",
+        status_color: "#f59e0b",
+        priority: "URGENT",
+        priority_label: "Khẩn cấp",
+        incident_title: "Ùn ứ rác thải y tế & ô nhiễm ngã tư Nguyễn Văn Quá",
+        location_address: "Ngã tư Nguyễn Văn Quá - Tô Ký, Phường Đông Hưng Thuận, Quận 12",
+        team_name: "Đội tuần tra môi trường 3 (Đội Cơ động số 3)",
+        team_phone: "0934567890",
+        deadline: new Date(Date.now() + 3 * 3600 * 1000).toISOString(),
+        assigned_at: new Date().toISOString(),
+        version: 1,
+      } as DispatchOrderItem;
+
+      await loadTrackingData({
+        ...targetOrder,
+        status: "EN_ROUTE",
+        status_label: "Đang đến",
+      });
+
+      addToast("info", "🗺️ Định vị GPS dẫn đường theo mặt đường thực tế đã được kích hoạt!");
+      setIsLoading(false);
+    }
+  };
+
+  // Handler for Xác nhận đã đến hiện trường (EN_ROUTE -> IN_PROGRESS)
+  const handleArriveOrder = async (orderId: string) => {
+    setIsLoading(true);
+    try {
+      const res = await dispatchApi.arriveDispatchOrder(orderId);
+      addToast("success", res.message || "📍 Đội xử lý đã xác nhận có mặt tại hiện trường!");
+    } catch {
+      addToast("success", "📍 Đã xác nhận đội xử lý có mặt tại hiện trường sự cố!");
+    } finally {
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.order_id === orderId
+            ? {
+                ...o,
+                status: "IN_PROGRESS",
+                status_label: "Đang xử lý",
+                status_color: "#eab308",
+              }
+            : o
+        )
+      );
+      setTrackingData((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          status: "IN_PROGRESS",
+          status_label: "Đang tiến hành xử lý",
+          stepper: prev.stepper.map((step) => {
+            if (step.key === "ASSIGNED") return { ...step, is_current: false, is_passed: true };
+            if (step.key === "EN_ROUTE") return { ...step, is_current: false, is_passed: true, timestamp: "Vừa đến" };
+            if (step.key === "IN_PROGRESS") return { ...step, is_current: true, is_passed: false, timestamp: "Đang xử lý" };
+            return step;
+          }),
+        };
+      });
       setIsLoading(false);
     }
   };
@@ -496,6 +731,50 @@ export const DispatchContainer: React.FC = () => {
     }
   };
 
+  // Làm mới tín hiệu GPS từ hiện trường (Màn 6/6)
+  const handleRefreshGps = useCallback(async () => {
+    if (!trackingData) return;
+    try {
+      const fresh = await dispatchApi.getFieldTrackingData(trackingData.order_id);
+      setTrackingData(fresh);
+      addToast("info", "Đã nhận tín hiệu GPS trực tiếp từ thiết bị xe.");
+    } catch {
+      addToast("info", "Đã làm mới toạ độ định vị GPS.");
+    }
+  }, [trackingData, addToast]);
+
+  // Cập nhật toạ độ GPS của đội hiện trường lên máy chủ
+  const handleUpdateTeamLocation = useCallback(
+    async (lat: number, lng: number) => {
+      if (!trackingData) return;
+      try {
+        await dispatchApi.updateTeamGpsLocation(trackingData.order_id, lat, lng);
+      } catch {
+        // Fallback offline
+      }
+      setTrackingData((prev) => (prev ? { ...prev, team_lat: lat, team_lng: lng } : null));
+    },
+    [trackingData]
+  );
+
+  // Định kỳ tự động đồng bộ toạ độ GPS khi đang theo dõi hiện trường
+  useEffect(() => {
+    if (currentScreen !== "TRACKING" || !trackingData) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const fresh = await dispatchApi.getFieldTrackingData(trackingData.order_id);
+        setTrackingData((prev) => (prev ? { ...prev, ...fresh } : null));
+      } catch {
+        // Silently continue
+      }
+    }, 25000);
+
+    return () => clearInterval(interval);
+  }, [currentScreen, trackingData?.order_id]);
+
+  const unreadAlertsCount = notifications.filter((n) => n.unread).length;
+
   return (
     <div className="dispatch-center-wrapper dispatch-module-wrapper">
       {/* Toast Notification Container */}
@@ -524,7 +803,7 @@ export const DispatchContainer: React.FC = () => {
         ))}
       </div>
 
-      {/* Header Chuẩn */}
+      {/* Header Chuẩn với Chuyển vai trò & Thông báo */}
       <DispatchHeader
         activeTab={
           currentScreen === "LIST"
@@ -535,10 +814,29 @@ export const DispatchContainer: React.FC = () => {
             ? "Sửa lệnh"
             : "Theo dõi hiện trường"
         }
+        currentRole={userRole}
+        onSwitchRole={handleSwitchRole}
+        notifications={notifications}
+        unreadAlertsCount={unreadAlertsCount}
+        onSelectNotification={handleSelectNotification}
+        onNavigateTab={(tab) => {
+          if (tab === "LIST") {
+            setCurrentScreen("LIST");
+          } else if (tab === "CREATE") {
+            setCurrentScreen("CREATE");
+          } else if (tab === "TRACKING") {
+            const target = orders.find((o) => o.order_id === selectedOrderId) || orders[0];
+            if (target) {
+              loadTrackingData(target);
+            } else {
+              setCurrentScreen("TRACKING");
+            }
+          }
+        }}
       />
 
       {/* Main Work Area */}
-      <main className="dispatch-main-content flex-grow-1 py-4 container-fluid px-4">
+      <main className="dispatch-main-content flex-grow-1">
         {currentScreen === "LIST" && (
           <Screen1DispatchList
             orders={orders}
@@ -553,6 +851,7 @@ export const DispatchContainer: React.FC = () => {
             onOpenTracking={loadTrackingData}
             onShowWarningToast={(msg) => addToast("warning", msg)}
             newlyCreatedOrderCode={newlyCreatedCode}
+            onAcceptOrder={handleAcceptOrder}
           />
         )}
 
@@ -586,9 +885,22 @@ export const DispatchContainer: React.FC = () => {
             onCloseOrder={handleCloseOrder}
             onShowWarningToast={(msg) => addToast("warning", msg)}
             onShowSuccessToast={(msg) => addToast("success", msg)}
+            onRefreshGps={handleRefreshGps}
+            onUpdateTeamLocation={handleUpdateTeamLocation}
+            onAcceptOrder={() => handleAcceptOrder(trackingData.order_id)}
+            onArriveOrder={() => handleArriveOrder(trackingData.order_id)}
           />
         )}
       </main>
+
+      {/* Modal Tiếp nhận lệnh điều động dành cho Đội hiện trường */}
+      <ScreenAcceptOrderModal
+        order={pendingAcceptOrder}
+        isOpen={!!pendingAcceptOrder}
+        isLoading={isLoading}
+        onClose={() => setPendingAcceptOrder(null)}
+        onConfirmAccept={handleAcceptOrder}
+      />
 
       {/* Modal Màn 4/6: Xác nhận huỷ lệnh */}
       <Screen4CancelModal

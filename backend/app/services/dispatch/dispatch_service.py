@@ -23,7 +23,9 @@ from app.schemas.dispatch.schemas import (
     CloseDispatchOrderRequest,
     FieldTrackingResponse,
     DispatchActionResult,
+    UpdateTeamLocationRequest,
 )
+
 
 
 class DispatchService:
@@ -299,3 +301,61 @@ class DispatchService:
                 detail="Không tìm thấy dữ liệu giám sát của lệnh điều phối.",
             )
         return tracking
+
+    async def update_team_location(
+        self, db: AsyncSession, order_id: uuid.UUID, request: UpdateTeamLocationRequest
+    ) -> DispatchActionResult:
+        """Cập nhật tọa độ định vị GPS của đội hiện trường theo thời gian thực"""
+        success = await self.repository.update_team_location(
+            db, order_id, request.team_latitude, request.team_longitude
+        )
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Không tìm thấy lệnh xử lý để cập nhật GPS.",
+            )
+        return DispatchActionResult(
+            success=True,
+            message="Đã cập nhật tọa độ GPS đội hiện trường thành công.",
+            order_id=order_id,
+        )
+
+    async def accept_dispatch_order(
+        self, db: AsyncSession, order_id: uuid.UUID
+    ) -> DispatchActionResult:
+        """Đội phản ứng hiện trường xác nhận tiếp nhận lệnh điều động (ASSIGNED -> EN_ROUTE)"""
+        order = await self.repository.get_order_by_id(db, order_id)
+        if not order:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Không tìm thấy lệnh xử lý.",
+            )
+        accepted = await self.repository.accept_order(db, order_id)
+        return DispatchActionResult(
+            success=True,
+            message=f"Đội {accepted.team_name} đã xác nhận tiếp nhận lệnh {accepted.order_code}. Xe bắt đầu xuất phát đến hiện trường!",
+            order_code=accepted.order_code,
+            order_id=accepted.order_id,
+            version=accepted.version,
+        )
+
+    async def arrive_dispatch_order(
+        self, db: AsyncSession, order_id: uuid.UUID
+    ) -> DispatchActionResult:
+        """Đội phản ứng hiện trường xác nhận đã đến nơi (EN_ROUTE -> IN_PROGRESS)"""
+        order = await self.repository.get_order_by_id(db, order_id)
+        if not order:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Không tìm thấy lệnh xử lý.",
+            )
+        arrived = await self.repository.arrive_order(db, order_id)
+        return DispatchActionResult(
+            success=True,
+            message=f"Đội {arrived.team_name} đã đến hiện trường sự cố {arrived.order_code}. Bắt đầu triển khai xử lý!",
+            order_code=arrived.order_code,
+            order_id=arrived.order_id,
+            version=arrived.version,
+        )
+
+
