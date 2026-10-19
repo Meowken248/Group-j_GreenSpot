@@ -24,6 +24,7 @@ import { FeedContainer } from "./features/feed";
 import { ChatContainer } from "./features/chat";
 import { chatSocket, playChatNotificationChime } from "./features/chat/services/chatSocket";
 import { chatService } from "./features/chat/services/chatService";
+import { GroupsContainer } from "./features/groups/GroupsContainer";
 
 import {
   SettingsContainer,
@@ -53,7 +54,8 @@ type TabType =
   | "settings"
   | "penalties"
   | "posts"
-  | "messages";
+  | "messages"
+  | "groups";
 
 // Hàm kiểm tra trạng thái đăng nhập thực tế của phiên hiện tại
 const checkIsLoggedIn = (): boolean => {
@@ -80,6 +82,7 @@ function App() {
       if (hash === "#rbac" || path === "/rbac") return "/rbac";
       if (hash === "#dedup" || path === "/dedup") return "/dedup";
       if (hash === "#settings" || path === "/settings") return "/settings";
+      if (hash === "#groups" || path === "/groups") return "/groups";
     }
     if ((hash === "#report" || window.location.pathname.toLowerCase() === "/report") && !isLogged) {
       return "/report";
@@ -94,6 +97,10 @@ function App() {
 
     if (hash === "#voice" || path === "/voice") return "voice";
     if (hash === "#map" || path === "/map") return "map";
+    if (hash === "#groups" || path === "/groups") {
+      if (!isLogged) return "auth";
+      return "groups";
+    }
     if (hash.startsWith("#messages") || hash.startsWith("#chat") || path.startsWith("/messages") || path.startsWith("/chat")) {
       if (!isLogged) return "auth";
       return "messages";
@@ -1057,6 +1064,18 @@ function App() {
               <span>⚙️</span>
               <span>Cài đặt</span>
             </button>
+            <button
+              type="button"
+              className={`view-tab-btn ${activeTab === "groups" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("groups");
+                window.location.hash = "#groups";
+              }}
+              title="Nhóm cộng đồng theo quận, phường hoặc chủ đề (Chức năng 16)"
+            >
+              <span>👥</span>
+              <span>Nhóm</span>
+            </button>
           </>
         ) : (
           <>
@@ -1083,6 +1102,25 @@ function App() {
             >
               <span>🌐</span>
               <span>Bảng tin Mạng xã hội</span>
+            </button>
+            <button
+              type="button"
+              className={`view-tab-btn btn-groups-nav ${activeTab === "groups" ? "active" : ""}`}
+              onClick={() => {
+                if (!checkIsLoggedIn()) {
+                  setAuthRedirectUrl("/groups");
+                  setActiveTab("auth");
+                  window.location.hash = "#login";
+                } else {
+                  setActiveTab("groups");
+                  window.location.hash = "#groups";
+                }
+              }}
+              title="Nhóm cộng đồng theo quận, phường hoặc chủ đề (Chức năng 16)"
+              data-testid="nav-tab-groups"
+            >
+              <span>👥</span>
+              <span>Nhóm</span>
             </button>
             <button
               type="button"
@@ -1341,6 +1379,29 @@ function App() {
                 setAuthRedirectUrl("/settings");
                 setActiveTab("auth");
                 window.location.hash = "#login";
+              }}
+            />
+          </div>
+        )
+      ) : activeTab === "groups" ? (
+        !currentUser ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/groups"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`} style={{ overflowY: "auto", position: "absolute", inset: 0, paddingTop: "76px" }}>
+            <GroupsContainer
+              currentUser={currentUser}
+              onNavigateToProfile={() => {
+                setActiveTab("profile");
+                window.location.hash = "#profile";
               }}
             />
           </div>
