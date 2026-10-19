@@ -1,0 +1,421 @@
+@use "./variables" as *;
+@use "./mixins" as *;
+
+.rbac-master-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+  color: $neutral-900;
+  font-family: $font-family;
+
+  // HEADER QUẢN TRỊ
+  .rbac-top-header {
+    height: 64px;
+    background: #ffffff;
+    border-bottom: 1px solid $neutral-200;
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+    .header-brand-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+
+      .brand-icon {
+        font-size: 24px;
+      }
+
+      .brand-text {
+        display: flex;
+        flex-direction: column;
+
+        .brand-name {
+          font-size: 17px;
+          font-weight: 800;
+          color: $neutral-900;
+          letter-spacing: -0.02em;
+
+          span {
+            color: $primary-600;
+          }
+        }
+
+        .brand-sub {
+          font-size: 11px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: $neutral-500;
+        }
+      }
+
+      .admin-tag {
+        padding: 3px 8px;
+        background: $neutral-900;
+        color: #ffffff;
+        font-size: 11px;
+        font-weight: 700;
+        border-radius: 4px;
+        letter-spacing: 0.04em;
+      }
+    }
+
+    .header-nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .nav-tab-link {
+        padding: 8px 14px;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: $neutral-600;
+        background: transparent;
+        border: none;
+        border-radius: $radius-md;
+        cursor: pointer;
+        transition: $transition-fast;
+
+        &:hover {
+          color: $neutral-900;
+          background: $neutral-100;
+        }
+
+        &.active {
+          color: $primary-700;
+          background: $primary-50;
+        }
+      }
+    }
+
+    .header-user-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+
+      .btn-header-bell {
+        background: $neutral-100;
+        border: 1px solid $neutral-200;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        @include flex-center;
+        font-size: 15px;
+        cursor: pointer;
+        position: relative;
+        transition: $transition-fast;
+
+        &:hover {
+          background: $neutral-200;
+        }
+
+        .bell-dot {
+          position: absolute;
+          top: 6px;
+          right: 7px;
+          width: 7px;
+          height: 7px;
+          background: $error-500;
+          border-radius: 50%;
+        }
+      }
+
+      .user-capsule-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 12px 5px 6px;
+        background: $neutral-100;
+        border: 1px solid $neutral-200;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        color: $neutral-800;
+
+        .user-avatar-mini {
+          width: 26px;
+          height: 26px;
+          background: $primary-600;
+          color: #ffffff;
+          border-radius: 50%;
+          @include flex-center;
+          font-size: 13px;
+        }
+      }
+
+      .btn-exit-admin {
+        @include button-base;
+        padding: 7px 12px;
+        font-size: 12.5px;
+        background: #ffffff;
+        border: 1px solid $neutral-300;
+        color: $neutral-700;
+
+        &:hover {
+          background: $neutral-100;
+          color: $neutral-900;
+        }
+      }
+    }
+  }
+
+  // NỘI DUNG CHÍNH (BODY)
+  .rbac-main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  // FOOTER CHUẨN ĐẶC TẢ
+  .rbac-footer {
+    background: #ffffff;
+    border-top: 1px solid $neutral-200;
+    padding: 24px 28px;
+    margin-top: auto;
+
+    .footer-content {
+      max-width: 1320px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 13px;
+      color: $neutral-500;
+
+      .footer-links {
+        display: flex;
+        gap: 20px;
+
+        a {
+          color: $neutral-600;
+          text-decoration: none;
+          transition: $transition-fast;
+
+          &:hover {
+            color: $primary-600;
+          }
+        }
+      }
+    }
+  }
+
+  // TOAST FLOATING NOTIFICATIONS
+  .rbac-toast-container {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+
+    .rbac-toast {
+      pointer-events: auto;
+      min-width: 280px;
+      max-width: 440px;
+      padding: 12px 18px;
+      border-radius: $radius-lg;
+      box-shadow: $shadow-xl;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13.5px;
+      font-weight: 500;
+      line-height: 1.4;
+      animation: toast-slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &.success {
+        background: #065f46;
+        color: #ffffff;
+        border: 1px solid #047857;
+      }
+
+      &.error {
+        background: #991b1b;
+        color: #ffffff;
+        border: 1px solid #b91c1c;
+      }
+
+      &.warning {
+        background: #92400e;
+        color: #ffffff;
+        border: 1px solid #b45309;
+      }
+
+      .toast-icon {
+        font-size: 18px;
+        flex-shrink: 0;
+      }
+
+      .toast-msg {
+        flex: 1;
+      }
+
+      .toast-close {
+        background: transparent;
+        border: none;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 18px;
+        cursor: pointer;
+        padding: 0 4px;
+
+        &:hover {
+          color: #ffffff;
+        }
+      }
+    }
+  }
+
+  // ADMIN ACCESS GATE
+  .rbac-admin-gate-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 180px);
+    padding: 40px 20px;
+
+    .admin-gate-card {
+      max-width: 520px;
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid $neutral-200;
+      border-radius: $radius-lg;
+      padding: 36px 32px;
+      text-align: center;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+
+      .gate-icon-badge {
+        width: 64px;
+        height: 64px;
+        background: $primary-50;
+        border: 2px solid $primary-200;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        margin: 0 auto 20px;
+      }
+
+      h2 {
+        font-size: 20px;
+        font-weight: 700;
+        color: $neutral-900;
+        margin-bottom: 10px;
+      }
+
+      .gate-desc {
+        font-size: 14px;
+        color: $neutral-600;
+        line-height: 1.5;
+        margin-bottom: 24px;
+      }
+
+      .gate-credentials-box {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: $radius-md;
+        padding: 16px;
+        text-align: left;
+        margin-bottom: 24px;
+
+        .box-title {
+          font-size: 13px;
+          font-weight: 700;
+          color: $neutral-800;
+          margin-bottom: 8px;
+        }
+
+        .cred-line {
+          font-size: 13px;
+          color: $neutral-700;
+          margin-bottom: 6px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          .cred-label {
+            width: 70px;
+            color: $neutral-500;
+          }
+
+          code.cred-val {
+            font-family: monospace;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: $primary-700;
+            font-weight: 600;
+          }
+        }
+      }
+
+      .gate-actions-row {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+
+        .btn-gate-login {
+          padding: 11px 22px;
+          background: $primary-600;
+          color: #ffffff;
+          border: none;
+          border-radius: $radius-md;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: $transition-fast;
+
+          &:hover {
+            background: $primary-700;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+          }
+        }
+
+        .btn-gate-back {
+          padding: 11px 18px;
+          background: #ffffff;
+          color: $neutral-700;
+          border: 1px solid $neutral-300;
+          border-radius: $radius-md;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: $transition-fast;
+
+          &:hover {
+            background: $neutral-50;
+            color: $neutral-900;
+          }
+        }
+      }
+    }
+  }
+}
+
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
