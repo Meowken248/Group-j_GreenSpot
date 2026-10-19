@@ -16,12 +16,12 @@ from fastapi import (
     WebSocketDisconnect,
     status,
 )
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.rbac import get_current_active_user
 from app.database import AsyncSessionLocal, get_db
-from app.models.chat import ConversationMember
+from app.models.chat import Conversation, ConversationMember
 from app.models.rbac import User
 from app.schemas.chat import (
     ConversationItemResponse,
@@ -42,6 +42,33 @@ logger = logging.getLogger("chat_api")
 
 router = APIRouter(prefix="/chat", tags=["Chat & Nhắn tin thời gian thực (Feature STT 15)"])
 chat_service = ChatService()
+
+
+# =============================================================================
+# 0. TỔNG SỐ TIN NHẮN CHƯA ĐỌC TOÀN CỤC (Phục vụ Navbar & Floating Badge)
+# =============================================================================
+
+@router.get(
+    "/unread-count",
+    summary="Lấy tổng số tin nhắn chưa đọc của người dùng hiện tại",
+)
+async def get_total_unread_count_endpoint(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Tính tổng số tin nhắn chưa đọc của người dùng trong tất cả các cuộc trò chuyện đang tham gia"""
+    stmt = (
+        select(func.coalesce(func.sum(ConversationMember.unread_count), 0))
+        .join(Conversation, Conversation.conversation_id == ConversationMember.conversation_id)
+        .where(
+            ConversationMember.user_id == current_user.user_id,
+            ConversationMember.left_at.is_(None),
+            Conversation.deleted_at.is_(None),
+        )
+    )
+    res = await db.execute(stmt)
+    total = res.scalar() or 0
+    return {"total_unread": int(total)}
 
 
 # =============================================================================

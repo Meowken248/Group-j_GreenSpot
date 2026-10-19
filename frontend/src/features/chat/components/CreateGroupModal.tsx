@@ -54,6 +54,26 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
     };
   }, [isOpen, searchQuery]);
 
+  // Reset trạng thái form khi modal đóng
+  useEffect(() => {
+    if (!isOpen) {
+      setTitle("");
+      setSearchQuery("");
+      setSelectedFriends([]);
+      setErrorMessage(null);
+      setIsSubmitting(false);
+    }
+  }, [isOpen]);
+
+  // Đóng modal và dọn sạch dữ liệu nhập
+  const handleClose = () => {
+    setTitle("");
+    setSearchQuery("");
+    setSelectedFriends([]);
+    setErrorMessage(null);
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   // Xử lý chọn / bỏ chọn bạn bè
@@ -97,6 +117,10 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
 
       const memberIds = selectedFriends.map((f) => f.user_id);
       const newConv = await chatService.createGroupConversation(cleanTitle, memberIds);
+      setTitle("");
+      setSearchQuery("");
+      setSelectedFriends([]);
+      setErrorMessage(null);
       onCreateSuccess(newConv);
       onClose();
     } catch (err: any) {
@@ -114,7 +138,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
     !isSubmitting;
 
   return (
-    <div className="chat-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
+    <div className="chat-modal-backdrop" onClick={handleClose} role="dialog" aria-modal="true">
       <div className="chat-modal-card" onClick={(e) => e.stopPropagation()}>
         {/* Header Modal */}
         <div className="modal-card-header">
@@ -122,7 +146,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
           <button
             type="button"
             className="btn-close-modal"
-            onClick={onClose}
+            onClick={handleClose}
             title="Đóng"
           >
             ✕

@@ -23,6 +23,7 @@ import { PenaltyLookupContainer } from "./features/penalties";
 import { FeedContainer } from "./features/feed";
 import { ChatContainer } from "./features/chat";
 import { chatSocket, playChatNotificationChime } from "./features/chat/services/chatSocket";
+import { chatService } from "./features/chat/services/chatService";
 
 import {
   SettingsContainer,
@@ -468,10 +469,23 @@ function App() {
     localStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
     localStorage.removeItem(AUTH_STORAGE_KEYS.USER_INFO);
     delete api.defaults.headers.common.Authorization;
+    chatSocket.disconnect();
+    setGlobalUnreadChatCount(0);
     resetSessionExpired();
     window.dispatchEvent(new Event("auth_change"));
     setActiveTab("auth");
   };
+
+  // Đồng bộ tổng số tin nhắn chưa đọc từ server khi đăng nhập hoặc khởi động lại trang
+  useEffect(() => {
+    if (!currentUser) {
+      setGlobalUnreadChatCount(0);
+      return;
+    }
+    chatService.getTotalUnreadCount().then((count) => {
+      setGlobalUnreadChatCount(count);
+    });
+  }, [currentUser]);
 
   const handleConfirmLogout = async () => {
     setIsLoggingOut(true);

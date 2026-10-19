@@ -101,6 +101,18 @@ export function mapMessageItem(item: any): ChatMessage {
 
 export const chatService = {
   /**
+   * Lấy tổng số tin nhắn chưa đọc của người dùng trong tất cả hội thoại (phục vụ Navbar & Floating Badge)
+   */
+  async getTotalUnreadCount(): Promise<number> {
+    try {
+      const res = await api.get("/chat/unread-count");
+      return Number(res.data?.total_unread) || 0;
+    } catch {
+      return 0;
+    }
+  },
+
+  /**
    * Lấy danh sách hội thoại theo tab (direct | group | district) có phân trang
    * Backend nhận query param: ?tab=direct | group | district
    */

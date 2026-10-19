@@ -331,6 +331,9 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
       // Tìm trong danh sách hội thoại đã tải trước
       const existing = conversations.find((c) => c.conversation_id === targetConvId);
       if (existing) {
+        if (existing.type && (existing.type === "direct" || existing.type === "group" || existing.type === "district")) {
+          setActiveTab(existing.type);
+        }
         handleSelectConversation(existing);
       } else if (!isLoadingConversations) {
         // Tải chi tiết từ API nếu chưa có trong trang đầu
@@ -338,6 +341,9 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
           .getConversationDetail(targetConvId)
           .then((conv) => {
             if (conv) {
+              if (conv.type && (conv.type === "direct" || conv.type === "group" || conv.type === "district")) {
+                setActiveTab(conv.type);
+              }
               setConversations((prev) => {
                 if (prev.some((c) => c.conversation_id === conv.conversation_id)) return prev;
                 return [conv, ...prev];
@@ -348,6 +354,12 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
           .catch(() => {
             try {
               sessionStorage.removeItem("greenspot_active_chat_conv_id");
+            } catch {}
+            // Xóa param ?conv=... khỏi URL hash để tránh useEffect lặp tải vô tận khi re-render
+            try {
+              if (window.location.hash.includes("conv=")) {
+                window.history.replaceState(null, "", "#messages");
+              }
             } catch {}
           });
       }
@@ -664,39 +676,28 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
           };
           return [newConvItem, ...prev];
         } else {
-          // Tạo optimistic conversation item ngay lập tức để người nhận thấy ngay hội thoại ở Cột 1
-          const optimisticConv: ChatConversation = {
-            conversation_id: newMsg.conversation_id,
-            type: "direct",
-            title: newMsg.sender?.full_name || "Tin nhắn mới",
-            avatar_url: newMsg.sender?.avatar_url || null,
-            district: null,
-            admin_user_id: null,
-            creator_id: newMsg.sender_id,
-            other_user_id: newMsg.sender_id,
-            members: newMsg.sender ? [newMsg.sender] : [],
-            member_count: 2,
-            unread_count: 1,
-            last_message: newMsg,
-            created_at: newMsg.created_at,
-            updated_at: newMsg.created_at,
-          };
-
-          // Lấy detail hoàn chỉnh ngầm phía sau
+          // Lấy thông tin chi tiết cuộc trò chuyện thực tế từ server để hiển thị đúng loại (direct/group/district)
           chatService
             .getConversationDetail(newMsg.conversation_id)
             .then((convDetail: ChatConversation) => {
-              setConversations((current) =>
-                current.map((c) =>
-                  c.conversation_id === convDetail.conversation_id
-                    ? { ...convDetail, last_message: newMsg, unread_count: Math.max(c.unread_count, 1) }
-                    : c
-                )
-              );
+              setConversations((current) => {
+                const found = current.some((c) => c.conversation_id === convDetail.conversation_id);
+                const updatedDetail = {
+                  ...convDetail,
+                  last_message: newMsg,
+                  unread_count: Math.max(convDetail.unread_count || 1, 1),
+                };
+                if (found) {
+                  return current.map((c) =>
+                    c.conversation_id === convDetail.conversation_id ? updatedDetail : c
+                  );
+                }
+                return [updatedDetail, ...current];
+              });
             })
             .catch(() => {});
 
-          return [optimisticConv, ...prev];
+          return prev;
         }
       });
     });
