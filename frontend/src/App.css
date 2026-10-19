@@ -330,7 +330,7 @@
 
 /* Floating Chat Quick Launch Button (Feature 15) */
 .floating-chat-quick-btn {
-  position: absolute;
+  position: fixed;
   bottom: 84px;
   right: 24px;
   z-index: 1000;
@@ -365,7 +365,7 @@
 
 /* Floating Voice Assistant Quick Launch Button */
 .floating-voice-quick-btn {
-  position: absolute;
+  position: fixed;
   bottom: 24px;
   right: 24px;
   z-index: 1000;
@@ -649,10 +649,6 @@
   margin-left: 4px;
   box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
   animation: pulseBadge 2s infinite;
-}
-
-.floating-chat-quick-btn {
-  position: relative;
 }
 
 .floating-chat-badge {
