@@ -75,12 +75,13 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
   const [sortBy, setSortBy] = useState<FeedSortBy>("newest");
   const [district, setDistrict] = useState<string>("");
 
-  // 3. Trạng thái định vị GPS thực tế
-  const [userCoords, setUserCoords] = useState<{ lat: number; lon: number } | null>(
-    null
-  );
+  // 3. Trạng thái định vị GPS thực tế (Khởi tạo toạ độ TP.HCM để nạp bài ngay, không bị treo)
+  const [userCoords, setUserCoords] = useState<{ lat: number; lon: number } | null>({
+    lat: 10.7769,
+    lon: 106.7009,
+  });
   const [gpsStatus, setGpsStatus] = useState<"locating" | "ready" | "denied">(
-    "locating"
+    "ready"
   );
 
   // 4. Dữ liệu bài viết
@@ -122,29 +123,34 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
   // A. LẤY TOẠ ĐỘ GPS CỦA THIẾT BỊ (SRS MÀN 1)
   // =========================================================================
   const requestGeolocation = useCallback(() => {
-    setGpsStatus("locating");
     if (!navigator.geolocation) {
-      // Thiết bị không hỗ trợ Geolocation -> fallback trung tâm TP.HCM
-      setUserCoords({ lat: 10.7769, lon: 106.7009 });
-      setGpsStatus("ready");
+      setGpsStatus("denied");
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setUserCoords({
+        const newCoords = {
           lat: pos.coords.latitude,
           lon: pos.coords.longitude,
+        };
+        setUserCoords((prev) => {
+          // Chỉ cập nhật nếu toạ độ dịch chuyển đáng kể (> 500m ~ 0.005 độ)
+          if (!prev) return newCoords;
+          const dLat = Math.abs(prev.lat - newCoords.lat);
+          const dLon = Math.abs(prev.lon - newCoords.lon);
+          if (dLat > 0.005 || dLon > 0.005) {
+            return newCoords;
+          }
+          return prev;
         });
         setGpsStatus("ready");
       },
       (_err) => {
-        // Người dùng từ chối quyền hoặc lỗi thiết bị
+        // Người dùng từ chối quyền hoặc timeout -> Giữ nguyên fallback TP.HCM, hiển thị badge cảnh báo
         setGpsStatus("denied");
-        // Vẫn dùng fallback TP.HCM để hiển thị bài viết
-        setUserCoords({ lat: 10.7769, lon: 106.7009 });
       },
-      { timeout: 8000, enableHighAccuracy: true }
+      { timeout: 4000, enableHighAccuracy: false, maximumAge: 60000 }
     );
   }, []);
 
@@ -210,12 +216,10 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
     [activeTab, radiusKm, selectedCategory, sortBy, district, userCoords]
   );
 
-  // Nạp dữ liệu khi thay đổi Tab, Bán kính, Lọc, Tọa độ GPS
+  // Nạp dữ liệu khi thay đổi Tab, Bán kính, Lọc, Tọa độ GPS (Tải tức thì, không bị chặn bởi GPS)
   useEffect(() => {
-    if (gpsStatus !== "locating") {
-      fetchFeed(1, false);
-    }
-  }, [gpsStatus, activeTab, radiusKm, selectedCategory, sortBy, district, fetchFeed]);
+    fetchFeed(1, false);
+  }, [activeTab, radiusKm, selectedCategory, sortBy, district, fetchFeed]);
 
   // =========================================================================
   // C. XỬ LÝ CHUYỂN TAB & KIỂM TRA ĐĂNG NHẬP (SRS MÀN 2)

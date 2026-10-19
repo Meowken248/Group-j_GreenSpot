@@ -105,7 +105,7 @@ export const chatService = {
    */
   async getTotalUnreadCount(): Promise<number> {
     try {
-      const res = await api.get("/chat/unread-count");
+      const res = await api.get("/api/v1/chat/unread-count");
       return Number(res.data?.total_unread) || 0;
     } catch {
       return 0;

@@ -65,6 +65,19 @@ class ChatSocketManager {
     const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
     if (!token) return;
 
+    // Không kích hoạt kết nối nếu token đã hết hạn
+    try {
+      const parts = token.split(".");
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          return;
+        }
+      }
+    } catch {
+      // Bỏ qua nếu lỗi giải mã base64
+    }
+
     if (
       !this.socket ||
       this.socket.readyState === WebSocket.CLOSED ||
@@ -93,6 +106,20 @@ class ChatSocketManager {
   private getWsUrl(): string | null {
     const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
     if (!token) return null;
+
+    // Kiểm tra tính hợp lệ và thời hạn hết hạn của JWT
+    try {
+      const parts = token.split(".");
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          console.warn("[ChatSocket] Token đã hết hạn, ngừng kết nối WebSocket");
+          return null;
+        }
+      }
+    } catch {
+      // Bỏ qua lỗi parse nếu token không theo định dạng chuẩn
+    }
 
     const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
     const wsProtocol = apiUrl.startsWith("https") ? "wss" : "ws";
@@ -236,9 +263,26 @@ class ChatSocketManager {
         this.setState("error");
       };
 
-      this.socket.onclose = () => {
+      this.socket.onclose = (event: CloseEvent) => {
         this.stopHeartbeat();
         this.socket = null;
+
+        // Mã 1008 (Policy Violation / Auth Failure), 4001, 4003, 4403 là lỗi xác thực
+        // Tuyệt đối không tự động kết nối lại để tránh flood request làm treo server và client
+        const isAuthFailure =
+          event?.code === 1008 ||
+          event?.code === 4001 ||
+          event?.code === 4003 ||
+          event?.code === 4403;
+
+        if (isAuthFailure) {
+          console.warn(
+            `[ChatSocket] Kết nối bị từ chối do xác thực thất bại (code: ${event?.code}). Ngừng thử lại.`
+          );
+          this.isIntentionallyClosed = true;
+          this.setState("disconnected");
+          return;
+        }
 
         if (!this.isIntentionallyClosed) {
           this.setState("disconnected");
