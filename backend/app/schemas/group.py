@@ -15,6 +15,7 @@ class GroupCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=50, description="Tên nhóm tối đa 50 ký tự")
     description: Optional[str] = Field(None, max_length=300, description="Mô tả nhóm tối đa 300 ký tự")
     group_type: GroupType = Field(GroupType.DISTRICT, description="Loại nhóm: DISTRICT, WARD, THEME")
+    province: Optional[str] = Field(None, max_length=100, description="Tên tỉnh/thành phố")
     district: Optional[str] = Field(None, max_length=100, description="Tên quận/huyện nếu là nhóm quận/phường")
     ward: Optional[str] = Field(None, max_length=100, description="Tên phường/xã nếu là nhóm phường")
     theme_topic: Optional[str] = Field(None, max_length=100, description="Chủ đề nếu là nhóm theo chủ đề")
@@ -47,6 +48,7 @@ class GroupUpdate(BaseModel):
     description: Optional[str] = Field(None, max_length=300)
     cover_image_url: Optional[str] = Field(None, max_length=500)
     avatar_url: Optional[str] = Field(None, max_length=500)
+    province: Optional[str] = Field(None, max_length=100)
     privacy: Optional[GroupPrivacy] = None
     version: int = Field(..., description="Optimistic locking version")
 
@@ -70,6 +72,7 @@ class GroupResponse(BaseModel):
     cover_image_url: Optional[str] = None
     avatar_url: Optional[str] = None
     group_type: str
+    province: Optional[str] = None
     district: Optional[str] = None
     ward: Optional[str] = None
     theme_topic: Optional[str] = None
@@ -104,6 +107,8 @@ class InviteFriendsRequest(BaseModel):
 
 
 class AdministrativeMetadataResponse(BaseModel):
+    provinces: List[str]
+    districts_by_province: dict[str, List[str]]
     districts: List[str]
     wards_by_district: dict[str, List[str]]
     theme_topics: List[str]

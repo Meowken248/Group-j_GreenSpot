@@ -20,6 +20,100 @@ from app.models.rbac import User
 from app.schemas.group import GroupCreate, GroupUpdate
 
 
+VIETNAM_PROVINCES = [
+    "Thành phố Hồ Chí Minh",
+    "Thành phố Hà Nội",
+    "Thành phố Đà Nẵng",
+    "Thành phố Hải Phòng",
+    "Thành phố Cần Thơ",
+    "Tỉnh Bình Dương",
+    "Tỉnh Đồng Nai",
+    "Tỉnh Bà Rịa - Vũng Tàu",
+    "Tỉnh Long An",
+    "Tỉnh Tiền Giang",
+    "Tỉnh Lâm Đồng",
+    "Tỉnh Khánh Hòa",
+    "Tỉnh Thừa Thiên Huế",
+    "Tỉnh Quảng Nam",
+    "Tỉnh Quảng Ninh",
+    "Tỉnh Thanh Hóa",
+    "Tỉnh Nghệ An",
+]
+
+HANOI_DISTRICTS = [
+    "Quận Ba Đình",
+    "Quận Hoàn Kiếm",
+    "Quận Cầu Giấy",
+    "Quận Đống Đa",
+    "Quận Hai Bà Trưng",
+    "Quận Tây Hồ",
+    "Quận Thanh Xuân",
+    "Quận Hoàng Mai",
+    "Quận Long Biên",
+    "Quận Nam Từ Liêm",
+    "Quận Bắc Từ Liêm",
+    "Quận Hà Đông",
+    "Thị xã Sơn Tây",
+    "Huyện Đông Anh",
+    "Huyện Gia Lâm",
+    "Huyện Sóc Sơn",
+    "Huyện Thanh Trì",
+]
+
+DANANG_DISTRICTS = [
+    "Quận Hải Châu",
+    "Quận Sơn Trà",
+    "Quận Thanh Khê",
+    "Quận Ngũ Hành Sơn",
+    "Quận Liên Chiểu",
+    "Quận Cẩm Lệ",
+    "Huyện Hòa Vang",
+]
+
+CANTHO_DISTRICTS = [
+    "Quận Ninh Kiều",
+    "Quận Bình Thủy",
+    "Quận Cái Răng",
+    "Quận Ô Môn",
+    "Quận Thốt Nốt",
+    "Huyện Phong Điền",
+]
+
+HAIPHONG_DISTRICTS = [
+    "Quận Hồng Bàng",
+    "Quận Ngô Quyền",
+    "Quận Lê Chân",
+    "Quận Hải An",
+    "Quận Kiến An",
+    "Quận Đồ Sơn",
+    "Huyện Thủy Nguyên",
+]
+
+BINHDUONG_DISTRICTS = [
+    "TP. Thủ Dầu Một",
+    "TP. Dĩ An",
+    "TP. Thuận An",
+    "TP. Tân Uyên",
+    "TP. Bến Cát",
+    "Huyện Bàu Bàng",
+]
+
+DONGNAI_DISTRICTS = [
+    "TP. Biên Hòa",
+    "TP. Long Khánh",
+    "Huyện Long Thành",
+    "Huyện Nhơn Trạch",
+    "Huyện Trảng Bom",
+]
+
+BARIA_VUNGTAU_DISTRICTS = [
+    "TP. Vũng Tàu",
+    "TP. Bà Rịa",
+    "Thị xã Phú Mỹ",
+    "Huyện Côn Đảo",
+    "Huyện Long Điền",
+]
+
 HCMC_DISTRICTS = [
     "TP. Thủ Đức",
     "Quận 1",
@@ -122,6 +216,38 @@ HCMC_WARDS_BY_DISTRICT = {
         "Xã Tam Thôn Hiệp",
         "Xã Thạnh An",
     ],
+    "Quận Ba Đình": [
+        "Phường Cống Vị",
+        "Phường Điện Biên",
+        "Phường Đội Cấn",
+        "Phường Kim Mã",
+        "Phường Liễu Giai",
+        "Phường Quán Thánh",
+    ],
+    "Quận Hoàn Kiếm": [
+        "Phường Hàng Bạc",
+        "Phường Hàng Bài",
+        "Phường Hàng Bồ",
+        "Phường Hàng Gai",
+        "Phường Tràng Tiền",
+    ],
+    "Quận Hải Châu": [
+        "Phường Hải Châu I",
+        "Phường Hải Châu II",
+        "Phường Thạch Thang",
+        "Phường Thanh Bình",
+    ],
+}
+
+DISTRICTS_BY_PROVINCE = {
+    "Thành phố Hồ Chí Minh": HCMC_DISTRICTS,
+    "Thành phố Hà Nội": HANOI_DISTRICTS,
+    "Thành phố Đà Nẵng": DANANG_DISTRICTS,
+    "Thành phố Cần Thơ": CANTHO_DISTRICTS,
+    "Thành phố Hải Phòng": HAIPHONG_DISTRICTS,
+    "Tỉnh Bình Dương": BINHDUONG_DISTRICTS,
+    "Tỉnh Đồng Nai": DONGNAI_DISTRICTS,
+    "Tỉnh Bà Rịa - Vũng Tàu": BARIA_VUNGTAU_DISTRICTS,
 }
 
 DEFAULT_THEME_TOPICS = [
@@ -139,8 +265,10 @@ DEFAULT_THEME_TOPICS = [
 class GroupService:
     @staticmethod
     def get_metadata():
-        """Lấy danh mục quận huyện, phường xã và chủ đề môi trường chuẩn hóa."""
+        """Lấy danh mục tỉnh thành, quận huyện, phường xã và chủ đề môi trường chuẩn hóa."""
         return {
+            "provinces": VIETNAM_PROVINCES,
+            "districts_by_province": DISTRICTS_BY_PROVINCE,
             "districts": HCMC_DISTRICTS,
             "wards_by_district": HCMC_WARDS_BY_DISTRICT,
             "theme_topics": DEFAULT_THEME_TOPICS,
@@ -207,6 +335,11 @@ class GroupService:
                     detail="Vui lòng chọn phạm vi cho nhóm",
                 )
 
+        # Xác định Tỉnh / Thành phố
+        province_val = payload.province.strip() if payload.province and payload.province.strip() else None
+        if payload.group_type in (GroupType.DISTRICT, GroupType.WARD) and not province_val:
+            province_val = "Thành phố Hồ Chí Minh"
+
         # 4. Kiểm tra trùng tên nhóm trong cùng phạm vi
         dup_query = select(Group).where(
             Group.status == GroupStatus.ACTIVE.value,
@@ -216,11 +349,15 @@ class GroupService:
         )
         if payload.group_type == GroupType.DISTRICT:
             dup_query = dup_query.where(func.lower(Group.district) == payload.district.strip().lower())
+            if province_val:
+                dup_query = dup_query.where(func.lower(Group.province) == province_val.lower())
         elif payload.group_type == GroupType.WARD:
             dup_query = dup_query.where(
                 func.lower(Group.district) == payload.district.strip().lower(),
                 func.lower(Group.ward) == payload.ward.strip().lower(),
             )
+            if province_val:
+                dup_query = dup_query.where(func.lower(Group.province) == province_val.lower())
         elif payload.group_type == GroupType.THEME:
             dup_query = dup_query.where(func.lower(Group.theme_topic) == payload.theme_topic.strip().lower())
 
@@ -238,6 +375,7 @@ class GroupService:
             cover_image_url=payload.cover_image_url,
             avatar_url=payload.avatar_url,
             group_type=payload.group_type.value,
+            province=province_val,
             district=payload.district.strip() if payload.district else None,
             ward=payload.ward.strip() if payload.ward else None,
             theme_topic=payload.theme_topic.strip() if payload.theme_topic else None,
@@ -293,6 +431,7 @@ class GroupService:
                 "cover_image_url": group.cover_image_url,
                 "avatar_url": group.avatar_url,
                 "group_type": group.group_type,
+                "province": group.province,
                 "district": group.district,
                 "ward": group.ward,
                 "theme_topic": group.theme_topic,
@@ -315,6 +454,7 @@ class GroupService:
         db: AsyncSession,
         user_id: uuid.UUID,
         group_type: Optional[str] = None,
+        province: Optional[str] = None,
         district: Optional[str] = None,
         ward: Optional[str] = None,
         theme_topic: Optional[str] = None,
@@ -334,6 +474,8 @@ class GroupService:
 
         if group_type:
             stmt = stmt.where(Group.group_type == group_type)
+        if province:
+            stmt = stmt.where(Group.province == province)
         if district:
             stmt = stmt.where(Group.district == district)
         if ward:
@@ -371,6 +513,7 @@ class GroupService:
                 "cover_image_url": g.cover_image_url,
                 "avatar_url": g.avatar_url,
                 "group_type": g.group_type,
+                "province": g.province,
                 "district": g.district,
                 "ward": g.ward,
                 "theme_topic": g.theme_topic,
@@ -417,6 +560,7 @@ class GroupService:
             "cover_image_url": group.cover_image_url,
             "avatar_url": group.avatar_url,
             "group_type": group.group_type,
+            "province": group.province,
             "district": group.district,
             "ward": group.ward,
             "theme_topic": group.theme_topic,

@@ -40,13 +40,16 @@ def main():
     print("✅ Đăng nhập thành công! Đã lấy token.")
 
     # 2. Metadata đơn vị hành chính và chủ đề
-    print_step("2. Lấy metadata quận/huyện, phường/xã và chủ đề (GET /groups/metadata)")
+    print_step("2. Lấy metadata tỉnh/thành phố, quận/huyện, phường/xã và chủ đề (GET /groups/metadata)")
     meta_res = requests.get(f"{BASE_URL}/groups/metadata")
     assert meta_res.status_code == 200, f"Lấy metadata thất bại: {meta_res.text}"
     meta = meta_res.json()
+    assert "Thành phố Hồ Chí Minh" in meta["provinces"], "Thiếu TP.HCM trong danh sách tỉnh thành"
+    assert "Thành phố Hà Nội" in meta["provinces"], "Thiếu Hà Nội trong danh sách tỉnh thành"
+    assert "Quận Ba Đình" in meta["districts_by_province"]["Thành phố Hà Nội"], "Thiếu Quận Ba Đình trong Hà Nội"
     assert "Quận 1" in meta["districts"], "Thiếu Quận 1 trong danh sách quận"
     assert "Phân loại rác" in meta["theme_topics"], "Thiếu chủ đề Phân loại rác"
-    print(f"✅ Metadata hợp lệ: {len(meta['districts'])} quận/huyện, {len(meta['theme_topics'])} chủ đề.")
+    print(f"✅ Metadata hợp lệ: {len(meta['provinces'])} tỉnh/thành phố, {len(meta['districts'])} quận/huyện TP.HCM, {len(meta['theme_topics'])} chủ đề.")
 
     # 3. Lấy danh sách nhóm của tôi (Màn 1)
     print_step("3. Lấy danh sách Nhóm của tôi (GET /groups/my-groups)")
@@ -57,12 +60,13 @@ def main():
     print(f"✅ Lấy thành công: {my_groups['total']} nhóm, số nhóm làm Admin: {initial_admin_count}/5")
 
     # 4. Khám phá nhóm theo bộ lọc (GET /groups/explore)
-    print_step("4. Khám phá nhóm theo bộ lọc Quận 1 (GET /groups/explore)")
-    exp_res = requests.get(f"{BASE_URL}/groups/explore?group_type=DISTRICT&district=Quận 1", headers=headers)
+    print_step("4. Khám phá nhóm theo bộ lọc Tỉnh/Thành phố & Quận 1 (GET /groups/explore)")
+    exp_res = requests.get(f"{BASE_URL}/groups/explore?province=Thành phố Hồ Chí Minh&district=Quận 1", headers=headers)
     assert exp_res.status_code == 200, f"Explore thất bại: {exp_res.text}"
     exp_data = exp_res.json()
     assert exp_data["total"] >= 1, "Cần có ít nhất 1 nhóm mẫu Quận 1 từ seeder"
-    print(f"✅ Khám phá thành công: Tìm thấy {exp_data['total']} nhóm tại Quận 1.")
+    assert exp_data["items"][0]["province"] == "Thành phố Hồ Chí Minh"
+    print(f"✅ Khám phá thành công: Tìm thấy {exp_data['total']} nhóm tại Quận 1, TP. Hồ Chí Minh.")
 
     # 5. Validation: Để trống tên nhóm -> Bị chặn
     print_step("5. Kiểm tra để trống tên nhóm -> Phải báo lỗi validation")
@@ -163,6 +167,34 @@ def main():
     detail = detail_res.json()
     assert detail["name"] == created_group_name
     print(f"✅ Chi tiết nhóm chính xác: {detail['name']}, Thành viên: {detail['members_count']}")
+
+    # 12b. Tạo nhóm Quận có phân cấp Tỉnh / Thành phố
+    hanoi_group_name = f"Sống Xanh Ba Đình {unique_suffix}"
+    print_step(f"12b. Tạo nhóm Quận có phân cấp Tỉnh/Thành phố: '{hanoi_group_name}'")
+    hanoi_res = requests.post(
+        f"{BASE_URL}/groups",
+        json={
+            "name": hanoi_group_name,
+            "description": "Nhóm bảo vệ môi trường quận Ba Đình, Hà Nội",
+            "group_type": "DISTRICT",
+            "province": "Thành phố Hà Nội",
+            "district": "Quận Ba Đình",
+            "privacy": "PUBLIC",
+        },
+        headers=headers,
+    )
+    assert hanoi_res.status_code == 201, f"Tạo nhóm Hà Nội thất bại: {hanoi_res.text}"
+    hanoi_group = hanoi_res.json()
+    assert hanoi_group["province"] == "Thành phố Hà Nội"
+    assert hanoi_group["district"] == "Quận Ba Đình"
+    print(f"✅ Tạo nhóm theo Quận có phân cấp Tỉnh/Thành phố thành công! ID: {hanoi_group['group_id']}")
+
+    # Dọn dẹp nhóm Hà Nội
+    requests.post(
+        f"{BASE_URL}/groups/{hanoi_group['group_id']}/disband",
+        json={"confirmation_name": hanoi_group_name},
+        headers=headers,
+    )
 
     # 13. Rời nhóm khi là ADMIN duy nhất -> Bị chặn
     print_step("13. Thử rời nhóm khi là Quản trị nhóm duy nhất -> Phải bị chặn")

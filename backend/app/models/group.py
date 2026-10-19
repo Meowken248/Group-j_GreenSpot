@@ -79,6 +79,7 @@ class Group(Base, TimestampMixin):
     group_type: Mapped[str] = mapped_column(
         String(20), default=GroupType.DISTRICT.value, nullable=False, index=True
     )
+    province: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
     district: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
     ward: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
     theme_topic: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
@@ -113,7 +114,7 @@ class Group(Base, TimestampMixin):
 
     __table_args__ = (
         Index("idx_groups_active_type", "status", "group_type", "deleted_at"),
-        Index("idx_groups_district_ward", "district", "ward"),
+        Index("idx_groups_geo_scope", "province", "district", "ward"),
     )
 
 

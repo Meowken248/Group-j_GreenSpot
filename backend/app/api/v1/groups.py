@@ -65,6 +65,7 @@ async def get_my_groups(
 )
 async def explore_groups(
     group_type: Optional[str] = Query(None, description="DISTRICT, WARD, THEME"),
+    province: Optional[str] = Query(None, description="Tên tỉnh/thành phố lọc"),
     district: Optional[str] = Query(None, description="Tên quận lọc"),
     ward: Optional[str] = Query(None, description="Tên phường lọc"),
     theme_topic: Optional[str] = Query(None, description="Chủ đề môi trường"),
@@ -79,6 +80,7 @@ async def explore_groups(
         db=db,
         user_id=current_user.user_id,
         group_type=group_type,
+        province=province,
         district=district,
         ward=ward,
         theme_topic=theme_topic,
@@ -163,6 +165,7 @@ async def create_group(
         cover_image_url=group.cover_image_url,
         avatar_url=group.avatar_url,
         group_type=group.group_type,
+        province=group.province,
         district=group.district,
         ward=group.ward,
         theme_topic=group.theme_topic,
