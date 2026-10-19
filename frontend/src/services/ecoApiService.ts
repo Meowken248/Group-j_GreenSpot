@@ -3,7 +3,7 @@ import type { HCMLocation } from "../data/hcmLocations";
 import type { FeatureCollection } from "geojson";
 
 // API Base URL từ biến môi trường Vite hoặc localhost mặc định
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 export interface EcoLocationsApiResponse {
   success: boolean;

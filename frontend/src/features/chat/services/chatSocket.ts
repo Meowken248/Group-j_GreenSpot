@@ -121,7 +121,7 @@ class ChatSocketManager {
       // Bỏ qua lỗi parse nếu token không theo định dạng chuẩn
     }
 
-    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+    const apiUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
     const wsProtocol = apiUrl.startsWith("https") ? "wss" : "ws";
     const host = apiUrl.replace(/^https?:\/\//, "");
 

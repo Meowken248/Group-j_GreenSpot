@@ -17,7 +17,7 @@ export const resolveMediaUrl = (url?: string | null): string => {
 
   // Relative backend path (e.g., /uploads/incidents/...)
   const backendBase = (
-    import.meta.env.VITE_API_URL || "http://localhost:8000"
+    import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"
   ).replace(/\/$/, "");
   const cleanPath = url.startsWith("/") ? url : `/${url}`;
   return `${backendBase}${cleanPath}`;
