@@ -171,5 +171,24 @@ __all__ = [
     "UserBlock",
     "ConversationType",
     "MemberRole",
+    # Community Groups (Feature 16)
+    "Group",
+    "GroupMember",
+    "GroupInvitation",
+    "GroupType",
+    "GroupPrivacy",
+    "GroupMemberRole",
+    "GroupStatus",
 ]
+
+# 11. Nhóm cộng đồng theo quận, phường hoặc chủ đề (Community Groups - Feature 16)
+from app.models.group import (
+    Group,
+    GroupMember,
+    GroupInvitation,
+    GroupType,
+    GroupPrivacy,
+    GroupMemberRole,
+    GroupStatus,
+)
 
