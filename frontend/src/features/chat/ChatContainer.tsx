@@ -86,6 +86,24 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
   // Quản lý timeout 12s cho các tin nhắn optimistic đang gửi
   const pendingTimeoutMapRef = useRef<Map<string, any>>(new Map());
 
+  // Ref chống re-render lặp vô tận khi auto-select deep-link / desktop fallback
+  const hasAutoSelectedRef = useRef(false);
+
+  // Ref lưu selectedConversation để các WebSocket listeners không cần re-bind liên tục
+  const selectedConversationRef = useRef<ChatConversation | null>(selectedConversation);
+  selectedConversationRef.current = selectedConversation;
+
+  // Ref lưu page hiện tại để fetchConversations không bị stale closure và không gây re-create callback
+  const pageRef = useRef(page);
+  pageRef.current = page;
+
+  // Reset hasAutoSelectedRef khi initialConversationId hoặc initialTargetUserId thay đổi từ props
+  useEffect(() => {
+    if (initialConversationId || initialTargetUserId) {
+      hasAutoSelectedRef.current = false;
+    }
+  }, [initialConversationId, initialTargetUserId]);
+
   // Dọn dẹp tất cả timers khi unmount
   useEffect(() => {
     return () => {
@@ -145,7 +163,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
           setIsLoadingMoreConversations(true);
         }
 
-        const targetPage = resetPage ? 1 : page + 1;
+        const targetPage = resetPage ? 1 : pageRef.current + 1;
         const res = await chatService.getConversations(
           activeTab,
           targetPage,
@@ -159,12 +177,12 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
             // Nếu có selectedConversation (ví dụ từ targetUserId hoặc mới tạo)
             // mà serverItems chưa chứa, giữ lại ở đầu danh sách
             if (
-              selectedConversation &&
+              selectedConversationRef.current &&
               !serverItems.some(
-                (c) => c.conversation_id === selectedConversation.conversation_id
+                (c) => c.conversation_id === selectedConversationRef.current?.conversation_id
               )
             ) {
-              return [selectedConversation, ...serverItems];
+              return [selectedConversationRef.current, ...serverItems];
             }
             return serverItems;
           });
@@ -182,7 +200,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
         setIsLoadingMoreConversations(false);
       }
     },
-    [activeTab, page, searchQuery]
+    [activeTab, searchQuery]
   );
 
   // Tải danh sách khi đổi Tab hoặc tìm kiếm
@@ -191,7 +209,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
       fetchConversations(true);
     }, 250);
     return () => clearTimeout(timer);
-  }, [activeTab, searchQuery]);
+  }, [fetchConversations]);
 
   // Tải thêm trang tiếp theo khi cuộn xuống đáy
   const handleLoadMoreConversations = () => {
@@ -222,14 +240,18 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
         // ignore
       }
 
-      // Đánh dấu đã đọc trong danh sách
-      setConversations((prev) =>
-        prev.map((c) =>
+      // Đánh dấu đã đọc trong danh sách (chỉ tạo array mới nếu unread_count > 0 để tránh re-render)
+      setConversations((prev) => {
+        const target = prev.find((c) => c.conversation_id === conv.conversation_id);
+        if (!target || target.unread_count === 0) {
+          return prev;
+        }
+        return prev.map((c) =>
           c.conversation_id === conv.conversation_id
             ? { ...c, unread_count: 0 }
             : c
-        )
-      );
+        );
+      });
 
       // Gửi báo đã xem tin nhắn
       chatService.markAsSeen(conv.conversation_id).catch(() => {});
@@ -268,6 +290,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
   // Khởi tạo đoạn chat 1-1 từ chọn bạn bè trong Modal
   const handleStartDirectChat = async (targetUserId: string) => {
     try {
+      hasAutoSelectedRef.current = true;
       setIsNewDirectChatOpen(false);
       setActiveTab("direct");
       const directConv = await chatService.createDirectConversation(targetUserId);
@@ -290,6 +313,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
     let isMounted = true;
     (async () => {
       try {
+        hasAutoSelectedRef.current = true;
         const directConv = await chatService.createDirectConversation(
           initialTargetUserId
         );
@@ -304,6 +328,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
           handleSelectConversation(directConv);
         }
       } catch (err) {
+        hasAutoSelectedRef.current = false;
         console.error("Lỗi khởi tạo chat 1-1 từ liên kết:", err);
       }
     })();
@@ -317,6 +342,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
   useEffect(() => {
     if (!isLoggedIn) return;
     if (selectedConversation) return;
+    if (hasAutoSelectedRef.current) return;
 
     let targetConvId = initialConversationId;
     if (!targetConvId) {
@@ -331,11 +357,13 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
       // Tìm trong danh sách hội thoại đã tải trước
       const existing = conversations.find((c) => c.conversation_id === targetConvId);
       if (existing) {
+        hasAutoSelectedRef.current = true;
         if (existing.type && (existing.type === "direct" || existing.type === "group" || existing.type === "district")) {
           setActiveTab(existing.type);
         }
         handleSelectConversation(existing);
       } else if (!isLoadingConversations) {
+        hasAutoSelectedRef.current = true;
         // Tải chi tiết từ API nếu chưa có trong trang đầu
         chatService
           .getConversationDetail(targetConvId)
@@ -352,6 +380,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
             }
           })
           .catch(() => {
+            hasAutoSelectedRef.current = false;
             try {
               sessionStorage.removeItem("greenspot_active_chat_conv_id");
             } catch {}
@@ -371,6 +400,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
       !isLoadingConversations
     ) {
       // Chuẩn Messenger/Slack Desktop: Tự động mở cuộc trò chuyện đầu tiên nếu chưa chọn ai
+      hasAutoSelectedRef.current = true;
       handleSelectConversation(conversations[0]);
     }
   }, [
@@ -615,7 +645,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
       }
 
       // Nếu tin nhắn thuộc cuộc trò chuyện đang mở
-      if (selectedConversation?.conversation_id === newMsg.conversation_id) {
+      if (selectedConversationRef.current?.conversation_id === newMsg.conversation_id) {
         setMessages((prev) => {
           // 1. Tránh trùng lặp nếu tin nhắn này đã tồn tại trong danh sách (qua ID thực)
           if (prev.some((m) => m.message_id === newMsg.message_id)) {
@@ -656,7 +686,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
       // Cập nhật tin nhắn cuối cùng và đẩy hội thoại lên đầu danh sách
       setConversations((prev) => {
         const found = prev.find((c) => c.conversation_id === newMsg.conversation_id);
-        const isCurrentOpen = selectedConversation?.conversation_id === newMsg.conversation_id;
+        const isCurrentOpen = selectedConversationRef.current?.conversation_id === newMsg.conversation_id;
         const isFromMe = newMsg.sender_id === currentUserId;
 
         if (found) {
@@ -667,9 +697,9 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
             unread_count: isCurrentOpen || isFromMe ? found.unread_count : (found.unread_count || 0) + 1,
           };
           return [updated, ...prev.filter((c) => c.conversation_id !== newMsg.conversation_id)];
-        } else if (selectedConversation && selectedConversation.conversation_id === newMsg.conversation_id) {
+        } else if (selectedConversationRef.current && selectedConversationRef.current.conversation_id === newMsg.conversation_id) {
           const newConvItem: ChatConversation = {
-            ...selectedConversation,
+            ...selectedConversationRef.current,
             last_message: newMsg,
             updated_at: newMsg.created_at,
             unread_count: 0,
@@ -712,10 +742,11 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
           clearTimeout(timer);
           pendingTimeoutMapRef.current.delete(ackTempId);
         }
-        if (data.message) {
+        const ackMessage = data.message || data;
+        if (ackMessage) {
           setMessages((prev) =>
             prev.map((m) =>
-              m.temp_id === ackTempId ? { ...data.message, status: "sent", is_mine: true } : m
+              m.temp_id === ackTempId ? { ...ackMessage, status: "sent", is_mine: true } : m
             )
           );
         }
@@ -766,7 +797,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
 
     // 3. Nhận trạng thái đã xem (MESSAGE_SEEN)
     const unbindSeen = chatSocket.on("MESSAGE_SEEN", (data: any) => {
-      if (selectedConversation?.conversation_id === data.conversation_id) {
+      if (selectedConversationRef.current?.conversation_id === data.conversation_id) {
         setMessages((prev) =>
           prev.map((m) =>
             m.sender_id === currentUserId ? { ...m, status: "seen" } : m
@@ -836,7 +867,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
       unbindSeen();
       unbindOnline();
     };
-  }, [selectedConversation, currentUserId]);
+  }, [currentUserId]);
 
   // -------------------------------------------------------------
   // XÓA HỘI THOẠI & RỜI NHÓM (MÀN 4)

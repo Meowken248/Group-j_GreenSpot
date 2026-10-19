@@ -531,6 +531,9 @@ function App() {
   }, []);
 
   // KẾT NỐI WEBSOCKET CHAT TOÀN CỤC & THÔNG BÁO TỨC THỜI (CHUẨN DOANH NGHIỆP)
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+
   useEffect(() => {
     const isLogged = checkIsLoggedIn();
     if (!isLogged || !currentUser) return;
@@ -541,7 +544,7 @@ function App() {
     const unbindMsg = chatSocket.on("NEW_MESSAGE", (msg: any) => {
       const myId = String(currentUser?.user_id || currentUser?.id || "");
       if (msg && msg.sender_id !== myId) {
-        if (activeTab !== "messages") {
+        if (activeTabRef.current !== "messages") {
           setGlobalUnreadChatCount((prev) => prev + 1);
           playChatNotificationChime();
         }
@@ -551,7 +554,7 @@ function App() {
     return () => {
       unbindMsg();
     };
-  }, [currentUser, activeTab]);
+  }, [currentUser]);
 
   return (
     <div className="app-container">

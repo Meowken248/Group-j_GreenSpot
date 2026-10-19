@@ -208,7 +208,6 @@ class ChatSocketManager {
                 }
                 const mappedMsg = mapMessageItem(rawMsg);
                 this.emit("MESSAGE_SENT", mappedMsg);
-                this.emit("NEW_MESSAGE", mappedMsg);
               }
               break;
             }
