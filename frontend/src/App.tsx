@@ -1306,10 +1306,30 @@ function App() {
                 setActiveTab("map");
                 window.location.hash = "#map";
               }}
-              onNavigateToFeature={(target) => {
+              onNavigateToFeature={(target, payload) => {
                 if (target === "dashboard_aqi") {
                   setActiveTab("dashboard");
                   window.location.hash = "#dashboard";
+                } else if (target === "map_flood" || target === "navigation") {
+                  if (payload) {
+                    try {
+                      localStorage.setItem("greenspot_nav_destination", JSON.stringify(payload));
+                    } catch {}
+                  }
+                  setActiveTab("navigation");
+                  window.location.hash = "#navigation";
+                } else if (target === "dispatch" || target === "operations_dispatch") {
+                  setActiveTab("dispatch");
+                  window.location.hash = "#dispatch";
+                } else if (target === "risk_dashboard" || target === "urban_risk") {
+                  setActiveTab("risk-dashboard");
+                  window.location.hash = "#risk-dashboard";
+                } else if (target === "hotspots") {
+                  setActiveTab("hotspots");
+                  window.location.hash = "#hotspots";
+                } else if (target === "dedup") {
+                  setActiveTab("dedup");
+                  window.location.hash = "#dedup";
                 } else if (target === "/report-incident") {
                   setActiveTab("triage");
                   window.location.hash = "#triage";

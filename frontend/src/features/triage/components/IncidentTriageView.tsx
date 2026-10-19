@@ -85,6 +85,49 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
     }
   };
 
+  // Nút liên kết chuyển thẳng sang Trung tâm Điều phối (STT 43)
+  const handleCreateDispatch = () => {
+    try {
+      const priorityMap: Record<string, string> = {
+        "KHẨN CẤP": "URGENT",
+        "CAO": "HIGH",
+        "TRUNG BÌNH": "MEDIUM",
+        "THẤP": "LOW",
+        "CRITICAL": "URGENT",
+        "URGENT": "URGENT",
+        "HIGH": "HIGH",
+        "MEDIUM": "MEDIUM",
+        "LOW": "LOW",
+      };
+      const suggestedPriority = priorityMap[data.ai_suggested_priority?.toUpperCase()] || "HIGH";
+      
+      // Trích xuất quận từ địa chỉ nếu có
+      let detectedDistrict = "Quận 12";
+      if (data.address_text) {
+        const match = data.address_text.match(/(Quận\s+\d+|Quận\s+[\p{L}\s]+|Huyện\s+[\p{L}\s]+|Thành phố\s+Thủ Đức)/iu);
+        if (match) detectedDistrict = match[0].trim();
+      }
+
+      const prefill = {
+        incident_id: data.incident_id,
+        incident_code: data.tracking_code,
+        title: data.title,
+        incident_type: (data as any).category_name || "Rác thải",
+        priority: suggestedPriority,
+        district: (data as any).district || detectedDistrict,
+        ward: (data as any).ward || "",
+        address: data.address_text,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        target_deadline_hours: data.sla_resolve_hours || 4,
+      };
+      localStorage.setItem("greenspot_prefill_dispatch", JSON.stringify(prefill));
+      window.location.hash = "#dispatch";
+    } catch {
+      window.location.hash = "#dispatch";
+    }
+  };
+
   // Bấm nút "Xác nhận" trên Popup (Màn 3/3)
   const handleConfirmOverride = async () => {
     const trimmed = overrideReason.trim();
@@ -283,6 +326,26 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
                 >
                   🌐 Quét vùng đệm cơ sở thiết yếu
                 </button>
+                <button
+                  type="button"
+                  className="btn-create-dispatch-link"
+                  onClick={handleCreateDispatch}
+                  style={{
+                    padding: "8px 16px",
+                    background: "#16a34a",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                  title="Chuyển sang Trung tâm Điều phối (STT 43) để giao việc cho đội cơ động"
+                >
+                  🚀 Tạo lệnh điều phối
+                </button>
               </div>
             </div>
           </div>
@@ -370,6 +433,28 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
                 disabled={isSavingDecision}
               >
                 {isSavingDecision ? "Đang xử lý…" : "✓ Chấp nhận đề xuất"}
+              </button>
+
+              <button
+                type="button"
+                className="btn-create-dispatch-link"
+                onClick={handleCreateDispatch}
+                style={{
+                  padding: "10px 16px",
+                  background: "#2563eb",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
+                }}
+                title="Tạo lệnh điều phối xử lý hiện trường ngay với mức ưu tiên này"
+              >
+                🚀 Tạo lệnh điều phối ngay
               </button>
 
               <button

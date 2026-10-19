@@ -13,6 +13,8 @@ interface Screen2CreateOrderProps {
   onCancel: () => void;
   onSubmitCreate: (payload: CreateDispatchOrderRequest) => Promise<void>;
   onShowWarningToast: (msg: string) => void;
+  initialIncidentId?: string;
+  initialPriority?: DispatchPriority;
 }
 
 export const Screen2CreateOrder: React.FC<Screen2CreateOrderProps> = ({
@@ -22,10 +24,12 @@ export const Screen2CreateOrder: React.FC<Screen2CreateOrderProps> = ({
   onCancel,
   onSubmitCreate,
   onShowWarningToast,
+  initialIncidentId,
+  initialPriority,
 }) => {
-  const [selectedIncidentId, setSelectedIncidentId] = useState<string>("");
+  const [selectedIncidentId, setSelectedIncidentId] = useState<string>(initialIncidentId || "");
   const [selectedTeamId, setSelectedTeamId] = useState<string>("");
-  const [priority, setPriority] = useState<DispatchPriority>("HIGH");
+  const [priority, setPriority] = useState<DispatchPriority>(initialPriority || "HIGH");
   const [deadline, setDeadline] = useState<string>("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [copiedGps, setCopiedGps] = useState<boolean>(false);
@@ -46,12 +50,26 @@ export const Screen2CreateOrder: React.FC<Screen2CreateOrderProps> = ({
     setQuickDeadline(4);
   }, []);
 
-  // Pre-select first incident if available
+  // Update selected incident if initialIncidentId changes
+  useEffect(() => {
+    if (initialIncidentId) {
+      setSelectedIncidentId(initialIncidentId);
+    }
+  }, [initialIncidentId]);
+
+  // Update priority if initialPriority changes
+  useEffect(() => {
+    if (initialPriority) {
+      setPriority(initialPriority);
+    }
+  }, [initialPriority]);
+
+  // Pre-select first incident if available and none selected
   useEffect(() => {
     if (incidents.length > 0 && !selectedIncidentId) {
-      setSelectedIncidentId(incidents[0].incident_id);
+      setSelectedIncidentId(initialIncidentId || incidents[0].incident_id);
     }
-  }, [incidents, selectedIncidentId]);
+  }, [incidents, selectedIncidentId, initialIncidentId]);
 
   // Pre-select closest available team
   useEffect(() => {

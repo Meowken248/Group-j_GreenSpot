@@ -42,6 +42,8 @@ export const Screen6FieldTracking: React.FC<Screen6FieldTrackingProps> = ({
     status_label,
     incident_title,
     incident_address,
+    incident_lat,
+    incident_lng,
     team_name,
     team_phone,
     stepper,
@@ -387,6 +389,32 @@ export const Screen6FieldTracking: React.FC<Screen6FieldTrackingProps> = ({
               <span>Xác nhận đã đến hiện trường</span>
             </button>
           )}
+
+          {/* Nút Xem lộ trình né ngập đến sự cố (STT 41) */}
+          <button
+            type="button"
+            className="btn-edit-order btn-pill-lg mb-2"
+            onClick={() => {
+              try {
+                const navData = {
+                  destLat: incident_lat,
+                  destLng: incident_lng,
+                  destName: incident_title,
+                  destAddress: incident_address,
+                };
+                localStorage.setItem("greenspot_nav_destination", JSON.stringify(navData));
+                window.location.hash = "#navigation";
+              } catch {
+                window.location.hash = "#navigation";
+              }
+            }}
+            data-testid="btn-nav-flood-safe"
+            style={{ background: "#0284c7", color: "#ffffff", borderColor: "#0369a1" }}
+            title="Mở Bản đồ né ngập (STT 41) dẫn đường an toàn cho đội cơ động đến hiện trường"
+          >
+            <span>🌊</span>
+            <span>Chỉ dẫn né ngập đến sự cố</span>
+          </button>
 
           {/* Nút Gọi đội (Pill shape) */}
           <button

@@ -8,6 +8,7 @@ import type {
   EditDispatchOrderRequest,
   FieldTrackingResponse,
   CloseDispatchOrderRequest,
+  DispatchPriority,
 } from "../types/dispatch.types";
 import { dispatchApi } from "../services/dispatchApi";
 import { DispatchHeader, type HeaderNotificationItem } from "../components/DispatchHeader";
@@ -228,6 +229,8 @@ export const DispatchContainer: React.FC = () => {
   const [editingOrder, setEditingOrder] = useState<DispatchOrderItem | null>(null);
   const [cancellingOrder, setCancellingOrder] = useState<DispatchOrderItem | null>(null);
   const [newlyCreatedCode, setNewlyCreatedCode] = useState<string | null>(null);
+  const [prefillIncidentId, setPrefillIncidentId] = useState<string | undefined>(undefined);
+  const [prefillPriority, setPrefillPriority] = useState<DispatchPriority | undefined>(undefined);
 
   // Field Tracking Data State (Screen 6)
   const [trackingData, setTrackingData] = useState<FieldTrackingResponse | null>(null);
@@ -387,6 +390,62 @@ export const DispatchContainer: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  // Tự động tiếp nhận dữ liệu liên thông từ Điểm nóng (STT 44), Thẩm định (STT 39) hoặc Hash URL
+  useEffect(() => {
+    // 1. Kiểm tra prefill trong LocalStorage
+    try {
+      const storedPrefill = localStorage.getItem("greenspot_prefill_dispatch");
+      if (storedPrefill) {
+        const parsed = JSON.parse(storedPrefill);
+        if (parsed) {
+          const prefillId = parsed.incident_id || `inc-prefill-${Date.now()}`;
+          const newIncident: IncidentComboboxItem = {
+            incident_id: prefillId,
+            incident_code: parsed.incident_code || parsed.code || "SC-PREFILL-001",
+            title: parsed.title || "Sự cố cần xử lý khẩn cấp",
+            category: parsed.incident_type || parsed.category || "Rác thải",
+            urgency: parsed.priority === "URGENT" ? "KHẨN" : "CAO",
+            location_address: parsed.address || parsed.location_address || "TP. Hồ Chí Minh",
+            district: parsed.district || "Quận 12",
+            ward: parsed.ward || "",
+            latitude: Number(parsed.latitude) || 10.8415,
+            longitude: Number(parsed.longitude) || 106.6335,
+          };
+          setIncidents((prev) => {
+            const exists = prev.some((item) => item.incident_id === prefillId);
+            return exists ? prev : [newIncident, ...prev];
+          });
+          setPrefillIncidentId(prefillId);
+          if (parsed.priority) {
+            setPrefillPriority(parsed.priority as DispatchPriority);
+          }
+          setCurrentScreen("CREATE");
+          addToast("info", `Đã tiếp nhận sự cố: ${newIncident.title} để lập lệnh điều phối`);
+          localStorage.removeItem("greenspot_prefill_dispatch");
+        }
+      }
+    } catch {}
+
+    // 2. Kiểm tra Hash params (?order_id=... hoặc ?district=...)
+    const hash = window.location.hash;
+    if (hash.includes("order_id=")) {
+      const urlParams = new URLSearchParams(hash.split("?")[1] || "");
+      const orderId = urlParams.get("order_id");
+      if (orderId) {
+        const matchedOrder = orders.find((o) => o.order_id === orderId || o.order_code === orderId);
+        if (matchedOrder) {
+          loadTrackingData(matchedOrder);
+        }
+      }
+    } else if (hash.includes("district=")) {
+      const urlParams = new URLSearchParams(hash.split("?")[1] || "");
+      const dist = urlParams.get("district");
+      if (dist) {
+        setFilters((prev) => ({ ...prev, search: dist }));
+      }
+    }
+  }, [orders, loadTrackingData, addToast]);
 
   // Handlers for Màn 1/6
   const handleSelectOrder = (order: DispatchOrderItem) => {
@@ -860,9 +919,19 @@ export const DispatchContainer: React.FC = () => {
             incidents={incidents}
             teams={teams}
             isLoading={isLoading}
-            onCancel={() => setCurrentScreen("LIST")}
-            onSubmitCreate={handleCreateOrder}
+            onCancel={() => {
+              setPrefillIncidentId(undefined);
+              setPrefillPriority(undefined);
+              setCurrentScreen("LIST");
+            }}
+            onSubmitCreate={async (payload) => {
+              await handleCreateOrder(payload);
+              setPrefillIncidentId(undefined);
+              setPrefillPriority(undefined);
+            }}
             onShowWarningToast={(msg) => addToast("warning", msg)}
+            initialIncidentId={prefillIncidentId}
+            initialPriority={prefillPriority}
           />
         )}
 

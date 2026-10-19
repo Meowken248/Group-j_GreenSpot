@@ -108,6 +108,36 @@ export const Screen3DistrictPopup: React.FC<Screen3DistrictPopupProps> = ({
             <span>Xem bản đồ</span>
           </button>
 
+          {/* Nút Xem điểm nóng quận này (STT 44) */}
+          <button
+            type="button"
+            className="btn-map-view"
+            onClick={() => {
+              window.location.hash = `#hotspots?district=${encodeURIComponent(districtData.district_name)}`;
+              onClose();
+            }}
+            style={{ background: "#dc2626", borderColor: "#b91c1c", color: "#ffffff" }}
+            title="Xem phân tích điểm nóng mật độ cao KDE và dự báo 7 ngày của quận này (STT 44)"
+          >
+            <span>🔥</span>
+            <span>Xem điểm nóng</span>
+          </button>
+
+          {/* Nút Xem lệnh điều phối quận này (STT 43) */}
+          <button
+            type="button"
+            className="btn-map-view"
+            onClick={() => {
+              window.location.hash = `#dispatch?district=${encodeURIComponent(districtData.district_name)}`;
+              onClose();
+            }}
+            style={{ background: "#2563eb", borderColor: "#1d4ed8", color: "#ffffff" }}
+            title="Xem danh sách lệnh điều phối tác nghiệp hiện trường của quận này (STT 43)"
+          >
+            <span>⚡</span>
+            <span>Xem điều phối</span>
+          </button>
+
           {/* Nút "Đóng" */}
           <button
             type="button"

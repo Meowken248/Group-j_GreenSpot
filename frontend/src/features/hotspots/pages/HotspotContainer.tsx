@@ -146,6 +146,29 @@ export const HotspotContainer: React.FC<HotspotContainerProps> = ({
     loadAreas();
   }, [loadAreas]);
 
+  // Tự động nhận diện khu vực từ URL hash (?district=...) được liên kết từ Dashboard Rủi ro (STT 42)
+  useEffect(() => {
+    if (areas.length > 0) {
+      const hash = window.location.hash;
+      if (hash.includes("district=")) {
+        const urlParams = new URLSearchParams(hash.split("?")[1] || "");
+        const distName = urlParams.get("district");
+        if (distName) {
+          const matched = areas.find(
+            (a) =>
+              a.name.toLowerCase().includes(distName.toLowerCase()) ||
+              distName.toLowerCase().includes(a.name.toLowerCase())
+          );
+          if (matched) {
+            setSelectedAreaId(matched.id);
+            setActiveScreen("forecast");
+            showToast(`📍 Đã chuyển sang phân tích điểm nóng & dự báo: ${matched.name}`, "info");
+          }
+        }
+      }
+    }
+  }, [areas, showToast]);
+
   // Tải dữ liệu dự báo khi đổi khu vực hoặc chuyển tab sang forecast
   useEffect(() => {
     if (activeScreen === "forecast" && selectedAreaId) {
