@@ -26,12 +26,65 @@ class ChatSocketManager {
 
   constructor() {
     this.listeners.set("NEW_MESSAGE", new Set());
+    this.listeners.set("CONVERSATION_UPDATE", new Set());
     this.listeners.set("MESSAGE_SENT", new Set());
     this.listeners.set("TYPING_STATUS", new Set());
     this.listeners.set("USER_ONLINE_STATUS", new Set());
     this.listeners.set("MESSAGE_SEEN", new Set());
     this.listeners.set("ERROR", new Set());
     this.listeners.set("CONNECTION_CHANGE", new Set());
+
+    // Đăng ký bộ lắng nghe sự kiện Tab & Mạng để đánh thức kết nối tức thì (0ms)
+    if (typeof window !== "undefined" && typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", this.handleVisibilityChange);
+      window.addEventListener("focus", this.handleWindowFocus);
+      window.addEventListener("online", this.handleNetworkOnline);
+    }
+  }
+
+  private handleVisibilityChange = () => {
+    if (document.visibilityState === "visible") {
+      this.reconnectIfStale("visibilitychange");
+    }
+  };
+
+  private handleWindowFocus = () => {
+    this.reconnectIfStale("window_focus");
+  };
+
+  private handleNetworkOnline = () => {
+    this.reconnectIfStale("network_online");
+  };
+
+  /**
+   * Đánh thức kết nối tức thì (0ms delay) khi tab active trở lại
+   */
+  public reconnectIfStale(_reason: string = "wake_up") {
+    if (this.isIntentionallyClosed) return;
+
+    const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+    if (!token) return;
+
+    if (
+      !this.socket ||
+      this.socket.readyState === WebSocket.CLOSED ||
+      this.socket.readyState === WebSocket.CLOSING
+    ) {
+      if (this.reconnectTimer) {
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = null;
+      }
+      this.reconnectAttempts = 0;
+      this.connect();
+    } else if (this.socket.readyState === WebSocket.OPEN) {
+      // Gửi Ping ngay lập tức để kiểm tra kết nối có bị dead ngầm không
+      try {
+        this.socket.send(JSON.stringify({ action: "PING" }));
+      } catch {
+        this.socket.close();
+        this.connect();
+      }
+    }
   }
 
   /**
@@ -159,6 +212,11 @@ class ChatSocketManager {
               break;
             }
 
+            case "CONVERSATION_UPDATE": {
+              this.emit("CONVERSATION_UPDATE", payload.data || payload);
+              break;
+            }
+
             case "ERROR": {
               this.emit("ERROR", payload);
               break;
@@ -236,15 +294,19 @@ class ChatSocketManager {
   }
 
   /**
-   * Ping định kỳ giữ kết nối (30s một lần)
+   * Ping định kỳ giữ kết nối (25s một lần để chống reverse proxy timeout)
    */
   private startHeartbeat() {
     this.stopHeartbeat();
     this.pingTimer = setInterval(() => {
       if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-        this.socket.send(JSON.stringify({ action: "PING" }));
+        try {
+          this.socket.send(JSON.stringify({ action: "PING" }));
+        } catch {
+          this.reconnectIfStale("ping_error");
+        }
       }
-    }, 30000);
+    }, 25000);
   }
 
   private stopHeartbeat() {
@@ -353,3 +415,33 @@ class ChatSocketManager {
 
 // Xuất singleton instance để dùng chung trong toàn bộ ứng dụng
 export const chatSocket = new ChatSocketManager();
+
+/**
+ * Phát âm thanh chuông nhẹ báo tin nhắn mới chuẩn Web Audio API (không tải tệp ngoài)
+ */
+export function playChatNotificationChime() {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "sine";
+    // Hợp âm Re 587Hz -> La 880Hz
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+    osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08);
+
+    gain.gain.setValueAtTime(0.04, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.35);
+  } catch {
+    // Autoplay restrictions or headless env
+  }
+}
+

@@ -90,6 +90,7 @@ export interface SendMessagePayload {
 
 export type WebSocketEventType =
   | "NEW_MESSAGE"
+  | "CONVERSATION_UPDATE"
   | "TYPING_STATUS"
   | "USER_ONLINE_STATUS"
   | "MESSAGE_SEEN"
