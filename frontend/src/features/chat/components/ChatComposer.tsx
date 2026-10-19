@@ -109,7 +109,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
     setPreviewUrl(null);
   };
 
-  // Thực hiện gửi tin nhắn
+  // Thực hiện gửi tin nhắn (Chuẩn Doanh nghiệp: Optimistic clearing <1ms)
   const handleSubmit = async () => {
     const textToSend = content.trim();
     if ((!textToSend && !selectedFile) || isSending || cooldown > 0 || disabled) {
@@ -122,17 +122,26 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
     }
     onTyping(false);
 
-    const success = await onSendMessage(textToSend, selectedFile || undefined);
-    if (success) {
-      setContent("");
-      handleRemoveFile();
-      if (textareaRef.current) {
-        textareaRef.current.style.height = "auto";
-      }
+    // Chuẩn doanh nghiệp: Xóa sạch input ngay lập tức và giữ focus để người dùng có thể gõ tiếp tin nhắn tiếp theo
+    const fileToSend = selectedFile;
+    setContent("");
+    handleRemoveFile();
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.focus();
+    }
 
-      // Kích hoạt cooldown 3 giây nếu là Chat Quận
+    // Kích hoạt cooldown 3 giây nếu là Chat Quận
+    if (isDistrict) {
+      setCooldown(3);
+    }
+
+    const success = await onSendMessage(textToSend, fileToSend || undefined);
+    if (!success) {
+      // Nếu có lỗi mạng nghiêm trọng, phục hồi lại text để người dùng không bị mất dữ liệu
+      setContent(textToSend);
       if (isDistrict) {
-        setCooldown(3);
+        setCooldown(0);
       }
     }
   };
