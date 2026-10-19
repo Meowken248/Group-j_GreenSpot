@@ -89,7 +89,7 @@ export const MyGroupsView: React.FC<MyGroupsViewProps> = ({
               <h3 className="group-name">{group.name}</h3>
               {group.district && (
                 <div className="group-scope">
-                  📍 {group.district} {group.ward ? `• ${group.ward}` : ""}
+                  📍 {group.ward ? `${group.ward}, ` : ""}{group.district}{group.province ? `, ${group.province}` : ""}
                 </div>
               )}
               {group.theme_topic && (

@@ -8,11 +8,17 @@ import { groupService } from "../services/groupService";
 import type { AdministrativeMetadata, GroupItem } from "../types/group";
 
 const mockMetadata: AdministrativeMetadata = {
+  provinces: ["Thành phố Hồ Chí Minh", "Thành phố Hà Nội"],
+  districts_by_province: {
+    "Thành phố Hồ Chí Minh": ["Quận 1", "Quận 3", "TP. Thủ Đức"],
+    "Thành phố Hà Nội": ["Quận Ba Đình", "Quận Hoàn Kiếm"],
+  },
   districts: ["Quận 1", "Quận 3", "TP. Thủ Đức"],
   wards_by_district: {
     "Quận 1": ["Phường Bến Nghé", "Phường Bến Thành"],
     "Quận 3": ["Phường Võ Thị Sáu", "Phường 1"],
     "TP. Thủ Đức": ["Phường Thảo Điền", "Phường An Phú"],
+    "Quận Ba Đình": ["Phường Cống Vị", "Phường Điện Biên"],
   },
   theme_topics: ["Phân loại rác", "Cây xanh", "Chống ngập", "Tái chế"],
 };
@@ -22,6 +28,7 @@ const mockGroup: GroupItem = {
   name: "Cộng Đồng Sống Xanh Quận 1",
   description: "Mô tả nhóm mẫu",
   group_type: "DISTRICT",
+  province: "Thành phố Hồ Chí Minh",
   district: "Quận 1",
   privacy: "PUBLIC",
   creator_id: "creator-uuid-1",
@@ -121,7 +128,7 @@ describe("Chức năng 16: Frontend Community Groups (Tạo nhóm theo quận, p
   });
 
   describe("Màn 2: Form Tạo Nhóm Chi Tiết (CreateGroupForm)", () => {
-    it("2.1. Render đầy đủ 3 khối: Thông tin, Phạm vi và Nút bấm", () => {
+    it("2.1. Render đầy đủ 3 khối: Thông tin, Phạm vi phân cấp (Tỉnh/Quận) và Nút bấm", () => {
       render(
         <CreateGroupForm
           groupType="DISTRICT"
@@ -134,9 +141,28 @@ describe("Chức năng 16: Frontend Community Groups (Tạo nhóm theo quận, p
 
       expect(screen.getByTestId("input-group-name")).toBeInTheDocument();
       expect(screen.getByTestId("textarea-group-desc")).toBeInTheDocument();
+      expect(screen.getByTestId("select-province")).toBeInTheDocument();
       expect(screen.getByTestId("select-district")).toBeInTheDocument();
       expect(screen.getByTestId("btn-submit-create")).toBeInTheDocument();
       expect(screen.getByTestId("btn-cancel-create")).toBeInTheDocument();
+    });
+
+    it("2.1b. Thay đổi Tỉnh/Thành phố cập nhật lại danh sách Quận/Huyện của tỉnh đó", () => {
+      render(
+        <CreateGroupForm
+          groupType="DISTRICT"
+          metadata={mockMetadata}
+          onCancel={vi.fn()}
+          onSuccess={vi.fn()}
+        />
+      );
+
+      const provinceSelect = screen.getByTestId("select-province");
+      fireEvent.change(provinceSelect, { target: { value: "Thành phố Hà Nội" } });
+
+      expect(screen.getByText("Quận Ba Đình")).toBeInTheDocument();
+      expect(screen.getByText("Quận Hoàn Kiếm")).toBeInTheDocument();
+      expect(screen.queryByText("Quận 1")).not.toBeInTheDocument();
     });
 
     it("2.2. Kiểm tra validation tên nhóm để trống hoặc vượt quá 50 ký tự", async () => {

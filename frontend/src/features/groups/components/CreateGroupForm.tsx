@@ -19,8 +19,30 @@ export const CreateGroupForm: React.FC<CreateGroupFormProps> = ({
 }) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [district, setDistrict] = useState(userDistrict || (metadata.districts[0] || ""));
-  const [ward, setWard] = useState("");
+
+  const defaultProvince =
+    metadata.provinces && metadata.provinces.length > 0
+      ? metadata.provinces[0]
+      : "Thành phố Hồ Chí Minh";
+  const [province, setProvince] = useState<string>(defaultProvince);
+
+  const availableDistricts =
+    metadata.districts_by_province && metadata.districts_by_province[province]
+      ? metadata.districts_by_province[province]
+      : metadata.districts || [];
+
+  const [district, setDistrict] = useState<string>(
+    userDistrict && availableDistricts.includes(userDistrict)
+      ? userDistrict
+      : availableDistricts[0] || ""
+  );
+
+  const availableWards =
+    metadata.wards_by_district && metadata.wards_by_district[district]
+      ? metadata.wards_by_district[district]
+      : [];
+
+  const [ward, setWard] = useState<string>(availableWards[0] || "");
   const [themeTopic, setThemeTopic] = useState(metadata.theme_topics[0] || "");
   const [privacy, setPrivacy] = useState<GroupPrivacy>("PUBLIC");
 
@@ -39,11 +61,24 @@ export const CreateGroupForm: React.FC<CreateGroupFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
+  // Khi thay đổi Tỉnh / Thành phố, tự động chọn Quận / Huyện đầu tiên của tỉnh đó
+  useEffect(() => {
+    if (groupType !== "THEME") {
+      const districtsForProv =
+        metadata.districts_by_province && metadata.districts_by_province[province]
+          ? metadata.districts_by_province[province]
+          : metadata.districts || [];
+      if (!districtsForProv.includes(district)) {
+        setDistrict(districtsForProv[0] || "");
+      }
+    }
+  }, [province, metadata.districts_by_province, metadata.districts, groupType, district]);
+
   // Khi thay đổi quận, reset phường
   useEffect(() => {
     if (groupType === "WARD" && district) {
-      const availableWards = metadata.wards_by_district[district] || [];
-      setWard(availableWards[0] || "");
+      const wardsForDist = metadata.wards_by_district[district] || [];
+      setWard(wardsForDist[0] || "");
     }
   }, [district, groupType, metadata.wards_by_district]);
 
@@ -115,10 +150,10 @@ export const CreateGroupForm: React.FC<CreateGroupFormProps> = ({
       errors.description = "Mô tả tối đa 300 ký tự";
     }
 
-    if (groupType === "DISTRICT" && !district) {
-      errors.scope = "Vui lòng chọn phạm vi cho nhóm";
-    } else if (groupType === "WARD" && (!district || !ward)) {
-      errors.scope = "Vui lòng chọn phạm vi cho nhóm";
+    if (groupType === "DISTRICT" && (!province || !district)) {
+      errors.scope = "Vui lòng chọn Tỉnh/Thành phố và Quận/Huyện cho nhóm";
+    } else if (groupType === "WARD" && (!province || !district || !ward)) {
+      errors.scope = "Vui lòng chọn đầy đủ Tỉnh/Thành phố, Quận/Huyện và Phường/Xã cho nhóm";
     } else if (groupType === "THEME" && !themeTopic) {
       errors.scope = "Vui lòng chọn phạm vi cho nhóm";
     }
@@ -138,6 +173,7 @@ export const CreateGroupForm: React.FC<CreateGroupFormProps> = ({
       name: name.trim(),
       description: description.trim() || undefined,
       group_type: groupType,
+      province: groupType !== "THEME" ? province : undefined,
       district: groupType !== "THEME" ? district : undefined,
       ward: groupType === "WARD" ? ward : undefined,
       theme_topic: groupType === "THEME" ? themeTopic : undefined,
@@ -163,8 +199,6 @@ export const CreateGroupForm: React.FC<CreateGroupFormProps> = ({
       }
     }
   };
-
-  const availableWards = (district && metadata.wards_by_district[district]) || [];
 
   return (
     <div className="create-form-wrapper" data-testid="create-group-form">
@@ -276,31 +310,71 @@ export const CreateGroupForm: React.FC<CreateGroupFormProps> = ({
             <div className="section-heading">Phạm vi hoạt động</div>
 
             {groupType === "DISTRICT" && (
-              <div className="form-field">
-                <label htmlFor="district-select">
-                  Chọn Quận/Huyện <span className="required">*</span>
-                </label>
-                <select
-                  id="district-select"
-                  data-testid="select-district"
-                  value={district}
-                  onChange={(e) => setDistrict(e.target.value)}
-                  disabled={isSubmitting}
-                >
-                  {metadata.districts.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <>
+                <div className="form-field">
+                  <label htmlFor="province-select">
+                    Chọn Tỉnh / Thành phố <span className="required">*</span>
+                  </label>
+                  <select
+                    id="province-select"
+                    data-testid="select-province"
+                    value={province}
+                    onChange={(e) => setProvince(e.target.value)}
+                    disabled={isSubmitting}
+                  >
+                    {(metadata.provinces || ["Thành phố Hồ Chí Minh"]).map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="district-select">
+                    Chọn Quận / Huyện <span className="required">*</span>
+                  </label>
+                  <select
+                    id="district-select"
+                    data-testid="select-district"
+                    value={district}
+                    onChange={(e) => setDistrict(e.target.value)}
+                    disabled={isSubmitting}
+                  >
+                    {availableDistricts.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
             )}
 
             {groupType === "WARD" && (
               <>
                 <div className="form-field">
+                  <label htmlFor="ward-province-select">
+                    Chọn Tỉnh / Thành phố <span className="required">*</span>
+                  </label>
+                  <select
+                    id="ward-province-select"
+                    data-testid="select-ward-province"
+                    value={province}
+                    onChange={(e) => setProvince(e.target.value)}
+                    disabled={isSubmitting}
+                  >
+                    {(metadata.provinces || ["Thành phố Hồ Chí Minh"]).map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-field">
                   <label htmlFor="ward-district-select">
-                    Chọn Quận/Huyện <span className="required">*</span>
+                    Chọn Quận / Huyện <span className="required">*</span>
                   </label>
                   <select
                     id="ward-district-select"
@@ -309,7 +383,7 @@ export const CreateGroupForm: React.FC<CreateGroupFormProps> = ({
                     onChange={(e) => setDistrict(e.target.value)}
                     disabled={isSubmitting}
                   >
-                    {metadata.districts.map((d) => (
+                    {availableDistricts.map((d) => (
                       <option key={d} value={d}>
                         {d}
                       </option>
@@ -319,7 +393,7 @@ export const CreateGroupForm: React.FC<CreateGroupFormProps> = ({
 
                 <div className="form-field">
                   <label htmlFor="ward-select">
-                    Chọn Phường/Xã <span className="required">*</span>
+                    Chọn Phường / Xã <span className="required">*</span>
                   </label>
                   <select
                     id="ward-select"

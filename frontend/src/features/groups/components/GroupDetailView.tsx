@@ -201,7 +201,7 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
               </span>
               {group.district && (
                 <span style={{ fontSize: 13, color: "#64748b", fontWeight: 500 }}>
-                  📍 {group.district} {group.ward ? `• ${group.ward}` : ""}
+                  📍 {group.ward ? `${group.ward}, ` : ""}{group.district}{group.province ? `, ${group.province}` : ""}
                 </span>
               )}
               {group.theme_topic && (

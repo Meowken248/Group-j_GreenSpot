@@ -7,10 +7,12 @@ interface ExploreGroupsViewProps {
   metadata: AdministrativeMetadata;
   isLoading: boolean;
   selectedType: GroupType | "";
+  selectedProvince?: string;
   selectedDistrict: string;
   searchKeyword: string;
   onFilterChange: (filters: {
     group_type?: GroupType;
+    province?: string;
     district?: string;
     q?: string;
   }) => void;
@@ -23,6 +25,7 @@ export const ExploreGroupsView: React.FC<ExploreGroupsViewProps> = ({
   metadata,
   isLoading,
   selectedType,
+  selectedProvince = "",
   selectedDistrict,
   searchKeyword,
   onFilterChange,
@@ -31,10 +34,16 @@ export const ExploreGroupsView: React.FC<ExploreGroupsViewProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState(searchKeyword);
 
+  const availableDistricts =
+    selectedProvince && metadata.districts_by_province?.[selectedProvince]
+      ? metadata.districts_by_province[selectedProvince]
+      : metadata.districts || [];
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onFilterChange({
       group_type: selectedType ? selectedType : undefined,
+      province: selectedProvince || undefined,
       district: selectedDistrict || undefined,
       q: searchTerm.trim() || undefined,
     });
@@ -97,6 +106,7 @@ export const ExploreGroupsView: React.FC<ExploreGroupsViewProps> = ({
             const val = e.target.value as GroupType | "";
             onFilterChange({
               group_type: val ? val : undefined,
+              province: selectedProvince || undefined,
               district: selectedDistrict || undefined,
               q: searchTerm.trim() || undefined,
             });
@@ -116,12 +126,43 @@ export const ExploreGroupsView: React.FC<ExploreGroupsViewProps> = ({
           <option value="THEME">Theo chủ đề</option>
         </select>
 
+        {/* Bộ lọc Tỉnh / Thành phố */}
+        <select
+          value={selectedProvince}
+          onChange={(e) => {
+            const val = e.target.value;
+            onFilterChange({
+              group_type: selectedType ? selectedType : undefined,
+              province: val || undefined,
+              district: undefined,
+              q: searchTerm.trim() || undefined,
+            });
+          }}
+          style={{
+            padding: "10px 14px",
+            borderRadius: 10,
+            border: "1.5px solid #cbd5e1",
+            fontSize: 14,
+            background: "#fff",
+          }}
+          data-testid="filter-group-province"
+        >
+          <option value="">Tất cả tỉnh/thành</option>
+          {(metadata.provinces || []).map((p) => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+        </select>
+
+        {/* Bộ lọc Quận / Huyện */}
         <select
           value={selectedDistrict}
           onChange={(e) => {
             const val = e.target.value;
             onFilterChange({
               group_type: selectedType ? selectedType : undefined,
+              province: selectedProvince || undefined,
               district: val || undefined,
               q: searchTerm.trim() || undefined,
             });
@@ -136,7 +177,7 @@ export const ExploreGroupsView: React.FC<ExploreGroupsViewProps> = ({
           data-testid="filter-group-district"
         >
           <option value="">Tất cả quận/huyện</option>
-          {metadata.districts.map((d) => (
+          {availableDistricts.map((d) => (
             <option key={d} value={d}>
               {d}
             </option>
@@ -193,7 +234,7 @@ export const ExploreGroupsView: React.FC<ExploreGroupsViewProps> = ({
                 <h3 className="group-name">{group.name}</h3>
                 {group.district && (
                   <div className="group-scope">
-                    📍 {group.district} {group.ward ? `• ${group.ward}` : ""}
+                    📍 {group.ward ? `${group.ward}, ` : ""}{group.district}{group.province ? `, ${group.province}` : ""}
                   </div>
                 )}
                 {group.theme_topic && (

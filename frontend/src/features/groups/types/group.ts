@@ -15,6 +15,7 @@ export interface GroupItem {
   cover_image_url?: string | null;
   avatar_url?: string | null;
   group_type: GroupType;
+  province?: string | null;
   district?: string | null;
   ward?: string | null;
   theme_topic?: string | null;
@@ -41,6 +42,7 @@ export interface CreateGroupPayload {
   name: string;
   description?: string;
   group_type: GroupType;
+  province?: string;
   district?: string;
   ward?: string;
   theme_topic?: string;
@@ -50,8 +52,21 @@ export interface CreateGroupPayload {
 }
 
 export interface AdministrativeMetadata {
+  provinces: string[];
+  districts_by_province: Record<string, string[]>;
   districts: string[];
   wards_by_district: Record<string, string[]>;
   theme_topics: string[];
+}
+
+export interface ExploreGroupsParams {
+  group_type?: GroupType;
+  province?: string;
+  district?: string;
+  ward?: string;
+  theme_topic?: string;
+  q?: string;
+  limit?: number;
+  offset?: number;
 }
 

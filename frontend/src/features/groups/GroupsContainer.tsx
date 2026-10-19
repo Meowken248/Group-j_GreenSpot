@@ -29,6 +29,8 @@ export const GroupsContainer: React.FC<GroupsContainerProps> = ({
   const [selectedGroupType, setSelectedGroupType] = useState<GroupType | null>(null);
 
   const [metadata, setMetadata] = useState<AdministrativeMetadata>({
+    provinces: [],
+    districts_by_province: {},
     districts: [],
     wards_by_district: {},
     theme_topics: [],
@@ -43,6 +45,7 @@ export const GroupsContainer: React.FC<GroupsContainerProps> = ({
 
   // Bộ lọc khám phá
   const [filterType, setFilterType] = useState<GroupType | "">("");
+  const [filterProvince, setFilterProvince] = useState<string>("");
   const [filterDistrict, setFilterDistrict] = useState<string>("");
   const [searchKeyword, setSearchKeyword] = useState<string>("");
 
@@ -91,6 +94,7 @@ export const GroupsContainer: React.FC<GroupsContainerProps> = ({
   // Nạp danh sách Khám phá
   const fetchExploreGroups = async (filters?: {
     group_type?: GroupType;
+    province?: string;
     district?: string;
     q?: string;
   }) => {
@@ -98,7 +102,8 @@ export const GroupsContainer: React.FC<GroupsContainerProps> = ({
       setIsLoadingExplore(true);
       const res = await groupService.exploreGroups({
         group_type: filters?.group_type || (filterType ? filterType : undefined),
-        district: filters?.district || (filterDistrict ? filterDistrict : undefined),
+        province: filters?.province !== undefined ? (filters.province || undefined) : (filterProvince || undefined),
+        district: filters?.district !== undefined ? (filters.district || undefined) : (filterDistrict || undefined),
         q: filters?.q !== undefined ? filters.q : searchKeyword,
       });
       setExploreGroupsList(res.items || []);
@@ -260,10 +265,12 @@ export const GroupsContainer: React.FC<GroupsContainerProps> = ({
           metadata={metadata}
           isLoading={isLoadingExplore}
           selectedType={filterType}
+          selectedProvince={filterProvince}
           selectedDistrict={filterDistrict}
           searchKeyword={searchKeyword}
           onFilterChange={(filters) => {
             if (filters.group_type !== undefined) setFilterType(filters.group_type);
+            if (filters.province !== undefined) setFilterProvince(filters.province);
             if (filters.district !== undefined) setFilterDistrict(filters.district);
             if (filters.q !== undefined) setSearchKeyword(filters.q);
             fetchExploreGroups(filters);

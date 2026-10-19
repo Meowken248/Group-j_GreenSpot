@@ -31,8 +31,9 @@ export const groupService = {
   /**
    * Khám phá nhóm cộng đồng theo bộ lọc
    */
-  async exploreGroups(params: {
+  async exploreGroups(params?: {
     group_type?: GroupType;
+    province?: string;
     district?: string;
     ward?: string;
     theme_topic?: string;
