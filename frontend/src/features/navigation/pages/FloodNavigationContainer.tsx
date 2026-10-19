@@ -111,6 +111,33 @@ export const FloodNavigationContainer: React.FC = () => {
     }
   }, [toastMessage]);
 
+  // Kiểm tra điểm đến né ngập được truyền từ Điều phối (STT 43) hoặc Trợ lý giọng nói (STT 37)
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("greenspot_nav_destination");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed) {
+          const lat = Number(parsed.destLat ?? parsed.latitude);
+          const lng = Number(parsed.destLng ?? parsed.longitude);
+          const name = parsed.destName || parsed.destAddress || parsed.name || "Vị trí sự cố cần đến";
+          if (!isNaN(lat) && !isNaN(lng)) {
+            setDestination({
+              name,
+              latitude: lat,
+              longitude: lng,
+            });
+            setToastMessage({
+              text: `📍 Đã thiết lập điểm đến né ngập: ${name}`,
+              type: "success",
+            });
+          }
+          localStorage.removeItem("greenspot_nav_destination");
+        }
+      }
+    } catch {}
+  }, []);
+
   // Bắt GPS thiết bị người dùng
   const handleGpsRequest = () => {
     setGpsWarning(null);
@@ -334,7 +361,7 @@ export const FloodNavigationContainer: React.FC = () => {
             <span className="logo-icon">🌿</span>
             <span>GreenSpot SafeNav</span>
           </div>
-          <span className="feature-tag">STT 41: Tránh Ngập Đô Thị</span>
+          <span className="feature-tag">Tránh Ngập Đô Thị</span>
         </div>
 
         <nav className="header-nav">

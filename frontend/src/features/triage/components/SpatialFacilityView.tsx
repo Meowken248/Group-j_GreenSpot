@@ -549,7 +549,7 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
                 className="btn-back-to-triage-sub"
                 onClick={onBackToTriage}
               >
-                ← Quay lại Màn hình Tóm tắt AI (STT 39)
+                ← Quay lại Màn hình Tóm tắt AI
               </button>
             </div>
           </div>

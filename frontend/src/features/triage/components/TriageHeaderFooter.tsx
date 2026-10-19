@@ -28,14 +28,14 @@ export const TriageHeader: React.FC<HeaderProps> = ({
             className={`tab-btn ${currentTab === "triage" ? "active" : ""}`}
             onClick={() => onTabChange("triage")}
           >
-            STT 39: Tóm tắt & Ưu tiên AI
+            Tóm tắt & Ưu tiên AI
           </button>
           <button
             type="button"
             className={`tab-btn ${currentTab === "spatial" ? "active" : ""}`}
             onClick={() => onTabChange("spatial")}
           >
-            STT 40: Phân tích vùng đệm GIS
+            Phân tích vùng đệm GIS
           </button>
         </div>
 

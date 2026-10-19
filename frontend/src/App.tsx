@@ -20,6 +20,9 @@ import { TriageAppDashboard } from "./features/triage";
 import { PenaltyLookupContainer, PenaltyReportsDashboard } from "./features/penalties";
 import { PostCreatorContainer } from "./features/posts";
 import { FloodNavigationContainer } from "./features/navigation";
+import { RiskDashboardContainer } from "./features/risk_dashboard";
+import { DispatchContainer } from "./features/dispatch";
+import { HotspotContainer } from "./features/hotspots";
 import {
   SettingsContainer,
   applyThemeToDocument,
@@ -44,6 +47,26 @@ const checkIsLoggedIn = (): boolean => {
   }
 };
 
+export type ActiveTab =
+  | "map"
+  | "dashboard"
+  | "auth"
+  | "rbac"
+  | "users"
+  | "profile"
+  | "friends"
+  | "voice"
+  | "dedup"
+  | "settings"
+  | "penalties"
+  | "penalty-reports"
+  | "posts"
+  | "triage"
+  | "navigation"
+  | "risk-dashboard"
+  | "dispatch"
+  | "hotspots";
+
 function App() {
   const [authRedirectUrl, setAuthRedirectUrl] = useState<string | undefined>(() => {
     const hash = window.location.hash.toLowerCase();
@@ -58,31 +81,30 @@ function App() {
       if (hash === "#dedup" || path === "/dedup") return "/dedup";
       if (hash === "#settings" || path === "/settings") return "/settings";
       if (hash === "#penalty-reports" || path === "/penalty-reports") return "/penalty-reports";
+      if (hash === "#risk-dashboard" || hash === "#urban-risk" || path === "/risk-dashboard") return "/risk-dashboard";
+      if (hash === "#dispatch" || hash === "#operations-dispatch" || path === "/dispatch") return "/dispatch";
+      if (hash === "#hotspots" || hash === "#hotspot-analytics" || path === "/hotspots") return "/hotspots";
     }
     return undefined;
   });
 
-  const [activeTab, setActiveTab] = useState<
-    | "map"
-    | "dashboard"
-    | "auth"
-    | "rbac"
-    | "users"
-    | "profile"
-    | "friends"
-    | "voice"
-    | "dedup"
-    | "settings"
-    | "penalties"
-    | "penalty-reports"
-    | "posts"
-    | "triage"
-    | "navigation"
-  >(() => {
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
     const hash = window.location.hash.toLowerCase();
     const path = window.location.pathname.toLowerCase();
     const isLogged = checkIsLoggedIn();
 
+    if (hash === "#hotspots" || hash === "#hotspot-analytics" || path === "/hotspots") {
+      if (!isLogged) return "auth";
+      return "hotspots";
+    }
+    if (hash === "#dispatch" || hash === "#operations-dispatch" || path === "/dispatch") {
+      if (!isLogged) return "auth";
+      return "dispatch";
+    }
+    if (hash === "#risk-dashboard" || hash === "#urban-risk" || path === "/risk-dashboard") {
+      if (!isLogged) return "auth";
+      return "risk-dashboard";
+    }
     if (hash === "#navigation" || path === "/navigation") return "navigation";
     if (hash === "#map" || path === "/map") return "map";
     if (hash === "#penalties" || path === "/penalties") {
@@ -216,6 +238,30 @@ function App() {
     currentUser?.role === "COORDINATOR" ||
     canAccess("INCIDENTS");
 
+  const hasRiskDashboardAccess =
+    currentUser?.role === "ADMIN" ||
+    currentUser?.role === "OFFICER" ||
+    currentUser?.role === "DISTRICT_MANAGER" ||
+    currentUser?.role === "COORDINATOR" ||
+    canAccess("STATISTICS") ||
+    canAccess("INCIDENTS");
+
+  const hasDispatchAccess =
+    currentUser?.role === "ADMIN" ||
+    currentUser?.role === "OFFICER" ||
+    currentUser?.role === "DISTRICT_MANAGER" ||
+    currentUser?.role === "COORDINATOR" ||
+    currentUser?.role === "RESPONDER" ||
+    canAccess("INCIDENTS");
+
+  const hasHotspotsAccess =
+    currentUser?.role === "ADMIN" ||
+    currentUser?.role === "OFFICER" ||
+    currentUser?.role === "DISTRICT_MANAGER" ||
+    currentUser?.role === "COORDINATOR" ||
+    canAccess("STATISTICS") ||
+    canAccess("INCIDENTS");
+
   const hasPenaltyReportsAccess =
     currentUser?.role === "ADMIN" ||
     currentUser?.role === "OFFICER" ||
@@ -225,22 +271,45 @@ function App() {
     canAccess("CITIZEN_FEEDBACK") ||
     canAccess("INCIDENTS");
 
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<"geo" | "ops" | "community" | "user" | null>(null);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
+  const topHeaderRef = useRef<HTMLElement>(null);
 
-  // Đóng dropdown tài khoản khi click ra ngoài
+  // Đóng dropdown và popover khi click ra ngoài hoặc bấm Escape
   useEffect(() => {
-    if (!userDropdownOpen) return;
+    if (!openDropdown && !showDrawer) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
-        setUserDropdownOpen(false);
+      if (topHeaderRef.current && !topHeaderRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null);
+        setShowDrawer(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpenDropdown(null);
+        setShowDrawer(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [userDropdownOpen]);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [openDropdown, showDrawer]);
+
+  const navigateTo = (tab: ActiveTab, hash?: string) => {
+    setActiveTab(tab);
+    if (hash) window.location.hash = hash;
+    setOpenDropdown(null);
+    setShowDrawer(false);
+  };
+
+  const isGeoActive = ["map", "dashboard", "navigation", "hotspots", "risk-dashboard"].includes(activeTab);
+  const isOpsActive = ["dispatch", "penalty-reports", "triage", "dedup"].includes(activeTab);
+  const isCommunityActive = ["posts", "friends", "voice"].includes(activeTab);
+  const isPenaltiesActive = activeTab === "penalties";
 
   useEffect(() => {
     const unsubscribe = subscribeSessionExpired(() => {
@@ -348,6 +417,22 @@ function App() {
         } else {
           setActiveTab("penalty-reports");
         }
+      } else if (hash === "#dispatch" || hash === "#operations-dispatch" || window.location.pathname === "/dispatch") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/dispatch");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("dispatch");
+        }
+      } else if (hash === "#hotspots" || hash === "#hotspot-analytics" || window.location.pathname === "/hotspots") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/hotspots");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("hotspots");
+        }
       } else if (hash === "#profile") {
         if (!isLogged) {
           setAuthRedirectUrl("/profile");
@@ -401,6 +486,14 @@ function App() {
         setAuthRedirectUrl("/penalty-reports");
         setActiveTab("auth");
         window.location.hash = "#login";
+      } else if (activeTab === "dispatch") {
+        setAuthRedirectUrl("/dispatch");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "hotspots") {
+        setAuthRedirectUrl("/hotspots");
+        setActiveTab("auth");
+        window.location.hash = "#login";
       }
     }
   }, [activeTab, currentUser]);
@@ -432,7 +525,7 @@ function App() {
       window.dispatchEvent(new Event("auth_change"));
       setIsLoggingOut(false);
       setLogoutModalOpen(false);
-      setUserDropdownOpen(false);
+      setOpenDropdown(null);
       setAuthRedirectUrl(undefined);
       setActiveTab("auth");
     }
@@ -476,416 +569,469 @@ function App() {
         onConfirm={handleConfirmLogout}
       />
 
-      {/* THANH ĐIỀU HƯỚNG CHUYỂN ĐỔI CHẾ ĐỘ VIEW (TOP CENTER) */}
-      <nav className={`view-mode-switcher ${isDarkMode ? "dark-mode" : ""}`} aria-label="Chế độ hiển thị">
-        {currentUser ? (
-          <div className="user-profile-nav-wrapper" ref={userMenuRef}>
+      {/* THANH TOP HEADER BAR (CHUẨN ENTERPRISE DASHBOARD) */}
+      <header ref={topHeaderRef} className={`app-top-header ${isDarkMode ? "dark-mode" : ""}`} role="banner">
+        {/* KHỐI TRÁI: LOGO & THƯƠNG HIỆU */}
+        <div className="header-left">
+          <button
+            type="button"
+            className="brand-logo-btn"
+            onClick={() => navigateTo("map", "#map")}
+            title="Trang chủ WebGIS GreenSpot"
+          >
+            <div className="brand-logo-icon">🌿</div>
+            <div className="brand-text-group">
+              <span className="brand-name">GreenSpot</span>
+              <span className="brand-badge">WebGIS</span>
+            </div>
+          </button>
+        </div>
+
+        {/* KHỐI GIỮA: 4 NHÓM MENU ĐIỀU HƯỚNG TINH GỌN */}
+        <nav className="header-center-nav" aria-label="Điều hướng chính">
+          {/* NHÓM 1: BẢN ĐỒ & KHÍ HẬU */}
+          <div className="nav-dropdown-wrapper">
             <button
               type="button"
-              className={`view-tab-btn user-nav-btn ${activeTab === "auth" ? "active" : ""} ${userDropdownOpen ? "menu-open" : ""}`}
-              onClick={() => setUserDropdownOpen((prev) => !prev)}
-              title="Tài khoản công dân số"
-              aria-expanded={userDropdownOpen}
+              className={`nav-group-btn ${isGeoActive ? "active" : ""} ${openDropdown === "geo" ? "dropdown-open" : ""}`}
+              onClick={() => setOpenDropdown((prev) => (prev === "geo" ? null : "geo"))}
+              aria-expanded={openDropdown === "geo"}
             >
-              <span className="user-avatar-icon">👤</span>
-              <span className="user-display-name">{currentUser.full_name || "Công dân"}</span>
-              <span className="user-status-dot" title="Đang hoạt động">🟢</span>
-              <span className="user-nav-arrow">{userDropdownOpen ? "▴" : "▾"}</span>
+              <span className="nav-icon">🗺️</span>
+              <span className="nav-label">Bản đồ & Khí hậu</span>
+              <span className="dropdown-caret">{openDropdown === "geo" ? "▴" : "▾"}</span>
             </button>
 
-            {userDropdownOpen && (
-              <div className={`user-nav-dropdown ${isDarkMode ? "dark-mode" : ""}`} role="menu">
-                <div className="dropdown-user-info">
-                  <div className="dropdown-avatar">🌱</div>
-                  <div className="dropdown-user-details">
-                    <strong className="user-name">{currentUser.full_name || "Công dân GreenSpot"}</strong>
-                    <span className="user-email">{currentUser.email}</span>
-                    <span className="user-role-badge">
-                      {currentUser.role === "CITIZEN" ? "Công dân sinh thái" : currentUser.role}
-                    </span>
+            {openDropdown === "geo" && (
+              <div className={`nav-menu-panel ${isDarkMode ? "dark-mode" : ""}`} role="menu">
+                <div className="panel-section-title">DỮ LIỆU KHÔNG GIAN SỐ</div>
+
+                {hasMapAccess && (
+                  <button
+                    type="button"
+                    className={`panel-item-btn ${activeTab === "map" ? "active" : ""}`}
+                    onClick={() => navigateTo("map", "#map")}
+                  >
+                    <span className="panel-item-icon">🗺️</span>
+                    <div className="panel-item-content">
+                      <span className="panel-item-title">Bản đồ WebGIS</span>
+                      <span className="panel-item-desc">Không gian xanh, ngập lụt & trạm IoT</span>
+                    </div>
+                    {activeTab === "map" && <span className="active-indicator">●</span>}
+                  </button>
+                )}
+
+                {hasAqiAccess && (
+                  <button
+                    type="button"
+                    className={`panel-item-btn ${activeTab === "dashboard" ? "active" : ""}`}
+                    onClick={() => navigateTo("dashboard", "#dashboard")}
+                  >
+                    <span className="panel-item-icon">📊</span>
+                    <div className="panel-item-content">
+                      <span className="panel-item-title">Phân tích AQI & Khí hậu</span>
+                      <span className="panel-item-desc">Chất lượng không khí & radar khí tượng</span>
+                    </div>
+                    {activeTab === "dashboard" && <span className="active-indicator">●</span>}
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className={`panel-item-btn ${activeTab === "navigation" ? "active" : ""}`}
+                  onClick={() => navigateTo("navigation", "#navigation")}
+                >
+                  <span className="panel-item-icon">🧭</span>
+                  <div className="panel-item-content">
+                    <span className="panel-item-title">Dẫn đường tránh ngập</span>
+                    <span className="panel-item-desc">Tìm tuyến đường an toàn thời gian thực</span>
                   </div>
-                </div>
-
-                <div className="dropdown-separator" />
-
-                <button
-                  type="button"
-                  className="dropdown-menu-action"
-                  onClick={() => {
-                    setUserDropdownOpen(false);
-                    setActiveTab("profile");
-                    window.location.hash = "#profile";
-                  }}
-                >
-                  <span className="action-icon">🌿</span>
-                  <span>Trang cá nhân & Green Passport</span>
+                  {activeTab === "navigation" && <span className="active-indicator">●</span>}
                 </button>
 
-                <div className="dropdown-separator" />
-
-                <button
-                  type="button"
-                  className="dropdown-menu-action"
-                  onClick={() => {
-                    setUserDropdownOpen(false);
-                    setActiveTab("penalties");
-                    window.location.hash = "#penalties";
-                  }}
-                >
-                  <span className="action-icon">⚖️</span>
-                  <span>Tra cứu quy định xử phạt</span>
-                </button>
-
-                <div className="dropdown-separator" />
-
-                {currentUser?.role === "ADMIN" && (
-                  <>
-                    <button
-                      type="button"
-                      className="dropdown-menu-action"
-                      onClick={() => {
-                        setUserDropdownOpen(false);
-                        setActiveTab("users");
-                        window.location.hash = "#users";
-                      }}
-                    >
-                      <span className="action-icon">👥</span>
-                      <span>Quản lý người dùng</span>
-                    </button>
-                    <div className="dropdown-separator" />
-                    <button
-                      type="button"
-                      className="dropdown-menu-action"
-                      onClick={() => {
-                        setUserDropdownOpen(false);
-                        setActiveTab("rbac");
-                        window.location.hash = "#rbac";
-                      }}
-                    >
-                      <span className="action-icon">🛡️</span>
-                      <span>Phân quyền vai trò</span>
-                    </button>
-                    <div className="dropdown-separator" />
-                    <button
-                      type="button"
-                      className="dropdown-menu-action"
-                      onClick={() => {
-                        setUserDropdownOpen(false);
-                        setActiveTab("dedup");
-                        window.location.hash = "#dedup";
-                      }}
-                    >
-                      <span className="action-icon">📑</span>
-                      <span>Báo cáo trùng lặp (AI)</span>
-                    </button>
-                  </>
+                {hasHotspotsAccess && (
+                  <button
+                    type="button"
+                    className={`panel-item-btn ${activeTab === "hotspots" ? "active" : ""}`}
+                    onClick={() => navigateTo("hotspots", "#hotspots")}
+                    data-testid="tab-btn-hotspots"
+                  >
+                    <span className="panel-item-icon">🔥</span>
+                    <div className="panel-item-content">
+                      <span className="panel-item-title">Điểm nóng & Dự báo</span>
+                      <span className="panel-item-desc">Dự báo ô nhiễm 7 ngày & chuỗi thời gian</span>
+                    </div>
+                    {activeTab === "hotspots" && <span className="active-indicator">●</span>}
+                  </button>
                 )}
 
-                {hasTriageAccess && (
-                  <>
-                    <button
-                      type="button"
-                      className="dropdown-menu-action"
-                      onClick={() => {
-                        setUserDropdownOpen(false);
-                        setActiveTab("triage");
-                        window.location.hash = "#triage";
-                      }}
-                    >
-                      <span className="action-icon">🤖</span>
-                      <span>Thẩm định AI & GIS</span>
-                    </button>
-                    <div className="dropdown-separator" />
-                    <button
-                      type="button"
-                      className="dropdown-menu-action"
-                      onClick={() => {
-                        setUserDropdownOpen(false);
-                        setActiveTab("penalty-reports");
-                        window.location.hash = "#penalty-reports";
-                      }}
-                    >
-                      <span className="action-icon">📢</span>
-                      <span>Quản lý vi phạm</span>
-                    </button>
-                    <div className="dropdown-separator" />
-                  </>
+                {hasRiskDashboardAccess && (
+                  <button
+                    type="button"
+                    className={`panel-item-btn ${activeTab === "risk-dashboard" ? "active" : ""}`}
+                    onClick={() => navigateTo("risk-dashboard", "#risk-dashboard")}
+                    data-testid="tab-btn-risk-dashboard"
+                  >
+                    <span className="panel-item-icon">🏙️</span>
+                    <div className="panel-item-content">
+                      <span className="panel-item-title">Rủi ro đô thị</span>
+                      <span className="panel-item-desc">Phân tích đa tiêu chí rủi ro toàn thành phố</span>
+                    </div>
+                    {activeTab === "risk-dashboard" && <span className="active-indicator">●</span>}
+                  </button>
                 )}
-
-                <button
-                  type="button"
-                  className="dropdown-menu-action"
-                  onClick={() => {
-                    setUserDropdownOpen(false);
-                    setAuthRedirectUrl("/devices");
-                    setActiveTab("auth");
-                    window.location.hash = "#devices";
-                  }}
-                >
-                  <span className="action-icon">💻</span>
-                  <span>Quản lý thiết bị & Phiên</span>
-                </button>
-
-                <div className="dropdown-separator" />
-
-                <button
-                  type="button"
-                  className="dropdown-menu-action"
-                  onClick={() => {
-                    setUserDropdownOpen(false);
-                    setActiveTab("settings");
-                    window.location.hash = "#settings";
-                  }}
-                >
-                  <span className="action-icon">⚙️</span>
-                  <span>Cài đặt tài khoản</span>
-                </button>
-
-                <div className="dropdown-separator" />
-
-                <button
-                  type="button"
-                  className="dropdown-menu-action logout-action"
-                  onClick={() => {
-                    setUserDropdownOpen(false);
-                    setLogoutModalOpen(true);
-                  }}
-                >
-                  <span className="action-icon">🚪</span>
-                  <span>Đăng xuất tài khoản</span>
-                </button>
               </div>
             )}
           </div>
-        ) : (
+
+          {/* NHÓM 2: TÁC NGHIỆP & AI (Chỉ hiện khi có ít nhất 1 quyền tác nghiệp) */}
+          {(hasDispatchAccess || hasPenaltyReportsAccess || hasTriageAccess || hasDedupAccess) && (
+            <div className="nav-dropdown-wrapper">
+              <button
+                type="button"
+                className={`nav-group-btn ${isOpsActive ? "active" : ""} ${openDropdown === "ops" ? "dropdown-open" : ""}`}
+                onClick={() => setOpenDropdown((prev) => (prev === "ops" ? null : "ops"))}
+                aria-expanded={openDropdown === "ops"}
+              >
+                <span className="nav-icon">🚨</span>
+                <span className="nav-label">Tác nghiệp & AI</span>
+                <span className="dropdown-caret">{openDropdown === "ops" ? "▴" : "▾"}</span>
+              </button>
+
+              {openDropdown === "ops" && (
+                <div className={`nav-menu-panel ${isDarkMode ? "dark-mode" : ""}`} role="menu">
+                  <div className="panel-section-title">ĐIỀU HÀNH & HIỆN TRƯỜNG</div>
+
+                  {hasDispatchAccess && (
+                    <button
+                      type="button"
+                      className={`panel-item-btn ${activeTab === "dispatch" ? "active" : ""}`}
+                      onClick={() => navigateTo("dispatch", "#dispatch")}
+                      data-testid="tab-btn-dispatch"
+                    >
+                      <span className="panel-item-icon">🚨</span>
+                      <div className="panel-item-content">
+                        <span className="panel-item-title">Điều phối tác nghiệp</span>
+                        <span className="panel-item-desc">Trung tâm điều phối & phân công hiện trường</span>
+                      </div>
+                      {activeTab === "dispatch" && <span className="active-indicator">●</span>}
+                    </button>
+                  )}
+
+                  {hasPenaltyReportsAccess && (
+                    <button
+                      type="button"
+                      className={`panel-item-btn ${activeTab === "penalty-reports" ? "active" : ""}`}
+                      onClick={() => navigateTo("penalty-reports", "#penalty-reports")}
+                      data-testid="tab-btn-penalty-reports"
+                    >
+                      <span className="panel-item-icon">📢</span>
+                      <div className="panel-item-content">
+                        <span className="panel-item-title">Quản lý vi phạm</span>
+                        <span className="panel-item-desc">Giám sát & xử lý phản ánh từ công dân</span>
+                      </div>
+                      {activeTab === "penalty-reports" && <span className="active-indicator">●</span>}
+                    </button>
+                  )}
+
+                  {hasTriageAccess && (
+                    <button
+                      type="button"
+                      className={`panel-item-btn ${activeTab === "triage" ? "active" : ""}`}
+                      onClick={() => navigateTo("triage", "#triage")}
+                    >
+                      <span className="panel-item-icon">🤖</span>
+                      <div className="panel-item-content">
+                        <span className="panel-item-title">Thẩm định AI & GIS</span>
+                        <span className="panel-item-desc">AI đánh giá & phân loại tự động</span>
+                      </div>
+                      {activeTab === "triage" && <span className="active-indicator">●</span>}
+                    </button>
+                  )}
+
+                  {hasDedupAccess && (
+                    <button
+                      type="button"
+                      className={`panel-item-btn ${activeTab === "dedup" ? "active" : ""}`}
+                      onClick={() => navigateTo("dedup", "#dedup")}
+                    >
+                      <span className="panel-item-icon">📑</span>
+                      <div className="panel-item-content">
+                        <span className="panel-item-title">Báo cáo trùng lặp (AI)</span>
+                        <span className="panel-item-desc">AI gom cụm sự cố trùng lặp trên bản đồ</span>
+                      </div>
+                      {activeTab === "dedup" && <span className="active-indicator">●</span>}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* NHÓM 3: CỘNG ĐỒNG */}
+          {currentUser && (
+            <div className="nav-dropdown-wrapper">
+              <button
+                type="button"
+                className={`nav-group-btn ${isCommunityActive ? "active" : ""} ${openDropdown === "community" ? "dropdown-open" : ""}`}
+                onClick={() => setOpenDropdown((prev) => (prev === "community" ? null : "community"))}
+                aria-expanded={openDropdown === "community"}
+              >
+                <span className="nav-icon">🌱</span>
+                <span className="nav-label">Cộng đồng</span>
+                <span className="dropdown-caret">{openDropdown === "community" ? "▴" : "▾"}</span>
+              </button>
+
+              {openDropdown === "community" && (
+                <div className={`nav-menu-panel ${isDarkMode ? "dark-mode" : ""}`} role="menu">
+                  <div className="panel-section-title">KẾT NỐI & TƯƠNG TÁC</div>
+
+                  <button
+                    type="button"
+                    className={`panel-item-btn ${activeTab === "posts" ? "active" : ""}`}
+                    onClick={() => navigateTo("posts", "#create-post")}
+                  >
+                    <span className="panel-item-icon">✍️</span>
+                    <div className="panel-item-content">
+                      <span className="panel-item-title">Đăng bài & Phản ánh</span>
+                      <span className="panel-item-desc">Phản ánh sự cố & chia sẻ kinh nghiệm sống xanh</span>
+                    </div>
+                    {activeTab === "posts" && <span className="active-indicator">●</span>}
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`panel-item-btn ${activeTab === "friends" ? "active" : ""}`}
+                    onClick={() => navigateTo("friends", "#friends")}
+                  >
+                    <span className="panel-item-icon">🤝</span>
+                    <div className="panel-item-content">
+                      <span className="panel-item-title">Bạn bè & Kết nối</span>
+                      <span className="panel-item-desc">Kết bạn và theo dõi công dân xanh</span>
+                    </div>
+                    {activeTab === "friends" && <span className="active-indicator">●</span>}
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`panel-item-btn ${activeTab === "voice" ? "active" : ""}`}
+                    onClick={() => navigateTo("voice", "#voice")}
+                  >
+                    <span className="panel-item-icon">🎙️</span>
+                    <div className="panel-item-content">
+                      <span className="panel-item-title">Trợ lý Giọng nói</span>
+                      <span className="panel-item-desc">Trợ lý ảo rảnh tay Hands-free</span>
+                    </div>
+                    {activeTab === "voice" && <span className="active-indicator">●</span>}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* NHÓM 4: TRA CỨU XỬ PHẠT (Nút trực tiếp) */}
           <button
             type="button"
-            className={`view-tab-btn ${activeTab === "auth" ? "active" : ""}`}
-            onClick={() => {
-              setAuthRedirectUrl(undefined);
-              setActiveTab("auth");
-            }}
-            title="Đăng nhập hoặc đăng ký tài khoản công dân"
+            className={`nav-group-btn single-btn ${isPenaltiesActive ? "active" : ""}`}
+            onClick={() => navigateTo("penalties", "#penalties")}
+            title="Tra cứu quy định xử phạt vi phạm hành chính (Nghị định 45/2022/NĐ-CP)"
           >
-            <span>🌱</span>
-            <span>Đăng ký / Đăng nhập</span>
+            <span className="nav-icon">⚖️</span>
+            <span className="nav-label">Tra cứu xử phạt</span>
           </button>
-        )}
+        </nav>
 
-        {currentUser ? (
-          <>
-            {hasUserMgmtAccess && (
+        {/* KHỐI PHẢI: TIỆN ÍCH & TÀI KHOẢN */}
+        <div className="header-right-actions">
+          {/* Nút đổi Theme Sáng / Tối */}
+          <button
+            type="button"
+            className="header-icon-btn"
+            onClick={handleToggleTheme}
+            title={isDarkMode ? "Chuyển sang giao diện Sáng" : "Chuyển sang giao diện Tối"}
+            aria-label="Chuyển chế độ giao diện sáng tối"
+          >
+            <span>{isDarkMode ? "☀️" : "🌙"}</span>
+          </button>
+
+          {/* Nút trạng thái Microservice Backend API */}
+          <div className="api-status-wrapper">
+            <button
+              type="button"
+              className={`header-api-btn ${backendStatus?.startsWith("Online") ? "online" : "offline"}`}
+              onClick={() => {
+                setShowDrawer((prev) => !prev);
+                if (!backendStatus) checkHealth();
+              }}
+              title="Kiểm tra trạng thái Backend FastAPI"
+            >
+              <span className={`dot ${backendStatus?.startsWith("Online") ? "online" : "offline"}`} />
+              <span className="api-btn-text">API Service</span>
+            </button>
+
+            {showDrawer && (
+              <div className={`health-popover ${isDarkMode ? "dark-mode" : ""}`}>
+                <div className="popover-header">
+                  <strong>Backend Diagnostic</strong>
+                  <button
+                    type="button"
+                    className="close-btn"
+                    onClick={() => setShowDrawer(false)}
+                  >
+                    ×
+                  </button>
+                </div>
+                <p className="popover-desc">
+                  Kiểm tra kết nối microservice FastAPI backend qua axios client.
+                </p>
+                <div className="popover-actions">
+                  <button
+                    type="button"
+                    className="btn-action"
+                    onClick={checkHealth}
+                    disabled={checkingBackend}
+                  >
+                    {checkingBackend ? "Đang ping..." : "Ping /health"}
+                  </button>
+                </div>
+                {backendStatus && (
+                  <div
+                    className={`status-pill ${
+                      backendStatus.startsWith("Online") ? "success" : "warning"
+                    }`}
+                  >
+                    {backendStatus}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Tài khoản Người dùng / Đăng nhập */}
+          {currentUser ? (
+            <div className="header-user-wrapper">
               <button
                 type="button"
-                className={`view-tab-btn ${activeTab === "users" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveTab("users");
-                  window.location.hash = "#users";
-                }}
-                title="Quản lý người dùng & Cấp tài khoản"
+                className={`header-user-btn ${openDropdown === "user" ? "menu-open" : ""}`}
+                onClick={() => setOpenDropdown((prev) => (prev === "user" ? null : "user"))}
+                aria-expanded={openDropdown === "user"}
+                title="Tài khoản công dân số"
               >
-                <span>👥</span>
-                <span>Quản lý người dùng</span>
+                <span className="header-avatar-circle">👤</span>
+                <span className="header-user-name">{currentUser.full_name || "Công dân"}</span>
+                <span className="user-status-dot" title="Đang hoạt động">🟢</span>
+                <span className="dropdown-caret">{openDropdown === "user" ? "▴" : "▾"}</span>
               </button>
-            )}
 
-            {hasRbacAccess && (
-              <button
-                type="button"
-                className={`view-tab-btn ${activeTab === "rbac" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveTab("rbac");
-                  window.location.hash = "#rbac";
-                }}
-                title="Quản lý phân quyền vai trò RBAC & Ma trận quyền"
-              >
-                <span>🛡️</span>
-                <span>Phân quyền vai trò</span>
-              </button>
-            )}
+              {openDropdown === "user" && (
+                <div className={`user-nav-dropdown header-user-dropdown ${isDarkMode ? "dark-mode" : ""}`} role="menu">
+                  <div className="dropdown-user-info">
+                    <div className="dropdown-avatar">🌱</div>
+                    <div className="dropdown-user-details">
+                      <strong className="user-name">{currentUser.full_name || "Công dân GreenSpot"}</strong>
+                      <span className="user-email">{currentUser.email}</span>
+                      <span className="user-role-badge">
+                        {currentUser.role === "CITIZEN" ? "Công dân sinh thái" : currentUser.role}
+                      </span>
+                    </div>
+                  </div>
 
-            {hasDedupAccess && (
-              <button
-                type="button"
-                className={`view-tab-btn ${activeTab === "dedup" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveTab("dedup");
-                  window.location.hash = "#dedup";
-                }}
-                title="Bảng điều khiển AI gom cụm báo cáo trùng lặp"
-              >
-                <span>📑</span>
-                <span>Báo cáo trùng (AI)</span>
-              </button>
-            )}
+                  <div className="dropdown-separator" />
 
-            {hasMapAccess && (
-              <button
-                type="button"
-                className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveTab("map");
-                  window.location.hash = "#map";
-                }}
-                title="Bản đồ không gian xanh, ngập lụt & trạm IoT"
-              >
-                <span>🗺️</span>
-                <span>Bản đồ WebGIS</span>
-              </button>
-            )}
+                  <button
+                    type="button"
+                    className="dropdown-menu-action"
+                    onClick={() => navigateTo("profile", "#profile")}
+                  >
+                    <span className="action-icon">🌿</span>
+                    <span>Trang cá nhân & Green Passport</span>
+                  </button>
 
-            {hasAqiAccess && (
-              <button
-                type="button"
-                className={`view-tab-btn ${activeTab === "dashboard" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveTab("dashboard");
-                  window.location.hash = "#dashboard";
-                }}
-                title="Bảng điều khiển phân tích chất lượng không khí & khí tượng toàn quốc"
-              >
-                <span>📊</span>
-                <span>Phân tích AQI & Khí hậu</span>
-              </button>
-            )}
+                  <button
+                    type="button"
+                    className="dropdown-menu-action"
+                    onClick={() => {
+                      setAuthRedirectUrl("/devices");
+                      navigateTo("auth", "#devices");
+                    }}
+                  >
+                    <span className="action-icon">💻</span>
+                    <span>Quản lý thiết bị & Phiên</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="dropdown-menu-action"
+                    onClick={() => navigateTo("settings", "#settings")}
+                  >
+                    <span className="action-icon">⚙️</span>
+                    <span>Cài đặt tài khoản</span>
+                  </button>
+
+                  {(currentUser?.role === "ADMIN" || hasUserMgmtAccess || hasRbacAccess) && (
+                    <>
+                      <div className="dropdown-separator" />
+                      <div className="panel-section-title" style={{ padding: "4px 8px" }}>QUẢN TRỊ HỆ THỐNG</div>
+
+                      {hasUserMgmtAccess && (
+                        <button
+                          type="button"
+                          className="dropdown-menu-action"
+                          onClick={() => navigateTo("users", "#users")}
+                        >
+                          <span className="action-icon">👥</span>
+                          <span>Quản lý người dùng</span>
+                        </button>
+                      )}
+
+                      {hasRbacAccess && (
+                        <button
+                          type="button"
+                          className="dropdown-menu-action"
+                          onClick={() => navigateTo("rbac", "#rbac")}
+                        >
+                          <span className="action-icon">🛡️</span>
+                          <span>Phân quyền vai trò RBAC</span>
+                        </button>
+                      )}
+                    </>
+                  )}
+
+                  <div className="dropdown-separator" />
+
+                  <button
+                    type="button"
+                    className="dropdown-menu-action logout-action"
+                    onClick={() => {
+                      setOpenDropdown(null);
+                      setLogoutModalOpen(true);
+                    }}
+                  >
+                    <span className="action-icon">🚪</span>
+                    <span>Đăng xuất tài khoản</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
             <button
               type="button"
-              className={`view-tab-btn ${activeTab === "navigation" ? "active" : ""}`}
+              className="header-login-btn"
               onClick={() => {
-                setActiveTab("navigation");
-                window.location.hash = "#navigation";
+                setAuthRedirectUrl(undefined);
+                navigateTo("auth");
               }}
-              title="Tìm tuyến đường an toàn tránh ngập (STT 41)"
+              title="Đăng nhập hoặc đăng ký tài khoản công dân"
             >
-              <span>🧭</span>
-              <span>Tránh ngập</span>
+              <span>🌱</span>
+              <span>Đăng nhập</span>
             </button>
+          )}
+        </div>
+      </header>
 
-            <button
-              type="button"
-              className={`view-tab-btn ${activeTab === "posts" ? "active" : ""}`}
-              onClick={() => {
-                setActiveTab("posts");
-                window.location.hash = "#create-post";
-              }}
-              title="Tạo bài viết, phản ánh sự cố & chia sẻ kinh nghiệm sống xanh (STT 9)"
-            >
-              <span>✍️</span>
-              <span>Đăng bài viết</span>
-            </button>
-
-            <button
-              type="button"
-              className={`view-tab-btn ${activeTab === "penalties" ? "active" : ""}`}
-              onClick={() => {
-                setActiveTab("penalties");
-                window.location.hash = "#penalties";
-              }}
-              title="Tra cứu quy định xử phạt vi phạm hành chính (Nghị định 45/2022/NĐ-CP)"
-            >
-              <span>⚖️</span>
-              <span>Tra cứu xử phạt</span>
-            </button>
-
-            {hasPenaltyReportsAccess && (
-              <button
-                type="button"
-                className={`view-tab-btn ${activeTab === "penalty-reports" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveTab("penalty-reports");
-                  window.location.hash = "#penalty-reports";
-                }}
-                title="Giám sát & Xử lý phản ánh vi phạm môi trường từ công dân"
-                data-testid="tab-btn-penalty-reports"
-              >
-                <span>📢</span>
-                <span>Quản lý vi phạm</span>
-              </button>
-            )}
-
-
-
-            <button
-              type="button"
-              className={`view-tab-btn ${activeTab === "voice" ? "active" : ""}`}
-              onClick={() => {
-                setActiveTab("voice");
-                window.location.hash = "#voice";
-              }}
-              title="Trợ lý giọng nói rảnh tay (Hands-free Voice Assistant)"
-            >
-              <span>🎙️</span>
-              <span>Trợ lý Giọng nói</span>
-            </button>
-
-            <button
-              type="button"
-              className={`view-tab-btn ${activeTab === "friends" ? "active" : ""}`}
-              onClick={() => {
-                setActiveTab("friends");
-                window.location.hash = "#friends";
-              }}
-              title="Kết bạn và theo dõi công dân xanh"
-            >
-              <span>🤝</span>
-              <span>Bạn bè & Kết nối</span>
-            </button>
-
-            <button
-              type="button"
-              className={`view-tab-btn ${activeTab === "profile" ? "active" : ""}`}
-              onClick={() => {
-                setActiveTab("profile");
-                window.location.hash = "#profile";
-              }}
-              title="Trang cá nhân, Green Passport & Lịch sử đóng góp"
-            >
-              <span>🌿</span>
-              <span>Hồ sơ xanh</span>
-            </button>
-
-            <button
-              type="button"
-              className={`view-tab-btn ${activeTab === "settings" ? "active" : ""}`}
-              onClick={() => {
-                setActiveTab("settings");
-                window.location.hash = "#settings";
-              }}
-              title="Cài đặt giao diện, ngôn ngữ và bảo mật tài khoản"
-            >
-              <span>⚙️</span>
-              <span>Cài đặt</span>
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              className={`view-tab-btn ${activeTab === "map" ? "active" : ""}`}
-              onClick={() => {
-                setActiveTab("map");
-                window.location.hash = "#map";
-              }}
-              title="Bản đồ không gian xanh, ngập lụt & trạm IoT"
-            >
-              <span>🗺️</span>
-              <span>Bản đồ WebGIS</span>
-            </button>
-          </>
-        )}
-
-        {/* Nút chuyển đổi nhanh Giao diện Sáng / Tối */}
-        <button
-          type="button"
-          className={`view-tab-btn theme-tab-toggle ${isDarkMode ? "active" : ""}`}
-          onClick={handleToggleTheme}
-          title={isDarkMode ? "Đang là Chế độ Tối. Bấm để chuyển sang Chế độ Sáng" : "Đang là Chế độ Sáng. Bấm để chuyển sang Chế độ Tối"}
-          aria-label="Chuyển chế độ sáng tối"
-        >
-          <span>{isDarkMode ? "☀️" : "🌙"}</span>
-          <span>{isDarkMode ? "Sáng" : "Tối"}</span>
-        </button>
-      </nav>
+      {/* KHUNG NỘI DUNG CHÍNH (BÊN DƯỚI TOP HEADER) */}
+      <main className="app-main-viewport">
 
       {/* VIEW NỘI DUNG CHÍNH: AUTH, RBAC, PROFILE, MAP, DASHBOARD HOẶC VOICE */}
       {activeTab === "auth" ? (
@@ -1009,6 +1155,85 @@ function App() {
         <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
           <FloodNavigationContainer />
         </div>
+      ) : activeTab === "risk-dashboard" ? (
+        !currentUser ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/risk-dashboard"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+            <RiskDashboardContainer
+              currentUser={currentUser}
+              onBackToHome={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              onNavigateToMap={(lat, lng, districtName) => {
+                setActiveTab("map");
+                window.location.hash = `#map?lat=${lat}&lng=${lng}&district=${encodeURIComponent(districtName)}`;
+              }}
+            />
+          </div>
+        )
+      ) : activeTab === "dispatch" ? (
+        !currentUser ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/dispatch"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+            <DispatchContainer />
+          </div>
+        )
+      ) : activeTab === "hotspots" ? (
+        !currentUser ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/hotspots"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+            <HotspotContainer
+              currentUser={currentUser}
+              onNavigateToDispatch={(prefill, activeOrderId) => {
+                if (activeOrderId) {
+                  setActiveTab("dispatch");
+                  window.location.hash = `#dispatch?order_id=${encodeURIComponent(activeOrderId)}`;
+                } else {
+                  if (prefill) {
+                    try {
+                      localStorage.setItem("greenspot_prefill_dispatch", JSON.stringify(prefill));
+                    } catch {
+                      // Ignored
+                    }
+                  }
+                  setActiveTab("dispatch");
+                  window.location.hash = "#dispatch?action=create";
+                }
+              }}
+            />
+          </div>
+        )
       ) : activeTab === "settings" ? (
         !currentUser ? (
           <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
@@ -1081,10 +1306,30 @@ function App() {
                 setActiveTab("map");
                 window.location.hash = "#map";
               }}
-              onNavigateToFeature={(target) => {
+              onNavigateToFeature={(target, payload) => {
                 if (target === "dashboard_aqi") {
                   setActiveTab("dashboard");
                   window.location.hash = "#dashboard";
+                } else if (target === "map_flood" || target === "navigation") {
+                  if (payload) {
+                    try {
+                      localStorage.setItem("greenspot_nav_destination", JSON.stringify(payload));
+                    } catch {}
+                  }
+                  setActiveTab("navigation");
+                  window.location.hash = "#navigation";
+                } else if (target === "dispatch" || target === "operations_dispatch") {
+                  setActiveTab("dispatch");
+                  window.location.hash = "#dispatch";
+                } else if (target === "risk_dashboard" || target === "urban_risk") {
+                  setActiveTab("risk-dashboard");
+                  window.location.hash = "#risk-dashboard";
+                } else if (target === "hotspots") {
+                  setActiveTab("hotspots");
+                  window.location.hash = "#hotspots";
+                } else if (target === "dedup") {
+                  setActiveTab("dedup");
+                  window.location.hash = "#dedup";
                 } else if (target === "/report-incident") {
                   setActiveTab("triage");
                   window.location.hash = "#triage";
@@ -1169,89 +1414,25 @@ function App() {
           <EcoMap />
         </ModulePermissionGuard>
       )}
+      </main>
 
       {/* NÚT TRỢ LÝ GIỌNG NÓI NHANH NỔI (CHỈ HIỂN THỊ KHI ĐÃ ĐĂNG NHẬP VÀ KHÔNG Ở TAB VOICE) */}
-      {
-        currentUser && activeTab !== "voice" && (
-          <button
-            type="button"
-            className="floating-voice-quick-btn"
-            onClick={() => {
-              setActiveTab("voice");
-              window.location.hash = "#voice";
-            }}
-            title="Bật Trợ lý giọng nói rảnh tay"
-            aria-label="Trợ lý giọng nói"
-          >
-            <span className="floating-mic-icon">🎙️</span>
-            <span className="floating-mic-label">Trợ lý ảo</span>
-          </button>
-        )
-      }
-
-      {/* NÚT ĐỔI GIAO DIỆN SÁNG / TỐI & KIỂM TRA MICROSERVICE BACKEND (GÓC TRÊN BÊN PHẢI) */}
-      <div className="quick-top-actions">
+      {currentUser && activeTab !== "voice" && (
         <button
           type="button"
-          className={`theme-mode-toggle-btn ${isDarkMode || activeTab === "dashboard" ? "dark-mode" : ""}`}
-          onClick={handleToggleTheme}
-          title={isDarkMode ? "Chuyển sang giao diện Sáng" : "Chuyển sang giao diện Tối"}
-          aria-label="Chuyển chế độ giao diện sáng tối"
-        >
-          <span className="theme-toggle-icon">{isDarkMode ? "☀️" : "🌙"}</span>
-          <span className="theme-toggle-text">{isDarkMode ? "Giao diện Sáng" : "Giao diện Tối"}</span>
-        </button>
-
-        <button
-          type="button"
-          className={`health-badge-btn ${isDarkMode || activeTab === "dashboard" ? "dark-mode" : ""}`}
+          className="floating-voice-quick-btn"
           onClick={() => {
-            setShowDrawer((prev) => !prev);
-            if (!backendStatus) checkHealth();
+            setActiveTab("voice");
+            window.location.hash = "#voice";
           }}
-          title="Kiểm tra trạng thái Backend FastAPI"
+          title="Bật Trợ lý giọng nói rảnh tay"
+          aria-label="Trợ lý giọng nói"
         >
-          <span className={`dot ${backendStatus?.startsWith("Online") ? "online" : "offline"}`} />
-          <span>API Service</span>
+          <span className="floating-mic-icon">🎙️</span>
+          <span className="floating-mic-label">Trợ lý ảo</span>
         </button>
-
-        {showDrawer && (
-          <div className={`health-popover ${isDarkMode || activeTab === "dashboard" ? "dark-mode" : ""}`}>
-            <div className="popover-header">
-              <strong>Backend Diagnostic</strong>
-              <button
-                type="button"
-                className="close-btn"
-                onClick={() => setShowDrawer(false)}
-              >
-                ×
-              </button>
-            </div>
-            <p className="popover-desc">
-              Kiểm tra kết nối microservice FastAPI backend qua axios client.
-            </p>
-            <div className="popover-actions">
-              <button
-                type="button"
-                className="btn-action"
-                onClick={checkHealth}
-                disabled={checkingBackend}
-              >
-                {checkingBackend ? "Đang ping..." : "Ping /health"}
-              </button>
-            </div>
-            {backendStatus && (
-              <div
-                className={`status-pill ${backendStatus.startsWith("Online") ? "success" : "warning"
-                  }`}
-              >
-                {backendStatus}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div >
+      )}
+    </div>
   );
 }
 

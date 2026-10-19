@@ -11,6 +11,7 @@ from app.models.rbac import User, Role
 from app.models.spatial import AdministrativeUnit
 from app.models.incident import Incident
 from app.models.deduplication import IncidentDuplicateCluster
+from app.crud.deduplication.deduplication_repository import deduplication_repository
 from app.schemas.deduplication import (
     DistrictOption,
     DuplicateClusterListItem,
@@ -58,13 +59,11 @@ async def get_deduplication_districts(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Lấy danh sách quận/huyện cho bộ lọc ở Cột trái (Màn 1)
+    Lấy danh sách quận/huyện cho bộ lọc ở Cột trái (Màn 1) qua DeduplicationRepository
     """
     await verify_deduplication_access(current_user, db)
 
-    stmt = select(AdministrativeUnit).order_by(AdministrativeUnit.name)
-    res = await db.execute(stmt)
-    units = res.scalars().all()
+    units = await deduplication_repository.get_districts(db)
 
     options = [DistrictOption(unit_id=None, name="Tất cả quận/huyện", unit_code="ALL")]
     for u in units:
@@ -90,7 +89,7 @@ async def list_duplicate_clusters(
 ):
     """
     Cột phải: Khối 'NHÓM TRÙNG' (Màn 1/4)
-    Tự động gom cụm các báo cáo trùng lặp theo thuật toán AI.
+    Tự động gom cụm các báo cáo trùng lặp theo thuật toán AI qua DeduplicationRepository.
     Hỗ trợ lọc theo quận và mức giống nhau (%).
     """
     await verify_deduplication_access(current_user, db)
@@ -102,22 +101,12 @@ async def list_duplicate_clusters(
             detail="Không thể kết nối dịch vụ AI. Vui lòng thử lại",
         )
 
-    # Truy vấn danh sách cụm đang chờ duyệt, áp dụng Soft delete (deleted_at IS NULL - Quy tắc 6)
-    query = (
-        select(IncidentDuplicateCluster)
-        .where(IncidentDuplicateCluster.deleted_at.is_(None))
-        .where(IncidentDuplicateCluster.status == "PENDING_REVIEW")
+    # Truy vấn danh sách cụm đang chờ duyệt qua Repository (áp dụng soft delete)
+    clusters = await deduplication_repository.list_clusters(
+        db=db,
+        district_name=district_name,
+        min_similarity=min_similarity,
     )
-
-    if district_name and district_name != "Tất cả quận/huyện":
-        query = query.where(IncidentDuplicateCluster.district_name == district_name)
-
-    if min_similarity is not None:
-        query = query.where(IncidentDuplicateCluster.similarity_rate >= min_similarity)
-
-    query = query.order_by(IncidentDuplicateCluster.similarity_rate.desc())
-    res = await db.execute(query)
-    clusters = res.scalars().all()
 
     items = []
     for c in clusters:
@@ -159,31 +148,18 @@ async def get_cluster_comparison_detail(
         .where(IncidentDuplicateCluster.cluster_id == cluster_id)
         .where(IncidentDuplicateCluster.deleted_at.is_(None))
     )
-    res = await db.execute(stmt)
-    cluster = res.scalar_one_or_none()
+    cluster = await deduplication_repository.get_cluster_by_id(db, cluster_id)
     if not cluster:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Không tìm thấy cụm báo cáo trùng lặp yêu cầu",
         )
 
-    # Nạp chi tiết Báo cáo A
-    stmt_a = (
-        select(Incident)
-        .options(selectinload(Incident.media), selectinload(Incident.reporter))
-        .where(Incident.incident_id == cluster.incident_a_id)
-    )
-    res_a = await db.execute(stmt_a)
-    inc_a = res_a.scalar_one_or_none()
+    # Nạp chi tiết Báo cáo A qua Repository
+    inc_a = await deduplication_repository.get_incident_with_media_and_reporter(db, cluster.incident_a_id)
 
-    # Nạp chi tiết Báo cáo B
-    stmt_b = (
-        select(Incident)
-        .options(selectinload(Incident.media), selectinload(Incident.reporter))
-        .where(Incident.incident_id == cluster.incident_b_id)
-    )
-    res_b = await db.execute(stmt_b)
-    inc_b = res_b.scalar_one_or_none()
+    # Nạp chi tiết Báo cáo B qua Repository
+    inc_b = await deduplication_repository.get_incident_with_media_and_reporter(db, cluster.incident_b_id)
 
     if not inc_a or not inc_b:
         raise HTTPException(
@@ -272,12 +248,7 @@ async def mark_cluster_as_distinct(
     """
     await verify_deduplication_access(current_user, db)
 
-    stmt = select(IncidentDuplicateCluster).where(
-        IncidentDuplicateCluster.cluster_id == req.cluster_id,
-        IncidentDuplicateCluster.deleted_at.is_(None),
-    )
-    res = await db.execute(stmt)
-    cluster = res.scalar_one_or_none()
+    cluster = await deduplication_repository.get_cluster_by_id(db, req.cluster_id)
     if not cluster:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -291,10 +262,7 @@ async def mark_cluster_as_distinct(
             detail="Dữ liệu đã bị thay đổi bởi thao tác khác. Vui lòng tải lại dữ liệu",
         )
 
-    cluster.status = "SEPARATED"
-    cluster.version = cluster.version + 1
-    cluster.updated_at = datetime.now(timezone.utc)
-    await db.commit()
+    cluster = await deduplication_repository.mark_cluster_distinct(db, cluster)
 
     return MarkDistinctResponse(
         success=True,
@@ -317,12 +285,7 @@ async def merge_cluster_incidents(
     await verify_deduplication_access(current_user, db)
 
     # 1. Tìm cluster và kiểm tra version (Optimistic Concurrency Control)
-    stmt = select(IncidentDuplicateCluster).where(
-        IncidentDuplicateCluster.cluster_id == req.cluster_id,
-        IncidentDuplicateCluster.deleted_at.is_(None),
-    )
-    res = await db.execute(stmt)
-    cluster = res.scalar_one_or_none()
+    cluster = await deduplication_repository.get_cluster_by_id(db, req.cluster_id)
     if not cluster:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -335,9 +298,9 @@ async def merge_cluster_incidents(
             detail="Dữ liệu đã bị thay đổi bởi người dùng khác. Vui lòng tải lại trang",
         )
 
-    # 2. Tìm Báo cáo chính và Báo cáo phụ
-    primary_inc = await db.get(Incident, req.primary_incident_id)
-    secondary_inc = await db.get(Incident, req.secondary_incident_id)
+    # 2. Tìm Báo cáo chính và Báo cáo phụ qua Repository
+    primary_inc = await deduplication_repository.get_incident_by_id(db, req.primary_incident_id)
+    secondary_inc = await deduplication_repository.get_incident_by_id(db, req.secondary_incident_id)
 
     if not primary_inc or not secondary_inc:
         raise HTTPException(
@@ -345,22 +308,16 @@ async def merge_cluster_incidents(
             detail="Không thể gộp báo cáo lúc này. Vui lòng thử lại",
         )
 
-    # 3. Liên kết báo cáo phụ vào báo cáo chính
-    secondary_inc.master_incident_id = primary_inc.incident_id
-    secondary_inc.is_duplicate_merged = True
-    secondary_inc.status = "MERGED"
-    secondary_inc.version = secondary_inc.version + 1
+    # 3. Liên kết báo cáo phụ vào báo cáo chính và Soft Delete cụm qua Repository
+    await deduplication_repository.merge_cluster_incidents(
+        db=db,
+        cluster=cluster,
+        primary_inc=primary_inc,
+        secondary_inc=secondary_inc,
+    )
 
-    # 4. Cập nhật cụm báo cáo và Soft Delete (Quy tắc 6)
-    cluster.status = "MERGED"
-    cluster.master_incident_id = primary_inc.incident_id
-    cluster.version = cluster.version + 1
-    cluster.deleted_at = datetime.now(timezone.utc)
-
-    # 5. Hệ thống gửi thông báo push/chuông đến người gửi báo cáo phụ
+    # 4. Hệ thống gửi thông báo push/chuông đến người gửi báo cáo phụ
     notification_target = secondary_inc.reporter_id or "Công dân gửi báo cáo phụ"
-
-    await db.commit()
 
     return MergeIncidentResponse(
         success=True,

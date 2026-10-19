@@ -17,6 +17,9 @@ from app.api.v1.penalties import router as penalties_router
 from app.api.v1.posts import router as posts_router
 from app.api.v1.navigation import navigation_router
 from app.api.v1.notifications import router as notifications_router
+from app.api.v1.risk_dashboard.router import router as risk_dashboard_router
+from app.api.v1.dispatch.router import router as dispatch_router
+from app.api.v1.hotspots.router import router as hotspots_router
 
 api_v1_router = APIRouter()
 api_v1_router.include_router(auth_router)
@@ -37,4 +40,9 @@ api_v1_router.include_router(penalties_router)
 api_v1_router.include_router(posts_router)
 api_v1_router.include_router(navigation_router)
 api_v1_router.include_router(notifications_router)
+api_v1_router.include_router(risk_dashboard_router)
+api_v1_router.include_router(dispatch_router)
+api_v1_router.include_router(hotspots_router)
+
+
 
