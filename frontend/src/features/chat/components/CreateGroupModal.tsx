@@ -142,7 +142,12 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
       <div className="chat-modal-card" onClick={(e) => e.stopPropagation()}>
         {/* Header Modal */}
         <div className="modal-card-header">
-          <h3>Tạo cuộc trò chuyện nhóm</h3>
+          <div>
+            <h3>Tạo cuộc trò chuyện nhóm</h3>
+            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 400, marginTop: 2 }}>
+              Nhóm chat riêng bạn bè (2–50 người) • Tạo nhóm theo địa bàn xem tab <b>Nhóm cộng đồng</b>
+            </div>
+          </div>
           <button
             type="button"
             className="btn-close-modal"

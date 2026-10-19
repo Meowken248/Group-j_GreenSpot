@@ -652,6 +652,21 @@ function App() {
                   className="dropdown-menu-action"
                   onClick={() => {
                     setUserDropdownOpen(false);
+                    setActiveTab("groups");
+                    window.location.hash = "#groups";
+                  }}
+                >
+                  <span className="action-icon">👥</span>
+                  <span>Nhóm cộng đồng</span>
+                </button>
+
+                <div className="dropdown-separator" />
+
+                <button
+                  type="button"
+                  className="dropdown-menu-action"
+                  onClick={() => {
+                    setUserDropdownOpen(false);
                     setActiveTab("posts");
                     window.location.hash = "#posts";
                   }}
@@ -863,6 +878,20 @@ function App() {
 
             <button
               type="button"
+              className={`view-tab-btn btn-groups-nav ${activeTab === "groups" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("groups");
+                window.location.hash = "#groups";
+              }}
+              title="Nhóm cộng đồng theo quận, phường hoặc chủ đề (Chức năng 16)"
+              data-testid="nav-tab-groups"
+            >
+              <span>👥</span>
+              <span>Nhóm cộng đồng</span>
+            </button>
+
+            <button
+              type="button"
               className={`view-tab-btn btn-chat-nav ${activeTab === "messages" ? "active" : ""}`}
               onClick={() => {
                 setChatTargetUserId(null);
@@ -1064,18 +1093,6 @@ function App() {
               <span>⚙️</span>
               <span>Cài đặt</span>
             </button>
-            <button
-              type="button"
-              className={`view-tab-btn ${activeTab === "groups" ? "active" : ""}`}
-              onClick={() => {
-                setActiveTab("groups");
-                window.location.hash = "#groups";
-              }}
-              title="Nhóm cộng đồng theo quận, phường hoặc chủ đề (Chức năng 16)"
-            >
-              <span>👥</span>
-              <span>Nhóm</span>
-            </button>
           </>
         ) : (
           <>
@@ -1195,8 +1212,8 @@ function App() {
               authRedirectUrl === "/devices" || window.location.hash === "#devices"
                 ? "devices"
                 : authRedirectUrl
-                ? "login"
-                : undefined
+                  ? "login"
+                  : undefined
             }
             redirectUrl={authRedirectUrl}
             onExitAuth={() => {
