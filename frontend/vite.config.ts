@@ -8,6 +8,14 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     proxy: {
+      '/api': {
+        target: process.env.BACKEND_PROXY_URL || 'http://backend:8000',
+        changeOrigin: true,
+      },
+      '/health': {
+        target: process.env.BACKEND_PROXY_URL || 'http://backend:8000',
+        changeOrigin: true,
+      },
       '/uploads': {
         target: process.env.BACKEND_PROXY_URL || 'http://backend:8000',
         changeOrigin: true,
