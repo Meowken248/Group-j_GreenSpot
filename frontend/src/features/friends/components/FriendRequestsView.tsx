@@ -1,5 +1,6 @@
 import React from "react";
 import type { FriendRequestItem, GreenCitizenSuggestion } from "../types";
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
 
 interface FriendRequestsViewProps {
   requests: FriendRequestItem[];
@@ -59,7 +60,7 @@ export const FriendRequestsView: React.FC<FriendRequestsViewProps> = ({
                 >
                   {req.sender_avatar ? (
                     <img
-                      src={req.sender_avatar}
+                      src={resolveMediaUrl(req.sender_avatar)}
                       alt={req.sender_name}
                       className="user-avatar-round"
                     />
@@ -137,7 +138,7 @@ export const FriendRequestsView: React.FC<FriendRequestsViewProps> = ({
                 >
                   {sug.avatar_url ? (
                     <img
-                      src={sug.avatar_url}
+                      src={resolveMediaUrl(sug.avatar_url)}
                       alt={sug.full_name}
                       className="user-avatar-round"
                     />

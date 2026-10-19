@@ -302,9 +302,9 @@ async def respond_to_friend_request(
         req.status = FriendRequestStatus.ACCEPTED.value
 
         # Tăng friends_count của cả 2 user
-        current_user.friends_count += 1
+        current_user.friends_count = (current_user.friends_count or 0) + 1
         if sender_user:
-            sender_user.friends_count += 1
+            sender_user.friends_count = (sender_user.friends_count or 0) + 1
 
         await db.commit()
         return GenericFriendsActionResponse(
@@ -575,12 +575,12 @@ async def unfriend_user(
     friendship.deleted_at = datetime.now(timezone.utc)
 
     # 2. Giảm friends_count không âm
-    current_user.friends_count = max(0, current_user.friends_count - 1)
+    current_user.friends_count = max(0, (current_user.friends_count or 0) - 1)
 
     f_res = await db.execute(select(User).where(User.user_id == friend_id))
     friend_user = f_res.scalars().first()
     if friend_user:
-        friend_user.friends_count = max(0, friend_user.friends_count - 1)
+        friend_user.friends_count = max(0, (friend_user.friends_count or 0) - 1)
 
     await db.commit()
 

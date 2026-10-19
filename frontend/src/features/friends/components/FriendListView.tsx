@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { FriendItem, FollowingItem } from "../types";
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
 
 interface FriendListViewProps {
   friends: FriendItem[];
@@ -92,7 +93,7 @@ export const FriendListView: React.FC<FriendListViewProps> = ({
                   <div className="avatar-wrapper">
                     {friend.avatar_url ? (
                       <img
-                        src={friend.avatar_url}
+                        src={resolveMediaUrl(friend.avatar_url)}
                         alt={friend.full_name}
                         className="friend-avatar"
                       />
@@ -184,7 +185,7 @@ export const FriendListView: React.FC<FriendListViewProps> = ({
                 >
                   {target.avatar_url ? (
                     <img
-                      src={target.avatar_url}
+                      src={resolveMediaUrl(target.avatar_url)}
                       alt={target.full_name}
                       className="following-avatar"
                     />

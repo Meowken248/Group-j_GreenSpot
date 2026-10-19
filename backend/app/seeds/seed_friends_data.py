@@ -183,6 +183,7 @@ async def seed_friends_data():
 
         # 1. Tìm hoặc xác định danh sách các tài khoản người dùng chính (để tạo quan hệ bạn bè)
         target_emails = [
+            "admin@gmail.com",
             "citizen@ecoreport.gov.vn",
             "ddatmguyen2023+test@gmail.com"
         ]

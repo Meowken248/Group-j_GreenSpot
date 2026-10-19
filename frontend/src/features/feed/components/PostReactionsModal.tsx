@@ -79,7 +79,7 @@ export const PostReactionsModal: React.FC<PostReactionsModalProps> = ({
   const handleAddFriend = async (targetUserId: string) => {
     try {
       setActionLoadingIds((prev) => ({ ...prev, [targetUserId]: true }));
-      await api.post("/friends/requests", { receiver_id: targetUserId });
+      await api.post("/api/v1/friends/requests", { receiver_id: targetUserId });
       setUsers((prev) =>
         prev.map((u) =>
           u.user_id === targetUserId
@@ -89,7 +89,11 @@ export const PostReactionsModal: React.FC<PostReactionsModalProps> = ({
       );
       if (onShowToast) onShowToast("success", "Đã gửi lời mời kết bạn!");
     } catch (err: any) {
-      const msg = err?.response?.data?.detail || "Không thể gửi lời mời kết bạn";
+      const errDetail = err?.response?.data?.detail;
+      const msg =
+        (typeof errDetail === "object" ? errDetail?.message : errDetail) ||
+        err?.response?.data?.message ||
+        "Không thể gửi lời mời kết bạn";
       if (onShowToast) onShowToast("error", msg);
     } finally {
       setActionLoadingIds((prev) => ({ ...prev, [targetUserId]: false }));
