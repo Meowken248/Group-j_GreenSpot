@@ -100,6 +100,9 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
     e.target.value = "";
   };
 
+  // Khóa ngăn chặn bấm đúp chuột tức thì
+  const isSubmittingRef = useRef(false);
+
   // Hủy ảnh đính kèm
   const handleRemoveFile = () => {
     if (previewUrl) {
@@ -107,14 +110,23 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
     }
     setSelectedFile(null);
     setPreviewUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
-  // Thực hiện gửi tin nhắn (Chuẩn Doanh nghiệp: Optimistic clearing <1ms)
+  // Thực hiện gửi tin nhắn (Chuẩn Doanh nghiệp: Optimistic clearing <1ms, gõ liên tục, phục hồi tệp khi lỗi)
   const handleSubmit = async () => {
     const textToSend = content.trim();
-    if ((!textToSend && !selectedFile) || isSending || cooldown > 0 || disabled) {
+    if ((!textToSend && !selectedFile) || isSubmittingRef.current || cooldown > 0 || disabled) {
       return;
     }
+    // Nếu đang có tiến trình upload file khác thì chặn gửi thêm file đính kèm cùng lúc
+    if (selectedFile && isSending) {
+      return;
+    }
+
+    isSubmittingRef.current = true;
 
     // Tắt typing ngay khi bấm gửi
     if (typingTimerRef.current) {
@@ -122,10 +134,17 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
     }
     onTyping(false);
 
-    // Chuẩn doanh nghiệp: Xóa sạch input ngay lập tức và giữ focus để người dùng có thể gõ tiếp tin nhắn tiếp theo
+    // Lưu lại dữ liệu dự phòng để phục hồi nếu gặp sự cố mạng
     const fileToSend = selectedFile;
+    const currentPreviewUrl = previewUrl;
+
+    // Chuẩn doanh nghiệp: Xóa sạch input ngay lập tức và giữ focus để người dùng có thể gõ tiếp tin nhắn tiếp theo
     setContent("");
-    handleRemoveFile();
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
       textareaRef.current.focus();
@@ -136,12 +155,24 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
       setCooldown(3);
     }
 
+    // Cho phép người dùng gõ và gửi tin nhắn tiếp theo ngay sau khi input được dọn sạch
+    isSubmittingRef.current = false;
+
     const success = await onSendMessage(textToSend, fileToSend || undefined);
     if (!success) {
-      // Nếu có lỗi mạng nghiêm trọng, phục hồi lại text để người dùng không bị mất dữ liệu
+      // Nếu có lỗi mạng hoặc lỗi upload, phục hồi đầy đủ cả text và tệp ảnh đính kèm
       setContent(textToSend);
+      if (fileToSend) {
+        setSelectedFile(fileToSend);
+        setPreviewUrl(currentPreviewUrl || URL.createObjectURL(fileToSend));
+      }
       if (isDistrict) {
         setCooldown(0);
+      }
+    } else {
+      // Gửi thành công hoàn toàn thì mới giải phóng bộ nhớ blob URL
+      if (currentPreviewUrl) {
+        URL.revokeObjectURL(currentPreviewUrl);
       }
     }
   };
@@ -154,7 +185,11 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
     }
   };
 
-  const isSubmitDisabled = (!content.trim() && !selectedFile) || isSending || cooldown > 0 || disabled;
+  const isSubmitDisabled =
+    (!content.trim() && !selectedFile) ||
+    (selectedFile ? isSending : false) ||
+    cooldown > 0 ||
+    disabled;
 
   return (
     <div className="chat-composer-bar">
