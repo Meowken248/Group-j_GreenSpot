@@ -18,6 +18,7 @@ import "./styles/Chat.scss";
 
 interface ChatContainerProps {
   initialTargetUserId?: string | null;
+  initialConversationId?: string | null;
   onNavigateLogin?: () => void;
   currentUser?: any;
   onBackToHome?: () => void;
@@ -25,6 +26,7 @@ interface ChatContainerProps {
 
 export const ChatContainer: React.FC<ChatContainerProps> = ({
   initialTargetUserId,
+  initialConversationId,
   onNavigateLogin,
   currentUser: propCurrentUser,
   onBackToHome,
@@ -197,6 +199,18 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
       setMessages([]);
       setHasMoreOlderMessages(false);
 
+      // Cập nhật URL Hash và SessionStorage để F5 tự động mở lại đúng người đang chat
+      try {
+        sessionStorage.setItem("greenspot_active_chat_conv_id", conv.conversation_id);
+        const currentHash = window.location.hash;
+        const newHash = `#messages?conv=${conv.conversation_id}`;
+        if (currentHash !== newHash) {
+          window.history.replaceState(null, "", newHash);
+        }
+      } catch {
+        // ignore
+      }
+
       // Đánh dấu đã đọc trong danh sách
       setConversations((prev) =>
         prev.map((c) =>
@@ -287,6 +301,64 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
       isMounted = false;
     };
   }, [initialTargetUserId, isLoggedIn, handleSelectConversation]);
+
+  // Xử lý mở lại cuộc trò chuyện từ URL Deep-link (#messages?conv={id}) hoặc sessionStorage khi F5
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    if (selectedConversation) return;
+
+    let targetConvId = initialConversationId;
+    if (!targetConvId) {
+      try {
+        targetConvId = sessionStorage.getItem("greenspot_active_chat_conv_id");
+      } catch {
+        targetConvId = null;
+      }
+    }
+
+    if (targetConvId) {
+      // Tìm trong danh sách hội thoại đã tải trước
+      const existing = conversations.find((c) => c.conversation_id === targetConvId);
+      if (existing) {
+        handleSelectConversation(existing);
+      } else if (!isLoadingConversations) {
+        // Tải chi tiết từ API nếu chưa có trong trang đầu
+        chatService
+          .getConversationDetail(targetConvId)
+          .then((conv) => {
+            if (conv) {
+              setConversations((prev) => {
+                if (prev.some((c) => c.conversation_id === conv.conversation_id)) return prev;
+                return [conv, ...prev];
+              });
+              handleSelectConversation(conv);
+            }
+          })
+          .catch(() => {
+            try {
+              sessionStorage.removeItem("greenspot_active_chat_conv_id");
+            } catch {}
+          });
+      }
+    } else if (
+      window.innerWidth >= 768 &&
+      !initialTargetUserId &&
+      conversations.length > 0 &&
+      !selectedConversation &&
+      !isLoadingConversations
+    ) {
+      // Chuẩn Messenger/Slack Desktop: Tự động mở cuộc trò chuyện đầu tiên nếu chưa chọn ai
+      handleSelectConversation(conversations[0]);
+    }
+  }, [
+    initialConversationId,
+    initialTargetUserId,
+    isLoggedIn,
+    conversations,
+    selectedConversation,
+    isLoadingConversations,
+    handleSelectConversation,
+  ]);
 
   // Cuộn ngược tải 30 tin cũ hơn
   const handleLoadOlderMessages = async () => {
@@ -546,21 +618,39 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
           };
           return [newConvItem, ...prev];
         } else {
+          // Tạo optimistic conversation item ngay lập tức để người nhận thấy ngay hội thoại ở Cột 1
+          const optimisticConv: ChatConversation = {
+            conversation_id: newMsg.conversation_id,
+            type: "direct",
+            title: newMsg.sender?.full_name || "Tin nhắn mới",
+            avatar_url: newMsg.sender?.avatar_url || null,
+            district: null,
+            admin_user_id: null,
+            creator_id: newMsg.sender_id,
+            other_user_id: newMsg.sender_id,
+            members: newMsg.sender ? [newMsg.sender] : [],
+            member_count: 2,
+            unread_count: 1,
+            last_message: newMsg,
+            created_at: newMsg.created_at,
+            updated_at: newMsg.created_at,
+          };
+
+          // Lấy detail hoàn chỉnh ngầm phía sau
           chatService
             .getConversationDetail(newMsg.conversation_id)
             .then((convDetail: ChatConversation) => {
-              setConversations((current) => {
-                if (
-                  current.some(
-                    (c) => c.conversation_id === convDetail.conversation_id
-                  )
+              setConversations((current) =>
+                current.map((c) =>
+                  c.conversation_id === convDetail.conversation_id
+                    ? { ...convDetail, last_message: newMsg, unread_count: Math.max(c.unread_count, 1) }
+                    : c
                 )
-                  return current;
-                return [{ ...convDetail, last_message: newMsg }, ...current];
-              });
+              );
             })
             .catch(() => {});
-          return prev;
+
+          return [optimisticConv, ...prev];
         }
       });
     });
@@ -618,8 +708,40 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
       );
     });
 
+    // 5. Nhận cập nhật cuộc trò chuyện từ WebSocket (CONVERSATION_UPDATE)
+    const unbindConvUpdate = chatSocket.on("CONVERSATION_UPDATE", (data: any) => {
+      if (!data || !data.conversation_id) return;
+      const convId = String(data.conversation_id);
+      setConversations((prev) => {
+        const found = prev.find((c) => c.conversation_id === convId);
+        if (found) {
+          const updated: ChatConversation = {
+            ...found,
+            last_message: data.last_message
+              ? {
+                  message_id: String(data.last_message.message_id),
+                  conversation_id: convId,
+                  sender_id: String(data.last_message.sender_id),
+                  sender: {
+                    user_id: String(data.last_message.sender_id),
+                    full_name: data.last_message.sender_name || "",
+                  },
+                  content: data.last_message.content || "",
+                  media_url: data.last_message.media_url || null,
+                  created_at: data.last_message.created_at || data.last_message_at,
+                }
+              : found.last_message,
+            updated_at: data.last_message_at || found.updated_at,
+          };
+          return [updated, ...prev.filter((c) => c.conversation_id !== convId)];
+        }
+        return prev;
+      });
+    });
+
     return () => {
       unbindMsg();
+      unbindConvUpdate();
       unbindTyping();
       unbindSeen();
       unbindOnline();

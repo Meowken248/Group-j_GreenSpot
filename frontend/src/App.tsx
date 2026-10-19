@@ -22,6 +22,7 @@ import { FriendsContainer } from "./features/friends";
 import { PenaltyLookupContainer } from "./features/penalties";
 import { FeedContainer } from "./features/feed";
 import { ChatContainer } from "./features/chat";
+import { chatSocket, playChatNotificationChime } from "./features/chat/services/chatSocket";
 
 import {
   SettingsContainer,
@@ -166,6 +167,12 @@ function App() {
     const match = hash.match(/[?&]target=([^&]+)/);
     return match ? decodeURIComponent(match[1]) : null;
   });
+  const [chatConversationId, setChatConversationId] = useState<string | null>(() => {
+    const hash = window.location.hash;
+    const match = hash.match(/[?&](?:conv|conversation_id)=([^&]+)/);
+    return match ? decodeURIComponent(match[1]) : null;
+  });
+  const [globalUnreadChatCount, setGlobalUnreadChatCount] = useState<number>(0);
   const [profileTargetUserId, setProfileTargetUserId] = useState<string | null>(() => {
     const hash = window.location.hash;
     const match = hash.match(/[?&](?:id|userId|user_id)=([^&]+)/);
@@ -273,12 +280,17 @@ function App() {
         const targetId = match ? decodeURIComponent(match[1]) : null;
         setChatTargetUserId(targetId);
 
+        const convMatch = window.location.hash.match(/[?&](?:conv|conversation_id)=([^&]+)/);
+        const convId = convMatch ? decodeURIComponent(convMatch[1]) : null;
+        setChatConversationId(convId);
+
         if (!isLogged) {
           setAuthRedirectUrl("/messages");
           setActiveTab("auth");
           window.location.hash = "#login";
         } else {
           setActiveTab("messages");
+          setGlobalUnreadChatCount(0);
         }
       } else if (hash === "#dashboard") {
         if (!isLogged) {
@@ -472,6 +484,8 @@ function App() {
       localStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
       localStorage.removeItem(AUTH_STORAGE_KEYS.USER_INFO);
       delete api.defaults.headers.common.Authorization;
+      chatSocket.disconnect();
+      setGlobalUnreadChatCount(0);
       resetSessionExpired();
       window.dispatchEvent(new Event("auth_change"));
       setIsLoggingOut(false);
@@ -501,6 +515,29 @@ function App() {
   useEffect(() => {
     checkHealth();
   }, []);
+
+  // KẾT NỐI WEBSOCKET CHAT TOÀN CỤC & THÔNG BÁO TỨC THỜI (CHUẨN DOANH NGHIỆP)
+  useEffect(() => {
+    const isLogged = checkIsLoggedIn();
+    if (!isLogged || !currentUser) return;
+
+    chatSocket.connect();
+
+    // Lắng nghe tin nhắn mới để cập nhật badge thông báo và phát âm thanh
+    const unbindMsg = chatSocket.on("NEW_MESSAGE", (msg: any) => {
+      const myId = String(currentUser?.user_id || currentUser?.id || "");
+      if (msg && msg.sender_id !== myId) {
+        if (activeTab !== "messages") {
+          setGlobalUnreadChatCount((prev) => prev + 1);
+          playChatNotificationChime();
+        }
+      }
+    });
+
+    return () => {
+      unbindMsg();
+    };
+  }, [currentUser, activeTab]);
 
   return (
     <div className="app-container">
@@ -574,12 +611,14 @@ function App() {
                   onClick={() => {
                     setUserDropdownOpen(false);
                     setChatTargetUserId(null);
+                    setChatConversationId(null);
                     setActiveTab("messages");
                     window.location.hash = "#messages";
+                    setGlobalUnreadChatCount(0);
                   }}
                 >
                   <span className="action-icon">💬</span>
-                  <span>Tin nhắn & Đoạn chat</span>
+                  <span>Tin nhắn & Đoạn chat {globalUnreadChatCount > 0 ? `(${globalUnreadChatCount})` : ""}</span>
                 </button>
 
                 <div className="dropdown-separator" />
@@ -803,13 +842,18 @@ function App() {
               className={`view-tab-btn btn-chat-nav ${activeTab === "messages" ? "active" : ""}`}
               onClick={() => {
                 setChatTargetUserId(null);
+                setChatConversationId(null);
                 setActiveTab("messages");
                 window.location.hash = "#messages";
+                setGlobalUnreadChatCount(0);
               }}
               title="Nhắn tin 1-1, Chat nhóm & Chat quận thời gian thực (Chức năng 15)"
             >
               <span>💬</span>
               <span>Tin nhắn</span>
+              {globalUnreadChatCount > 0 && (
+                <span className="global-chat-badge">{globalUnreadChatCount > 99 ? "99+" : globalUnreadChatCount}</span>
+              )}
             </button>
 
             {hasAqiAccess && (
@@ -1397,6 +1441,7 @@ function App() {
             <ChatContainer
               currentUser={currentUser}
               initialTargetUserId={chatTargetUserId}
+              initialConversationId={chatConversationId}
               onBackToHome={() => {
                 setActiveTab("map");
                 window.location.hash = "#map";
@@ -1426,8 +1471,10 @@ function App() {
               window.location.hash = "#login";
             } else {
               setChatTargetUserId(null);
+              setChatConversationId(null);
               setActiveTab("messages");
               window.location.hash = "#messages";
+              setGlobalUnreadChatCount(0);
             }
           }}
           title="Nhắn tin 1-1, Chat nhóm & Chat quận (Chức năng 15)"
@@ -1435,6 +1482,9 @@ function App() {
         >
           <span className="floating-chat-icon">💬</span>
           <span className="floating-chat-label">Tin nhắn</span>
+          {globalUnreadChatCount > 0 && (
+            <span className="floating-chat-badge">{globalUnreadChatCount > 99 ? "99+" : globalUnreadChatCount}</span>
+          )}
         </button>
       )}
 

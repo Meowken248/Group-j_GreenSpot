@@ -3,6 +3,7 @@ import type { ChatMessage, ConversationType } from "../types/chat.types";
 import { MessageItem } from "./MessageItem";
 
 interface MessageListProps {
+  conversationId?: string;
   messages: ChatMessage[];
   currentUserId?: string;
   conversationType: ConversationType;
@@ -15,6 +16,7 @@ interface MessageListProps {
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
+  conversationId,
   messages,
   currentUserId,
   conversationType,
@@ -31,6 +33,12 @@ export const MessageList: React.FC<MessageListProps> = ({
   const prevScrollHeightRef = useRef<number>(0);
   const isInitialLoadRef = useRef<boolean>(true);
   const isNearBottomRef = useRef<boolean>(true);
+
+  // Khi đổi cuộc trò chuyện, reset trạng thái cuộn ban đầu để ép cuộn xuống đáy
+  useLayoutEffect(() => {
+    isInitialLoadRef.current = true;
+    isNearBottomRef.current = true;
+  }, [conversationId]);
 
   // Kiểm tra vị trí cuộn có đang ở đáy hay không
   const handleScroll = () => {

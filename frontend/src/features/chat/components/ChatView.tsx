@@ -98,6 +98,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           </div>
         ) : (
           <MessageList
+            conversationId={conversation.conversation_id}
             messages={messages}
             currentUserId={currentUserId}
             conversationType={conversation.type}
