@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import type {
   ConversationType,
   ChatConversation,
@@ -82,6 +82,17 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
   // 6. State Responsive Mobile View
   // Trên mobile: false = hiển thị danh sách, true = hiển thị khung chat
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
+
+  // Quản lý timeout 12s cho các tin nhắn optimistic đang gửi
+  const pendingTimeoutMapRef = useRef<Map<string, any>>(new Map());
+
+  // Dọn dẹp tất cả timers khi unmount
+  useEffect(() => {
+    return () => {
+      pendingTimeoutMapRef.current.forEach((timer: any) => clearTimeout(timer));
+      pendingTimeoutMapRef.current.clear();
+    };
+  }, []);
 
   // 7. State Modals
   const [isNewDirectChatOpen, setIsNewDirectChatOpen] = useState(false);
@@ -469,7 +480,20 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
         temp_id: tempId,
       });
 
-      if (!isSentWs) {
+      if (isSentWs) {
+        // Thiết lập timeout 12 giây: nếu sau 12 giây không nhận được ack từ server thì chuyển sang error
+        const timer = setTimeout(() => {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.temp_id === tempId && m.status === "sending"
+                ? { ...m, status: "error" }
+                : m
+            )
+          );
+          pendingTimeoutMapRef.current.delete(tempId);
+        }, 12000);
+        pendingTimeoutMapRef.current.set(tempId, timer);
+      } else {
         // Fallback HTTP
         const savedMsg = await chatService.sendMessageHttp({
           conversation_id: convId,
@@ -512,28 +536,41 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
     );
 
     try {
+      const retryTempId = failedMsg.temp_id || failedMsg.message_id;
       const isSent = chatSocket.sendMessage({
         conversation_id: selectedConversation.conversation_id,
         content: failedMsg.content,
         media_url: failedMsg.media_url,
-        temp_id: failedMsg.temp_id || failedMsg.message_id,
+        temp_id: retryTempId,
       });
 
-      if (!isSent) {
+      if (isSent) {
+        const timer = setTimeout(() => {
+          setMessages((prev) =>
+            prev.map((m) =>
+              (m.temp_id === retryTempId || m.message_id === retryTempId) && m.status === "sending"
+                ? { ...m, status: "error" }
+                : m
+            )
+          );
+          pendingTimeoutMapRef.current.delete(retryTempId);
+        }, 12000);
+        pendingTimeoutMapRef.current.set(retryTempId, timer);
+      } else {
         await chatService.sendMessageHttp({
           conversation_id: selectedConversation.conversation_id,
           content: failedMsg.content,
           media_url: failedMsg.media_url,
         });
-      }
 
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.message_id === failedMsg.message_id
-            ? { ...m, status: "sent" }
-            : m
-        )
-      );
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.message_id === failedMsg.message_id
+              ? { ...m, status: "sent" }
+              : m
+          )
+        );
+      }
     } catch {
       setMessages((prev) =>
         prev.map((m) =>
@@ -556,6 +593,15 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
   useEffect(() => {
     // 1. Nhận tin nhắn mới (NEW_MESSAGE)
     const unbindMsg = chatSocket.on("NEW_MESSAGE", (newMsg: ChatMessage) => {
+      // Hủy timer timeout nếu tin nhắn gửi đi đã được broadcast xác nhận
+      if (newMsg.temp_id) {
+        const timer = pendingTimeoutMapRef.current.get(newMsg.temp_id);
+        if (timer) {
+          clearTimeout(timer);
+          pendingTimeoutMapRef.current.delete(newMsg.temp_id);
+        }
+      }
+
       // Nếu tin nhắn thuộc cuộc trò chuyện đang mở
       if (selectedConversation?.conversation_id === newMsg.conversation_id) {
         setMessages((prev) => {
@@ -655,7 +701,48 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
       });
     });
 
-    // 2. Nhận trạng thái soạn tin (TYPING_STATUS)
+    // 2. Nhận xác nhận tin đã gửi từ WebSocket (MESSAGE_SENT)
+    const unbindSent = chatSocket.on("MESSAGE_SENT", (data: any) => {
+      if (!data) return;
+      const ackTempId = data.temp_id;
+      if (ackTempId) {
+        const timer = pendingTimeoutMapRef.current.get(ackTempId);
+        if (timer) {
+          clearTimeout(timer);
+          pendingTimeoutMapRef.current.delete(ackTempId);
+        }
+        if (data.message) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.temp_id === ackTempId ? { ...data.message, status: "sent", is_mine: true } : m
+            )
+          );
+        }
+      }
+    });
+
+    // 3. Nhận phản hồi báo lỗi từ WebSocket (ERROR)
+    const unbindError = chatSocket.on("ERROR", (data: any) => {
+      if (!data) return;
+      const failedTempId = data.temp_id;
+      if (failedTempId) {
+        const timer = pendingTimeoutMapRef.current.get(failedTempId);
+        if (timer) {
+          clearTimeout(timer);
+          pendingTimeoutMapRef.current.delete(failedTempId);
+        }
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.temp_id === failedTempId ? { ...m, status: "error" } : m
+          )
+        );
+      }
+      if (data.message) {
+        console.warn("[ChatSocket ERROR]:", data.message);
+      }
+    });
+
+    // 4. Nhận trạng thái soạn tin (TYPING_STATUS)
     const unbindTyping = chatSocket.on("TYPING_STATUS", (data: any) => {
       if (data && data.user_id !== currentUserId) {
         if (data.is_typing) {
@@ -741,6 +828,8 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
 
     return () => {
       unbindMsg();
+      unbindSent();
+      unbindError();
       unbindConvUpdate();
       unbindTyping();
       unbindSeen();

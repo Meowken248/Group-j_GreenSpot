@@ -426,12 +426,16 @@ async def chat_websocket_endpoint(
                         "event": "ERROR",
                         "status_code": he.status_code,
                         "message": he.detail,
+                        "temp_id": temp_id,
+                        "conversation_id": conv_id_str,
                     })
                 except Exception as ex:
                     logger.exception(f"Lỗi gửi tin qua WS: {ex}")
                     await websocket.send_json({
                         "event": "ERROR",
                         "message": "Gửi không thành công",
+                        "temp_id": temp_id,
+                        "conversation_id": conv_id_str,
                     })
 
             elif action == "TYPING":
