@@ -132,6 +132,24 @@ export const FeedLeftSidebar: React.FC<FeedLeftSidebarProps> = ({
         <button
           type="button"
           className="feed-shortcut-item shortcut-nav-item"
+          onClick={() => onNavigate("friends")}
+        >
+          <span className="shortcut-icon">🤝</span>
+          <span className="shortcut-text">Bạn bè & Kết nối (STT 12)</span>
+        </button>
+
+        <button
+          type="button"
+          className="feed-shortcut-item shortcut-nav-item"
+          onClick={() => onNavigate("messages")}
+        >
+          <span className="shortcut-icon">💬</span>
+          <span className="shortcut-text">Đoạn chat & Tin nhắn (STT 15)</span>
+        </button>
+
+        <button
+          type="button"
+          className="feed-shortcut-item shortcut-nav-item"
           onClick={() => onNavigate("penalties")}
         >
           <span className="shortcut-icon">⚖️</span>

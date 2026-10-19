@@ -295,6 +295,43 @@ class ChatService:
                 )
             )
 
+        # Nếu là tab 1-1 và có từ khóa tìm kiếm: bổ sung các bạn bè khớp tìm kiếm mà chưa có cuộc trò chuyện trong kết quả
+        if target_type == ConversationType.DIRECT.value and clean_search:
+            existing_other_ids = {item.other_user_id for item in items if item.other_user_id}
+            u_id = user.user_id
+            friend_user_alias = aliased(User)
+            friends_query = (
+                select(friend_user_alias)
+                .select_from(Friendship)
+                .join(
+                    friend_user_alias,
+                    friend_user_alias.user_id == case(
+                        (Friendship.user_id_1 == u_id, Friendship.user_id_2),
+                        else_=Friendship.user_id_1,
+                    ),
+                )
+                .where(
+                    or_(Friendship.user_id_1 == u_id, Friendship.user_id_2 == u_id),
+                    Friendship.deleted_at.is_(None),
+                    friend_user_alias.deleted_at.is_(None),
+                    friend_user_alias.full_name.ilike(search_pattern),
+                )
+            )
+            f_res = await db.execute(friends_query)
+            matching_friends = f_res.scalars().all()
+
+            for friend in matching_friends:
+                if friend.user_id not in existing_other_ids:
+                    try:
+                        friend_conv = await self.get_or_create_direct_conversation(
+                            db, user, friend.user_id
+                        )
+                        items.append(friend_conv)
+                        existing_other_ids.add(friend.user_id)
+                        total += 1
+                    except Exception:
+                        pass
+
         has_more = (offset + limit) < total
         return ConversationListResponse(
             items=items,
@@ -1186,6 +1223,38 @@ class ChatService:
                 )
 
         return online_list
+
+    async def get_all_members_in_conversation(
+        self, db: AsyncSession, user: User, conversation_id: uuid.UUID
+    ) -> List[OnlineMemberItemResponse]:
+        """
+        Lấy danh sách tất cả thành viên đang hoạt động trong cuộc trò chuyện
+        (phục vụ hiển thị và chuyển giao quyền Quản trị nhóm khi rời nhóm).
+        """
+        stmt = (
+            select(ConversationMember)
+            .options(selectinload(ConversationMember.user))
+            .where(
+                ConversationMember.conversation_id == conversation_id,
+                ConversationMember.left_at.is_(None),
+            )
+        )
+        res = await db.execute(stmt)
+        members = res.scalars().all()
+
+        member_list: List[OnlineMemberItemResponse] = []
+        for m in members:
+            if m.user:
+                member_list.append(
+                    OnlineMemberItemResponse(
+                        user_id=m.user.user_id,
+                        full_name=m.user.full_name,
+                        avatar_url=m.user.avatar_url,
+                        role=m.role,
+                        is_online=chat_manager.is_user_online(m.user.user_id),
+                    )
+                )
+        return member_list
 
     # =========================================================================
     # 13. CHẶN VÀ BỎ CHẶN NGƯỜI DÙNG (Phục vụ Màn 2: Bạn không thể nhắn tin...)

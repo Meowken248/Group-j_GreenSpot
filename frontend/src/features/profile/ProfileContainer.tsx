@@ -23,6 +23,7 @@ interface ToastItem {
 }
 
 interface ProfileContainerProps {
+  targetUserId?: string | null;
   onBackToMap?: () => void;
   onNavigateToAqi?: () => void;
   onNavigateToAuth?: () => void;
@@ -30,6 +31,7 @@ interface ProfileContainerProps {
 }
 
 export const ProfileContainer: React.FC<ProfileContainerProps> = ({
+  targetUserId,
   onBackToMap,
   onNavigateToAqi,
   onNavigateToAuth,
@@ -112,7 +114,9 @@ export const ProfileContainer: React.FC<ProfileContainerProps> = ({
     setProfileLoading(true);
     setProfileError(null);
     try {
-      const data = await profileService.getMyProfile();
+      const data = targetUserId
+        ? await profileService.getUserProfile(targetUserId)
+        : await profileService.getMyProfile();
       setProfile(data);
       setIsUnauthorized(false);
     } catch (err: unknown) {
@@ -131,7 +135,7 @@ export const ProfileContainer: React.FC<ProfileContainerProps> = ({
     } finally {
       setProfileLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, targetUserId]);
 
   // =========================================================================
   // 2. TẢI DỮ LIỆU BÀI ĐĂNG (ĐỘC LẬP VỚI PROFILE)
@@ -177,6 +181,10 @@ export const ProfileContainer: React.FC<ProfileContainerProps> = ({
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
+
+  useEffect(() => {
+    setCurrentView("timeline");
+  }, [targetUserId]);
 
   useEffect(() => {
     const uid = profile?.user_id || profile?.id;

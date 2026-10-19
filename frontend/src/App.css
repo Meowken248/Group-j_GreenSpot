@@ -74,6 +74,21 @@
   box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
 }
 
+.view-tab-btn.btn-chat-nav {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.view-tab-btn.btn-chat-nav:hover {
+  color: #34d399;
+}
+
+.view-tab-btn.btn-chat-nav.active {
+  background: #059669;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+
 .view-tab-btn.btn-report-nav {
   color: #10b981;
   font-weight: 700;
@@ -311,6 +326,41 @@
   background: rgba(239, 68, 68, 0.2);
   color: #fca5a5;
   border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Floating Chat Quick Launch Button (Feature 15) */
+.floating-chat-quick-btn {
+  position: absolute;
+  bottom: 84px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 9999px;
+  box-shadow: 0 10px 25px rgba(5, 150, 105, 0.45), 0 0 15px rgba(16, 185, 129, 0.3);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.floating-chat-quick-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 14px 30px rgba(16, 185, 129, 0.6);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.floating-chat-quick-btn .floating-chat-icon {
+  font-size: 18px;
+}
+
+.floating-chat-quick-btn .floating-chat-label {
+  letter-spacing: 0.3px;
 }
 
 /* Floating Voice Assistant Quick Launch Button */

@@ -279,6 +279,20 @@ async def get_online_members_endpoint(
 ):
     """Cung cấp danh sách thành viên đang online ở cột bên phải phòng chat quận"""
     return await chat_service.get_online_members_in_conversation(db, current_user, conversation_id)
+ 
+ 
+@router.get(
+    "/conversations/{conversation_id}/members",
+    response_model=List[OnlineMemberItemResponse],
+    summary="Lấy danh sách tất cả thành viên trong cuộc trò chuyện",
+)
+async def get_all_members_endpoint(
+    conversation_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Cung cấp danh sách tất cả thành viên đang hoạt động trong cuộc trò chuyện"""
+    return await chat_service.get_all_members_in_conversation(db, current_user, conversation_id)
 
 
 # =============================================================================
@@ -377,6 +391,7 @@ async def chat_websocket_endpoint(
                 conv_id_str = data.get("conversation_id")
                 content = data.get("content")
                 media_url = data.get("media_url")
+                temp_id = data.get("temp_id")
 
                 if not conv_id_str:
                     await websocket.send_json({
@@ -396,11 +411,15 @@ async def chat_websocket_endpoint(
                             conversation_id=conv_uuid,
                             payload=send_req,
                         )
+                        msg_dict = msg_res.model_dump(mode="json")
+                        if temp_id:
+                            msg_dict["temp_id"] = temp_id
                         # Phản hồi lại người gửi xác nhận đã gửi
                         await websocket.send_json({
                             "event": "MESSAGE_SENT",
                             "conversation_id": str(conv_uuid),
-                            "message": msg_res.model_dump(mode="json"),
+                            "temp_id": temp_id,
+                            "message": msg_dict,
                         })
                 except HTTPException as he:
                     await websocket.send_json({
@@ -463,3 +482,4 @@ async def chat_websocket_endpoint(
     except Exception as e:
         logger.warning(f"WebSocket closed unexpectedly for user {user_uuid}: {e}")
         await chat_manager.disconnect(user_uuid, websocket)
+

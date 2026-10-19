@@ -21,6 +21,7 @@ import { RecyclingFacilityContainer } from "./features/recycling_facilities";
 import { FriendsContainer } from "./features/friends";
 import { PenaltyLookupContainer } from "./features/penalties";
 import { FeedContainer } from "./features/feed";
+import { ChatContainer } from "./features/chat";
 
 import {
   SettingsContainer,
@@ -49,7 +50,8 @@ type TabType =
   | "dedup"
   | "settings"
   | "penalties"
-  | "posts";
+  | "posts"
+  | "messages";
 
 // Hàm kiểm tra trạng thái đăng nhập thực tế của phiên hiện tại
 const checkIsLoggedIn = (): boolean => {
@@ -70,6 +72,7 @@ function App() {
     if (!isLogged) {
       if (hash === "#profile" || path === "/profile") return "/profile";
       if (hash === "#friends" || path === "/friends") return "/friends";
+      if (hash.startsWith("#messages") || path.startsWith("/messages") || hash.startsWith("#chat") || path.startsWith("/chat")) return "/messages";
       if (hash === "#dashboard" || path === "/dashboard") return "/dashboard";
       if (hash === "#users" || path === "/users") return "/users";
       if (hash === "#rbac" || path === "/rbac") return "/rbac";
@@ -89,6 +92,10 @@ function App() {
 
     if (hash === "#voice" || path === "/voice") return "voice";
     if (hash === "#map" || path === "/map") return "map";
+    if (hash.startsWith("#messages") || hash.startsWith("#chat") || path.startsWith("/messages") || path.startsWith("/chat")) {
+      if (!isLogged) return "auth";
+      return "messages";
+    }
     if (hash === "#penalties" || path === "/penalties") {
       if (!isLogged) return "auth";
       return "penalties";
@@ -116,7 +123,7 @@ function App() {
       if (!isLogged) return "auth";
       return "friends";
     }
-    if (hash === "#profile" || path === "/profile") {
+    if (hash.startsWith("#profile") || path.startsWith("/profile")) {
       if (!isLogged) return "auth";
       return "profile";
     }
@@ -152,6 +159,17 @@ function App() {
     // Mặc định: khi chưa đăng nhập, chỉ hiển thị Bản đồ WebGIS công cộng
     if (!isLogged) return "map";
     return "profile";
+  });
+
+  const [chatTargetUserId, setChatTargetUserId] = useState<string | null>(() => {
+    const hash = window.location.hash;
+    const match = hash.match(/[?&]target=([^&]+)/);
+    return match ? decodeURIComponent(match[1]) : null;
+  });
+  const [profileTargetUserId, setProfileTargetUserId] = useState<string | null>(() => {
+    const hash = window.location.hash;
+    const match = hash.match(/[?&](?:id|userId|user_id)=([^&]+)/);
+    return match ? decodeURIComponent(match[1]) : null;
   });
   const [backendStatus, setBackendStatus] = useState<string | null>(null);
   const [checkingBackend, setCheckingBackend] = useState(false);
@@ -250,6 +268,18 @@ function App() {
 
       if (hash === "#map") {
         setActiveTab("map");
+      } else if (hash.startsWith("#messages") || hash.startsWith("#chat") || window.location.pathname.startsWith("/messages") || window.location.pathname.startsWith("/chat")) {
+        const match = window.location.hash.match(/[?&]target=([^&]+)/);
+        const targetId = match ? decodeURIComponent(match[1]) : null;
+        setChatTargetUserId(targetId);
+
+        if (!isLogged) {
+          setAuthRedirectUrl("/messages");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("messages");
+        }
       } else if (hash === "#dashboard") {
         if (!isLogged) {
           setAuthRedirectUrl("/dashboard");
@@ -310,9 +340,13 @@ function App() {
         }
       } else if (hash === "#posts" || hash === "#feed" || hash === "#create-post" || hash.startsWith("#post-comments") || window.location.pathname.startsWith("/post-comments")) {
         setActiveTab("posts");
-      } else if (hash === "#profile") {
+      } else if (hash.startsWith("#profile") || window.location.pathname.startsWith("/profile")) {
+        const match = window.location.hash.match(/[?&](?:id|userId|user_id)=([^&]+)/);
+        const targetId = match ? decodeURIComponent(match[1]) : null;
+        setProfileTargetUserId(targetId);
+
         if (!isLogged) {
-          setAuthRedirectUrl("/profile");
+          setAuthRedirectUrl(targetId ? `/profile?id=${targetId}` : "/profile");
           setActiveTab("auth");
           window.location.hash = "#login";
         } else {
@@ -361,6 +395,10 @@ function App() {
     if (!currentUser) {
       if (activeTab === "profile") {
         setAuthRedirectUrl("/profile");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "messages") {
+        setAuthRedirectUrl("/messages");
         setActiveTab("auth");
         window.location.hash = "#login";
       } else if (activeTab === "friends") {
@@ -519,12 +557,29 @@ function App() {
                   className="dropdown-menu-action"
                   onClick={() => {
                     setUserDropdownOpen(false);
+                    setProfileTargetUserId(null);
                     setActiveTab("profile");
                     window.location.hash = "#profile";
                   }}
                 >
                   <span className="action-icon">🌿</span>
                   <span>Trang cá nhân & Green Passport</span>
+                </button>
+
+                <div className="dropdown-separator" />
+
+                <button
+                  type="button"
+                  className="dropdown-menu-action"
+                  onClick={() => {
+                    setUserDropdownOpen(false);
+                    setChatTargetUserId(null);
+                    setActiveTab("messages");
+                    window.location.hash = "#messages";
+                  }}
+                >
+                  <span className="action-icon">💬</span>
+                  <span>Tin nhắn & Đoạn chat</span>
                 </button>
 
                 <div className="dropdown-separator" />
@@ -743,6 +798,20 @@ function App() {
               <span>Bảng tin Mạng xã hội</span>
             </button>
 
+            <button
+              type="button"
+              className={`view-tab-btn btn-chat-nav ${activeTab === "messages" ? "active" : ""}`}
+              onClick={() => {
+                setChatTargetUserId(null);
+                setActiveTab("messages");
+                window.location.hash = "#messages";
+              }}
+              title="Nhắn tin 1-1, Chat nhóm & Chat quận thời gian thực (Chức năng 15)"
+            >
+              <span>💬</span>
+              <span>Tin nhắn</span>
+            </button>
+
             {hasAqiAccess && (
               <button
                 type="button"
@@ -788,6 +857,7 @@ function App() {
               type="button"
               className={`view-tab-btn ${activeTab === "profile" ? "active" : ""}`}
               onClick={() => {
+                setProfileTargetUserId(null);
                 setActiveTab("profile");
                 window.location.hash = "#profile";
               }}
@@ -955,6 +1025,25 @@ function App() {
             </button>
             <button
               type="button"
+              className={`view-tab-btn btn-chat-nav ${activeTab === "messages" ? "active" : ""}`}
+              onClick={() => {
+                if (!checkIsLoggedIn()) {
+                  setAuthRedirectUrl("/messages");
+                  setActiveTab("auth");
+                  window.location.hash = "#login";
+                } else {
+                  setChatTargetUserId(null);
+                  setActiveTab("messages");
+                  window.location.hash = "#messages";
+                }
+              }}
+              title="Nhắn tin 1-1, Chat nhóm & Chat quận thời gian thực (Chức năng 15)"
+            >
+              <span>💬</span>
+              <span>Tin nhắn</span>
+            </button>
+            <button
+              type="button"
               className={`view-tab-btn ${activeTab === "dashboard" ? "active" : ""}`}
               onClick={() => {
                 setActiveTab("dashboard");
@@ -1055,6 +1144,7 @@ function App() {
         ) : (
           <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
             <ProfileContainer
+              targetUserId={profileTargetUserId}
               onBackToMap={() => {
                 setActiveTab("map");
                 window.location.hash = "#map";
@@ -1109,9 +1199,15 @@ function App() {
                 setActiveTab("map");
                 window.location.hash = "#map";
               }}
-              onNavigateToProfile={() => {
+              onNavigateToProfile={(targetUserId) => {
+                setProfileTargetUserId(targetUserId || null);
                 setActiveTab("profile");
-                window.location.hash = "#profile";
+                window.location.hash = targetUserId ? `#profile?id=${targetUserId}` : "#profile";
+              }}
+              onNavigateToChat={(targetUserId) => {
+                setChatTargetUserId(targetUserId);
+                setActiveTab("messages");
+                window.location.hash = `#messages?target=${targetUserId}`;
               }}
             />
           </div>
@@ -1284,6 +1380,30 @@ function App() {
             }}
           />
         </div>
+      ) : activeTab === "messages" ? (
+        !currentUser ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/messages"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`} style={{ paddingTop: "64px", height: "100vh", overflow: "hidden" }}>
+            <ChatContainer
+              currentUser={currentUser}
+              initialTargetUserId={chatTargetUserId}
+              onBackToHome={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        )
       ) : (
         /* Mặc định an toàn cho khách vãng lai và tab map: Bản đồ số WebGIS công cộng */
         <ModulePermissionGuard
@@ -1292,6 +1412,30 @@ function App() {
         >
           <EcoMap />
         </ModulePermissionGuard>
+      )}
+
+      {/* NÚT ĐOẠN CHAT & TIN NHẮN NHANH NỔI (CHỨC NĂNG 15) */}
+      {activeTab !== "messages" && (
+        <button
+          type="button"
+          className="floating-chat-quick-btn"
+          onClick={() => {
+            if (!checkIsLoggedIn()) {
+              setAuthRedirectUrl("/messages");
+              setActiveTab("auth");
+              window.location.hash = "#login";
+            } else {
+              setChatTargetUserId(null);
+              setActiveTab("messages");
+              window.location.hash = "#messages";
+            }
+          }}
+          title="Nhắn tin 1-1, Chat nhóm & Chat quận (Chức năng 15)"
+          aria-label="Tin nhắn"
+        >
+          <span className="floating-chat-icon">💬</span>
+          <span className="floating-chat-label">Tin nhắn</span>
+        </button>
       )}
 
       {/* NÚT TRỢ LÝ GIỌNG NÓI NHANH NỔI (CHỈ HIỂN THỊ KHI ĐÃ ĐĂNG NHẬP VÀ KHÔNG Ở TAB VOICE) */}

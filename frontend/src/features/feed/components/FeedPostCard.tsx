@@ -201,7 +201,14 @@ export const FeedPostCard: React.FC<FeedPostCardProps> = ({
       {/* =================================================================== */}
       <div className="post-header-row">
         <div className="post-author-block">
-          <div className="author-avatar-wrapper">
+          <div
+            className="author-avatar-wrapper"
+            style={{ cursor: "pointer" }}
+            onClick={() => {
+              if (post.user_id) window.location.hash = `#profile?id=${post.user_id}`;
+            }}
+            title={`Xem trang cá nhân của ${authorName}`}
+          >
             {authorAvatar ? (
               <img
                 src={resolveMediaUrl(authorAvatar)}
@@ -217,7 +224,16 @@ export const FeedPostCard: React.FC<FeedPostCardProps> = ({
 
           <div className="author-meta-info">
             <div className="author-name-row">
-              <span className="author-name">{authorName}</span>
+              <span
+                className="author-name"
+                style={{ cursor: "pointer" }}
+                onClick={() => {
+                  if (post.user_id) window.location.hash = `#profile?id=${post.user_id}`;
+                }}
+                title={`Xem trang cá nhân của ${authorName}`}
+              >
+                {authorName}
+              </span>
 
               {/* Bạn bè được gắn thẻ */}
               {post.tagged_friends && post.tagged_friends.length > 0 && (

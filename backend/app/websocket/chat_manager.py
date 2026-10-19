@@ -71,3 +71,4 @@ class ChatConnectionManager:
 
 # Singleton instance dùng chung trong toàn backend
 chat_manager = ChatConnectionManager()
+

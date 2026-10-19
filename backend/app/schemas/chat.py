@@ -118,3 +118,4 @@ class OnlineMemberItemResponse(BaseModel):
     avatar_url: Optional[str] = None
     role: str = "MEMBER"
     is_online: bool = True
+

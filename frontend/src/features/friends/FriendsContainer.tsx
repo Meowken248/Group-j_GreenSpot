@@ -14,7 +14,8 @@ import "./Friends.scss";
 
 interface FriendsContainerProps {
   onBackToHome?: () => void;
-  onNavigateToProfile?: () => void;
+  onNavigateToProfile?: (targetUserId?: string) => void;
+  onNavigateToChat?: (targetUserId: string) => void;
   currentUser?: {
     user_id?: string;
     email?: string;
@@ -26,6 +27,7 @@ interface FriendsContainerProps {
 export const FriendsContainer: React.FC<FriendsContainerProps> = ({
   onBackToHome,
   onNavigateToProfile,
+  onNavigateToChat,
   currentUser,
 }) => {
   // Tab điều hướng: "requests" (Màn 1) hoặc "friends" (Màn 2)
@@ -259,9 +261,13 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
     }
   };
 
-  // Nhắn tin
+  // Nhắn tin trực tiếp cùng bạn bè
   const handleOpenChat = (friend: FriendItem) => {
-    showToast(`Mở hộp thoại trò chuyện cùng ${friend.full_name}`, "info");
+    if (onNavigateToChat) {
+      onNavigateToChat(friend.user_id);
+    } else {
+      window.location.hash = `#messages?target=${friend.user_id}`;
+    }
   };
 
   return (
@@ -308,7 +314,7 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
 
             <div
               className="user-avatar-pill"
-              onClick={onNavigateToProfile}
+              onClick={() => onNavigateToProfile?.()}
               role="button"
               tabIndex={0}
               title="Xem trang cá nhân của bạn"
@@ -336,6 +342,7 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
             onRejectRequest={handleRejectRequest}
             onSendRequest={handleSendFriendRequest}
             onToggleFollow={handleToggleFollow}
+            onOpenProfile={(targetId) => onNavigateToProfile?.(targetId)}
           />
         ) : (
           <FriendListView
@@ -348,6 +355,7 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
             onOpenUnfriendModal={handleOpenUnfriendModal}
             onUnfollow={handleUnfollowFromList}
             onOpenChat={handleOpenChat}
+            onOpenProfile={(targetId) => onNavigateToProfile?.(targetId)}
           />
         )}
       </main>

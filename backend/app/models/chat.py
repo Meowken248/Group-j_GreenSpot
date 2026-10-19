@@ -188,3 +188,4 @@ class UserBlock(Base):
         UniqueConstraint("blocker_id", "blocked_id", name="uq_user_blocks_pair"),
         CheckConstraint("blocker_id != blocked_id", name="ck_user_blocks_not_self"),
     )
+
