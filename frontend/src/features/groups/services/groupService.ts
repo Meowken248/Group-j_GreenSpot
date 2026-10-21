@@ -9,7 +9,9 @@ import type {
   CreateGroupPayload,
   AdministrativeMetadata,
   GroupType,
+  GroupMemberListResponse,
 } from "../types/group";
+import type { FeedListResponse } from "../../feed/types/feed.types";
 
 export const groupService = {
   /**
@@ -105,6 +107,35 @@ export const groupService = {
   async disbandGroup(groupId: string, confirmationName: string): Promise<{ message: string }> {
     const res = await api.post<{ message: string }>(`/api/v1/groups/${groupId}/disband`, {
       confirmation_name: confirmationName,
+    });
+    return res.data;
+  },
+
+  /**
+   * Lấy danh sách bài viết trong nhóm
+   */
+  async getGroupPosts(
+    groupId: string,
+    page: number = 1,
+    limit: number = 10,
+    sortBy: string = "newest"
+  ): Promise<FeedListResponse> {
+    const res = await api.get<FeedListResponse>(`/api/v1/groups/${groupId}/posts`, {
+      params: { page, limit, sort_by: sortBy },
+    });
+    return res.data;
+  },
+
+  /**
+   * Lấy danh sách thành viên trong nhóm
+   */
+  async getGroupMembers(
+    groupId: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<GroupMemberListResponse> {
+    const res = await api.get<GroupMemberListResponse>(`/api/v1/groups/${groupId}/members`, {
+      params: { page, limit },
     });
     return res.data;
   },

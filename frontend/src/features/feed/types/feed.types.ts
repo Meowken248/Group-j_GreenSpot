@@ -40,6 +40,9 @@ export interface FeedPostItem {
   longitude?: number | null;
   address?: string | null;
   group_id?: string | null;
+  group_name?: string | null;
+  group_privacy?: string | null;
+  group_avatar?: string | null;
   visibility: string;
   is_hidden: boolean;
   is_edited: boolean;

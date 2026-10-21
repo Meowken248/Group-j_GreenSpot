@@ -70,3 +70,17 @@ export interface ExploreGroupsParams {
   offset?: number;
 }
 
+export interface GroupMemberItem {
+  user_id: string;
+  full_name: string;
+  avatar_url?: string | null;
+  district?: string | null;
+  role: GroupMemberRole | string;
+  joined_at: string;
+}
+
+export interface GroupMemberListResponse {
+  items: GroupMemberItem[];
+  total: number;
+}
+
