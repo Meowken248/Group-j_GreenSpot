@@ -96,7 +96,7 @@ export const AiAssistantWidget: React.FC<AiAssistantWidgetProps> = ({
               <div className="header-brand">
                 <span className="brand-icon">🌿</span>
                 <span className="brand-title">
-                  GreenSpot AI Environmental & Platform Assistant (STT 24)
+                  GreenSpot AI Environmental & Platform Assistant
                 </span>
               </div>
               <button
