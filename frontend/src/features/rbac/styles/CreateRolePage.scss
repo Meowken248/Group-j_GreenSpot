@@ -1,0 +1,364 @@
+@use "./variables" as *;
+@use "./mixins" as *;
+
+.create-role-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+  box-sizing: border-box;
+  font-family: $font-family;
+
+  .create-page-header {
+    margin-bottom: 24px;
+
+    .header-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: $neutral-500;
+      margin-bottom: 8px;
+
+      .crumb-item {
+        color: $neutral-500;
+        text-decoration: none;
+        cursor: pointer;
+        transition: $transition-fast;
+
+        &:hover {
+          color: $primary-600;
+        }
+      }
+
+      .crumb-separator {
+        color: $neutral-400;
+      }
+
+      .crumb-current {
+        color: $neutral-800;
+        font-weight: 600;
+      }
+    }
+
+    .header-title-row {
+      h1 {
+        margin: 0;
+        font-size: 26px;
+        font-weight: 700;
+        color: $neutral-900;
+        letter-spacing: -0.02em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .header-desc {
+        margin: 6px 0 0;
+        font-size: 14px;
+        color: $neutral-500;
+      }
+    }
+  }
+
+  // BỐ CỤC CHIA 2 KHUNG
+  .create-layout-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 24px;
+    align-items: start;
+
+    @media (max-width: 960px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // KHUNG TRÁI: FORM NHẬP LIỆU
+  .create-left-pane {
+    @include glass-panel;
+    border-radius: $radius-xl;
+    padding: 28px;
+    background: #ffffff;
+
+    .pane-title-bar {
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid $neutral-200;
+
+      h2 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: $neutral-800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+
+      .form-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 14px;
+        font-weight: 600;
+        color: $neutral-800;
+        margin-bottom: 8px;
+
+        .required-star {
+          color: $error-500;
+          margin-left: 2px;
+        }
+
+        .char-counter {
+          font-size: 12px;
+          font-weight: 500;
+          color: $neutral-400;
+
+          &.near-limit {
+            color: $warning-600;
+          }
+
+          &.at-limit {
+            color: $error-500;
+            font-weight: 700;
+          }
+        }
+      }
+
+      .input-wrapper {
+        position: relative;
+
+        .text-input {
+          width: 100%;
+          box-sizing: border-box;
+          padding: 12px 14px;
+          font-size: 14px;
+          font-family: $font-family;
+          color: $neutral-900;
+          background: #ffffff;
+          border: 1px solid $neutral-300;
+          border-radius: $radius-md;
+          transition: $transition-fast;
+          outline: none;
+
+          &:focus {
+            border-color: $primary-500;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+          }
+
+          &.has-error {
+            border-color: $error-500;
+            background: $error-50;
+
+            &:focus {
+              box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+            }
+          }
+
+          &::placeholder {
+            color: $neutral-400;
+          }
+        }
+
+        .textarea-input {
+          width: 100%;
+          box-sizing: border-box;
+          padding: 12px 14px;
+          font-size: 14px;
+          font-family: $font-family;
+          color: $neutral-900;
+          background: #ffffff;
+          border: 1px solid $neutral-300;
+          border-radius: $radius-md;
+          transition: $transition-fast;
+          outline: none;
+          resize: vertical;
+          min-height: 84px;
+
+          &:focus {
+            border-color: $primary-500;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+          }
+
+          &::placeholder {
+            color: $neutral-400;
+          }
+        }
+      }
+
+      .field-error-msg {
+        margin: 6px 0 0;
+        font-size: 12.5px;
+        color: $error-600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .field-hint {
+        margin: 6px 0 0;
+        font-size: 12px;
+        color: $neutral-500;
+      }
+
+      // RADIO OPTIONS CHO PHẠM VI (SCOPE)
+      .scope-radio-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+
+        .scope-option-card {
+          position: relative;
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          padding: 14px 16px;
+          border-radius: $radius-lg;
+          border: 2px solid $neutral-200;
+          background: $neutral-50;
+          cursor: pointer;
+          transition: $transition-fast;
+
+          &:hover {
+            border-color: $neutral-300;
+            background: #ffffff;
+          }
+
+          &.selected {
+            border-color: $primary-500;
+            background: $primary-50;
+          }
+
+          input[type="radio"] {
+            margin-top: 3px;
+            accent-color: $primary-600;
+            cursor: pointer;
+          }
+
+          .option-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+
+            .option-title {
+              font-size: 14px;
+              font-weight: 600;
+              color: $neutral-800;
+              display: flex;
+              align-items: center;
+              gap: 6px;
+            }
+
+            .option-desc {
+              font-size: 12px;
+              color: $neutral-500;
+              line-height: 1.4;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // KHUNG PHẢI: NÚT THAO TÁC & HƯỚNG DẪN
+  .create-right-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    position: sticky;
+    top: 24px;
+
+    .action-card {
+      @include glass-panel;
+      border-radius: $radius-xl;
+      padding: 24px;
+      background: #ffffff;
+
+      .card-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: $neutral-800;
+        margin: 0 0 16px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .action-buttons-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+
+        .btn-save-role {
+          @include button-base;
+          width: 100%;
+          padding: 12px 18px;
+          font-size: 14px;
+          font-weight: 600;
+          background: $primary-600;
+          color: #ffffff;
+          box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+
+          &:hover:not(:disabled) {
+            background: $primary-700;
+            box-shadow: 0 6px 16px rgba(5, 150, 105, 0.35);
+          }
+
+          &:disabled {
+            background: $neutral-200;
+            color: $neutral-400;
+            box-shadow: none;
+          }
+        }
+
+        .btn-cancel-create {
+          @include button-base;
+          width: 100%;
+          padding: 11px 18px;
+          font-size: 14px;
+          background: #ffffff;
+          border: 1px solid $neutral-300;
+          color: $neutral-700;
+
+          &:hover {
+            background: $neutral-50;
+            border-color: $neutral-400;
+            color: $neutral-900;
+          }
+        }
+      }
+    }
+
+    .flow-info-card {
+      background: #ffffff;
+      border: 1px solid $neutral-200;
+      border-radius: $radius-lg;
+      padding: 20px;
+      box-shadow: $shadow-sm;
+
+      h4 {
+        margin: 0 0 10px;
+        font-size: 13.5px;
+        font-weight: 700;
+        color: $neutral-800;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      ol {
+        margin: 0;
+        padding-left: 18px;
+        font-size: 12.5px;
+        color: $neutral-600;
+        line-height: 1.6;
+
+        li {
+          margin-bottom: 6px;
+        }
+      }
+    }
+  }
+}
