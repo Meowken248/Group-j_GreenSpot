@@ -30,22 +30,35 @@ async def seed_chatbot_data():
     print("=" * 60)
     print("🤖 [GreenSpot Seeder] Bắt đầu khởi tạo dữ liệu mẫu cho Chức năng 24 (AI Chatbot)...")
     async with AsyncSessionLocal() as session:
-        # 1. Tìm người dùng thử nghiệm chính (Citizen hoặc Admin)
-        u_res = await session.execute(
-            select(User).where(User.deleted_at.is_(None)).order_by(User.created_at.asc()).limit(5)
-        )
-        users = u_res.scalars().all()
-        if not users:
-            print("⚠️ Chưa có người dùng trong CSDL để liên kết hội thoại Chatbot.")
-            return
-
+        # 1. Ưu tiên tài khoản demo trong README để hội thoại mẫu hiển thị đúng tài khoản khi demo
         test_user = None
-        for u in users:
-            if "citizen" in u.email.lower() or "admin" in u.email.lower():
-                test_user = u
+        for preferred_email in ("admin@gmail.com", "citizen@ecoreport.gov.vn"):
+            p_res = await session.execute(
+                select(User).where(
+                    User.deleted_at.is_(None),
+                    User.email == preferred_email,
+                )
+            )
+            test_user = p_res.scalar_one_or_none()
+            if test_user:
                 break
+
+        # 2. Nếu chưa có tài khoản demo, fallback về Citizen/Admin đầu tiên trong CSDL
         if not test_user:
-            test_user = users[0]
+            u_res = await session.execute(
+                select(User).where(User.deleted_at.is_(None)).order_by(User.created_at.asc()).limit(5)
+            )
+            users = u_res.scalars().all()
+            if not users:
+                print("⚠️ Chưa có người dùng trong CSDL để liên kết hội thoại Chatbot.")
+                return
+
+            for u in users:
+                if "citizen" in u.email.lower() or "admin" in u.email.lower():
+                    test_user = u
+                    break
+            if not test_user:
+                test_user = users[0]
 
         print(f"👤 Sử dụng tài khoản thử nghiệm: {test_user.email} (ID: {test_user.user_id})")
 

@@ -64,7 +64,7 @@ docker compose up -d --build
 # 2. Tạo/cập nhật toàn bộ bảng dữ liệu (bắt buộc trước khi seed)
 docker compose exec backend alembic upgrade head
 
-# 3. Nạp đầy đủ dữ liệu mẫu của 14 bước (RBAC + Admin + toàn bộ chức năng)
+# 3. Nạp đầy đủ dữ liệu mẫu của 15 bước (RBAC + Admin + toàn bộ chức năng)
 docker compose exec backend python -m app.seeds.seed_all
 ```
 Sau 3 lệnh trên, CSDL đã có đủ dữ liệu cho mọi chức năng, bao gồm các tài khoản demo:
@@ -84,8 +84,9 @@ docker compose exec backend python -m app.seeds.seed_data
 ```
 
 ### Nạp toàn bộ dữ liệu mẫu của tất cả chức năng (RBAC, Bạn bè, Geo-Feed, Sinh nhật, ...)
-Lệnh này gộp 14 bước: RBAC + tạo tài khoản `admin@gmail.com`, dữ liệu nền TP.HCM, hồ sơ
-công dân, bạn bè, Geo-Feed, quy định xử phạt, cài đặt, nhóm, chat, reactions, sinh nhật & thiệp xanh, AI Triage.
+Lệnh này gộp 15 bước: RBAC + tạo tài khoản `admin@gmail.com`, dữ liệu nền TP.HCM, hồ sơ
+công dân, bạn bè, Geo-Feed, quy định xử phạt, cài đặt, nhóm, chat, reactions, sinh nhật & thiệp xanh, AI Triage,
+hội thoại mẫu của Trợ lý AI Chatbot (STT 24).
 Bao gồm cả **Chức năng 17 - Sinh nhật bạn bè & Thiệp xanh sinh thái**: ngày sinh của
 nhóm bạn bè mẫu, cờ hiển thị ngày sinh và hộp thư lời chúc/thiệp xanh (kèm điểm thưởng).
 ```bash

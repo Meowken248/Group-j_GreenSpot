@@ -15,6 +15,7 @@ Chạy lần lượt:
 12. Đồng bộ Cảm xúc sinh thái & Bình luận thực tế (STT 10 & 14)
 13. Nạp dữ liệu Sinh nhật bạn bè & Thiệp xanh sinh thái (STT 17)
 14. Nạp dữ liệu STT 39 & 40 AI Triage & Tiện ích không gian thiết yếu
+15. Nạp dữ liệu hội thoại mẫu cho Trợ lý AI Chatbot (STT 24)
 """
 
 import asyncio
@@ -36,6 +37,7 @@ from app.seeds.seed_chat import seed_chat_data
 from app.seeds.seed_real_reactions_and_comments import seed_and_sync
 from app.seeds.seed_birthdays import seed_birthdays
 from app.seeds.triage.seed_data import seed_triage_and_spatial_data
+from app.seeds.seed_chatbot import seed_chatbot_data
 
 
 async def run_seed_all():
@@ -43,51 +45,54 @@ async def run_seed_all():
     print("🚀 BẮT ĐẦU NẠP TOÀN BỘ CƠ SỞ DỮ LIỆU ECOREPORT / GREENSPOT")
     print("=" * 70)
 
-    print("\n👉 [BƯỚC 1/14] Đồng bộ ma trận phân quyền RBAC & tài khoản Quản trị viên...")
+    print("\n👉 [BƯỚC 1/15] Đồng bộ ma trận phân quyền RBAC & tài khoản Quản trị viên...")
     await run_rbac_migration()
     # Tạo/đồng bộ tài khoản admin@gmail.com (mật khẩu: admin@gmail.com) để dữ liệu Chức năng 17
     # và các kịch bản demo/kiểm thử luôn có sẵn tài khoản quản trị đúng như tài liệu.
     print("   ↳ Tạo/đồng bộ tài khoản quản trị: admin@gmail.com / admin@gmail.com")
     await seed_admin()
 
-    print("\n👉 [BƯỚC 2/14] Nạp dữ liệu nền tảng TP.HCM (GIS, Sự cố, Điểm xanh, Trạm IoT, Ngập lụt)...")
+    print("\n👉 [BƯỚC 2/15] Nạp dữ liệu nền tảng TP.HCM (GIS, Sự cố, Điểm xanh, Trạm IoT, Ngập lụt)...")
     await run_clean_seed()
 
-    print("\n👉 [BƯỚC 3/14] Nạp dữ liệu Hồ sơ Công dân & Hộ chiếu Xanh (Green Passport)...")
+    print("\n👉 [BƯỚC 3/15] Nạp dữ liệu Hồ sơ Công dân & Hộ chiếu Xanh (Green Passport)...")
     await seed_profile_data()
 
-    print("\n👉 [BƯỚC 4/14] Nạp dữ liệu Bạn bè, Lời mời kết bạn & Đang theo dõi (STT 07)...")
+    print("\n👉 [BƯỚC 4/15] Nạp dữ liệu Bạn bè, Lời mời kết bạn & Đang theo dõi (STT 07)...")
     await seed_friends_data()
 
-    print("\n👉 [BƯỚC 5/14] Nạp dữ liệu Bảng tin Mạng xã hội Geo-Feed kèm toạ độ & gắn thẻ (STT 08 & 09)...")
+    print("\n👉 [BƯỚC 5/15] Nạp dữ liệu Bảng tin Mạng xã hội Geo-Feed kèm toạ độ & gắn thẻ (STT 08 & 09)...")
     await seed_posts_data()
 
-    print("\n👉 [BƯỚC 6/14] Nạp danh mục Quy định xử phạt môi trường NĐ 45/2022/NĐ-CP (STT 11)...")
+    print("\n👉 [BƯỚC 6/15] Nạp danh mục Quy định xử phạt môi trường NĐ 45/2022/NĐ-CP (STT 11)...")
     await seed_penalty_regulations()
 
-    print("\n👉 [BƯỚC 7/14] Nạp danh sách Báo cáo phản ánh vi phạm môi trường mẫu (STT 11)...")
+    print("\n👉 [BƯỚC 7/15] Nạp danh sách Báo cáo phản ánh vi phạm môi trường mẫu (STT 11)...")
     await seed_penalty_reports()
 
-    print("\n👉 [BƯỚC 8/14] Nạp cấu hình Cài đặt người dùng & Theme giao diện (STT 25)...")
+    print("\n👉 [BƯỚC 8/15] Nạp cấu hình Cài đặt người dùng & Theme giao diện (STT 25)...")
     await seed_user_settings()
 
-    print("\n👉 [BƯỚC 9/14] Nạp dữ liệu cụm phát hiện Báo cáo trùng lặp AI (STT 20)...")
+    print("\n👉 [BƯỚC 9/15] Nạp dữ liệu cụm phát hiện Báo cáo trùng lặp AI (STT 20)...")
     await seed_deduplication()
 
-    print("\n👉 [BƯỚC 10/14] Nạp dữ liệu Nhóm cộng đồng Quận, Phường & Chủ đề sinh thái (STT 16)...")
+    print("\n👉 [BƯỚC 10/15] Nạp dữ liệu Nhóm cộng đồng Quận, Phường & Chủ đề sinh thái (STT 16)...")
     await seed_groups()
 
-    print("\n👉 [BƯỚC 11/14] Nạp dữ liệu Nhắn tin thời gian thực 1-1, Nhóm & 22 phòng chat quận (STT 15)...")
+    print("\n👉 [BƯỚC 11/15] Nạp dữ liệu Nhắn tin thời gian thực 1-1, Nhóm & 22 phòng chat quận (STT 15)...")
     await seed_chat_data()
 
-    print("\n👉 [BƯỚC 12/14] Đồng bộ hóa cảm xúc sinh thái (Eco-Reactions) & Bình luận thực tế (STT 10 & 14)...")
+    print("\n👉 [BƯỚC 12/15] Đồng bộ hóa cảm xúc sinh thái (Eco-Reactions) & Bình luận thực tế (STT 10 & 14)...")
     await seed_and_sync()
 
-    print("\n👉 [BƯỚC 13/14] Nạp dữ liệu Sinh nhật bạn bè & Thiệp xanh sinh thái (STT 17)...")
+    print("\n👉 [BƯỚC 13/15] Nạp dữ liệu Sinh nhật bạn bè & Thiệp xanh sinh thái (STT 17)...")
     await seed_birthdays()
 
-    print("\n👉 [BƯỚC 14/14] Nạp dữ liệu AI Incident Triage & Tiện ích không gian thiết yếu (STT 39 & 40)...")
+    print("\n👉 [BƯỚC 14/15] Nạp dữ liệu AI Incident Triage & Tiện ích không gian thiết yếu (STT 39 & 40)...")
     await seed_triage_and_spatial_data()
+
+    print("\n👉 [BƯỚC 15/15] Nạp dữ liệu hội thoại mẫu cho Trợ lý AI Chatbot (STT 24)...")
+    await seed_chatbot_data()
 
     print("\n" + "=" * 70)
     print("🎉 HOÀN TẤT NẠP TOÀN BỘ CƠ SỞ DỮ LIỆU TOÀN HỆ THỐNG THÀNH CÔNG 100%!")
