@@ -62,6 +62,24 @@ Bao gồm: tài khoản mẫu (`admin`, `officer`, `collector`, `citizen`), danh
 docker compose exec backend python -m app.seeds.seed_data
 ```
 
+### Nạp toàn bộ dữ liệu mẫu của tất cả chức năng (RBAC, Bạn bè, Geo-Feed, Sinh nhật, ...)
+Bao gồm cả **Chức năng 17 - Sinh nhật bạn bè & Thiệp xanh sinh thái**: ngày sinh của
+nhóm bạn bè mẫu, cờ hiển thị ngày sinh và hộp thư lời chúc/thiệp xanh (kèm điểm thưởng).
+```bash
+docker compose exec backend python -m app.seeds.seed_all
+```
+
+### Chỉ nạp lại dữ liệu Sinh nhật bạn bè & Thiệp xanh (Chức năng 17)
+Seeder này gán ngày sinh rơi đúng vào **hôm nay** nên cần chạy lại mỗi ngày trước khi demo:
+```bash
+docker compose exec backend python -m app.seeds.seed_birthdays
+```
+Dữ liệu nạp: ngày sinh cho nhóm bạn mẫu của `citizen@ecoreport.gov.vn` / `admin@gmail.com`
+(kèm 3 ca biên: tài khoản bị khoá, chưa kết bạn, đã tắt hiển thị ngày sinh), 8 lời chúc /
+thiệp xanh của năm trước (đủ 4 mẫu thiệp, có lời chúc chưa đọc để hiện badge hộp thư,
++5 điểm xanh nhất quán cho cả người gửi & người nhận). Seeder chạy lại nhiều lần
+không nhân đôi dữ liệu.
+
 ### Nạp dữ liệu lớn mô phỏng hiệu năng (Bulk Seeder >= 100.000 records)
 ```bash
 docker compose exec backend python -m app.seeds.bulk_seeder

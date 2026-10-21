@@ -28,3 +28,4 @@ def downgrade() -> None:
     existing_indices = [idx["name"] for idx in inspector.get_indexes("posts")]
     if "idx_posts_group_id" in existing_indices:
         op.drop_index("idx_posts_group_id", table_name="posts")
+
