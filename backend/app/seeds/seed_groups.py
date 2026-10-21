@@ -9,6 +9,7 @@ Khởi tạo dữ liệu mẫu phong phú phục vụ kiểm thử và giao di�
 """
 
 import asyncio
+import json
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy import select, text
@@ -23,6 +24,7 @@ from app.models.group import (
     GroupMemberStatus,
     GroupStatus,
 )
+from app.models.post import Post
 from app.models.rbac import User
 
 
@@ -135,6 +137,76 @@ async def seed_groups():
                 print(f"✅ Đã tạo nhóm mẫu: '{group.name}' ({group.group_type}) kèm thành viên.")
             else:
                 print(f"ℹ️ Nhóm '{existing_group.name}' đã tồn tại, bỏ qua.")
+
+        # 3. Tạo các bài viết mẫu gắn với nhóm
+        sample_group_posts = [
+            {
+                "post_id": uuid.UUID("88888888-0001-0000-0000-000000000001"),
+                "group_id": uuid.UUID("77777777-0001-0000-0000-000000000001"),
+                "author_id": admin_user.user_id,
+                "content": "Chào mừng các thành viên mới đến với Cộng Đồng Sống Xanh Quận 1! Sắp tới nhóm sẽ tổ chức chương trình đổi pin cũ lấy sen đá vào sáng Chủ Nhật tại phố đi bộ Nguyễn Huệ. Mọi người cùng chuẩn bị nhé! 🌱 #SongXanhQuan1 #DoiPinLayCay",
+                "media_urls": json.dumps([
+                    "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=800&q=80"
+                ]),
+                "reactions_count": 12,
+                "comments_count": 3,
+                "visibility": "PUBLIC",
+            },
+            {
+                "post_id": uuid.UUID("88888888-0001-0000-0000-000000000002"),
+                "group_id": uuid.UUID("77777777-0001-0000-0000-000000000001"),
+                "author_id": users[1].user_id if len(users) > 1 else admin_user.user_id,
+                "content": "Gợi ý cho mọi người điểm thu gom rác điện tử uy tín tại khu vực Quận 1. Đã qua trải nghiệm và nhân viên phân loại rất nhiệt tình!",
+                "media_urls": None,
+                "reactions_count": 8,
+                "comments_count": 2,
+                "visibility": "PUBLIC",
+            },
+            {
+                "post_id": uuid.UUID("88888888-0002-0000-0000-000000000001"),
+                "group_id": uuid.UUID("77777777-0002-0000-0000-000000000002"),
+                "author_id": admin_user.user_id,
+                "content": "Bà con khu phố Bến Nghé chú ý lịch thu gom rác cồng kềnh tuần này nhé. Hãy phân loại đúng quy định để hỗ trợ các cô chú công nhân vệ sinh. ♻️",
+                "media_urls": json.dumps([
+                    "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=800&q=80"
+                ]),
+                "reactions_count": 15,
+                "comments_count": 4,
+                "visibility": "PUBLIC",
+            },
+            {
+                "post_id": uuid.UUID("88888888-0003-0000-0000-000000000001"),
+                "group_id": uuid.UUID("77777777-0003-0000-0000-000000000003"),
+                "author_id": admin_user.user_id,
+                "content": "Mẹo phân loại rác tái chế tại nhà: Rửa sạch hộp sữa chua và chai nhựa trước khi cho vào thùng tái chế để tránh bốc mùi và tăng hiệu suất tái chế!",
+                "media_urls": json.dumps([
+                    "https://images.unsplash.com/photo-1618477461853-cf6ed80faba5?auto=format&fit=crop&w=800&q=80"
+                ]),
+                "reactions_count": 25,
+                "comments_count": 7,
+                "visibility": "PUBLIC",
+            },
+        ]
+
+        for p_data in sample_group_posts:
+            existing_post = await session.get(Post, p_data["post_id"])
+            if not existing_post:
+                new_post = Post(
+                    post_id=p_data["post_id"],
+                    user_id=p_data["author_id"],
+                    group_id=p_data["group_id"],
+                    content=p_data["content"],
+                    media_urls=p_data["media_urls"],
+                    visibility=p_data["visibility"],
+                    reactions_count=p_data["reactions_count"],
+                    comments_count=p_data["comments_count"],
+                    version=1,
+                )
+                session.add(new_post)
+                print(f"✅ Đã tạo bài viết mẫu cho nhóm: {p_data['post_id']}")
+            else:
+                existing_post.group_id = p_data["group_id"]
+                session.add(existing_post)
 
         await session.commit()
     print("🎉 Hoàn tất nạp dữ liệu mẫu Chức năng 16!")

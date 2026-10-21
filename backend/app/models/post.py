@@ -36,7 +36,7 @@ class Post(Base, TimestampMixin):
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
     media_urls: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    group_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True)
+    group_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     visibility: Mapped[str] = mapped_column(String(20), default="PUBLIC", nullable=False)
     is_hidden: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     reactions_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
