@@ -31,7 +31,13 @@ export const aiAssistantService = {
         question,
         conversation_id: conversationId || null,
       },
-      { signal }
+      {
+        signal,
+        // Backend cho phép mô hình AI phản hồi tối đa 30 giây (SRS trang 196).
+        // Axios mặc định chỉ chờ 10 giây nên cần nới riêng cho endpoint này,
+        // tránh báo "Trợ lý phản hồi chậm" trong khi máy chủ vẫn đang sinh câu trả lời.
+        timeout: 35000,
+      }
     );
     return res.data;
   },
