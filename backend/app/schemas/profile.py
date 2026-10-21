@@ -41,6 +41,8 @@ class UserProfileResponse(BaseModel):
     is_own_profile: bool = False
     total_green_points: int = 0
     date_of_birth: Optional[date] = None
+    # Feature STT 17: bật/tắt hiển thị ngày sinh cho bạn bè chúc mừng
+    show_birthday: bool = True
     version: int = 1
 
 
@@ -147,6 +149,9 @@ class UpdateProfileRequest(BaseModel):
     full_name: str = Field(..., description="Họ tên 2-50 ký tự, chỉ gồm chữ cái và khoảng trắng")
     bio: Optional[str] = Field(None, description="Đoạn giới thiệu tối đa 200 ký tự")
     date_of_birth: Optional[date] = Field(None, description="Ngày sinh không ở tương lai, không trước 1900-01-01")
+    show_birthday: Optional[bool] = Field(
+        None, description="Feature 17: cho phép bạn bè xem và chúc mừng sinh nhật"
+    )
     avatar_url: Optional[str] = Field(None, description="Đường dẫn hoặc Data URL Base64 của ảnh avatar")
     cover_image_url: Optional[str] = Field(None, description="Đường dẫn hoặc Data URL Base64 của ảnh bìa")
     version: int = Field(..., description="Version hiện tại để kiểm tra Optimistic Locking")

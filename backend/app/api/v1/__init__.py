@@ -20,6 +20,7 @@ from app.api.v1.posts import router as posts_router
 from app.api.v1.comments import router as comments_router
 from app.api.v1.chat import router as chat_router
 from app.api.v1.groups import router as groups_router
+from app.api.v1.birthday import router as birthday_router
 
 api_v1_router = APIRouter()
 api_v1_router.include_router(auth_router)
@@ -43,3 +44,4 @@ api_v1_router.include_router(posts_router)
 api_v1_router.include_router(comments_router)
 api_v1_router.include_router(chat_router)
 api_v1_router.include_router(groups_router)
+api_v1_router.include_router(birthday_router)

@@ -122,6 +122,7 @@ async def build_profile_response(target_user: User, current_user: User, db: Asyn
         is_own_profile=is_own,
         total_green_points=target_user.total_green_points,
         date_of_birth=target_user.date_of_birth if is_own else None,
+        show_birthday=target_user.show_birthday if is_own else False,
         version=target_user.version
     )
 
@@ -656,6 +657,11 @@ async def update_my_profile(
             full_name=body.full_name,
             bio=body.bio,
             date_of_birth=body.date_of_birth,
+            show_birthday=(
+                body.show_birthday
+                if body.show_birthday is not None
+                else current_user.show_birthday
+            ),
             avatar_url=new_avatar_url,
             cover_image_url=new_cover_url,
             version=User.version + 1,

@@ -1,7 +1,7 @@
 """create_user_settings_table
 
 Revision ID: 022_user_settings
-Revises: 021_friends_domain
+Revises: 021_friends_domain, 021_sla_warning_audit_logs
 Create Date: 2026-10-09 14:45:00.000000
 
 """
@@ -11,7 +11,10 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 revision: str = "022_user_settings"
-down_revision: Union[str, Sequence[str], None] = ("021_friends_domain", "020_voice_assistant")
+down_revision: Union[str, Sequence[str], None] = (
+    "021_friends_domain",
+    "021_sla_warning_audit_logs",
+)
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

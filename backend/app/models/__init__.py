@@ -101,6 +101,9 @@ from app.models.chat import (
 # 8. Nhật ký kiểm toán hệ thống (Audit Logs)
 from app.models.audit_log import AuditLog
 
+# 11. Sinh nhật bạn bè & thiệp xanh sinh thái (Birthday Domain - Feature 17)
+from app.models.birthday import BirthdayWish, BirthdayWishType
+
 __all__ = [
     "Base",
     "TimestampMixin",
@@ -179,6 +182,9 @@ __all__ = [
     "GroupPrivacy",
     "GroupMemberRole",
     "GroupStatus",
+    # Birthday Domain (Feature 17)
+    "BirthdayWish",
+    "BirthdayWishType",
 ]
 
 # 11. Nhóm cộng đồng theo quận, phường hoặc chủ đề (Community Groups - Feature 16)

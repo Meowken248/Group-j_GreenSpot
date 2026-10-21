@@ -1,7 +1,7 @@
 """Add province column to groups table
 
 Revision ID: 026_add_province_to_groups
-Revises: 025_create_community_groups_tables
+Revises: 025_community_groups
 Create Date: 2026-10-19 16:10:00.000000
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "026_add_province_to_groups"
-down_revision: Union[str, None] = "025_create_community_groups_tables"
+down_revision: Union[str, None] = "025_community_groups"
 branch_labels: Union[Sequence[str], None] = None
 depends_on: Union[Sequence[str], None] = None
 
