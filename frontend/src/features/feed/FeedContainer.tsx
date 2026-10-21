@@ -22,6 +22,7 @@ import { EditPostModal } from "../profile/components/EditPostModal";
 import { DeletePostModal } from "../profile/components/DeletePostModal";
 import { HidePostModal } from "../profile/components/HidePostModal";
 import { PostCommentsModal, SharePostModal } from "../comments";
+import { GroupDetailView } from "../groups/components/GroupDetailView";
 import api from "../../api/client";
 import { AUTH_STORAGE_KEYS } from "../auth/types/auth.types";
 import "./styles/Feed.scss";
@@ -104,6 +105,20 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
   const [showLoginPrompt, setShowLoginPrompt] = useState<boolean>(false);
   const [selectedPostForComments, setSelectedPostForComments] = useState<FeedPostItem | null>(null);
   const [sharingPost, setSharingPost] = useState<FeedPostItem | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleUrlHash = () => {
+      const hash = window.location.hash;
+      const match = hash.match(/group_id=([^&]+)/);
+      if (match) {
+        setSelectedGroupId(match[1]);
+      }
+    };
+    handleUrlHash();
+    window.addEventListener("hashchange", handleUrlHash);
+    return () => window.removeEventListener("hashchange", handleUrlHash);
+  }, []);
 
   // 6. Quản lý Toast thông báo
   const [toasts, setToasts] = useState<FeedToast[]>([]);
@@ -407,16 +422,38 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
         {/* =================================================================== */}
         <FeedLeftSidebar
           activeTab={activeTab}
-          onTabChange={handleTabChange}
+          onTabChange={(tab) => {
+            setSelectedGroupId(null);
+            handleTabChange(tab);
+          }}
           currentUser={currentUser}
           onNavigate={handleNavigate}
+          selectedGroupId={selectedGroupId}
+          onSelectGroup={(grpId) => setSelectedGroupId(grpId)}
+          onOpenCreateGroup={() => {
+            handleNavigate("groups?tab=create");
+          }}
         />
 
         {/* =================================================================== */}
-        {/* CỘT GIỮA: DÒNG THỜI GIAN BẢNG TIN CHÍNH */}
+        {/* CỘT GIỮA: DÒNG THỜI GIAN BẢNG TIN CHÍNH / TRANG NHÓM CỘNG ĐỒNG */}
         {/* =================================================================== */}
         <main className="feed-main-stream">
-          {/* 1. Khung đăng bài nhanh Facebook (STT 09) */}
+          {selectedGroupId ? (
+            <div className="feed-group-view-container" style={{ width: "100%", marginBottom: 32 }}>
+              <GroupDetailView
+                groupId={selectedGroupId}
+                onBack={() => setSelectedGroupId(null)}
+                onGroupDisbanded={() => {
+                  setSelectedGroupId(null);
+                  fetchFeed(1, false);
+                }}
+                onSelectAnotherGroup={(anotherId) => setSelectedGroupId(anotherId)}
+              />
+            </div>
+          ) : (
+            <>
+              {/* 1. Khung đăng bài nhanh Facebook (STT 09) */}
           <FeedComposerBox
             userAvatar={currentUser?.avatar_url}
             userName={currentUser?.full_name}
@@ -569,6 +606,7 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
                   }}
                   onOpenShare={(p) => setSharingPost(p)}
                   onShowToast={showToast}
+                  onSelectGroup={(grpId) => setSelectedGroupId(grpId)}
                 />
               ))
             )}
@@ -622,6 +660,8 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
                 </div>
               )}
             </div>
+          )}
+          </>
           )}
         </main>
 

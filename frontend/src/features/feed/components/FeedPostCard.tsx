@@ -18,6 +18,7 @@ interface FeedPostCardProps {
   onOpenComments?: (post: FeedPostItem) => void;
   onOpenShare?: (post: FeedPostItem) => void;
   onShowToast?: (type: "success" | "error" | "info", msg: string) => void;
+  onSelectGroup?: (groupId: string) => void;
 }
 
 const ECO_REACTIONS = [
@@ -38,6 +39,7 @@ export const FeedPostCard: React.FC<FeedPostCardProps> = ({
   onOpenComments,
   onOpenShare,
   onShowToast,
+  onSelectGroup,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
@@ -234,6 +236,62 @@ export const FeedPostCard: React.FC<FeedPostCardProps> = ({
               >
                 {authorName}
               </span>
+
+              {/* Nhãn nguồn bài viết từ Nhóm cộng đồng (Chức năng 16) */}
+              {post.group_id && post.group_name && (
+                <span className="post-group-origin-badge" style={{ display: "inline-flex", alignItems: "center", gap: 4, marginLeft: 4 }}>
+                  <span style={{ color: "#94a3b8", fontSize: "12px" }}>➔</span>
+                  <span
+                    className="group-link-btn"
+                    role="button"
+                    tabIndex={0}
+                    style={{
+                      cursor: "pointer",
+                      fontWeight: 700,
+                      color: "#059669",
+                      fontSize: "13px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "3px",
+                      background: "#ecfdf5",
+                      padding: "1px 7px",
+                      borderRadius: "6px",
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onSelectGroup) {
+                        onSelectGroup(post.group_id!);
+                      } else {
+                        window.location.hash = `#groups?id=${post.group_id}`;
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.stopPropagation();
+                        if (onSelectGroup) onSelectGroup(post.group_id!);
+                      }
+                    }}
+                    title={`Mở trang nhóm: ${post.group_name}`}
+                  >
+                    <span>👥</span>
+                    <span>{post.group_name}</span>
+                  </span>
+                  {post.group_privacy === "PRIVATE" && (
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        color: "#64748b",
+                        background: "#f1f5f9",
+                        padding: "1px 5px",
+                        borderRadius: "4px",
+                      }}
+                      title="Bài viết chỉ hiển thị với thành viên nhóm"
+                    >
+                      🔒 Nội bộ
+                    </span>
+                  )}
+                </span>
+              )}
 
               {/* Bạn bè được gắn thẻ */}
               {post.tagged_friends && post.tagged_friends.length > 0 && (

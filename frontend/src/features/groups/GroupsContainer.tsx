@@ -18,12 +18,14 @@ interface GroupsContainerProps {
   } | null;
   onNavigateToProfile?: () => void;
   initialTab?: "my_groups" | "explore" | "create";
+  initialGroupId?: string | null;
 }
 
 export const GroupsContainer: React.FC<GroupsContainerProps> = ({
   currentUser,
   onNavigateToProfile,
   initialTab = "my_groups",
+  initialGroupId,
 }) => {
   const [activeTab, setActiveTab] = useState<"my_groups" | "explore" | "create">(initialTab);
   const [selectedGroupType, setSelectedGroupType] = useState<GroupType | null>(null);
@@ -50,7 +52,24 @@ export const GroupsContainer: React.FC<GroupsContainerProps> = ({
   const [searchKeyword, setSearchKeyword] = useState<string>("");
 
   // Chi tiết nhóm đang xem
-  const [viewingGroupId, setViewingGroupId] = useState<string | null>(null);
+  const [viewingGroupId, setViewingGroupId] = useState<string | null>(initialGroupId || null);
+
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash;
+      const idMatch = hash.match(/id=([^&]+)/);
+      if (idMatch) {
+        setViewingGroupId(idMatch[1]);
+      }
+      const tabMatch = hash.match(/tab=([^&]+)/);
+      if (tabMatch && (tabMatch[1] === "my_groups" || tabMatch[1] === "explore" || tabMatch[1] === "create")) {
+        setActiveTab(tabMatch[1] as any);
+      }
+    };
+    handleHash();
+    window.addEventListener("hashchange", handleHash);
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, []);
 
   // Modal states
   const [createdGroup, setCreatedGroup] = useState<GroupItem | null>(null);
@@ -237,6 +256,7 @@ export const GroupsContainer: React.FC<GroupsContainerProps> = ({
           groupId={viewingGroupId}
           onBack={() => setViewingGroupId(null)}
           onGroupDisbanded={handleGroupDisbanded}
+          onSelectAnotherGroup={(id) => setViewingGroupId(id)}
         />
       ) : activeTab === "create" ? (
         /* MÀN 1 HOẶC MÀN 2 TẠO NHÓM */
