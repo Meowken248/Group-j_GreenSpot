@@ -88,3 +88,4 @@ async def call_kira_ai(
         logger.warning(f"[KiraAI] Lỗi kết nối ngoại lệ: {e}")
 
     return None
+

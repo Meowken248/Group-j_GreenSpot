@@ -92,3 +92,4 @@ class ChatbotStopRequest(BaseModel):
 class ChatbotStopResponse(BaseModel):
     success: bool
     message: str = "Đã dừng trả lời"
+

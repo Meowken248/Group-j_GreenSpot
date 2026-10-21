@@ -1,0 +1,925 @@
+// =========================================================================
+// AI ASSISTANT & CHATBOT STYLESHEET (SASS - .scss)
+// Chức năng 24: AI chat box (EcoReport / GreenSpot)
+// Tuân thủ 100% Quy tắc 4 của PROJECT_RULES.md (Variables, Mixins, Nesting)
+// =========================================================================
+
+$ai-primary: #10b981;
+$ai-primary-hover: #059669;
+$ai-primary-light: #ecfdf5;
+$ai-primary-border: #a7f3d0;
+
+$ai-bg-dark: #0f172a;
+$ai-bg-light: #f8fafc;
+$ai-card-bg: #ffffff;
+$ai-card-border: #e2e8f0;
+
+$ai-text-main: #1e293b;
+$ai-text-muted: #64748b;
+$ai-text-white: #ffffff;
+
+$ai-danger: #ef4444;
+$ai-danger-bg: #fef2f2;
+$ai-danger-border: #fecaca;
+
+$ai-warning: #f59e0b;
+$ai-warning-bg: #fffbeb;
+$ai-warning-border: #fde68a;
+
+$ai-bubble-user: #10b981;
+$ai-bubble-ai: #f1f5f9;
+$ai-bubble-ai-border: #e2e8f0;
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin card-shadow {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+}
+
+@mixin modal-shadow {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+@mixin transition-all {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// Bố cục chính của trang Khung Chat AI (Màn 1/4 & 2/4)
+.ai-assistant-page {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 70px);
+  background: $ai-bg-light;
+  color: $ai-text-main;
+
+  .ai-assistant-container {
+    max-width: 1280px;
+    width: 100%;
+    margin: 1.5rem auto;
+    padding: 0 1rem;
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 1.5rem;
+    height: calc(100vh - 120px);
+
+    @media (max-width: 900px) {
+      grid-template-columns: 1fr;
+      height: auto;
+    }
+  }
+
+  // Khối GỢI Ý (Bên trái)
+  .ai-suggestions-panel {
+    background: $ai-card-bg;
+    border: 1px solid $ai-card-border;
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    @include card-shadow;
+    overflow-y: auto;
+
+    .panel-header {
+      @include flex-between;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid $ai-card-border;
+
+      h3 {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: $ai-text-main;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0;
+
+        .icon {
+          color: $ai-primary;
+        }
+      }
+    }
+
+    .prompts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+
+      .prompt-card {
+        background: #f8fafc;
+        border: 1px solid $ai-card-border;
+        border-radius: 8px;
+        padding: 0.85rem;
+        cursor: pointer;
+        font-size: 0.875rem;
+        line-height: 1.4;
+        color: $ai-text-main;
+        @include transition-all;
+        text-align: left;
+
+        &:hover {
+          background: $ai-primary-light;
+          border-color: $ai-primary-border;
+          color: $ai-primary-hover;
+          transform: translateY(-1px);
+        }
+
+        .prompt-tag {
+          display: inline-block;
+          font-size: 0.7rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          color: $ai-primary;
+          margin-bottom: 0.35rem;
+        }
+      }
+    }
+
+    .panel-footer-actions {
+      margin-top: auto;
+      padding-top: 1rem;
+      border-top: 1px solid $ai-card-border;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
+      .btn-history {
+        @include flex-center;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 0.65rem 1rem;
+        background: #f1f5f9;
+        border: 1px solid $ai-card-border;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: $ai-text-main;
+        cursor: pointer;
+        @include transition-all;
+
+        &:hover {
+          background: #e2e8f0;
+        }
+      }
+
+      .btn-new-chat {
+        @include flex-center;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 0.65rem 1rem;
+        background: $ai-primary-light;
+        border: 1px solid $ai-primary-border;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: $ai-primary-hover;
+        cursor: pointer;
+        @include transition-all;
+
+        &:hover {
+          background: $ai-primary;
+          color: $ai-text-white;
+        }
+      }
+    }
+  }
+
+  // Khối HỘI THOẠI (Bên phải)
+  .ai-conversation-panel {
+    background: $ai-card-bg;
+    border: 1px solid $ai-card-border;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    @include card-shadow;
+    overflow: hidden;
+    height: 100%;
+
+    .conversation-header {
+      @include flex-between;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid $ai-card-border;
+      background: #ffffff;
+
+      .header-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+
+        .avatar-robot {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: $ai-primary-light;
+          color: $ai-primary;
+          @include flex-center;
+          font-size: 1.25rem;
+        }
+
+        .title-meta {
+          h2 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin: 0;
+            color: $ai-text-main;
+          }
+
+          .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.75rem;
+            color: $ai-primary;
+
+            .dot {
+              width: 8px;
+              height: 8px;
+              border-radius: 50%;
+              background: $ai-primary;
+              display: inline-block;
+            }
+          }
+        }
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 0.5rem;
+
+        .btn-action {
+          padding: 0.4rem 0.8rem;
+          font-size: 0.8rem;
+          font-weight: 600;
+          border-radius: 6px;
+          border: 1px solid $ai-card-border;
+          background: #ffffff;
+          cursor: pointer;
+          @include transition-all;
+
+          &:hover {
+            background: #f1f5f9;
+          }
+        }
+      }
+    }
+
+    // Vùng cảnh báo vàng (ngữ cảnh > 10 tin)
+    .context-warning-bar {
+      background: $ai-warning-bg;
+      border-bottom: 1px solid $ai-warning-border;
+      padding: 0.5rem 1rem;
+      font-size: 0.8rem;
+      color: #92400e;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      .warning-icon {
+        font-weight: bold;
+      }
+    }
+
+    // Danh sách bong bóng tin nhắn
+    .messages-scroll-area {
+      flex: 1;
+      padding: 1.25rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+
+      .empty-welcome-card {
+        margin: auto;
+        text-align: center;
+        max-width: 420px;
+        padding: 2rem 1rem;
+
+        .welcome-avatar {
+          width: 64px;
+          height: 64px;
+          border-radius: 50%;
+          background: $ai-primary-light;
+          color: $ai-primary;
+          @include flex-center;
+          font-size: 2rem;
+          margin: 0 auto 1rem;
+        }
+
+        h3 {
+          font-size: 1.2rem;
+          font-weight: 700;
+          margin-bottom: 0.5rem;
+        }
+
+        p {
+          font-size: 0.9rem;
+          color: $ai-text-muted;
+          line-height: 1.5;
+        }
+      }
+
+      // Bong bóng tin nhắn
+      .message-wrapper {
+        display: flex;
+        flex-direction: column;
+        max-width: 78%;
+
+        &.user {
+          align-self: flex-end;
+
+          .bubble {
+            background: $ai-bubble-user;
+            color: $ai-text-white;
+            border-radius: 16px 16px 4px 16px;
+          }
+
+          .message-time {
+            text-align: right;
+          }
+        }
+
+        &.ai {
+          align-self: flex-start;
+
+          .bubble {
+            background: $ai-bubble-ai;
+            color: $ai-text-main;
+            border: 1px solid $ai-bubble-ai-border;
+            border-radius: 16px 16px 16px 4px;
+
+            &.out-of-scope {
+              border-color: $ai-warning-border;
+              background: $ai-warning-bg;
+            }
+
+            &.error-bubble {
+              border-color: $ai-danger-border;
+              background: $ai-danger-bg;
+              color: $ai-danger;
+            }
+          }
+
+          .message-time {
+            text-align: left;
+          }
+        }
+
+        .bubble {
+          padding: 0.85rem 1.1rem;
+          font-size: 0.925rem;
+          line-height: 1.55;
+          word-break: break-word;
+          white-space: pre-wrap;
+
+          .stopped-badge {
+            display: inline-block;
+            margin-top: 0.5rem;
+            padding: 0.2rem 0.5rem;
+            background: #e2e8f0;
+            color: #64748b;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            font-style: italic;
+          }
+
+          .btn-retry {
+            margin-top: 0.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.35rem 0.75rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: $ai-danger;
+            background: #ffffff;
+            border: 1px solid $ai-danger;
+            border-radius: 4px;
+            cursor: pointer;
+            @include transition-all;
+
+            &:hover {
+              background: $ai-danger;
+              color: #ffffff;
+            }
+          }
+        }
+
+        .message-time {
+          font-size: 0.7rem;
+          color: $ai-text-muted;
+          margin-top: 0.25rem;
+          padding: 0 0.25rem;
+        }
+      }
+
+      // Trạng thái AI đang soạn câu trả lời (Màn 2/4)
+      .ai-typing-indicator {
+        align-self: flex-start;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        background: $ai-bubble-ai;
+        border: 1px solid $ai-bubble-ai-border;
+        border-radius: 16px;
+        font-size: 0.875rem;
+        color: $ai-text-muted;
+
+        .dots {
+          display: inline-flex;
+          gap: 0.25rem;
+
+          span {
+            width: 6px;
+            height: 6px;
+            background: $ai-primary;
+            border-radius: 50%;
+            animation: typingBounce 1.4s infinite ease-in-out both;
+
+            &:nth-child(1) { animation-delay: -0.32s; }
+            &:nth-child(2) { animation-delay: -0.16s; }
+          }
+        }
+      }
+    }
+
+    // Thanh điều khiển dừng trả lời (Màn 2/4)
+    .generating-control-bar {
+      @include flex-between;
+      padding: 0.4rem 1rem;
+      background: #f8fafc;
+      border-top: 1px solid $ai-card-border;
+
+      .generating-text {
+        font-size: 0.8rem;
+        color: $ai-text-muted;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+      }
+
+      .btn-stop {
+        padding: 0.3rem 0.85rem;
+        background: #ffffff;
+        border: 1px solid $ai-danger;
+        color: $ai-danger;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        @include transition-all;
+
+        &:hover {
+          background: $ai-danger;
+          color: #ffffff;
+        }
+      }
+    }
+
+    // Dòng khuyến cáo pháp lý
+    .legal-disclaimer-bar {
+      padding: 0.35rem 1rem;
+      background: #fafafa;
+      border-top: 1px solid #f1f5f9;
+      font-size: 0.725rem;
+      color: $ai-text-muted;
+      text-align: center;
+      font-style: italic;
+    }
+
+    // Thanh soạn thảo câu hỏi
+    .composer-area {
+      padding: 0.75rem 1rem 1rem;
+      background: #ffffff;
+      border-top: 1px solid $ai-card-border;
+
+      .rate-limit-warning {
+        background: $ai-danger-bg;
+        border: 1px solid $ai-danger-border;
+        color: $ai-danger;
+        padding: 0.4rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .composer-box {
+        display: flex;
+        align-items: flex-end;
+        gap: 0.75rem;
+        border: 1px solid $ai-card-border;
+        border-radius: 10px;
+        padding: 0.6rem 0.85rem;
+        background: #f8fafc;
+        @include transition-all;
+
+        &:focus-within {
+          border-color: $ai-primary;
+          background: #ffffff;
+          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
+
+        &.has-error {
+          border-color: $ai-danger;
+        }
+
+        textarea {
+          flex: 1;
+          border: none;
+          background: transparent;
+          outline: none;
+          resize: none;
+          font-family: inherit;
+          font-size: 0.925rem;
+          color: $ai-text-main;
+          line-height: 1.4;
+          max-height: 120px;
+          min-height: 24px;
+
+          &::placeholder {
+            color: #94a3b8;
+          }
+
+          &:disabled {
+            cursor: not-allowed;
+            color: #94a3b8;
+          }
+        }
+
+        .composer-controls {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+
+          .char-counter {
+            font-size: 0.75rem;
+            color: $ai-text-muted;
+
+            &.overflow {
+              color: $ai-danger;
+              font-weight: 700;
+            }
+          }
+
+          .btn-send {
+            @include flex-center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: $ai-primary;
+            color: $ai-text-white;
+            border: none;
+            cursor: pointer;
+            @include transition-all;
+
+            &:hover:not(:disabled) {
+              background: $ai-primary-hover;
+            }
+
+            &:disabled {
+              background: #cbd5e1;
+              cursor: not-allowed;
+              opacity: 0.7;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// =========================================================================
+// MODAL LỊCH SỬ TRÒ CHUYỆN (Màn 3/4) & XÁC NHẬN XOÁ (Màn 4/4)
+// =========================================================================
+.ai-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  @include flex-center;
+  z-index: 9999;
+  padding: 1rem;
+
+  .history-modal-content {
+    background: $ai-card-bg;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 680px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    @include modal-shadow;
+    overflow: hidden;
+
+    .modal-header {
+      @include flex-between;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid $ai-card-border;
+
+      h3 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin: 0;
+      }
+
+      .btn-close {
+        background: transparent;
+        border: none;
+        font-size: 1.5rem;
+        color: $ai-text-muted;
+        cursor: pointer;
+        line-height: 1;
+
+        &:hover {
+          color: $ai-text-main;
+        }
+      }
+    }
+
+    .modal-body {
+      flex: 1;
+      padding: 1.25rem 1.5rem;
+      overflow-y: auto;
+
+      .empty-history {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: $ai-text-muted;
+
+        p {
+          margin-bottom: 1rem;
+          font-size: 0.95rem;
+        }
+
+        .btn-create-chat {
+          padding: 0.6rem 1.25rem;
+          background: $ai-primary;
+          color: $ai-text-white;
+          border: none;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+
+          &:hover {
+            background: $ai-primary-hover;
+          }
+        }
+      }
+
+      .history-items-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+
+        .history-row {
+          @include flex-between;
+          padding: 0.85rem 1rem;
+          background: #f8fafc;
+          border: 1px solid $ai-card-border;
+          border-radius: 10px;
+          @include transition-all;
+
+          &:hover {
+            border-color: $ai-primary-border;
+            background: #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+          }
+
+          .row-main {
+            flex: 1;
+            margin-right: 1rem;
+            cursor: pointer;
+
+            .row-title {
+              font-weight: 600;
+              font-size: 0.95rem;
+              color: $ai-text-main;
+              margin-bottom: 0.25rem;
+            }
+
+            .row-meta {
+              font-size: 0.775rem;
+              color: $ai-text-muted;
+              display: flex;
+              gap: 0.75rem;
+            }
+          }
+
+          .row-actions {
+            display: flex;
+            gap: 0.5rem;
+
+            .btn-open {
+              padding: 0.35rem 0.75rem;
+              font-size: 0.8rem;
+              font-weight: 600;
+              color: $ai-primary-hover;
+              background: $ai-primary-light;
+              border: 1px solid $ai-primary-border;
+              border-radius: 6px;
+              cursor: pointer;
+
+              &:hover {
+                background: $ai-primary;
+                color: #ffffff;
+              }
+            }
+
+            .btn-delete {
+              padding: 0.35rem 0.75rem;
+              font-size: 0.8rem;
+              font-weight: 600;
+              color: $ai-danger;
+              background: $ai-danger-bg;
+              border: 1px solid $ai-danger-border;
+              border-radius: 6px;
+              cursor: pointer;
+
+              &:hover {
+                background: $ai-danger;
+                color: #ffffff;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .modal-footer {
+      @include flex-between;
+      padding: 0.85rem 1.5rem;
+      border-top: 1px solid $ai-card-border;
+      background: #f8fafc;
+
+      .retention-note {
+        font-size: 0.75rem;
+        color: $ai-text-muted;
+      }
+
+      .pagination-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        .btn-page {
+          padding: 0.25rem 0.5rem;
+          font-size: 0.8rem;
+          border: 1px solid $ai-card-border;
+          background: #ffffff;
+          border-radius: 4px;
+          cursor: pointer;
+
+          &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+        }
+
+        .page-info {
+          font-size: 0.8rem;
+          color: $ai-text-muted;
+        }
+      }
+    }
+  }
+
+  // Popup Xóa Lịch Sử (Màn 4/4)
+  .delete-confirm-popup {
+    background: #ffffff;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 440px;
+    padding: 1.5rem;
+    text-align: center;
+    @include modal-shadow;
+
+    .popup-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: $ai-danger;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 0.75rem;
+    }
+
+    .target-title {
+      font-weight: 600;
+      color: $ai-text-main;
+      background: #f1f5f9;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      margin-bottom: 0.75rem;
+    }
+
+    p {
+      font-size: 0.875rem;
+      color: $ai-text-muted;
+      line-height: 1.45;
+      margin-bottom: 1.5rem;
+    }
+
+    .popup-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+
+      .btn-cancel {
+        padding: 0.65rem 1rem;
+        background: #f1f5f9;
+        border: 1px solid $ai-card-border;
+        border-radius: 8px;
+        font-weight: 600;
+        color: $ai-text-main;
+        cursor: pointer;
+
+        &:hover {
+          background: #e2e8f0;
+        }
+      }
+
+      .btn-confirm-delete {
+        padding: 0.65rem 1rem;
+        background: $ai-danger;
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+
+        &:hover:not(:disabled) {
+          background: #dc2626;
+        }
+
+        &:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+}
+
+// =========================================================================
+// FLOATING ACTION BUTTON (Bong bóng nổi mở nhanh AI)
+// =========================================================================
+.ai-assistant-fab {
+  position: fixed;
+  bottom: 144px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  @include flex-center;
+  cursor: pointer;
+  z-index: 999;
+  box-shadow: 0 8px 16px rgba(16, 185, 129, 0.35);
+  @include transition-all;
+
+  &:hover {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 0 12px 20px rgba(16, 185, 129, 0.45);
+  }
+
+  .fab-icon {
+    font-size: 1.5rem;
+  }
+
+  .fab-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: #0f172a;
+    color: #34d399;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 0.15rem 0.4rem;
+    border-radius: 10px;
+    border: 2px solid #ffffff;
+  }
+}
+
+// Keyframes hiệu ứng 3 chấm động (typing animation)
+@keyframes typingBounce {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}

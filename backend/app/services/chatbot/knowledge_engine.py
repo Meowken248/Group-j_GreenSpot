@@ -213,3 +213,4 @@ class EnvironmentalKnowledgeEngine:
             "Hãy đặt câu hỏi cụ thể để tôi hỗ trợ bạn tốt nhất nhé!"
             + self.LEGAL_DISCLAIMER
         )
+

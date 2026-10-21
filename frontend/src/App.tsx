@@ -40,6 +40,7 @@ import {
   subscribeThemeChange,
 } from "./features/settings";
 import type { ThemeMode } from "./features/settings";
+import { AiAssistantWidget, AiAssistantPage } from "./features/ai_assistant";
 import api from "./api/client";
 import "./App.css";
 
@@ -67,7 +68,8 @@ export type TabType =
   | "navigation"
   | "risk-dashboard"
   | "dispatch"
-  | "hotspots";
+  | "hotspots"
+  | "ai-assistant";
 
 export type ActiveTab = TabType;
 
@@ -101,6 +103,7 @@ function App() {
       if (hash === "#risk-dashboard" || hash === "#urban-risk" || path === "/risk-dashboard") return "/risk-dashboard";
       if (hash === "#dispatch" || hash === "#operations-dispatch" || path === "/dispatch") return "/dispatch";
       if (hash === "#hotspots" || hash === "#hotspot-analytics" || path === "/hotspots") return "/hotspots";
+      if (hash === "#ai-assistant" || hash === "#chatbot" || path === "/ai-assistant" || path === "/chatbot") return "/ai-assistant";
     }
     if ((hash === "#report" || window.location.pathname.toLowerCase() === "/report") && !isLogged) {
       return "/report";
@@ -202,6 +205,10 @@ function App() {
     if (hash === "#triage" || path === "/triage") {
       if (!isLogged) return "auth";
       return "triage";
+    }
+    if (hash === "#ai-assistant" || hash === "#chatbot" || path === "/ai-assistant" || path === "/chatbot") {
+      if (!isLogged) return "auth";
+      return "ai-assistant";
     }
 
     // Mặc định: khi chưa đăng nhập, chỉ hiển thị Bản đồ WebGIS công cộng
@@ -383,7 +390,7 @@ function App() {
     "waste_categories",
     "recycling_facilities",
   ].includes(activeTab);
-  const isCommunityActive = ["posts", "groups", "messages", "friends", "voice"].includes(activeTab);
+  const isCommunityActive = ["posts", "groups", "messages", "friends", "voice", "ai-assistant"].includes(activeTab);
   const isPenaltiesActive = activeTab === "penalties";
 
   useEffect(() => {
@@ -540,6 +547,14 @@ function App() {
           window.location.hash = "#login";
         } else {
           setActiveTab("groups");
+        }
+      } else if (hash === "#ai-assistant" || hash === "#chatbot" || window.location.pathname === "/ai-assistant" || window.location.pathname === "/chatbot") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/ai-assistant");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("ai-assistant");
         }
       } else if (hash === "#posts" || hash === "#feed" || hash === "#create-post" || hash.startsWith("#post-comments") || window.location.pathname.startsWith("/post-comments")) {
         setActiveTab("posts");
@@ -1157,6 +1172,28 @@ function App() {
                   </div>
                   {activeTab === "voice" && <span className="active-indicator">●</span>}
                 </button>
+
+                <button
+                  type="button"
+                  className={`panel-item-btn ${activeTab === "ai-assistant" ? "active" : ""}`}
+                  onClick={() => {
+                    if (!checkIsLoggedIn()) {
+                      setAuthRedirectUrl("/ai-assistant");
+                      setActiveTab("auth");
+                      window.location.hash = "#login";
+                    } else {
+                      navigateTo("ai-assistant", "#ai-assistant");
+                    }
+                  }}
+                  data-testid="nav-tab-ai-assistant"
+                >
+                  <span className="panel-item-icon">🤖</span>
+                  <div className="panel-item-content">
+                    <span className="panel-item-title">Trợ lý AI Môi trường</span>
+                    <span className="panel-item-desc">Hỏi đáp phân loại rác, quy định & nền tảng</span>
+                  </div>
+                  {activeTab === "ai-assistant" && <span className="active-indicator">●</span>}
+                </button>
               </div>
             )}
           </div>
@@ -1301,6 +1338,15 @@ function App() {
                   >
                     <span className="action-icon">⚙️</span>
                     <span>Cài đặt tài khoản</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="dropdown-menu-action"
+                    onClick={() => navigateTo("ai-assistant", "#ai-assistant")}
+                  >
+                    <span className="action-icon">🤖</span>
+                    <span>Trợ lý AI Môi trường</span>
                   </button>
 
                   {(currentUser?.role === "ADMIN" || hasUserMgmtAccess || hasRbacAccess) && (
@@ -1828,6 +1874,28 @@ function App() {
             />
           </div>
         )
+      ) : activeTab === "ai-assistant" ? (
+        !currentUser ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <AuthContainer
+              initialView="login"
+              redirectUrl="/ai-assistant"
+              onExitAuth={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`} style={{ paddingTop: "76px", height: "100vh", overflow: "hidden" }}>
+            <AiAssistantPage
+              onBackToHome={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        )
       ) : (
         /* Mặc định an toàn cho khách vãng lai và tab map: Bản đồ số WebGIS công cộng */
         <ModulePermissionGuard
@@ -1883,6 +1951,17 @@ function App() {
           <span className="floating-mic-icon">🎙️</span>
           <span className="floating-mic-label">Trợ lý ảo</span>
         </button>
+      )}
+
+      {/* NÚT TRỢ LÝ AI MÔI TRƯỜNG NỔI (CHỨC NĂNG 24) */}
+      {activeTab !== "ai-assistant" && (
+        <AiAssistantWidget
+          onNavigateToLogin={() => {
+            setAuthRedirectUrl("/ai-assistant");
+            setActiveTab("auth");
+            window.location.hash = "#login";
+          }}
+        />
       )}
     </div>
   );
