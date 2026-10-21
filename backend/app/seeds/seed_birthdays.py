@@ -48,6 +48,9 @@ VN_TZ = timezone(timedelta(hours=7))
 # Điểm thưởng thiệp xanh (đồng bộ với birthday_service.BIRTHDAY_CARD_POINTS)
 BIRTHDAY_CARD_POINTS = 5
 
+# Email admin dùng trong kịch bản mẫu; nếu CSDL mới chưa có thì fallback sang tài khoản ADMIN thật
+ADMIN_ALIAS = "admin@gmail.com"
+
 # (email, năm sinh, bật hiển thị ngày sinh)
 BIRTHDAY_USERS = [
     # Bạn của citizen@ecoreport.gov.vn và admin@gmail.com
@@ -174,12 +177,44 @@ def birthday_date_for(year: int, today: date) -> date:
         return date(year, today.month, 28)
 
 
-async def _load_user_map(conn: asyncpg.Connection) -> Dict[str, Dict[str, object]]:
+async def _resolve_email_aliases(conn: asyncpg.Connection) -> Dict[str, str]:
+    """Ánh xạ email mẫu sang email thật khi CSDL mới chưa có tài khoản admin@gmail.com"""
+    aliases: Dict[str, str] = {}
+    exists = await conn.fetchval(
+        "SELECT 1 FROM users WHERE email = $1 AND deleted_at IS NULL;", ADMIN_ALIAS
+    )
+    if exists:
+        return aliases
+
+    fallback_email = await conn.fetchval(
+        """
+        SELECT u.email
+        FROM users u
+        JOIN roles r ON r.role_id = u.role_id
+        WHERE r.role_code = 'ADMIN' AND u.deleted_at IS NULL
+        ORDER BY u.created_at
+        LIMIT 1;
+        """
+    )
+    if fallback_email:
+        aliases[ADMIN_ALIAS] = fallback_email
+        print(
+            f"   ℹ️  Chưa có {ADMIN_ALIAS} → dùng tài khoản ADMIN "
+            f"{fallback_email} thay thế."
+        )
+    return aliases
+
+
+async def _load_user_map(
+    conn: asyncpg.Connection, aliases: Optional[Dict[str, str]] = None
+) -> Dict[str, Dict[str, object]]:
     """Nạp nhanh user_id + họ tên của các tài khoản liên quan"""
+    aliases = aliases or {}
     emails = {row[0] for row in BIRTHDAY_USERS}
     emails.update(str(w["sender"]) for w in PAST_WISHES)
     emails.update(str(w["recipient"]) for w in PAST_WISHES)
     emails.update(SUMMARY_ACCOUNTS)
+    emails.update(aliases.values())
 
     rows = await conn.fetch(
         """
@@ -189,10 +224,15 @@ async def _load_user_map(conn: asyncpg.Connection) -> Dict[str, Dict[str, object
         """,
         sorted(emails),
     )
-    return {
+    mapping = {
         row["email"]: {"user_id": row["user_id"], "full_name": row["full_name"]}
         for row in rows
     }
+    # Gắn alias -> bản ghi thật để các kịch bản dùng email mẫu vẫn chạy được
+    for alias, real_email in aliases.items():
+        if alias not in mapping and real_email in mapping:
+            mapping[alias] = mapping[real_email]
+    return mapping
 
 
 async def _past_wish_exists(
@@ -226,12 +266,14 @@ async def seed_birthdays():
 
     try:
         today = datetime.now(VN_TZ).date()
+        aliases = await _resolve_email_aliases(conn)
 
         # 1. CẬP NHẬT NGÀY SINH & CỜ HIỂN THỊ NGÀY SINH
         print(" 🎈 [1/3] Cập nhật ngày sinh cho nhóm bạn bè mẫu...")
         updated = 0
         for email, birth_year, show_birthday in BIRTHDAY_USERS:
             dob = birthday_date_for(birth_year, today)
+            target_email = aliases.get(email, email)
             result = await conn.execute(
                 """
                 UPDATE users
@@ -242,17 +284,20 @@ async def seed_birthdays():
                 """,
                 dob,
                 show_birthday,
-                email,
+                target_email,
             )
             if result != "UPDATE 0":
                 updated += 1
                 status = "hiển thị" if show_birthday else "ẩn"
-                print(f"   • {email:<38} sinh nhật {dob.strftime('%d/%m')} ({status})")
+                print(
+                    f"   • {target_email:<38} sinh nhật "
+                    f"{dob.strftime('%d/%m')} ({status})"
+                )
         print(f"   → Đã cập nhật {updated}/{len(BIRTHDAY_USERS)} tài khoản.")
 
         # 2. NẠP LỜI CHÚC / THIỆP XANH CỦA NĂM TRƯỚC (hộp thư + điểm thưởng + nhật ký)
         print(" 💌 [2/3] Nạp lời chúc & thiệp xanh của mùa sinh nhật năm trước...")
-        users = await _load_user_map(conn)
+        users = await _load_user_map(conn, aliases)
         inserted = skipped = 0
         wish_date = birthday_date_for(today.year - 1, today)
         created_at = datetime(
@@ -383,12 +428,13 @@ async def seed_birthdays():
             user = users.get(email)
             if user is None:
                 continue
+            real_email = aliases.get(email, email)
             birthdays = await conn.fetchval(
-                count_birthdays_sql, email, today.month, today.day
+                count_birthdays_sql, real_email, today.month, today.day
             )
             inbox = await conn.fetchrow(inbox_sql, user["user_id"])
             print(
-                f"   • {email:<38} banner {birthdays} bạn sinh nhật | "
+                f"   • {real_email:<38} banner {birthdays} bạn sinh nhật | "
                 f"hộp thư {inbox['total']} lời chúc ({inbox['unread']} chưa đọc)"
             )
 

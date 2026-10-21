@@ -517,6 +517,22 @@ function App() {
         } else {
           setActiveTab("hotspots");
         }
+      } else if (hash === "#risk-dashboard" || hash === "#urban-risk" || window.location.pathname === "/risk-dashboard") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/risk-dashboard");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("risk-dashboard");
+        }
+      } else if (hash === "#settings" || window.location.pathname === "/settings") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/settings");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("settings");
+        }
       } else if (hash === "#groups" || window.location.pathname === "/groups") {
         if (!isLogged) {
           setAuthRedirectUrl("/groups");
@@ -630,6 +646,10 @@ function App() {
         window.location.hash = "#login";
       } else if (activeTab === "hotspots") {
         setAuthRedirectUrl("/hotspots");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "risk-dashboard") {
+        setAuthRedirectUrl("/risk-dashboard");
         setActiveTab("auth");
         window.location.hash = "#login";
       } else if (activeTab === "report") {
