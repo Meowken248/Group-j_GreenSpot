@@ -1,7 +1,7 @@
 """
 EcoReport Master Seeder (Nạp toàn bộ dữ liệu hệ thống)
 Chạy lần lượt:
-1. Đồng bộ ma trận phân quyền RBAC (Roles, 105 Permissions, 15 Modules)
+1. Đồng bộ ma trận phân quyền RBAC (Roles, 105 Permissions, 15 Modules) + tài khoản admin@gmail.com
 2. Nạp dữ liệu nền tảng TP.HCM (Admin Units, Waste Categories, Incidents, Green Spots, Recycling, IoT, Flood, Tides)
 3. Nạp dữ liệu Hồ sơ Công dân & Hộ chiếu Xanh (Citizen Levels, Badges, User Activities, Timeline Posts)
 4. Nạp dữ liệu Bạn bè, Theo dõi & Gợi ý kết bạn (STT 07)
@@ -43,8 +43,12 @@ async def run_seed_all():
     print("🚀 BẮT ĐẦU NẠP TOÀN BỘ CƠ SỞ DỮ LIỆU ECOREPORT / GREENSPOT")
     print("=" * 70)
 
-    print("\n👉 [BƯỚC 1/14] Đồng bộ ma trận phân quyền RBAC (Roles & Permissions)...")
+    print("\n👉 [BƯỚC 1/14] Đồng bộ ma trận phân quyền RBAC & tài khoản Quản trị viên...")
     await run_rbac_migration()
+    # Tạo/đồng bộ tài khoản admin@gmail.com (mật khẩu: admin@gmail.com) để dữ liệu Chức năng 17
+    # và các kịch bản demo/kiểm thử luôn có sẵn tài khoản quản trị đúng như tài liệu.
+    print("   ↳ Tạo/đồng bộ tài khoản quản trị: admin@gmail.com / admin@gmail.com")
+    await seed_admin()
 
     print("\n👉 [BƯỚC 2/14] Nạp dữ liệu nền tảng TP.HCM (GIS, Sự cố, Điểm xanh, Trạm IoT, Ngập lụt)...")
     await run_clean_seed()

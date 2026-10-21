@@ -56,6 +56,27 @@ docker compose exec backend alembic current
 
 ## 3. Nạp Dữ Liệu Mẫu (Seed Data)
 
+### Quy trình nạp ĐẦY ĐỦ dữ liệu cho CSDL mới (chạy đúng thứ tự)
+```bash
+# 1. Khởi động Database + Backend + Frontend (lần đầu thêm --build)
+docker compose up -d --build
+
+# 2. Tạo/cập nhật toàn bộ bảng dữ liệu (bắt buộc trước khi seed)
+docker compose exec backend alembic upgrade head
+
+# 3. Nạp đầy đủ dữ liệu mẫu của 14 bước (RBAC + Admin + toàn bộ chức năng)
+docker compose exec backend python -m app.seeds.seed_all
+```
+Sau 3 lệnh trên, CSDL đã có đủ dữ liệu cho mọi chức năng, bao gồm các tài khoản demo:
+
+| Email | Mật khẩu | Vai trò |
+| :--- | :--- | :--- |
+| `admin@gmail.com` | `admin@gmail.com` | ADMIN (105 quyền) |
+| `citizen@ecoreport.gov.vn` | `Password123@` | CITIZEN |
+| `friend_tuan@ecoreport.gov.vn`, `friend_ngan@…`, `req_*@…`, `sug_*@…` | `Password123@` | CITIZEN (tài khoản mẫu) |
+
+> `seed_all` chạy lại nhiều lần vẫn an toàn (idempotent), không nhân đôi dữ liệu.
+
 ### Nạp dữ liệu mẫu cơ bản (Khuyên dùng)
 Bao gồm: tài khoản mẫu (`admin`, `officer`, `collector`, `citizen`), danh mục phân loại rác, sự cố mẫu, trạm cảm biến IoT, lộ trình thu gom, cấu hình hệ thống...
 ```bash
@@ -63,6 +84,8 @@ docker compose exec backend python -m app.seeds.seed_data
 ```
 
 ### Nạp toàn bộ dữ liệu mẫu của tất cả chức năng (RBAC, Bạn bè, Geo-Feed, Sinh nhật, ...)
+Lệnh này gộp 14 bước: RBAC + tạo tài khoản `admin@gmail.com`, dữ liệu nền TP.HCM, hồ sơ
+công dân, bạn bè, Geo-Feed, quy định xử phạt, cài đặt, nhóm, chat, reactions, sinh nhật & thiệp xanh, AI Triage.
 Bao gồm cả **Chức năng 17 - Sinh nhật bạn bè & Thiệp xanh sinh thái**: ngày sinh của
 nhóm bạn bè mẫu, cờ hiển thị ngày sinh và hộp thư lời chúc/thiệp xanh (kèm điểm thưởng).
 ```bash
