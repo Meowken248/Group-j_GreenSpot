@@ -90,47 +90,19 @@ export const AiAssistantWidget: React.FC<AiAssistantWidgetProps> = ({
             }
           }}
         >
-          <div
-            style={{
-              width: "100%",
-              maxWidth: "1200px",
-              height: "90vh",
-              display: "flex",
-              flexDirection: "column",
-              background: "#ffffff",
-              borderRadius: "16px",
-              overflow: "hidden",
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-            }}
-          >
+          <div className="ai-widget-modal">
             {/* Header thanh công cụ cửa sổ trợ lý */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "0.85rem 1.25rem",
-                background: "#0f172a",
-                color: "#ffffff",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <span style={{ fontSize: "1.25rem" }}>🌿</span>
-                <span style={{ fontWeight: 700, fontSize: "1rem" }}>
+            <div className="ai-widget-header">
+              <div className="header-brand">
+                <span className="brand-icon">🌿</span>
+                <span className="brand-title">
                   GreenSpot AI Environmental & Platform Assistant (STT 24)
                 </span>
               </div>
               <button
                 type="button"
+                className="btn-close-widget"
                 data-testid="btn-close-ai-widget"
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: "#cbd5e1",
-                  fontSize: "1.5rem",
-                  cursor: "pointer",
-                  lineHeight: 1,
-                }}
                 onClick={() => {
                   setIsOpen(false);
                   if (window.location.hash === "#ai-assistant") {
@@ -143,7 +115,7 @@ export const AiAssistantWidget: React.FC<AiAssistantWidgetProps> = ({
             </div>
 
             {/* Thân giao diện AI Chat Box (Màn 1/4 & 2/4) */}
-            <div style={{ flex: 1, overflow: "hidden", background: "#f8fafc" }}>
+            <div className="ai-widget-body">
               <AiChatBox
                 currentUserName={userFullName}
                 isLoggedIn={isLoggedIn}

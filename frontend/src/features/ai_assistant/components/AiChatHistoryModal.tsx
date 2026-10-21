@@ -4,6 +4,7 @@ import type {
   ChatbotConversationItem,
   ChatbotMessageItem,
 } from "../types/aiAssistant.types";
+import "../styles/AiAssistant.scss";
 
 interface AiChatHistoryModalProps {
   isOpen: boolean;

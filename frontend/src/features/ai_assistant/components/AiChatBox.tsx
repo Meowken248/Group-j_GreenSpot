@@ -4,6 +4,7 @@ import type {
   ChatbotPromptSuggestion,
   ChatbotMessageItem,
 } from "../types/aiAssistant.types";
+import "../styles/AiAssistant.scss";
 
 interface AiChatBoxProps {
   currentUserName?: string;

@@ -54,28 +54,21 @@ $ai-bubble-ai-border: #e2e8f0;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-// Bố cục chính của trang Khung Chat AI (Màn 1/4 & 2/4)
-.ai-assistant-page {
-  display: flex;
-  flex-direction: column;
-  min-height: calc(100vh - 70px);
-  background: $ai-bg-light;
-  color: $ai-text-main;
+// =========================================================================
+// KHUNG CHAT AI (MÀN 1/4 & 2/4) - DÙNG CHUNG CHO CẢ TRANG & WIDGET POPUP
+// =========================================================================
+.ai-assistant-container {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 1.25rem;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
 
-  .ai-assistant-container {
-    max-width: 1280px;
-    width: 100%;
-    margin: 1.5rem auto;
-    padding: 0 1rem;
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 1.5rem;
-    height: calc(100vh - 120px);
-
-    @media (max-width: 900px) {
-      grid-template-columns: 1fr;
-      height: auto;
-    }
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    height: auto;
+    overflow-y: auto;
   }
 
   // Khối GỢI Ý (Bên trái)
@@ -594,6 +587,101 @@ $ai-bubble-ai-border: #e2e8f0;
           }
         }
       }
+    }
+  }
+}
+
+// =========================================================================
+// TRANG TOÀN MÀN HÌNH AI ASSISTANT (#ai-assistant)
+// =========================================================================
+.ai-assistant-page {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 76px);
+  background: $ai-bg-light;
+  color: $ai-text-main;
+  box-sizing: border-box;
+
+  .ai-page-header-nav {
+    flex-shrink: 0;
+  }
+
+  .ai-assistant-container {
+    max-width: 1360px;
+    margin: 1.25rem auto;
+    padding: 0 1rem;
+    height: calc(100vh - 140px);
+  }
+}
+
+// =========================================================================
+// MODAL CỬA SỔ WIDGET NỔI AI ASSISTANT (Mở nhanh từ FAB button)
+// =========================================================================
+.ai-widget-modal {
+  width: 95vw;
+  max-width: 1240px;
+  height: 88vh;
+  max-height: 880px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  @include modal-shadow;
+  box-sizing: border-box;
+
+  .ai-widget-header {
+    @include flex-between;
+    padding: 0.85rem 1.25rem;
+    background: #0f172a;
+    color: #ffffff;
+    flex-shrink: 0;
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+
+      .brand-icon {
+        font-size: 1.25rem;
+      }
+
+      .brand-title {
+        font-weight: 700;
+        font-size: 1rem;
+        letter-spacing: -0.01em;
+      }
+    }
+
+    .btn-close-widget {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      @include transition-all;
+
+      &:hover {
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.12);
+      }
+    }
+  }
+
+  .ai-widget-body {
+    flex: 1;
+    overflow: hidden;
+    background: #f8fafc;
+    padding: 1rem;
+    box-sizing: border-box;
+
+    .ai-assistant-container {
+      height: 100%;
+      margin: 0;
+      padding: 0;
     }
   }
 }
