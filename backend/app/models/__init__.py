@@ -204,3 +204,6 @@ from app.models.group import (
     GroupStatus,
 )
 
+
+# 12. Chatbot (Feature 24)
+from app.models.chatbot import ChatbotConversation, ChatbotMessage, ChatbotSenderType
