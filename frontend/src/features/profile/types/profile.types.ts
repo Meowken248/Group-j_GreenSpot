@@ -30,6 +30,8 @@ export interface UserProfile {
   is_own_profile: boolean;
   total_green_points: number;
   date_of_birth?: string | null;
+  // Feature STT 17: bật/tắt hiển thị ngày sinh với bạn bè (chỉ trả về cho chính chủ)
+  show_birthday?: boolean;
   version: number;
 }
 
@@ -146,6 +148,8 @@ export interface UpdateProfilePayload {
   full_name: string;
   bio?: string | null;
   date_of_birth?: string | null;
+  // Feature STT 17: quyền riêng tư ngày sinh
+  show_birthday?: boolean;
   cover_image_url?: string | null;
   avatar_url?: string | null;
   version: number;

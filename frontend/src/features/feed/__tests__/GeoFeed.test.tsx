@@ -7,6 +7,7 @@ import { FeedPostCard } from '../components/FeedPostCard';
 import { BirthdayBanner } from '../components/BirthdayBanner';
 import { FeedContainer } from '../FeedContainer';
 import { feedService } from '../services/feedService';
+import { birthdayService } from '../services/birthdayService';
 import type { FeedPostItem } from '../types/feed.types';
 
 // Mock feedService
@@ -20,6 +21,15 @@ vi.mock('../services/feedService', async () => {
     },
   };
 });
+
+// Mock birthdayService: widget sinh nhật (STT 17) gọi API riêng
+vi.mock('../services/birthdayService', () => ({
+  birthdayService: {
+    getTodayBirthdays: vi.fn(),
+    getCardTemplates: vi.fn(),
+    sendWish: vi.fn(),
+  },
+}));
 
 describe('Feature STT 08: Bảng tin Geo-Feed theo bán kính (SRS pp. 97-102)', () => {
   beforeEach(() => {
@@ -219,18 +229,50 @@ describe('Feature STT 08: Bảng tin Geo-Feed theo bán kính (SRS pp. 97-102)',
     });
   });
 
-  describe('4. BirthdayBanner (Widget chúc mừng sinh nhật bạn bè STT 17)', () => {
-    it('hiển thị lời nhắc sinh nhật và cho phép gửi lời chúc', () => {
-      const handleWish = vi.fn();
+  describe('4. BirthdayBanner (Widget sinh nhật bạn bè STT 17)', () => {
+    it('hiển thị bạn bè sinh nhật hôm nay từ API và mở popup gửi lời chúc', async () => {
+      (birthdayService.getTodayBirthdays as any).mockResolvedValueOnce({
+        items: [
+          {
+            user_id: 'friend-bday-01',
+            full_name: 'Lê Hoàng Phúc',
+            avatar_url: null,
+            date_of_birth: '2000-10-21',
+            age: 26,
+            citizen_level_name: 'Công dân xanh',
+            card_sent_today: false,
+            wish_sent_today: false,
+          },
+        ],
+        total: 1,
+        has_more: false,
+        limit: 3,
+        today: '2026-10-21',
+        points_per_card: 5,
+        daily_points_cap: 25,
+        daily_points_earned: 0,
+        daily_reward_limit_reached: false,
+        card_templates: [],
+        default_suggestion: 'Chúc mừng sinh nhật {name}! Chúc bạn một ngày thật xanh và tràn đầy niềm vui.',
+      });
 
-      render(<BirthdayBanner onSendWish={handleWish} />);
+      render(<BirthdayBanner />);
 
+      expect(await screen.findByText('Lê Hoàng Phúc')).toBeInTheDocument();
       expect(screen.getByText(/Sinh nhật bạn bè hôm nay/i)).toBeInTheDocument();
-      const wishBtn = screen.getByRole('button', { name: /Gửi lời chúc xanh/i });
-      fireEvent.click(wishBtn);
 
-      expect(handleWish).toHaveBeenCalledTimes(1);
-      expect(screen.getByText(/Đã gửi lời chúc/i)).toBeInTheDocument();
+      // Bấm "Gửi lời chúc xanh" phải mở popup gửi lời chúc
+      fireEvent.click(screen.getByRole('button', { name: /Gửi lời chúc xanh/i }));
+
+      expect(await screen.findByRole('dialog')).toBeInTheDocument();
+      expect(screen.getByText(/Gửi lời chúc đến Lê Hoàng Phúc/i)).toBeInTheDocument();
+    });
+
+    it('không hiển thị gì khi chưa đăng nhập', () => {
+      const { container } = render(<BirthdayBanner isLoggedIn={false} />);
+
+      expect(container).toBeEmptyDOMElement();
+      expect(birthdayService.getTodayBirthdays).not.toHaveBeenCalled();
     });
   });
 

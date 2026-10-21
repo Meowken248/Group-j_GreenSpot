@@ -430,11 +430,7 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
           />
 
           {/* 2. Banner Sinh nhật bạn bè (STT 17) */}
-          <BirthdayBanner
-            onSendWish={(friendName) =>
-              showToast("success", `Đã gửi lời chúc xanh đến ${friendName}!`)
-            }
-          />
+          <BirthdayBanner isLoggedIn={isLoggedIn} onNotify={showToast} />
 
           {/* 3. Banner Cảnh báo cấp quyền GPS nếu bị từ chối */}
           {gpsStatus === "denied" && activeTab === "nearby" && (

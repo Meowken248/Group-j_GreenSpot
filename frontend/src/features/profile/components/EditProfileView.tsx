@@ -25,6 +25,8 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
   const [fullName, setFullName] = useState<string>(initialName);
   const [bio, setBio] = useState<string>(initialBio);
   const [dob, setDob] = useState<string>(initialDob);
+  // Feature STT 17: quyền riêng tư ngày sinh (mặc định bật)
+  const [showBirthday, setShowBirthday] = useState<boolean>(userProfile.show_birthday !== false);
 
   // File ảnh & preview
   const [coverPreview, setCoverPreview] = useState<string | null>(userProfile.cover_image_url || null);
@@ -62,9 +64,17 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
     const isNameChanged = cleanCurrentName !== cleanInitialName && cleanCurrentName.length > 0;
     const isBioChanged = bio !== initialBio;
     const isDobChanged = dob !== initialDob;
+    const isShowBirthdayChanged = showBirthday !== (userProfile.show_birthday !== false);
     const isCoverChanged = selectedCoverFile !== null;
     const isAvatarChanged = selectedAvatarFile !== null;
-    return isNameChanged || isBioChanged || isDobChanged || isCoverChanged || isAvatarChanged;
+    return (
+      isNameChanged ||
+      isBioChanged ||
+      isDobChanged ||
+      isShowBirthdayChanged ||
+      isCoverChanged ||
+      isAvatarChanged
+    );
   };
 
   // Cảnh báo beforeunload khi có thay đổi chưa lưu
@@ -238,6 +248,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
         full_name: cleanName,
         bio: bio.trim() || null,
         date_of_birth: dob || null,
+        show_birthday: showBirthday,
         version: userProfile.version,
       },
       selectedCoverFile,
@@ -401,6 +412,26 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
           <div className="group-hint-text">
             Ngày sinh dùng để nhắc sinh nhật cho bạn bè và không hiển thị công khai trên trang cá nhân
           </div>
+
+          {/* Feature STT 17: bật/tắt hiển thị ngày sinh với bạn bè */}
+          <label className="birthday-privacy-toggle" htmlFor="edit-show-birthday">
+            <input
+              id="edit-show-birthday"
+              type="checkbox"
+              checked={showBirthday}
+              onChange={(e) => setShowBirthday(e.target.checked)}
+              disabled={saving || !dob}
+            />
+            <span className="toggle-track" aria-hidden="true">
+              <span className="toggle-thumb" />
+            </span>
+            <span className="toggle-text">
+              <strong>Hiển thị ngày sinh với bạn bè</strong>
+              <small>
+                Bật để bạn bè thấy và gửi lời chúc trong khối “Sinh nhật bạn bè hôm nay” trên Bảng tin.
+              </small>
+            </span>
+          </label>
         </div>
       </section>
 
