@@ -122,16 +122,17 @@ export const GroupComposerBox: React.FC<GroupComposerBoxProps> = ({
           alignItems: "center",
           justifyContent: "space-around",
           gap: "8px",
+          overflowX: "auto",
         }}
       >
         <button
           type="button"
           onClick={onOpenPostCreator}
           style={{
-            display: "flex",
+            display: "inline-flex",
             alignItems: "center",
             gap: "8px",
-            padding: "8px 16px",
+            padding: "8px 14px",
             borderRadius: "10px",
             border: "none",
             background: "transparent",
@@ -139,23 +140,25 @@ export const GroupComposerBox: React.FC<GroupComposerBoxProps> = ({
             fontSize: "13px",
             fontWeight: 600,
             cursor: "pointer",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
             transition: "background 0.2s",
           }}
           onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f5f9")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
         >
           <span style={{ fontSize: "16px" }}>📸</span>
-          <span>Ảnh / Video</span>
+          <span style={{ whiteSpace: "nowrap" }}>Ảnh / Video</span>
         </button>
 
         <button
           type="button"
           onClick={onOpenPostCreator}
           style={{
-            display: "flex",
+            display: "inline-flex",
             alignItems: "center",
             gap: "8px",
-            padding: "8px 16px",
+            padding: "8px 14px",
             borderRadius: "10px",
             border: "none",
             background: "transparent",
@@ -163,23 +166,25 @@ export const GroupComposerBox: React.FC<GroupComposerBoxProps> = ({
             fontSize: "13px",
             fontWeight: 600,
             cursor: "pointer",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
             transition: "background 0.2s",
           }}
           onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f5f9")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
         >
           <span style={{ fontSize: "16px" }}>📍</span>
-          <span>Toạ độ / Vị trí</span>
+          <span style={{ whiteSpace: "nowrap" }}>Toạ độ / Vị trí</span>
         </button>
 
         <button
           type="button"
           onClick={onOpenPostCreator}
           style={{
-            display: "flex",
+            display: "inline-flex",
             alignItems: "center",
             gap: "8px",
-            padding: "8px 16px",
+            padding: "8px 14px",
             borderRadius: "10px",
             border: "none",
             background: "transparent",
@@ -187,15 +192,18 @@ export const GroupComposerBox: React.FC<GroupComposerBoxProps> = ({
             fontSize: "13px",
             fontWeight: 600,
             cursor: "pointer",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
             transition: "background 0.2s",
           }}
           onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f5f9")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
         >
           <span style={{ fontSize: "16px" }}>🌱</span>
-          <span>Chiến dịch xanh</span>
+          <span style={{ whiteSpace: "nowrap" }}>Chiến dịch xanh</span>
         </button>
       </div>
     </div>
   );
 };
+

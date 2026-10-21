@@ -17,6 +17,8 @@ import { FeedPostCard } from "../../feed/components/FeedPostCard";
 import type { FeedPostItem } from "../../feed/types/feed.types";
 import { PostCreatorContainer } from "../../posts/PostCreatorContainer";
 import { AUTH_STORAGE_KEYS } from "../../auth/types/auth.types";
+import { SharePostModal, PostCommentsModal } from "../../comments";
+import { feedService } from "../../feed/services/feedService";
 
 interface GroupDetailViewProps {
   groupId: string;
@@ -45,6 +47,40 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
   // Dữ liệu bài viết trong nhóm
   const [posts, setPosts] = useState<FeedPostItem[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
+  const [sharingPost, setSharingPost] = useState<FeedPostItem | null>(null);
+  const [selectedPostForComments, setSelectedPostForComments] = useState<FeedPostItem | null>(null);
+  const [toasts, setToasts] = useState<Array<{ id: string; type: "success" | "error" | "info"; message: string }>>([]);
+
+  const showToast = useCallback((type: "success" | "error" | "info", message: string) => {
+    const id = `${Date.now()}-${Math.random()}`;
+    setToasts((prev) => [...prev, { id, type, message }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3500);
+  }, []);
+
+  const handleReactPost = async (postId: string, reactionType: string) => {
+    try {
+      await feedService.reactToPost(postId, reactionType);
+      setPosts((prev) =>
+        prev.map((p) => {
+          if (p.post_id !== postId) return p;
+          const isSame = p.user_reaction === reactionType;
+          const newReaction = isSame ? null : reactionType;
+          let count = p.reactions_count || 0;
+          if (!p.user_reaction && newReaction) count += 1;
+          else if (p.user_reaction && !newReaction) count = Math.max(0, count - 1);
+          return {
+            ...p,
+            user_reaction: newReaction,
+            reactions_count: count,
+          };
+        })
+      );
+    } catch (err) {
+      console.error("Lỗi thả cảm xúc bài viết:", err);
+    }
+  };
 
   // Người dùng hiện tại
   const [currentUser, setCurrentUser] = useState<any>(() => {
@@ -102,6 +138,7 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
   useEffect(() => {
     fetchDetail();
     fetchPosts();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, [fetchDetail, fetchPosts]);
 
   const handleJoin = async () => {
@@ -465,7 +502,15 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
       </div>
 
       {/* 3. Nội dung chính theo từng Tab */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "24px", alignItems: "start" }}>
+      <div
+        className="group-tab-layout-grid"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1fr) 340px",
+          gap: "24px",
+          alignItems: "start",
+        }}
+      >
         {/* Cột trái: Tab Content */}
         <div className="group-tab-main-col">
           {activeTab === "feed" && (
@@ -592,7 +637,10 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
                           post={post}
                           currentUserId={currentUser?.user_id}
                           onSelectGroup={(id) => onSelectAnotherGroup?.(id)}
-                          onShowToast={(_type, _msg) => {}}
+                          onOpenShare={(p) => setSharingPost(p)}
+                          onOpenComments={(p) => setSelectedPostForComments(p)}
+                          onReactPost={handleReactPost}
+                          onShowToast={showToast}
                         />
                       ))}
                     </div>
@@ -834,6 +882,83 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
               }}
             />
           </div>
+        </div>
+      )}
+
+      {/* 7. Modal Chia sẻ bài viết (Chức năng 14) */}
+      {sharingPost && (
+        <SharePostModal
+          isOpen={Boolean(sharingPost)}
+          postId={sharingPost.post_id}
+          postContent={sharingPost.content}
+          authorName={sharingPost.author?.full_name}
+          onClose={() => setSharingPost(null)}
+          onShareSuccess={(message) => {
+            showToast("success", message);
+            const newShares = (sharingPost.shares_count || 0) + 1;
+            setPosts((prev) =>
+              prev.map((p) =>
+                p.post_id === sharingPost.post_id
+                  ? { ...p, shares_count: newShares }
+                  : p
+              )
+            );
+          }}
+          onShowToast={showToast}
+        />
+      )}
+
+      {/* 8. Modal Bình luận bài viết Overlay (Chức năng 14) */}
+      {selectedPostForComments && (
+        <PostCommentsModal
+          isOpen={Boolean(selectedPostForComments)}
+          post={selectedPostForComments}
+          onClose={() => setSelectedPostForComments(null)}
+          onPostUpdated={(updatedPost) => {
+            setPosts((prev) =>
+              prev.map((p) => (p.post_id === updatedPost.post_id ? updatedPost : p))
+            );
+            setSelectedPostForComments(updatedPost);
+          }}
+        />
+      )}
+
+      {/* 9. Toast thông báo phản hồi thao tác */}
+      {toasts.length > 0 && (
+        <div
+          style={{
+            position: "fixed",
+            top: "24px",
+            right: "24px",
+            zIndex: 10000,
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+            pointerEvents: "none",
+          }}
+        >
+          {toasts.map((t) => (
+            <div
+              key={t.id}
+              style={{
+                pointerEvents: "auto",
+                background:
+                  t.type === "success"
+                    ? "#059669"
+                    : t.type === "error"
+                    ? "#dc2626"
+                    : "#2563eb",
+                color: "#ffffff",
+                padding: "12px 20px",
+                borderRadius: "12px",
+                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.15)",
+                fontWeight: 600,
+                fontSize: "14px",
+              }}
+            >
+              {t.message}
+            </div>
+          ))}
         </div>
       )}
     </div>

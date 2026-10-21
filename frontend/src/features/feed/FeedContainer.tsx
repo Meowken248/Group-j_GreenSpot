@@ -120,6 +120,12 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
     return () => window.removeEventListener("hashchange", handleUrlHash);
   }, []);
 
+  useEffect(() => {
+    if (selectedGroupId) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [selectedGroupId]);
+
   // 6. Quản lý Toast thông báo
   const [toasts, setToasts] = useState<FeedToast[]>([]);
 
@@ -416,7 +422,7 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
         ))}
       </div>
 
-      <div className="feed-layout-grid">
+      <div className={`feed-layout-grid ${selectedGroupId ? "is-group-view" : ""}`}>
         {/* =================================================================== */}
         {/* CỘT TRÁI: ĐIỀU HƯỚNG TABS & MINI PROFILE */}
         {/* =================================================================== */}
@@ -668,17 +674,19 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
         {/* =================================================================== */}
         {/* CỘT PHẢI: RADAR BÁN KÍNH GPS, BỘ LỌC CHỦ ĐỀ, SẮP XẾP */}
         {/* =================================================================== */}
-        <FeedRightSidebar
-          radiusKm={radiusKm}
-          onOpenRadiusPicker={() => setShowRadiusModal(true)}
-          selectedCategory={selectedCategory}
-          onSelectCategory={(cat) => setSelectedCategory(cat)}
-          sortBy={sortBy}
-          onSelectSortBy={(s) => setSortBy(s)}
-          activeDistrict={district}
-          onSelectDistrict={(d) => setDistrict(d)}
-          isDistrictTab={activeTab === "district"}
-        />
+        {!selectedGroupId && (
+          <FeedRightSidebar
+            radiusKm={radiusKm}
+            onOpenRadiusPicker={() => setShowRadiusModal(true)}
+            selectedCategory={selectedCategory}
+            onSelectCategory={(cat) => setSelectedCategory(cat)}
+            sortBy={sortBy}
+            onSelectSortBy={(s) => setSortBy(s)}
+            activeDistrict={district}
+            onSelectDistrict={(d) => setDistrict(d)}
+            isDistrictTab={activeTab === "district"}
+          />
+        )}
       </div>
 
       {/* =================================================================== */}

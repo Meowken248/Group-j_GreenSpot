@@ -492,5 +492,53 @@ describe("Chức năng 16: Frontend Community Groups (Tạo nhóm theo quận, p
       fireEvent.click(groupBadge);
       expect(handleSelectGroup).toHaveBeenCalledWith(mockGroup.group_id);
     });
+
+    it("6.3. GroupDetailView: nhấp nút Chia sẻ trên bài viết nhóm mở SharePostModal (Chức năng 14)", async () => {
+      vi.spyOn(groupService, "getGroupDetail").mockResolvedValueOnce(mockGroup);
+      const mockPostInGroup: FeedPostItem = {
+        post_id: "p-grp-share",
+        user_id: "u-1",
+        author: {
+          user_id: "u-1",
+          full_name: "Lê Văn Xanh",
+          avatar_url: null,
+        },
+        content: "Chiến dịch làm sạch kênh Nhiêu Lộc!",
+        visibility: "PUBLIC",
+        group_id: mockGroup.group_id,
+        group_name: mockGroup.name,
+        created_at: new Date().toISOString(),
+        reactions_count: 3,
+        comments_count: 0,
+      };
+
+      vi.spyOn(groupService, "getGroupPosts").mockResolvedValueOnce({
+        items: [mockPostInGroup],
+        total: 1,
+        page: 1,
+        limit: 10,
+        has_more: false,
+      });
+
+      render(
+        <GroupDetailView
+          groupId={mockGroup.group_id}
+          onBack={vi.fn()}
+          onGroupDisbanded={vi.fn()}
+        />
+      );
+
+      // Bài viết xuất hiện
+      expect(await screen.findByText("Chiến dịch làm sạch kênh Nhiêu Lộc!")).toBeInTheDocument();
+
+      // Nút chia sẻ
+      const shareBtn = screen.getByTitle("Chia sẻ bài viết");
+      expect(shareBtn).toBeInTheDocument();
+
+      fireEvent.click(shareBtn);
+
+      // Phải mở SharePostModal (có tiêu đề chia sẻ)
+      expect(await screen.findByRole("heading", { name: /chia sẻ bài viết/i })).toBeInTheDocument();
+    });
   });
 });
