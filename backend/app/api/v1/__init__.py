@@ -14,6 +14,7 @@ from app.api.v1.waste_categories import router as waste_categories_router
 from app.api.v1.recycling_facilities import router as recycling_facilities_router
 from app.api.v1.friends import router as friends_router
 from app.api.v1.deduplication import router as deduplication_router
+from app.api.v1.triage import triage_composite_router
 from app.api.v1.settings import settings_router
 from app.api.v1.penalties import router as penalties_router
 from app.api.v1.posts import router as posts_router
@@ -21,6 +22,11 @@ from app.api.v1.comments import router as comments_router
 from app.api.v1.chat import router as chat_router
 from app.api.v1.groups import router as groups_router
 from app.api.v1.birthday import router as birthday_router
+from app.api.v1.navigation import navigation_router
+from app.api.v1.notifications import router as notifications_router
+from app.api.v1.risk_dashboard.router import router as risk_dashboard_router
+from app.api.v1.dispatch.router import router as dispatch_router
+from app.api.v1.hotspots.router import router as hotspots_router
 
 api_v1_router = APIRouter()
 api_v1_router.include_router(auth_router)
@@ -30,6 +36,7 @@ api_v1_router.include_router(profile_router)
 api_v1_router.include_router(friends_router)
 api_v1_router.include_router(settings_router)
 api_v1_router.include_router(deduplication_router)
+api_v1_router.include_router(triage_composite_router)
 api_v1_router.include_router(eco_locations_router)
 api_v1_router.include_router(spatial_router)
 api_v1_router.include_router(weather_router)
@@ -45,3 +52,8 @@ api_v1_router.include_router(comments_router)
 api_v1_router.include_router(chat_router)
 api_v1_router.include_router(groups_router)
 api_v1_router.include_router(birthday_router)
+api_v1_router.include_router(navigation_router)
+api_v1_router.include_router(notifications_router)
+api_v1_router.include_router(risk_dashboard_router)
+api_v1_router.include_router(dispatch_router)
+api_v1_router.include_router(hotspots_router)

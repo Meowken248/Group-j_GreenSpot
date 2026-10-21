@@ -77,6 +77,23 @@ Module tự động gom cụm các sự cố môi trường gửi về từ ngư
 - **Đánh dấu không trùng lặp (False Positive) (Dòng 262 - 304):** `POST /api/v1/deduplication/mark-distinct`. Kiểm tra OCC locking version ($409$ tại Dòng 288 - 292), chuyển trạng thái sang `SEPARATED`.
 - **Gộp báo cáo & Bảo lưu điểm thưởng (Dòng 306 - 374):** `POST /api/v1/deduplication/merge`. Kiểm tra OCC locking ($409$ tại Dòng 332 - 336), gán `master_incident_id`, soft-delete cụm, bảo lưu điểm thưởng và kích hoạt thông báo push cho người báo cáo phụ.
 
+### 1.3. Hệ Thống Thư Mục & Luồng Luân Chuyển Truy Vấn (Layered Architecture Flow)
+- **Tầng CSDL (Domain Models):**
+  - Model Cụm trùng lặp: [`BackEnd/app/models/deduplication/cluster.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/deduplication/cluster.py) (`IncidentDuplicateCluster`).
+  - Model Sự cố & Phương tiện: [`BackEnd/app/models/incident.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/incident.py) (`Incident`, `IncidentMedia`).
+- **Tầng Hợp đồng Interface (Contracts & Abstraction):**
+  - [`BackEnd/app/interface/deduplication/deduplication_interface.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/interface/deduplication/deduplication_interface.py): Định nghĩa hợp đồng trừu tượng `IDeduplicationRepository` tuân thủ nguyên lý Dependency Inversion (SOLID).
+- **Tầng Truy vấn CSDL (Repository Layer):**
+  - **Vị trí viết truy vấn:** Toàn bộ truy vấn CSDL được đóng gói trong `DeduplicationRepository` tại [`BackEnd/app/crud/deduplication/deduplication_repository.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/crud/deduplication/deduplication_repository.py).
+  - Các truy vấn chính: `list_clusters` lọc theo quận, % tương đồng và soft delete (`deleted_at IS NULL`), `get_incident_with_media_and_reporter` nạp eager-loading `options(selectinload(Incident.media), selectinload(Incident.reporter))`, `mark_cluster_distinct`, `merge_cluster_incidents`.
+- **Tầng Dịch vụ (Service Layer):**
+  - [`BackEnd/app/services/deduplication/ai_engine.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/deduplication/ai_engine.py) (`AIDeduplicationService`) chịu trách nhiệm tính toán khoảng cách đại cầu Haversine, độ tương đồng Cosine trên embedding ảnh 512-chiều và chấm điểm tương đồng 3 yếu tố.
+- **Tầng DTO / Schemas:**
+  - [`BackEnd/app/schemas/deduplication/schemas.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/schemas/deduplication/schemas.py) (`ClusterListResponse`, `ClusterCompareResponse`, `MergeClusterRequest`, `MarkDistinctRequest`).
+- **Tầng API Router & Tích hợp Hệ thống (Routing & Mounting):**
+  - Router: [`BackEnd/app/api/v1/deduplication/router.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/deduplication/router.py) (prefix `/deduplication`).
+  - Tích hợp vào Router tổng: [`BackEnd/app/api/v1/__init__.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/__init__.py#L28) thông qua `api_v1_router.include_router(deduplication_router)`.
+
 ---
 
 ## CORE BE 2: PHÂN QUYỀN VAI TRÒ RBAC & MA TRẬN PHÂN QUYỀN ĐỘNG (DYNAMIC PERMISSION MATRIX)

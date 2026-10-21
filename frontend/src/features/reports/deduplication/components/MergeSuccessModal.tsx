@@ -3,13 +3,37 @@ import React from 'react';
 interface MergeSuccessModalProps {
   isOpen: boolean;
   onClose: () => void;
+  masterIncidentId?: string;
+  onNavigateToTriage?: () => void;
+  onNavigateToDispatch?: () => void;
 }
 
 export const MergeSuccessModal: React.FC<MergeSuccessModalProps> = ({
   isOpen,
   onClose,
+  masterIncidentId: _masterIncidentId,
+  onNavigateToTriage,
+  onNavigateToDispatch,
 }) => {
   if (!isOpen) return null;
+
+  const handleTriageClick = () => {
+    onClose();
+    if (onNavigateToTriage) {
+      onNavigateToTriage();
+    } else {
+      window.location.hash = "#triage";
+    }
+  };
+
+  const handleDispatchClick = () => {
+    onClose();
+    if (onNavigateToDispatch) {
+      onNavigateToDispatch();
+    } else {
+      window.location.hash = "#dispatch";
+    }
+  };
 
   return (
     <div
@@ -33,12 +57,48 @@ export const MergeSuccessModal: React.FC<MergeSuccessModalProps> = ({
           Người báo cáo nhận thông báo
         </p>
 
-        <p className="popup-explain-note" style={{ marginTop: '-12px', marginBottom: '28px' }}>
+        <p className="popup-explain-note" style={{ marginTop: '-12px', marginBottom: '24px' }}>
           Hệ thống đã tự động gửi thông báo push/chuông đến tài khoản của công dân gửi báo cáo phụ, xác nhận sự cố của họ đã được tiếp nhận và liên kết vào hồ sơ xử lý chung.
         </p>
 
-        {/* Nút Đóng duy nhất */}
-        <div className="popup-actions-wrapper">
+        {/* Khung nút hành động liên thông */}
+        <div className="popup-actions-wrapper" style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="popup-secondary-btn"
+            onClick={handleTriageClick}
+            style={{
+              padding: '10px 18px',
+              borderRadius: '8px',
+              border: '1px solid #0284c7',
+              background: '#f0f9ff',
+              color: '#0369a1',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+            title="Chuyển đến thẩm định mức độ ưu tiên & SLA cho sự cố gốc (STT 39)"
+          >
+            🔍 Thẩm định sự cố gốc
+          </button>
+
+          <button
+            type="button"
+            className="popup-secondary-btn"
+            onClick={handleDispatchClick}
+            style={{
+              padding: '10px 18px',
+              borderRadius: '8px',
+              border: '1px solid #16a34a',
+              background: '#f0fdf4',
+              color: '#15803d',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+            title="Chuyển sang Trung tâm Điều phối tác nghiệp (STT 43) để giao việc"
+          >
+            🚀 Tạo lệnh điều phối
+          </button>
+
           <button
             type="button"
             className="popup-primary-btn"

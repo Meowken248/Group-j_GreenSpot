@@ -86,7 +86,9 @@ from app.models.friends import (
 from app.models.settings import UserSettings
 
 # 9. Tra cứu quy định xử phạt vi phạm hành chính (Penalty Regulations Domain)
-from app.models.penalty import PenaltyRegulation
+from app.models.penalty import PenaltyRegulation, PenaltyReport
+# 10. Th?ng b?o h? th?ng (Notification Domain)
+from app.models.notification import Notification
 
 # 10. Nhắn tin 1-1, Chat nhóm & Chat quận (Chat Domain - Feature 15)
 from app.models.chat import (
@@ -99,7 +101,7 @@ from app.models.chat import (
 )
 
 # 8. Nhật ký kiểm toán hệ thống (Audit Logs)
-from app.models.audit_log import AuditLog
+from app.models.audit_log import AuditLog, IncidentAuditLog
 
 # 11. Sinh nhật bạn bè & thiệp xanh sinh thái (Birthday Domain - Feature 17)
 from app.models.birthday import BirthdayWish, BirthdayWishType
@@ -125,6 +127,7 @@ __all__ = [
     "Incident",
     "IncidentMedia",
     "IncidentDuplicateCluster",
+    "IncidentAuditLog",
     # IoT Sensors
     "IoTSensorStation",
     # Flood, Tide & Safe Navigation
@@ -167,6 +170,9 @@ __all__ = [
     "UserSettings",
     # Penalty Regulations Domain
     "PenaltyRegulation",
+    "PenaltyReport",
+    # Notification Domain
+    "Notification",
     # Chat Domain (Feature 15)
     "Conversation",
     "ConversationMember",

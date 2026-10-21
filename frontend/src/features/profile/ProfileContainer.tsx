@@ -12,6 +12,7 @@ import { ProfileTimeline } from "./components/ProfileTimeline";
 import { GreenPassportView } from "./components/GreenPassportView";
 import { ContributionHistoryView } from "./components/ContributionHistoryView";
 import { EditProfileView } from "./components/EditProfileView";
+import { NotificationBell } from "../../components/NotificationBell";
 import "./styles/Profile.scss";
 
 type ProfileViewMode = "timeline" | "passport" | "history" | "edit";
@@ -554,15 +555,13 @@ export const ProfileContainer: React.FC<ProfileContainerProps> = ({
           </div>
 
           <div className="header-right">
-            <button
-              type="button"
-              className="bell-notification-btn"
-              title="Thông báo hoạt động sinh thái"
-              onClick={() => showToast("success", "Không có thông báo mới nào.")}
-            >
-              🔔
-              <span className="bell-dot" />
-            </button>
+            <NotificationBell
+              onNotificationClick={(notif) => {
+                if (notif.notification_type === "PENALTY_REPORT") {
+                  setCurrentView("history");
+                }
+              }}
+            />
 
             <div
               className="header-user-avatar"

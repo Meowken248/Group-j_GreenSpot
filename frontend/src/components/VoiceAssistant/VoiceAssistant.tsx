@@ -351,11 +351,16 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
-    if (resultData?.action_target && onNavigateToFeature) {
-      onNavigateToFeature(resultData.action_target, resultData.action_payload);
-    }
+    
+    const target = resultData?.action_target;
+    const payload = resultData?.action_payload;
+    
     setCurrentScreen("HOME");
     setResultData(null);
+    
+    if (target && onNavigateToFeature) {
+      onNavigateToFeature(target, payload);
+    }
     if (onClose) {
       onClose();
     }
@@ -373,7 +378,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
             type="button"
             className="voice-menu-btn"
             title="Menu điều hướng"
-            onClick={onClose}
+            onClick={handleCloseAssistant}
           >
             ☰
           </button>
@@ -654,7 +659,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                         <div className="action-payload-details">
                           {resultData.detected_intent === "REPORT_INCIDENT" && (
                             <div className="prefilled-form-preview">
-                              <strong>Form Báo cáo sự cố (STT 01):</strong>
+                              <strong>Form Báo cáo sự cố:</strong>
                               <p>• Phân loại: {resultData.action_payload.incident_type}</p>
                               <p>• Tiêu đề: {resultData.action_payload.title}</p>
                               <p>• Vị trí: {resultData.action_payload.location_text}</p>

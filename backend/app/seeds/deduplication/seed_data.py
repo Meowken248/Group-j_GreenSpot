@@ -387,5 +387,7 @@ async def seed_deduplication():
     print("=" * 60)
 
 
+seed_deduplication_data = seed_deduplication
+
 if __name__ == "__main__":
     asyncio.run(seed_deduplication())
