@@ -4,9 +4,11 @@
  * Quản lý các tab: Gần tôi, Quận của tôi, Bạn bè, Nhóm và Lối tắt nhanh
  */
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import type { FeedTab } from "../types/feed.types";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
+import { groupService } from "../../groups/services/groupService";
+import type { GroupItem } from "../../groups/types/group";
 
 interface FeedLeftSidebarProps {
   activeTab: FeedTab;
@@ -19,6 +21,9 @@ interface FeedLeftSidebarProps {
     email?: string;
   } | null;
   onNavigate: (route: string) => void;
+  selectedGroupId?: string | null;
+  onSelectGroup?: (groupId: string) => void;
+  onOpenCreateGroup?: () => void;
 }
 
 export const FeedLeftSidebar: React.FC<FeedLeftSidebarProps> = ({
@@ -26,10 +31,47 @@ export const FeedLeftSidebar: React.FC<FeedLeftSidebarProps> = ({
   onTabChange,
   currentUser,
   onNavigate,
+  selectedGroupId,
+  onSelectGroup,
+  onOpenCreateGroup,
 }) => {
   const userName = currentUser?.full_name || "Khách vãng lai";
   const userAvatar = currentUser?.avatar_url;
   const greenPoints = currentUser?.total_green_points || 0;
+
+  const [myGroups, setMyGroups] = useState<GroupItem[]>([]);
+  const [loadingGroups, setLoadingGroups] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!currentUser?.user_id) {
+      setMyGroups([]);
+      return;
+    }
+    let isMounted = true;
+    const fetchGroups = async () => {
+      try {
+        setLoadingGroups(true);
+        const res = await groupService.getMyGroups();
+        if (isMounted && res && res.items) {
+          setMyGroups(res.items);
+        }
+      } catch {
+        // im lặng nếu không có quyền hoặc lỗi mạng
+      } finally {
+        if (isMounted) setLoadingGroups(false);
+      }
+    };
+    fetchGroups();
+
+    const handleGroupsUpdate = () => fetchGroups();
+    window.addEventListener("group_joined", handleGroupsUpdate);
+    window.addEventListener("group_created", handleGroupsUpdate);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("group_joined", handleGroupsUpdate);
+      window.removeEventListener("group_created", handleGroupsUpdate);
+    };
+  }, [currentUser?.user_id]);
 
   return (
     <aside className="feed-left-sidebar">
@@ -107,7 +149,78 @@ export const FeedLeftSidebar: React.FC<FeedLeftSidebarProps> = ({
         </button>
       </nav>
 
-      {/* 3. Lối tắt nhanh đến các phân hệ liên quan */}
+      {/* 3. Phân mục Nhóm của bạn (Chức năng 16) */}
+      {currentUser && (
+        <div className="feed-my-groups-section" data-testid="feed-my-groups-section">
+          <div className="section-header-flex">
+            <div className="section-eyebrow-label">NHÓM CỦA BẠN ({myGroups.length})</div>
+            {onOpenCreateGroup && (
+              <button
+                type="button"
+                className="btn-create-group-mini"
+                onClick={onOpenCreateGroup}
+                title="Tạo nhóm cộng đồng mới (Chức năng 16)"
+              >
+                + Tạo nhóm
+              </button>
+            )}
+          </div>
+
+          {loadingGroups ? (
+            <div className="groups-loading-hint">Đang nạp nhóm…</div>
+          ) : myGroups.length > 0 ? (
+            <div className="my-groups-list">
+              {myGroups.slice(0, 5).map((grp) => {
+                const isSelected = selectedGroupId === grp.group_id;
+                return (
+                  <button
+                    key={grp.group_id}
+                    type="button"
+                    className={`my-group-nav-item ${isSelected ? "active" : ""}`}
+                    onClick={() => {
+                      if (onSelectGroup) {
+                        onSelectGroup(grp.group_id);
+                      } else {
+                        onNavigate(`groups?id=${grp.group_id}`);
+                      }
+                    }}
+                    title={grp.name}
+                  >
+                    <div className="group-mini-avatar">
+                      {grp.avatar_url ? (
+                        <img src={resolveMediaUrl(grp.avatar_url)} alt={grp.name} />
+                      ) : (
+                        <span>🌿</span>
+                      )}
+                    </div>
+                    <div className="group-mini-details">
+                      <span className="group-mini-name">{grp.name}</span>
+                      <span className="group-mini-meta">
+                        {grp.members_count} thành viên {grp.my_role === "ADMIN" && "• 👑 Admin"}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="groups-empty-hint">
+              <span>Bạn chưa tham gia nhóm nào.</span>
+            </div>
+          )}
+
+          <button
+            type="button"
+            className="btn-explore-all-groups"
+            onClick={() => onNavigate("groups")}
+          >
+            <span>🧭</span>
+            <span>Khám phá các nhóm</span>
+          </button>
+        </div>
+      )}
+
+      {/* 4. Lối tắt nhanh đến các phân hệ liên quan */}
       <div className="feed-shortcuts-section">
         <div className="section-eyebrow-label">LỐI TẮT NHANH</div>
 

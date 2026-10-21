@@ -20,12 +20,14 @@ interface PostCreatorContainerProps {
   onNavigateHome?: () => void;
   onNavigateLogin?: () => void;
   onViewCreatedPost?: (postId: string) => void;
+  initialGroupId?: string | null;
 }
 
 export const PostCreatorContainer: React.FC<PostCreatorContainerProps> = ({
   onNavigateHome,
   onNavigateLogin,
   onViewCreatedPost,
+  initialGroupId,
 }) => {
   // 1. Kiểm tra trạng thái đăng nhập & thông tin người dùng
   const [currentUser, setCurrentUser] = useState<any>(() => {
@@ -75,8 +77,14 @@ export const PostCreatorContainer: React.FC<PostCreatorContainerProps> = ({
   const [mediaList, setMediaList] = useState<MediaItem[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(null);
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(initialGroupId || null);
   const [visibility, setVisibility] = useState<"PUBLIC" | "FRIENDS" | "ONLY_ME">("PUBLIC");
+
+  useEffect(() => {
+    if (initialGroupId !== undefined) {
+      setSelectedGroupId(initialGroupId);
+    }
+  }, [initialGroupId]);
 
   // 3. Danh sách bạn bè & nhóm
   const [friendsList, setFriendsList] = useState<FriendOption[]>([]);

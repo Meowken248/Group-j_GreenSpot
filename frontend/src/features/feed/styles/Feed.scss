@@ -359,6 +359,153 @@ $info-500: #3b82f6;
     }
   }
 
+  .feed-my-groups-section {
+    background: #ffffff;
+    border: 1px solid $neutral-200;
+    border-radius: 16px;
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.04);
+
+    .section-header-flex {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px 6px;
+      border-bottom: 1px solid $neutral-100;
+
+      .section-eyebrow-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: $neutral-400;
+        letter-spacing: 0.05em;
+      }
+
+      .btn-create-group-mini {
+        background: none;
+        border: none;
+        color: $primary-600;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+        padding: 2px 6px;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: $primary-50;
+        }
+      }
+    }
+
+    .my-groups-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .my-group-nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        background: transparent;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        text-align: left;
+        width: 100%;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: $neutral-50;
+        }
+
+        &.active {
+          background: $primary-50;
+          .group-mini-name {
+            color: $primary-700;
+            font-weight: 700;
+          }
+        }
+
+        .group-mini-avatar {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          overflow: hidden;
+          background: $primary-100;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+
+          img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+
+          span {
+            font-size: 16px;
+          }
+        }
+
+        .group-mini-details {
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+
+          .group-mini-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: $neutral-800;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .group-mini-meta {
+            font-size: 11px;
+            color: $neutral-500;
+          }
+        }
+      }
+    }
+
+    .groups-loading-hint,
+    .groups-empty-hint {
+      padding: 10px 8px;
+      font-size: 12px;
+      color: $neutral-500;
+      text-align: center;
+    }
+
+    .btn-explore-all-groups {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 12px;
+      margin-top: 4px;
+      background: $neutral-50;
+      border: 1px dashed $neutral-300;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: $neutral-700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: $primary-50;
+        border-color: $primary-300;
+        color: $primary-700;
+      }
+    }
+  }
+
   .feed-shortcuts-section {
     background: #ffffff;
     border: 1px solid $neutral-200;
