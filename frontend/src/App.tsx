@@ -667,6 +667,21 @@ function App() {
                   className="dropdown-menu-action"
                   onClick={() => {
                     setUserDropdownOpen(false);
+                    setActiveTab("groups");
+                    window.location.hash = "#groups";
+                  }}
+                >
+                  <span className="action-icon">👥</span>
+                  <span>Nhóm cộng đồng (Chức năng 16)</span>
+                </button>
+
+                <div className="dropdown-separator" />
+
+                <button
+                  type="button"
+                  className="dropdown-menu-action"
+                  onClick={() => {
+                    setUserDropdownOpen(false);
                     setActiveTab("posts");
                     window.location.hash = "#posts";
                   }}
