@@ -826,12 +826,12 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
             style={{
               background: "#ffffff",
               borderRadius: "20px",
-              maxWidth: "680px",
-              width: "100%",
-              maxHeight: "90vh",
+              maxWidth: "1060px",
+              width: "95%",
+              maxHeight: "92vh",
               overflowY: "auto",
-              padding: "24px",
-              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+              padding: "20px 28px",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
