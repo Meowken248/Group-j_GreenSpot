@@ -22,6 +22,7 @@ import sys
 import os
 
 from app.seeds.seed_rbac_matrix import run_rbac_migration
+from app.seeds.seed_admin import seed_admin
 from app.seeds.seed_clean import run_clean_seed
 from app.seeds.seed_profile_data import seed_profile_data
 from app.seeds.seed_friends_data import seed_friends_data
