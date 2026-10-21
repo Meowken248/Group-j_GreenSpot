@@ -65,6 +65,11 @@ class GroupMemberResponse(BaseModel):
         from_attributes = True
 
 
+class GroupMemberListResponse(BaseModel):
+    items: List[GroupMemberResponse]
+    total: int
+
+
 class GroupResponse(BaseModel):
     group_id: uuid.UUID
     name: str

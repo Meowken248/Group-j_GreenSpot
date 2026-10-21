@@ -1,8 +1,9 @@
+import json
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional, Tuple
 from fastapi import HTTPException, status
-from sqlalchemy import select, func, and_, or_, text
+from sqlalchemy import select, func, and_, or_, text, desc, case
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -16,8 +17,12 @@ from app.models.group import (
     GroupMemberStatus,
     GroupStatus,
 )
+from app.models.post import Post, PostReaction, PostTaggedFriend
+from app.models.comment import Comment
 from app.models.rbac import User
-from app.schemas.group import GroupCreate, GroupUpdate
+from app.schemas.group import GroupCreate, GroupUpdate, GroupMemberResponse, GroupMemberListResponse
+from app.schemas.feed import FeedListResponse, FeedPostItem
+from app.schemas.post import AuthorSummary, TaggedFriendInfo, MediaItemInput, MediaTypeEnum
 
 
 VIETNAM_PROVINCES = [
@@ -723,3 +728,246 @@ class GroupService:
         group.members_count = max(0, group.members_count - 1)
         await db.commit()
         return {"message": "Đã rời nhóm thành công"}
+
+    @staticmethod
+    async def get_group_posts(
+        db: AsyncSession,
+        group_id: uuid.UUID,
+        current_user: Optional[User] = None,
+        page: int = 1,
+        limit: int = 10,
+        sort_by: str = "newest",
+    ) -> FeedListResponse:
+        """
+        Lấy danh sách bài viết thuộc một nhóm cộng đồng cụ thể:
+        - Kiểm tra nhóm tồn tại và chưa bị giải tán
+        - Kiểm tra quyền riêng tư: Nếu là nhóm PRIVATE, chỉ thành viên mới được xem
+        - Trả về danh sách bài viết phân trang chuẩn FeedListResponse
+        """
+        group = await db.get(Group, group_id)
+        if not group or group.deleted_at is not None or group.status == GroupStatus.DISBANDED.value:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Nhóm không tồn tại hoặc đã bị giải tán"
+            )
+
+        # Kiểm tra tư cách thành viên nếu nhóm là PRIVATE
+        is_member = False
+        if current_user:
+            mem = (await db.execute(
+                select(GroupMember).where(
+                    GroupMember.group_id == group_id,
+                    GroupMember.user_id == current_user.user_id,
+                    GroupMember.status == GroupMemberStatus.ACTIVE.value
+                )
+            )).scalars().first()
+            is_member = bool(mem)
+
+        if group.privacy == GroupPrivacy.PRIVATE.value and not is_member:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Đây là nhóm riêng tư. Chỉ thành viên mới có thể xem các bài viết trong nhóm."
+            )
+
+        page = max(1, page)
+        limit = min(50, max(1, limit))
+        offset = (page - 1) * limit
+
+        conditions = [
+            Post.group_id == group_id,
+            Post.deleted_at.is_(None),
+            Post.is_hidden == False,
+        ]
+
+        count_stmt = select(func.count(Post.post_id)).where(and_(*conditions))
+        total_res = await db.execute(count_stmt)
+        total_count = total_res.scalar() or 0
+
+        real_rx_subquery = (
+            select(func.count(PostReaction.reaction_id))
+            .where(PostReaction.post_id == Post.post_id)
+            .scalar_subquery()
+        )
+        real_cm_subquery = (
+            select(func.count(Comment.comment_id))
+            .where(Comment.post_id == Post.post_id, Comment.deleted_at.is_(None))
+            .scalar_subquery()
+        )
+
+        order_clauses = [desc(Post.created_at)]
+        if sort_by == "popular":
+            order_clauses = [desc(real_rx_subquery + real_cm_subquery), desc(Post.created_at)]
+
+        stmt = (
+            select(Post, real_rx_subquery.label("rx_count"), real_cm_subquery.label("cm_count"))
+            .options(
+                selectinload(Post.user),
+                selectinload(Post.tagged_friends).selectinload(PostTaggedFriend.friend),
+            )
+            .where(and_(*conditions))
+            .order_by(*order_clauses)
+            .offset(offset)
+            .limit(limit)
+        )
+
+        rows = (await db.execute(stmt)).all()
+        post_ids = [r[0].post_id for r in rows]
+
+        user_rx_map = {}
+        if current_user and post_ids:
+            rx_stmt = select(PostReaction).where(
+                PostReaction.post_id.in_(post_ids),
+                PostReaction.user_id == current_user.user_id
+            )
+            for rx in (await db.execute(rx_stmt)).scalars().all():
+                user_rx_map[rx.post_id] = rx.reaction_type
+
+        items = []
+        for row in rows:
+            post_obj = row[0]
+            real_rx_count = row[1] or 0
+            real_cm_count = row[2] or 0
+
+            parsed_media = []
+            thumb_url = None
+            if post_obj.media_urls:
+                try:
+                    raw_items = json.loads(post_obj.media_urls)
+                    if isinstance(raw_items, list):
+                        for item in raw_items:
+                            if isinstance(item, dict):
+                                parsed_media.append(MediaItemInput(**item))
+                            elif isinstance(item, str):
+                                parsed_media.append(MediaItemInput(url=item, media_type=MediaTypeEnum.IMAGE))
+                    elif isinstance(raw_items, str):
+                        parsed_media.append(MediaItemInput(url=raw_items, media_type=MediaTypeEnum.IMAGE))
+                    if parsed_media:
+                        thumb_url = parsed_media[0].url
+                except Exception:
+                    parsed_media = []
+
+            tagged_list = []
+            if hasattr(post_obj, "tagged_friends") and post_obj.tagged_friends:
+                for tf in post_obj.tagged_friends:
+                    if tf.deleted_at is None and tf.friend:
+                        tagged_list.append(
+                            TaggedFriendInfo(
+                                user_id=tf.friend.user_id,
+                                full_name=tf.friend.full_name or "Bạn bè",
+                                avatar_url=tf.friend.avatar_url,
+                                email=tf.friend.email or "",
+                            )
+                        )
+
+            author_info = None
+            if hasattr(post_obj, "user") and post_obj.user:
+                author_info = AuthorSummary(
+                    user_id=post_obj.user.user_id,
+                    email=post_obj.user.email,
+                    full_name=post_obj.user.full_name or "Công dân sinh thái",
+                    avatar_url=post_obj.user.avatar_url,
+                )
+
+            is_edited = False
+            if post_obj.updated_at and post_obj.created_at:
+                try:
+                    is_edited = abs((post_obj.updated_at - post_obj.created_at).total_seconds()) > 2
+                except Exception:
+                    is_edited = False
+
+            items.append(
+                FeedPostItem(
+                    post_id=post_obj.post_id,
+                    user_id=post_obj.user_id,
+                    author=author_info,
+                    content=post_obj.content,
+                    media_urls=parsed_media,
+                    thumbnail_url=thumb_url,
+                    latitude=post_obj.latitude,
+                    longitude=post_obj.longitude,
+                    address=post_obj.address,
+                    group_id=group.group_id,
+                    group_name=group.name,
+                    group_privacy=group.privacy,
+                    group_avatar=group.avatar_url or group.cover_image_url,
+                    visibility=post_obj.visibility,
+                    is_hidden=post_obj.is_hidden,
+                    is_edited=is_edited,
+                    reactions_count=real_rx_count,
+                    comments_count=real_cm_count,
+                    shares_count=getattr(post_obj, "shares_count", 0),
+                    shared_post_id=getattr(post_obj, "shared_post_id", None),
+                    version=post_obj.version,
+                    created_at=post_obj.created_at,
+                    updated_at=post_obj.updated_at,
+                    tagged_friends=tagged_list,
+                    user_reaction=user_rx_map.get(post_obj.post_id),
+                )
+            )
+
+        return FeedListResponse(
+            items=items,
+            total=total_count,
+            has_more=(offset + len(items)) < total_count,
+            page=page,
+            limit=limit,
+            tab="group_detail",
+            sort_by=sort_by,
+        )
+
+    @staticmethod
+    async def get_group_members(
+        db: AsyncSession,
+        group_id: uuid.UUID,
+        page: int = 1,
+        limit: int = 20,
+    ) -> GroupMemberListResponse:
+        """Lấy danh sách thành viên nhóm có phân trang."""
+        group = await db.get(Group, group_id)
+        if not group or group.deleted_at is not None or group.status == GroupStatus.DISBANDED.value:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Nhóm không tồn tại hoặc đã bị giải tán"
+            )
+
+        page = max(1, page)
+        limit = min(50, max(1, limit))
+        offset = (page - 1) * limit
+
+        count_stmt = select(func.count(GroupMember.id)).where(
+            GroupMember.group_id == group_id,
+            GroupMember.status == GroupMemberStatus.ACTIVE.value
+        )
+        total_count = (await db.execute(count_stmt)).scalar() or 0
+
+        stmt = (
+            select(GroupMember)
+            .options(selectinload(GroupMember.user))
+            .where(
+                GroupMember.group_id == group_id,
+                GroupMember.status == GroupMemberStatus.ACTIVE.value
+            )
+            .order_by(
+                case((GroupMember.role == GroupMemberRole.ADMIN.value, 1), else_=2),
+                GroupMember.joined_at.asc()
+            )
+            .offset(offset)
+            .limit(limit)
+        )
+        members = (await db.execute(stmt)).scalars().all()
+
+        items = []
+        for m in members:
+            u = m.user
+            items.append(
+                GroupMemberResponse(
+                    user_id=m.user_id,
+                    full_name=u.full_name if u else "Thành viên",
+                    avatar_url=u.avatar_url if u else None,
+                    district=u.district if u else None,
+                    role=m.role,
+                    joined_at=m.joined_at,
+                )
+            )
+
+        return GroupMemberListResponse(items=items, total=total_count)

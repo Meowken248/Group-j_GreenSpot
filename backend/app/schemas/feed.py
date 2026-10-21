@@ -18,6 +18,9 @@ class FeedPostItem(BaseModel):
     longitude: Optional[float] = None
     address: Optional[str] = None
     group_id: Optional[uuid.UUID] = None
+    group_name: Optional[str] = None
+    group_privacy: Optional[str] = None
+    group_avatar: Optional[str] = None
     visibility: str = "PUBLIC"
     is_hidden: bool = False
     is_edited: bool = False

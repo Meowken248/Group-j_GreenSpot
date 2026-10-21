@@ -12,8 +12,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.rbac import User
 from app.api.v1.rbac import get_current_active_user
+from app.api.v1.posts import get_optional_current_user
 from app.core.config import UPLOAD_DIR
 from app.services.group_service import GroupService
+from app.schemas.feed import FeedListResponse
 from app.schemas.group import (
     GroupCreate,
     GroupResponse,
@@ -21,6 +23,7 @@ from app.schemas.group import (
     GroupDisbandRequest,
     InviteFriendsRequest,
     AdministrativeMetadataResponse,
+    GroupMemberListResponse,
 )
 
 router = APIRouter(prefix="/groups", tags=["Community Groups (Chức năng 16)"])
@@ -194,6 +197,51 @@ async def get_group_detail(
 ):
     """Lấy thông tin chi tiết nhóm."""
     return await GroupService.get_group_detail(db, group_id, current_user.user_id)
+
+
+@router.get(
+    "/{group_id}/posts",
+    response_model=FeedListResponse,
+    summary="Lấy danh sách bài viết trong nhóm cộng đồng",
+)
+async def get_group_posts(
+    group_id: uuid.UUID,
+    page: int = Query(1, ge=1, description="Số trang"),
+    limit: int = Query(10, ge=1, le=50, description="Số bài viết mỗi trang"),
+    sort_by: str = Query("newest", description="Sắp xếp: newest hoặc popular"),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Lấy danh sách bài viết phân trang của nhóm."""
+    return await GroupService.get_group_posts(
+        db=db,
+        group_id=group_id,
+        current_user=current_user,
+        page=page,
+        limit=limit,
+        sort_by=sort_by,
+    )
+
+
+@router.get(
+    "/{group_id}/members",
+    response_model=GroupMemberListResponse,
+    summary="Lấy danh sách thành viên trong nhóm cộng đồng",
+)
+async def get_group_members(
+    group_id: uuid.UUID,
+    page: int = Query(1, ge=1, description="Số trang"),
+    limit: int = Query(20, ge=1, le=50, description="Số thành viên mỗi trang"),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Lấy danh sách thành viên phân trang của nhóm."""
+    return await GroupService.get_group_members(
+        db=db,
+        group_id=group_id,
+        page=page,
+        limit=limit,
+    )
 
 
 @router.post(

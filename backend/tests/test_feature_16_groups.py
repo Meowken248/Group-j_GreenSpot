@@ -231,8 +231,51 @@ def main():
     assert check_404.status_code == 404, f"Kỳ vọng 404 nhưng nhận: {check_404.status_code}"
     print("✅ Xác nhận nhóm đã giải tán biến mất hoàn toàn khỏi hệ thống!")
 
+    # 17. Lấy danh sách bài viết trong nhóm mẫu (GET /groups/{group_id}/posts)
+    print_step("17. Lấy danh sách bài viết trong nhóm mẫu (GET /groups/{group_id}/posts)")
+    sample_group_id = "77777777-0001-0000-0000-000000000001"
+    posts_res = requests.get(f"{BASE_URL}/groups/{sample_group_id}/posts", headers=headers)
+    assert posts_res.status_code == 200, f"Lấy bài viết thất bại: {posts_res.text}"
+    posts_data = posts_res.json()
+    assert "items" in posts_data
+    assert len(posts_data["items"]) >= 1, "Kỳ vọng ít nhất 1 bài viết mẫu trong nhóm"
+    print(f"✅ Lấy thành công {len(posts_data['items'])} bài viết trong nhóm mẫu!")
+
+    # 18. Lấy danh sách thành viên trong nhóm mẫu (GET /groups/{group_id}/members)
+    print_step("18. Lấy danh sách thành viên trong nhóm mẫu (GET /groups/{group_id}/members)")
+    members_res = requests.get(f"{BASE_URL}/groups/{sample_group_id}/members", headers=headers)
+    assert members_res.status_code == 200, f"Lấy thành viên thất bại: {members_res.text}"
+    members_data = members_res.json()
+    assert "items" in members_data
+    assert len(members_data["items"]) >= 1
+    print(f"✅ Lấy thành công {len(members_data['items'])} thành viên trong nhóm mẫu!")
+
+    # 19. Đăng bài vào nhóm mẫu khi là thành viên (POST /posts)
+    print_step("19. Đăng bài viết vào nhóm khi là thành viên (POST /posts)")
+    new_post_payload = {
+        "content": "Hoạt động dọn rác cuối tuần cùng nhóm sống xanh Quận 1 #CleanUp",
+        "group_id": sample_group_id,
+        "visibility": "PUBLIC",
+    }
+    create_post_res = requests.post(f"{BASE_URL}/posts", json=new_post_payload, headers=headers)
+    assert create_post_res.status_code == 201, f"Đăng bài vào nhóm thất bại: {create_post_res.text}"
+    created_post = create_post_res.json()
+    assert created_post.get("group_id") == sample_group_id
+    print("✅ Đăng bài vào nhóm thành công!")
+
+    # 20. Đăng bài vào nhóm không tồn tại hoặc chưa tham gia -> Phải bị chặn 403/404
+    print_step("20. Đăng bài vào nhóm không tồn tại -> Phải bị chặn 404")
+    fake_group_id = "00000000-0000-0000-0000-000000000000"
+    fake_post_res = requests.post(
+        f"{BASE_URL}/posts",
+        json={"content": "Test bài viết nhóm giả", "group_id": fake_group_id},
+        headers=headers,
+    )
+    assert fake_post_res.status_code == 404, f"Kỳ vọng 404 nhưng nhận: {fake_post_res.status_code}"
+    print("✅ Chặn đăng bài vào nhóm không tồn tại thành công!")
+
     print("\n" + "=" * 70)
-    print("🎉 TẤT CẢ 16/16 BÀI KIỂM THỬ BACKEND CHO CHỨC NĂNG 16 ĐÃ VƯỢT QUA 100%!")
+    print("🎉 TẤT CẢ 20/20 BÀI KIỂM THỬ BACKEND CHO CHỨC NĂNG 16 ĐÃ VƯỢT QUA 100%!")
     print("=" * 70)
 
 

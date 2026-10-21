@@ -53,6 +53,31 @@ class PostService:
         if request.media_urls and len(request.media_urls) > 0:
             media_json = json.dumps([m.model_dump() for m in request.media_urls])
 
+        # Kiểm tra nhóm nếu đăng bài vào nhóm
+        if request.group_id:
+            from app.models.group import Group, GroupMember, GroupMemberStatus
+            group = await db.get(Group, request.group_id)
+            if not group or group.deleted_at is not None or group.status == "DISBANDED":
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Nhóm không tồn tại hoặc đã bị giải tán"
+                )
+
+            member_check = (await db.execute(
+                select(GroupMember).where(
+                    GroupMember.group_id == request.group_id,
+                    GroupMember.user_id == author_id,
+                    GroupMember.status == GroupMemberStatus.ACTIVE.value
+                )
+            )).scalars().first()
+            if not member_check:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Bạn phải là thành viên của nhóm để đăng bài viết"
+                )
+
+            group.posts_count = (group.posts_count or 0) + 1
+
         post = Post(
             post_id=uuid.uuid4(),
             user_id=author_id,
@@ -490,6 +515,32 @@ class PostService:
             # Khách vãng lai chỉ xem được bài công khai
             conditions.append(Post.visibility.in_(["PUBLIC", "COMMUNITY"]))
 
+        # Ràng buộc bảo mật đối với bài viết thuộc nhóm:
+        from app.models.group import Group, GroupMember, GroupMemberStatus, GroupPrivacy
+        public_groups_subquery = select(Group.group_id).where(
+            Group.privacy == GroupPrivacy.PUBLIC.value,
+            Group.deleted_at.is_(None)
+        )
+        if current_user:
+            my_groups_subquery = select(GroupMember.group_id).where(
+                GroupMember.user_id == current_user.user_id,
+                GroupMember.status == GroupMemberStatus.ACTIVE.value
+            )
+            conditions.append(
+                or_(
+                    Post.group_id.is_(None),
+                    Post.group_id.in_(public_groups_subquery),
+                    Post.group_id.in_(my_groups_subquery),
+                )
+            )
+        else:
+            conditions.append(
+                or_(
+                    Post.group_id.is_(None),
+                    Post.group_id.in_(public_groups_subquery),
+                )
+            )
+
         has_user_coords = (user_lat is not None and user_lon is not None)
         if has_user_coords:
             distance_expr = func.ST_DistanceSphere(
@@ -638,12 +689,26 @@ class PostService:
             urx_res = await db.execute(urx_stmt)
             user_rx_map = {r[0]: r[1] for r in urx_res.fetchall()}
 
+        # Nạp trước thông tin các nhóm nếu có bài viết thuộc nhóm
+        group_ids = [row[0].group_id for row in rows if row[0].group_id]
+        group_map = {}
+        if group_ids:
+            g_stmt = select(Group).where(Group.group_id.in_(group_ids))
+            g_res = await db.execute(g_stmt)
+            for g in g_res.scalars().all():
+                group_map[g.group_id] = g
+
         items: List[FeedPostItem] = []
         for row in rows:
             post_obj: Post = row[0]
             real_rx_count = int(row[1] or 0)
             real_cm_count = int(row[2] or 0)
             dist_val = row[3]
+
+            g_info = group_map.get(post_obj.group_id) if post_obj.group_id else None
+            group_name = g_info.name if g_info else None
+            group_privacy = g_info.privacy if g_info else None
+            group_avatar = g_info.avatar_url or g_info.cover_image_url if g_info else None
 
             parsed_media: List[MediaItemInput] = []
             thumb_url: Optional[str] = None
@@ -717,6 +782,9 @@ class PostService:
                     longitude=post_obj.longitude,
                     address=post_obj.address,
                     group_id=post_obj.group_id,
+                    group_name=group_name,
+                    group_privacy=group_privacy,
+                    group_avatar=group_avatar,
                     visibility=post_obj.visibility,
                     is_hidden=post_obj.is_hidden,
                     is_edited=is_edited,
