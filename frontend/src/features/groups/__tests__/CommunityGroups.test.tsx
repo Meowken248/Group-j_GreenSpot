@@ -4,8 +4,13 @@ import { GroupTypeSelector } from "../components/GroupTypeSelector";
 import { CreateGroupForm } from "../components/CreateGroupForm";
 import { GroupCreatedSuccessModal } from "../components/GroupCreatedSuccessModal";
 import { DisbandGroupModal } from "../components/DisbandGroupModal";
+import { GroupComposerBox } from "../components/GroupComposerBox";
+import { GroupMembersTab } from "../components/GroupMembersTab";
+import { GroupDetailView } from "../components/GroupDetailView";
+import { FeedPostCard } from "../../feed/components/FeedPostCard";
 import { groupService } from "../services/groupService";
-import type { AdministrativeMetadata, GroupItem } from "../types/group";
+import type { AdministrativeMetadata, GroupItem, GroupMemberListResponse } from "../types/group";
+import type { FeedPostItem } from "../../feed/types/feed.types";
 
 const mockMetadata: AdministrativeMetadata = {
   provinces: ["Thành phố Hồ Chí Minh", "Thành phố Hà Nội"],
@@ -342,6 +347,150 @@ describe("Chức năng 16: Frontend Community Groups (Tạo nhóm theo quận, p
         );
         expect(handleSuccess).toHaveBeenCalledTimes(1);
       });
+    });
+  });
+
+  describe("Màn 5: Khung đăng bài và Thành viên nhóm mạng xã hội", () => {
+    it("5.1. GroupComposerBox: hiển thị lời chào và kích hoạt onOpenPostCreator khi bấm", () => {
+      const handleOpen = vi.fn();
+      render(
+        <GroupComposerBox
+          groupId={mockGroup.group_id}
+          groupName={mockGroup.name}
+          currentUser={{ user_id: "u1", full_name: "Huỳnh Anh Tú", avatar_url: null }}
+          onOpenPostCreator={handleOpen}
+        />
+      );
+
+      expect(screen.getByTestId("group-composer-box")).toBeInTheDocument();
+      expect(
+        screen.getByText(/Huỳnh Anh Tú ơi, bạn muốn chia sẻ điều gì với Cộng Đồng Sống Xanh Quận 1\?/i)
+      ).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Ảnh / Video"));
+      expect(handleOpen).toHaveBeenCalledTimes(1);
+    });
+
+    it("5.2. GroupMembersTab: nạp danh sách thành viên, hiển thị huy hiệu Quản trị viên và lọc tìm kiếm", async () => {
+      const mockMembersData: GroupMemberListResponse = {
+        items: [
+          {
+            user_id: "admin-1",
+            full_name: "Nguyễn Văn Admin",
+            avatar_url: null,
+            district: "Quận 1",
+            role: "ADMIN",
+            joined_at: new Date().toISOString(),
+          },
+          {
+            user_id: "mem-2",
+            full_name: "Trần Thị Thành Viên",
+            avatar_url: null,
+            district: "Quận 3",
+            role: "MEMBER",
+            joined_at: new Date().toISOString(),
+          },
+        ],
+        total: 2,
+      };
+
+      vi.spyOn(groupService, "getGroupMembers").mockResolvedValueOnce(mockMembersData);
+      const handleInvite = vi.fn();
+
+      render(
+        <GroupMembersTab
+          groupId={mockGroup.group_id}
+          isAdmin={true}
+          onInviteClick={handleInvite}
+        />
+      );
+
+      expect(await screen.findByText("Thành viên nhóm (2)")).toBeInTheDocument();
+      expect(screen.getByText("Nguyễn Văn Admin")).toBeInTheDocument();
+      expect(screen.getByText("👑 Quản trị viên")).toBeInTheDocument();
+      expect(screen.getByText("Trần Thị Thành Viên")).toBeInTheDocument();
+
+      // Nút mời bạn bè
+      const inviteBtn = screen.getByTestId("btn-open-invite");
+      fireEvent.click(inviteBtn);
+      expect(handleInvite).toHaveBeenCalledTimes(1);
+
+      // Tìm kiếm thành viên
+      const searchInput = screen.getByPlaceholderText("Tìm thành viên...");
+      fireEvent.change(searchInput, { target: { value: "Nguyễn Văn" } });
+      expect(screen.getByText("Nguyễn Văn Admin")).toBeInTheDocument();
+      expect(screen.queryByText("Trần Thị Thành Viên")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Màn 6: Trang chủ nhóm mạng xã hội đa tab & Nguồn bài viết", () => {
+    it("6.1. GroupDetailView: render đầy đủ tabs, tên nhóm, và chuyển đổi giữa tab Bài viết và Giới thiệu", async () => {
+      vi.spyOn(groupService, "getGroupDetail").mockResolvedValueOnce(mockGroup);
+      vi.spyOn(groupService, "getGroupPosts").mockResolvedValueOnce({
+        items: [],
+        total: 0,
+        page: 1,
+        limit: 10,
+        has_more: false,
+      });
+
+      render(
+        <GroupDetailView
+          groupId={mockGroup.group_id}
+          onBack={vi.fn()}
+          onGroupDisbanded={vi.fn()}
+        />
+      );
+
+      expect(await screen.findByTestId("detail-group-name")).toHaveTextContent(mockGroup.name);
+      expect(screen.getByTestId("tab-group-feed")).toBeInTheDocument();
+      expect(screen.getByTestId("tab-group-about")).toBeInTheDocument();
+      expect(screen.getByTestId("tab-group-members")).toBeInTheDocument();
+
+      // Ban đầu ở tab Bài viết
+      expect(screen.getByTestId("group-composer-box")).toBeInTheDocument();
+      expect(screen.getByText("Giới thiệu ngắn")).toBeInTheDocument();
+
+      // Nhấp sang tab Giới thiệu
+      fireEvent.click(screen.getByTestId("tab-group-about"));
+      expect(screen.getByText("Giới thiệu nhóm cộng đồng")).toBeInTheDocument();
+      expect(screen.getByText("Quy tắc ứng xử cộng đồng sống xanh")).toBeInTheDocument();
+      expect(screen.getByText(mockGroup.description!)).toBeInTheDocument();
+    });
+
+    it("6.2. FeedPostCard: hiển thị nhãn nhóm và gọi onSelectGroup khi người dùng nhấp vào tên nhóm", () => {
+      const handleSelectGroup = vi.fn();
+      const mockPostWithGroup: FeedPostItem = {
+        post_id: "p-grp-1",
+        user_id: "u-1",
+        author: {
+          user_id: "u-1",
+          full_name: "Lê Văn Xanh",
+          avatar_url: null,
+        },
+        content: "Dọn rác bãi bồi ven sông!",
+        visibility: "PUBLIC",
+        group_id: mockGroup.group_id,
+        group_name: mockGroup.name,
+        group_privacy: "PUBLIC",
+        created_at: new Date().toISOString(),
+        reactions_count: 5,
+        comments_count: 1,
+      };
+
+      render(
+        <FeedPostCard
+          post={mockPostWithGroup}
+          onSelectGroup={handleSelectGroup}
+        />
+      );
+
+      // Phải có nhãn tên nhóm
+      const groupBadge = screen.getByText(mockGroup.name);
+      expect(groupBadge).toBeInTheDocument();
+
+      fireEvent.click(groupBadge);
+      expect(handleSelectGroup).toHaveBeenCalledWith(mockGroup.group_id);
     });
   });
 });

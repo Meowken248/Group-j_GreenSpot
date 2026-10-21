@@ -5,9 +5,11 @@ import { RadiusPickerModal } from '../components/RadiusPickerModal';
 import { FeedComposerBox } from '../components/FeedComposerBox';
 import { FeedPostCard } from '../components/FeedPostCard';
 import { BirthdayBanner } from '../components/BirthdayBanner';
+import { FeedLeftSidebar } from '../components/FeedLeftSidebar';
 import { FeedContainer } from '../FeedContainer';
 import { feedService } from '../services/feedService';
 import { birthdayService } from '../services/birthdayService';
+import { groupService } from '../../groups/services/groupService';
 import type { FeedPostItem } from '../types/feed.types';
 
 // Mock feedService
@@ -28,6 +30,16 @@ vi.mock('../services/birthdayService', () => ({
     getTodayBirthdays: vi.fn(),
     getCardTemplates: vi.fn(),
     sendWish: vi.fn(),
+  },
+}));
+
+// Mock groupService cho Chức năng 16
+vi.mock('../../groups/services/groupService', () => ({
+  groupService: {
+    getMyGroups: vi.fn(),
+    getGroupDetail: vi.fn(),
+    getGroupPosts: vi.fn(),
+    getGroupMembers: vi.fn(),
   },
 }));
 
@@ -354,6 +366,87 @@ describe('Feature STT 08: Bảng tin Geo-Feed theo bán kính (SRS pp. 97-102)',
       render(<FeedContainer />);
 
       expect(await screen.findByText(/Bạn đã xem hết bài viết/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('4. Tích hợp Nhóm cộng đồng vào Bảng tin (Chức năng 16)', () => {
+    it('FeedLeftSidebar: hiển thị khối NHÓM CỦA BẠN và kích hoạt onSelectGroup khi chọn', async () => {
+      const mockGroups = [
+        {
+          group_id: 'grp-test-01',
+          name: 'Hội Tái Chế Quận Bình Thạnh',
+          group_type: 'DISTRICT',
+          members_count: 14,
+          posts_count: 5,
+          privacy: 'PUBLIC',
+          my_role: 'ADMIN',
+          status: 'ACTIVE',
+          creator_id: 'u1',
+          version: 1,
+          created_at: new Date().toISOString(),
+        },
+      ];
+
+      (groupService.getMyGroups as any).mockResolvedValueOnce({
+        items: mockGroups,
+        total: 1,
+        admin_groups_count: 1,
+        max_admin_groups: 5,
+      });
+
+      const handleSelectGroup = vi.fn();
+      const handleOpenCreate = vi.fn();
+
+      render(
+        <FeedLeftSidebar
+          activeTab="all"
+          onTabChange={vi.fn()}
+          currentUser={{
+            user_id: 'u-current',
+            full_name: 'Huỳnh Anh Tú',
+          }}
+          onNavigate={vi.fn()}
+          selectedGroupId={null}
+          onSelectGroup={handleSelectGroup}
+          onOpenCreateGroup={handleOpenCreate}
+        />
+      );
+
+      // Phải có khối Nhóm của bạn
+      expect(await screen.findByTestId('feed-my-groups-section')).toBeInTheDocument();
+      expect(await screen.findByText('Hội Tái Chế Quận Bình Thạnh')).toBeInTheDocument();
+      expect(screen.getByText(/14 thành viên • 👑 Admin/i)).toBeInTheDocument();
+
+      // Bấm vào nhóm
+      fireEvent.click(screen.getByText('Hội Tái Chế Quận Bình Thạnh'));
+      expect(handleSelectGroup).toHaveBeenCalledWith('grp-test-01');
+
+      // Bấm nút + Tạo nhóm
+      fireEvent.click(screen.getByTitle('Tạo nhóm cộng đồng mới (Chức năng 16)'));
+      expect(handleOpenCreate).toHaveBeenCalledTimes(1);
+    });
+
+    it('FeedPostCard: nhấp vào tên nhóm gắn trên bài viết kích hoạt onSelectGroup', () => {
+      const handleSelectGroup = vi.fn();
+      const postWithGroup: FeedPostItem = {
+        ...mockPost,
+        group_id: 'grp-test-02',
+        group_name: 'Cộng Đồng Sống Xanh Thủ Đức',
+        group_privacy: 'PUBLIC',
+      };
+
+      render(
+        <FeedPostCard
+          post={postWithGroup}
+          onSelectGroup={handleSelectGroup}
+        />
+      );
+
+      const groupLink = screen.getByText('Cộng Đồng Sống Xanh Thủ Đức');
+      expect(groupLink).toBeInTheDocument();
+
+      fireEvent.click(groupLink);
+      expect(handleSelectGroup).toHaveBeenCalledWith('grp-test-02');
     });
   });
 });
