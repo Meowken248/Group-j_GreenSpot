@@ -2,6 +2,10 @@ import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+ROOT_DIR = os.path.dirname(BASE_DIR)
+
+
 class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/ecoreport_db"
     KIRA_API_KEY: str = ""
@@ -10,7 +14,7 @@ class Settings(BaseSettings):
     KIRA_TIMEOUT_SECONDS: float = 45.0
 
     model_config = SettingsConfigDict(
-        env_file=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".env"),
+        env_file=[os.path.join(ROOT_DIR, ".env"), os.path.join(BASE_DIR, ".env"), ".env"],
         extra="ignore"
     )
 
@@ -18,7 +22,7 @@ class Settings(BaseSettings):
 settings = Settings()
 
 # Đường dẫn thư mục backend và uploads đồng nhất
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 
