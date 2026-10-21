@@ -804,9 +804,52 @@ $info-500: #3b82f6;
       padding-top: 2px;
 
       .birthday-foot-note {
+        flex: 1;
+        min-width: 0;
         font-size: 11.5px;
         color: $neutral-500;
         line-height: 1.45;
+      }
+
+      .birthday-foot-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+
+        .btn-birthday-inbox {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 5px 12px;
+          border: 1px solid $primary-300;
+          border-radius: 9999px;
+          background: #ffffff;
+          color: $primary-700;
+          font-size: 11.5px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background: $primary-50;
+            border-color: $primary-400;
+          }
+
+          .birthday-inbox-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 17px;
+            height: 17px;
+            padding: 0 4px;
+            border-radius: 9999px;
+            background: $primary-500;
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: 700;
+          }
+        }
       }
 
       .btn-birthday-view-all {
@@ -2793,6 +2836,338 @@ body.dark-mode,
 }
 
 
+// =========================================================================
+// 7c. BIRTHDAY INBOX MODAL (STT 17) - Hộp thư lời chúc & thiệp xanh đã nhận
+// =========================================================================
+.feed-modal-backdrop .feed-modal-content.birthday-inbox-card {
+  display: flex;
+  flex-direction: column;
+  max-width: 540px;
+  max-height: 88vh;
+  padding: 0;
+  overflow: hidden;
+
+  .birthday-inbox-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 18px;
+    border-bottom: 1px solid $neutral-200;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%);
+
+    .birthday-inbox-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      flex-shrink: 0;
+      border-radius: 14px;
+      border: 1px solid $primary-200;
+      background: #ffffff;
+      font-size: 20px;
+    }
+
+    .birthday-inbox-heading {
+      flex: 1;
+      min-width: 0;
+
+      .birthday-inbox-eyebrow {
+        display: inline-block;
+        margin-bottom: 2px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: $primary-600;
+      }
+
+      h4 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: $neutral-800;
+        line-height: 1.3;
+      }
+
+      p {
+        margin: 2px 0 0;
+        font-size: 12px;
+        color: $neutral-500;
+      }
+    }
+
+    .btn-close-birthday-inbox {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      flex-shrink: 0;
+      border: none;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.7);
+      color: $neutral-600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #ffffff;
+        color: $neutral-800;
+      }
+    }
+  }
+
+  .birthday-inbox-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px 18px 0;
+
+    .btn-mark-all-read {
+      padding: 5px 12px;
+      border: 1px solid $primary-300;
+      border-radius: 9999px;
+      background: #ffffff;
+      color: $primary-700;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover:not(:disabled) {
+        background: $primary-50;
+      }
+
+      &:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  .birthday-inbox-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 12px 18px 18px;
+  }
+
+  .birthday-inbox-loading {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    .birthday-inbox-skeleton {
+      height: 68px;
+      border-radius: 12px;
+      background: linear-gradient(90deg, $primary-100 25%, $primary-50 50%, $primary-100 75%);
+      background-size: 200% 100%;
+      animation: birthdayShimmer 1.4s infinite linear;
+    }
+  }
+
+  .birthday-inbox-error-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+
+    .birthday-inbox-error {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      background: #fef2f2;
+      color: #b91c1c;
+      font-size: 12.5px;
+      line-height: 1.45;
+    }
+
+    .btn-retry-inbox {
+      padding: 6px 14px;
+      border: 1px solid $primary-300;
+      border-radius: 9999px;
+      background: #ffffff;
+      color: $primary-700;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+
+      &:hover {
+        background: $primary-50;
+      }
+    }
+  }
+
+  .birthday-inbox-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 28px 16px;
+    text-align: center;
+
+    span {
+      font-size: 30px;
+    }
+
+    p {
+      margin: 0;
+      max-width: 320px;
+      font-size: 12.5px;
+      color: $neutral-500;
+      line-height: 1.5;
+    }
+  }
+
+  .birthday-inbox-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    .birthday-inbox-item {
+      display: flex;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid $neutral-200;
+      border-radius: 14px;
+      background: #ffffff;
+      transition: all 0.2s ease;
+
+      &.is-unread {
+        border-color: $primary-300;
+        background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+      }
+
+      &.is-read {
+        opacity: 0.92;
+      }
+
+      .birthday-inbox-avatar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        overflow: hidden;
+        background: $primary-100;
+        color: $primary-700;
+        font-size: 14px;
+        font-weight: 700;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
+
+      .birthday-inbox-item-body {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .birthday-inbox-item-head {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+
+        strong {
+          font-size: 13px;
+          font-weight: 700;
+          color: $neutral-800;
+        }
+
+        .inbox-type-chip {
+          padding: 1px 8px;
+          border-radius: 9999px;
+          font-size: 10.5px;
+          font-weight: 700;
+
+          &.type-card {
+            background: $primary-100;
+            color: $primary-700;
+          }
+
+          &.type-message {
+            background: #e0f2fe;
+            color: #0369a1;
+          }
+        }
+
+        .inbox-unread-label {
+          padding: 1px 7px;
+          border-radius: 9999px;
+          background: #fee2e2;
+          color: #b91c1c;
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+        }
+      }
+
+      .birthday-inbox-message {
+        margin: 5px 0 0;
+        font-size: 12.5px;
+        color: $neutral-700;
+        line-height: 1.5;
+        word-break: break-word;
+      }
+
+      .birthday-inbox-meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 7px;
+        font-size: 11px;
+        color: $neutral-500;
+
+        .inbox-points-chip {
+          padding: 1px 8px;
+          border-radius: 9999px;
+          background: $primary-50;
+          border: 1px solid $primary-200;
+          color: $primary-700;
+          font-weight: 700;
+        }
+
+        .btn-mark-one-read {
+          margin-left: auto;
+          padding: 3px 10px;
+          border: 1px solid $neutral-300;
+          border-radius: 9999px;
+          background: #ffffff;
+          color: $neutral-600;
+          font-size: 10.5px;
+          font-weight: 600;
+          cursor: pointer;
+
+          &:hover:not(:disabled) {
+            border-color: $primary-300;
+            color: $primary-700;
+          }
+
+          &:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+          }
+        }
+      }
+    }
+  }
+}
+
+
 // Dark Mode cho khối Sinh nhật & modal thiệp xanh (STT 17)
 body.dark-theme,
 body.dark-mode,
@@ -2849,6 +3224,16 @@ body.dark-mode,
     .birthday-banner-foot .birthday-foot-note {
       color: #94a3b8;
     }
+
+    .birthday-banner-foot .birthday-foot-actions .btn-birthday-inbox {
+      background: #1e293b;
+      border-color: #14532d;
+      color: #a7f3d0;
+
+      &:hover {
+        background: #0f2f27;
+      }
+    }
   }
 
   .feed-modal-backdrop .feed-modal-content.birthday-wish-card {
@@ -2898,6 +3283,78 @@ body.dark-mode,
       background: #334155;
       border-color: #475569;
       color: #e2e8f0;
+    }
+  }
+
+  .feed-modal-backdrop .feed-modal-content.birthday-inbox-card {
+    background: #1e293b;
+
+    .birthday-inbox-head {
+      background: linear-gradient(135deg, #0f2f27 0%, #1e293b 100%);
+      border-color: #334155;
+
+      .birthday-inbox-icon {
+        background: #1e293b;
+        border-color: #14532d;
+      }
+
+      .birthday-inbox-heading {
+        h4 {
+          color: #f8fafc;
+        }
+
+        p {
+          color: #94a3b8;
+        }
+      }
+
+      .btn-close-birthday-inbox {
+        background: rgba(51, 65, 85, 0.8);
+        color: #cbd5e1;
+
+        &:hover {
+          background: #334155;
+          color: #f8fafc;
+        }
+      }
+    }
+
+    .birthday-inbox-toolbar .btn-mark-all-read {
+      background: #1e293b;
+      border-color: #14532d;
+      color: #a7f3d0;
+    }
+
+    .birthday-inbox-item {
+      background: #0f172a;
+      border-color: #334155;
+
+      &.is-unread {
+        background: linear-gradient(135deg, #0f2f27 0%, #0f172a 100%);
+        border-color: #14532d;
+      }
+
+      .birthday-inbox-item-head strong {
+        color: #f8fafc;
+      }
+
+      .birthday-inbox-message {
+        color: #cbd5e1;
+      }
+
+      .birthday-inbox-meta {
+        color: #94a3b8;
+
+        .btn-mark-one-read {
+          background: #1e293b;
+          border-color: #475569;
+          color: #cbd5e1;
+        }
+      }
+    }
+
+    .birthday-inbox-empty p {
+      color: #94a3b8;
     }
   }
 }

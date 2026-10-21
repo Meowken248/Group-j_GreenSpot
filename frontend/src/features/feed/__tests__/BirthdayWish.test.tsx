@@ -3,12 +3,14 @@ import type { ComponentProps } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BirthdayBanner } from '../components/BirthdayBanner';
+import { BirthdayInboxModal } from '../components/BirthdayInboxModal';
 import { BirthdayWishModal, MAX_WISH_LENGTH } from '../components/BirthdayWishModal';
 import { birthdayService } from '../services/birthdayService';
 import type {
   BirthdayCardTemplate,
   BirthdayFriendItem,
   BirthdayTodayResponse,
+  BirthdayWishListResponse,
 } from '../types/birthday.types';
 
 // Mock service: toàn bộ dữ liệu sinh nhật đi qua API /api/v1/birthday/*
@@ -244,3 +246,118 @@ describe('2. Popup gửi lời chúc / tặng thiệp xanh', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('3. Hộp thư lời chúc & thiệp xanh đã nhận', () => {
+  const mockInbox: BirthdayWishListResponse = {
+    items: [
+      {
+        wish_id: 'wish-inbox-01',
+        sender_id: 'sender-01',
+        sender_name: 'Trần Minh Anh',
+        sender_avatar_url: null,
+        wish_type: 'CARD',
+        card_template_id: 'card-green-forest',
+        message: 'Chúc mừng sinh nhật bạn! Chúc bạn một năm mới thật xanh.',
+        points_awarded: 5,
+        is_read: false,
+        birthday_date: '2026-10-21',
+        created_at: '2026-10-21T08:15:00+07:00',
+      },
+      {
+        wish_id: 'wish-inbox-02',
+        sender_id: 'sender-02',
+        sender_name: 'Phạm Gia Hân',
+        sender_avatar_url: null,
+        wish_type: 'MESSAGE',
+        card_template_id: null,
+        message: 'Sinh nhật vui vẻ nhé!',
+        points_awarded: 0,
+        is_read: true,
+        birthday_date: '2026-10-21',
+        created_at: '2026-10-20T09:00:00+07:00',
+      },
+    ],
+    total: 2,
+    unread_count: 1,
+    has_more: false,
+    limit: 20,
+    offset: 0,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (birthdayService.getReceivedWishes as any).mockResolvedValue(mockInbox);
+    (birthdayService.markWishesRead as any).mockResolvedValue({
+      success: true,
+      marked_count: 1,
+      unread_count: 0,
+    });
+  });
+
+  it('hiển thị lời chúc, thiệp xanh và số lượng chưa đọc trong hộp thư', async () => {
+    render(<BirthdayInboxModal templates={mockTemplates} onClose={vi.fn()} />);
+
+    expect(await screen.findByText('Trần Minh Anh')).toBeInTheDocument();
+    expect(screen.getByText('Phạm Gia Hân')).toBeInTheDocument();
+    expect(
+      screen.getByText('Chúc mừng sinh nhật bạn! Chúc bạn một năm mới thật xanh.')
+    ).toBeInTheDocument();
+    expect(screen.getByText(/💌 Rừng Xanh Việt/)).toBeInTheDocument();
+    expect(screen.getByText('+5 điểm xanh')).toBeInTheDocument();
+    expect(screen.getByText('Chưa đọc')).toBeInTheDocument();
+    expect(screen.getByText(/1 lời chúc chưa đọc/)).toBeInTheDocument();
+    expect(birthdayService.getReceivedWishes).toHaveBeenCalledWith(20, 0);
+  });
+
+  it('đánh dấu tất cả đã đọc và cập nhật huy hiệu chưa đọc', async () => {
+    const onUnreadChange = vi.fn();
+    render(
+      <BirthdayInboxModal templates={mockTemplates} onClose={vi.fn()} onUnreadChange={onUnreadChange} />
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: /Đánh dấu tất cả đã đọc/i }));
+
+    await waitFor(() => {
+      expect(birthdayService.markWishesRead).toHaveBeenCalledWith();
+    });
+    await waitFor(() => {
+      expect(onUnreadChange).toHaveBeenCalledWith(0);
+    });
+    expect(screen.queryByText('Chưa đọc')).not.toBeInTheDocument();
+  });
+
+  it('hiển thị trạng thái rỗng khi chưa nhận được lời chúc nào', async () => {
+    (birthdayService.getReceivedWishes as any).mockResolvedValue({
+      items: [],
+      total: 0,
+      unread_count: 0,
+      has_more: false,
+      limit: 20,
+      offset: 0,
+    });
+
+    render(<BirthdayInboxModal onClose={vi.fn()} />);
+
+    expect(await screen.findByText(/Chưa có lời chúc nào trong hộp thư/i)).toBeInTheDocument();
+  });
+
+  it('banner vẫn hiển thị nút hộp thư khi hôm nay không có ai sinh nhật nhưng có lời chúc chưa đọc', async () => {
+    (birthdayService.getTodayBirthdays as any).mockResolvedValue({
+      ...mockToday,
+      items: [],
+      total: 0,
+      has_more: false,
+    });
+
+    render(<BirthdayBanner />);
+
+    const inboxButton = await screen.findByRole('button', { name: /Hộp thư lời chúc/i });
+    expect(inboxButton).toBeInTheDocument();
+    expect(screen.getByText('1')).toBeInTheDocument();
+
+    fireEvent.click(inboxButton);
+
+    expect(await screen.findByRole('dialog', { name: /Hộp thư lời chúc của bạn/i })).toBeInTheDocument();
+  });
+});
+

@@ -8,6 +8,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { birthdayService } from "../services/birthdayService";
+import { BirthdayInboxModal } from "./BirthdayInboxModal";
 import { BirthdayWishModal } from "./BirthdayWishModal";
 import type {
   BirthdayFriendItem,
@@ -38,6 +39,8 @@ export const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
   const [data, setData] = useState<BirthdayTodayResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(isLoggedIn);
   const [loadingAll, setLoadingAll] = useState<boolean>(false);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [inboxOpen, setInboxOpen] = useState<boolean>(false);
   const [modal, setModal] = useState<{ friend: BirthdayFriendItem; wishType: BirthdayWishType } | null>(
     null
   );
@@ -49,8 +52,20 @@ export const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
     if (!isLoggedIn) {
       setData(null);
       setLoading(false);
+      setUnreadCount(0);
       return;
     }
+
+    // Đếm số lời chúc chưa đọc để hiển thị huy hiệu trên nút "Hộp thư lời chúc"
+    const loadInboxBadge = async () => {
+      try {
+        const inbox = await birthdayService.getReceivedWishes(1, 0);
+        if (!cancelled) setUnreadCount(inbox?.unread_count ?? 0);
+      } catch {
+        if (!cancelled) setUnreadCount(0);
+      }
+    };
+    void loadInboxBadge();
 
     setLoading(true);
     birthdayService
@@ -127,7 +142,7 @@ export const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
       </div>
     );
   }
-  if (!data || data.items.length === 0) return null;
+  if (!data || (data.items.length === 0 && unreadCount === 0)) return null;
 
   return (
     <div className="feed-birthday-banner" role="region" aria-label="Sinh nhật bạn bè hôm nay">
@@ -138,8 +153,14 @@ export const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
         <div className="birthday-info-col">
           <h4 className="birthday-title">Sinh nhật bạn bè hôm nay</h4>
           <p className="birthday-desc">
-            Hôm nay có <strong>{data.total}</strong> người bạn sinh nhật. Gửi lời chúc xanh và thiệp sinh thái
-            để lan toả lối sống xanh nhé!
+            {data.total > 0 ? (
+              <>
+                Hôm nay có <strong>{data.total}</strong> người bạn sinh nhật. Gửi lời chúc xanh và thiệp
+                sinh thái để lan toả lối sống xanh nhé!
+              </>
+            ) : (
+              "Hôm nay chưa có bạn bè nào sinh nhật. Bạn vẫn có thể xem lại hộp thư lời chúc bên dưới."
+            )}
           </p>
         </div>
         <span className="birthday-points-chip" title="Điểm thưởng thiệp xanh đã nhận trong ngày">
@@ -147,7 +168,8 @@ export const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
         </span>
       </div>
 
-      <ul className="birthday-friend-list">
+      {data.items.length > 0 && (
+        <ul className="birthday-friend-list">
         {data.items.map((friend) => (
           <li
             key={friend.user_id}
@@ -205,7 +227,8 @@ export const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
             </div>
           </li>
         ))}
-      </ul>
+        </ul>
+      )}
 
       <div className="birthday-banner-foot">
         <span className="birthday-foot-note">
@@ -213,16 +236,29 @@ export const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
             ? "Bạn đã đạt hạn mức điểm thưởng thiệp xanh hôm nay, hẹn gặp lại vào ngày mai!"
             : `Tặng thiệp xanh nhận +${data.points_per_card} điểm cho cả hai, tối đa ${data.daily_points_cap} điểm/ngày.`}
         </span>
-        {data.has_more && (
+
+        <div className="birthday-foot-actions">
           <button
             type="button"
-            className="btn-birthday-view-all"
-            onClick={handleViewAll}
-            disabled={loadingAll}
+            className="btn-birthday-inbox"
+            onClick={() => setInboxOpen(true)}
+            title="Xem hộp thư lời chúc và thiệp xanh bạn đã nhận"
           >
-            {loadingAll ? "Đang tải..." : `Xem tất cả ${data.total} người`}
+            💌 Hộp thư lời chúc
+            {unreadCount > 0 && <span className="birthday-inbox-badge">{unreadCount}</span>}
           </button>
-        )}
+
+          {data.has_more && (
+            <button
+              type="button"
+              className="btn-birthday-view-all"
+              onClick={handleViewAll}
+              disabled={loadingAll}
+            >
+              {loadingAll ? "Đang tải..." : `Xem tất cả ${data.total} người`}
+            </button>
+          )}
+        </div>
       </div>
 
       {modal && (
@@ -237,6 +273,15 @@ export const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
           dailyRewardLimitReached={data.daily_reward_limit_reached}
           onClose={() => setModal(null)}
           onSent={handleSent}
+        />
+      )}
+
+      {inboxOpen && (
+        <BirthdayInboxModal
+          templates={data.card_templates}
+          onClose={() => setInboxOpen(false)}
+          onUnreadChange={setUnreadCount}
+          onNotify={onNotify}
         />
       )}
     </div>
