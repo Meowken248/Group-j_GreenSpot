@@ -246,8 +246,8 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
       const badgeClass = isSchool
         ? "facility-school"
         : isHospital
-        ? "facility-hospital"
-        : "facility-clinic";
+          ? "facility-hospital"
+          : "facility-clinic";
       const badgeIcon = isSchool ? "🏫" : isHospital ? "🏥" : "🩺";
 
       const facMarkerIcon = L.divIcon({

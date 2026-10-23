@@ -394,32 +394,108 @@
   align-items: center;
 }
 
+.radius-slider-control-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .radius-slider-current-val {
   font-size: 1.05rem;
   font-weight: 700;
   color: #f87171;
 }
 
+.radius-slider-track-wrapper {
+  position: relative;
+  width: 100%;
+  height: 22px;
+  display: flex;
+  align-items: center;
+}
+
 .radius-range-slider {
   width: 100%;
-  accent-color: #ef4444;
-  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
   height: 6px;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  z-index: 2;
+  position: relative;
+}
+
+.radius-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.85);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.radius-range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.18);
+}
+
+.radius-range-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.85);
+  cursor: pointer;
+}
+
+.radius-slider-ticks {
+  position: absolute;
+  top: 50%;
+  left: 6px;
+  right: 6px;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.slider-tick-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #475569;
+  border: 1px solid #1e293b;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.slider-tick-dot.active {
+  background: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.9);
 }
 
 .radius-presets-row {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   justify-content: space-between;
 }
 
 .preset-chip-btn {
+  flex: 1;
+  text-align: center;
   background: #1e293b;
   border: 1px solid #475569;
   color: #cbd5e1;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.76rem;
+  padding: 6px 4px;
+  border-radius: 6px;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
@@ -428,12 +504,15 @@
 .preset-chip-btn:hover {
   background: #334155;
   color: #fff;
+  border-color: #64748b;
 }
 
 .preset-chip-btn.active {
   background: rgba(239, 68, 68, 0.25);
-  color: #f87171;
+  color: #fca5a5;
   border-color: #ef4444;
+  font-weight: 700;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.35);
 }
 
 .spatial-estimate-badge-box {

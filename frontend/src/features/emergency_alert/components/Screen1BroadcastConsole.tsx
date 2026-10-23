@@ -8,6 +8,8 @@ import type {
 } from "../types/emergency_alert.types";
 import { emergencyAlertApi } from "../services/emergencyAlertApi";
 
+const RADIUS_PRESETS = [500, 1000, 2000, 5000, 10000];
+
 interface Screen1BroadcastConsoleProps {
   onBroadcastSuccess?: (alertId: string) => void;
 }
@@ -395,17 +397,41 @@ export const Screen1BroadcastConsole: React.FC<Screen1BroadcastConsoleProps> = (
                   {(radiusMeters / 1000).toFixed(1)} km ({radiusMeters}m)
                 </span>
               </div>
-              <input
-                type="range"
-                className="radius-range-slider"
-                min={500}
-                max={10000}
-                step={500}
-                value={radiusMeters}
-                onChange={(e) => handleRadiusChange(Number(e.target.value))}
-              />
+
+              {/* Khung ray trượt và vạch chia mốc 1:1 */}
+              <div className="radius-slider-track-wrapper">
+                <input
+                  type="range"
+                  className="radius-range-slider"
+                  min={0}
+                  max={RADIUS_PRESETS.length - 1}
+                  step={1}
+                  value={
+                    RADIUS_PRESETS.indexOf(radiusMeters) !== -1
+                      ? RADIUS_PRESETS.indexOf(radiusMeters)
+                      : 2
+                  }
+                  onChange={(e) => handleRadiusChange(RADIUS_PRESETS[Number(e.target.value)])}
+                  style={{
+                    background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${(Math.max(0, RADIUS_PRESETS.indexOf(radiusMeters)) / (RADIUS_PRESETS.length - 1)) * 100}%, #334155 ${(Math.max(0, RADIUS_PRESETS.indexOf(radiusMeters)) / (RADIUS_PRESETS.length - 1)) * 100}%, #334155 100%)`,
+                  }}
+                  aria-label="Thanh trượt bán kính vùng ảnh hưởng"
+                />
+                <div className="radius-slider-ticks">
+                  {RADIUS_PRESETS.map((preset, idx) => (
+                    <div
+                      key={preset}
+                      className={`slider-tick-dot ${idx <= Math.max(0, RADIUS_PRESETS.indexOf(radiusMeters)) ? "active" : ""}`}
+                      onClick={() => handleRadiusChange(preset)}
+                      title={`Mốc ${preset < 1000 ? `${preset}m` : `${preset / 1000}km`}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Hàng 5 nút mốc hiển thị số và lựa chọn nhanh */}
               <div className="radius-presets-row">
-                {[500, 1000, 2000, 5000, 10000].map((preset) => (
+                {RADIUS_PRESETS.map((preset) => (
                   <button
                     key={preset}
                     type="button"
