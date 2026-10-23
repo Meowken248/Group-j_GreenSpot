@@ -333,7 +333,8 @@ class SafetyCheckRepository(ISafetyCheckRepository):
             SELECT 
                 u.user_id,
                 u.full_name,
-                u.avatar_url
+                u.avatar_url,
+                u.phone_number
             FROM friendships f
             JOIN users u ON (
                 (f.user_id_1 = :user_id AND f.user_id_2 = u.user_id) OR
@@ -351,6 +352,7 @@ class SafetyCheckRepository(ISafetyCheckRepository):
                 "user_id": r.user_id,
                 "full_name": r.full_name,
                 "avatar_url": r.avatar_url,
+                "phone": r.phone_number,
                 "is_selected": True,
                 "push_notification_enabled": True,
             })

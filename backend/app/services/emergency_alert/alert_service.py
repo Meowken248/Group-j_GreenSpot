@@ -332,6 +332,7 @@ class EmergencyAlertService:
                 user_id=f["user_id"],
                 full_name=f["full_name"],
                 avatar_url=f["avatar_url"],
+                phone=f.get("phone"),
                 is_selected=True,
                 push_notification_enabled=f["push_notification_enabled"],
             )

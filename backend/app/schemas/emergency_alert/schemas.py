@@ -122,6 +122,7 @@ class FriendCheckboxItem(BaseModel):
     user_id: uuid.UUID
     full_name: str
     avatar_url: Optional[str] = None
+    phone: Optional[str] = None
     is_selected: bool = True
     push_notification_enabled: bool = True
 
