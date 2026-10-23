@@ -67,7 +67,12 @@ async def call_kira_ai(
                     "model": model_name,
                     "messages": payload_messages,
                     "temperature": 0.4,
-                    "max_tokens": 1024,
+                    # Kira AI (kira-mini-1.0) tiêu hao phần lớn hạn mức token cho "suy luận ẩn"
+                    # trước khi sinh nội dung: với max_tokens=1024 phản hồi trả về rỗng kèm
+                    # finish_reason="length" (đo thực tế ~3.100 completion_tokens cho một câu
+                    # trả lời ~1.000 ký tự). Đặt 8192 để câu trả lời luôn có nội dung trong
+                    # giới hạn 30 giây của SRS (đo thực tế ~10 giây/câu).
+                    "max_tokens": 8192,
                 },
             )
 
@@ -78,6 +83,12 @@ async def call_kira_ai(
                     content = choices[0].get("message", {}).get("content", "")
                     if content and len(content.strip()) > 0:
                         return content.strip()
+                    logger.warning(
+                        "[KiraAI] Phản hồi 200 nhưng không có nội dung "
+                        f"(finish_reason={choices[0].get('finish_reason')}). Chuyển sang Fallback Engine."
+                    )
+                else:
+                    logger.warning("[KiraAI] Phản hồi 200 nhưng không có choices. Chuyển sang Fallback Engine.")
             elif resp.status_code == 402:
                 logger.info("[KiraAI] Tài khoản Kira AI hết hạn mức số dư (402). Tự động kích hoạt Fallback Engine.")
             else:
