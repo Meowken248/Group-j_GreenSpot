@@ -58,6 +58,39 @@ class EnvironmentalKnowledgeEngine:
         r"\b(tình yêu|tỏ tình|người yêu|hẹn hò|tâm sự tuổi hồng)\b",
     ]
 
+    # Chủ đề mở rộng được hỗ trợ: thời tiết – khí hậu – hệ sinh thái – Trái Đất.
+    # So khớp theo RANH GIỚI TỪ (word boundary) để tránh dương tính giả với từ ngắn
+    # (ví dụ "mưa" không được khớp bừa vào "mua sắm").
+    EXTENDED_SCOPE_PATTERNS = [
+        # --- Thời tiết & Khí hậu ---
+        r"\bthời tiết\b", r"\bthoi tiet\b", r"\bnhiệt độ\b", r"\bnhiet do\b",
+        r"\bdự báo\b", r"\bdu bao\b", r"\bthời tiết hôm nay\b",
+        r"\bmưa\b", r"\bcơn mưa\b", r"\bmưa lớn\b", r"\bmưa axit\b", r"\bmùa mưa\b",
+        r"\bnắng\b", r"\bnắng nóng\b", r"\bnóng\b", r"\blạnh\b",
+        r"\bbão\b", r"\báp thấp\b", r"\blũ\b", r"\blụt\b", r"\btriều cường\b",
+        r"\bgió\b", r"\bđộ ẩm\b", r"\bdo am\b", r"\bsương mù\b", r"\bsấm chớp\b", r"\bsét\b",
+        r"\bkhí hậu\b", r"\bkhi hau\b", r"\bbiến đổi khí hậu\b", r"\bbien doi khi hau\b",
+        r"\bhiệu ứng nhà kính\b", r"\bhieu ung nha kinh\b", r"\bnóng lên toàn cầu\b",
+        r"\btia uv\b", r"\bchỉ số uv\b", r"\bmùa khô\b", r"\bthời vụ\b",
+        # --- Hệ sinh thái, động thực vật & Trái Đất ---
+        r"\bhệ sinh thái\b", r"\bhe sinh thai\b", r"\bsinh thái\b", r"\bsinh thai\b",
+        r"\bđộng vật\b", r"\bdong vat\b", r"\bthực vật\b", r"\bthuc vat\b", r"\bđộng thực vật\b",
+        r"\brừng\b", r"\brung\b", r"\brừng ngập mặn\b", r"\bcây xanh\b", r"\bcay xanh\b",
+        r"\bbiển\b", r"\bbiển đông\b", r"\bđại dương\b", r"\bdai duong\b",
+        r"\bsan hô\b", r"\bsan ho\b", r"\bcá voi\b", r"\brùa biển\b", r"\bcôn trùng\b",
+        r"\bchim\b", r"\bđa dạng sinh học\b", r"\bda dang sinh hoc\b",
+        r"\btuyệt chủng\b", r"\btuyet chung\b", r"\bbảo tồn\b", r"\bbao ton\b",
+        r"\btrái đất\b", r"\btrai dat\b", r"\bhành tinh\b", r"\bhanh tinh\b",
+        r"\btầng ozone\b", r"\bozone\b", r"\bphát thải\b", r"\bphat thai\b",
+        r"\bcarbon\b", r"\bco2\b", r"\bnăng lượng tái tạo\b", r"\bnang luong tai tao\b",
+        r"\bnăng lượng mặt trời\b", r"\bđiện mặt trời\b", r"\bđiện gió\b",
+        r"\bô nhiễm\b", r"\bo nhiem\b", r"\bô nhiễm không khí\b", r"\bô nhiễm nước\b",
+        r"\bnước sạch\b", r"\bnuoc sach\b", r"\bnguồn nước\b", r"\bnguon nuoc\b",
+        r"\bhạn hán\b", r"\bhan han\b", r"\bxói mòn\b", r"\bxoi mon\b",
+        r"\bsa mạc\b", r"\bsa mac\b", r"\bsông\b", r"\bkênh rạch\b", r"\bkenh rach\b",
+        r"\bbăng tan\b", r"\bnước biển dâng\b",
+    ]
+
     def is_query_in_scope(self, query: str) -> bool:
         """Kiểm tra xem câu hỏi có thuộc phạm vi hỗ trợ hay không"""
         q_lower = query.lower().strip()
@@ -70,7 +103,11 @@ class EnvironmentalKnowledgeEngine:
                     return False
 
         # Kiểm tra sự xuất hiện của từ khóa môi trường hoặc nền tảng
-        return any(k in q_lower for k in self.ENVIRONMENTAL_KEYWORDS)
+        if any(k in q_lower for k in self.ENVIRONMENTAL_KEYWORDS):
+            return True
+
+        # Chủ đề mở rộng: thời tiết – khí hậu – hệ sinh thái – Trái Đất
+        return any(re.search(pattern, q_lower) for pattern in self.EXTENDED_SCOPE_PATTERNS)
 
     def check_scope_and_answer(self, query: str) -> Tuple[bool, str]:
         """
@@ -83,11 +120,13 @@ class EnvironmentalKnowledgeEngine:
             refusal = (
                 f"{self.STANDARD_OUT_OF_SCOPE_REFUSAL}\n\n"
                 "💡 **Gợi ý các chủ đề bạn có thể hỏi tôi:**\n"
-                "• *'Pin cũ, bóng đèn, dầu ăn thừa thì bỏ vào đâu?'*\n"
-                "• *'Vứt rác bừa bãi vỉa hè bị phạt bao nhiêu tiền?'*\n"
-                "• *'Tìm điểm thu gom rác tái chế gần nhất tại TP.HCM'*\n"
-                "• *'Cách kiếm Điểm Xanh và đổi voucher quà tặng'* \n"
-                "• *'Hướng dẫn gửi báo cáo ô nhiễm và chụp ảnh hiện trường'*"
+                "• 'Pin cũ, bóng đèn, dầu ăn thừa thì bỏ vào đâu?'\n"
+                "• 'Vứt rác bừa bãi vỉa hè bị phạt bao nhiêu tiền?'\n"
+                "• 'Hôm nay thời tiết TP.HCM thế nào, có mưa không?'\n"
+                "• 'Biến đổi khí hậu ảnh hưởng tới hệ sinh thái Trái Đất ra sao?'\n"
+                "• 'Tìm điểm thu gom rác tái chế gần nhất tại TP.HCM'\n"
+                "• 'Cách kiếm Điểm Xanh và đổi voucher quà tặng'\n"
+                "• 'Hướng dẫn gửi báo cáo ô nhiễm và chụp ảnh hiện trường'"
             )
             return False, refusal
 
@@ -145,7 +184,55 @@ class EnvironmentalKnowledgeEngine:
                     + self.LEGAL_DISCLAIMER
                 )
 
-        # 3. Câu hỏi về Rác hữu cơ, rác tái chế, rác thải sinh hoạt
+        # 3. Câu hỏi về Thời tiết, khí hậu, tia UV, biến đổi khí hậu
+        if any(w in q for w in [
+            "thời tiết", "thoi tiet", "nhiệt độ", "nhiet do", "dự báo", "du bao",
+            "mưa", "nắng", "nóng", "lạnh", "bão", "lũ", "lụt", "triều cường",
+            "khí hậu", "khi hau", "biến đổi khí hậu", "uv", "độ ẩm", "do am", "gió",
+            "không khí", "khong khi", "chất lượng không khí", "bụi mịn", "bui min", "pm2.5",
+        ]):
+            return (
+                "🌦️ **Thời tiết – Khí hậu: cách tra cứu và ứng phó an toàn**\n\n"
+                "**1. Xem số liệu thời tiết cập nhật ngay trên GreenSpot:**\n"
+                "• Mở tab **Thời tiết & Chất lượng không khí (AQI)** để xem nhiệt độ, độ ẩm, chỉ số UV và bụi mịn PM2.5 theo từng khung giờ trong ngày.\n"
+                "• TP.HCM có 2 mùa rõ rệt: **mùa mưa (khoảng tháng 5 – 11)** và **mùa khô (khoảng tháng 12 – 4)**, nhiệt độ trung bình 26–34°C, độ ẩm cao 75–85%.\n\n"
+                "**2. Khuyến cáo sức khỏe & an toàn theo thời tiết:**\n"
+                "• **Nắng nóng trên 35°C hoặc chỉ số UV từ 8 trở lên:** hạn chế ra đường 11h–15h, uống đủ nước, đội mũ rộng vành và dùng kem chống nắng SPF 30+.\n"
+                "• **Mưa lớn, dông sét:** không trú dưới tán cây lớn hay cột điện; theo dõi **bản đồ ngập** để chọn tuyến đường an toàn.\n"
+                "• **Không khí ô nhiễm (AQI trên 100):** đeo khẩu trang N95 khi ra ngoài, hạn chế tập thể dục ngoài trời, đóng cửa sổ vào giờ cao điểm.\n\n"
+                "**3. Liên hệ với biến đổi khí hậu:** Nhiệt độ trung bình toàn cầu tăng chủ yếu do phát thải CO₂ và các khí nhà kính. TP.HCM thuộc nhóm đô thị chịu tác động mạnh của **nước biển dâng và triều cường**, nên giảm rác nhựa, phân loại rác tại nguồn và tiết kiệm điện chính là hành động giảm phát thải thiết thực.\n\n"
+                "💡 *Khi mưa lớn kéo dài, bạn có thể dùng **Tìm lộ trình an toàn tránh ngập (STT 41)** và **Flood SOS (STT 46)** trên GreenSpot.*"
+                + self.LEGAL_DISCLAIMER
+            )
+
+        # 4. Câu hỏi về Hệ sinh thái, động – thực vật, Trái Đất
+        if any(w in q for w in [
+            "hệ sinh thái", "he sinh thai", "sinh thái", "sinh thai", "động vật", "dong vat",
+            "thực vật", "thuc vat", "rừng", "rung", "biển", "bien", "đại dương", "dai duong",
+            "san hô", "san ho", "côn trùng", "con trung", "đa dạng sinh học", "da dang sinh hoc",
+            "tuyệt chủng", "tuyet chung", "trái đất", "trai dat", "ozone", "carbon", "co2",
+            "phát thải", "phat thai", "năng lượng tái tạo", "nang luong tai tao",
+        ]):
+            return (
+                "🌍 **Hệ sinh thái & Trái Đất: vì sao mỗi hành động nhỏ đều quan trọng**\n\n"
+                "**1. Hệ sinh thái là gì?** Là cộng đồng sinh vật (động vật, thực vật, vi sinh vật) cùng môi trường sống, liên kết với nhau qua chuỗi thức ăn và vòng tuần hoàn vật chất. Một mắt xích bị phá vỡ sẽ ảnh hưởng toàn hệ.\n\n"
+                "**2. Hệ sinh thái tiêu biểu gần bạn:**\n"
+                "• **Rừng ngập mặn Cần Giờ** – Khu dự trữ sinh quyển thế giới (UNESCO 2000): lá phổi xanh, bức tường chắn sóng, bãi ươm tôm cá và hấp thụ carbon rất tốt.\n"
+                "• **Rạn san hô và thảm cỏ biển ven biển** – nơi sinh sản của hàng trăm loài hải sản, rất nhạy cảm với rác nhựa và nước thải.\n"
+                "• **Mảng xanh đô thị, công viên, kênh rạch** – giảm nhiệt độ, giữ nước mưa và là nơi trú ngụ của chim, côn trùng thụ phấn.\n\n"
+                "**3. Mối đe dọa chính:** rác nhựa và vi nhựa, phá rừng, khai thác quá mức, ô nhiễm nguồn nước, cùng biến đổi khí hậu (nhiệt độ tăng, nước biển dâng làm mất nơi cư trú và gây tẩy trắng san hô).\n\n"
+                "**4. Bạn có thể làm ngay:**\n"
+                "• Phân loại rác tại nguồn, nói không với túi nilon dùng một lần và hộp xốp.\n"
+                "• Gửi báo cáo ô nhiễm kèm ảnh + GPS qua GreenSpot để cơ quan chức năng xử lý.\n"
+                "• Tham gia chiến dịch **Chủ Nhật Xanh**, nhặt rác kênh rạch, trồng và chăm sóc cây xanh.\n"
+                "• Tiết kiệm điện – nước, ưu tiên năng lượng tái tạo để giảm phát thải CO₂.\n\n"
+                "🌱 *Mỗi lượt phân loại rác đúng cách được ghi nhận **Điểm Xanh**, góp phần bảo vệ chính hệ sinh thái bạn đang sống.*"
+                + self.LEGAL_DISCLAIMER
+            )
+
+
+
+        # 5. Câu hỏi về Rác hữu cơ, rác tái chế, rác thải sinh hoạt
         if any(w in q for w in ["hữu cơ", "huu co", "tái chế", "tai che", "nhựa", "nhua", "hộp xốp", "hop xop", "chai lọ", "chai lo", "lá cây", "thực phẩm"]):
             return (
                 "♻️ **Cẩm nang phân loại chất thải rắn sinh hoạt tại nguồn (theo Luật BVMT 2020):**\n\n"
@@ -162,7 +249,7 @@ class EnvironmentalKnowledgeEngine:
                 + self.LEGAL_DISCLAIMER
             )
 
-        # 4. Câu hỏi về Trạm tái chế, điểm thu gom
+        # 6. Câu hỏi về Trạm tái chế, điểm thu gom
         if any(w in q for w in ["trạm tái chế", "tram tai che", "điểm thu gom", "diem thu gom", "thu hồi", "thu hoi", "tìm trạm"]):
             return (
                 "📍 **Mạng lưới Trạm Tái chế & Điểm tiếp nhận chất thải GreenSpot:**\n\n"
@@ -173,7 +260,7 @@ class EnvironmentalKnowledgeEngine:
                 "🔍 *Hãy mở mục **Trạm tái chế (STT 23)** trên bản đồ để xem điểm thu gom gần tọa độ của bạn nhất cùng lộ trình dẫn đường tối ưu.*"
             )
 
-        # 5. Câu hỏi về Điểm xanh, tích điểm, đổi quà, cấp bậc Công dân Xanh
+        # 7. Câu hỏi về Điểm xanh, tích điểm, đổi quà, cấp bậc Công dân Xanh
         if any(w in q for w in ["điểm xanh", "diem xanh", "tích điểm", "tich diem", "đổi quà", "doi qua", "thăng hạng", "thang hang", "công dân xanh", "voucher"]):
             return (
                 "🌟 **Cơ chế tích lũy Điểm thưởng Công dân Xanh (Green Point Policy):**\n\n"
@@ -191,7 +278,7 @@ class EnvironmentalKnowledgeEngine:
                 "🎁 *Bạn có thể vào mục **Ví điểm (STT 29)** để xem chi tiết sao kê và đổi quà tặng sinh thái.*"
             )
 
-        # 6. Câu hỏi về Báo cáo sự cố, bản đồ AQI, tránh ngập, SOS
+        # 8. Câu hỏi về Báo cáo sự cố, bản đồ AQI, tránh ngập, SOS
         if any(w in q for w in ["báo cáo sự cố", "bao cao su co", "gửi phản ánh", "gui phan anh", "chụp ảnh", "bản đồ", "aqi", "ngập", "sos"]):
             return (
                 "📱 **Hướng dẫn sử dụng các tiện ích thông minh trên GreenSpot:**\n\n"
@@ -201,7 +288,7 @@ class EnvironmentalKnowledgeEngine:
                 "4. **Cứu hộ khẩn cấp Flood SOS (STT 46):** Trong tình huống ngập sâu nguy hiểm, phát tín hiệu SOS để kết nối trực tiếp với đội cứu hộ gần nhất trong bán kính 3km."
             )
 
-        # 7. Mặc định nếu trong phạm vi môi trường nói chung
+        # 9. Mặc định nếu trong phạm vi môi trường nói chung
         return (
             "🌱 **Trợ lý AI Môi trường GreenSpot sẵn sàng hỗ trợ bạn:**\n\n"
             "Tôi có thể giải đáp chi tiết cho bạn về:\n"
@@ -209,7 +296,9 @@ class EnvironmentalKnowledgeEngine:
             "• Tra cứu mức phạt tiền và quy định bảo vệ môi trường theo Nghị định 45/2022/NĐ-CP.\n"
             "• Tìm vị trí trạm tái chế và điểm tiếp nhận rác nguy hại tại TP.HCM.\n"
             "• Cách tính Điểm Xanh, đổi voucher quà tặng và thăng hạng Công dân Xanh.\n"
-            "• Hướng dẫn gửi báo cáo ô nhiễm, xem bản đồ AQI và cảnh báo ngập lụt.\n\n"
+            "• Hướng dẫn gửi báo cáo ô nhiễm, xem bản đồ AQI và cảnh báo ngập lụt.\n"
+            "• Thời tiết, nhiệt độ, tia UV, mưa bão và biến đổi khí hậu.\n"
+            "• Hệ sinh thái, động – thực vật, rừng ngập mặn, biển và các vấn đề toàn cầu của Trái Đất.\n\n"
             "Hãy đặt câu hỏi cụ thể để tôi hỗ trợ bạn tốt nhất nhé!"
             + self.LEGAL_DISCLAIMER
         )

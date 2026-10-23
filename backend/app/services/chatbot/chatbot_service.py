@@ -388,5 +388,15 @@ class ChatbotService:
                 "text": "Hướng dẫn gửi báo cáo điểm rác ô nhiễm kèm tọa độ GPS",
                 "category": "platform_guide",
             },
+            {
+                "id": "prompt-weather",
+                "text": "Hôm nay thời tiết TP.HCM thế nào, có mưa không?",
+                "category": "weather_climate",
+            },
+            {
+                "id": "prompt-ecosystem",
+                "text": "Biến đổi khí hậu ảnh hưởng tới hệ sinh thái Trái Đất ra sao?",
+                "category": "ecosystem_earth",
+            },
         ]
 

@@ -347,7 +347,9 @@ export const AiChatBox: React.FC<AiChatBoxProps> = ({
               <h3>Xin chào {currentUserName}!</h3>
               <p>
                 Tôi là Trợ lý AI Sinh thái của GreenSpot. Tôi có thể hỗ trợ bạn phân loại rác,
-                tra cứu mức phạt quy định xử phạt theo Nghị định 45/2022/NĐ-CP, tìm trạm tái chế và hướng dẫn sử dụng hệ thống.
+                tra cứu mức phạt quy định xử phạt theo Nghị định 45/2022/NĐ-CP, tìm trạm tái chế,
+                giải đáp về thời tiết – khí hậu, hệ sinh thái và môi trường Trái Đất,
+                cùng hướng dẫn sử dụng hệ thống.
               </p>
               <p style={{ marginTop: "0.5rem", fontSize: "0.8rem", color: "#10b981" }}>
                 Hãy chọn một câu hỏi gợi ý bên trái hoặc nhập câu hỏi bên dưới nhé!

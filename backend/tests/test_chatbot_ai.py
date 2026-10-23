@@ -126,6 +126,22 @@ class TestChatbotAIFeature24(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(len(answer) > 50, "Câu trả lời phải chi tiết và đầy đủ hướng dẫn")
             self.assertIn("Câu trả lời của AI mang tính tham khảo", answer)
 
+    def test_tc03b_expanded_scope_weather_ecosystem_earth(self):
+        """TC-03B: Phạm vi mở rộng - thời tiết, khí hậu, hệ sinh thái và Trái Đất đều được tư vấn"""
+        expanded_queries = [
+            "Cho tôi biết nhiệt độ hôm nay ở TP.HCM",
+            "Dự báo thời tiết cuối tuần có mưa không?",
+            "Biến đổi khí hậu ảnh hưởng tới Trái Đất như thế nào?",
+            "Hệ sinh thái rừng ngập mặn Cần Giờ quan trọng ra sao?",
+            "Vì sao rạn san hô lại nhạy cảm với rác nhựa?",
+            "Năng lượng tái tạo giúp giảm phát thải CO2 thế nào?",
+        ]
+        for q in expanded_queries:
+            is_in_scope, answer = self.knowledge_engine.check_scope_and_answer(q)
+            self.assertTrue(is_in_scope, f"Câu hỏi '{q}' phải thuộc phạm vi mở rộng (thời tiết/hệ sinh thái)")
+            self.assertTrue(len(answer) > 50, f"Câu trả lời cho '{q}' phải chi tiết")
+            self.assertIn("Câu trả lời của AI mang tính tham khảo", answer)
+
     async def test_tc02_rate_limiting_30_per_hour(self):
         """TC-02: Kiểm tra giới hạn tần suất 30 tin nhắn mỗi giờ cho mỗi người dùng"""
         user_id = self.test_user.user_id
@@ -301,6 +317,8 @@ class TestChatbotAIFeature24(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(any("phạt" in t.lower() for t in sample_texts))
         self.assertTrue(any("tái chế" in t.lower() for t in sample_texts))
         self.assertTrue(any("điểm xanh" in t.lower() for t in sample_texts))
+        self.assertTrue(any("thời tiết" in t.lower() for t in sample_texts))
+        self.assertTrue(any("hệ sinh thái" in t.lower() for t in sample_texts))
 
 
 if __name__ == "__main__":
