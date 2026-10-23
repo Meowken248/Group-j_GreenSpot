@@ -163,8 +163,7 @@ export const Screen3SafetyCheck: React.FC<Screen3SafetyCheckProps> = ({
            =================================================================== */}
         <div className="console-column-card">
           <div className="column-card-header">
-            <span className="column-card-title">🛡️ Khối Xác Nhận An Toàn</span>
-            <span style={{ fontSize: "0.78rem", color: "#94a3b8" }}>Cột trái</span>
+            <span className="column-card-title">🛡️ XÁC NHẬN AN TOÀN</span>
           </div>
 
           <div className="column-card-body">
@@ -210,10 +209,6 @@ export const Screen3SafetyCheck: React.FC<Screen3SafetyCheckProps> = ({
             >
               <span>{markingSafe ? "ĐANG CẬP NHẬT..." : isMarkedSafe ? "✅ ĐÃ BÁO AN TOÀN TRÊN HỒ SƠ" : "🛡️ Tôi an toàn"}</span>
             </button>
-
-            <div style={{ marginTop: "14px", fontSize: "0.82rem", color: "#94a3b8", textAlign: "center" }}>
-              Khi bấm, huy hiệu <strong style={{ color: "#4ade80" }}>An toàn (Safe)</strong> sẽ xuất hiện bên cạnh avatar và trên Bảng tin Geo-Feed (STT 08).
-            </div>
           </div>
         </div>
 
@@ -222,15 +217,10 @@ export const Screen3SafetyCheck: React.FC<Screen3SafetyCheckProps> = ({
            =================================================================== */}
         <div className="console-column-card">
           <div className="column-card-header">
-            <span className="column-card-title">👥 Khối Gửi Cho</span>
-            <span style={{ fontSize: "0.78rem", color: "#94a3b8" }}>Cột phải (Danh sách bạn bè)</span>
+            <span className="column-card-title">👥 GỬI CHO</span>
           </div>
 
           <div className="column-card-body">
-            <div style={{ fontSize: "0.88rem", color: "#cbd5e1" }}>
-              Gửi thông báo riêng đến mạng lưới gia đình và bạn bè để mọi người an tâm:
-            </div>
-
             {/* Danh sách bạn bè tích chọn (Checkbox) */}
             <div className="friends-checklist-container">
               <div className="friends-checklist-toolbar">

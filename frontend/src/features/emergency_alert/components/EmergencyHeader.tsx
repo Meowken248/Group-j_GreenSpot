@@ -37,14 +37,14 @@ export const EmergencyHeader: React.FC<EmergencyHeaderProps> = ({
           className={`emergency-nav-btn ${currentView === "CONSOLE" ? "active" : ""}`}
           onClick={() => onSwitchView("CONSOLE")}
         >
-          <span>📡 Phát lệnh khẩn cấp (Màn 1/4)</span>
+          <span>📡 Phát lệnh khẩn cấp</span>
         </button>
         <button
           type="button"
           className={`emergency-nav-btn ${currentView === "SAFETY_CHECK" ? "active" : ""}`}
           onClick={() => onSwitchView("SAFETY_CHECK")}
         >
-          <span>🛡️ Safety Check (Màn 3/4)</span>
+          <span>🛡️ Safety Check</span>
         </button>
         {onTriggerSimulateAlert && (
           <button
@@ -52,9 +52,9 @@ export const EmergencyHeader: React.FC<EmergencyHeaderProps> = ({
             className="emergency-nav-btn"
             style={{ borderColor: "#ef4444", color: "#f87171" }}
             onClick={onTriggerSimulateAlert}
-            title="Thử nghiệm Modal Cảnh Báo Khẩn Cấp (Màn 2/4)"
+            title="Thử nghiệm cảnh báo khẩn cấp"
           >
-            <span>⚡ Test Alert Modal (Màn 2/4)</span>
+            <span>⚡ Thử nghiệm cảnh báo</span>
           </button>
         )}
       </div>

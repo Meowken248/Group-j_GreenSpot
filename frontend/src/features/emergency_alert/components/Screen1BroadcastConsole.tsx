@@ -279,8 +279,7 @@ export const Screen1BroadcastConsole: React.FC<Screen1BroadcastConsoleProps> = (
            =================================================================== */}
         <div className="console-column-card">
           <div className="column-card-header">
-            <span className="column-card-title">📝 Khối Nội Dung</span>
-            <span style={{ fontSize: "0.78rem", color: "#94a3b8" }}>Cột trái</span>
+            <span className="column-card-title">📝 NỘI DUNG</span>
           </div>
 
           <div className="column-card-body">
@@ -374,8 +373,7 @@ export const Screen1BroadcastConsole: React.FC<Screen1BroadcastConsoleProps> = (
            =================================================================== */}
         <div className="console-column-card">
           <div className="column-card-header">
-            <span className="column-card-title">🗺️ Khối Phạm Vi</span>
-            <span style={{ fontSize: "0.78rem", color: "#94a3b8" }}>Cột giữa (Bản đồ GIS & Slider)</span>
+            <span className="column-card-title">🗺️ PHẠM VI</span>
           </div>
 
           <div className="column-card-body">
@@ -420,11 +418,11 @@ export const Screen1BroadcastConsole: React.FC<Screen1BroadcastConsoleProps> = (
               </div>
             </div>
 
-            {/* Khối hiển thị số người dự kiến nhận (Spatial Query) */}
+            {/* Khối hiển thị số người dự kiến nhận */}
             <div className="spatial-estimate-badge-box">
               <div>
                 <div style={{ fontSize: "0.78rem", color: "#94a3b8", textTransform: "uppercase", fontWeight: 700 }}>
-                  Số người dự kiến nhận (Spatial Query)
+                  Số người dự kiến nhận
                 </div>
                 <div className="estimate-count-text">
                   {isEstimating ? "Đang truy vấn không gian..." : spatialMessage}
@@ -442,16 +440,10 @@ export const Screen1BroadcastConsole: React.FC<Screen1BroadcastConsoleProps> = (
            =================================================================== */}
         <div className="console-column-card">
           <div className="column-card-header">
-            <span className="column-card-title">📡 Khối Gửi</span>
-            <span style={{ fontSize: "0.78rem", color: "#94a3b8" }}>Cột phải (Hành động)</span>
+            <span className="column-card-title">📡 GỬI</span>
           </div>
 
           <div className="column-card-body">
-            <div style={{ fontSize: "0.85rem", color: "#94a3b8", lineHeight: 1.45 }}>
-              Hạ tầng truyền phát khẩn cấp kết hợp thông báo đẩy <strong>FCM/WebSocket Broadcast</strong> với âm thanh
-              báo động ưu tiên cao nhất trên ứng dụng di động và trình duyệt.
-            </div>
-
             {/* Cụm 2 nút hành động đúng Prototype (Gửi cảnh báo & Huỷ) */}
             <div className="send-action-buttons-box">
               <button

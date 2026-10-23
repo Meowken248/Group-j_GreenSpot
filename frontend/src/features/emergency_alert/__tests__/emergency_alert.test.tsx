@@ -95,13 +95,13 @@ describe('Bộ kiểm thử UI/UX STT 45: Hệ thống Cảnh báo Khẩn cấp 
     render(<Screen3SafetyCheck onSendSuccess={handleSendSuccess} />);
 
     // Kiểm tra Cột Trái: XÁC NHẬN AN TOÀN
-    expect(screen.getByText(/Khối Xác Nhận An Toàn/i)).toBeInTheDocument();
+    expect(screen.getByText('🛡️ XÁC NHẬN AN TOÀN')).toBeInTheDocument();
     expect(screen.getByText(/Vị trí GPS thời gian thực/i)).toBeInTheDocument();
     const btnMarkSafe = screen.getByRole('button', { name: /Tôi an toàn/i });
     expect(btnMarkSafe).toBeInTheDocument();
 
     // Kiểm tra Cột Phải: GỬI CHO
-    expect(screen.getByText(/Khối Gửi Cho/i)).toBeInTheDocument();
+    expect(screen.getByText('👥 GỬI CHO')).toBeInTheDocument();
     const btnSendFriends = screen.getByRole('button', { name: /Gửi cho bạn bè/i });
     expect(btnSendFriends).toBeInTheDocument();
   });
