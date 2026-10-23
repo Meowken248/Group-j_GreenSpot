@@ -1,0 +1,1040 @@
+/**
+ * CSS Styling cho STT 45: Hệ thống Cảnh báo Khẩn cấp theo Vị trí & Safety Check
+ * Chuẩn hóa 100% với Wireframe / Prototype 4 Màn hình (Khung Header, Footer, Cột & Modal)
+ */
+
+/* =========================================================================
+   1. KHUNG TỔNG THỂ VÀ CHUẨN MÀU THEO HỆ THỐNG
+   ========================================================================= */
+.emergency-module-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 70px);
+  background: var(--bg-primary, #0f172a);
+  color: var(--text-primary, #f8fafc);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+/* =========================================================================
+   2. HEADER & FOOTER ĐỒNG BỘ NỀN TẢNG (PROTOTYPE KHUNG QUẢN TRỊ & CÔNG DÂN)
+   ========================================================================= */
+.emergency-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: var(--bg-surface, #1e293b);
+  border-bottom: 2px solid #334155;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.emergency-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.emergency-logo-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: 0.5px;
+  color: #38bdf8;
+  cursor: pointer;
+}
+
+.emergency-logo-icon {
+  font-size: 1.6rem;
+}
+
+.header-role-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  letter-spacing: 0.5px;
+}
+
+.emergency-header-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.emergency-nav-btn {
+  background: transparent;
+  border: 1px solid #475569;
+  color: #cbd5e1;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.emergency-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-color: #64748b;
+}
+
+.emergency-nav-btn.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+}
+
+.emergency-header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.bell-btn {
+  position: relative;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #f1f5f9;
+  font-size: 1.1rem;
+  transition: background 0.2s;
+}
+
+.bell-btn:hover {
+  background: #475569;
+}
+
+.bell-badge-pulse {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 8px #ef4444;
+  animation: pulse-ring 2s infinite;
+}
+
+.emergency-avatar-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px;
+  background: #334155;
+  border-radius: 20px;
+  border: 1px solid #475569;
+}
+
+.avatar-circle {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #3b82f6;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.emergency-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: var(--bg-surface, #1e293b);
+  border-top: 1px solid #334155;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin-top: auto;
+}
+
+.footer-links {
+  display: flex;
+  gap: 16px;
+}
+
+.footer-links a, .footer-links button {
+  color: #94a3b8;
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.82rem;
+  padding: 0;
+}
+
+.footer-links a:hover, .footer-links button:hover {
+  color: #38bdf8;
+  text-decoration: underline;
+}
+
+/* =========================================================================
+   3. MÀN 1/4: EMERGENCY BROADCAST CONSOLE (3 CỘT: NỘI DUNG | PHẠM VI | GỬI)
+   ========================================================================= */
+.broadcast-console-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.3fr 0.8fr;
+  gap: 18px;
+  padding: 20px 24px;
+  flex: 1;
+  max-width: 1750px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1280px) {
+  .broadcast-console-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .broadcast-console-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.console-column-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.column-card-header {
+  padding: 14px 18px;
+  background: #0f172a;
+  border-bottom: 2px solid #334155;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.column-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.75px;
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.column-card-body {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+/* Cột Trái: Loại cảnh báo & Nội dung */
+.alert-type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.alert-type-card-btn {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 12px 10px;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.alert-type-card-btn:hover {
+  background: #1e293b;
+  color: #f8fafc;
+  border-color: #64748b;
+}
+
+.alert-type-card-btn.selected {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}
+
+.alert-type-icon {
+  font-size: 1.5rem;
+}
+
+.input-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.text-input-field, .textarea-field {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: #f8fafc;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: inherit;
+}
+
+.text-input-field:focus, .textarea-field:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+}
+
+.text-input-field.error, .textarea-field.error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25);
+}
+
+.textarea-field {
+  min-height: 140px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+/* Cột Giữa: Bản đồ GIS + Ghim tâm & Bán kính */
+.gis-map-viewport-container {
+  width: 100%;
+  height: 380px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #334155;
+  position: relative;
+  background: #020617;
+}
+
+.gis-map-element {
+  width: 100%;
+  height: 100%;
+}
+
+.gis-map-overlay-tip {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(4px);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  z-index: 500;
+  pointer-events: none;
+}
+
+.radius-slider-control-box {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.radius-slider-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.radius-slider-current-val {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f87171;
+}
+
+.radius-range-slider {
+  width: 100%;
+  accent-color: #ef4444;
+  cursor: pointer;
+  height: 6px;
+}
+
+.radius-presets-row {
+  display: flex;
+  gap: 6px;
+  justify-content: space-between;
+}
+
+.preset-chip-btn {
+  background: #1e293b;
+  border: 1px solid #475569;
+  color: #cbd5e1;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.preset-chip-btn:hover {
+  background: #334155;
+  color: #fff;
+}
+
+.preset-chip-btn.active {
+  background: rgba(239, 68, 68, 0.25);
+  color: #f87171;
+  border-color: #ef4444;
+}
+
+.spatial-estimate-badge-box {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid #3b82f6;
+  border-left: 4px solid #3b82f6;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.estimate-count-number {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #60a5fa;
+}
+
+.estimate-count-text {
+  font-size: 0.84rem;
+  color: #cbd5e1;
+  line-height: 1.35;
+}
+
+/* Cột Phải: Các nút phát lệnh (GỬI & HỦY) */
+.send-action-buttons-box {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.btn-primary-danger-send {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 9999px; /* Tròn oval theo prototype */
+  padding: 18px 24px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.75px;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.45);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.btn-primary-danger-send:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 6px 22px rgba(239, 68, 68, 0.6);
+  transform: translateY(-2px);
+}
+
+.btn-primary-danger-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.btn-cancel-console {
+  background: #334155;
+  color: #cbd5e1;
+  border: 1px solid #475569;
+  border-radius: 9999px; /* Tròn oval theo prototype */
+  padding: 14px 20px;
+  font-size: 0.98rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-cancel-console:hover {
+  background: #475569;
+  color: #ffffff;
+}
+
+/* Nhật ký phát sóng cảnh báo */
+.history-section-box {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.history-item-row {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+}
+
+.history-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.status-badge.ACTIVE {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.status-badge.CANCELLED {
+  background: rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+/* =========================================================================
+   4. MÀN 2/4: EMERGENCY ALERT MODAL (POPUP CẢNH BÁO KHẨN CẤP NHẤP NHÁY)
+   ========================================================================= */
+.alert-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.88);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.alert-modal-card {
+  background: #0f172a;
+  border: 3px solid #ef4444;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 580px;
+  padding: 30px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 0 35px rgba(239, 68, 68, 0.55), inset 0 0 20px rgba(239, 68, 68, 0.25);
+  animation: modal-danger-pulse 1.8s infinite ease-in-out;
+  position: relative;
+}
+
+.alert-modal-tag {
+  position: absolute;
+  top: 14px;
+  left: 18px;
+  font-size: 0.75rem;
+  font-style: italic;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 1px;
+}
+
+.danger-icon-animated {
+  font-size: 3.5rem;
+  color: #ef4444;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 0 12px #ef4444);
+  animation: danger-shake 1.2s infinite ease-in-out;
+}
+
+.alert-modal-title {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #f87171;
+  letter-spacing: 0.8px;
+  margin: 0 0 10px 0;
+  text-transform: uppercase;
+}
+
+.alert-situation-message {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.alert-detail-advice {
+  font-size: 0.92rem;
+  color: #cbd5e1;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px dashed rgba(239, 68, 68, 0.4);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 24px;
+  line-height: 1.45;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.alert-action-buttons-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.modal-action-oval-btn {
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 9999px; /* Dạng bầu dục đúng prototype */
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-safe-action {
+  background: #16a34a;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35);
+}
+
+.btn-safe-action:hover {
+  background: #22c55e;
+  box-shadow: 0 6px 18px rgba(34, 197, 94, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-sos-danger-action {
+  background: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+}
+
+.btn-sos-danger-action:hover {
+  background: #ef4444;
+  box-shadow: 0 6px 18px rgba(239, 68, 68, 0.6);
+  transform: translateY(-1px);
+}
+
+.btn-view-detail-action {
+  background: #334155;
+  color: #e2e8f0;
+  border: 1px solid #475569;
+}
+
+.btn-view-detail-action:hover {
+  background: #475569;
+  color: #ffffff;
+}
+
+/* =========================================================================
+   5. MÀN 3/4: COMMUNITY DISASTER SAFETY CHECK (2 CỘT: XÁC NHẬN | GỬI CHO)
+   ========================================================================= */
+.safety-check-layout-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 24px;
+  flex: 1;
+  max-width: 1300px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 860px) {
+  .safety-check-layout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.gps-verified-box {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.gps-verified-icon {
+  font-size: 2rem;
+  color: #22c55e;
+}
+
+.gps-verified-title {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.gps-address-text {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.btn-large-safe-toggle {
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  border-radius: 9999px; /* Dạng bầu dục đúng prototype */
+  padding: 18px 24px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.4);
+  transition: all 0.2s ease;
+  margin-top: 18px;
+}
+
+.btn-large-safe-toggle:hover {
+  background: #22c55e;
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.55);
+}
+
+.btn-large-safe-toggle.already-marked {
+  background: #059669;
+  border: 2px solid #34d399;
+}
+
+.friends-checklist-container {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.friends-checklist-toolbar {
+  padding: 10px 14px;
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+}
+
+.friend-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid #1e293b;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.friend-item-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.friend-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.friend-avatar-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.friend-name {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: #f1f5f9;
+}
+
+.friend-phone {
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.friend-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #22c55e;
+  cursor: pointer;
+}
+
+.btn-send-to-friends-oval {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 9999px; /* Dạng bầu dục đúng prototype */
+  padding: 16px 24px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+  transition: all 0.2s ease;
+  margin-top: 14px;
+}
+
+.btn-send-to-friends-oval:hover:not(:disabled) {
+  background: #3b82f6;
+  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.55);
+}
+
+.btn-send-to-friends-oval:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* =========================================================================
+   6. MÀN 4/4: SAFETY CHECK CONFIRMATION MODAL (POPUP ĐÃ BÁO AN TOÀN)
+   ========================================================================= */
+.confirm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.8);
+  backdrop-filter: blur(6px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.confirm-modal-card {
+  background: #0f172a;
+  border: 2px solid #22c55e;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 520px;
+  padding: 34px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 0 30px rgba(34, 197, 94, 0.35);
+  position: relative;
+  animation: modal-fade-scale 0.3s ease-out;
+}
+
+.confirm-shield-icon {
+  font-size: 4rem;
+  color: #22c55e;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.6));
+}
+
+.confirm-modal-title {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #4ade80;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.75px;
+}
+
+.confirm-main-msg {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-bottom: 6px;
+}
+
+.confirm-sub-msg {
+  font-size: 0.88rem;
+  color: #94a3b8;
+  margin-bottom: 14px;
+}
+
+.sms-fallback-note {
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  background: rgba(100, 116, 139, 0.2);
+  border: 1px solid #475569;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 22px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.btn-close-confirm-oval {
+  background: #334155;
+  color: #ffffff;
+  border: 1px solid #64748b;
+  border-radius: 9999px; /* Bầu dục đúng prototype */
+  padding: 14px 28px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 200px;
+}
+
+.btn-close-confirm-oval:hover {
+  background: #475569;
+  border-color: #94a3b8;
+}
+
+/* =========================================================================
+   7. TOAST & BANNER THÔNG BÁO TỨC THỜI
+   ========================================================================= */
+.emergency-toast-banner {
+  padding: 10px 18px;
+  margin: 12px 24px 0 24px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  animation: slide-down 0.25s ease-out;
+}
+
+.emergency-toast-banner.success {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid #22c55e;
+  color: #4ade80;
+}
+
+.emergency-toast-banner.danger {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid #ef4444;
+  color: #f87171;
+}
+
+.emergency-toast-banner.warning {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid #f59e0b;
+  color: #fbbf24;
+}
+
+/* =========================================================================
+   8. KEYFRAMES & ANIMATIONS
+   ========================================================================= */
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+@keyframes modal-danger-pulse {
+  0% { border-color: #ef4444; box-shadow: 0 0 25px rgba(239, 68, 68, 0.4); }
+  50% { border-color: #f87171; box-shadow: 0 0 45px rgba(239, 68, 68, 0.75); }
+  100% { border-color: #ef4444; box-shadow: 0 0 25px rgba(239, 68, 68, 0.4); }
+}
+
+@keyframes danger-shake {
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-4px) rotate(-3deg); }
+  75% { transform: translateY(4px) rotate(3deg); }
+}
+
+@keyframes modal-fade-scale {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: scale(1); }
+}
