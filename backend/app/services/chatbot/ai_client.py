@@ -36,16 +36,18 @@ QUY TẮC RÀNG BUỘC CHUYÊN MÔN (GUARDRAILS):
 
 async def call_kira_ai(
     messages: List[Dict[str, str]],
-    timeout: float = 30.0,
+    timeout: Optional[float] = None,
 ) -> Optional[str]:
     """
     Gửi prompt đến Kira AI API.
-    Timeout mặc định 30.0 giây theo quy định đặc tả SRS (trang 196).
+    Timeout lấy từ cấu hình KIRA_TIMEOUT_SECONDS (mặc định 30.0 giây theo đặc tả SRS trang 196),
+    có thể ghi đè bằng tham số `timeout`.
     Trả về: Nội dung văn bản câu trả lời, hoặc None nếu có lỗi (để kích hoạt Fallback Engine).
     """
     api_key = settings.KIRA_API_KEY or os.getenv("KIRA_API_KEY", "")
     api_url = settings.KIRA_API_URL or os.getenv("KIRA_API_URL", "https://kiraai.vn/api/v1/chat/completions")
     model_name = settings.KIRA_MODEL or os.getenv("KIRA_MODEL", "kira-mini-1.0")
+    req_timeout = timeout or settings.KIRA_TIMEOUT_SECONDS or 30.0
 
     if not api_key:
         logger.warning("[KiraAI] Chưa cấu hình KIRA_API_KEY. Chuyển sang Fallback Engine.")
@@ -56,7 +58,7 @@ async def call_kira_ai(
     payload_messages.extend(messages)
 
     try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
+        async with httpx.AsyncClient(timeout=req_timeout) as client:
             resp = await client.post(
                 api_url,
                 headers={
@@ -94,7 +96,7 @@ async def call_kira_ai(
             else:
                 logger.warning(f"[KiraAI] API phản hồi mã {resp.status_code}: {resp.text[:200]}")
     except httpx.TimeoutException:
-        logger.warning(f"[KiraAI] Quá thời gian phản hồi {timeout}s.")
+        logger.warning(f"[KiraAI] Quá thời gian phản hồi {req_timeout}s.")
     except Exception as e:
         logger.warning(f"[KiraAI] Lỗi kết nối ngoại lệ: {e}")
 

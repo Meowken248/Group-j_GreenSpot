@@ -192,7 +192,8 @@ class ChatbotService:
             ai_content = expert_answer
         else:
             # Trong phạm vi -> Thử gọi mô hình ngôn ngữ lớn Kira AI
-            kira_response = await call_kira_ai(context_msgs, timeout=30.0)
+            # (timeout lấy từ cấu hình KIRA_TIMEOUT_SECONDS, mặc định 30 giây theo SRS)
+            kira_response = await call_kira_ai(context_msgs)
             if kira_response and len(kira_response.strip()) > 0:
                 ai_content = kira_response.strip()
                 # Đảm bảo luôn có câu khuyến cáo pháp lý nếu nói về luật
