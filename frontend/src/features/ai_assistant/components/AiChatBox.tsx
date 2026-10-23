@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { aiAssistantService } from "../services/aiAssistantService";
+import { RichMessage } from "./RichMessage";
 import type {
   ChatbotPromptSuggestion,
   ChatbotMessageItem,
@@ -367,7 +368,7 @@ export const AiChatBox: React.FC<AiChatBoxProps> = ({
                       : ""
                   }`}
                 >
-                  {m.content}
+                  <RichMessage content={m.content} />
                   {m.is_stopped && (
                     <div className="stopped-badge">Đã dừng trả lời</div>
                   )}
