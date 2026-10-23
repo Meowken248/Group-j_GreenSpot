@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 revision: str = "020_profile_domain"
-down_revision: Union[str, None] = "019_safe_routes"
+down_revision: Union[str, None] = "020_voice_assistant"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

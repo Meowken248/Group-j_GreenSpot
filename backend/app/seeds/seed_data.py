@@ -17,7 +17,7 @@ INSERT INTO roles (role_id, role_code, role_name, description, is_system) VALUES
 (2, 'OFFICER', 'Cán bộ Môi trường / Điều phối viên', 'Tiếp nhận, thẩm tra, chuyển cấp và phân công sự cố', TRUE),
 (3, 'COLLECTOR', 'Đội Thu gom & Xử lý Hiện trường', 'Tiếp nhận lệnh, cập nhật tiến độ và tải ảnh nghiệm thu', TRUE),
 (4, 'CITIZEN', 'Công dân Đô thị', 'Gửi báo cáo sự cố, theo dõi tiến độ, tham gia chiến dịch', TRUE)
-ON CONFLICT (role_code) DO NOTHING;
+ON CONFLICT (role_id) DO NOTHING;
 
 -- 2. SEED PERMISSIONS
 INSERT INTO permissions (permission_code, module, action, description) VALUES

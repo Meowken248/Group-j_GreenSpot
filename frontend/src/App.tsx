@@ -15,7 +15,8 @@ import { RbacContainer, usePermissions, ModulePermissionGuard } from "./features
 import { UserManagementContainer } from "./features/user_management";
 import { ProfileContainer } from "./features/profile";
 import { FriendsContainer } from "./features/friends";
-import { DeduplicationDashboard } from "./features/reports";
+import { DeduplicationDashboard, ReportContainer } from "./features/reports";
+import { IncidentManagementContainer } from "./features/incident_management";
 import { TriageAppDashboard } from "./features/triage";
 import { PenaltyLookupContainer, PenaltyReportsDashboard } from "./features/penalties";
 import { PostCreatorContainer } from "./features/posts";
@@ -37,17 +38,6 @@ import type { ThemeMode } from "./features/settings";
 import api from "./api/client";
 import "./App.css";
 
-// Hàm kiểm tra trạng thái đăng nhập thực tế của phiên hiện tại
-const checkIsLoggedIn = (): boolean => {
-  try {
-    const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
-    const userInfo = localStorage.getItem(AUTH_STORAGE_KEYS.USER_INFO);
-    return Boolean(token && userInfo);
-  } catch {
-    return false;
-  }
-};
-
 export type ActiveTab =
   | "map"
   | "dashboard"
@@ -68,7 +58,22 @@ export type ActiveTab =
   | "dispatch"
   | "hotspots"
   | "emergency-alert"
-  | "safety-check";
+  | "safety-check"
+  | "report"
+  | "incidents";
+
+export type TabType = ActiveTab;
+
+// Hàm kiểm tra trạng thái đăng nhập thực tế của phiên hiện tại
+const checkIsLoggedIn = (): boolean => {
+  try {
+    const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+    const userInfo = localStorage.getItem(AUTH_STORAGE_KEYS.USER_INFO);
+    return Boolean(token && userInfo);
+  } catch {
+    return false;
+  }
+};
 
 function App() {
   const [authRedirectUrl, setAuthRedirectUrl] = useState<string | undefined>(() => {
@@ -89,6 +94,12 @@ function App() {
       if (hash === "#hotspots" || hash === "#hotspot-analytics" || path === "/hotspots") return "/hotspots";
       if (hash === "#emergency-alert" || path === "/emergency-alert") return "/emergency-alert";
       if (hash === "#safety-check" || path === "/safety-check") return "/safety-check";
+    }
+    if ((hash === "#report" || window.location.pathname.toLowerCase() === "/report") && !isLogged) {
+      return "/report";
+    }
+    if ((hash === "#incidents" || window.location.pathname.toLowerCase() === "/incidents") && !isLogged) {
+      return "/incidents";
     }
     return undefined;
   });
@@ -134,7 +145,6 @@ function App() {
       return "voice";
     }
 
-
     // Khách vãng lai chưa đăng nhập: Không được phép vào các trang cài đặt, phân tích khí hậu, bạn bè, profile, quản trị, trùng lặp
     if (hash === "#penalty-reports" || path === "/penalty-reports") {
       if (!isLogged) return "auth";
@@ -172,8 +182,15 @@ function App() {
       if (!isLogged) return "auth";
       return "triage";
     }
-
-    // Mặc định: khi chưa đăng nhập, chỉ hiển thị Bản đồ WebGIS công cộng
+    if (hash === "#report" || path === "/report") {
+      if (!isLogged) return "auth";
+      return "report";
+    }
+    if (hash === "#incidents" || path === "/incidents") {
+      if (!isLogged) return "auth";
+      return "incidents";
+    }
+    // Mặc định: khi chưa đăng nhập, hiển thị Bản đồ WebGIS công cộng
     if (!isLogged) return "map";
     return "profile";
   });
@@ -237,7 +254,10 @@ function App() {
   const hasMapAccess = canAccess("GIS_MAP");
   const hasAqiAccess = canAccess("AIR_QUALITY");
   const hasUserMgmtAccess = currentUser?.role === "ADMIN" || canAccess("USER_MANAGEMENT");
-  const hasRbacAccess = currentUser?.role === "ADMIN" || canAccess("ROLE");
+  const hasIncidentMgmtAccess =
+    currentUser?.role === "ADMIN" ||
+    currentUser?.role === "DISTRICT_MANAGER" ||
+    canAccess("INCIDENTS");
   const hasDedupAccess =
     currentUser?.role === "ADMIN" ||
     currentUser?.role === "OFFICER" ||
@@ -320,8 +340,8 @@ function App() {
   };
 
   const isGeoActive = ["map", "dashboard", "navigation", "hotspots", "risk-dashboard"].includes(activeTab);
-  const isOpsActive = ["dispatch", "penalty-reports", "triage", "dedup"].includes(activeTab);
-  const isCommunityActive = ["posts", "friends", "voice"].includes(activeTab);
+  const isOpsActive = ["dispatch", "penalty-reports", "triage", "dedup", "incidents"].includes(activeTab);
+  const isCommunityActive = ["posts", "friends", "voice", "safety-check", "report"].includes(activeTab);
   const isPenaltiesActive = activeTab === "penalties";
 
   useEffect(() => {
@@ -344,13 +364,7 @@ function App() {
     return () => window.removeEventListener("auth_change", handleAuthChange);
   }, []);
 
-  // Lắng nghe sự kiện hashchange để đồng bộ view khi thay đổi URL hoặc bấm Back/Forward
-  useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.toLowerCase();
-      const isLogged = checkIsLoggedIn();
-
-      if (hash === "#map") {
+  // Lắng nghe sự kiện hashchange để đồng bộ view khi thay       if (hash === "#map") {
         setActiveTab("map");
       } else if (hash === "#dashboard") {
         if (!isLogged) {
@@ -454,6 +468,22 @@ function App() {
         } else {
           setActiveTab("profile");
         }
+      } else if (hash === "#report") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/report");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("report");
+        }
+      } else if (hash === "#incidents") {
+        if (!isLogged) {
+          setAuthRedirectUrl("/incidents");
+          setActiveTab("auth");
+          window.location.hash = "#login";
+        } else {
+          setActiveTab("incidents");
+        }
       }
     };
     window.addEventListener("hashchange", handleHashChange);
@@ -505,6 +535,14 @@ function App() {
         window.location.hash = "#login";
       } else if (activeTab === "hotspots") {
         setAuthRedirectUrl("/hotspots");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "report" && !checkIsLoggedIn()) {
+        setAuthRedirectUrl("/report");
+        setActiveTab("auth");
+        window.location.hash = "#login";
+      } else if (activeTab === "incidents" && !checkIsLoggedIn()) {
+        setAuthRedirectUrl("/incidents");
         setActiveTab("auth");
         window.location.hash = "#login";
       }
@@ -698,7 +736,7 @@ function App() {
           </div>
 
           {/* NHÓM 2: TÁC NGHIỆP & AI (Chỉ hiện khi có ít nhất 1 quyền tác nghiệp) */}
-          {(hasDispatchAccess || hasPenaltyReportsAccess || hasTriageAccess || hasDedupAccess) && (
+          {(hasDispatchAccess || hasPenaltyReportsAccess || hasTriageAccess || hasDedupAccess || hasIncidentMgmtAccess) && (
             <div className="nav-dropdown-wrapper">
               <button
                 type="button"
@@ -714,6 +752,22 @@ function App() {
               {openDropdown === "ops" && (
                 <div className={`nav-menu-panel ${isDarkMode ? "dark-mode" : ""}`} role="menu">
                   <div className="panel-section-title">ĐIỀU HÀNH & HIỆN TRƯỜNG</div>
+
+                  {hasIncidentMgmtAccess && (
+                    <button
+                      type="button"
+                      className={`panel-item-btn btn-incidents-nav ${activeTab === "incidents" ? "active" : ""}`}
+                      onClick={() => navigateTo("incidents", "#incidents")}
+                      data-testid="tab-btn-incidents"
+                    >
+                      <span className="panel-item-icon">📋</span>
+                      <div className="panel-item-content">
+                        <span className="panel-item-title">Quản lý sự cố</span>
+                        <span className="panel-item-desc">Tiếp nhận & duyệt phản ánh sự cố môi trường</span>
+                      </div>
+                      {activeTab === "incidents" && <span className="active-indicator">●</span>}
+                    </button>
+                  )}
 
                   {hasDispatchAccess && (
                     <button
@@ -801,6 +855,27 @@ function App() {
 
                   <button
                     type="button"
+                    className={`panel-item-btn btn-report-nav ${activeTab === "report" ? "active" : ""}`}
+                    onClick={() => {
+                      if (!checkIsLoggedIn()) {
+                        setAuthRedirectUrl("/report");
+                        navigateTo("auth", "#login");
+                      } else {
+                        navigateTo("report", "#report");
+                      }
+                    }}
+                    data-testid="tab-btn-report"
+                  >
+                    <span className="panel-item-icon">📢</span>
+                    <div className="panel-item-content">
+                      <span className="panel-item-title">Gửi phản ánh sự cố</span>
+                      <span className="panel-item-desc">Báo cáo ô nhiễm & sự cố môi trường kèm ảnh/video</span>
+                    </div>
+                    {activeTab === "report" && <span className="active-indicator">●</span>}
+                  </button>
+
+                  <button
+                    type="button"
                     className={`panel-item-btn ${activeTab === "posts" ? "active" : ""}`}
                     onClick={() => navigateTo("posts", "#create-post")}
                   >
@@ -869,6 +944,24 @@ function App() {
 
         {/* KHỐI PHẢI: TIỆN ÍCH & TÀI KHOẢN */}
         <div className="header-right-actions">
+          {/* Nút gửi phản ánh nhanh nổi bật (Quick CTA) */}
+          <button
+            type="button"
+            className={`quick-report-btn ${activeTab === "report" ? "active" : ""}`}
+            onClick={() => {
+              if (!checkIsLoggedIn()) {
+                setAuthRedirectUrl("/report");
+                navigateTo("auth", "#login");
+              } else {
+                navigateTo("report", "#report");
+              }
+            }}
+            title="Gửi phản ánh sự cố môi trường"
+          >
+            <span>📢</span>
+            <span className="quick-report-label">Gửi phản ánh</span>
+          </button>
+
           {/* Nút đổi Theme Sáng / Tối */}
           <button
             type="button"
@@ -894,6 +987,7 @@ function App() {
               <span className={`dot ${backendStatus?.startsWith("Online") ? "online" : "offline"}`} />
               <span className="api-btn-text">API Service</span>
             </button>
+
 
             {showDrawer && (
               <div className={`health-popover ${isDarkMode ? "dark-mode" : ""}`}>
@@ -972,6 +1066,17 @@ function App() {
                     <span className="action-icon">🌿</span>
                     <span>Trang cá nhân & Green Passport</span>
                   </button>
+
+                  {hasIncidentMgmtAccess && (
+                    <button
+                      type="button"
+                      className="dropdown-menu-action"
+                      onClick={() => navigateTo("incidents", "#incidents")}
+                    >
+                      <span className="action-icon">📋</span>
+                      <span>Quản lý sự cố môi trường</span>
+                    </button>
+                  )}
 
                   <button
                     type="button"
@@ -1067,8 +1172,6 @@ function App() {
 
       {/* KHUNG NỘI DUNG CHÍNH (BÊN DƯỚI TOP HEADER) */}
       <main className="app-main-viewport">
-
-      {/* VIEW NỘI DUNG CHÍNH: AUTH, RBAC, PROFILE, MAP, DASHBOARD HOẶC VOICE */}
       {activeTab === "auth" ? (
         <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
           <AuthContainer
@@ -1081,6 +1184,29 @@ function App() {
             }
             redirectUrl={authRedirectUrl}
             onExitAuth={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
+          />
+        </div>
+      ) : activeTab === "report" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#090d16" }}>
+          <ReportContainer
+            onNavigateTab={(tab) => {
+              setActiveTab(tab as TabType);
+              window.location.hash = `#${tab}`;
+            }}
+            onRequireLogin={(redirectUrl) => {
+              setAuthRedirectUrl(redirectUrl);
+              setActiveTab("auth");
+              window.location.hash = "#login";
+            }}
+          />
+        </div>
+      ) : activeTab === "incidents" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#0b1120" }}>
+          <IncidentManagementContainer
+            onNavigateToMap={(_lat, _lng) => {
               setActiveTab("map");
               window.location.hash = "#map";
             }}

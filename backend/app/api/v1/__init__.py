@@ -1,14 +1,14 @@
 from fastapi import APIRouter
+from app.api.v1.auth import router as auth_router
+from app.api.v1.rbac import router as rbac_router
+from app.api.v1.user_management import router as user_management_router
+from app.api.v1.profile import router as profile_router
 from app.api.v1.eco_locations import router as eco_locations_router
 from app.api.v1.spatial import router as spatial_router
 from app.api.v1.weather import router as weather_router
 from app.api.v1.flood import router as flood_router
 from app.api.v1.air_quality import router as air_quality_router
 from app.api.v1.voice_assistant import voice_router
-from app.api.v1.auth import router as auth_router
-from app.api.v1.rbac import router as rbac_router
-from app.api.v1.user_management import router as user_management_router
-from app.api.v1.profile import router as profile_router
 from app.api.v1.friends import router as friends_router
 from app.api.v1.deduplication import router as deduplication_router
 from app.api.v1.triage import triage_composite_router
@@ -21,6 +21,7 @@ from app.api.v1.risk_dashboard.router import router as risk_dashboard_router
 from app.api.v1.dispatch.router import router as dispatch_router
 from app.api.v1.hotspots.router import router as hotspots_router
 from app.api.v1.emergency_alert import router as emergency_alerts_router
+from app.api.v1.incidents import router as incidents_router
 
 api_v1_router = APIRouter()
 api_v1_router.include_router(auth_router)
@@ -45,7 +46,4 @@ api_v1_router.include_router(risk_dashboard_router)
 api_v1_router.include_router(dispatch_router)
 api_v1_router.include_router(hotspots_router)
 api_v1_router.include_router(emergency_alerts_router)
-
-
-
-
+api_v1_router.include_router(incidents_router)
