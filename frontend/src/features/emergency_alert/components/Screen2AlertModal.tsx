@@ -20,13 +20,9 @@ export const Screen2AlertModal: React.FC<Screen2AlertModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Nút 1: "Tôi an toàn" -> Chuyển sang Màn 3/4 Safety Check
-  const handleMarkSafe = async () => {
+  const handleMarkSafe = () => {
     if (alertData.alert_id) {
-      try {
-        await emergencyAlertApi.acknowledgeAlert(alertData.alert_id, "SAFE");
-      } catch {
-        // Ignored
-      }
+      emergencyAlertApi.acknowledgeAlert(alertData.alert_id, "SAFE").catch(() => {});
     }
     onNavigateSafetyCheck();
   };

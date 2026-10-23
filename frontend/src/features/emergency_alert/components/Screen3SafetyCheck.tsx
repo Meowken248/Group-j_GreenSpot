@@ -54,30 +54,13 @@ export const Screen3SafetyCheck: React.FC<Screen3SafetyCheckProps> = ({
           setLeftMessage("Bạn đã được đánh dấu là AN TOÀN trong đợt thiên tai này.");
         }
 
-        if (res.friends && res.friends.length > 0) {
-          setFriendsList(res.friends);
-          // Mặc định tích chọn tất cả để người dùng tiện gửi
-          setSelectedFriendIds(res.friends.map((f) => f.user_id));
-        } else {
-          // Dữ liệu mẫu bạn bè dự phòng
-          const fallbackFriends: FriendContact[] = [
-            { user_id: "f1", full_name: "Nguyễn Thị Mai (Gia đình)", phone: "0909123456" },
-            { user_id: "f2", full_name: "Lê Hoàng Nam (Bạn thân)", phone: "0918765432" },
-            { user_id: "f3", full_name: "Trần Quốc Bảo (Đồng nghiệp)", phone: "0988112233" },
-            { user_id: "f4", full_name: "Phạm Thu Hương (Hàng xóm)", phone: "0933557799" },
-          ];
-          setFriendsList(fallbackFriends);
-          setSelectedFriendIds(fallbackFriends.map((f) => f.user_id));
-        }
+        const realFriends = res.friends || [];
+        setFriendsList(realFriends);
+        setSelectedFriendIds(realFriends.map((f) => f.user_id));
       } catch {
         // Fallback offline
-        const fallbackFriends: FriendContact[] = [
-          { user_id: "f1", full_name: "Nguyễn Thị Mai (Gia đình)", phone: "0909123456" },
-          { user_id: "f2", full_name: "Lê Hoàng Nam (Bạn thân)", phone: "0918765432" },
-          { user_id: "f3", full_name: "Trần Quốc Bảo (Đồng nghiệp)", phone: "0988112233" },
-        ];
-        setFriendsList(fallbackFriends);
-        setSelectedFriendIds(fallbackFriends.map((f) => f.user_id));
+        setFriendsList([]);
+        setSelectedFriendIds([]);
       }
     };
 
@@ -221,48 +204,79 @@ export const Screen3SafetyCheck: React.FC<Screen3SafetyCheckProps> = ({
           </div>
 
           <div className="column-card-body">
-            {/* Danh sách bạn bè tích chọn (Checkbox) */}
+            {/* Danh sách bạn bè tích chọn (Checkbox) hoặc Empty State */}
             <div className="friends-checklist-container">
               <div className="friends-checklist-toolbar">
                 <span>Danh bạ bạn bè ({friendsList.length})</span>
-                <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    className="friend-checkbox"
-                    checked={selectedFriendIds.length === friendsList.length && friendsList.length > 0}
-                    onChange={handleSelectAll}
-                  />
-                  <span>Chọn tất cả ({selectedFriendIds.length}/{friendsList.length})</span>
-                </label>
-              </div>
-
-              {friendsList.map((friend) => {
-                const isChecked = selectedFriendIds.includes(friend.user_id);
-                return (
-                  <div
-                    key={friend.user_id}
-                    className="friend-item-row"
-                    onClick={() => handleToggleFriend(friend.user_id)}
-                  >
-                    <div className="friend-item-left">
-                      <div className="friend-avatar-circle">
-                        {friend.full_name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="friend-name">{friend.full_name}</div>
-                        {friend.phone && <div className="friend-phone">{friend.phone}</div>}
-                      </div>
-                    </div>
+                {friendsList.length > 0 && (
+                  <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
                     <input
                       type="checkbox"
                       className="friend-checkbox"
-                      checked={isChecked}
-                      onChange={() => {}} /* Xử lý ở thẻ cha */
-                      aria-label={`Chọn bạn bè ${friend.full_name}`}
+                      checked={selectedFriendIds.length === friendsList.length && friendsList.length > 0}
+                      onChange={handleSelectAll}
                     />
+                    <span>Chọn tất cả ({selectedFriendIds.length}/{friendsList.length})</span>
+                  </label>
+                )}
+              </div>
+
+              {friendsList.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "36px 14px", color: "#94a3b8" }}>
+                  <div style={{ fontSize: "2.2rem", marginBottom: "8px" }}>👥</div>
+                  <div style={{ fontWeight: 600, color: "#e2e8f0", marginBottom: "6px", fontSize: "0.95rem" }}>
+                    Bạn chưa có người bạn nào trong danh bạ
                   </div>
-                );
-              })}
+                  <div style={{ fontSize: "0.82rem", marginBottom: "16px", color: "#94a3b8", lineHeight: 1.45 }}>
+                    Hãy kết nối bạn bè ở mục "Cộng đồng" để có thể gửi thông báo an toàn khi xảy ra thiên tai.
+                  </div>
+                  <a
+                    href="#friends"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "8px 16px",
+                      background: "#059669",
+                      color: "#ffffff",
+                      borderRadius: "6px",
+                      textDecoration: "none",
+                      fontSize: "0.82rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    ➕ Đến trang Bạn bè & Theo dõi
+                  </a>
+                </div>
+              ) : (
+                friendsList.map((friend) => {
+                  const isChecked = selectedFriendIds.includes(friend.user_id);
+                  return (
+                    <div
+                      key={friend.user_id}
+                      className="friend-item-row"
+                      onClick={() => handleToggleFriend(friend.user_id)}
+                    >
+                      <div className="friend-item-left">
+                        <div className="friend-avatar-circle">
+                          {friend.full_name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="friend-name">{friend.full_name}</div>
+                          {friend.phone && <div className="friend-phone">{friend.phone}</div>}
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        className="friend-checkbox"
+                        checked={isChecked}
+                        onChange={() => {}} /* Xử lý ở thẻ cha */
+                        aria-label={`Chọn bạn bè ${friend.full_name}`}
+                      />
+                    </div>
+                  );
+                })
+              )}
             </div>
 
             {/* Dòng nhắc nhở lỗi màu đỏ nếu chưa chọn bạn bè */}
@@ -277,7 +291,7 @@ export const Screen3SafetyCheck: React.FC<Screen3SafetyCheckProps> = ({
               type="button"
               className="btn-send-to-friends-oval"
               onClick={handleSendToFriends}
-              disabled={isSendingToFriends}
+              disabled={isSendingToFriends || friendsList.length === 0}
             >
               <span>{isSendingToFriends ? "Đang gửi thông báo an toàn đến bạn bè..." : "📤 Gửi cho bạn bè"}</span>
             </button>
