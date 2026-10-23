@@ -71,6 +71,9 @@ class TestChatbotAIFeature24(unittest.IsolatedAsyncioTestCase):
             await self.session.rollback()
         finally:
             await self.session.close()
+            # Đóng connection pool gắn với event loop hiện tại, tránh
+            # "RuntimeError: Event loop is closed" ở lần dọn dẹp cuối của unittest.
+            await engine.dispose()
 
     def test_tc01_validation_question_length(self):
         """TC-01: Kiểm tra validation câu hỏi: không rỗng, tối đa 500 ký tự"""
