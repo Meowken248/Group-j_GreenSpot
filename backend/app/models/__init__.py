@@ -91,6 +91,16 @@ from app.models.penalty import PenaltyRegulation, PenaltyReport
 # 10. Thông báo hệ thống (Notification Domain)
 from app.models.notification import Notification
 
+# 11. Cảnh báo khẩn cấp theo vị trí & Safety Check (STT 45)
+from app.models.emergency_alert import (
+    UserDeviceLocation,
+    EmergencyBroadcastAlert,
+    EmergencyAlertRecipient,
+    EmergencySOSSignal,
+    UserSafetyCheck,
+    SafetyCheckFriendDelivery,
+)
+
 __all__ = [
     "Base",
     "TimestampMixin",
@@ -153,5 +163,13 @@ __all__ = [
     "PenaltyReport",
     # Notification Domain
     "Notification",
+    # Emergency Alert & Safety Check (STT 45)
+    "UserDeviceLocation",
+    "EmergencyBroadcastAlert",
+    "EmergencyAlertRecipient",
+    "EmergencySOSSignal",
+    "UserSafetyCheck",
+    "SafetyCheckFriendDelivery",
 ]
+
 
