@@ -23,6 +23,7 @@ import { FloodNavigationContainer } from "./features/navigation";
 import { RiskDashboardContainer } from "./features/risk_dashboard";
 import { DispatchContainer } from "./features/dispatch";
 import { HotspotContainer } from "./features/hotspots";
+import { EmergencyAlertContainer } from "./features/emergency_alert";
 import {
   SettingsContainer,
   applyThemeToDocument,
@@ -65,7 +66,9 @@ export type ActiveTab =
   | "navigation"
   | "risk-dashboard"
   | "dispatch"
-  | "hotspots";
+  | "hotspots"
+  | "emergency-alert"
+  | "safety-check";
 
 function App() {
   const [authRedirectUrl, setAuthRedirectUrl] = useState<string | undefined>(() => {
@@ -84,6 +87,8 @@ function App() {
       if (hash === "#risk-dashboard" || hash === "#urban-risk" || path === "/risk-dashboard") return "/risk-dashboard";
       if (hash === "#dispatch" || hash === "#operations-dispatch" || path === "/dispatch") return "/dispatch";
       if (hash === "#hotspots" || hash === "#hotspot-analytics" || path === "/hotspots") return "/hotspots";
+      if (hash === "#emergency-alert" || path === "/emergency-alert") return "/emergency-alert";
+      if (hash === "#safety-check" || path === "/safety-check") return "/safety-check";
     }
     return undefined;
   });
@@ -96,6 +101,14 @@ function App() {
     if (hash === "#hotspots" || hash === "#hotspot-analytics" || path === "/hotspots") {
       if (!isLogged) return "auth";
       return "hotspots";
+    }
+    if (hash === "#emergency-alert" || path === "/emergency-alert") {
+      if (!isLogged) return "auth";
+      return "emergency-alert";
+    }
+    if (hash === "#safety-check" || path === "/safety-check") {
+      if (!isLogged) return "auth";
+      return "safety-check";
     }
     if (hash === "#dispatch" || hash === "#operations-dispatch" || path === "/dispatch") {
       if (!isLogged) return "auth";
@@ -824,6 +837,19 @@ function App() {
                     </div>
                     {activeTab === "voice" && <span className="active-indicator">●</span>}
                   </button>
+
+                  <button
+                    type="button"
+                    className={`panel-item-btn ${activeTab === "safety-check" ? "active" : ""}`}
+                    onClick={() => navigateTo("safety-check", "#safety-check")}
+                  >
+                    <span className="panel-item-icon">🛡️</span>
+                    <div className="panel-item-content">
+                      <span className="panel-item-title">Báo an toàn (Safety Check)</span>
+                      <span className="panel-item-desc">Báo an toàn thiên tai cho bạn bè & người thân</span>
+                    </div>
+                    {activeTab === "safety-check" && <span className="active-indicator">●</span>}
+                  </button>
                 </div>
               )}
             </div>
@@ -994,6 +1020,15 @@ function App() {
                           <span>Phân quyền vai trò RBAC</span>
                         </button>
                       )}
+
+                      <button
+                        type="button"
+                        className="dropdown-menu-action"
+                        onClick={() => navigateTo("emergency-alert", "#emergency-alert")}
+                      >
+                        <span className="action-icon">🚨</span>
+                        <span>Phát lệnh cảnh báo khẩn cấp (PCTT)</span>
+                      </button>
                     </>
                   )}
 
@@ -1405,6 +1440,25 @@ function App() {
             />
           </div>
         )
+      ) : activeTab === "emergency-alert" || activeTab === "safety-check" ? (
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+          <EmergencyAlertContainer
+            initialView={activeTab === "safety-check" ? "SAFETY_CHECK" : "CONSOLE"}
+            currentUser={currentUser}
+            onNavigateHome={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
+            onNavigateFeed={() => {
+              setActiveTab("posts");
+              window.location.hash = "#create-post";
+            }}
+            onNavigateSafeRoute={() => {
+              setActiveTab("navigation");
+              window.location.hash = "#navigation";
+            }}
+          />
+        </div>
       ) : (
         /* Mặc định an toàn cho khách vãng lai và tab map: Bản đồ số WebGIS công cộng */
         <ModulePermissionGuard
