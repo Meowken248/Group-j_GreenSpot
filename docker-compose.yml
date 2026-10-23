@@ -40,10 +40,13 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ddatmguyen2023@gmail.com
       SMTP_PASSWORD: deuz znem iyqv nzqo
-      KIRA_API_URL: ${KIRA_API_URL:-https://kiraai.vn/api/v1/chat/completions}
-      KIRA_MODEL: ${KIRA_MODEL:-kira-mini-1.0}
-      KIRA_API_KEY: ${KIRA_API_KEY:-kira_8498c28c9487752244f9b4f24ecb31cd}
-      KIRA_TIMEOUT_SECONDS: ${KIRA_TIMEOUT_SECONDS:-45.0}
+      # =========================================================================
+      # CẤU HÌNH TRỢ LÝ AI (KIRA AI / OPENAI-COMPATIBLE LLM) - CHỨC NĂNG 24
+      # =========================================================================
+      # Không khai báo KIRA_* ở đây để tránh ghi đè cấu hình trong backend/.env
+      # (biến môi trường container có độ ưu tiên cao hơn env_file của pydantic).
+      # Sao chép backend/.env.example -> backend/.env và điền KIRA_API_KEY.
+      # =========================================================================
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
