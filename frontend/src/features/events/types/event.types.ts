@@ -30,12 +30,15 @@ export interface GreenEvent {
   checkin_radius_meters: number;
   created_at: string;
   updated_at: string;
+  version: number;
+  is_ended: boolean;
 
   is_joined: boolean;
   is_interested: boolean;
   is_checked_in: boolean;
   participants_preview: ParticipantItem[];
 }
+
 
 export interface EventListResponse {
   items: GreenEvent[];
@@ -57,6 +60,25 @@ export interface CreateEventPayload {
   max_participants: number;
 }
 
+export interface UpdateEventPayload extends Partial<Omit<CreateEventPayload, "end_time">> {
+  version: number;
+  end_time?: string | null;
+}
+
+export type EventReviewStatus = "APPROVED" | "REJECTED";
+
+export interface EventReviewPayload {
+  status: EventReviewStatus;
+  reject_reason?: string;
+}
+
+export interface EventCoverUploadResponse {
+  url: string;
+  file_name: string;
+  size_bytes: number;
+}
+
+
 export interface CheckinPayload {
   latitude: number;
   longitude: number;
@@ -73,7 +95,10 @@ export interface CheckinResponse {
   accuracy_meters: number;
   points_awarded: number;
   total_green_points: number;
+  daily_points_earned: number;
+  daily_points_cap: number;
 }
+
 
 export const HCM_DISTRICTS: string[] = [
   "Quận 1",

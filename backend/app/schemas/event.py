@@ -137,3 +137,10 @@ class CheckinResponse(BaseModel):
     daily_points_earned: int = 0
     daily_points_cap: int = 150
 
+
+class EventCoverUploadResponse(BaseModel):
+    url: str = Field(..., description="Đường dẫn tương đối phục vụ qua /uploads")
+    file_name: str
+    size_bytes: int
+
+

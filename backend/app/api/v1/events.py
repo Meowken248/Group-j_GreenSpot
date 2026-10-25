@@ -3,18 +3,21 @@ Router API cho Chức năng 21: Sự kiện và chiến dịch Chủ Nhật Xanh
 Tài liệu căn cứ: Đồ Án Chuyên Đề Web 1 - Báo Cáo.docx.pdf (Trang 169 - 177)
 """
 
+import os
 import uuid
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Query, Header, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Header, UploadFile, status
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.core.config import UPLOAD_DIR
 from app.database import get_db
 from app.api.v1.rbac import get_current_active_user as get_current_user, require_permission
 from app.api.v1.auth import decode_access_token
 from app.models.rbac import User
 from app.schemas.event import (
+    EventCoverUploadResponse,
     EventCreate,
     EventResponse,
     EventListResponse,
@@ -27,7 +30,55 @@ from app.schemas.event import (
 from app.services.event_service import EventService
 
 
+
 router = APIRouter(prefix="/events", tags=["Green Sunday Events - Feature 21"])
+
+ALLOWED_COVER_EXTENSIONS = {".jpg", ".jpeg", ".png"}
+MAX_COVER_SIZE_BYTES = 5 * 1024 * 1024  # 5MB theo đặc tả Màn 2/4
+
+
+@router.post(
+    "/cover",
+    response_model=EventCoverUploadResponse,
+    summary="Tải lên ảnh bìa sự kiện (JPG/PNG, tối đa 5MB)",
+)
+async def upload_event_cover(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    """Lưu ảnh bìa vào thư mục uploads/events và trả về URL tương đối."""
+    original_name = file.filename or "cover"
+    ext = os.path.splitext(original_name)[1].lower()
+    if ext not in ALLOWED_COVER_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ảnh bìa phải có định dạng JPG hoặc PNG.",
+        )
+
+    content = await file.read()
+    if len(content) > MAX_COVER_SIZE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ảnh bìa vượt quá dung lượng cho phép 5MB.",
+        )
+    if not content:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tệp ảnh bìa rỗng, vui lòng chọn ảnh khác.",
+        )
+
+    folder = os.path.join(UPLOAD_DIR, "events")
+    os.makedirs(folder, exist_ok=True)
+    unique_name = f"{uuid.uuid4().hex}{ext}"
+    with open(os.path.join(folder, unique_name), "wb") as out_file:
+        out_file.write(content)
+
+    return EventCoverUploadResponse(
+        url=f"/uploads/events/{unique_name}",
+        file_name=original_name,
+        size_bytes=len(content),
+    )
+
 
 
 async def get_optional_user(

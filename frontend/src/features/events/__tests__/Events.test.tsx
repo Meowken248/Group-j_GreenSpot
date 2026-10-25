@@ -71,6 +71,9 @@ const mockSampleEvent: GreenEvent = {
   checkin_radius_meters: 100,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
+  version: 1,
+  is_ended: false,
+
   is_joined: false,
   is_interested: false,
   is_checked_in: false,
@@ -232,7 +235,10 @@ describe("Feature 21: Sự kiện và chiến dịch Chủ Nhật Xanh (Frontend
       accuracy_meters: 10.0,
       points_awarded: 50,
       total_green_points: 150,
+      daily_points_earned: 50,
+      daily_points_cap: 150,
     };
+
 
     vi.mocked(eventService.checkinEvent).mockResolvedValue(mockCheckinRes);
 
@@ -248,4 +254,181 @@ describe("Feature 21: Sự kiện và chiến dịch Chủ Nhật Xanh (Frontend
     expect(screen.getByText(/Check-in GPS tại hiện trường/i)).toBeInTheDocument();
     expect(screen.getByTestId("checkin-map")).toBeInTheDocument();
   });
+
+  // 6. Khách chưa đăng nhập: chặn tạo sự kiện và điều hướng đăng nhập
+  it("TC-06: Khách chưa đăng nhập không mở được form tạo sự kiện", async () => {
+    const onOpenLogin = vi.fn();
+    vi.mocked(eventService.getEvents).mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      page_size: 12,
+    });
+
+    render(<EventsList isLoggedIn={false} onOpenLogin={onOpenLogin} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("empty-events-placeholder")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("btn-open-create-event"));
+
+    expect(onOpenLogin).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("create-event-modal")).not.toBeInTheDocument();
+  });
+
+  // 7. Đăng ký nhanh ngay trên card
+  it("TC-07: Đăng ký tham gia nhanh trên card và hiển thị nhãn đã đăng ký", async () => {
+    vi.mocked(eventService.getEvents).mockResolvedValue({
+      items: [mockSampleEvent],
+      total: 1,
+      page: 1,
+      page_size: 12,
+    });
+    vi.mocked(eventService.toggleJoin).mockResolvedValue({
+      is_joined: true,
+      current_participants: 26,
+      message: "Đăng ký tham gia thành công!",
+    });
+
+    render(
+      <EventsList isLoggedIn={true} currentUserId="user-demo-1" onOpenLogin={vi.fn()} />
+    );
+
+    const quickJoin = await screen.findByTestId(
+      `btn-quick-join-${mockSampleEvent.event_id}`
+    );
+    fireEvent.click(quickJoin);
+
+    await waitFor(() => {
+      expect(eventService.toggleJoin).toHaveBeenCalledWith(mockSampleEvent.event_id);
+      expect(screen.getByText("Đã đăng ký")).toBeInTheDocument();
+    });
+  });
+
+  // 8. Quản trị viên duyệt sự kiện
+  it("TC-08: Quản trị viên phê duyệt sự kiện trong bảng duyệt", async () => {
+    const pendingEvent: GreenEvent = {
+      ...mockSampleEvent,
+      event_id: "ev-pending-1",
+      title: "Sự kiện đang chờ duyệt",
+      status: "PENDING",
+    };
+
+    vi.mocked(eventService.getEvents).mockImplementation(async (params) => {
+      if (params.status === "PENDING") {
+        return { items: [pendingEvent], total: 1, page: 1, page_size: 50 };
+      }
+      return { items: [mockSampleEvent], total: 1, page: 1, page_size: 12 };
+    });
+    vi.mocked(eventService.reviewEvent).mockResolvedValue({
+      ...pendingEvent,
+      status: "APPROVED",
+    });
+
+    render(
+      <EventsList
+        isLoggedIn={true}
+        currentUserId="admin-1"
+        canApprove={true}
+        onOpenLogin={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("btn-toggle-admin-panel"));
+
+    const approveBtn = await screen.findByTestId("btn-approve-ev-pending-1");
+    fireEvent.click(approveBtn);
+
+    await waitFor(() => {
+      expect(eventService.reviewEvent).toHaveBeenCalledWith(
+        "ev-pending-1",
+        expect.objectContaining({ status: "APPROVED" })
+      );
+    });
+  });
+
+  // 9. Chỉnh sửa sự kiện gửi kèm version (optimistic locking)
+  it("TC-09: Chỉnh sửa sự kiện gửi kèm version hiện tại", async () => {
+    const handleSuccess = vi.fn();
+    vi.mocked(eventService.updateEvent).mockResolvedValue({
+      ...mockSampleEvent,
+      title: "Sự kiện đã chỉnh sửa",
+    });
+
+    render(
+      <CreateEventModal
+        isOpen={true}
+        event={mockSampleEvent}
+        onClose={vi.fn()}
+        onSuccess={handleSuccess}
+      />
+    );
+
+    expect(screen.getByText(/Chỉnh sửa Sự kiện Chủ Nhật Xanh/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByTestId("input-event-title"), {
+      target: { value: "Sự kiện đã chỉnh sửa" },
+    });
+    fireEvent.click(screen.getByTestId("btn-submit-create-event"));
+
+    await waitFor(() => {
+      expect(eventService.updateEvent).toHaveBeenCalledWith(
+        mockSampleEvent.event_id,
+        expect.objectContaining({ version: 1, title: "Sự kiện đã chỉnh sửa" })
+      );
+      expect(handleSuccess).toHaveBeenCalled();
+    });
+  });
+
+  // 10. Sự kiện đã kết thúc: khóa tương tác
+  it("TC-10: Sự kiện đã kết thúc thì khóa nút đăng ký tham gia", () => {
+    render(
+      <EventDetailModal
+        event={{ ...mockSampleEvent, is_ended: true }}
+        isOpen={true}
+        onClose={vi.fn()}
+        isLoggedIn={true}
+        currentUserId="user-demo-1"
+        onOpenLogin={vi.fn()}
+        onEventUpdated={vi.fn()}
+      />
+    );
+
+    expect(screen.getByTestId("btn-toggle-join")).toBeDisabled();
+    expect(screen.getAllByText(/kết thúc/i).length).toBeGreaterThan(0);
+  });
+
+  // 11. Xem toàn bộ người tham gia
+  it("TC-11: Tải toàn bộ danh sách người tham gia khi bấm xem tất cả", async () => {
+    vi.mocked(eventService.getParticipants).mockResolvedValue([
+      ...mockSampleEvent.participants_preview,
+      {
+        user_id: "user-2",
+        full_name: "Lê Văn Tham Gia",
+        avatar_url: null,
+        joined_at: new Date().toISOString(),
+        is_creator: false,
+      },
+    ]);
+
+    render(
+      <EventDetailModal
+        event={mockSampleEvent}
+        isOpen={true}
+        onClose={vi.fn()}
+        isLoggedIn={true}
+        currentUserId="user-demo-1"
+        onOpenLogin={vi.fn()}
+        onEventUpdated={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("btn-view-all-participants"));
+
+    await waitFor(() => {
+      expect(eventService.getParticipants).toHaveBeenCalledWith(mockSampleEvent.event_id);
+      expect(screen.getByText("Lê Văn Tham Gia")).toBeInTheDocument();
+    });
+  });
 });
+

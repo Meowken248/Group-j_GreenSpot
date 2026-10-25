@@ -1,7 +1,17 @@
-import React, { useState } from "react";
-import type { GreenEvent, CheckinResponse } from "../types/event.types";
+import React, { useEffect, useRef, useState } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import type { GreenEvent, CheckinResponse, ParticipantItem } from "../types/event.types";
 import { eventService } from "../services/eventService";
 import { EventCheckinModal } from "./EventCheckinModal";
+import { CreateEventModal } from "./CreateEventModal";
+import { EVENT_MESSAGES } from "../utils/eventMessages";
+import {
+  formatDateTime,
+  getCheckinWindowState,
+  isEventEnded,
+  resolveMediaUrl,
+} from "../utils/datetime";
 
 interface EventDetailModalProps {
   event: GreenEvent;
@@ -9,8 +19,10 @@ interface EventDetailModalProps {
   onClose: () => void;
   isLoggedIn: boolean;
   currentUserId?: string;
+  canApprove?: boolean;
   onOpenLogin: () => void;
   onEventUpdated: (updatedEvent: GreenEvent) => void;
+  onToast?: (message: string, type?: "success" | "error") => void;
 }
 
 export const EventDetailModal: React.FC<EventDetailModalProps> = ({
@@ -19,105 +31,199 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   onClose,
   isLoggedIn,
   currentUserId,
+  canApprove = false,
   onOpenLogin,
   onEventUpdated,
+  onToast,
 }) => {
   const [isCheckinOpen, setIsCheckinOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  const [showParticipants, setShowParticipants] = useState(false);
+  const [allParticipants, setAllParticipants] = useState<ParticipantItem[]>([]);
+  const [participantsLoading, setParticipantsLoading] = useState(false);
+
+  const [rejectReason, setRejectReason] = useState("");
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
+
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+
+  // Bản đồ vị trí điểm tập trung
+  useEffect(() => {
+    if (!isOpen || !mapContainerRef.current) return;
+
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.remove();
+      mapInstanceRef.current = null;
+    }
+
+    const map = L.map(mapContainerRef.current, { scrollWheelZoom: false }).setView(
+      [event.latitude, event.longitude],
+      15
+    );
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors",
+    }).addTo(map);
+    L.marker([event.latitude, event.longitude]).addTo(map);
+    L.circle([event.latitude, event.longitude], {
+      radius: event.checkin_radius_meters || 100,
+      color: "#10b981",
+      fillColor: "#10b981",
+      fillOpacity: 0.18,
+      weight: 2,
+    }).addTo(map);
+
+    mapInstanceRef.current = map;
+    setTimeout(() => map.invalidateSize(), 200);
+
+    return () => {
+      map.remove();
+      mapInstanceRef.current = null;
+    };
+  }, [isOpen, event.latitude, event.longitude, event.checkin_radius_meters]);
 
   if (!isOpen) return null;
 
-  // Kiểm tra khung giờ Check-in: [T_start - 1h, T_start + 3h]
-  const now = new Date();
-  const startDt = new Date(event.start_time);
-  const checkinStart = new Date(startDt.getTime() - 60 * 60 * 1000); // Trước 1h
-  const checkinEnd = event.end_time
-    ? new Date(event.end_time)
-    : new Date(startDt.getTime() + 3 * 60 * 60 * 1000); // Sau 3h
-
-  const isCheckinTimeWindow = now >= checkinStart && now <= checkinEnd;
+  const ended = isEventEnded(event);
   const isFull = event.current_participants >= event.max_participants;
-  const isCreator = currentUserId && event.creator_id === currentUserId;
+  const isCreator = Boolean(currentUserId && event.creator_id === currentUserId);
+  const checkinWindowState = getCheckinWindowState(event);
+  const canManage = isCreator || canApprove;
 
-  // Xử lý Quan tâm
+  const notify = (message: string, type: "success" | "error" = "success") => {
+    if (onToast) onToast(message, type);
+  };
+
+  const requireLogin = (): boolean => {
+    if (isLoggedIn) return false;
+    notify(EVENT_MESSAGES.LOGIN_REQUIRED_INTERACT, "error");
+    onOpenLogin();
+    return true;
+  };
+
   const handleToggleInterest = async () => {
-    if (!isLoggedIn) {
-      onOpenLogin();
+    if (requireLogin()) return;
+    if (ended || event.status !== "APPROVED") {
+      notify(EVENT_MESSAGES.DETAIL_ENDED, "error");
       return;
     }
     try {
       setLoadingAction(true);
       const res = await eventService.toggleInterest(event.event_id);
-      const updated: GreenEvent = {
+      onEventUpdated({
         ...event,
         is_interested: res.is_interested,
         interested_count: res.interested_count,
-      };
-      onEventUpdated(updated);
-    } catch (err: any) {
-      alert(err.response?.data?.detail || "Không thể cập nhật trạng thái quan tâm.");
+      });
+      notify(res.message);
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data
+        ?.detail;
+      notify(typeof detail === "string" ? detail : EVENT_MESSAGES.DETAIL_ACTION_ERROR, "error");
     } finally {
       setLoadingAction(false);
     }
   };
 
-  // Xử lý Tham gia
   const handleToggleJoin = async () => {
-    if (!isLoggedIn) {
-      onOpenLogin();
+    if (requireLogin()) return;
+    if (ended) {
+      notify(EVENT_MESSAGES.DETAIL_ENDED, "error");
       return;
     }
     try {
       setLoadingAction(true);
       const res = await eventService.toggleJoin(event.event_id);
-      const updated: GreenEvent = {
+      onEventUpdated({
         ...event,
         is_joined: res.is_joined,
         current_participants: res.current_participants,
-      };
-      onEventUpdated(updated);
-    } catch (err: any) {
-      alert(err.response?.data?.detail || "Không thể đăng ký tham gia.");
+      });
+      notify(
+        res.is_joined ? EVENT_MESSAGES.DETAIL_JOIN_SUCCESS : EVENT_MESSAGES.DETAIL_LEAVE_SUCCESS
+      );
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data
+        ?.detail;
+      notify(typeof detail === "string" ? detail : EVENT_MESSAGES.DETAIL_ACTION_ERROR, "error");
     } finally {
       setLoadingAction(false);
     }
   };
 
-  // Xử lý Hủy sự kiện
   const handleCancelEvent = async () => {
-    if (!window.confirm("Bạn có chắc chắn muốn hủy sự kiện này? Hành động này không thể hoàn tác.")) {
-      return;
-    }
+    setShowCancelConfirm(false);
     try {
       setLoadingAction(true);
       await eventService.cancelEvent(event.event_id);
-      alert("Đã hủy sự kiện.");
+      notify(EVENT_MESSAGES.DETAIL_CANCEL_SUCCESS);
       onEventUpdated({ ...event, status: "CANCELLED" });
-      onClose();
-    } catch (err: any) {
-      alert(err.response?.data?.detail || "Không thể hủy sự kiện.");
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data
+        ?.detail;
+      notify(typeof detail === "string" ? detail : EVENT_MESSAGES.DETAIL_ACTION_ERROR, "error");
     } finally {
       setLoadingAction(false);
     }
   };
 
-  const handleCheckinSuccess = (_res: CheckinResponse) => {
-    const updated: GreenEvent = {
-      ...event,
-      is_checked_in: true,
-    };
-    onEventUpdated(updated);
+  const handleReview = async (status: "APPROVED" | "REJECTED") => {
+    if (status === "REJECTED" && !rejectReason.trim()) {
+      notify(EVENT_MESSAGES.ADMIN_REJECT_REASON_REQUIRED, "error");
+      return;
+    }
+    try {
+      setReviewing(true);
+      const updated = await eventService.reviewEvent(event.event_id, {
+        status,
+        reject_reason: status === "REJECTED" ? rejectReason.trim() : undefined,
+      });
+      onEventUpdated(updated);
+      setShowRejectForm(false);
+      setRejectReason("");
+      notify(
+        status === "APPROVED"
+          ? EVENT_MESSAGES.ADMIN_APPROVED_TOAST
+          : EVENT_MESSAGES.ADMIN_REJECTED_TOAST
+      );
+    } catch {
+      notify(EVENT_MESSAGES.DETAIL_ACTION_ERROR, "error");
+    } finally {
+      setReviewing(false);
+    }
+  };
+
+  const handleOpenParticipants = async () => {
+    setShowParticipants(true);
+    if (allParticipants.length > 0 || participantsLoading) return;
+    setParticipantsLoading(true);
+    try {
+      const list = await eventService.getParticipants(event.event_id);
+      setAllParticipants(list);
+    } catch {
+      notify(EVENT_MESSAGES.LIST_LOAD_ERROR, "error");
+    } finally {
+      setParticipantsLoading(false);
+    }
+  };
+
+  const handleCheckinSuccess = (res: CheckinResponse) => {
+    onEventUpdated({ ...event, is_checked_in: true });
+    notify(res.message);
   };
 
   return (
     <>
       <div className="event-modal-overlay" data-testid="event-detail-modal-overlay">
         <div className="event-modal-box large" data-testid="event-detail-modal">
-          {/* Header */}
           <div className="modal-header">
             <div className="modal-title-wrap">
-              <h2>Chi tiết Sự kiện Chủ Nhật Xanh</h2>
-              <p className="modal-sub">Mã sự kiện: {event.event_id.slice(0, 8)}...</p>
+              <h2>{EVENT_MESSAGES.DETAIL_TITLE}</h2>
+              <p className="modal-sub">Mã sự kiện: {event.event_id.slice(0, 8)}…</p>
             </div>
             <button
               type="button"
@@ -129,68 +235,47 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </button>
           </div>
 
-          {/* Body */}
           <div className="modal-body-scroll">
             <div className="event-detail-view">
               {/* Hero Banner */}
               <div className="detail-hero-banner">
-                <img src={event.cover_image_url} alt={event.title} />
+                <img src={resolveMediaUrl(event.cover_image_url)} alt={event.title} />
                 <div className="banner-overlay">
                   <h3 className="hero-title">{event.title}</h3>
                   <div className="hero-meta-row">
                     <span>📍 {event.district}</span>
-                    <span>
-                      📅 {new Date(event.start_time).toLocaleDateString("vi-VN", {
-                        weekday: "long",
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
+                    <span>📅 {formatDateTime(event.start_time)}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Grid 2 cột */}
-              <div className="detail-content-grid">
-                {/* Cột trái: Mô tả & Người tham gia */}
-                <div className="detail-main-col">
-                  {/* Trạng thái duyệt */}
-                  {event.status !== "APPROVED" && (
-                    <div
-                      style={{
-                        padding: "0.85rem 1rem",
-                        borderRadius: "8px",
-                        marginBottom: "1.25rem",
-                        fontSize: "0.85rem",
-                        background: event.status === "PENDING" ? "#fffbeb" : "#fef2f2",
-                        color: event.status === "PENDING" ? "#b45309" : "#b91c1c",
-                        border: `1px solid ${
-                          event.status === "PENDING" ? "#fde68a" : "#fecaca"
-                        }`,
-                      }}
-                    >
-                      {event.status === "PENDING" && (
-                        <span>⏳ <strong>Sự kiện đang chờ Quản trị viên phê duyệt.</strong> Chỉ bạn mới nhìn thấy sự kiện này.</span>
-                      )}
-                      {event.status === "REJECTED" && (
-                        <span>❌ <strong>Sự kiện đã bị từ chối:</strong> {event.reject_reason || "Không rõ lý do"}</span>
-                      )}
-                      {event.status === "CANCELLED" && (
-                        <span>🛑 <strong>Sự kiện đã bị hủy bỏ bởi ban tổ chức.</strong></span>
-                      )}
-                    </div>
+              {/* Cảnh báo trạng thái */}
+              {event.status !== "APPROVED" && (
+                <div className={`detail-status-note status-note-${event.status}`}>
+                  {event.status === "PENDING" && <span>⏳ {EVENT_MESSAGES.DETAIL_STATUS_PENDING}</span>}
+                  {event.status === "REJECTED" && (
+                    <span>
+                      ❌ {EVENT_MESSAGES.DETAIL_STATUS_REJECTED}{" "}
+                      <strong>{event.reject_reason || "Không rõ lý do"}</strong>
+                    </span>
                   )}
+                  {event.status === "CANCELLED" && (
+                    <span>🛑 {EVENT_MESSAGES.DETAIL_STATUS_CANCELLED}</span>
+                  )}
+                </div>
+              )}
 
-                  {/* Nội dung hoạt động */}
+              {ended && event.status === "APPROVED" && (
+                <div className="detail-ended-note">🏁 {EVENT_MESSAGES.DETAIL_ENDED}</div>
+              )}
+
+              <div className="detail-content-grid">
+                <div className="detail-main-col">
                   <div className="section-block">
-                    <h4>📋 Nội dung hoạt động & Vật dụng cần mang theo</h4>
+                    <h4>📋 Nội dung hoạt động &amp; Vật dụng cần mang theo</h4>
                     <div className="desc-text">{event.description}</div>
                   </div>
 
-                  {/* Danh sách người tham gia */}
                   <div className="section-block">
                     <h4>
                       👥 Người tham gia ({event.current_participants}/{event.max_participants})
@@ -204,7 +289,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                             title={`${p.full_name} ${p.is_creator ? "(Người tạo)" : ""}`}
                           >
                             {p.avatar_url ? (
-                              <img src={p.avatar_url} alt={p.full_name} />
+                              <img src={resolveMediaUrl(p.avatar_url)} alt={p.full_name} />
                             ) : (
                               <span>{p.full_name.charAt(0).toUpperCase()}</span>
                             )}
@@ -212,10 +297,25 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                         ))}
                       </div>
                     ) : (
-                      <p style={{ fontSize: "0.85rem", color: "#64748b" }}>
-                        Chưa có người tham gia nào ngoài người tổ chức.
-                      </p>
+                      <p className="muted-text">{EVENT_MESSAGES.DETAIL_PARTICIPANTS_EMPTY}</p>
                     )}
+                    <button
+                      type="button"
+                      className="btn-link-participants"
+                      data-testid="btn-view-all-participants"
+                      onClick={handleOpenParticipants}
+                    >
+                      {EVENT_MESSAGES.DETAIL_VIEW_ALL_PARTICIPANTS}
+                    </button>
+                  </div>
+
+                  <div className="section-block">
+                    <h4>🗺️ {EVENT_MESSAGES.DETAIL_MAP_TITLE}</h4>
+                    <div
+                      ref={mapContainerRef}
+                      className="detail-map-container"
+                      data-testid="detail-map"
+                    />
                   </div>
                 </div>
 
@@ -225,7 +325,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     <div className="info-row">
                       <span className="info-icon">👤</span>
                       <div className="info-text">
-                        <div className="info-label">Người tổ chức</div>
+                        <div className="info-label">{EVENT_MESSAGES.DETAIL_ORGANIZER}</div>
                         <div className="info-val">{event.creator_name || "Quản trị viên"}</div>
                       </div>
                     </div>
@@ -233,99 +333,171 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     <div className="info-row">
                       <span className="info-icon">📍</span>
                       <div className="info-text">
-                        <div className="info-label">Địa điểm tập trung</div>
+                        <div className="info-label">{EVENT_MESSAGES.DETAIL_LOCATION}</div>
                         <div className="info-val">{event.address}</div>
+                      </div>
+                    </div>
+
+                    <div className="info-row">
+                      <span className="info-icon">🕒</span>
+                      <div className="info-text">
+                        <div className="info-label">{EVENT_MESSAGES.DETAIL_TIME}</div>
+                        <div className="info-val">
+                          {formatDateTime(event.start_time)}
+                          {event.end_time ? ` → ${formatDateTime(event.end_time)}` : ""}
+                        </div>
                       </div>
                     </div>
 
                     <div className="info-row">
                       <span className="info-icon">🎯</span>
                       <div className="info-text">
-                        <div className="info-label">Bán kính Check-in</div>
-                        <div className="info-val">Trong vòng 100m quanh điểm ghim</div>
+                        <div className="info-label">{EVENT_MESSAGES.DETAIL_RADIUS}</div>
+                        <div className="info-val">
+                          Trong vòng {event.checkin_radius_meters || 100}m quanh điểm ghim
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Ngăn xếp các nút tương tác */}
+                  {/* Khối duyệt sự kiện cho Quản trị viên */}
+                  {canApprove && event.status === "PENDING" && (
+                    <div className="admin-review-box" data-testid="detail-admin-review">
+                      <h4>🛡️ Phê duyệt sự kiện</h4>
+                      <div className="admin-review-actions">
+                        <button
+                          type="button"
+                          className="btn-admin-approve"
+                          disabled={reviewing}
+                          onClick={() => handleReview("APPROVED")}
+                        >
+                          {EVENT_MESSAGES.ADMIN_APPROVE}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-admin-reject"
+                          disabled={reviewing}
+                          onClick={() => setShowRejectForm((prev) => !prev)}
+                        >
+                          {EVENT_MESSAGES.ADMIN_REJECT}
+                        </button>
+                      </div>
+                      {showRejectForm && (
+                        <div className="admin-reject-form">
+                          <textarea
+                            rows={3}
+                            maxLength={500}
+                            value={rejectReason}
+                            placeholder="Nhập lý do từ chối (bắt buộc, tối đa 500 ký tự)"
+                            onChange={(e) => setRejectReason(e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="btn-admin-reject"
+                            disabled={reviewing}
+                            onClick={() => handleReview("REJECTED")}
+                          >
+                            Gửi lý do &amp; từ chối
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="action-buttons-stack">
-                    {/* 1. Nút Check-in GPS (Nếu đã tham gia) */}
-                    {event.is_joined && (
+                    {/* 1. Check-in GPS */}
+                    {event.is_joined && event.status === "APPROVED" && (
                       <div>
                         {event.is_checked_in ? (
                           <button
                             type="button"
-                            className="btn-action-primary"
+                            className="btn-action-primary btn-checkin-done"
                             disabled
-                            style={{ background: "#059669" }}
                           >
-                            ✅ Đã check-in (+50 GP)
+                            ✅ {EVENT_MESSAGES.CHECKIN_DONE}
                           </button>
-                        ) : isCheckinTimeWindow ? (
+                        ) : ended ? (
+                          <button type="button" className="btn-action-primary" disabled>
+                            🏁 {EVENT_MESSAGES.CHECKIN_CLOSED}
+                          </button>
+                        ) : checkinWindowState === "open" ? (
                           <button
                             type="button"
                             className="btn-action-primary btn-checkin-gold"
                             data-testid="btn-open-checkin"
                             onClick={() => setIsCheckinOpen(true)}
                           >
-                            🎯 Check-in GPS nhận +50 GP
+                            🎯 {EVENT_MESSAGES.CHECKIN_OPEN}
                           </button>
                         ) : (
                           <button
                             type="button"
                             className="btn-action-primary"
                             disabled
-                            title="Check-in mở trước giờ bắt đầu 1 tiếng đến 3 tiếng sau giờ bắt đầu"
+                            title={EVENT_MESSAGES.CHECKIN_WINDOW_HINT}
                           >
-                            ⏳ Chưa tới khung giờ Check-in
+                            {checkinWindowState === "before"
+                              ? `⏳ ${EVENT_MESSAGES.CHECKIN_EARLY}`
+                              : `🏁 ${EVENT_MESSAGES.CHECKIN_CLOSED}`}
                           </button>
                         )}
+                        <p className="field-hint">{EVENT_MESSAGES.CHECKIN_WINDOW_HINT}</p>
                       </div>
                     )}
 
-                    {/* 2. Nút Tham gia / Hủy tham gia */}
+                    {/* 2. Tham gia / Hủy tham gia */}
                     {event.status === "APPROVED" && (
                       <button
                         type="button"
                         className={`btn-action-primary ${event.is_joined ? "btn-cancel" : ""}`}
                         data-testid="btn-toggle-join"
-                        disabled={loadingAction || (!event.is_joined && isFull)}
+                        disabled={loadingAction || ended || (!event.is_joined && isFull)}
                         onClick={handleToggleJoin}
-                        style={{
-                          background: event.is_joined ? "#ef4444" : undefined,
-                        }}
                       >
-                        {event.is_joined
-                          ? "Hủy tham gia sự kiện"
+                        {ended
+                          ? EVENT_MESSAGES.DETAIL_ENDED
+                          : event.is_joined
+                          ? EVENT_MESSAGES.DETAIL_LEAVE
                           : isFull
-                          ? "Sự kiện đã đủ số người tham gia"
-                          : `Đăng ký tham gia (${event.current_participants}/${event.max_participants})`}
+                          ? EVENT_MESSAGES.DETAIL_FULL
+                          : `${EVENT_MESSAGES.DETAIL_JOIN} (${event.current_participants}/${event.max_participants})`}
                       </button>
                     )}
 
-                    {/* 3. Nút Quan tâm */}
+                    {/* 3. Quan tâm */}
                     <button
                       type="button"
                       className={`btn-action-secondary ${event.is_interested ? "active" : ""}`}
                       data-testid="btn-toggle-interest"
-                      disabled={loadingAction}
+                      disabled={loadingAction || ended || event.status !== "APPROVED"}
                       onClick={handleToggleInterest}
                     >
                       {event.is_interested
-                        ? `❤️ Đã quan tâm (${event.interested_count})`
-                        : `🤍 Quan tâm (${event.interested_count})`}
+                        ? `❤️ ${EVENT_MESSAGES.DETAIL_INTERESTED} (${event.interested_count})`
+                        : `🤍 ${EVENT_MESSAGES.DETAIL_INTEREST} (${event.interested_count})`}
                     </button>
 
-                    {/* 4. Nút Hủy sự kiện (Người tạo) */}
-                    {isCreator && event.status !== "CANCELLED" && (
+                    {/* 4. Chỉnh sửa / Hủy sự kiện cho người tổ chức */}
+                    {canManage && event.status !== "CANCELLED" && !ended && (
                       <button
                         type="button"
                         className="btn-action-secondary"
-                        style={{ color: "#ef4444", borderColor: "#fecaca" }}
-                        onClick={handleCancelEvent}
+                        data-testid="btn-edit-event"
+                        onClick={() => setIsEditOpen(true)}
                         disabled={loadingAction}
                       >
-                        Hủy sự kiện này
+                        ✏️ {EVENT_MESSAGES.DETAIL_EDIT}
+                      </button>
+                    )}
+
+                    {canManage && event.status !== "CANCELLED" && !ended && (
+                      <button
+                        type="button"
+                        className="btn-action-secondary btn-danger-outline"
+                        onClick={() => setShowCancelConfirm(true)}
+                        disabled={loadingAction}
+                      >
+                        {EVENT_MESSAGES.DETAIL_CANCEL_EVENT}
                       </button>
                     )}
                   </div>
@@ -336,13 +508,107 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         </div>
       </div>
 
+      {/* Modal danh sách đầy đủ người tham gia */}
+      {showParticipants && (
+        <div
+          className="event-modal-overlay"
+          data-testid="participants-modal-overlay"
+          onClick={() => setShowParticipants(false)}
+        >
+          <div className="participants-modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title-wrap">
+                <h2>{EVENT_MESSAGES.DETAIL_PARTICIPANTS_TITLE}</h2>
+                <p className="modal-sub">
+                  {event.current_participants}/{event.max_participants} người đã đăng ký
+                </p>
+              </div>
+              <button
+                type="button"
+                className="btn-close-modal"
+                onClick={() => setShowParticipants(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="participants-modal-body">
+              {participantsLoading ? (
+                <p className="muted-text">{EVENT_MESSAGES.LIST_LOADING}</p>
+              ) : allParticipants.length === 0 ? (
+                <p className="muted-text">{EVENT_MESSAGES.DETAIL_PARTICIPANTS_EMPTY}</p>
+              ) : (
+                <ul className="participants-full-list">
+                  {allParticipants.map((p) => (
+                    <li key={p.user_id}>
+                      <span className="participant-avatar-small">
+                        {p.avatar_url ? (
+                          <img src={resolveMediaUrl(p.avatar_url)} alt={p.full_name} />
+                        ) : (
+                          p.full_name.charAt(0).toUpperCase()
+                        )}
+                      </span>
+                      <span className="participant-name">{p.full_name}</span>
+                      {p.is_creator && <span className="badge-joined">Người tổ chức</span>}
+                      <span className="participant-joined-at">
+                        {formatDateTime(p.joined_at)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Xác nhận hủy sự kiện */}
+      {showCancelConfirm && (
+        <div className="event-modal-overlay" data-testid="cancel-event-confirm">
+          <div className="discard-confirm-box">
+            <h3>{EVENT_MESSAGES.DETAIL_CANCEL_EVENT}</h3>
+            <p>{EVENT_MESSAGES.DETAIL_CANCEL_CONFIRM}</p>
+            <div className="discard-confirm-actions">
+              <button
+                type="button"
+                className="btn-my-events-toggle"
+                onClick={() => setShowCancelConfirm(false)}
+              >
+                {EVENT_MESSAGES.DISCARD_CANCEL}
+              </button>
+              <button
+                type="button"
+                className="btn-create-event btn-danger-solid"
+                onClick={handleCancelEvent}
+              >
+                {EVENT_MESSAGES.DETAIL_CANCEL_EVENT}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal chỉnh sửa sự kiện (dùng lại CreateEventModal) */}
+      <CreateEventModal
+        isOpen={isEditOpen}
+        event={event}
+        onClose={() => setIsEditOpen(false)}
+        onSuccess={(updated) => onEventUpdated(updated)}
+        onToast={onToast}
+      />
+
+
       {/* Modal Check-in GPS (Màn 4/4) */}
       <EventCheckinModal
         event={event}
         isOpen={isCheckinOpen}
         onClose={() => setIsCheckinOpen(false)}
         onCheckinSuccess={handleCheckinSuccess}
+        onToast={onToast}
       />
     </>
   );
 };
+
+
+
+

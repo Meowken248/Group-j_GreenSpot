@@ -246,48 +246,27 @@ export const FeedLeftSidebar: React.FC<FeedLeftSidebarProps> = ({
       )}
 
       {/* 4. Widget Lối tắt Chiến dịch Chủ Nhật Xanh (Chức năng 21) */}
-      <div
-        className="feed-events-sidebar-widget"
-        data-testid="feed-events-sidebar-widget"
-        style={{
-          background: "linear-gradient(135deg, #f0fdf4 0%, #e6fcf5 100%)",
-          border: "1px solid #bbf7d0",
-          borderRadius: "12px",
-          padding: "0.85rem 1rem",
-          margin: "0.85rem 0",
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
-          <span style={{ fontSize: "0.7rem", fontWeight: 800, color: "#15803d", textTransform: "uppercase" }}>
-            🌱 CHỦ NHẬT XANH
-          </span>
-          <span style={{ fontSize: "1rem" }}>🎯</span>
+      <div className="feed-events-sidebar-widget" data-testid="feed-events-sidebar-widget">
+        <div className="widget-header-flex">
+          <span className="widget-badge">🌱 CHỦ NHẬT XANH</span>
+          <span className="widget-icon">🎯</span>
         </div>
-        <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#14532d", marginBottom: "0.25rem", lineHeight: 1.35 }}>
+        <div className="widget-event-title">
           Check-in hiện trường nhận ngay +50 Điểm Xanh (GP)
         </div>
-        <div style={{ fontSize: "0.75rem", color: "#166534", marginBottom: "0.65rem" }}>
+        <div className="widget-event-time">
           Chiến dịch ra quân bảo vệ môi trường toàn thành phố
         </div>
         <button
           type="button"
+          className="widget-btn-explore"
           data-testid="btn-explore-events-sidebar"
           onClick={() => onNavigate("events")}
-          style={{
-            width: "100%",
-            padding: "0.45rem",
-            background: "#10b981",
-            color: "#ffffff",
-            border: "none",
-            borderRadius: "8px",
-            fontSize: "0.775rem",
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
         >
           Khám phá sự kiện ngay
         </button>
       </div>
+
 
       {/* 5. Lối tắt nhanh đến các phân hệ liên quan */}
       <div className="feed-shortcuts-section">

@@ -1058,3 +1058,561 @@ $event-info: #3b82f6;
     box-shadow: 0 6px 20px rgba(16, 185, 129, 0.55);
   }
 }
+
+// =========================================================================
+// 6. BỔ SUNG: TRẠNG THÁI DANH SÁCH, DUYỆT SỰ KIỆN, TIỆN ÍCH BIỂU MẪU
+// =========================================================================
+
+.events-main-page {
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.events-loading-state,
+.events-error-state {
+  padding: 2.5rem 1rem;
+  border-radius: 12px;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.9rem;
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+}
+
+.events-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  color: #b91c1c;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.events-loading-more,
+.events-list-end {
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.events-scroll-sentinel {
+  height: 1px;
+  width: 100%;
+}
+
+.event-card-ended {
+  opacity: 0.75;
+  filter: grayscale(0.35);
+}
+
+.card-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-card-join {
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 0.7rem;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover {
+    background: #d1fae5;
+  }
+}
+
+.badge-joined {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+// --- Duyệt sự kiện ---
+.admin-approval-panel {
+  background: #ffffff;
+  border: 1px solid #d1fae5;
+  border-radius: 14px;
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+
+  .admin-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.85rem;
+
+    h2 {
+      margin: 0;
+      font-size: 1.05rem;
+      color: #065f46;
+    }
+  }
+
+  .admin-panel-empty {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #64748b;
+  }
+
+  .admin-pending-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .admin-pending-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.75rem 0.9rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.65rem;
+  }
+
+  .admin-pending-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+
+    strong {
+      font-size: 0.9rem;
+      color: #0f172a;
+    }
+
+    span {
+      font-size: 0.76rem;
+      color: #64748b;
+    }
+  }
+
+  .admin-pending-actions {
+    display: flex;
+    gap: 0.45rem;
+    align-items: flex-start;
+  }
+
+  .admin-reject-form {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    textarea {
+      width: 100%;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 0.55rem 0.7rem;
+      font-size: 0.82rem;
+      resize: vertical;
+    }
+  }
+
+  .admin-reject-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+}
+
+.btn-admin-approve,
+.btn-admin-reject {
+  border: none;
+  border-radius: 8px;
+  padding: 0.42rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-admin-approve {
+  background: #10b981;
+  color: #ffffff;
+
+  &:hover {
+    background: #059669;
+  }
+}
+
+.btn-admin-reject {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+
+  &:hover {
+    background: #fee2e2;
+  }
+}
+
+.btn-admin-approve:disabled,
+.btn-admin-reject:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+// --- Tiện ích biểu mẫu ---
+.form-alert {
+  background: #fef2f2;
+  color: #b91c1c;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  border: 1px solid #fecaca;
+}
+
+.field-error {
+  display: block;
+  margin-top: 0.3rem;
+  color: #dc2626;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.field-hint {
+  display: block;
+  margin-top: 0.35rem;
+  color: #64748b;
+  font-size: 0.74rem;
+}
+
+.input-invalid {
+  border-color: #f87171 !important;
+  background: #fff5f5;
+}
+
+.address-input-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+
+  input {
+    flex: 1;
+  }
+}
+
+.cover-preview-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.cover-preview-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.cover-file-input {
+  display: none;
+}
+
+.cover-url-input {
+  width: 100%;
+  margin-top: 0.55rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.78rem;
+}
+
+.upload-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 1.5rem 1rem;
+  border: 2px dashed #a7f3d0;
+  border-radius: 10px;
+  background: #f0fdf4;
+  cursor: pointer;
+}
+
+.discard-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 12000;
+  padding: 1rem;
+}
+
+.discard-confirm-box {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 1.4rem 1.5rem;
+  width: min(420px, 100%);
+  box-shadow: 0 24px 50px rgba(15, 23, 42, 0.28);
+
+  h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.05rem;
+    color: #0f172a;
+  }
+
+  p {
+    margin: 0 0 1.1rem;
+    font-size: 0.86rem;
+    color: #475569;
+    line-height: 1.5;
+  }
+}
+
+.discard-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+// --- Chi tiết sự kiện ---
+.detail-status-note {
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.1rem;
+  font-size: 0.85rem;
+  border: 1px solid transparent;
+}
+
+.status-note-PENDING {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.status-note-REJECTED {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.status-note-CANCELLED {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+.detail-ended-note {
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.1rem;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  color: #475569;
+  font-size: 0.84rem;
+}
+
+.detail-map-container {
+  height: 220px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #e2e8f0;
+}
+
+.muted-text {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.btn-link-participants {
+  margin-top: 0.5rem;
+  border: none;
+  background: none;
+  color: #047857;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.btn-danger-outline {
+  color: #dc2626 !important;
+  border-color: #fecaca !important;
+}
+
+.btn-danger-solid {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+.btn-checkin-done {
+  background: #059669 !important;
+  color: #ffffff;
+}
+
+.admin-review-box {
+  margin-top: 1rem;
+  padding: 0.9rem;
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  border-radius: 10px;
+
+  h4 {
+    margin: 0 0 0.65rem;
+    font-size: 0.88rem;
+    color: #92400e;
+  }
+
+  .admin-review-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .admin-reject-form {
+    margin-top: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    textarea {
+      width: 100%;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 0.5rem 0.65rem;
+      font-size: 0.8rem;
+      resize: vertical;
+    }
+  }
+}
+
+// --- Modal danh sách người tham gia ---
+.participants-modal-box {
+  background: #ffffff;
+  border-radius: 16px;
+  width: min(520px, 94vw);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.3);
+}
+
+.participants-modal-body {
+  padding: 1rem 1.25rem 1.25rem;
+  overflow-y: auto;
+}
+
+.participants-full-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px dashed #e2e8f0;
+  }
+}
+
+.participant-avatar-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #d1fae5;
+  color: #047857;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.8rem;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.participant-name {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.participant-joined-at {
+  margin-left: auto;
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+// --- Check-in bổ sung ---
+.checkin-failure-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  border-radius: 10px;
+  padding: 0.8rem 0.9rem;
+  margin-bottom: 1rem;
+  font-size: 0.82rem;
+
+  .failure-icon {
+    font-size: 1.1rem;
+  }
+
+  p {
+    margin: 0.2rem 0 0;
+  }
+
+  button {
+    margin-left: auto;
+    background: #ffffff;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    border-radius: 8px;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+}
+
+.checkin-result-meta {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin-bottom: 0.4rem;
+  text-align: center;
+}
+
+.gps-status-note {
+  font-size: 0.8rem;
+  color: #0369a1;
+  margin: 0.4rem 0 0.6rem;
+
+  &.error {
+    color: #b91c1c;
+  }
+}
+
+.accuracy-indicator.accuracy-warning {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+
