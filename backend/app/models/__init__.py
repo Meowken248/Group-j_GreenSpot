@@ -55,7 +55,48 @@ from app.models.flood import (
     RouteSafetyStatus,
 )
 
-# 6. Trợ lý giọng nói rảnh tay (Hands-free Voice Assistant)
+# 6. Kinh tế Điểm thưởng Công dân Xanh & Ví điểm (Gamification & Rewards Domain - Chức năng 28, 29, 30 & 31)
+from app.models.reward import (
+    CitizenReward,
+    RewardTransaction,
+    UserVoucher,
+)
+
+# 7. Thử thách xanh trong tuần (Chức năng 25)
+from app.models.challenge import (
+    GreenChallenge,
+    UserChallenge,
+)
+
+# 8. Nhật ký kiểm toán Audit Log (Chức năng 26)
+from app.models.audit import (
+    AuditLog,
+)
+
+# 9. Thư viện sống xanh: Cẩm nang phân loại rác (Chức năng 27)
+from app.models.waste_handbook import (
+    WasteHandbookItem,
+)
+
+# 10. Bảng xếp hạng & Bản đồ nhiệt môi trường (Chức năng 32 & 33)
+from app.models.leaderboard import (
+    CommunityGroup,
+    DistrictEnvironmentalStat,
+)
+
+# 11. Quét mã QR & Vòng quay may mắn (Chức năng 34 & 35)
+from app.models.qr_lucky import (
+    EcoQRCode,
+    UserQRScan,
+    LuckyWheelSpin,
+)
+
+# 12. Hiệu ứng thăng cấp danh hiệu & Bài vinh danh (Chức năng 36)
+from app.models.milestone import (
+    MilestonePost,
+)
+
+# 13. Trợ lý giọng nói rảnh tay (Hands-free Voice Assistant)
 from app.models.voice_assistant import (
     VoiceSampleCommand,
     VoiceInteractionLog,
@@ -63,7 +104,7 @@ from app.models.voice_assistant import (
     VoiceCategory,
 )
 
-# 7. Trang cá nhân, Hộ chiếu Xanh, Huy hiệu & Lịch sử đóng góp (Profile Domain)
+# 14. Trang cá nhân, Hộ chiếu Xanh, Huy hiệu & Lịch sử đóng góp (Profile Domain)
 from app.models.profile import (
     CitizenLevel,
     Badge,
@@ -73,7 +114,7 @@ from app.models.profile import (
 )
 from app.models.post import PostTaggedFriend
 
-# 8. Kết bạn và theo dõi (Friends & Follows Domain)
+# 15. Kết bạn và theo dõi (Friends & Follows Domain)
 from app.models.friends import (
     FriendRequest,
     Friendship,
@@ -81,16 +122,16 @@ from app.models.friends import (
     FriendRequestStatus,
 )
 
-# 9. Cài đặt người dùng (User Settings Domain)
+# 16. Cài đặt người dùng (User Settings Domain)
 from app.models.settings import UserSettings
 
-# 10. Tra cứu quy định xử phạt vi phạm hành chính (Penalty Regulations Domain)
+# 17. Tra cứu quy định xử phạt vi phạm hành chính (Penalty Regulations Domain)
 from app.models.penalty import PenaltyRegulation, PenaltyReport
 
-# 11. Thông báo hệ thống (Notification Domain)
+# 18. Thông báo hệ thống (Notification Domain)
 from app.models.notification import Notification
 
-# 12. Cảnh báo khẩn cấp theo vị trí & Safety Check (STT 45)
+# 19. Cảnh báo khẩn cấp theo vị trí & Safety Check (STT 45)
 from app.models.emergency_alert import (
     UserDeviceLocation,
     EmergencyBroadcastAlert,
@@ -112,6 +153,24 @@ __all__ = [
     "UserOTP",
     "UserSession",
     "LoginAttempt",
+    # Rewards & Eco Points (Chức năng 28, 29, 30 & 31)
+    "CitizenReward",
+    "RewardTransaction",
+    "UserVoucher",
+    # Features 25, 26, 27
+    "GreenChallenge",
+    "UserChallenge",
+    "AuditLog",
+    "WasteHandbookItem",
+    # Features 32, 33
+    "CommunityGroup",
+    "DistrictEnvironmentalStat",
+    # Features 34, 35
+    "EcoQRCode",
+    "UserQRScan",
+    "LuckyWheelSpin",
+    # Feature 36
+    "MilestonePost",
     # Spatial & Green Facilities
     "AdministrativeUnit",
     "EssentialFacility",
@@ -124,6 +183,7 @@ __all__ = [
     "IncidentDuplicateCluster",
     # IoT Sensors
     "IoTSensorStation",
+    "AirQualityRecord",
     # Flood, Tide & Safe Navigation
     "TideStation",
     "TideHarmonicConstituent",
@@ -149,7 +209,6 @@ __all__ = [
     "UserActivity",
     "Post",
     "PostTaggedFriend",
-
     # Friends & Follows Domain
     "FriendRequest",
     "Friendship",

@@ -35,6 +35,15 @@ import {
   subscribeThemeChange,
 } from "./features/settings";
 import type { ThemeMode } from "./features/settings";
+import { RewardsContainer } from "./features/rewards";
+import { WeeklyChallengesContainer } from "./features/challenges/WeeklyChallengesContainer";
+import { AuditLogContainer } from "./features/audit_logs/AuditLogContainer";
+import { WasteHandbookContainer } from "./features/waste_handbook/WasteHandbookContainer";
+import { LeaderboardContainer } from "./features/leaderboard/LeaderboardContainer";
+import { MultiModeHeatmapContainer } from "./features/heatmap/MultiModeHeatmapContainer";
+import { QRScanContainer } from "./features/qr_scan/QRScanContainer";
+import { LuckyWheelContainer } from "./features/lucky_wheel/LuckyWheelContainer";
+import { MilestoneContainer } from "./features/milestone/MilestoneContainer";
 import api from "./api/client";
 import "./App.css";
 
@@ -60,7 +69,16 @@ export type ActiveTab =
   | "emergency-alert"
   | "safety-check"
   | "report"
-  | "incidents";
+  | "incidents"
+  | "rewards"
+  | "challenges"
+  | "audit-logs"
+  | "handbook"
+  | "leaderboard"
+  | "heatmap"
+  | "qr-scan"
+  | "lucky-wheel"
+  | "milestone";
 
 export type TabType = ActiveTab;
 
@@ -190,6 +208,15 @@ function App() {
       if (!isLogged) return "auth";
       return "incidents";
     }
+    if (hash === "#wallet" || hash === "#rewards" || hash === "#policy" || hash === "#catalog" || hash === "#vouchers") return "rewards";
+    if (hash === "#challenges") return "challenges";
+    if (hash === "#audit-logs" || hash === "#audit") return "audit-logs";
+    if (hash === "#handbook" || hash === "#guide") return "handbook";
+    if (hash === "#leaderboard" || hash === "#ranking") return "leaderboard";
+    if (hash === "#heatmap" || hash === "#climate-map") return "heatmap";
+    if (hash === "#qr-scan" || hash === "#qr" || hash === "#scan") return "qr-scan";
+    if (hash === "#lucky-wheel" || hash === "#wheel" || hash === "#spin") return "lucky-wheel";
+    if (hash === "#milestone" || hash === "#tier-progress" || hash === "#tier") return "milestone";
     // Mặc định: khi chưa đăng nhập, hiển thị Bản đồ WebGIS công cộng
     if (!isLogged) return "map";
     return "profile";
@@ -255,6 +282,7 @@ function App() {
   const hasAqiAccess = canAccess("AIR_QUALITY");
   const hasUserMgmtAccess = currentUser?.role === "ADMIN" || canAccess("USER_MANAGEMENT");
   const hasRbacAccess = currentUser?.role === "ADMIN" || canAccess("ROLE") || canAccess("ROLES");
+  const hasAuditAccess = currentUser?.role === "ADMIN" || canAccess("AUDIT_LOG");
   const hasIncidentMgmtAccess =
     currentUser?.role === "ADMIN" ||
     currentUser?.role === "DISTRICT_MANAGER" ||
@@ -492,6 +520,24 @@ function App() {
         } else {
           setActiveTab("incidents");
         }
+      } else if (hash === "#wallet" || hash === "#rewards" || hash === "#policy" || hash === "#catalog" || hash === "#vouchers") {
+        setActiveTab("rewards");
+      } else if (hash === "#challenges") {
+        setActiveTab("challenges");
+      } else if (hash === "#audit-logs" || hash === "#audit") {
+        setActiveTab("audit-logs");
+      } else if (hash === "#handbook" || hash === "#guide") {
+        setActiveTab("handbook");
+      } else if (hash === "#leaderboard" || hash === "#ranking") {
+        setActiveTab("leaderboard");
+      } else if (hash === "#heatmap" || hash === "#climate-map") {
+        setActiveTab("heatmap");
+      } else if (hash === "#qr-scan" || hash === "#qr" || hash === "#scan") {
+        setActiveTab("qr-scan");
+      } else if (hash === "#lucky-wheel" || hash === "#wheel" || hash === "#spin") {
+        setActiveTab("lucky-wheel");
+      } else if (hash === "#milestone" || hash === "#tier-progress" || hash === "#tier") {
+        setActiveTab("milestone");
       }
     };
     window.addEventListener("hashchange", handleHashChange);
@@ -559,7 +605,9 @@ function App() {
 
   const handleRelogin = (redirectUrl?: string) => {
     setSessionExpiredOpen(false);
-    setAuthRedirectUrl(redirectUrl);
+    const target = redirectUrl || window.location.hash || `#${activeTab}`;
+    sessionStorage.setItem("greenspot_target_hash", target);
+    setAuthRedirectUrl(target);
     localStorage.removeItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
     localStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
     localStorage.removeItem(AUTH_STORAGE_KEYS.USER_INFO);
@@ -567,6 +615,107 @@ function App() {
     resetSessionExpired();
     window.dispatchEvent(new Event("auth_change"));
     setActiveTab("auth");
+  };
+
+  const handleLoginSuccess = (targetRedirect?: string) => {
+    // 1. Lấy thông tin đích chuyển hướng từ param, state, sessionStorage hoặc hash hiện tại
+    const stored = sessionStorage.getItem("greenspot_target_hash");
+    sessionStorage.removeItem("greenspot_target_hash");
+
+    let raw = targetRedirect || authRedirectUrl || stored || "";
+    if (
+      !raw &&
+      window.location.hash &&
+      !["#auth", "#login", "#register", "#devices"].includes(window.location.hash.toLowerCase())
+    ) {
+      raw = window.location.hash;
+    }
+
+    setAuthRedirectUrl(undefined);
+    const target = raw.trim().toLowerCase();
+
+    // 2. Chuyển hướng chính xác về chức năng đích tương ứng
+    if (target.includes("challenges")) {
+      setActiveTab("challenges");
+      window.location.hash = "#challenges";
+    } else if (target.includes("audit")) {
+      setActiveTab("audit-logs");
+      window.location.hash = "#audit-logs";
+    } else if (target.includes("handbook") || target.includes("guide")) {
+      setActiveTab("handbook");
+      window.location.hash = "#handbook";
+    } else if (target.includes("wallet") || target.includes("rewards")) {
+      setActiveTab("rewards");
+      window.location.hash = "#wallet";
+    } else if (target.includes("policy")) {
+      setActiveTab("rewards");
+      window.location.hash = "#policy";
+    } else if (target.includes("catalog")) {
+      setActiveTab("rewards");
+      window.location.hash = "#catalog";
+    } else if (target.includes("voucher")) {
+      setActiveTab("rewards");
+      window.location.hash = "#vouchers";
+    } else if (target.includes("leaderboard") || target.includes("ranking")) {
+      setActiveTab("leaderboard");
+      window.location.hash = "#leaderboard";
+    } else if (target.includes("heatmap") || target.includes("climate")) {
+      setActiveTab("heatmap");
+      window.location.hash = "#heatmap";
+    } else if (target.includes("qr")) {
+      setActiveTab("qr-scan");
+      window.location.hash = "#qr-scan";
+    } else if (target.includes("wheel") || target.includes("lucky") || target.includes("spin")) {
+      setActiveTab("lucky-wheel");
+      window.location.hash = "#lucky-wheel";
+    } else if (target.includes("milestone") || target.includes("tier")) {
+      setActiveTab("milestone");
+      window.location.hash = "#milestone";
+    } else if (target.includes("users")) {
+      setActiveTab("users");
+      window.location.hash = "#users";
+    } else if (target.includes("rbac")) {
+      setActiveTab("rbac");
+      window.location.hash = "#rbac";
+    } else if (target.includes("dashboard")) {
+      setActiveTab("dashboard");
+      window.location.hash = "#dashboard";
+    } else if (target.includes("devices")) {
+      setAuthRedirectUrl("/devices");
+      setActiveTab("auth");
+      window.location.hash = "#devices";
+    } else if (target.includes("map")) {
+      setActiveTab("map");
+      window.location.hash = "#map";
+    } else {
+      // Nếu không có bất kỳ URL nào được chỉ định trước đó:
+      // Phân quyền theo vai trò vừa đăng nhập: ADMIN -> #users, CITIZEN -> #challenges
+      try {
+        const userRaw = localStorage.getItem(AUTH_STORAGE_KEYS.USER_INFO);
+        const u = userRaw ? JSON.parse(userRaw) : null;
+        if (u?.role === "ADMIN") {
+          setActiveTab("users");
+          window.location.hash = "#users";
+        } else {
+          setActiveTab("challenges");
+          window.location.hash = "#challenges";
+        }
+      } catch {
+        setActiveTab("challenges");
+        window.location.hash = "#challenges";
+      }
+    }
+  };
+
+  const handleExitAuth = () => {
+    const stored = sessionStorage.getItem("greenspot_target_hash");
+    sessionStorage.removeItem("greenspot_target_hash");
+    if (stored) {
+      handleLoginSuccess(stored);
+    } else {
+      setActiveTab("map");
+      window.location.hash = "#map";
+    }
   };
 
   const handleConfirmLogout = async () => {
@@ -724,7 +873,7 @@ function App() {
                   </button>
                 )}
 
-                {hasRiskDashboardAccess && (
+{hasRiskDashboardAccess && (
                   <button
                     type="button"
                     className={`panel-item-btn ${activeTab === "risk-dashboard" ? "active" : ""}`}
@@ -941,7 +1090,7 @@ function App() {
           {/* NHÓM 4: TRA CỨU XỬ PHẠT (Nút trực tiếp) */}
           <button
             type="button"
-            className={`nav-group-btn single-btn ${isPenaltiesActive ? "active" : ""}`}
+className={`nav-group-btn single-btn ${isPenaltiesActive ? "active" : ""}`}
             onClick={() => navigateTo("penalties", "#penalties")}
             title="Tra cứu quy định xử phạt vi phạm hành chính (Nghị định 45/2022/NĐ-CP)"
           >
@@ -950,7 +1099,7 @@ function App() {
           </button>
         </nav>
 
-        {/* KHỐI PHẢI: TIỆN ÍCH & TÀI KHOẢN */}
+{/* KHỐI PHẢI: TIỆN ÍCH & TÀI KHOẢN */}
         <div className="header-right-actions">
           {/* Nút gửi phản ánh nhanh nổi bật (Quick CTA) */}
           <button
@@ -1085,6 +1234,89 @@ function App() {
                       <span>Quản lý sự cố môi trường</span>
                     </button>
                   )}
+                  <button
+                    type="button"
+                    className="dropdown-menu-action"
+                    onClick={() => navigateTo("rewards", "#wallet")}
+                  >
+                    <span className="action-icon">💳</span>
+                    <span>Ví Điểm Thưởng & Danh Hiệu</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="dropdown-menu-action"
+                    onClick={() => navigateTo("challenges", "#challenges")}
+                  >
+                    <span className="action-icon">🎯</span>
+                    <span>Thử Thách Xanh Trong Tuần</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="dropdown-menu-action"
+                    onClick={() => navigateTo("handbook", "#handbook")}
+                  >
+                    <span className="action-icon">📖</span>
+                    <span>Cẩm Nang Phân Loại Rác</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="dropdown-menu-action"
+                    onClick={() => navigateTo("leaderboard", "#leaderboard")}
+                  >
+                    <span className="action-icon">🏆</span>
+                    <span>Bảng Xếp Hạng Công Dân Xanh</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="dropdown-menu-action"
+                    onClick={() => navigateTo("heatmap", "#heatmap")}
+                  >
+                    <span className="action-icon">🛰️</span>
+                    <span>Bản Đồ Nhiệt Môi Trường (GIS)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="dropdown-menu-action"
+                    onClick={() => navigateTo("qr-scan", "#qr-scan")}
+                  >
+                    <span className="action-icon">📷</span>
+                    <span>Quét Mã QR Nhận Điểm</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="dropdown-menu-action"
+                    onClick={() => navigateTo("lucky-wheel", "#lucky-wheel")}
+                  >
+                    <span className="action-icon">🎡</span>
+                    <span>Vòng Quay May Mắn Mỗi Ngày</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="dropdown-menu-action"
+                    onClick={() => navigateTo("milestone", "#milestone")}
+                  >
+                    <span className="action-icon">🏅</span>
+                    <span>Lộ Trình Danh Hiệu</span>
+                  </button>
+
+                  {hasAuditAccess && (
+                    <button
+                      type="button"
+                      className="dropdown-menu-action"
+                      onClick={() => navigateTo("audit-logs", "#audit-logs")}
+                    >
+                      <span className="action-icon">📜</span>
+                      <span>Nhật Ký Kiểm Toán (Audit Log)</span>
+                    </button>
+                  )}
+
 
                   <button
                     type="button"
@@ -1191,10 +1423,8 @@ function App() {
                   : undefined
             }
             redirectUrl={authRedirectUrl}
-            onExitAuth={() => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
+            onLoginSuccess={handleLoginSuccess}
+            onExitAuth={handleExitAuth}
           />
         </div>
       ) : activeTab === "report" ? (
@@ -1259,6 +1489,7 @@ function App() {
               window.location.hash = "#map";
             }}
             onNavigateToAuth={() => {
+              sessionStorage.setItem("greenspot_target_hash", "#rbac");
               setAuthRedirectUrl("/rbac");
               setActiveTab("auth");
               window.location.hash = "#login";
@@ -1300,6 +1531,7 @@ function App() {
               window.location.hash = "#map";
             }}
             onNavigateToAuth={() => {
+              sessionStorage.setItem("greenspot_target_hash", "#users");
               setAuthRedirectUrl("/users");
               setActiveTab("auth");
               window.location.hash = "#login";
@@ -1313,6 +1545,142 @@ function App() {
             onBackToHome={() => {
               setActiveTab("map");
               window.location.hash = "#map";
+            }}
+          />
+        </div>
+      ) : activeTab === "rewards" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <RewardsContainer
+            onBackToHome={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
+            onNavigateToAuth={() => {
+              const currentH = window.location.hash || "#wallet";
+              sessionStorage.setItem("greenspot_target_hash", currentH);
+              setAuthRedirectUrl(currentH);
+              setActiveTab("auth");
+              window.location.hash = "#login";
+            }}
+          />
+        </div>
+      ) : activeTab === "challenges" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <WeeklyChallengesContainer
+            onBackToHome={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
+            onNavigateToAuth={() => {
+              sessionStorage.setItem("greenspot_target_hash", "#challenges");
+              setAuthRedirectUrl("/challenges");
+              setActiveTab("auth");
+              window.location.hash = "#login";
+            }}
+            onNavigateToWallet={() => {
+              setActiveTab("rewards");
+              window.location.hash = "#wallet";
+            }}
+          />
+        </div>
+      ) : activeTab === "audit-logs" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <AuditLogContainer
+            onBackToHome={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
+            onNavigateToAuth={() => {
+              sessionStorage.setItem("greenspot_target_hash", "#audit-logs");
+              setAuthRedirectUrl("/audit-logs");
+              setActiveTab("auth");
+              window.location.hash = "#login";
+            }}
+          />
+        </div>
+      ) : activeTab === "handbook" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <WasteHandbookContainer
+            onBackToHome={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
+            onNavigateToMap={(_facilityType) => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
+          />
+        </div>
+      ) : activeTab === "leaderboard" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <LeaderboardContainer
+            onNavigateLogin={() => {
+              sessionStorage.setItem("greenspot_target_hash", "#leaderboard");
+              setAuthRedirectUrl("/leaderboard");
+              setActiveTab("auth");
+              window.location.hash = "#login";
+            }}
+            onNavigateHeatmap={(_districtCode) => {
+              setActiveTab("heatmap");
+              window.location.hash = "#heatmap";
+            }}
+          />
+        </div>
+      ) : activeTab === "heatmap" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#0b0f19" }}>
+          <MultiModeHeatmapContainer
+            onNavigateDistrictReport={(_districtCode) => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
+          />
+        </div>
+      ) : activeTab === "qr-scan" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <QRScanContainer
+            onBackToHome={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
+            onNavigateWallet={() => {
+              setActiveTab("rewards");
+              window.location.hash = "#wallet";
+            }}
+            onNavigateLogin={() => {
+              sessionStorage.setItem("greenspot_target_hash", "#qr-scan");
+              setAuthRedirectUrl("/qr-scan");
+              setActiveTab("auth");
+              window.location.hash = "#login";
+            }}
+          />
+        </div>
+      ) : activeTab === "lucky-wheel" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <LuckyWheelContainer
+            onBackToHome={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
+            onNavigateLogin={() => {
+              sessionStorage.setItem("greenspot_target_hash", "#lucky-wheel");
+              setAuthRedirectUrl("/lucky-wheel");
+              setActiveTab("auth");
+              window.location.hash = "#login";
+            }}
+          />
+        </div>
+      ) : activeTab === "milestone" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+          <MilestoneContainer
+            onBackToHome={() => {
+              setActiveTab("map");
+              window.location.hash = "#map";
+            }}
+            onNavigateLogin={() => {
+              sessionStorage.setItem("greenspot_target_hash", "#milestone");
+              setAuthRedirectUrl("/milestone");
+              setActiveTab("auth");
+              window.location.hash = "#login";
             }}
           />
         </div>
@@ -1538,8 +1906,8 @@ function App() {
               window.location.hash = "#login";
             }}
             onNavigateToReport={() => {
-              setActiveTab("map");
-              window.location.hash = "#map";
+              setActiveTab("report");
+              window.location.hash = "#report";
             }}
           />
         </div>
@@ -1594,7 +1962,6 @@ function App() {
           />
         </div>
       ) : (
-        /* Mặc định an toàn cho khách vãng lai và tab map: Bản đồ số WebGIS công cộng */
         <ModulePermissionGuard
           moduleCode="GIS_MAP"
           moduleName="Bản đồ số WebGIS"

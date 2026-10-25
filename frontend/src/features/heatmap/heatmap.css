@@ -1,0 +1,589 @@
+/* ==========================================================================
+   GreenSpot - Chức năng 33: Bản đồ nhiệt môi trường và khí hậu đa chế độ
+   (AQI, Nhiệt độ bề mặt vi khí hậu, Điểm số rủi ro ô nhiễm)
+   ========================================================================== */
+
+.hm-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  color: #1e293b;
+  animation: hmFadeIn 0.3s ease-out;
+}
+
+@keyframes hmFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header Banner */
+.hm-header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+  border-radius: 1rem;
+  padding: 1.75rem 2.25rem;
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.hm-header::after {
+  content: "🛰️";
+  position: absolute;
+  right: 2.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 5rem;
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+.hm-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.hm-subtitle {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  max-width: 650px;
+  line-height: 1.45;
+}
+
+/* Mode Switcher Tabs */
+.hm-controls-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.hm-mode-tabs {
+  display: flex;
+  gap: 0.5rem;
+  background: #f1f5f9;
+  padding: 0.35rem;
+  border-radius: 0.75rem;
+}
+
+.hm-mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  border: none;
+  background: transparent;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hm-mode-btn:hover {
+  color: #0f172a;
+}
+
+.hm-mode-btn.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  font-weight: 700;
+}
+
+.hm-mode-btn.mode-AQI.active {
+  color: #059669;
+}
+
+.hm-mode-btn.mode-TEMPERATURE.active {
+  color: #ea580c;
+}
+
+.hm-mode-btn.mode-RISK.active {
+  color: #dc2626;
+}
+
+/* Warnings Banner */
+.hm-warning-strip {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 5px solid #ef4444;
+  padding: 0.85rem 1.25rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #991b1b;
+  font-size: 0.9rem;
+  font-weight: 600;
+  animation: hmPulseRed 2s infinite;
+}
+
+@keyframes hmPulseRed {
+  0% { box-shadow: 0 0 0 rgba(239, 68, 68, 0); }
+  50% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
+  100% { box-shadow: 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* Main Heatmap Stage Layout */
+.hm-stage-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .hm-stage-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* GIS Heatmap Canvas Card */
+.hm-canvas-card {
+  background: #0f172a;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+  min-height: 540px;
+  display: flex;
+  flex-direction: column;
+}
+
+.hm-canvas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  z-index: 2;
+}
+
+.hm-canvas-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hm-timestamp-badge {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.25rem 0.65rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  backdrop-filter: blur(4px);
+}
+
+/* Interactive SVG Map Container */
+.hm-svg-container {
+  flex: 1;
+  width: 100%;
+  height: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.hm-svg-viewport {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+.hm-district-bubble {
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hm-district-bubble:hover circle {
+  stroke: #ffffff;
+  stroke-width: 3px;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
+}
+
+.hm-bubble-warning circle {
+  animation: bubbleWarningPulse 1.4s infinite;
+}
+
+@keyframes bubbleWarningPulse {
+  0% { stroke: #ef4444; stroke-width: 3px; stroke-opacity: 1; }
+  50% { stroke: #fbbf24; stroke-width: 7px; stroke-opacity: 0.6; }
+  100% { stroke: #ef4444; stroke-width: 3px; stroke-opacity: 1; }
+}
+
+/* Legends Bar */
+.hm-legends-bar {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  z-index: 2;
+}
+
+.hm-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #cbd5e1;
+}
+
+.hm-legend-color {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0.25rem;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Sidebar List of Districts */
+.hm-sidebar-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  max-height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+
+.hm-sidebar-header {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #0f172a;
+  margin-bottom: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hm-search-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+  outline: none;
+}
+
+.hm-search-input:focus {
+  border-color: #059669;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15);
+}
+
+.hm-districts-scroll {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-right: 0.25rem;
+}
+
+.hm-district-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hm-district-row:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.hm-district-row.has-warning {
+  border-left: 3px solid #ef4444;
+  background: #fef2f2;
+}
+
+.hm-row-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.hm-row-val-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.35rem;
+  color: #ffffff;
+}
+
+/* Modal: Màn 4 (Popup Chi tiết khu vực - Table 141) */
+.hm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1.25rem;
+}
+
+.hm-modal-card {
+  background: #ffffff;
+  border-radius: 1.25rem;
+  max-width: 580px;
+  width: 100%;
+  padding: 2rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  position: relative;
+  animation: hmModalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes hmModalPop {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.hm-modal-close {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  background: #f1f5f9;
+  border: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.15s ease;
+}
+
+.hm-modal-close:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.hm-modal-header {
+  margin-bottom: 1.5rem;
+}
+
+.hm-modal-zone-title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hm-modal-coord {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+/* 4-Dimension Metric Grid per Table 141 */
+.hm-modal-4dim-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.hm-dim-box {
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.hm-dim-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.hm-dim-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.hm-dim-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.25rem;
+  color: #ffffff;
+  display: inline-block;
+  margin-top: 0.35rem;
+  align-self: flex-start;
+}
+
+.hm-modal-extra-stats {
+  background: #f8fafc;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid #f1f5f9;
+}
+
+.hm-extra-stat-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.hm-extra-stat-item .val {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.hm-extra-stat-item .lbl {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.hm-modal-alert-box {
+  background: #fef2f2;
+  border-left: 4px solid #ef4444;
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  color: #991b1b;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hm-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.hm-btn-secondary {
+  padding: 0.65rem 1.25rem;
+  background: #f1f5f9;
+  color: #475569;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.hm-btn-secondary:hover {
+  background: #e2e8f0;
+}
+
+.hm-btn-primary {
+  padding: 0.65rem 1.25rem;
+  background: #059669;
+  color: #ffffff;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.hm-btn-primary:hover {
+  background: #047857;
+}
+
+/* Loading & Error */
+.hm-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(3px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  color: #ffffff;
+  gap: 0.75rem;
+}
+
+.hm-spinner {
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #10b981;
+  border-radius: 50%;
+  animation: hmSpin 0.8s linear infinite;
+}
+
+@keyframes hmSpin {
+  to { transform: rotate(360deg); }
+}
+
+.hm-error-card {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.75rem;
+  padding: 2rem;
+  text-align: center;
+  color: #991b1b;
+}
+
+.hm-error-card p {
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.hm-retry-btn {
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  padding: 0.55rem 1.25rem;
+  border-radius: 0.375rem;
+  font-weight: 700;
+  cursor: pointer;
+}

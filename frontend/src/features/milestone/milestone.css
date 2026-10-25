@@ -1,0 +1,852 @@
+/* ==========================================================================
+   GreenSpot - Chức năng 36: Hiệu ứng thăng cấp danh hiệu
+   Milestone Celebration, Auto-Generated Post & Tier Progression Map
+   ========================================================================== */
+
+.ms-page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  color: #1e293b;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  animation: msFadeIn 0.35s ease-out;
+}
+
+@keyframes msFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header */
+.ms-header {
+  background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 50%, #7c3aed 100%);
+  border-radius: 1rem;
+  padding: 1.75rem 2rem;
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 30px -6px rgba(59, 130, 246, 0.3);
+}
+
+.ms-header::after {
+  content: "🏅";
+  position: absolute;
+  right: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 5rem;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.ms-title {
+  font-size: 1.65rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.ms-subtitle {
+  font-size: 0.9rem;
+  color: #dbeafe;
+  max-width: 640px;
+  line-height: 1.45;
+}
+
+.ms-back-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff;
+  padding: 0.55rem 1.2rem;
+  border-radius: 0.65rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.ms-back-btn:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+/* ======== View Toggle ======== */
+.ms-view-toggle {
+  display: flex;
+  gap: 0.6rem;
+  background: #f1f5f9;
+  border-radius: 0.75rem;
+  padding: 0.35rem;
+  width: fit-content;
+  margin: 0 auto;
+}
+.ms-view-toggle button {
+  padding: 0.5rem 1.1rem;
+  border: none;
+  border-radius: 0.55rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: #64748b;
+  transition: all 0.2s;
+}
+.ms-view-toggle button.active {
+  background: #3b82f6;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+}
+.ms-view-toggle button:hover:not(.active) {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+/* ======== Màn 1: Celebration Popup ======== */
+.ms-celebration-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(6px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: msOverlayIn 0.3s ease-out;
+}
+
+@keyframes msOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.ms-celebration-popup {
+  background: #fff;
+  border-radius: 1.25rem;
+  padding: 2.5rem 2.75rem;
+  max-width: 480px;
+  width: 92%;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 60px -15px rgba(0,0,0,0.3);
+  animation: msPopupIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes msPopupIn {
+  from { opacity: 0; transform: scale(0.85) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.ms-popup-label {
+  font-size: 0.7rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 0.5rem;
+}
+
+.ms-popup-title {
+  font-size: 1.5rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #3b82f6, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 1rem;
+}
+
+.ms-popup-badge {
+  font-size: 5rem;
+  display: block;
+  margin: 0.5rem auto;
+  animation: msBadgeBounce 1.5s ease-in-out infinite;
+  filter: drop-shadow(0 4px 16px rgba(0,0,0,0.15));
+}
+
+@keyframes msBadgeBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-8px) scale(1.05); }
+}
+
+.ms-popup-tier-name {
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin: 0.75rem 0 0.35rem;
+}
+
+.ms-popup-message {
+  font-size: 0.95rem;
+  color: #475569;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.ms-popup-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.ms-popup-btn {
+  padding: 0.65rem 1.4rem;
+  border-radius: 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.ms-popup-btn.primary {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff;
+  box-shadow: 0 4px 14px -3px rgba(37, 99, 235, 0.4);
+}
+.ms-popup-btn.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px -3px rgba(37, 99, 235, 0.5);
+}
+
+.ms-popup-btn.secondary {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+.ms-popup-btn.secondary:hover {
+  background: #e2e8f0;
+}
+
+/* Confetti Particles */
+.ms-confetti-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ms-confetti-particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  top: -10px;
+  animation: msConfettiFall linear forwards;
+}
+
+@keyframes msConfettiFall {
+  0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(500px) rotate(720deg); }
+}
+
+/* ======== Màn 2: Post Editor (3-Column) ======== */
+.ms-post-editor {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1.25rem;
+  animation: msFadeIn 0.35s ease-out;
+}
+
+.ms-post-col {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.ms-post-col-header {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+/* Preview card */
+.ms-preview-card {
+  border-radius: 0.85rem;
+  padding: 1.5rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.ms-preview-badge-icon {
+  font-size: 3.5rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.ms-preview-tier {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin-bottom: 0.2rem;
+}
+
+.ms-preview-date {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin-bottom: 0.75rem;
+}
+
+.ms-preview-category {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  margin-bottom: 0.75rem;
+}
+
+.ms-preview-content {
+  font-size: 0.88rem;
+  color: #475569;
+  line-height: 1.55;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 0.5rem;
+  min-height: 60px;
+}
+
+/* Options column */
+.ms-option-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0.4rem;
+}
+
+.ms-text-editor {
+  width: 100%;
+  min-height: 120px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.65rem;
+  padding: 0.85rem;
+  font-size: 0.88rem;
+  color: #1e293b;
+  line-height: 1.55;
+  resize: vertical;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+.ms-text-editor:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.ms-privacy-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.ms-privacy-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.55rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 0.85rem;
+}
+.ms-privacy-radio:hover { border-color: #93c5fd; background: #f0f9ff; }
+.ms-privacy-radio.selected {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+.ms-privacy-radio input { display: none; }
+
+/* Publish column */
+.ms-publish-btn {
+  width: 100%;
+  padding: 0.85rem;
+  border: none;
+  border-radius: 0.65rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 0.75rem;
+}
+
+.ms-publish-btn.submit {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff;
+  box-shadow: 0 4px 14px -3px rgba(37, 99, 235, 0.35);
+}
+.ms-publish-btn.submit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px -3px rgba(37, 99, 235, 0.45);
+}
+.ms-publish-btn.submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.ms-publish-btn.cancel {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+.ms-publish-btn.cancel:hover { background: #e2e8f0; }
+
+.ms-publish-error {
+  color: #dc2626;
+  font-size: 0.82rem;
+  background: #fef2f2;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #fecaca;
+  margin-bottom: 0.75rem;
+}
+
+/* ======== Màn 3: Tier Progression Map (3-Column) ======== */
+.ms-progression-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr;
+  gap: 1.25rem;
+  animation: msFadeIn 0.35s ease-out;
+}
+
+.ms-prog-card {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.ms-prog-card-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+/* Current tier card */
+.ms-current-tier-display {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.ms-current-badge {
+  font-size: 4rem;
+  display: block;
+  margin-bottom: 0.5rem;
+  filter: drop-shadow(0 3px 10px rgba(0,0,0,0.1));
+}
+
+.ms-current-tier-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-bottom: 0.25rem;
+}
+
+.ms-current-points-label {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 1rem;
+}
+
+.ms-current-points-value {
+  font-size: 2rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #3b82f6, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ms-benefits-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #334155;
+  margin: 1.25rem 0 0.65rem;
+}
+
+.ms-benefits-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ms-benefits-list li {
+  font-size: 0.82rem;
+  color: #475569;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  line-height: 1.45;
+}
+
+.ms-benefits-list li::before {
+  content: "✅";
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Tier steps (Cột giữa) */
+.ms-tier-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ms-tier-step {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.85rem;
+  padding: 1rem 1.15rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  position: relative;
+}
+
+.ms-tier-step:hover { border-color: #93c5fd; background: #f0f9ff; }
+.ms-tier-step.current {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  box-shadow: 0 2px 10px rgba(59, 130, 246, 0.12);
+}
+.ms-tier-step.locked { opacity: 0.55; }
+.ms-tier-step.unlocked { border-color: #86efac; }
+
+.ms-tier-step-icon {
+  font-size: 2.2rem;
+  flex-shrink: 0;
+}
+
+.ms-tier-step-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ms-tier-step-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+}
+
+.ms-tier-step-range {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.ms-tier-step-current-badge {
+  position: absolute;
+  top: -8px;
+  right: 12px;
+  background: #3b82f6;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+}
+
+/* Expanded tier detail */
+.ms-tier-detail-panel {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.65rem;
+  padding: 0.85rem 1rem;
+  margin-top: 0.5rem;
+  animation: msFadeIn 0.2s ease-out;
+}
+
+.ms-tier-detail-desc {
+  font-size: 0.82rem;
+  color: #475569;
+  margin-bottom: 0.5rem;
+  line-height: 1.45;
+}
+
+.ms-tier-detail-benefits {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ms-tier-detail-benefits li {
+  font-size: 0.78rem;
+  color: #334155;
+  padding: 0.3rem 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+.ms-tier-detail-benefits li::before {
+  content: "🎁";
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+/* Progress column */
+.ms-progress-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 1rem;
+}
+
+.ms-progress-ring-wrapper {
+  position: relative;
+  width: 140px;
+  height: 140px;
+}
+
+.ms-progress-ring {
+  width: 140px;
+  height: 140px;
+  transform: rotate(-90deg);
+}
+
+.ms-progress-ring-bg {
+  fill: none;
+  stroke: #e2e8f0;
+  stroke-width: 10;
+}
+
+.ms-progress-ring-fill {
+  fill: none;
+  stroke: url(#msGradient);
+  stroke-width: 10;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s ease-out;
+}
+
+.ms-progress-ring-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.ms-progress-percent {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.ms-progress-label {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.ms-progress-detail {
+  text-align: center;
+  font-size: 0.88rem;
+  color: #475569;
+  line-height: 1.55;
+  padding: 0 0.5rem;
+}
+
+.ms-max-tier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: linear-gradient(135deg, #3b82f6, #7c3aed);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  box-shadow: 0 2px 10px rgba(59, 130, 246, 0.25);
+}
+
+/* Toast notification */
+.ms-toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #059669;
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  box-shadow: 0 8px 25px -5px rgba(5, 150, 105, 0.35);
+  z-index: 10000;
+  animation: msToastIn 0.35s ease-out, msToastOut 0.35s 2.65s ease-in forwards;
+}
+
+@keyframes msToastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@keyframes msToastOut {
+  from { opacity: 1; transform: translateX(-50%) translateY(0); }
+  to { opacity: 0; transform: translateX(-50%) translateY(20px); }
+}
+
+/* Error state */
+.ms-error-block {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #dc2626;
+}
+
+.ms-error-block p {
+  margin-bottom: 1rem;
+  font-size: 0.92rem;
+}
+
+.ms-retry-btn {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+  padding: 0.5rem 1.2rem;
+  border-radius: 0.55rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ms-retry-btn:hover { background: #fecaca; }
+
+/* Loading skeleton */
+.ms-loading {
+  text-align: center;
+  padding: 3rem;
+  color: #94a3b8;
+  font-size: 0.92rem;
+}
+
+.ms-loading-spinner {
+  display: inline-block;
+  width: 36px;
+  height: 36px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: msSpin 0.8s linear infinite;
+  margin-bottom: 0.75rem;
+}
+
+@keyframes msSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Community Feed */
+.ms-feed-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.ms-feed-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+.ms-feed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.ms-feed-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.85rem;
+  padding: 1rem 1.25rem;
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  transition: box-shadow 0.15s;
+}
+.ms-feed-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+
+.ms-feed-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+.ms-feed-body { flex: 1; min-width: 0; }
+.ms-feed-name { font-size: 0.88rem; font-weight: 700; color: #1e293b; }
+.ms-feed-tier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  margin-left: 0.5rem;
+}
+.ms-feed-content {
+  font-size: 0.85rem;
+  color: #475569;
+  margin: 0.35rem 0;
+  line-height: 1.5;
+}
+.ms-feed-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+.ms-feed-like-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: color 0.15s;
+}
+.ms-feed-like-btn:hover { color: #ef4444; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .ms-post-editor { grid-template-columns: 1fr; }
+  .ms-progression-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .ms-header { flex-direction: column; gap: 1rem; text-align: center; }
+  .ms-view-toggle { flex-wrap: wrap; justify-content: center; }
+}
