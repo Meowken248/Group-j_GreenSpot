@@ -63,13 +63,9 @@ export const Screen2AlertModal: React.FC<Screen2AlertModalProps> = ({
   };
 
   // Nút 3: "Xem chi tiết" -> Chuyển sang bản đồ tránh ngập STT 41
-  const handleViewDetail = async () => {
+  const handleViewDetail = () => {
     if (alertData.alert_id) {
-      try {
-        await emergencyAlertApi.acknowledgeAlert(alertData.alert_id, "NAVIGATE");
-      } catch {
-        // Ignored
-      }
+      emergencyAlertApi.acknowledgeAlert(alertData.alert_id, "NAVIGATE").catch(() => {});
     }
     onNavigateSafeRoute();
   };

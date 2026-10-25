@@ -254,6 +254,7 @@ function App() {
   const hasMapAccess = canAccess("GIS_MAP");
   const hasAqiAccess = canAccess("AIR_QUALITY");
   const hasUserMgmtAccess = currentUser?.role === "ADMIN" || canAccess("USER_MANAGEMENT");
+  const hasRbacAccess = currentUser?.role === "ADMIN" || canAccess("ROLE") || canAccess("ROLES");
   const hasIncidentMgmtAccess =
     currentUser?.role === "ADMIN" ||
     currentUser?.role === "DISTRICT_MANAGER" ||
@@ -364,7 +365,14 @@ function App() {
     return () => window.removeEventListener("auth_change", handleAuthChange);
   }, []);
 
-  // Lắng nghe sự kiện hashchange để đồng bộ view khi thay       if (hash === "#map") {
+  // Lắng nghe sự kiện hashchange để đồng bộ view khi thay đổi URL
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+      const isLogged = !!token;
+
+      if (hash === "#map") {
         setActiveTab("map");
       } else if (hash === "#dashboard") {
         if (!isLogged) {
