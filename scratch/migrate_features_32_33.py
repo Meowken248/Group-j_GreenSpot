@@ -5,7 +5,8 @@ import asyncio
 from sqlalchemy import text
 from app.database import engine
 
-sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 # 22 quận/huyện & TP. Thủ Đức chuẩn TP.HCM với tọa độ centroid và số liệu vi khí hậu thực tế
 DISTRICTS_DATA = [

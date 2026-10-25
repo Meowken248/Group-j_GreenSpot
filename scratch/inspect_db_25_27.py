@@ -5,7 +5,8 @@ import asyncio
 from sqlalchemy import text
 from app.database import engine
 
-sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 async def main():
     async with engine.connect() as conn:

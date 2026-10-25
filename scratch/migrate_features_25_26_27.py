@@ -5,7 +5,8 @@ import asyncio
 from sqlalchemy import text
 from app.database import engine
 
-sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 async def migrate_and_seed():
     async with engine.begin() as conn:
@@ -106,7 +107,7 @@ async def migrate_and_seed():
         print(f"Current audit_logs count: {count_val}")
         
         # If audit_logs has fewer than 10 sample records, add realistic records with before/after snapshots
-        if count_val < 5:
+        if count_val is not None and count_val < 5:
             print("Seeding sample audit logs for demonstration...")
             # Get an admin user id
             user_res = await conn.execute(text("SELECT user_id FROM users LIMIT 1;"))
