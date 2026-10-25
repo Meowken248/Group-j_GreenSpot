@@ -231,10 +231,35 @@ $info-500: #3b82f6;
 // =========================================================================
 .feed-left-sidebar {
   position: sticky;
-  top: 24px;
+  top: 16px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
+  padding-right: 6px;
+  padding-bottom: 32px;
+  box-sizing: border-box;
+
+  // Thanh cuộn tinh tế, tự động hiện khi rê chuột
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.3);
+    border-radius: 9999px;
+    transition: background 0.2s ease;
+  }
+  &:hover::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.6);
+  }
 
   .mini-profile-card {
     display: flex;
@@ -1775,10 +1800,34 @@ $info-500: #3b82f6;
 // =========================================================================
 .feed-right-sidebar {
   position: sticky;
-  top: 24px;
+  top: 16px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
+  padding-right: 6px;
+  padding-bottom: 32px;
+  box-sizing: border-box;
+
+  // Thanh cuộn tinh tế
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.3);
+    border-radius: 9999px;
+  }
+  &:hover::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.6);
+  }
 
   // Radar Widget
   .radar-radius-card {
