@@ -202,15 +202,16 @@ async def seed_events_data():
                     participants_count += 1
             new_event.current_participants = participants_count
 
-            # 3. Thêm một số user quan tâm (event_interests)
-            for idx, i_user in enumerate(users[:4]):
+            # 3. Thêm một số user quan tâm (event_interests) - không tính người tạo
+            interest_users = [u for u in users if u.user_id != admin_or_demo_user.user_id][:4]
+            for idx, i_user in enumerate(interest_users):
                 session.add(EventInterest(
                     id=uuid.uuid4(),
                     event_id=event_id,
                     user_id=i_user.user_id,
                     created_at=now - timedelta(hours=idx + 1),
                 ))
-            new_event.interested_count = min(len(users), 4)
+            new_event.interested_count = len(interest_users)
 
             # 4. Nếu là sự kiện đang diễn ra hoặc đã kết thúc, thêm 1 check-in mẫu
             if "Bến Bạch Đằng" in ev_data["title"] or "ủ phân compost" in ev_data["title"]:
@@ -223,8 +224,14 @@ async def seed_events_data():
                     distance_meters=15.5,
                     accuracy_meters=12.0,
                     points_awarded=50,
+                    checkin_time=ev_data["start_time"] + timedelta(minutes=10),
                     device_info="Chrome 130 on Windows 11",
                 ))
+                # Đồng bộ ví Điểm Xanh với sổ cái check-in (tránh lệch số liệu demo)
+                admin_or_demo_user.total_green_points = (
+                    admin_or_demo_user.total_green_points or 0
+                ) + 50
+
 
             inserted_count += 1
 

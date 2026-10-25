@@ -5,24 +5,27 @@ Tài liệu căn cứ: Đồ Án Chuyên Đề Web 1 - Báo Cáo.docx.pdf (Trang
 
 import uuid
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, Header, status
+from fastapi import APIRouter, Depends, Query, Header, status
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.database import get_db
-from app.api.v1.rbac import get_current_active_user as get_current_user
+from app.api.v1.rbac import get_current_active_user as get_current_user, require_permission
 from app.api.v1.auth import decode_access_token
 from app.models.rbac import User
 from app.schemas.event import (
     EventCreate,
     EventResponse,
     EventListResponse,
+    EventUpdate,
     ParticipantItem,
     CheckinRequest,
     CheckinResponse,
     EventReviewRequest,
 )
 from app.services.event_service import EventService
+
 
 router = APIRouter(prefix="/events", tags=["Green Sunday Events - Feature 21"])
 
@@ -57,8 +60,11 @@ async def get_optional_user(
 async def list_events(
     district: Optional[str] = Query(None, description="Lọc theo 22 quận/huyện TP.HCM"),
     time_filter: Optional[str] = Query("upcoming", description="upcoming, this_week, past, all"),
-    search: Optional[str] = Query(None, description="Tìm kiếm theo tiêu đề sự kiện"),
+    search: Optional[str] = Query(None, description="Tìm kiếm theo tiêu đề hoặc địa chỉ sự kiện"),
     my_events: bool = Query(False, description="Lọc sự kiện của tôi (do tôi tạo hoặc tham gia)"),
+    status: Optional[str] = Query(
+        None, description="Lọc theo trạng thái (chỉ Quản trị viên được xem PENDING/REJECTED)"
+    ),
     page: int = Query(1, ge=1, description="Số trang"),
     page_size: int = Query(12, ge=1, le=50, description="Số mục mỗi trang"),
     db: AsyncSession = Depends(get_db),
@@ -66,6 +72,7 @@ async def list_events(
 ):
     service = EventService(db)
     current_user_id = optional_user.user_id if optional_user else None
+    is_admin = await service.is_admin(current_user_id)
     return await service.list_events(
         current_user_id=current_user_id,
         district=district,
@@ -74,7 +81,10 @@ async def list_events(
         my_events=my_events,
         page=page,
         page_size=page_size,
+        status_filter=status,
+        is_admin=is_admin,
     )
+
 
 
 @router.post(
@@ -90,6 +100,22 @@ async def create_event(
 ):
     service = EventService(db)
     return await service.create_event(current_user.user_id, data)
+
+
+@router.patch(
+    "/{event_id}",
+    response_model=EventResponse,
+    summary="Người tổ chức chỉnh sửa sự kiện (Màn 3/4, optimistic locking)",
+)
+async def update_event(
+    event_id: uuid.UUID,
+    data: EventUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    service = EventService(db)
+    return await service.update_event(event_id, current_user.user_id, data)
+
 
 
 @router.get(
@@ -115,9 +141,13 @@ async def get_event_detail(
 async def get_event_participants(
     event_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    optional_user: Optional[User] = Depends(get_optional_user),
 ):
     service = EventService(db)
-    return await service.get_event_participants(event_id)
+    return await service.get_event_participants(
+        event_id, viewer_id=optional_user.user_id if optional_user else None
+    )
+
 
 
 @router.post(
@@ -170,17 +200,13 @@ async def review_event(
     event_id: uuid.UUID,
     data: EventReviewRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("CAMPAIGNS", "UPDATE")),
 ):
-    # Kiểm tra quyền Admin (role_id == 1 hoặc email admin)
-    is_admin = (current_user.role_id == 1) or ("admin" in (current_user.email or "").lower())
-    if not is_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Chỉ Quản trị viên hệ thống mới có quyền phê duyệt sự kiện.",
-        )
+    # Phân quyền theo RBAC: ADMIN luôn được bypass; các vai trò khác cần quyền
+    # CAMPAIGNS:UPDATE mới được phê duyệt sự kiện (không còn kiểm tra qua email).
     service = EventService(db)
     return await service.review_event(event_id, current_user.user_id, data)
+
 
 
 @router.patch(
