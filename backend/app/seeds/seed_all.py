@@ -16,6 +16,7 @@ Chạy lần lượt:
 13. Nạp dữ liệu Sinh nhật bạn bè & Thiệp xanh sinh thái (STT 17)
 14. Nạp dữ liệu STT 39 & 40 AI Triage & Tiện ích không gian thiết yếu
 15. Nạp dữ liệu hội thoại mẫu cho Trợ lý AI Chatbot (STT 24)
+16. Nạp dữ liệu sự kiện & chiến dịch Chủ Nhật Xanh (STT 21)
 """
 
 import asyncio
@@ -38,6 +39,7 @@ from app.seeds.seed_real_reactions_and_comments import seed_and_sync
 from app.seeds.seed_birthdays import seed_birthdays
 from app.seeds.triage.seed_data import seed_triage_and_spatial_data
 from app.seeds.seed_chatbot import seed_chatbot_data
+from app.seeds.seed_events import seed_events_data
 
 
 async def run_seed_all():
@@ -91,8 +93,11 @@ async def run_seed_all():
     print("\n👉 [BƯỚC 14/15] Nạp dữ liệu AI Incident Triage & Tiện ích không gian thiết yếu (STT 39 & 40)...")
     await seed_triage_and_spatial_data()
 
-    print("\n👉 [BƯỚC 15/15] Nạp dữ liệu hội thoại mẫu cho Trợ lý AI Chatbot (STT 24)...")
+    print("\n👉 [BƯỚC 15/16] Nạp dữ liệu hội thoại mẫu cho Trợ lý AI Chatbot (STT 24)...")
     await seed_chatbot_data()
+
+    print("\n👉 [BƯỚC 16/16] Nạp dữ liệu Sự kiện và Chiến dịch Chủ Nhật Xanh (STT 21)...")
+    await seed_events_data()
 
     print("\n" + "=" * 70)
     print("🎉 HOÀN TẤT NẠP TOÀN BỘ CƠ SỞ DỮ LIỆU TOÀN HỆ THỐNG THÀNH CÔNG 100%!")
