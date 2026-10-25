@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { ModuleViewLockedView } from '../components/ModuleViewLockedView';
 import { ModulePermissionGuard } from '../components/ModulePermissionGuard';
-import { useModulePermissions } from '../services/permissionGuard';
+import { useModulePermissions, usePermissions } from '../services/permissionGuard';
 import type { IModulePermissionState } from '../types/permissionGuard.interface';
 import { AUTH_STORAGE_KEYS } from '../../auth/types/auth.types';
 
@@ -47,6 +47,22 @@ describe('Universal RBAC Guard Framework Unit & Integration Tests', () => {
       expect(result.current.hasView).toBe(false);
       expect(result.current.canCreate).toBe(false);
       expect(result.current.isViewOnly).toBe(false);
+    });
+
+    it('Khách vãng lai bị chặn hoàn toàn đối với phân hệ phân tích khí hậu AIR_QUALITY', () => {
+      const { result } = renderHook(() => useModulePermissions('AIR_QUALITY'));
+
+      expect(result.current.hasAccess).toBe(false);
+      expect(result.current.hasView).toBe(false);
+      expect(result.current.canCreate).toBe(false);
+      expect(result.current.isViewOnly).toBe(false);
+    });
+
+    it('Hook usePermissions: canAccess chỉ cấp GIS_MAP, chặn AIR_QUALITY khi là khách vãng lai', () => {
+      const { result } = renderHook(() => usePermissions());
+
+      expect(result.current.canAccess('GIS_MAP')).toBe(true);
+      expect(result.current.canAccess('AIR_QUALITY')).toBe(false);
     });
 
     it('Quản trị viên ADMIN luôn sở hữu 100% 7 cột quyền trên mọi module', () => {

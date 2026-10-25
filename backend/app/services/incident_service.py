@@ -121,7 +121,7 @@ async def check_duplicate_incidents(
         CROSS JOIN current_pt pt
         WHERE ST_DWithin(i.location::geography, pt.geom::geography, :radius_m)
           AND i.status NOT IN ('RESOLVED', 'CLOSED', 'REJECTED')
-          AND (:cat_id IS NULL OR i.category_id = :cat_id)
+          AND (CAST(:cat_id AS INTEGER) IS NULL OR i.category_id = CAST(:cat_id AS INTEGER))
         ORDER BY distance_m ASC
         LIMIT 5;
     """

@@ -9,9 +9,9 @@ export interface WasteCategoryItem {
   description?: string;
   default_severity: string;
   sla_hours: number;
-  color_hex: string;
-  icon_name: string;
-  is_active: boolean;
+  color_hex?: string;
+  icon_name?: string;
+  is_active?: boolean;
 }
 
 export interface AttachedMedia {
@@ -40,6 +40,7 @@ export interface ReportFormData {
   category_id: number | null;
   category_code: string;
   category_name: string;
+  sla_hours?: number;
   title: string;
   description: string;
   severity: IncidentSeverity;
@@ -97,6 +98,7 @@ export const INITIAL_FORM_DATA: ReportFormData = {
   category_id: null,
   category_code: "",
   category_name: "",
+  sla_hours: undefined,
   title: "",
   description: "",
   severity: "MEDIUM",

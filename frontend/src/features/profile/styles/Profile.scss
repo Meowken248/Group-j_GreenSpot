@@ -97,6 +97,7 @@ $info-500: #3b82f6;
     opacity: 0;
     transform: translateY(-20px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -158,7 +159,7 @@ $info-500: #3b82f6;
 
     @media (max-width: 1023px) {
       grid-template-columns: 1fr;
-      
+
       // Thứ tự khi xếp dọc theo đặc tả:
       // 1. Ảnh bìa - Avatar (Cột trái)
       // 2. Giới thiệu (Cột phải)
@@ -166,9 +167,11 @@ $info-500: #3b82f6;
       .col-left-profile {
         order: 1;
       }
+
       .col-right-intro {
         order: 2;
       }
+
       .col-mid-posts {
         order: 3;
       }
@@ -445,31 +448,250 @@ $info-500: #3b82f6;
       @include card-surface;
       padding: 20px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      position: relative;
+      transition: all 0.25s cubic-bezier(0.32, 0.72, 0, 1);
 
       &:hover {
         border-color: $primary-300;
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
       }
 
+      &.is-hidden-card {
+        opacity: 0.65;
+        background: #f8fafc;
+        border: 1px dashed $neutral-300;
+
+        &:hover {
+          opacity: 0.95;
+          background: #ffffff;
+          border-color: $neutral-400;
+        }
+      }
+
       .post-meta-row {
         display: flex;
         align-items: center;
+        justify-content: space-between;
         gap: 10px;
         margin-bottom: 12px;
 
-        .post-relative-time {
-          font-size: 13px;
-          color: $neutral-400;
+        .post-meta-main {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+          min-width: 0;
+
+          .post-relative-time {
+            font-size: 13px;
+            color: $neutral-400;
+            white-space: nowrap;
+          }
+
+          .post-edited-tag {
+            font-size: 11px;
+            font-weight: 600;
+            color: $neutral-500;
+            background-color: $neutral-100;
+            border: 1px solid $neutral-200;
+            padding: 2px 7px;
+            border-radius: 6px;
+            white-space: nowrap;
+          }
+
+          .loc-bullet {
+            color: $neutral-300;
+            font-size: 12px;
+          }
+
+          .post-location-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12.5px;
+            color: #047857;
+            background: #ecfdf5;
+            border: 1px solid #d1fae5;
+            padding: 2px 10px;
+            border-radius: 9999px;
+            max-width: 320px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: all 0.2s ease;
+
+            .loc-icon {
+              flex-shrink: 0;
+              color: #059669;
+            }
+
+            .loc-text {
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              font-weight: 500;
+            }
+
+            &:hover {
+              background: #d1fae5;
+              border-color: #a7f3d0;
+            }
+          }
         }
 
-        .post-hidden-tag {
-          font-size: 11px;
-          font-weight: 700;
-          background-color: $neutral-200;
-          color: $neutral-600;
-          padding: 2px 8px;
-          border-radius: 6px;
+        .post-meta-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          position: relative;
+
+          .post-hidden-status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+
+            .post-hidden-tag {
+              font-size: 11px;
+              font-weight: 700;
+              background-color: $neutral-200;
+              color: $neutral-600;
+              padding: 2px 8px;
+              border-radius: 6px;
+            }
+
+            .btn-unhide-action {
+              font-size: 11.5px;
+              font-weight: 700;
+              color: $primary-700;
+              background: $primary-50;
+              border: 1px solid $primary-200;
+              padding: 2px 10px;
+              border-radius: 9999px;
+              cursor: pointer;
+              transition: all 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+
+              &:hover {
+                background: $primary-100;
+                color: $primary-800;
+                transform: translateY(-1px);
+              }
+
+              &:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+              }
+            }
+          }
+
+          .post-dropdown-container {
+            position: relative;
+
+            .btn-post-more-menu {
+              width: 30px;
+              height: 30px;
+              border-radius: 50%;
+              border: none;
+              background: transparent;
+              color: $neutral-500;
+              font-size: 18px;
+              font-weight: bold;
+              line-height: 1;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              transition: all 0.15s ease;
+
+              &:hover {
+                background: $neutral-100;
+                color: $neutral-800;
+              }
+
+              &:active {
+                transform: scale(0.92);
+              }
+            }
+
+            .post-dropdown-menu {
+              position: absolute;
+              top: calc(100% + 4px);
+              right: 0;
+              z-index: 100;
+              min-width: 175px;
+              background: rgba(255, 255, 255, 0.98);
+              backdrop-filter: blur(12px);
+              border: 1px solid rgba(226, 232, 240, 0.9);
+              border-radius: 12px;
+              padding: 6px;
+              box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.12), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+              animation: menuDropdownSlide 0.18s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+
+              .dropdown-item {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                width: 100%;
+                padding: 8px 12px;
+                border: none;
+                background: transparent;
+                border-radius: 8px;
+                font-size: 13.5px;
+                font-weight: 500;
+                color: $neutral-700;
+                cursor: pointer;
+                text-align: left;
+                transition: all 0.15s ease;
+
+                .dropdown-item-icon {
+                  font-size: 14px;
+                  line-height: 1;
+                  flex-shrink: 0;
+                }
+
+                .dropdown-item-label {
+                  flex: 1;
+                  white-space: nowrap;
+                }
+
+                &:hover {
+                  background: rgba($primary-500, 0.08);
+                  color: $primary-700;
+                }
+
+                &:active {
+                  transform: scale(0.98);
+                }
+
+                &.dropdown-item-danger {
+                  color: $error-600;
+
+                  &:hover {
+                    background: rgba($error-500, 0.08);
+                    color: $error-600;
+                  }
+                }
+
+                &.dropdown-item-report {
+                  color: $neutral-600;
+
+                  &:hover {
+                    background: rgba($warning-500, 0.08);
+                    color: $warning-600;
+                  }
+                }
+              }
+
+              .dropdown-divider {
+                height: 1px;
+                background: $neutral-200;
+                margin: 4px 2px;
+              }
+            }
+          }
         }
       }
 
@@ -481,13 +703,32 @@ $info-500: #3b82f6;
         .post-content-text {
           flex: 1;
           font-size: 15px;
-          line-height: 1.5;
+          line-height: 1.6;
           color: $neutral-800;
           display: -webkit-box;
           -webkit-line-clamp: 3; // Cắt tối đa 3 dòng
           -webkit-box-orient: vertical;
           overflow: hidden;
           text-overflow: ellipsis;
+          word-break: break-word;
+
+          .post-hashtag-pill {
+            display: inline-block;
+            color: $primary-600;
+            font-weight: 600;
+            background-color: rgba($primary-500, 0.08);
+            padding: 1px 6px;
+            margin: 0 2px;
+            border-radius: 4px;
+            transition: all 0.15s ease;
+            cursor: pointer;
+
+            &:hover {
+              color: $primary-700;
+              background-color: rgba($primary-500, 0.18);
+              text-decoration: underline;
+            }
+          }
         }
 
         .post-thumb-img {
@@ -662,6 +903,7 @@ $info-500: #3b82f6;
           color: $neutral-500;
           margin-bottom: 4px;
         }
+
         .level-val-big {
           font-size: 26px;
           font-weight: 800;
@@ -898,7 +1140,8 @@ $info-500: #3b82f6;
             color: $neutral-700;
           }
 
-          input, select {
+          input,
+          select {
             height: 42px;
             padding: 0 12px;
             border: 1px solid $neutral-300;
@@ -1199,6 +1442,96 @@ $info-500: #3b82f6;
           font-weight: 600;
           color: $error-600;
         }
+
+        // Feature STT 17: công tắc bật/tắt hiển thị ngày sinh với bạn bè
+        .birthday-privacy-toggle {
+          display: flex;
+          position: relative;
+          align-items: flex-start;
+          gap: 12px;
+          margin-top: 8px;
+          padding: 12px 14px;
+          border: 1px solid $neutral-200;
+          border-radius: 10px;
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.06), rgba(16, 185, 129, 0.01));
+          cursor: pointer;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+          &:hover {
+            border-color: $primary-400;
+          }
+
+          &:focus-within {
+            border-color: $primary-500;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+          }
+
+          input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            width: 1px;
+            height: 1px;
+            pointer-events: none;
+          }
+
+          .toggle-track {
+            position: relative;
+            flex: 0 0 auto;
+            width: 42px;
+            height: 24px;
+            border-radius: 999px;
+            background: $neutral-300;
+            transition: background 0.2s ease;
+            margin-top: 2px;
+
+            .toggle-thumb {
+              position: absolute;
+              top: 3px;
+              left: 3px;
+              width: 18px;
+              height: 18px;
+              border-radius: 50%;
+              background: #ffffff;
+              box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+              transition: transform 0.2s ease;
+            }
+          }
+
+          input[type="checkbox"]:checked~.toggle-track {
+            background: $primary-500;
+
+            .toggle-thumb {
+              transform: translateX(18px);
+            }
+          }
+
+          input[type="checkbox"]:disabled~.toggle-track {
+            opacity: 0.5;
+          }
+
+          .toggle-text {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+
+            strong {
+              font-size: 13.5px;
+              font-weight: 700;
+              color: $neutral-800;
+            }
+
+            small {
+              font-size: 12px;
+              line-height: 1.45;
+              color: $neutral-500;
+            }
+          }
+
+          &:has(input[type="checkbox"]:disabled) {
+            cursor: not-allowed;
+            opacity: 0.7;
+          }
+        }
       }
     }
 
@@ -1348,33 +1681,194 @@ $info-500: #3b82f6;
       align-items: center;
       gap: 16px;
 
-      .bell-notification-btn {
-        background: transparent;
-        border: 1px solid $neutral-200;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 18px;
-        cursor: pointer;
+      .bell-notification-wrapper {
         position: relative;
-        transition: all 0.2s ease;
+        display: inline-block;
 
-        &:hover {
-          background-color: $neutral-100;
+        .bell-notification-btn {
+          background: transparent;
+          border: 1px solid $neutral-200;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 18px;
+          cursor: pointer;
+          position: relative;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background-color: $neutral-100;
+          }
+
+          .bell-dot {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 8px;
+            height: 8px;
+            background-color: $error-500;
+            border-radius: 50%;
+            border: 1.5px solid #ffffff;
+            box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+          }
         }
 
-        .bell-dot {
+        .notification-dropdown-panel {
           position: absolute;
-          top: 8px;
-          right: 8px;
-          width: 8px;
-          height: 8px;
-          background-color: $error-500;
-          border-radius: 50%;
-          border: 1.5px solid #ffffff;
+          top: calc(100% + 10px);
+          right: 0;
+          width: 360px;
+          max-width: 90vw;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+          z-index: 1000;
+          overflow: hidden;
+          animation: dropdownFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+          .notif-dropdown-header {
+            padding: 14px 18px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8fafc;
+
+            .notif-header-title {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              font-size: 14px;
+              font-weight: 700;
+              color: #0f172a;
+
+              .notif-unread-badge {
+                background: #ef4444;
+                color: #ffffff;
+                font-size: 11px;
+                font-weight: 800;
+                padding: 1px 7px;
+                border-radius: 10px;
+              }
+            }
+
+            .btn-mark-all-read {
+              background: none;
+              border: none;
+              color: #059669;
+              font-size: 12px;
+              font-weight: 600;
+              cursor: pointer;
+              padding: 4px;
+              transition: color 0.2s;
+
+              &:hover {
+                color: #047857;
+                text-decoration: underline;
+              }
+            }
+          }
+
+          .notif-items-list {
+            max-height: 380px;
+            overflow-y: auto;
+
+            .notif-loading,
+            .notif-empty {
+              padding: 40px 20px;
+              text-align: center;
+              color: #64748b;
+              font-size: 13px;
+
+              .notif-empty-icon {
+                font-size: 32px;
+                display: block;
+                margin-bottom: 8px;
+              }
+            }
+
+            .notif-item {
+              padding: 12px 16px;
+              border-bottom: 1px solid #f1f5f9;
+              display: flex;
+              align-items: flex-start;
+              gap: 12px;
+              cursor: pointer;
+              transition: background 0.15s ease;
+              position: relative;
+
+              &:last-child {
+                border-bottom: none;
+              }
+
+              &:hover {
+                background: #f8fafc;
+              }
+
+              &.unread {
+                background: #f0fdf4;
+
+                &:hover {
+                  background: #e6fced;
+                }
+              }
+
+              .notif-item-icon {
+                font-size: 20px;
+                flex-shrink: 0;
+                margin-top: 2px;
+              }
+
+              .notif-item-content {
+                flex: 1;
+
+                .notif-item-title {
+                  font-size: 13px;
+                  font-weight: 700;
+                  color: #0f172a;
+                  margin-bottom: 3px;
+                  line-height: 1.3;
+                }
+
+                .notif-item-msg {
+                  font-size: 12px;
+                  color: #475569;
+                  line-height: 1.4;
+                  margin-bottom: 4px;
+                }
+
+                .notif-item-time {
+                  font-size: 11px;
+                  color: #94a3b8;
+                }
+              }
+
+              .notif-unread-dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: #10b981;
+                flex-shrink: 0;
+                margin-top: 6px;
+              }
+            }
+          }
+        }
+      }
+
+      @keyframes dropdownFadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-8px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
       }
 
@@ -1574,8 +2068,951 @@ $info-500: #3b82f6;
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }
 }
+
+// =============================================================================
+// DARK THEME CHO THÔNG BÁO CHUÔNG (NOTIFICATION DROPDOWN)
+// =============================================================================
+.dark-theme,
+[data-theme="dark"],
+body.dark-mode {
+  .bell-notification-wrapper {
+    .bell-notification-btn {
+      border-color: #334155 !important;
+      color: #f8fafc !important;
+
+      &:hover {
+        background-color: #1e293b !important;
+      }
+
+      .bell-dot {
+        border-color: #0f172a !important;
+      }
+    }
+
+    .notification-dropdown-panel {
+      background: #1e293b !important;
+      border-color: #334155 !important;
+      box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+
+      .notif-dropdown-header {
+        background: #0f172a !important;
+        border-bottom-color: #334155 !important;
+
+        .notif-header-title {
+          color: #f8fafc !important;
+        }
+
+        .btn-mark-all-read {
+          color: #34d399 !important;
+
+          &:hover {
+            color: #6ee7b7 !important;
+          }
+        }
+      }
+
+      .notif-items-list {
+
+        .notif-loading,
+        .notif-empty {
+          color: #94a3b8 !important;
+        }
+
+        .notif-item {
+          border-bottom-color: #334155 !important;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.03) !important;
+          }
+
+          &.unread {
+            background: rgba(16, 185, 129, 0.12) !important;
+
+            &:hover {
+              background: rgba(16, 185, 129, 0.18) !important;
+            }
+          }
+
+          .notif-item-content {
+            .notif-item-title {
+              color: #f8fafc !important;
+            }
+
+            .notif-item-msg {
+              color: #cbd5e1 !important;
+            }
+
+            .notif-item-time {
+              color: #64748b !important;
+            }
+          }
+
+          .notif-unread-dot {
+            background: #34d399 !important;
+          }
+        }
+      }
+    }
+  }
+}
+
+// =========================================================================
+// CHỨC NĂNG 13: KEYFRAMES & POPUP MODALS (HIGH-END VISUAL DESIGN)
+// =========================================================================
+@keyframes menuDropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modalBackdropFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes spinSmall {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ==========================================
+// HỆ THỐNG MODAL POPUP CHỨC NĂNG 13 (EDIT, DELETE, HIDE, CONFIRM)
+// ==========================================
+
+// 1. LỚP OVERLAY NỀN MỜ (BACKDROP)
+.modal-backdrop-overlay,
+.edit-post-modal-overlay,
+.delete-post-modal-overlay,
+.hide-post-modal-overlay,
+.discard-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: modalBackdropFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+  &.discard-confirm-overlay {
+    z-index: 10020; // Nằm trên Edit Modal khi xác nhận thoát
+  }
+}
+
+// Đảm bảo Modal Vị trí và Gắn thẻ luôn nổi trên EditPostModal khi mở từ Profile
+.location-modal-backdrop,
+.tag-modal-backdrop {
+  z-index: 10050 !important;
+}
+
+// 2. KHUNG THẺ CHÍNH (DOUBLE-BEZEL SURFACE)
+.modal-double-bezel {
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  animation: modalPopIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overflow: hidden;
+  width: 100%;
+  max-width: 500px;
+  position: relative;
+
+  &.modal-edit-post-card,
+  &.edit-post-modal-container {
+    max-width: 680px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &.modal-delete-card,
+  &.delete-post-modal-container {
+    max-width: 450px;
+    padding: 32px 28px;
+    text-align: center;
+  }
+
+  &.modal-hide-card,
+  &.hide-post-modal-container {
+    max-width: 450px;
+    padding: 32px 28px;
+    text-align: center;
+  }
+
+  &.modal-confirm-card,
+  &.discard-modal-container {
+    max-width: 440px;
+    padding: 28px 24px;
+  }
+}
+
+.modal-inner-core {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+// 3. TIÊU ĐỀ & EYEBROW PILLS
+.modal-header-between {
+  padding: 20px 24px;
+  border-bottom: 1px solid $neutral-100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.modal-eyebrow-pill {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: $primary-50;
+  color: $primary-700;
+  border: 1px solid $primary-200;
+  display: inline-flex;
+  margin-bottom: 6px;
+
+  &.danger-pill {
+    background: $error-50;
+    color: $error-600;
+    border-color: #fecaca;
+  }
+
+  &.success-pill {
+    background: #f0fdf4;
+    color: #15803d;
+    border-color: #bbf7d0;
+  }
+}
+
+.modal-title-main {
+  font-size: 20px;
+  font-weight: 800;
+  color: $neutral-900;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.modal-title-danger {
+  font-size: 20px;
+  font-weight: 800;
+  color: $error-600;
+  margin: 0 0 8px;
+}
+
+.modal-title-success {
+  font-size: 20px;
+  font-weight: 800;
+  color: #15803d;
+  margin: 0 0 8px;
+}
+
+.modal-desc-text {
+  font-size: 14.5px;
+  color: $neutral-600;
+  line-height: 1.55;
+  margin: 0 0 16px;
+}
+
+.btn-modal-close-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: $neutral-100;
+  color: $neutral-500;
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+
+  &:hover {
+    background: $neutral-200;
+    color: $neutral-900;
+    transform: rotate(90deg);
+  }
+}
+
+// 4. THÔNG BÁO LỖI TRONG MODAL
+.modal-error-banner {
+  margin: 16px 24px 0;
+  padding: 12px 16px;
+  background: $error-50;
+  border: 1px solid $error-500;
+  border-radius: 12px;
+  color: $error-600;
+  font-size: 13.5px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .error-icon-dot {
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+}
+
+// 5. NỘI DUNG CUỘN CỦA FORM SỬA BÀI VIẾT
+.edit-post-form {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: 1;
+
+  .edit-form-scrollable {
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    overflow-y: auto;
+    max-height: calc(90vh - 150px);
+  }
+
+  .form-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .form-field-label {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: $neutral-700;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .textarea-wrapper {
+    position: relative;
+    border-radius: 14px;
+    border: 1px solid $neutral-300;
+    background: #fbfcfe;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+    &.has-error {
+      border-color: $error-500;
+    }
+
+    &:focus-within {
+      border-color: $primary-500;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba($primary-500, 0.15);
+    }
+
+    .edit-post-textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 14px 16px 36px;
+      border: none;
+      background: transparent;
+      font-size: 14.5px;
+      line-height: 1.6;
+      color: $neutral-800;
+      resize: vertical;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .char-counter {
+      position: absolute;
+      right: 14px;
+      bottom: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: $neutral-400;
+      pointer-events: none;
+
+      &.counter-over {
+        color: $error-500;
+        font-weight: 700;
+      }
+    }
+  }
+
+  // Gợi ý Hashtags nhanh
+  .hashtag-suggestions-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 2px;
+
+    .hashtag-hint-label {
+      font-size: 12px;
+      color: $neutral-500;
+      margin-right: 2px;
+    }
+
+    .hashtag-pill-btn {
+      font-size: 12px;
+      font-weight: 600;
+      color: $primary-700;
+      background: $primary-50;
+      border: 1px solid $primary-200;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &:hover {
+        background: $primary-100;
+        border-color: $primary-300;
+        transform: translateY(-1px);
+      }
+    }
+  }
+
+  // Khối đính kèm Media
+  .media-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .btn-add-media {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      border: 1px solid $primary-200;
+      background: $primary-50;
+      color: $primary-700;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: $primary-100;
+        border-color: $primary-300;
+        transform: translateY(-1px);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+    }
+  }
+
+  .media-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+    gap: 10px;
+    margin-top: 6px;
+
+    .media-preview-item {
+      position: relative;
+      width: 100%;
+      padding-bottom: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid $neutral-200;
+      background: $neutral-100;
+
+      .preview-media-thumb {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .video-thumb-container {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+
+        video {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
+
+      .video-badge-pill {
+        position: absolute;
+        bottom: 4px;
+        left: 4px;
+        background: rgba(0, 0, 0, 0.7);
+        color: #ffffff;
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+        letter-spacing: 0.05em;
+      }
+
+      .btn-remove-media-thumb {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(15, 23, 42, 0.75);
+        color: #ffffff;
+        font-size: 11px;
+        font-weight: bold;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+
+        &:hover {
+          background: $error-500;
+          transform: scale(1.1);
+        }
+      }
+    }
+  }
+
+  .media-hint-text {
+    font-size: 12px;
+    color: $neutral-400;
+    margin: 4px 0 0;
+  }
+
+  // Khối tuỳ chọn: Vị trí, Gắn thẻ bạn bè, Chế độ hiển thị
+  .options-panel-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 14px;
+    border-top: 1px solid $neutral-100;
+
+    .option-row-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .option-action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 14px;
+      border-radius: 12px;
+      border: 1px solid $neutral-200;
+      background: #ffffff;
+      color: $neutral-700;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      align-self: flex-start;
+
+      &:hover {
+        background: $neutral-50;
+        border-color: $neutral-300;
+        color: $neutral-900;
+      }
+    }
+
+    .option-active-badge {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: 12px;
+      background: #ecfdf5;
+      border: 1px solid #d1fae5;
+      color: #047857;
+      font-size: 13px;
+      font-weight: 500;
+
+      .badge-content-left {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        .badge-text-overflow {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      }
+
+      .badge-actions-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+
+        .btn-badge-edit {
+          font-size: 12px;
+          font-weight: 600;
+          color: $primary-700;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          text-decoration: underline;
+
+          &:hover {
+            color: $primary-800;
+          }
+        }
+
+        .btn-badge-remove {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          border: none;
+          background: rgba(4, 120, 87, 0.15);
+          color: #047857;
+          font-size: 11px;
+          font-weight: bold;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          &:hover {
+            background: #ef4444;
+            color: #ffffff;
+          }
+        }
+      }
+    }
+
+    // Bộ chọn Chế độ hiển thị (Visibility pills)
+    .visibility-segmented-control {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 4px;
+
+      .visibility-option-btn {
+        padding: 8px 12px;
+        border-radius: 10px;
+        border: 1px solid $neutral-200;
+        background: #ffffff;
+        color: $neutral-600;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: $neutral-50;
+        }
+
+        &.is-selected {
+          border-color: $primary-500;
+          background: $primary-50;
+          color: $primary-700;
+          font-weight: 700;
+        }
+      }
+    }
+  }
+}
+
+// 6. CÁC NÚT BẤM DƯỚI ĐÁY MODAL
+.modal-actions-row {
+  padding: 16px 24px;
+  border-top: 1px solid $neutral-100;
+  background: #fafbfc;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+
+  &.single-action {
+    justify-content: center;
+  }
+}
+
+.btn-modal-ghost {
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: 1px solid $neutral-300;
+  background: #ffffff;
+  color: $neutral-700;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: $neutral-100;
+    border-color: $neutral-400;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-modal-primary-solid {
+  padding: 10px 24px;
+  border-radius: 12px;
+  border: none;
+  background: $primary-600;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 6px -1px rgba($primary-600, 0.25);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &:hover {
+    background: $primary-700;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px -2px rgba($primary-600, 0.35);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .spinner-inline {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spinSmall 0.6s linear infinite;
+  }
+}
+
+.btn-modal-danger-solid {
+  padding: 11px 22px;
+  border-radius: 12px;
+  border: none;
+  background: $error-500;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 6px -1px rgba($error-500, 0.25);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &:hover {
+    background: $error-600;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+.btn-modal-warning-solid {
+  padding: 11px 20px;
+  border-radius: 12px;
+  border: 1px solid #fcd34d;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &:hover {
+    background: #fde68a;
+    border-color: #f59e0b;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+// 7. CHI TIẾT POPUP XOÁ & THÔNG BÁO THÀNH CÔNG
+.modal-delete-card {
+  .delete-warning-icon-wrapper {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: $error-50;
+    border: 1px solid #fecaca;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 26px;
+  }
+
+  .modal-success-icon-badge {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #059669;
+    font-size: 28px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+  }
+
+  .modal-auto-dismiss-hint {
+    font-size: 12.5px;
+    color: $neutral-400;
+    font-style: italic;
+    margin-top: 4px;
+    margin-bottom: 20px;
+  }
+}
+
+// 8. CHI TIẾT POPUP ẨN BÀI VIẾT
+.modal-hide-card {
+  .modal-eye-icon-badge {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: $neutral-100;
+    border: 1px solid $neutral-200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 26px;
+  }
+
+  .countdown-pill-indicator {
+    margin: 0 auto 20px;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    color: #92400e;
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    .ticker-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #d97706;
+      animation: spinSmall 1.5s infinite linear;
+    }
+  }
+}
+
+// 9. RESPONSIVE QUERIES
+@media (max-width: 640px) {
+  .modal-double-bezel {
+    &.modal-edit-post-card {
+      max-height: 94vh;
+      border-radius: 20px;
+
+      .modal-header-between {
+        padding: 16px 18px;
+      }
+
+      .edit-form-scrollable {
+        padding: 16px 18px;
+      }
+
+      .modal-actions-row {
+        padding: 14px 18px;
+      }
+    }
+
+    &.modal-delete-card,
+    &.modal-hide-card,
+    &.modal-confirm-card {
+      padding: 24px 18px;
+      border-radius: 20px;
+    }
+  }
+}
+
 

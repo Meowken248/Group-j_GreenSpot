@@ -32,7 +32,7 @@ INSERT INTO users (
 VALUES
   ('11111111-1111-1111-1111-111111111111', 'admin@ecoreport.gov.vn', '0901000001', '1c17534bf8bef4f5904e8252c14edeee$5ac2e327d162f4cd6e98e774a09b74559e0c164e52fad60f642bdbd4ad82c0d5', 'Quản trị viên Hệ thống', 1, 'ACTIVE', 100, 500, 10, 1, NOW()),
   ('22222222-2222-2222-2222-222222222222', 'officer@ecoreport.gov.vn', '0901000002', '1c17534bf8bef4f5904e8252c14edeee$5ac2e327d162f4cd6e98e774a09b74559e0c164e52fad60f642bdbd4ad82c0d5', 'Cán bộ Phòng TN&MT', 2, 'ACTIVE', 100, 300, 5, 1, NOW()),
-  ('44444444-4444-4444-4444-444444444444', 'citizen@ecoreport.gov.vn', '0901000004', '1c17534bf8bef4f5904e8252c14edeee$5ac2e327d162f4cd6e98e774a09b74559e0c164e52fad60f642bdbd4ad82c0d5', 'Nguyễn Thành Đạt (Công dân)', 4, 'ACTIVE', 100, 200, 12, 1, NOW())
+  ('44444444-4444-4444-4444-444444444444', 'citizen@ecoreport.gov.vn', '0901000004', '8c328560dc6d21b268265d056242dd22$96b8e9682ca31eac8805421330f7434f8dafe868c71cee72d8c47b30a9218f18', 'Nguyễn Thành Đạt (Công dân)', 4, 'ACTIVE', 100, 200, 12, 1, NOW())
 ON CONFLICT (email) DO UPDATE
 SET password_hash = EXCLUDED.password_hash, status = 'ACTIVE';
 
@@ -73,78 +73,80 @@ SELECT 6, '787', 'Huyện Cần Giờ', 'DISTRICT', 1, 704.45, 71500,
 WHERE NOT EXISTS (SELECT 1 FROM administrative_units WHERE unit_code = '787');
 
 -- 4. WASTE CATEGORIES
-INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, color_hex, icon_name, is_active)
-SELECT 1, 'DOMESTIC_WASTE', 'Rác thải sinh hoạt ứ đọng', 'Bãi rác tự phát, túi ni lông bốc mùi', 'MEDIUM', 24, '#EAB308', 'trash', TRUE
+INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, sla_warning_hours, color_hex, icon_name, is_active, is_deleted)
+SELECT 1, 'DOMESTIC_WASTE', 'Rác thải sinh hoạt ứ đọng', 'Bãi rác tự phát, túi ni lông bốc mùi', 'MEDIUM', 24, 4, '#EAB308', 'trash', TRUE, FALSE
 WHERE NOT EXISTS (SELECT 1 FROM waste_categories WHERE category_code = 'DOMESTIC_WASTE');
 
-INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, color_hex, icon_name, is_active)
-SELECT 2, 'HAZARDOUS_WASTE', 'Chất thải nguy hại & Pin cũ', 'Pin cũ, hóa chất, bóng đèn huỳnh quang', 'CRITICAL', 12, '#EF4444', 'alert-triangle', TRUE
+INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, sla_warning_hours, color_hex, icon_name, is_active, is_deleted)
+SELECT 2, 'HAZARDOUS_WASTE', 'Chất thải nguy hại & Pin cũ', 'Pin cũ, hóa chất, bóng đèn huỳnh quang', 'CRITICAL', 12, 2, '#EF4444', 'alert-triangle', TRUE, FALSE
 WHERE NOT EXISTS (SELECT 1 FROM waste_categories WHERE category_code = 'HAZARDOUS_WASTE');
 
-INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, color_hex, icon_name, is_active)
-SELECT 3, 'WATERWAY_POLLUTION', 'Ô nhiễm kênh rạch & Nguồn nước', 'Rác thải nổi lềnh bềnh, nước đen bốc mùi', 'HIGH', 36, '#3B82F6', 'droplets', TRUE
+INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, sla_warning_hours, color_hex, icon_name, is_active, is_deleted)
+SELECT 3, 'WATERWAY_POLLUTION', 'Ô nhiễm kênh rạch & Nguồn nước', 'Rác thải nổi lềnh bềnh, nước đen bốc mùi', 'HIGH', 36, 4, '#3B82F6', 'droplets', TRUE, FALSE
 WHERE NOT EXISTS (SELECT 1 FROM waste_categories WHERE category_code = 'WATERWAY_POLLUTION');
 
-INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, color_hex, icon_name, is_active)
-SELECT 4, 'DRAINAGE_BLOCK', 'Điểm nghẽn cống ngập úng', 'Miệng hố ga bị rác bịt kín gây ngập cục bộ', 'HIGH', 18, '#06B6D4', 'cloud-rain', TRUE
+INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, sla_warning_hours, color_hex, icon_name, is_active, is_deleted)
+SELECT 4, 'DRAINAGE_BLOCK', 'Điểm nghẽn cống ngập úng', 'Miệng hố ga bị rác bịt kín gây ngập cục bộ', 'HIGH', 18, 3, '#06B6D4', 'cloud-rain', TRUE, FALSE
 WHERE NOT EXISTS (SELECT 1 FROM waste_categories WHERE category_code = 'DRAINAGE_BLOCK');
 
-INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, color_hex, icon_name, is_active)
-SELECT 5, 'CONSTRUCTION_DEBRIS', 'Xà bần & Phế thải xây dựng', 'Gạch vữa phế thải lấn chiếm lòng lề đường', 'LOW', 72, '#78716C', 'truck', TRUE
+INSERT INTO waste_categories (category_id, category_code, name, description, default_severity, sla_hours, sla_warning_hours, color_hex, icon_name, is_active, is_deleted)
+SELECT 5, 'CONSTRUCTION_DEBRIS', 'Xà bần & Phế thải xây dựng', 'Gạch vữa phế thải lấn chiếm lòng lề đường', 'LOW', 72, 12, '#78716C', 'truck', TRUE, FALSE
 WHERE NOT EXISTS (SELECT 1 FROM waste_categories WHERE category_code = 'CONSTRUCTION_DEBRIS');
+
+SELECT setval('waste_categories_category_id_seq', COALESCE((SELECT MAX(category_id) FROM waste_categories), 1));
 
 -- 5. INCIDENTS (SỰ CỐ MÔI TRƯỜNG THỰC TẾ TP.HCM)
 DELETE FROM incidents WHERE tracking_code LIKE 'ECO-HCM-%';
 
-INSERT INTO incidents (incident_id, tracking_code, reporter_id, category_id, unit_id, title, description, address_text, location, latitude, longitude, severity, status, risk_score, is_anonymous, upvotes_count)
+INSERT INTO incidents (incident_id, tracking_code, reporter_id, category_id, unit_id, title, description, address_text, location, latitude, longitude, severity, status, risk_score, is_anonymous, upvotes_count, version, is_duplicate_merged)
 VALUES
 (gen_random_uuid(), 'ECO-HCM-001', '44444444-4444-4444-4444-444444444444', 3, 3,
  'Rác thải trôi nổi và lục bình ứ đọng ven sông Sài Gòn',
  'Túi nilon và chai nhựa dạt vào bến Bạch Đằng gây mất mỹ quan đô thị trung tâm và bốc mùi khi nước ròng.',
  'Bến Bạch Đằng, Tôn Đức Thắng, Quận 1',
- ST_SetSRID(ST_MakePoint(106.7065, 10.7725), 4326), 10.7725, 106.7065, 'HIGH', 'PENDING', 82.0, FALSE, 12),
+ ST_SetSRID(ST_MakePoint(106.7065, 10.7725), 4326), 10.7725, 106.7065, 'HIGH', 'PENDING', 82.0, FALSE, 12, 1, FALSE),
 
 (gen_random_uuid(), 'ECO-HCM-002', '44444444-4444-4444-4444-444444444444', 1, 2,
  'Bãi rác tự phát lấn chiếm vỉa hè đường Võ Văn Ngân',
  'Túi rác sinh hoạt chất đống gần ngã 5 Chợ Thủ Đức, nước rỉ rác bốc mùi nồng nặc và cản trở người đi bộ.',
  'Số 245 Võ Văn Ngân, Phường Linh Chiểu, TP. Thủ Đức',
- ST_SetSRID(ST_MakePoint(106.7625, 10.8512), 4326), 10.8512, 106.7625, 'CRITICAL', 'IN_PROGRESS', 91.5, FALSE, 25),
+ ST_SetSRID(ST_MakePoint(106.7625, 10.8512), 4326), 10.8512, 106.7625, 'CRITICAL', 'IN_PROGRESS', 91.5, FALSE, 25, 1, FALSE),
 
 (gen_random_uuid(), 'ECO-HCM-003', '44444444-4444-4444-4444-444444444444', 4, 4,
  'Cửa cống thoát nước bị rác bít kín gây ngập Kênh Tè',
  'Miệng hố ga gom nước mưa bị bùn đất và lá cây chèn cứng gây ngập nước sâu sau các đợt mưa lớn.',
  'Đường Nguyễn Thị Thập, Phường Tân Phú, Quận 7',
- ST_SetSRID(ST_MakePoint(106.7215, 10.7380), 4326), 10.7380, 106.7215, 'HIGH', 'RESOLVED', 64.0, FALSE, 8),
+ ST_SetSRID(ST_MakePoint(106.7215, 10.7380), 4326), 10.7380, 106.7215, 'HIGH', 'RESOLVED', 64.0, FALSE, 8, 1, FALSE),
 
 (gen_random_uuid(), 'ECO-HCM-004', '44444444-4444-4444-4444-444444444444', 3, 5,
  'Ô nhiễm kênh Nhiêu Lộc - Thị Nghè đoạn cầu Điện Biên Phủ',
  'Xuất hiện váng dầu loang và mùi khét rác thải hữu cơ theo dòng chảy thủy triều qua địa bàn Bình Thạnh.',
  'Chân cầu Điện Biên Phủ, Phường 15, Quận Bình Thạnh',
- ST_SetSRID(ST_MakePoint(106.6995, 10.7930), 4326), 10.7930, 106.6995, 'HIGH', 'IN_PROGRESS', 77.5, FALSE, 18),
+ ST_SetSRID(ST_MakePoint(106.6995, 10.7930), 4326), 10.7930, 106.6995, 'HIGH', 'IN_PROGRESS', 77.5, FALSE, 18, 1, FALSE),
 
 (gen_random_uuid(), 'ECO-HCM-005', '44444444-4444-4444-4444-444444444444', 5, 2,
  'Đổ trộm xà bần xây dựng ven đường Lương Định Của',
  'Đoạn đường đất trống dự án Thủ Thiêm bị xe tải đổ trộm hơn 5 khối gạch vỡ và bê tông vào ban đêm.',
  'Đường Lương Định Của, Phường An Khánh, TP. Thủ Đức',
- ST_SetSRID(ST_MakePoint(106.7280, 10.7850), 4326), 10.7850, 106.7280, 'MEDIUM', 'PENDING', 58.0, FALSE, 5),
+ ST_SetSRID(ST_MakePoint(106.7280, 10.7850), 4326), 10.7850, 106.7280, 'MEDIUM', 'PENDING', 58.0, FALSE, 5, 1, FALSE),
 
 (gen_random_uuid(), 'ECO-HCM-006', '44444444-4444-4444-4444-444444444444', 1, 3,
  'Tập kết rác trái phép sau chợ Bến Thành',
  'Thùng rác chợ tràn ra mặt đường Lê Thánh Tôn trong giờ cao điểm du lịch gây mất vệ sinh công cộng.',
  'Đường Lê Thánh Tôn, Phường Bến Thành, Quận 1',
- ST_SetSRID(ST_MakePoint(106.6980, 10.7720), 4326), 10.7720, 106.6980, 'MEDIUM', 'IN_PROGRESS', 65.0, FALSE, 15),
+ ST_SetSRID(ST_MakePoint(106.6980, 10.7720), 4326), 10.7720, 106.6980, 'MEDIUM', 'IN_PROGRESS', 65.0, FALSE, 15, 1, FALSE),
 
 (gen_random_uuid(), 'ECO-HCM-007', '44444444-4444-4444-4444-444444444444', 4, 5,
  'Điểm đen ngập nước do cống nghẽn đường Ung Văn Khiêm',
  'Đoạn đường trũng thấp thường xuyên ngập lút bánh xe khi mưa kết hợp triều cường sông Sài Gòn.',
  'Đường Ung Văn Khiêm, Phường 25, Quận Bình Thạnh',
- ST_SetSRID(ST_MakePoint(106.7180, 10.8065), 4326), 10.8065, 106.7180, 'HIGH', 'PENDING', 79.0, FALSE, 21),
+ ST_SetSRID(ST_MakePoint(106.7180, 10.8065), 4326), 10.8065, 106.7180, 'HIGH', 'PENDING', 79.0, FALSE, 21, 1, FALSE),
 
 (gen_random_uuid(), 'ECO-HCM-008', '44444444-4444-4444-4444-444444444444', 3, 6,
  'Rác thải nhựa trôi dạt vào bãi biển 30/4 Cần Giờ',
  'Mảnh lưới đánh cá và chai nhựa thủy sinh dạt vào dải rừng ngập mặn ven biển Cần Giờ.',
  'Bãi biển 30/4, Xã Long Hòa, Huyện Cần Giờ',
- ST_SetSRID(ST_MakePoint(106.9450, 10.4120), 4326), 10.4120, 106.9450, 'MEDIUM', 'RESOLVED', 53.0, FALSE, 9);
+ ST_SetSRID(ST_MakePoint(106.9450, 10.4120), 4326), 10.4120, 106.9450, 'MEDIUM', 'RESOLVED', 53.0, FALSE, 9, 1, FALSE);
 
 -- 6. ESSENTIAL FACILITIES & GREEN SPACES (ĐIỂM XANH & CÔNG VIÊN)
 DELETE FROM essential_facilities WHERE facility_name IN (
@@ -190,25 +192,25 @@ VALUES
 -- 7. RECYCLING FACILITIES (TRẠM THU GOM RÁC TÁI CHẾ)
 DELETE FROM recycling_facilities WHERE name LIKE '%(TP.HCM)%';
 
-INSERT INTO recycling_facilities (name, facility_code, address, unit_id, location, accepted_waste_types, operating_hours, contact_phone, managing_org, is_active)
+INSERT INTO recycling_facilities (name, facility_code, address, unit_id, location, accepted_waste_types, operating_hours, contact_phone, managing_org, is_active, is_deleted)
 VALUES
 ('Trạm Thu gom Rác điện tử & Pin cũ Quận 1 (TP.HCM)', 'REC-Q1-01', '128 Hai Bà Trưng, Phường Đa Kao, Quận 1', 3,
- ST_SetSRID(ST_MakePoint(106.6960, 10.7850), 4326), ARRAY['PIN_CU', 'THIET_BI_DIEN_TU', 'BONG_DEN'], '08:00 - 17:00 (T2 - T7)', '028.3822.1122', 'Sở TN&MT TP.HCM', TRUE),
+ ST_SetSRID(ST_MakePoint(106.6960, 10.7850), 4326), ARRAY['PIN_CU', 'THIET_BI_DIEN_TU', 'BONG_DEN'], '08:00 - 17:00 (T2 - T7)', '028.3822.1122', 'Sở TN&MT TP.HCM', TRUE, FALSE),
 
 ('Trạm Tái chế Vỏ hộp sữa & Nhựa Tetra Pak (TP.HCM)', 'REC-TD-01', '105 Võ Văn Ngân, Phường Linh Chiểu, TP. Thủ Đức', 2,
- ST_SetSRID(ST_MakePoint(106.7550, 10.8490), 4326), ARRAY['VO_HOP_SUA', 'NHUA_PET', 'GIAY_BIA'], '07:30 - 17:30 (Hàng ngày)', '028.3722.9988', 'PRO Vietnam & UBND', TRUE),
+ ST_SetSRID(ST_MakePoint(106.7550, 10.8490), 4326), ARRAY['VO_HOP_SUA', 'NHUA_PET', 'GIAY_BIA'], '07:30 - 17:30 (Hàng ngày)', '028.3722.9988', 'PRO Vietnam & UBND', TRUE, FALSE),
 
 ('Điểm Thu hồi Kim loại & Chai thủy tinh Xanh (TP.HCM)', 'REC-Q7-01', 'Đường Nguyễn Lương Bằng, Phường Tân Phú, Quận 7', 4,
- ST_SetSRID(ST_MakePoint(106.7260, 10.7290), 4326), ARRAY['THUY_TINH', 'NHOM_KIM_LOAI', 'NHUA_TAI_CHE'], '08:00 - 18:00', '028.5413.5566', 'Môi trường Đô thị Q7', TRUE),
+ ST_SetSRID(ST_MakePoint(106.7260, 10.7290), 4326), ARRAY['THUY_TINH', 'NHOM_KIM_LOAI', 'NHUA_TAI_CHE'], '08:00 - 18:00', '028.5413.5566', 'Môi trường Đô thị Q7', TRUE, FALSE),
 
 ('Trạm Phân loại Rác tại Nguồn Bình Thạnh (TP.HCM)', 'REC-BT-01', 'Đường Nơ Trang Long, Phường 14, Quận Bình Thạnh', 5,
- ST_SetSRID(ST_MakePoint(106.6965, 10.8080), 4326), ARRAY['RAC_HUU_CO', 'NHUA_PET', 'PIN_CU'], '07:00 - 18:00', '028.3841.2233', 'Công ty Môi trường Đô thị', TRUE),
+ ST_SetSRID(ST_MakePoint(106.6965, 10.8080), 4326), ARRAY['RAC_HUU_CO', 'NHUA_PET', 'PIN_CU'], '07:00 - 18:00', '028.3841.2233', 'Công ty Môi trường Đô thị', TRUE, FALSE),
 
 ('Trạm Thu hồi Đồ gia dụng cũ & E-waste (TP.HCM)', 'REC-TD-02', 'Đường Song Hành Xa Lộ Hà Nội, An Phú, TP. Thủ Đức', 2,
- ST_SetSRID(ST_MakePoint(106.7450, 10.8030), 4326), ARRAY['DO_DIEN_TU_LON', 'MUC_IN', 'PIN_CU'], '08:00 - 17:00', '028.3744.1100', 'Vietnam Recycles', TRUE),
+ ST_SetSRID(ST_MakePoint(106.7450, 10.8030), 4326), ARRAY['DO_DIEN_TU_LON', 'MUC_IN', 'PIN_CU'], '08:00 - 17:00', '028.3744.1100', 'Vietnam Recycles', TRUE, FALSE),
 
 ('Điểm Tiếp nhận Thu gom Rác nhựa ven biển (TP.HCM)', 'REC-CG-01', 'Đường Duyên Hải, Thị trấn Cần Thạnh, Huyện Cần Giờ', 6,
- ST_SetSRID(ST_MakePoint(106.9600, 10.3950), 4326), ARRAY['RAC_NHUA_BIEN', 'NHUA_TAI_CHE'], '07:00 - 17:00', '028.3874.0011', 'Ban Quản lý Rừng Sác', TRUE);
+ ST_SetSRID(ST_MakePoint(106.9600, 10.3950), 4326), ARRAY['RAC_NHUA_BIEN', 'NHUA_TAI_CHE'], '07:00 - 17:00', '028.3874.0011', 'Ban Quản lý Rừng Sác', TRUE, FALSE);
 
 -- 8. IOT SENSOR STATIONS (TRẠM QUAN TRẮC CẢM BIẾN IOT)
 DELETE FROM iot_sensor_stations WHERE station_code LIKE 'IOT-HCM-%';

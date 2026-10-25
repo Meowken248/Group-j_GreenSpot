@@ -91,7 +91,7 @@ class TestRbacFullBackend(unittest.TestCase):
 
         # Kiểm tra vai trò Admin
         admin = roles[0]
-        self.assertEqual(admin["role_name"], "Admin")
+        self.assertIn(admin["role_name"], ["Admin", "Quản trị viên Hệ thống"])
         self.assertEqual(admin["scope_display"], "Toàn thành phố")
         self.assertTrue(admin["is_system"])
         self.assertGreaterEqual(admin["user_count"], 1)

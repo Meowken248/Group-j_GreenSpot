@@ -11,6 +11,7 @@ import type {
 } from "../types/incident_management.types";
 import { IncidentStatsCards } from "./IncidentStatsCards";
 import { IncidentVerificationModal } from "./IncidentVerificationModal";
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
 import "../IncidentManagement.scss";
 
 const HCMC_DISTRICTS = [
@@ -296,7 +297,11 @@ export const IncidentManagementContainer: React.FC<Props> = ({ onNavigateToMap }
                           className="thumb-preview-box"
                           onClick={() => setSelectedIncident(inc)}
                         >
-                          <img src={inc.thumbnail_url} alt={inc.title} className="thumb-img" />
+                          <img
+                            src={resolveMediaUrl(inc.thumbnail_url)}
+                            alt={inc.title}
+                            className="thumb-img"
+                          />
                           <span className="watermark-indicator">🏷️ WM</span>
                         </div>
                       ) : (

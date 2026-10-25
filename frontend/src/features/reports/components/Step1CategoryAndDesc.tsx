@@ -85,13 +85,123 @@ export const Step1CategoryAndDesc: React.FC<Step1Props> = ({
   const isTitleOver = titleLen > 100;
   const isDescOver = descLen > 500;
 
+  const getMatchedSubCategories = (key: string): WasteCategoryItem[] => {
+    const card = FOUR_CATEGORIES.find((c) => c.key === key);
+    if (!card) return [];
+
+    if (card.key === "WASTE") {
+      const list = categories.filter(
+        (c) =>
+          card.matchingCodes.includes(c.category_code) ||
+          c.category_code.toUpperCase().includes("WASTE") ||
+          c.category_code.toUpperCase().includes("DEBRIS") ||
+          c.category_code.toUpperCase().includes("TRASH")
+      );
+      if (list.length > 0) return list;
+      return [
+        {
+          category_id: 1,
+          category_code: "DOMESTIC_WASTE",
+          name: "Rác thải sinh hoạt ứ đọng",
+          description: "Bãi rác tự phát, túi ni lông, thực phẩm hư hỏng bốc mùi",
+          sla_hours: 24,
+          default_severity: "MEDIUM",
+        },
+      ];
+    }
+
+    if (card.key === "FLOOD") {
+      const list = categories.filter(
+        (c) =>
+          card.matchingCodes.includes(c.category_code) ||
+          c.category_code.toUpperCase().includes("DRAIN") ||
+          c.category_code.toUpperCase().includes("FLOOD")
+      );
+      if (list.length > 0) return list;
+      return [
+        {
+          category_id: 4,
+          category_code: "DRAINAGE_BLOCK",
+          name: "Điểm nghẽn cống ngập úng",
+          description: "Miệng cống thoát nước bị rác lấp kín, gây ngập cục bộ khi mưa lớn",
+          sla_hours: 18,
+          default_severity: "HIGH",
+        },
+      ];
+    }
+
+    if (card.key === "POLLUTION") {
+      const list = categories.filter(
+        (c) =>
+          card.matchingCodes.includes(c.category_code) ||
+          c.category_code.toUpperCase().includes("POLLUT") ||
+          c.category_code.toUpperCase().includes("WATER") ||
+          c.category_code.toUpperCase().includes("AIR")
+      );
+      if (list.length > 0) return list;
+      return [
+        {
+          category_id: 3,
+          category_code: "WATERWAY_POLLUTION",
+          name: "Ô nhiễm kênh rạch & Nguồn nước",
+          description: "Rác thải nổi lềnh bềnh trên kênh, nước đen đổi màu hoặc bốc mùi",
+          sla_hours: 36,
+          default_severity: "HIGH",
+        },
+      ];
+    }
+
+    if (card.key === "OTHER") {
+      const knownWaste = categories.filter(
+        (c) =>
+          ["DOMESTIC_WASTE", "CONSTRUCTION_DEBRIS", "HAZARDOUS_WASTE"].includes(c.category_code) ||
+          c.category_code.toUpperCase().includes("WASTE") ||
+          c.category_code.toUpperCase().includes("DEBRIS") ||
+          c.category_code.toUpperCase().includes("TRASH")
+      );
+      const knownFlood = categories.filter(
+        (c) =>
+          ["DRAINAGE_BLOCK"].includes(c.category_code) ||
+          c.category_code.toUpperCase().includes("DRAIN") ||
+          c.category_code.toUpperCase().includes("FLOOD")
+      );
+      const knownPollution = categories.filter(
+        (c) =>
+          ["WATERWAY_POLLUTION"].includes(c.category_code) ||
+          c.category_code.toUpperCase().includes("POLLUT") ||
+          c.category_code.toUpperCase().includes("WATER") ||
+          c.category_code.toUpperCase().includes("AIR")
+      );
+      const assignedIds = new Set([
+        ...knownWaste.map((c) => c.category_id),
+        ...knownFlood.map((c) => c.category_id),
+        ...knownPollution.map((c) => c.category_id),
+      ]);
+      const customList = categories.filter((c) => !assignedIds.has(c.category_id));
+      if (customList.length > 0) return customList;
+      return [
+        {
+          category_id: 99,
+          category_code: "OTHER",
+          name: "Sự cố môi trường đô thị khác",
+          description: "Các sự cố môi trường chưa thuộc nhóm trên (ghi rõ trong phần mô tả)",
+          sla_hours: 24,
+          default_severity: "MEDIUM",
+        },
+      ];
+    }
+
+    return [];
+  };
+
   // Xử lý chọn 1 trong 4 thẻ lớn
   const handleSelectCategory = (card: CategoryCardDef) => {
     setSelectedCategoryKey(card.key);
     setCategoryError(null);
 
     // Tìm danh mục tương ứng từ database để lấy SLA và category_id thật
-    let matchedDbCat = categories.find((c) => card.matchingCodes.includes(c.category_code));
+    const matchedList = getMatchedSubCategories(card.key);
+    let matchedDbCat = matchedList.length > 0 ? matchedList[0] : null;
     if (!matchedDbCat && categories.length > 0) {
       matchedDbCat = categories[0];
     }
@@ -101,12 +211,14 @@ export const Step1CategoryAndDesc: React.FC<Step1Props> = ({
         category_id: matchedDbCat.category_id,
         category_code: matchedDbCat.category_code,
         category_name: card.name,
+        sla_hours: matchedDbCat.sla_hours,
       });
     } else {
       onUpdateFormData({
         category_id: 1,
         category_code: card.key,
         category_name: card.name,
+        sla_hours: 24,
       });
     }
 
@@ -114,6 +226,15 @@ export const Step1CategoryAndDesc: React.FC<Step1Props> = ({
     if (card.key !== "OTHER") {
       setDescError(null);
     }
+  };
+
+  const handleSelectSubCategory = (subCat: WasteCategoryItem) => {
+    onUpdateFormData({
+      category_id: subCat.category_id,
+      category_code: subCat.category_code,
+      category_name: subCat.name,
+      sla_hours: subCat.sla_hours,
+    });
   };
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -228,6 +349,67 @@ export const Step1CategoryAndDesc: React.FC<Step1Props> = ({
             );
           })}
         </div>
+
+        {/* PHÂN LOẠI CHI TIẾT KHI CÓ TỪ 2 DANH MỤC TRỞ LÊN (ADAPTIVE UX) */}
+        {selectedCategoryKey && (() => {
+          const matchedList = getMatchedSubCategories(selectedCategoryKey);
+          // Tự động thích ứng: Chỉ mở khung phân loại khi nhóm có từ 2 lựa chọn trở lên (như Rác thải).
+          // Nếu nhóm chỉ có 1 danh mục chuẩn (như Ngập úng, Ô nhiễm), hiển thị trực tiếp cam kết xử lý để giao diện gọn gàng.
+          if (matchedList.length <= 1) return null;
+          return (
+            <div className="sub-categories-container">
+              <div className="sub-section-header">
+                <span className="sub-section-title">
+                  Phân loại cụ thể để hỗ trợ xử lý nhanh hơn:
+                </span>
+              </div>
+              <div className="sub-categories-grid">
+                {matchedList.map((subCat) => {
+                  const isSubSelected = formData.category_id === subCat.category_id;
+                  return (
+                    <div
+                      key={subCat.category_id}
+                      className={`sub-category-card ${isSubSelected ? "selected" : ""}`}
+                      onClick={() => handleSelectSubCategory(subCat)}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <div className="sub-card-top">
+                        <span className="sub-cat-name">{subCat.name}</span>
+                        <span className="sub-cat-sla">⏱️ {subCat.sla_hours} giờ</span>
+                      </div>
+                      {subCat.description && (
+                        <p className="sub-cat-desc">{subCat.description}</p>
+                      )}
+                      {subCat.default_severity === "CRITICAL" && (
+                        <div className="sub-card-bottom">
+                          <span className="sub-sev-badge sev-critical">
+                            ⚡ Ưu tiên xử lý khẩn cấp
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* CAM KẾT THỜI GIAN GIẢI QUYẾT CHO CÔNG DÂN */}
+        {formData.category_name && (
+          <div className="citizen-sla-commitment-banner">
+            <span className="commitment-icon">🛡️</span>
+            <div className="commitment-text">
+              <span>Đang chọn: <strong>{formData.category_name}</strong></span>
+              {formData.sla_hours && (
+                <span className="commitment-time">
+                  • Cam kết tiếp nhận và xử lý trong vòng <strong>{formData.sla_hours} giờ</strong>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* KHUNG MÔ TẢ */}

@@ -30,6 +30,8 @@ export interface UserProfile {
   is_own_profile: boolean;
   total_green_points: number;
   date_of_birth?: string | null;
+  // Feature STT 17: bật/tắt hiển thị ngày sinh với bạn bè (chỉ trả về cho chính chủ)
+  show_birthday?: boolean;
   version: number;
 }
 
@@ -39,11 +41,42 @@ export interface PostItem {
   content: string;
   media_urls?: string[] | null;
   thumbnail_url?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  address?: string | null;
   reactions_count: number;
   comments_count: number;
   is_hidden: boolean;
+  is_edited?: boolean;
+  version?: number;
   created_at: string;
+  updated_at?: string;
   relative_time?: string;
+  visibility?: string;
+  group_id?: string | null;
+  tagged_friends?: Array<{ user_id: string; full_name: string; avatar_url?: string | null; email?: string }>;
+}
+
+export type PostItemResponse = PostItem;
+
+export interface UpdatePostPayload {
+  content?: string;
+  media_urls?: Array<{ url: string; media_type: "IMAGE" | "VIDEO"; file_name: string; size_bytes: number }>;
+  latitude?: number | null;
+  longitude?: number | null;
+  address?: string | null;
+  clear_location?: boolean;
+  tagged_friend_ids?: string[];
+  group_id?: string | null;
+  visibility?: string;
+  version: number;
+}
+
+export interface ToggleHidePostResponse {
+  success: boolean;
+  post_id: string;
+  is_hidden: boolean;
+  message: string;
 }
 
 export interface PostListResponse {
@@ -115,6 +148,8 @@ export interface UpdateProfilePayload {
   full_name: string;
   bio?: string | null;
   date_of_birth?: string | null;
+  // Feature STT 17: quyền riêng tư ngày sinh
+  show_birthday?: boolean;
   cover_image_url?: string | null;
   avatar_url?: string | null;
   version: number;

@@ -29,6 +29,7 @@ from app.schemas.profile import (
     UpdateProfileRequest,
     UpdateProfileResponse,
 )
+from app.schemas.post import TaggedFriendInfo
 
 router = APIRouter(prefix="/profile", tags=["Profile & Timeline"])
 
@@ -121,6 +122,7 @@ async def build_profile_response(target_user: User, current_user: User, db: Asyn
         is_own_profile=is_own,
         total_green_points=target_user.total_green_points,
         date_of_birth=target_user.date_of_birth if is_own else None,
+        show_birthday=target_user.show_birthday if is_own else False,
         version=target_user.version
     )
 
@@ -200,17 +202,49 @@ async def get_user_posts(
 
     items: List[PostItemResponse] = []
     for p in posts:
-        media_list = None
-        thumb = None
+        media_list: List[str] = []
+        thumb: Optional[str] = None
         if p.media_urls:
             import json
             try:
-                media_list = json.loads(p.media_urls)
-                if isinstance(media_list, list) and len(media_list) > 0:
-                    thumb = media_list[0]
+                raw_items = json.loads(p.media_urls)
+                if isinstance(raw_items, list):
+                    for item in raw_items:
+                        if isinstance(item, dict):
+                            u = item.get("url") or item.get("thumbnail_url")
+                            if u:
+                                media_list.append(str(u))
+                        elif isinstance(item, str):
+                            media_list.append(item)
+                    if len(media_list) > 0:
+                        thumb = media_list[0]
+                elif isinstance(raw_items, str):
+                    media_list = [raw_items]
+                    thumb = raw_items
             except Exception:
-                media_list = [p.media_urls]
-                thumb = p.media_urls
+                media_list = [str(p.media_urls)]
+                thumb = str(p.media_urls)
+
+        is_edited = False
+        if p.updated_at and p.created_at:
+            try:
+                diff_sec = abs((p.updated_at - p.created_at).total_seconds())
+                is_edited = diff_sec > 2
+            except Exception:
+                is_edited = False
+
+        tagged_list = []
+        if hasattr(p, "tagged_friends") and p.tagged_friends:
+            for tf in p.tagged_friends:
+                if tf.deleted_at is None and tf.friend:
+                    tagged_list.append(
+                        TaggedFriendInfo(
+                            user_id=tf.friend.user_id,
+                            full_name=tf.friend.full_name or "Bạn bè",
+                            avatar_url=tf.friend.avatar_url,
+                            email=tf.friend.email or "",
+                        )
+                    )
 
         items.append(
             PostItemResponse(
@@ -219,10 +253,19 @@ async def get_user_posts(
                 content=p.content,
                 media_urls=media_list,
                 thumbnail_url=thumb,
+                latitude=p.latitude,
+                longitude=p.longitude,
+                address=p.address,
+                group_id=p.group_id,
+                visibility=p.visibility or "PUBLIC",
+                tagged_friends=tagged_list,
                 reactions_count=p.reactions_count,
                 comments_count=p.comments_count,
                 is_hidden=p.is_hidden,
-                created_at=p.created_at
+                is_edited=is_edited,
+                version=p.version,
+                created_at=p.created_at,
+                updated_at=p.updated_at,
             )
         )
 
@@ -614,6 +657,11 @@ async def update_my_profile(
             full_name=body.full_name,
             bio=body.bio,
             date_of_birth=body.date_of_birth,
+            show_birthday=(
+                body.show_birthday
+                if body.show_birthday is not None
+                else current_user.show_birthday
+            ),
             avatar_url=new_avatar_url,
             cover_image_url=new_cover_url,
             version=User.version + 1,

@@ -67,6 +67,8 @@ class User(Base, TimestampMixin):
     cover_image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     bio: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     date_of_birth: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    # Feature STT 17: cho phép bạn bè xem & chúc mừng sinh nhật (mặc định bật)
+    show_birthday: Mapped[bool] = mapped_column(Boolean, server_default="true", default=True, nullable=False)
     activated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     total_green_points: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     friends_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -76,6 +78,7 @@ class User(Base, TimestampMixin):
     status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
     citizen_id_card: Mapped[Optional[str]] = mapped_column(String(20))
     reputation_score: Mapped[int] = mapped_column(Integer, default=100)
+    district: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
     role: Mapped["Role"] = relationship(back_populates="users")
     sessions: Mapped[List["UserSession"]] = relationship(back_populates="user", cascade="all, delete-orphan")
