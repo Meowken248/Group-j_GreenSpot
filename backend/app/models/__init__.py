@@ -190,7 +190,13 @@ __all__ = [
     "GroupStatus",
     # Birthday Domain (Feature 17)
     "BirthdayWish",
-    "BirthdayWishType",
+    "BirthdayWishType",
+    # Green Sunday Events & Campaigns (Feature 21)
+    "Event",
+    "EventParticipant",
+    "EventInterest",
+    "EventCheckin",
+    "EventStatus",
 ]
 
 # 11. Nhóm cộng đồng theo quận, phường hoặc chủ đề (Community Groups - Feature 16)
@@ -207,3 +213,12 @@ from app.models.group import (
 
 # 12. Chatbot (Feature 24)
 from app.models.chatbot import ChatbotConversation, ChatbotMessage, ChatbotSenderType
+
+# 13. Sự kiện và Chiến dịch Chủ Nhật Xanh (Feature 21)
+from app.models.event import (
+    Event,
+    EventParticipant,
+    EventInterest,
+    EventCheckin,
+    EventStatus,
+)
