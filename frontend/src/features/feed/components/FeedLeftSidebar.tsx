@@ -147,6 +147,31 @@ export const FeedLeftSidebar: React.FC<FeedLeftSidebarProps> = ({
           <span className="nav-item-text">Nhóm tình nguyện</span>
           {activeTab === "groups" && <span className="nav-active-pill">Đang chọn</span>}
         </button>
+
+        {/* 2.5. Sự kiện và chiến dịch Chủ Nhật Xanh (Chức năng 21) */}
+        <button
+          type="button"
+          className="feed-nav-item"
+          data-testid="feed-nav-events"
+          onClick={() => onNavigate("events")}
+          title="Sự kiện và chiến dịch Chủ Nhật Xanh (Chức năng 21)"
+        >
+          <span className="nav-item-icon">📅</span>
+          <span className="nav-item-text">Chủ Nhật Xanh</span>
+          <span
+            style={{
+              marginLeft: "auto",
+              fontSize: "0.68rem",
+              background: "#10b981",
+              color: "#ffffff",
+              padding: "2px 7px",
+              borderRadius: "10px",
+              fontWeight: 800,
+            }}
+          >
+            +50 GP
+          </span>
+        </button>
       </nav>
 
       {/* 3. Phân mục Nhóm của bạn (Chức năng 16) */}
@@ -220,9 +245,63 @@ export const FeedLeftSidebar: React.FC<FeedLeftSidebarProps> = ({
         </div>
       )}
 
-      {/* 4. Lối tắt nhanh đến các phân hệ liên quan */}
+      {/* 4. Widget Lối tắt Chiến dịch Chủ Nhật Xanh (Chức năng 21) */}
+      <div
+        className="feed-events-sidebar-widget"
+        data-testid="feed-events-sidebar-widget"
+        style={{
+          background: "linear-gradient(135deg, #f0fdf4 0%, #e6fcf5 100%)",
+          border: "1px solid #bbf7d0",
+          borderRadius: "12px",
+          padding: "0.85rem 1rem",
+          margin: "0.85rem 0",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
+          <span style={{ fontSize: "0.7rem", fontWeight: 800, color: "#15803d", textTransform: "uppercase" }}>
+            🌱 CHỦ NHẬT XANH
+          </span>
+          <span style={{ fontSize: "1rem" }}>🎯</span>
+        </div>
+        <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#14532d", marginBottom: "0.25rem", lineHeight: 1.35 }}>
+          Check-in hiện trường nhận ngay +50 Điểm Xanh (GP)
+        </div>
+        <div style={{ fontSize: "0.75rem", color: "#166534", marginBottom: "0.65rem" }}>
+          Chiến dịch ra quân bảo vệ môi trường toàn thành phố
+        </div>
+        <button
+          type="button"
+          data-testid="btn-explore-events-sidebar"
+          onClick={() => onNavigate("events")}
+          style={{
+            width: "100%",
+            padding: "0.45rem",
+            background: "#10b981",
+            color: "#ffffff",
+            border: "none",
+            borderRadius: "8px",
+            fontSize: "0.775rem",
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          Khám phá sự kiện ngay
+        </button>
+      </div>
+
+      {/* 5. Lối tắt nhanh đến các phân hệ liên quan */}
       <div className="feed-shortcuts-section">
         <div className="section-eyebrow-label">LỐI TẮT NHANH</div>
+
+        <button
+          type="button"
+          className="feed-shortcut-item shortcut-nav-item"
+          data-testid="shortcut-nav-events"
+          onClick={() => onNavigate("events")}
+        >
+          <span className="shortcut-icon">📅</span>
+          <span className="shortcut-text">Sự kiện Chủ Nhật Xanh (STT 21)</span>
+        </button>
 
         <button
           type="button"

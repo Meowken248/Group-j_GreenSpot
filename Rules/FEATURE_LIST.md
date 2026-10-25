@@ -43,7 +43,7 @@
 | 18 | Tiếp nhận phản ánh đa phương tiện: GPS, ảnh/video + watermark thời gian, giọng nói, chọn loại sự cố | ⬜ | 2, **22** (loại sự cố) |
 | 19 | Chế độ Offline-First: lưu nháp, hàng đợi gửi, đồng bộ tự động khi online | ⬜ | 9, 18 |
 | 20 | Gây quỹ cộng đồng (Fundraiser): chiến dịch, quyên góp, thanh tiến độ, công khai danh sách và báo cáo sử dụng | ⬜ | 2, 3 |
-| 21 | Sự kiện và chiến dịch Chủ Nhật Xanh: tạo sự kiện, Quan tâm, Tham gia, check-in GPS | ⬜ | 2, 3; mềm: 16, 34 |
+| 21 | Sự kiện và chiến dịch Chủ Nhật Xanh: tạo sự kiện, Quan tâm, Tham gia, check-in GPS | ✅ | 2, 3; mềm: 16, 34 |
 | 22 | Quản trị CRUD Danh mục Rác thải Đô thị & Cấu hình Quy chuẩn SLA Xử lý | ⬜ | 3 |
 | 23 | Quản trị CRUD Mạng lưới Trạm Tái chế & Điểm Tiếp nhận | ⬜ | 3 |
 | 24 | AI chat box | ⬜ | 2; mềm: 27 |

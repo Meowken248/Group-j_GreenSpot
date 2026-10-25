@@ -41,6 +41,7 @@ import {
 } from "./features/settings";
 import type { ThemeMode } from "./features/settings";
 import { AiAssistantWidget, AiAssistantPage } from "./features/ai_assistant";
+import { EventsPage } from "./features/events";
 import api from "./api/client";
 import "./App.css";
 
@@ -69,7 +70,8 @@ export type TabType =
   | "risk-dashboard"
   | "dispatch"
   | "hotspots"
-  | "ai-assistant";
+  | "ai-assistant"
+  | "events";
 
 export type ActiveTab = TabType;
 
@@ -116,6 +118,9 @@ function App() {
     const path = window.location.pathname.toLowerCase();
     const isLogged = checkIsLoggedIn();
 
+    if (hash === "#events" || path === "/events") {
+      return "events";
+    }
     if (hash === "#hotspots" || hash === "#hotspot-analytics" || path === "/hotspots") {
       if (!isLogged) return "auth";
       return "hotspots";
@@ -1874,6 +1879,16 @@ function App() {
             />
           </div>
         )
+      ) : activeTab === "events" ? (
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+          <EventsPage
+            onNavigateToLogin={() => {
+              setAuthRedirectUrl("/events");
+              setActiveTab("auth");
+              window.location.hash = "#login";
+            }}
+          />
+        </div>
       ) : activeTab === "ai-assistant" ? (
         !currentUser ? (
           <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
