@@ -72,13 +72,13 @@ async def migrate_and_seed_32_33():
 
         # Seed Community Groups
         await conn.execute(text("""
-            INSERT INTO community_groups (group_id, name, avatar_url, description, member_count, total_points, weekly_points, monthly_points)
+            INSERT INTO community_groups (group_id, name, avatar_url, description, member_count, total_points, weekly_points, monthly_points, is_active)
             VALUES
-            ('GRP_GREEN_YOUTH', 'CLB Thanh Niên Xanh TP.HCM', 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=200', 'Đội xung kích tình nguyện dọn sạch rác kênh rạch và điểm nóng ô nhiễm.', 142, 18450, 1250, 4800),
-            ('GRP_ECO_RUNNERS', 'Biệt Đội Eco-Runners Sài Gòn', 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=200', 'Nhóm chạy bộ kết hợp nhặt rác (Plogging) định kỳ mỗi sáng Chủ Nhật.', 98, 14200, 980, 3650),
-            ('GRP_SAIGON_XANH', 'Cộng Đồng Sài Gòn Xanh', 'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=200', 'Tổ chức các chiến dịch Chủ Nhật Xanh khơi thông dòng chảy tại các tuyến rạch.', 215, 23500, 1620, 6200),
-            ('GRP_ZERO_WASTE', 'Liên Minh Zero-Waste Sinh Viên', 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=200', 'Tuyên truyền giảm thiểu rác thải nhựa dùng một lần tại các trường đại học.', 76, 9800, 640, 2450),
-            ('GRP_GREEN_NEIGHBOR', 'Tổ Dân Phố Xanh Bình Thạnh', 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=200', 'Mô hình phân loại rác tại nguồn và đổi rác lấy quà tặng sinh thái.', 65, 8250, 520, 1980)
+            ('GRP_GREEN_YOUTH', 'CLB Thanh Niên Xanh TP.HCM', 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=200', 'Đội xung kích tình nguyện dọn sạch rác kênh rạch và điểm nóng ô nhiễm.', 142, 18450, 1250, 4800, true),
+            ('GRP_ECO_RUNNERS', 'Biệt Đội Eco-Runners Sài Gòn', 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=200', 'Nhóm chạy bộ kết hợp nhặt rác (Plogging) định kỳ mỗi sáng Chủ Nhật.', 98, 14200, 980, 3650, true),
+            ('GRP_SAIGON_XANH', 'Cộng Đồng Sài Gòn Xanh', 'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=200', 'Tổ chức các chiến dịch Chủ Nhật Xanh khơi thông dòng chảy tại các tuyến rạch.', 215, 23500, 1620, 6200, true),
+            ('GRP_ZERO_WASTE', 'Liên Minh Zero-Waste Sinh Viên', 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=200', 'Tuyên truyền giảm thiểu rác thải nhựa dùng một lần tại các trường đại học.', 76, 9800, 640, 2450, true),
+            ('GRP_GREEN_NEIGHBOR', 'Tổ Dân Phố Xanh Bình Thạnh', 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=200', 'Mô hình phân loại rác tại nguồn và đổi rác lấy quà tặng sinh thái.', 65, 8250, 520, 1980, true)
             ON CONFLICT (group_id) DO UPDATE SET
                 name = EXCLUDED.name,
                 member_count = EXCLUDED.member_count,
