@@ -32,6 +32,7 @@ from app.models.incident import (
 )
 from app.models.audit_log import IncidentAuditLog
 from app.models.deduplication import IncidentDuplicateCluster
+from app.models.incident_export import ExportedIncidentFile
 
 # 4. Trạm Quan trắc Cảm biến IoT & Dữ liệu Khí tượng
 from app.models.iot import (
@@ -239,4 +240,7 @@ __all__ = [
     "FloodSosRequest",
     "VolunteerProfile",
     "FloodSosChatMessage",
+    # Incident Data Export (STT 47)
+    "ExportedIncidentFile",
 ]
+
