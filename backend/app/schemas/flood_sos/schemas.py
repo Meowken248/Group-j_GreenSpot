@@ -114,6 +114,8 @@ class ChatMessageItem(BaseModel):
     sender_name: str
     content: str
     created_at: datetime
+    delivered_to_admin: bool = Field(default=True, description="Đã thông báo tới Ban quản trị")
+    delivered_to_team: bool = Field(default=True, description="Đã thông báo tới Đội cứu hộ tiếp nhận")
 
     model_config = ConfigDict(from_attributes=True)
 

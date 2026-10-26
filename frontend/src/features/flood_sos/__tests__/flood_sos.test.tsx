@@ -19,6 +19,7 @@ import { FloodSosConfirmModal } from "../components/FloodSosConfirmModal";
 import { VolunteerResponseDashboard } from "../components/VolunteerResponseDashboard";
 import { FloodSosLiveTrackingScreen } from "../components/FloodSosLiveTrackingScreen";
 import { FloodSosCancelModal } from "../components/FloodSosCancelModal";
+import { FloodSosChatDrawer } from "../components/FloodSosChatDrawer";
 import { floodSosApi } from "../services/floodSosApi";
 import type {
   CreateFloodSosPayload,
@@ -239,6 +240,22 @@ describe("STT 46: Cứu hộ ngập cộng đồng (Flood SOS) Frontend Suite", 
       fireEvent.click(screen.getByTestId("btn-skip-card-1"));
       expect(handleSkip).toHaveBeenCalledWith(dummyCards[0]);
     });
+
+    it("hiển thị lộ trình di chuyển cụ thể với các mốc tiếp cận và cự ly thực tế (không đi đường chim bay)", () => {
+      render(
+        <VolunteerResponseDashboard
+          cards={dummyCards}
+          volunteerLat={10.748}
+          volunteerLng={106.658}
+          onAccept={vi.fn()}
+          onSkip={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByTestId("route-details-card")).toBeInTheDocument();
+      expect(screen.getByText(/Lộ trình thực tế:/i)).toBeInTheDocument();
+      expect(screen.getByText(/Độ sâu an toàn xuồng máy:/i)).toBeInTheDocument();
+    });
   });
 
   // =========================================================================
@@ -337,6 +354,33 @@ describe("STT 46: Cứu hộ ngập cộng đồng (Flood SOS) Frontend Suite", 
         screen.getByText("Ca cứu hộ đã hoàn tất thành công. Bạn đã an toàn!"),
       ).toBeInTheDocument();
       expect(screen.getByTestId("stars-selector")).toBeInTheDocument();
+    });
+
+    it("hiển thị kênh thông báo đồng bộ tin nhắn tới Đội cứu hộ và Ban quản trị / Admin", () => {
+      render(
+        <FloodSosChatDrawer
+          isOpen={true}
+          messages={[
+            {
+              message_id: "m-1",
+              sender_type: "VICTIM",
+              sender_name: "Bác Ba",
+              content: "Đang ở tầng 2, có cờ đỏ nhận diện",
+              created_at: new Date().toISOString(),
+            },
+          ]}
+          currentSenderType="VICTIM"
+          currentSenderName="Bác Ba"
+          onSendMessage={vi.fn()}
+          onClose={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByTestId("chat-notification-channel")).toBeInTheDocument();
+      expect(screen.getByText(/Ban quản trị & Admin điều phối/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Đã thông báo tới Ban quản trị & Đội cứu hộ/i),
+      ).toBeInTheDocument();
     });
   });
 

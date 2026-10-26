@@ -12,4 +12,5 @@ export { FloodSosChatDrawer } from "./components/FloodSosChatDrawer";
 export { FloodSosHeader } from "./components/FloodSosHeader";
 export { FloodSosFooter } from "./components/FloodSosFooter";
 export { floodSosApi } from "./services/floodSosApi";
+export * from "./services/floodSosRouting";
 export * from "./types/flood_sos.types";

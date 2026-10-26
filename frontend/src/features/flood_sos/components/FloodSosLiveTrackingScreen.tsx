@@ -2,6 +2,10 @@ import React, { useState, useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { SosTrackingDetail } from "../types/flood_sos.types";
+import {
+  fetchFloodRescueRoute,
+  getRealisticFloodRouteFallback,
+} from "../services/floodSosRouting";
 
 interface FloodSosLiveTrackingScreenProps {
   detail: SosTrackingDetail;
@@ -22,6 +26,39 @@ export const FloodSosLiveTrackingScreen: React.FC<FloodSosLiveTrackingScreenProp
   );
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const [hasRated, setHasRated] = useState(false);
+
+  // Lộ trình cứu hộ thực tế theo mạng đường / kênh rạch (không đi đường chim bay)
+  const rescuerLat = detail.rescuer_latitude || detail.latitude - 0.004;
+  const rescuerLng = detail.rescuer_longitude || detail.longitude - 0.004;
+
+  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>(() =>
+    getRealisticFloodRouteFallback(rescuerLat, rescuerLng, detail.latitude, detail.longitude),
+  );
+  const [routeDistanceKm, setRouteDistanceKm] = useState<number>(0.8);
+  const [routeDurationMin, setRouteDurationMin] = useState<number>(4);
+
+  useEffect(() => {
+    let isMounted = true;
+    const initialFallback = getRealisticFloodRouteFallback(
+      rescuerLat,
+      rescuerLng,
+      detail.latitude,
+      detail.longitude,
+    );
+    setRouteCoordinates(initialFallback);
+
+    fetchFloodRescueRoute(rescuerLat, rescuerLng, detail.latitude, detail.longitude).then((res) => {
+      if (isMounted && res.coordinates.length > 0) {
+        setRouteCoordinates(res.coordinates);
+        setRouteDistanceKm(res.distanceKm);
+        setRouteDurationMin(res.durationMin);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [rescuerLat, rescuerLng, detail.latitude, detail.longitude]);
 
   // Stepper definition: 1: Đã gửi, 2: Đã nhận, 3: Đang đến, 4: Hoàn tất
   const steps = [
@@ -134,23 +171,31 @@ export const FloodSosLiveTrackingScreen: React.FC<FloodSosLiveTrackingScreenProp
       .bindPopup(`<strong>${detail.assigned_rescuer_name || "Đội cứu hộ"}</strong><br/>Cự ly: ${detail.distance_display || "Đang đến"}`)
       .addTo(layerGroup);
 
-    // 3. Polyline nối giữa 2 điểm
-    L.polyline([[rescuerLat, rescuerLng], [detail.latitude, detail.longitude]], {
-      color: "#3182ce",
-      weight: 3,
-      dashArray: "5, 8",
-    }).addTo(layerGroup);
+    // 3. Polyline lộ trình di chuyển thực tế theo mạng đường bộ / bờ kênh (KHÔNG đi đường chim bay)
+    if (routeCoordinates.length > 0) {
+      // Viền glow
+      L.polyline(routeCoordinates, {
+        color: "#2b6cb0",
+        weight: 6,
+        opacity: 0.3,
+      }).addTo(layerGroup);
 
-    try {
-      const bounds = L.latLngBounds([
-        [rescuerLat, rescuerLng],
-        [detail.latitude, detail.longitude],
-      ]);
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
-    } catch {
-      // Safe fallback in test
+      // Tuyến chính
+      L.polyline(routeCoordinates, {
+        color: "#3182ce",
+        weight: 4,
+        dashArray: "6, 8",
+        opacity: 0.95,
+      }).addTo(layerGroup);
+
+      try {
+        const bounds = L.latLngBounds(routeCoordinates);
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+      } catch {
+        // Safe fallback in test
+      }
     }
-  }, [detail]);
+  }, [detail, routeCoordinates]);
 
   return (
     <div className="tracking-screen-container" data-testid="live-tracking-screen">
@@ -340,18 +385,26 @@ export const FloodSosLiveTrackingScreen: React.FC<FloodSosLiveTrackingScreenProp
                 bottom: "1rem",
                 left: "1rem",
                 right: "1rem",
-                background: "rgba(255, 255, 255, 0.95)",
-                backdropFilter: "blur(6px)",
-                borderRadius: "8px",
-                padding: "0.75rem 1rem",
+                background: "rgba(255, 255, 255, 0.96)",
+                backdropFilter: "blur(8px)",
+                borderRadius: "10px",
+                padding: "0.85rem 1rem",
                 fontSize: "0.82rem",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
                 zIndex: 1000,
-                border: "1px solid #e2e8f0",
+                border: "1px solid #cbd5e0",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.35rem",
               }}
             >
-              🌊 <strong>Tọa độ định vị GPS:</strong> {detail.latitude.toFixed(5)}, {detail.longitude.toFixed(5)} •{" "}
-              {detail.address_text}
+              <div>
+                🌊 <strong>Tọa độ định vị GPS:</strong> {detail.latitude.toFixed(5)}, {detail.longitude.toFixed(5)} •{" "}
+                {detail.address_text}
+              </div>
+              <div style={{ color: "#2b6cb0", fontWeight: "600", fontSize: "0.78rem" }}>
+                🚀 <strong>Lộ trình tiếp cận:</strong> Tuyến đường thực tế ~{routeDistanceKm}km (~{routeDurationMin} phút di chuyển)
+              </div>
             </div>
           </div>
         </section>

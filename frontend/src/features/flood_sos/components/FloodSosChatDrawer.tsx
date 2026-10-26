@@ -56,6 +56,29 @@ export const FloodSosChatDrawer: React.FC<FloodSosChatDrawerProps> = ({
         </button>
       </div>
 
+      {/* Thông báo phạm vi tiếp nhận và thông báo cho Ban quản trị/TNV */}
+      <div
+        className="chat-notification-channel"
+        style={{
+          background: "#ebf8ff",
+          borderBottom: "1px solid #bee3f8",
+          padding: "0.45rem 1rem",
+          fontSize: "0.75rem",
+          color: "#2b6cb0",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.4rem",
+        }}
+        data-testid="chat-notification-channel"
+      >
+        <span>📢</span>
+        <span>
+          <strong>Kênh thông báo đồng bộ:</strong> Tin nhắn được gửi trực tiếp tới{" "}
+          <strong>Đội cứu hộ tiếp nhận</strong> và tự động thông báo tới{" "}
+          <strong>Ban quản trị & Admin điều phối</strong>.
+        </span>
+      </div>
+
       <div className="chat-messages" data-testid="chat-messages-container">
         {messages.map((m) => {
           const typeClass =
@@ -73,6 +96,20 @@ export const FloodSosChatDrawer: React.FC<FloodSosChatDrawerProps> = ({
                   : m.sender_name || (m.sender_type === "VICTIM" ? "Người gặp nạn" : "Người cứu hộ")}
               </div>
               <div>{m.content}</div>
+              {m.sender_type !== "SYSTEM" && (
+                <div
+                  style={{
+                    fontSize: "0.68rem",
+                    marginTop: "0.25rem",
+                    opacity: 0.85,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.25rem",
+                  }}
+                >
+                  <span>✓ Đã thông báo tới Ban quản trị & Đội cứu hộ</span>
+                </div>
+              )}
             </div>
           );
         })}

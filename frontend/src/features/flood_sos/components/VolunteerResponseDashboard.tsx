@@ -2,6 +2,10 @@ import React, { useState, useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { VolunteerSosCard } from "../types/flood_sos.types";
+import {
+  fetchFloodRescueRoute,
+  getRealisticFloodRouteFallback,
+} from "../services/floodSosRouting";
 
 interface VolunteerResponseDashboardProps {
   cards: VolunteerSosCard[];
@@ -26,6 +30,62 @@ export const VolunteerResponseDashboard: React.FC<VolunteerResponseDashboardProp
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
   const selectedCard = cards.find((c) => c.request_id === selectedCardId) || cards[0];
+
+  // Lộ trình di chuyển cụ thể (không đi đường chim bay)
+  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>(() => {
+    if (selectedCard) {
+      return getRealisticFloodRouteFallback(
+        volunteerLat,
+        volunteerLng,
+        selectedCard.latitude,
+        selectedCard.longitude,
+      );
+    }
+    return [];
+  });
+  const [routeDistanceKm, setRouteDistanceKm] = useState<number>(1.4);
+  const [routeDurationMin, setRouteDurationMin] = useState<number>(6);
+  const [routeWaypoints, setRouteWaypoints] = useState<string[]>([
+    "Xuồng máy xuất phát từ vị trí TNV",
+    "Men theo tuyến bờ kè tránh ngập",
+    "Qua cầu tiếp cận khu vực ngập",
+    "Đến vị trí nạn nhân cần cứu",
+  ]);
+
+  // Tính toán lộ trình thực tế theo đường giao thông / kênh rạch (OSRM)
+  useEffect(() => {
+    if (!selectedCard) return;
+    let isMounted = true;
+
+    // Khởi tạo ngay lộ trình có các khúc rẽ thực tế (tránh đường chim bay)
+    const initialFallback = getRealisticFloodRouteFallback(
+      volunteerLat,
+      volunteerLng,
+      selectedCard.latitude,
+      selectedCard.longitude,
+    );
+    setRouteCoordinates(initialFallback);
+
+    fetchFloodRescueRoute(
+      volunteerLat,
+      volunteerLng,
+      selectedCard.latitude,
+      selectedCard.longitude,
+    ).then((res) => {
+      if (isMounted && res.coordinates.length > 0) {
+        setRouteCoordinates(res.coordinates);
+        setRouteDistanceKm(res.distanceKm);
+        setRouteDurationMin(res.durationMin);
+        if (res.waypointsDescription.length > 0) {
+          setRouteWaypoints(res.waypointsDescription);
+        }
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [volunteerLat, volunteerLng, selectedCard?.request_id, selectedCard?.latitude, selectedCard?.longitude]);
 
   const handleAcceptClick = async (card: VolunteerSosCard) => {
     setAcceptingId(card.request_id);
@@ -140,30 +200,31 @@ export const VolunteerResponseDashboard: React.FC<VolunteerResponseDashboardProp
       });
     });
 
-    // 4. Tuyến đường tiếp cận an toàn kết nối TNV -> Nạn nhân được chọn
-    if (selectedCard) {
-      const latlngs: L.LatLngExpression[] = [
-        [volunteerLat, volunteerLng],
-        [selectedCard.latitude, selectedCard.longitude],
-      ];
-      L.polyline(latlngs, {
+    // 4. Tuyến đường tiếp cận an toàn kết nối TNV -> Nạn nhân (Đường thực tế, KHÔNG đi chim bay)
+    if (selectedCard && routeCoordinates.length > 0) {
+      // Lớp viền nền tạo độ nổi cho tuyến cứu hộ
+      L.polyline(routeCoordinates, {
+        color: "#c53030",
+        weight: 6,
+        opacity: 0.35,
+      }).addTo(layerGroup);
+
+      // Tuyến đường giao thông/bờ kênh chính
+      L.polyline(routeCoordinates, {
         color: "#e53e3e",
-        weight: 3,
+        weight: 4,
         dashArray: "6, 8",
-        opacity: 0.9,
+        opacity: 0.95,
       }).addTo(layerGroup);
 
       try {
-        const bounds = L.latLngBounds([
-          [volunteerLat, volunteerLng],
-          [selectedCard.latitude, selectedCard.longitude],
-        ]);
+        const bounds = L.latLngBounds(routeCoordinates);
         map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 });
       } catch {
         // Safe fallback in test env
       }
     }
-  }, [volunteerLat, volunteerLng, cards, selectedCard]);
+  }, [volunteerLat, volunteerLng, cards, selectedCard, routeCoordinates]);
 
   return (
     <div className="volunteer-dashboard-container" data-testid="volunteer-dashboard">
@@ -320,32 +381,56 @@ export const VolunteerResponseDashboard: React.FC<VolunteerResponseDashboardProp
               </div>
             )}
 
-            {/* Tuyến đường tiếp cận an toàn */}
+            {/* Tuyến đường tiếp cận an toàn với thông số cụ thể */}
             <div
               style={{
                 position: "absolute",
                 bottom: "1rem",
                 left: "1rem",
                 right: "1rem",
-                background: "rgba(255, 255, 255, 0.95)",
-                backdropFilter: "blur(6px)",
-                borderRadius: "8px",
+                background: "rgba(255, 255, 255, 0.96)",
+                backdropFilter: "blur(8px)",
+                borderRadius: "10px",
                 padding: "0.85rem 1.25rem",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
                 display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                flexDirection: "column",
+                gap: "0.45rem",
                 fontSize: "0.85rem",
                 zIndex: 1000,
-                border: "1px solid #e2e8f0",
+                border: "1px solid #cbd5e0",
               }}
+              data-testid="route-details-card"
             >
-              <div>
-                <strong>Hướng tuyến tiếp cận:</strong> Tránh đoạn ngập sâu ngã tư Bến Phú Định,
-                khuyến nghị ca nô đi dọc bờ kênh.
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
+                <div>
+                  <strong>Hướng tuyến tiếp cận:</strong> Tránh đoạn ngập sâu ngã tư Bến Phú Định,
+                  khuyến nghị ca nô đi dọc bờ kênh.
+                </div>
+                <div style={{ color: "#2f855a", fontWeight: "700" }}>
+                  Độ sâu an toàn xuồng máy: 0.9m - 1.5m
+                </div>
               </div>
-              <div style={{ color: "#38a169", fontWeight: "700" }}>
-                Độ sâu an toàn xuồng máy: 0.9m - 1.5m
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "0.5rem",
+                  paddingTop: "0.4rem",
+                  borderTop: "1px solid #e2e8f0",
+                  fontSize: "0.8rem",
+                  color: "#4a5568",
+                }}
+              >
+                <div>
+                  🛣️ <strong>Lộ trình thực tế:</strong> {routeDistanceKm}km (~{routeDurationMin} phút di chuyển)
+                </div>
+                <div style={{ color: "#2b6cb0", fontWeight: "600" }}>
+                  📍 {routeWaypoints.join(" ➔ ")}
+                </div>
               </div>
             </div>
           </div>

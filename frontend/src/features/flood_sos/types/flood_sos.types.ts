@@ -82,6 +82,8 @@ export interface ChatMessageItem {
   sender_name: string;
   content: string;
   created_at: string;
+  delivered_to_admin?: boolean;
+  delivered_to_team?: boolean;
 }
 
 export interface SendChatMessagePayload {
