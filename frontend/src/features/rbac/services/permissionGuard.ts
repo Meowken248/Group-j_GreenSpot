@@ -60,10 +60,11 @@ export function checkUserPermission(moduleCode: string, action: string = 'ACCESS
     const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
     const userRaw = localStorage.getItem(AUTH_STORAGE_KEYS.USER_INFO);
     
-    // Nếu chưa đăng nhập: Cho phép khách vãng lai xem công cộng WebGIS và AQI
+    // Nếu chưa đăng nhập: Chỉ cho phép khách vãng lai xem bản đồ số WebGIS công cộng (GIS_MAP)
+    // Phân hệ Phân tích khí hậu (AIR_QUALITY), Mạng xã hội, Quản lý người dùng bắt buộc đăng nhập và được cấp quyền
     if (!token || !userRaw) {
       if (action === 'ACCESS' || action === 'VIEW') {
-        return moduleCode === 'GIS_MAP' || moduleCode === 'AIR_QUALITY' || moduleCode === 'WEATHER';
+        return moduleCode === 'GIS_MAP';
       }
       return false;
     }
@@ -184,9 +185,9 @@ export function usePermissions() {
    */
   const canAccess = useCallback(
     (moduleCode: string): boolean => {
-      // Khách vãng lai chưa đăng nhập
+      // Khách vãng lai chưa đăng nhập: chỉ được xem bản đồ công cộng GIS_MAP
       if (!currentUser) {
-        return moduleCode === 'GIS_MAP' || moduleCode === 'AIR_QUALITY' || moduleCode === 'WEATHER';
+        return moduleCode === 'GIS_MAP';
       }
       // Admin luôn có quyền
       if (currentUser.role === 'ADMIN') {
@@ -235,7 +236,7 @@ export function useModulePermissions(moduleCode: string): IModulePermissionState
       }
       if (isGuest) {
         if (action === 'ACCESS' || action === 'VIEW') {
-          return moduleCode === 'GIS_MAP' || moduleCode === 'AIR_QUALITY' || moduleCode === 'WEATHER';
+          return moduleCode === 'GIS_MAP';
         }
         return false;
       }

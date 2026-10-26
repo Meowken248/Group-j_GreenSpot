@@ -43,6 +43,42 @@
   pointer-events: auto;
 }
 
+.map-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.map-header-chat-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 9px 18px;
+  border-radius: 9999px;
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 0 15px rgba(16, 185, 129, 0.25);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.map-header-chat-btn:hover {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: #10b981;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(16, 185, 129, 0.45);
+}
+
+.map-header-chat-btn .chat-btn-icon {
+  font-size: 16px;
+}
+
 .app-brand {
   display: flex;
   align-items: center;
@@ -508,7 +544,7 @@
   to { opacity: 1; transform: scale(1); }
 }
 
-.modal-header {
+.config-modal-card .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -516,13 +552,13 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.modal-title-group {
+.config-modal-card .modal-title-group {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.modal-badge {
+.config-modal-card .modal-badge {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
@@ -530,14 +566,14 @@
   letter-spacing: 0.05em;
 }
 
-.modal-header h3 {
+.config-modal-card .modal-header h3 {
   margin: 0;
   font-size: 17px;
   font-weight: 700;
   color: #f8fafc;
 }
 
-.close-modal-btn {
+.config-modal-card .close-modal-btn {
   background: none;
   border: none;
   color: #94a3b8;
@@ -547,11 +583,11 @@
   line-height: 1;
 }
 
-.close-modal-btn:hover {
+.config-modal-card .close-modal-btn:hover {
   color: #fff;
 }
 
-.modal-body {
+.config-modal-card .modal-body {
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
@@ -560,20 +596,20 @@
   overflow-y: auto;
 }
 
-.intro-p {
+.config-modal-card .intro-p {
   margin: 0;
   color: #cbd5e1;
   font-size: 13px;
   line-height: 1.5;
 }
 
-.steps-list {
+.config-modal-card .steps-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.step-box {
+.config-modal-card .step-box {
   display: flex;
   gap: 14px;
   background: rgba(30, 41, 59, 0.5);
@@ -582,7 +618,7 @@
   padding: 14px;
 }
 
-.step-num {
+.config-modal-card .step-num {
   width: 28px;
   height: 28px;
   border-radius: 8px;
@@ -596,27 +632,27 @@
   flex-shrink: 0;
 }
 
-.step-info {
+.config-modal-card .step-info {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.step-info h4 {
+.config-modal-card .step-info h4 {
   margin: 0;
   font-size: 13.5px;
   font-weight: 700;
   color: #f1f5f9;
 }
 
-.step-info p {
+.config-modal-card .step-info p {
   margin: 0;
   font-size: 12px;
   color: #94a3b8;
   line-height: 1.4;
 }
 
-.code-hint {
+.config-modal-card .code-hint {
   background: #090d16;
   border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 8px 12px;
@@ -627,11 +663,11 @@
   margin-top: 6px;
 }
 
-.code-hint code {
+.config-modal-card .code-hint code {
   color: #38bdf8;
 }
 
-.modal-tip-box {
+.config-modal-card .modal-tip-box {
   background: rgba(16, 185, 129, 0.1);
   border: 1px solid rgba(16, 185, 129, 0.25);
   border-radius: 10px;
@@ -641,7 +677,7 @@
   line-height: 1.4;
 }
 
-.modal-footer {
+.config-modal-card .modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
@@ -650,7 +686,7 @@
   background: rgba(15, 23, 42, 0.5);
 }
 
-.btn-primary-action {
+.config-modal-card .btn-primary-action {
   padding: 10px 18px;
   background: #10b981;
   color: #064e3b;
@@ -662,11 +698,11 @@
   transition: opacity 0.2s;
 }
 
-.btn-primary-action:hover {
+.config-modal-card .btn-primary-action:hover {
   opacity: 0.9;
 }
 
-.btn-secondary-action {
+.config-modal-card .btn-secondary-action {
   padding: 10px 16px;
   background: transparent;
   color: #94a3b8;
@@ -677,6 +713,6 @@
   cursor: pointer;
 }
 
-.btn-secondary-action:hover {
+.config-modal-card .btn-secondary-action:hover {
   color: #fff;
 }

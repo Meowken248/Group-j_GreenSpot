@@ -14,6 +14,7 @@ pydantic-settings>=2.2.0
 python-dotenv>=1.0.0
 email-validator>=2.0.0
 pyjwt>=2.8.0
+prisma>=0.15.0
 
 # Air Quality Dashboard & Visualization (Streamlit)
 streamlit>=1.40.0
@@ -38,6 +39,7 @@ missingno>=0.5.2
 
 # Background Crawlers, Web Scraping & Utilities
 requests>=2.31.0
+httpx>=0.27.0
 beautifulsoup4>=4.12.0
 lxml>=5.2.0
 geopy>=2.4.0

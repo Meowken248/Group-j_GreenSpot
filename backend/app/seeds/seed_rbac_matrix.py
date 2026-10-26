@@ -7,7 +7,12 @@ Script Migration & Seeding cho Chức năng 3: Phân quyền vai trò RBAC & Ma 
 - Gán vai trò ADMIN cho tài khoản thử nghiệm của Đạt
 """
 
+import sys
 import asyncio
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 from sqlalchemy import text
 from app.database import engine, AsyncSessionLocal
 

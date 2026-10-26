@@ -6,7 +6,10 @@
   inset: 0;
   background-color: rgba(15, 23, 42, 0.7);
   backdrop-filter: blur(8px);
-  z-index: 9999;
+  // Popup hết phiên phải đè lên MỌI modal khác (đặc tả "Màn 4 - đè lên mọi màn hình").
+  // Trước đây 9999 < 10000 của modal sự kiện nên popup bị che, khiến mọi request bị chặn
+  // mà người dùng không thấy lý do (nút bấm "không ăn").
+  z-index: 100001;
   @include flex-center;
   padding: 1.25rem;
   animation: fadeIn 0.2s ease-out;

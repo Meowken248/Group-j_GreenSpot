@@ -1,0 +1,1655 @@
+/**
+ * Hệ thống Styles SASS cho Chức năng 15: Nhắn tin 1-1, Chat nhóm và Chat quận
+ * Thiết kế chuẩn phong cách Facebook Messenger hiện đại kết hợp màu xanh sinh thái GreenSpot
+ */
+
+// 1. BIẾN MÀU SẮC & GIAO DIỆN
+$emerald-50: #ecfdf5;
+$emerald-100: #d1fae5;
+$emerald-200: #a7f3d0;
+$emerald-300: #6ee7b7;
+$emerald-400: #34d399;
+$emerald-500: #10b981;
+$emerald-600: #059669;
+$emerald-700: #047857;
+
+$slate-50: #f8fafc;
+$slate-100: #f1f5f9;
+$slate-200: #e2e8f0;
+$slate-300: #cbd5e1;
+$slate-400: #94a3b8;
+$slate-500: #64748b;
+$slate-600: #475569;
+$slate-700: #334155;
+$slate-800: #1e293b;
+$slate-900: #0f172a;
+
+$dark-bg-card: #1c212d;
+$dark-bg-card-hover: #242b38;
+$dark-border: rgba(255, 255, 255, 0.08);
+
+// 2. LAYOUT CHÍNH: FULL PAGE 2 CỘT CHIA ĐÔI MÀN HÌNH
+.greenspot-chat-page {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: #ffffff;
+  overflow: hidden;
+  position: relative;
+  font-family: inherit;
+
+  [data-theme="dark"] & {
+    background: $slate-900;
+    color: #f8fafc;
+  }
+}
+
+// ============================================================
+// 3. MÀN 1: CỘT TRÁI (DANH SÁCH HỘI THOẠI)
+// ============================================================
+.chat-sidebar-left {
+  width: 380px;
+  min-width: 320px;
+  max-width: 420px;
+  height: 100%;
+  border-right: 1px solid $slate-200;
+  display: flex;
+  flex-direction: column;
+  background: inherit;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  transition: all 0.2s ease;
+
+  [data-theme="dark"] & {
+    border-right-color: $dark-border;
+  }
+
+  // Header cột trái: Tiêu đề + Nút tạo nhóm
+  .sidebar-header {
+    padding: 16px 18px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+
+    .sidebar-title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+      color: $slate-900;
+      white-space: nowrap;
+
+      [data-theme="dark"] & {
+        color: #f8fafc;
+      }
+    }
+
+    .sidebar-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .btn-header-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 10px;
+      border-radius: 18px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      white-space: nowrap;
+
+      &.btn-new-direct-chat {
+        background: linear-gradient(135deg, $emerald-500, $emerald-600);
+        color: #ffffff;
+        border: none;
+        box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+
+        &:hover {
+          background: linear-gradient(135deg, $emerald-600, $emerald-700);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);
+        }
+      }
+
+      &.btn-create-group {
+        background: $slate-100;
+        border: 1px solid $slate-200;
+        color: $slate-700;
+
+        &:hover {
+          background: $slate-200;
+          color: $slate-900;
+          transform: translateY(-1px);
+        }
+
+        [data-theme="dark"] & {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: $dark-border;
+          color: $slate-200;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.15);
+          }
+        }
+      }
+    }
+  }
+
+  // Thanh cảnh báo mất mạng WebSocket (Màu vàng Amber)
+  .socket-warning-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: #fef3c7;
+    border-bottom: 1px solid #fde68a;
+    color: #92400e;
+    font-size: 12.5px;
+    font-weight: 600;
+    animation: fadeIn 0.2s ease;
+
+    .warning-text {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-reconnect {
+      background: #f59e0b;
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+
+      &:hover {
+        background: #d97706;
+      }
+    }
+
+    [data-theme="dark"] & {
+      background: rgba(245, 158, 11, 0.15);
+      border-bottom-color: rgba(245, 158, 11, 0.25);
+      color: #fbbf24;
+    }
+  }
+
+  // Ô tìm kiếm hội thoại
+  .sidebar-search-box {
+    padding: 0 16px 10px;
+    flex-shrink: 0;
+
+    .search-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+
+      .search-icon {
+        position: absolute;
+        left: 12px;
+        color: $slate-400;
+        font-size: 14px;
+        pointer-events: none;
+      }
+
+      input {
+        width: 100%;
+        height: 38px;
+        padding: 0 32px 0 36px;
+        background: $slate-100;
+        border: 1px solid transparent;
+        border-radius: 20px;
+        font-size: 13.5px;
+        color: $slate-800;
+        outline: none;
+        transition: all 0.18s ease;
+
+        &::placeholder {
+          color: $slate-400;
+        }
+
+        &:focus {
+          background: #ffffff;
+          border-color: $emerald-500;
+          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
+
+        [data-theme="dark"] & {
+          background: $dark-bg-card-hover;
+          color: #f1f5f9;
+
+          &:focus {
+            background: $dark-bg-card;
+          }
+        }
+      }
+
+      .btn-clear-search {
+        position: absolute;
+        right: 10px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: $slate-300;
+        border: none;
+        color: $slate-700;
+        font-size: 11px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &:hover {
+          background: $slate-400;
+        }
+      }
+    }
+  }
+
+  // 3 Tabs: 1-1 / Nhóm / Quận
+  .sidebar-nav-tabs {
+    display: flex;
+    align-items: center;
+    padding: 0 16px 8px;
+    gap: 6px;
+    border-bottom: 1px solid $slate-200;
+    flex-shrink: 0;
+
+    [data-theme="dark"] & {
+      border-bottom-color: $dark-border;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 7px 6px;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: $slate-500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.18s ease;
+
+      &:hover {
+        background: $slate-100;
+        color: $slate-800;
+      }
+
+      &.active {
+        background: $emerald-50;
+        color: $emerald-600;
+        font-weight: 700;
+      }
+
+      .tab-badge {
+        padding: 1px 6px;
+        border-radius: 10px;
+        background: #ef4444;
+        color: #ffffff;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+
+      [data-theme="dark"] & {
+        color: $slate-400;
+
+        &:hover {
+          background: $dark-bg-card-hover;
+          color: #f8fafc;
+        }
+
+        &.active {
+          background: rgba(16, 185, 129, 0.14);
+          color: #34d399;
+        }
+      }
+    }
+  }
+
+  // Danh sách hội thoại cuộn vô tận
+  .conversations-scroll-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+
+    // Item hội thoại
+    .conversation-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      position: relative;
+      background: transparent;
+      transition: all 0.16s ease;
+      user-select: none;
+
+      &:hover {
+        background: $slate-100;
+
+        .item-quick-actions {
+          opacity: 1;
+          pointer-events: auto;
+        }
+      }
+
+      &.active {
+        background: $emerald-50;
+
+        .conv-name {
+          color: $emerald-700;
+        }
+
+        [data-theme="dark"] & {
+          background: rgba(16, 185, 129, 0.16);
+
+          .conv-name {
+            color: #34d399;
+          }
+        }
+      }
+
+      [data-theme="dark"] & {
+        &:hover {
+          background: $dark-bg-card-hover;
+        }
+      }
+
+      // Avatar + Chấm xanh Online
+      .avatar-wrap {
+        position: relative;
+        width: 48px;
+        height: 48px;
+        flex-shrink: 0;
+
+        .avatar-img {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          object-fit: cover;
+          display: block;
+        }
+
+        .avatar-fallback {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          background: linear-gradient(135deg, $emerald-500, $emerald-700);
+          color: #ffffff;
+          font-weight: 700;
+          font-size: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-transform: uppercase;
+        }
+
+        .online-dot {
+          position: absolute;
+          bottom: 1px;
+          right: 1px;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background: #22c55e;
+          border: 2px solid #ffffff;
+
+          [data-theme="dark"] & {
+            border-color: $slate-900;
+          }
+        }
+
+        .group-type-badge {
+          position: absolute;
+          bottom: -2px;
+          right: -2px;
+          font-size: 13px;
+        }
+      }
+
+      // Khối thông tin văn bản
+      .conv-info {
+        flex: 1;
+        min-width: 0; // Để truncate text ellipsis hoạt động
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+
+        .conv-header-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 6px;
+
+          .conv-name {
+            font-size: 14.5px;
+            font-weight: 600;
+            color: $slate-800;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+
+            &.unread {
+              font-weight: 800;
+              color: $slate-900;
+            }
+
+            [data-theme="dark"] & {
+              color: #f1f5f9;
+
+              &.unread {
+                color: #ffffff;
+              }
+            }
+          }
+
+          .conv-time {
+            font-size: 11.5px;
+            color: $slate-400;
+            white-space: nowrap;
+            flex-shrink: 0;
+
+            &.unread {
+              color: $emerald-600;
+              font-weight: 700;
+            }
+          }
+        }
+
+        .conv-preview-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 6px;
+
+          .last-msg-text {
+            font-size: 13px;
+            color: $slate-500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.35;
+
+            &.unread {
+              color: $slate-900;
+              font-weight: 700;
+            }
+
+            [data-theme="dark"] & {
+              color: $slate-400;
+
+              &.unread {
+                color: #f8fafc;
+              }
+            }
+          }
+
+          .unread-count-badge {
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 9px;
+            background: $emerald-500;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+          }
+        }
+      }
+
+      // Nút 3 chấm hành động nhanh
+      .item-quick-actions {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.15s ease;
+        position: relative;
+
+        .btn-dots {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          border: none;
+          background: rgba(0, 0, 0, 0.05);
+          color: $slate-600;
+          font-size: 13px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          &:hover {
+            background: rgba(0, 0, 0, 0.12);
+            color: $slate-900;
+          }
+
+          [data-theme="dark"] & {
+            background: rgba(255, 255, 255, 0.08);
+            color: $slate-300;
+
+            &:hover {
+              background: rgba(255, 255, 255, 0.16);
+              color: #ffffff;
+            }
+          }
+        }
+
+        .actions-dropdown {
+          position: absolute;
+          top: calc(100% + 4px);
+          right: 0;
+          background: #ffffff;
+          border-radius: 10px;
+          box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0, 0, 0, 0.06);
+          border: 1px solid $slate-200;
+          padding: 4px;
+          min-width: 160px;
+          z-index: 50;
+
+          [data-theme="dark"] & {
+            background: $dark-bg-card;
+            border-color: $dark-border;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
+          }
+
+          .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            padding: 8px 10px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: $slate-700;
+            cursor: pointer;
+            text-align: left;
+
+            &:hover {
+              background: $slate-100;
+            }
+
+            &.danger {
+              color: #ef4444;
+
+              &:hover {
+                background: #fef2f2;
+              }
+            }
+
+            [data-theme="dark"] & {
+              color: #e2e8f0;
+
+              &:hover {
+                background: $dark-bg-card-hover;
+              }
+
+              &.danger {
+                color: #f87171;
+
+                &:hover {
+                  background: rgba(239, 68, 68, 0.15);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Skeleton loaders
+    .conversation-skeleton-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+
+      .skeleton-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: $slate-200;
+        animation: pulse 1.5s infinite;
+
+        [data-theme="dark"] & {
+          background: $dark-bg-card-hover;
+        }
+      }
+
+      .skeleton-lines {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        .skeleton-line {
+          height: 12px;
+          border-radius: 6px;
+          background: $slate-200;
+          animation: pulse 1.5s infinite;
+
+          &.title {
+            width: 60%;
+          }
+
+          &.sub {
+            width: 85%;
+          }
+
+          [data-theme="dark"] & {
+            background: $dark-bg-card-hover;
+          }
+        }
+      }
+    }
+
+    // Khối trống
+    .conversations-empty {
+      padding: 48px 16px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+
+      .empty-icon {
+        font-size: 40px;
+      }
+
+      h4 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+        color: $slate-800;
+
+        [data-theme="dark"] & {
+          color: #f1f5f9;
+        }
+      }
+
+      p {
+        margin: 0;
+        font-size: 13px;
+        color: $slate-500;
+        max-width: 240px;
+      }
+    }
+  }
+}
+
+// ============================================================
+// 4. MÀN 2: CỘT PHẢI (CHI TIẾT ĐOẠN CHAT & COMPOSER)
+// ============================================================
+.chat-main-area {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: inherit;
+  position: relative;
+  min-width: 0;
+
+  // Placeholder khi chưa chọn hội thoại nào
+  .chat-unselected-placeholder {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 24px;
+    text-align: center;
+
+    .placeholder-leaf {
+      font-size: 56px;
+      animation: floatLeaf 3s ease-in-out infinite;
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 800;
+      color: $slate-800;
+
+      [data-theme="dark"] & {
+        color: #f8fafc;
+      }
+    }
+
+    p {
+      margin: 0;
+      font-size: 14px;
+      color: $slate-500;
+      max-width: 360px;
+      line-height: 1.5;
+    }
+  }
+
+  // Header Màn 2
+  .chat-view-header {
+    height: 64px;
+    padding: 0 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid $slate-200;
+    flex-shrink: 0;
+    background: inherit;
+
+    [data-theme="dark"] & {
+      border-bottom-color: $dark-border;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+
+      .btn-back-mobile {
+        display: none;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: none;
+        background: $slate-100;
+        color: $slate-700;
+        font-size: 16px;
+        cursor: pointer;
+        align-items: center;
+        justify-content: center;
+
+        [data-theme="dark"] & {
+          background: $dark-bg-card-hover;
+          color: #f1f5f9;
+        }
+      }
+
+      .header-avatar-wrap {
+        position: relative;
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+
+        img {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          object-fit: cover;
+        }
+
+        .avatar-initial {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          background: linear-gradient(135deg, $emerald-500, $emerald-700);
+          color: #ffffff;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .header-online-dot {
+          position: absolute;
+          bottom: 0;
+          right: 0;
+          width: 11px;
+          height: 11px;
+          border-radius: 50%;
+          background: #22c55e;
+          border: 2px solid #ffffff;
+
+          [data-theme="dark"] & {
+            border-color: $slate-900;
+          }
+        }
+      }
+
+      .header-meta {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        .header-title {
+          font-size: 15px;
+          font-weight: 700;
+          color: $slate-900;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+
+          [data-theme="dark"] & {
+            color: #f8fafc;
+          }
+        }
+
+        .header-substatus {
+          font-size: 12px;
+          color: $slate-400;
+
+          &.typing {
+            color: $emerald-600;
+            font-weight: 600;
+          }
+
+          &.online {
+            color: #22c55e;
+          }
+        }
+      }
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .btn-header-action {
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: 1px solid $slate-200;
+        background: transparent;
+        font-size: 13px;
+        font-weight: 600;
+        color: $slate-700;
+        cursor: pointer;
+        transition: all 0.15s ease;
+
+        &:hover {
+          background: $slate-100;
+        }
+
+        &.active {
+          background: $emerald-50;
+          color: $emerald-700;
+          border-color: $emerald-300;
+        }
+
+        [data-theme="dark"] & {
+          border-color: $dark-border;
+          color: $slate-300;
+
+          &:hover {
+            background: $dark-bg-card-hover;
+          }
+
+          &.active {
+            background: rgba(16, 185, 129, 0.16);
+            color: #34d399;
+          }
+        }
+      }
+    }
+  }
+
+  // Khung giữa: Dòng tin nhắn cuộn ngược + Sidebar Online Chat Quận
+  .chat-view-body {
+    flex: 1;
+    display: flex;
+    position: relative;
+    overflow: hidden;
+
+    .messages-stream-pane {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+
+      .btn-load-more-messages {
+        align-self: center;
+        background: $slate-100;
+        border: none;
+        padding: 5px 14px;
+        border-radius: 14px;
+        font-size: 12px;
+        font-weight: 600;
+        color: $slate-600;
+        cursor: pointer;
+        margin-bottom: 8px;
+
+        &:hover {
+          background: $slate-200;
+        }
+
+        [data-theme="dark"] & {
+          background: $dark-bg-card-hover;
+          color: $slate-300;
+        }
+      }
+
+      // Bong bóng tin nhắn
+      .message-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        max-width: 72%;
+
+        &.mine {
+          align-self: flex-end;
+          flex-direction: row-reverse;
+
+          .message-bubble {
+            background: linear-gradient(135deg, $emerald-500, $emerald-600);
+            color: #ffffff;
+            border-bottom-right-radius: 4px;
+
+            .msg-text {
+              color: #ffffff;
+            }
+          }
+
+          .msg-status-line {
+            text-align: right;
+          }
+        }
+
+        &.other {
+          align-self: flex-start;
+
+          .message-bubble {
+            background: $slate-100;
+            color: $slate-800;
+            border-bottom-left-radius: 4px;
+
+            [data-theme="dark"] & {
+              background: $dark-bg-card-hover;
+              color: #f1f5f9;
+            }
+          }
+        }
+
+        &.system {
+          align-self: center;
+          max-width: 90%;
+          text-align: center;
+
+          .system-bubble {
+            padding: 4px 12px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.05);
+            font-size: 12px;
+            color: $slate-500;
+
+            [data-theme="dark"] & {
+              background: rgba(255, 255, 255, 0.06);
+              color: $slate-400;
+            }
+          }
+        }
+
+        &.error {
+          .message-bubble {
+            border: 1.5px solid #ef4444;
+          }
+        }
+
+        .sender-avatar {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          object-fit: cover;
+          flex-shrink: 0;
+        }
+
+        .bubble-wrap {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+
+          .sender-name-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: $slate-500;
+            margin-left: 4px;
+          }
+
+          .message-bubble {
+            padding: 9px 14px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.45;
+            word-break: break-word;
+            position: relative;
+
+            .msg-image {
+              max-width: 280px;
+              max-height: 280px;
+              border-radius: 10px;
+              display: block;
+              cursor: pointer;
+              margin-bottom: 4px;
+              object-fit: cover;
+            }
+          }
+
+          .msg-status-line {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            color: $slate-400;
+            padding: 0 4px;
+
+            .status-seen {
+              color: $emerald-600;
+              font-weight: 600;
+            }
+
+            .btn-retry-msg {
+              background: transparent;
+              border: none;
+              color: #ef4444;
+              font-weight: 700;
+              cursor: pointer;
+              padding: 0;
+              text-decoration: underline;
+            }
+          }
+        }
+      }
+    }
+
+    // Sidebar danh sách thành viên Online của Chat Quận
+    .district-members-sidebar {
+      width: 240px;
+      border-left: 1px solid $slate-200;
+      background: inherit;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex-shrink: 0;
+
+      [data-theme="dark"] & {
+        border-left-color: $dark-border;
+      }
+
+      .members-sidebar-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: $slate-700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+
+        [data-theme="dark"] & {
+          color: $slate-400;
+        }
+      }
+
+      .members-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+
+        .member-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          .member-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            object-fit: cover;
+          }
+
+          .member-name {
+            font-size: 13px;
+            color: $slate-800;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+
+            [data-theme="dark"] & {
+              color: #e2e8f0;
+            }
+          }
+
+          .member-online-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+            margin-left: auto;
+            flex-shrink: 0;
+          }
+        }
+      }
+    }
+  }
+
+  // Khung Composer nhập tin nhắn (Dưới cùng)
+  .chat-composer-bar {
+    padding: 12px 18px;
+    border-top: 1px solid $slate-200;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: inherit;
+    flex-shrink: 0;
+
+    [data-theme="dark"] & {
+      border-top-color: $dark-border;
+    }
+
+    // Preview ảnh đính kèm trước khi gửi
+    .media-attachment-preview {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 8px;
+      background: $slate-100;
+      border-radius: 8px;
+      max-width: fit-content;
+
+      img {
+        width: 44px;
+        height: 44px;
+        border-radius: 6px;
+        object-fit: cover;
+      }
+
+      .btn-remove-preview {
+        border: none;
+        background: transparent;
+        color: #ef4444;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      [data-theme="dark"] & {
+        background: $dark-bg-card-hover;
+      }
+    }
+
+    .composer-input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      .btn-attach-media {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        background: $slate-100;
+        color: $slate-600;
+        font-size: 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s ease;
+
+        &:hover {
+          background: $slate-200;
+          color: $emerald-600;
+        }
+
+        [data-theme="dark"] & {
+          background: $dark-bg-card-hover;
+          color: $slate-300;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.12);
+          }
+        }
+      }
+
+      .composer-textarea {
+        flex: 1;
+        min-height: 40px;
+        max-height: 120px;
+        padding: 9px 14px;
+        background: $slate-100;
+        border: 1px solid transparent;
+        border-radius: 20px;
+        font-size: 14px;
+        line-height: 1.4;
+        color: $slate-900;
+        resize: none;
+        outline: none;
+        font-family: inherit;
+        transition: all 0.18s ease;
+
+        &:focus {
+          background: #ffffff;
+          border-color: $emerald-500;
+          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
+
+        [data-theme="dark"] & {
+          background: $dark-bg-card-hover;
+          color: #f8fafc;
+
+          &:focus {
+            background: $dark-bg-card;
+          }
+        }
+      }
+
+      .btn-send-message {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: none;
+        background: linear-gradient(135deg, $emerald-500, $emerald-600);
+        color: #ffffff;
+        font-size: 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.15s ease, opacity 0.15s ease;
+
+        &:hover:not(:disabled) {
+          transform: scale(1.05);
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+    }
+
+    .composer-footer-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: $slate-400;
+
+      .cooldown-text {
+        color: #f59e0b;
+        font-weight: 700;
+      }
+    }
+  }
+}
+
+// ============================================================
+// 5. MODAL POPUP MÀN 3 & MÀN 4 (TẠO NHÓM / RỜI NHÓM)
+// ============================================================
+.chat-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 15, 25, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 2500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.2s ease;
+}
+
+.chat-modal-card {
+  width: 100%;
+  max-width: 520px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: scaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+  [data-theme="dark"] & {
+    background: $dark-bg-card;
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.7);
+  }
+
+  .modal-card-header {
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid $slate-200;
+
+    [data-theme="dark"] & {
+      border-bottom-color: $dark-border;
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 800;
+      color: $slate-900;
+
+      [data-theme="dark"] & {
+        color: #f8fafc;
+      }
+    }
+
+    .btn-close-modal {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: $slate-100;
+      color: $slate-600;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      [data-theme="dark"] & {
+        background: $dark-bg-card-hover;
+        color: $slate-300;
+      }
+    }
+  }
+
+  .modal-card-body {
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-height: 65vh;
+    overflow-y: auto;
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+
+      label {
+        font-size: 13px;
+        font-weight: 700;
+        color: $slate-700;
+
+        [data-theme="dark"] & {
+          color: $slate-300;
+        }
+      }
+
+      .text-input {
+        width: 100%;
+        height: 40px;
+        padding: 0 14px;
+        background: $slate-50;
+        border: 1px solid $slate-300;
+        border-radius: 8px;
+        font-size: 14px;
+        color: $slate-900;
+        outline: none;
+
+        &:focus {
+          border-color: $emerald-500;
+          background: #ffffff;
+        }
+
+        [data-theme="dark"] & {
+          background: $dark-bg-card-hover;
+          border-color: $dark-border;
+          color: #f8fafc;
+        }
+      }
+
+      .char-counter {
+        font-size: 11px;
+        color: $slate-400;
+        text-align: right;
+      }
+    }
+
+    // Danh sách chip bạn bè đã chọn
+    .selected-chips-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px;
+      background: $slate-50;
+      border-radius: 8px;
+      border: 1px dashed $slate-300;
+      max-height: 110px;
+      overflow-y: auto;
+
+      [data-theme="dark"] & {
+        background: $dark-bg-card-hover;
+        border-color: $dark-border;
+      }
+
+      .friend-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px;
+        background: $emerald-50;
+        color: $emerald-700;
+        border-radius: 14px;
+        font-size: 12px;
+        font-weight: 600;
+
+        .btn-remove-chip {
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          font-weight: bold;
+          color: $emerald-700;
+        }
+
+        [data-theme="dark"] & {
+          background: rgba(16, 185, 129, 0.2);
+          color: #34d399;
+
+          .btn-remove-chip {
+            color: #34d399;
+          }
+        }
+      }
+    }
+
+    // Danh sách bạn bè để tick checkbox
+    .friends-picker-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 220px;
+      overflow-y: auto;
+      border: 1px solid $slate-200;
+      border-radius: 8px;
+      padding: 6px;
+
+      [data-theme="dark"] & {
+        border-color: $dark-border;
+      }
+
+      .friend-pick-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+
+        &:hover {
+          background: $slate-100;
+        }
+
+        [data-theme="dark"] & {
+          &:hover {
+            background: $dark-bg-card-hover;
+          }
+        }
+
+        .friend-avatar {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          object-fit: cover;
+        }
+
+        .friend-meta {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+
+          .friend-name {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: $slate-800;
+
+            [data-theme="dark"] & {
+              color: #f1f5f9;
+            }
+          }
+
+          .friend-district {
+            font-size: 11px;
+            color: $slate-400;
+          }
+        }
+
+        input[type="checkbox"] {
+          width: 18px;
+          height: 18px;
+          accent-color: $emerald-600;
+          cursor: pointer;
+        }
+      }
+    }
+  }
+
+  .modal-card-footer {
+    padding: 14px 20px;
+    border-top: 1px solid $slate-200;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+
+    [data-theme="dark"] & {
+      border-top-color: $dark-border;
+    }
+
+    .btn-modal-cancel {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid $slate-300;
+      background: transparent;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: $slate-700;
+      cursor: pointer;
+
+      [data-theme="dark"] & {
+        border-color: $dark-border;
+        color: $slate-300;
+      }
+    }
+
+    .btn-modal-submit {
+      padding: 8px 20px;
+      border-radius: 8px;
+      border: none;
+      background: linear-gradient(135deg, $emerald-500, $emerald-600);
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #ffffff;
+      cursor: pointer;
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      &.danger {
+        background: #ef4444;
+
+        &:hover {
+          background: #dc2626;
+        }
+      }
+    }
+  }
+}
+
+// 6. RESPONSIVE BREAKPOINT CHO MOBILE (≤ 768px)
+@media (max-width: 768px) {
+  .greenspot-chat-page {
+    .chat-sidebar-left {
+      width: 100%;
+      max-width: 100%;
+
+      &.mobile-hidden {
+        display: none;
+      }
+    }
+
+    .chat-main-area {
+      width: 100%;
+
+      &.mobile-hidden {
+        display: none;
+      }
+
+      .chat-view-header .header-left .btn-back-mobile {
+        display: inline-flex;
+      }
+
+      .chat-view-body .district-members-sidebar {
+        display: none; // Ẩn sidebar online trên mobile để nhường diện tích cho chat
+      }
+    }
+  }
+}
+
+// 7. KEYFRAME ANIMATIONS
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes floatLeaf {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}

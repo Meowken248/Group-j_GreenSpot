@@ -1,8 +1,9 @@
 import re
 import uuid
 from datetime import datetime, date
-from typing import List, Optional
+from typing import List, Optional, Union, Dict, Any
 from pydantic import BaseModel, Field, field_validator
+from app.schemas.post import TaggedFriendInfo
 
 
 # =========================================================================
@@ -40,6 +41,8 @@ class UserProfileResponse(BaseModel):
     is_own_profile: bool = False
     total_green_points: int = 0
     date_of_birth: Optional[date] = None
+    # Feature STT 17: bật/tắt hiển thị ngày sinh cho bạn bè chúc mừng
+    show_birthday: bool = True
     version: int = 1
 
 
@@ -47,12 +50,21 @@ class PostItemResponse(BaseModel):
     post_id: uuid.UUID
     user_id: uuid.UUID
     content: str
-    media_urls: Optional[List[str]] = None
+    media_urls: Optional[List[Union[str, Dict[str, Any]]]] = None
     thumbnail_url: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    address: Optional[str] = None
+    group_id: Optional[uuid.UUID] = None
+    visibility: Optional[str] = "PUBLIC"
+    tagged_friends: Optional[List[TaggedFriendInfo]] = None
     reactions_count: int = 0
     comments_count: int = 0
     is_hidden: bool = False
+    is_edited: bool = False
+    version: int = 1
     created_at: datetime
+    updated_at: Optional[datetime] = None
     relative_time: Optional[str] = None
 
 
@@ -137,6 +149,9 @@ class UpdateProfileRequest(BaseModel):
     full_name: str = Field(..., description="Họ tên 2-50 ký tự, chỉ gồm chữ cái và khoảng trắng")
     bio: Optional[str] = Field(None, description="Đoạn giới thiệu tối đa 200 ký tự")
     date_of_birth: Optional[date] = Field(None, description="Ngày sinh không ở tương lai, không trước 1900-01-01")
+    show_birthday: Optional[bool] = Field(
+        None, description="Feature 17: cho phép bạn bè xem và chúc mừng sinh nhật"
+    )
     avatar_url: Optional[str] = Field(None, description="Đường dẫn hoặc Data URL Base64 của ảnh avatar")
     cover_image_url: Optional[str] = Field(None, description="Đường dẫn hoặc Data URL Base64 của ảnh bìa")
     version: int = Field(..., description="Version hiện tại để kiểm tra Optimistic Locking")

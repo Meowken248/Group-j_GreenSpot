@@ -1,3 +1,8 @@
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 import asyncio
 import os
 import uuid
@@ -10,17 +15,17 @@ async def seed_profile_data():
     print("🚀 Bắt đầu nạp dữ liệu Profile Domain & Green Passport...")
 
     db_url = os.environ.get("DATABASE_URL", str(settings.DATABASE_URL))
-    clean_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
+    clean_url = db_url.replace("postgresql+asyncpg://", "postgresql://").split("?")[0]
     conn = await asyncpg.connect(clean_url)
 
     # 1. SEED CẤP BẬC CÔNG DÂN XANH (CITIZEN LEVELS)
     print(" 🌱 [1/6] Nạp dữ liệu citizen_levels...")
     levels = [
-        (1, "Hạt Mầm", 0, "https://api.iconify.design/twemoji:seedling.svg", 1),
-        (2, "Chồi Non", 100, "https://api.iconify.design/twemoji:herb.svg", 2),
-        (3, "Cây Xanh", 300, "https://api.iconify.design/twemoji:deciduous-tree.svg", 3),
-        (4, "Rừng Xanh", 700, "https://api.iconify.design/twemoji:evergreen-tree.svg", 4),
-        (5, "Đại Ngàn", 1500, "https://api.iconify.design/twemoji:national-park.svg", 5),
+        (1, "Mầm Xanh", 0, "https://api.iconify.design/twemoji:seedling.svg", 1),
+        (2, "Chồi Xanh", 100, "https://api.iconify.design/twemoji:herb.svg", 2),
+        (3, "Lá Xanh", 300, "https://api.iconify.design/twemoji:leaf-fluttering-in-wind.svg", 3),
+        (4, "Cây Xanh", 600, "https://api.iconify.design/twemoji:deciduous-tree.svg", 4),
+        (5, "Đại Sứ Xanh", 1000, "https://api.iconify.design/twemoji:national-park.svg", 5),
     ]
     for lvl in levels:
         await conn.execute("""
@@ -66,6 +71,7 @@ async def seed_profile_data():
         SET bio = 'Sống xanh mỗi ngày cùng GreenSpot! Tích cực tham gia bảo vệ môi trường TP.HCM.',
             cover_image_url = 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&w=1200&q=80',
             avatar_url = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+            date_of_birth = '1995-05-15',
             reputation_score = 100,
             total_green_points = 450,
             friends_count = 32,
@@ -74,18 +80,18 @@ async def seed_profile_data():
         WHERE email = 'citizen@ecoreport.gov.vn';
     """)
 
-    # Cập nhật cho tài khoản Admin ddatmguyen2023+test@gmail.com
+    # Cập nhật cho tài khoản Admin
     await conn.execute("""
         UPDATE users
         SET bio = 'Quản trị viên Hệ thống GreenSpot. Lan tỏa lối sống xanh và bảo tồn đô thị sinh thái.',
             cover_image_url = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
             avatar_url = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
             reputation_score = 100,
-            total_green_points = 720,
+            total_green_points = 1200,
             friends_count = 56,
             version = 1,
             activated_at = '2024-01-10 09:00:00+07'
-        WHERE email = 'ddatmguyen2023+test@gmail.com';
+        WHERE email IN ('admin@ecoreport.gov.vn', 'ddatmguyen2023+test@gmail.com');
     """)
 
     # Đồng bộ thêm badges, activities và posts cho tài khoản ddatmguyen2023+test@gmail.com nếu tồn tại
@@ -282,8 +288,8 @@ async def seed_profile_data():
             p_id = uuid.uuid4()
             created_time = datetime.now(timezone.utc) - timedelta(days=days_ago, hours=3)
             await conn.execute("""
-                INSERT INTO posts (post_id, user_id, content, media_urls, visibility, is_hidden, reactions_count, comments_count, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9)
+                INSERT INTO posts (post_id, user_id, content, media_urls, visibility, is_hidden, reactions_count, comments_count, shares_count, created_at, updated_at, version)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, $9, $9, 1)
             """, p_id, target_u, content, media, vis, hidden, reacts, comms, created_time)
 
     await conn.close()
