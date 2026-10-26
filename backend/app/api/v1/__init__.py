@@ -21,6 +21,7 @@ from app.api.v1.risk_dashboard.router import router as risk_dashboard_router
 from app.api.v1.dispatch.router import router as dispatch_router
 from app.api.v1.hotspots.router import router as hotspots_router
 from app.api.v1.emergency_alert import router as emergency_alerts_router
+from app.api.v1.flood_sos import router as flood_sos_router
 from app.api.v1.incidents import router as incidents_router
 from app.api.v1.rewards import router as rewards_router
 from app.api.v1.challenges import router as challenges_router
@@ -64,4 +65,5 @@ api_v1_router.include_router(risk_dashboard_router)
 api_v1_router.include_router(dispatch_router)
 api_v1_router.include_router(hotspots_router)
 api_v1_router.include_router(emergency_alerts_router)
+api_v1_router.include_router(flood_sos_router)
 api_v1_router.include_router(incidents_router)

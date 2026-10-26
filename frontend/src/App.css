@@ -327,6 +327,63 @@
   flex-shrink: 0;
 }
 
+/* Nút SOS Cứu hộ khẩn cấp trên Top Header */
+.quick-sos-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+  color: #ffffff;
+  border: 1px solid #9b2c2c;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(229, 62, 62, 0.4);
+  transition: all 0.2s ease;
+}
+
+.quick-sos-btn:hover {
+  background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(229, 62, 62, 0.5);
+}
+
+.quick-sos-btn.active {
+  background: #9b2c2c;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.quick-sos-btn .sos-pulse-icon {
+  font-size: 15px;
+  animation: pulseSOS 1.5s infinite ease-in-out;
+}
+
+@keyframes pulseSOS {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.quick-report-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #10b981;
+  color: #ffffff;
+  border: 1px solid #059669;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-report-btn:hover {
+  background: #059669;
+}
+
 .header-icon-btn {
   display: flex;
   align-items: center;

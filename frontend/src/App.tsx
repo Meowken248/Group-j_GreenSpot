@@ -25,6 +25,7 @@ import { RiskDashboardContainer } from "./features/risk_dashboard";
 import { DispatchContainer } from "./features/dispatch";
 import { HotspotContainer } from "./features/hotspots";
 import { EmergencyAlertContainer } from "./features/emergency_alert";
+import { FloodSosContainer } from "./features/flood_sos";
 import {
   SettingsContainer,
   applyThemeToDocument,
@@ -68,6 +69,7 @@ export type ActiveTab =
   | "hotspots"
   | "emergency-alert"
   | "safety-check"
+  | "flood-sos"
   | "report"
   | "incidents"
   | "rewards"
@@ -130,6 +132,9 @@ function App() {
     if (hash === "#hotspots" || hash === "#hotspot-analytics" || path === "/hotspots") {
       if (!isLogged) return "auth";
       return "hotspots";
+    }
+    if (hash === "#flood-sos" || path === "/flood-sos") {
+      return "flood-sos";
     }
     if (hash === "#emergency-alert" || path === "/emergency-alert") {
       if (!isLogged) return "auth";
@@ -1082,6 +1087,20 @@ function App() {
                     </div>
                     {activeTab === "safety-check" && <span className="active-indicator">●</span>}
                   </button>
+
+                  <button
+                    type="button"
+                    className={`panel-item-btn ${activeTab === "flood-sos" ? "active" : ""}`}
+                    onClick={() => navigateTo("flood-sos", "#flood-sos")}
+                    data-testid="tab-btn-flood-sos-menu"
+                  >
+                    <span className="panel-item-icon">🆘</span>
+                    <div className="panel-item-content">
+                      <span className="panel-item-title">Cứu hộ ngập lụt (Flood SOS)</span>
+                      <span className="panel-item-desc">Phát tín hiệu cứu hộ & mạng lưới cứu nạn cộng đồng</span>
+                    </div>
+                    {activeTab === "flood-sos" && <span className="active-indicator">●</span>}
+                  </button>
                 </div>
               )}
             </div>
@@ -1101,6 +1120,18 @@ className={`nav-group-btn single-btn ${isPenaltiesActive ? "active" : ""}`}
 
 {/* KHỐI PHẢI: TIỆN ÍCH & TÀI KHOẢN */}
         <div className="header-right-actions">
+          {/* Nút Cứu hộ khẩn cấp Flood SOS (Nổi bật, trực tiếp cho người dân vùng ngập) */}
+          <button
+            type="button"
+            className={`quick-sos-btn ${activeTab === "flood-sos" ? "active" : ""}`}
+            onClick={() => navigateTo("flood-sos", "#flood-sos")}
+            title="Cứu hộ ngập lụt khẩn cấp (Flood SOS)"
+            data-testid="btn-topbar-flood-sos"
+          >
+            <span className="sos-pulse-icon">🆘</span>
+            <span className="quick-sos-label">Cứu hộ ngập lụt</span>
+          </button>
+
           {/* Nút gửi phản ánh nhanh nổi bật (Quick CTA) */}
           <button
             type="button"
@@ -1373,6 +1404,15 @@ className={`nav-group-btn single-btn ${isPenaltiesActive ? "active" : ""}`}
                       >
                         <span className="action-icon">🚨</span>
                         <span>Phát lệnh cảnh báo khẩn cấp (PCTT)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="dropdown-menu-action"
+                        onClick={() => navigateTo("flood-sos", "#flood-sos")}
+                      >
+                        <span className="action-icon">🆘</span>
+                        <span>Cứu hộ ngập lụt (Flood SOS)</span>
                       </button>
                     </>
                   )}
@@ -1960,6 +2000,10 @@ className={`nav-group-btn single-btn ${isPenaltiesActive ? "active" : ""}`}
               window.location.hash = "#navigation";
             }}
           />
+        </div>
+      ) : activeTab === "flood-sos" ? (
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+          <FloodSosContainer />
         </div>
       ) : (
         <ModulePermissionGuard

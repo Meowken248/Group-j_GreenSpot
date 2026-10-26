@@ -141,6 +141,13 @@ from app.models.emergency_alert import (
     SafetyCheckFriendDelivery,
 )
 
+# 20. Cứu hộ ngập cộng đồng (Flood SOS - STT 46)
+from app.models.flood_sos import (
+    FloodSosRequest,
+    VolunteerProfile,
+    FloodSosChatMessage,
+)
+
 __all__ = [
     "Base",
     "TimestampMixin",
@@ -228,4 +235,8 @@ __all__ = [
     "EmergencySOSSignal",
     "UserSafetyCheck",
     "SafetyCheckFriendDelivery",
+    # Flood SOS Community Rescue (STT 46)
+    "FloodSosRequest",
+    "VolunteerProfile",
+    "FloodSosChatMessage",
 ]
