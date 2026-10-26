@@ -97,47 +97,9 @@ $event-info: #3b82f6;
       align-items: center;
       gap: 0.75rem;
 
-      .btn-my-events-toggle {
-        padding: 0.65rem 1rem;
-        background: #ffffff;
-        border: 1px solid $event-border;
-        border-radius: 10px;
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: $event-text-main;
-        cursor: pointer;
-        @include transition-all;
-
-        &.active {
-          background: $event-primary-light;
-          border-color: $event-primary;
-          color: $event-primary-hover;
-        }
-
-        &:hover {
-          border-color: $event-primary;
-        }
-      }
-
-      .btn-create-event {
-        @include flex-center;
-        gap: 0.5rem;
-        padding: 0.65rem 1.25rem;
-        background: linear-gradient(135deg, $event-primary 0%, $event-primary-hover 100%);
-        color: $event-text-white;
-        border: none;
-        border-radius: 10px;
-        font-size: 0.875rem;
-        font-weight: 700;
-        cursor: pointer;
-        @include transition-all;
-        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
-
-        &:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 6px 14px rgba(16, 185, 129, 0.35);
-        }
-      }
+      // Style của .btn-my-events-toggle / .btn-create-event được khai báo ở cấp
+      // gốc (mục 1b) vì modal được portal ra document.body, không còn nằm trong
+      // .events-feature-container nên selector lồng sẽ không khớp.
     }
   }
 
@@ -218,6 +180,7 @@ $event-info: #3b82f6;
         border: 1px solid $event-border;
         border-radius: 8px;
         background: #ffffff;
+        font-family: inherit;
         font-size: 0.825rem;
         font-weight: 600;
         color: $event-text-muted;
@@ -407,6 +370,7 @@ $event-info: #3b82f6;
             color: $event-primary-hover;
             border: 1px solid $event-primary-border;
             border-radius: 8px;
+            font-family: inherit;
             font-size: 0.825rem;
             font-weight: 700;
             cursor: pointer;
@@ -447,6 +411,65 @@ $event-info: #3b82f6;
       color: $event-text-muted;
       margin: 0;
     }
+  }
+}
+
+// =========================================================================
+// 1b. NÚT DÙNG CHUNG (TOOLBAR + MODAL)
+// Modal được render qua portal vào document.body nên KHÔNG còn là con của
+// .events-feature-container => phải khai báo ở cấp gốc thì mới ăn style.
+// =========================================================================
+.btn-my-events-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1rem;
+  background: #ffffff;
+  border: 1px solid $event-border;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: $event-text-main;
+  cursor: pointer;
+  white-space: nowrap;
+  box-sizing: border-box;
+  @include transition-all;
+
+  &.active {
+    background: $event-primary-light;
+    border-color: $event-primary;
+    color: $event-primary-hover;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: $event-primary;
+  }
+}
+
+.btn-create-event {
+  @include flex-center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  background: linear-gradient(135deg, $event-primary 0%, $event-primary-hover 100%);
+  color: $event-text-white;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: nowrap;
+  box-sizing: border-box;
+  @include transition-all;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(16, 185, 129, 0.35);
   }
 }
 
@@ -508,6 +531,7 @@ $event-info: #3b82f6;
       .btn-close-modal {
         background: transparent;
         border: none;
+        font-family: inherit;
         font-size: 1.5rem;
         color: $event-text-muted;
         cursor: pointer;
@@ -824,6 +848,7 @@ $event-info: #3b82f6;
           color: #ffffff;
           border: none;
           border-radius: 10px;
+          font-family: inherit;
           font-size: 0.95rem;
           font-weight: 700;
           cursor: pointer;
@@ -852,6 +877,7 @@ $event-info: #3b82f6;
           background: #ffffff;
           border: 1px solid $event-border;
           border-radius: 10px;
+          font-family: inherit;
           font-size: 0.875rem;
           font-weight: 600;
           color: $event-text-main;
@@ -1009,6 +1035,7 @@ $event-info: #3b82f6;
     color: #ffffff;
     border: none;
     border-radius: 10px;
+    font-family: inherit;
     font-size: 0.95rem;
     font-weight: 700;
     cursor: pointer;
@@ -1151,6 +1178,7 @@ $event-info: #3b82f6;
   padding: 0.4rem 0.7rem;
   background: #ecfdf5;
   color: #047857;
+  font-family: inherit;
   font-size: 0.76rem;
   font-weight: 700;
   cursor: pointer;
@@ -1273,6 +1301,7 @@ $event-info: #3b82f6;
   border: none;
   border-radius: 8px;
   padding: 0.42rem 0.8rem;
+  font-family: inherit;
   font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
@@ -1473,6 +1502,7 @@ $event-info: #3b82f6;
   border: none;
   background: none;
   color: #047857;
+  font-family: inherit;
   font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
