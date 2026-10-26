@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { HCM_DISTRICTS, type CreateEventPayload, type GreenEvent } from "../types/event.types";
@@ -328,7 +329,8 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
     }
   };
 
-  return (
+  // Portal ra body để overlay luôn phủ đúng viewport, không bị khối cha cắt/neo lệch
+  return createPortal(
     <div className="event-modal-overlay" data-testid="create-event-modal-overlay">
       <div className="event-modal-box large" data-testid="create-event-modal">
         <div className="modal-header">
@@ -639,7 +641,8 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

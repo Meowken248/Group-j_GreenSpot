@@ -54,6 +54,9 @@ export const EventsList: React.FC<EventsListProps> = ({
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  // Các sự kiện đang xử lý đăng ký nhanh: chặn double-click gây toggle tham gia/rời đi 2 lần
+  const [quickJoinIds, setQuickJoinIds] = useState<string[]>([]);
+  const quickJoinLockRef = useRef<Set<string>>(new Set());
 
   const [toast, setToast] = useState<ToastState | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -205,6 +208,9 @@ export const EventsList: React.FC<EventsListProps> = ({
       onOpenLogin();
       return;
     }
+    if (quickJoinLockRef.current.has(ev.event_id)) return;
+    quickJoinLockRef.current.add(ev.event_id);
+    setQuickJoinIds((prev) => [...prev, ev.event_id]);
     try {
       const res = await eventService.toggleJoin(ev.event_id);
       const updated: GreenEvent = {
@@ -213,6 +219,7 @@ export const EventsList: React.FC<EventsListProps> = ({
         current_participants: res.current_participants,
       };
       setEvents((prev) => prev.map((e) => (e.event_id === ev.event_id ? updated : e)));
+      setSelectedEvent((prev) => (prev && prev.event_id === ev.event_id ? updated : prev));
       showToast(
         res.is_joined ? EVENT_MESSAGES.DETAIL_JOIN_SUCCESS : EVENT_MESSAGES.DETAIL_LEAVE_SUCCESS
       );
@@ -220,6 +227,9 @@ export const EventsList: React.FC<EventsListProps> = ({
       const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data
         ?.detail;
       showToast(typeof detail === "string" ? detail : EVENT_MESSAGES.DETAIL_ACTION_ERROR, "error");
+    } finally {
+      quickJoinLockRef.current.delete(ev.event_id);
+      setQuickJoinIds((prev) => prev.filter((id) => id !== ev.event_id));
     }
   };
 
@@ -498,12 +508,15 @@ export const EventsList: React.FC<EventsListProps> = ({
                             type="button"
                             className="btn-card-join"
                             data-testid={`btn-quick-join-${ev.event_id}`}
+                            disabled={quickJoinIds.includes(ev.event_id)}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleQuickJoin(ev);
                             }}
                           >
-                            {EVENT_MESSAGES.DETAIL_JOIN}
+                            {quickJoinIds.includes(ev.event_id)
+                              ? EVENT_MESSAGES.DETAIL_JOINING
+                              : EVENT_MESSAGES.DETAIL_JOIN}
                           </button>
                         )}
                         {ev.is_joined && (

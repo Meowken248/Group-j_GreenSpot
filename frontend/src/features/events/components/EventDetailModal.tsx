@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { GreenEvent, CheckinResponse, ParticipantItem } from "../types/event.types";
@@ -10,6 +11,7 @@ import {
   formatDateTime,
   getCheckinWindowState,
   isEventEnded,
+  isEventStarted,
   resolveMediaUrl,
 } from "../utils/datetime";
 
@@ -25,6 +27,14 @@ interface EventDetailModalProps {
   onToast?: (message: string, type?: "success" | "error") => void;
 }
 
+type DetailAction = "join" | "interest" | "cancel";
+
+const createActionState = (): Record<DetailAction, boolean> => ({
+  join: false,
+  interest: false,
+  cancel: false,
+});
+
 export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   event,
   isOpen,
@@ -38,7 +48,15 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 }) => {
   const [isCheckinOpen, setIsCheckinOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [loadingAction, setLoadingAction] = useState(false);
+  // Mỗi nút có trạng thái chờ riêng: trước đây dùng chung 1 cờ `loadingAction`
+  // khiến mọi nút bị disable (và trông như "bấm không ăn") khi một request đang chạy.
+  const [pendingActions, setPendingActions] = useState<Record<DetailAction, boolean>>(
+    createActionState
+  );
+  const pendingActionsRef = useRef<Record<DetailAction, boolean>>(createActionState());
+  // Đếm số lần người dùng đã thao tác: dùng để bỏ qua phản hồi đồng bộ cũ
+  // (tránh GET chậm trả về và ghi đè trạng thái vừa cập nhật).
+  const mutationSeqRef = useRef(0);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const [showParticipants, setShowParticipants] = useState(false);
@@ -85,10 +103,45 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       mapInstanceRef.current = null;
     };
   }, [isOpen, event.latitude, event.longitude, event.checkin_radius_meters]);
+  // Mỗi lần mở modal: tải lại dữ liệu mới nhất để các nút bấm không dựa trên
+  // dữ liệu cũ (is_ended, is_joined, current_participants…) khiến bấm bị từ chối.
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    const seqAtStart = mutationSeqRef.current;
+    const syncLatestEvent = async () => {
+      try {
+        const fresh = await eventService.getEventDetail(event.event_id);
+        // Chỉ áp dụng khi người dùng chưa thao tác gì trong lúc chờ phản hồi
+        if (!cancelled && fresh && mutationSeqRef.current === seqAtStart) {
+          onEventUpdated(fresh);
+        }
+      } catch {
+        // Im lặng: giữ dữ liệu từ danh sách nếu không tải được chi tiết
+      }
+    };
+    syncLatestEvent();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, event.event_id]);
+
+  // Đổi sang sự kiện khác thì xóa các trạng thái phụ của sự kiện trước
+  useEffect(() => {
+    setAllParticipants([]);
+    setShowParticipants(false);
+    setShowCancelConfirm(false);
+    setShowRejectForm(false);
+    setRejectReason("");
+  }, [event.event_id]);
+
+
 
   if (!isOpen) return null;
 
   const ended = isEventEnded(event);
+  const started = isEventStarted(event);
   const isFull = event.current_participants >= event.max_participants;
   const isCreator = Boolean(currentUserId && event.creator_id === currentUserId);
   const checkinWindowState = getCheckinWindowState(event);
@@ -105,28 +158,41 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
     return true;
   };
 
+  const runAction = async (action: DetailAction, task: () => Promise<void>) => {
+    // Chặn double-click: nếu action đang chạy thì bỏ qua (tránh toggle join/leave 2 lần)
+    if (pendingActionsRef.current[action]) return;
+    pendingActionsRef.current[action] = true;
+    mutationSeqRef.current += 1;
+    setPendingActions((prev) => ({ ...prev, [action]: true }));
+    try {
+      await task();
+    } finally {
+      pendingActionsRef.current[action] = false;
+      setPendingActions((prev) => ({ ...prev, [action]: false }));
+    }
+  };
+
   const handleToggleInterest = async () => {
     if (requireLogin()) return;
     if (ended || event.status !== "APPROVED") {
       notify(EVENT_MESSAGES.DETAIL_ENDED, "error");
       return;
     }
-    try {
-      setLoadingAction(true);
-      const res = await eventService.toggleInterest(event.event_id);
-      onEventUpdated({
-        ...event,
-        is_interested: res.is_interested,
-        interested_count: res.interested_count,
-      });
-      notify(res.message);
-    } catch (err: unknown) {
-      const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data
-        ?.detail;
-      notify(typeof detail === "string" ? detail : EVENT_MESSAGES.DETAIL_ACTION_ERROR, "error");
-    } finally {
-      setLoadingAction(false);
-    }
+    await runAction("interest", async () => {
+      try {
+        const res = await eventService.toggleInterest(event.event_id);
+        onEventUpdated({
+          ...event,
+          is_interested: res.is_interested,
+          interested_count: res.interested_count,
+        });
+        notify(res.message);
+      } catch (err: unknown) {
+        const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data
+          ?.detail;
+        notify(typeof detail === "string" ? detail : EVENT_MESSAGES.DETAIL_ACTION_ERROR, "error");
+      }
+    });
   };
 
   const handleToggleJoin = async () => {
@@ -135,40 +201,43 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       notify(EVENT_MESSAGES.DETAIL_ENDED, "error");
       return;
     }
-    try {
-      setLoadingAction(true);
-      const res = await eventService.toggleJoin(event.event_id);
-      onEventUpdated({
-        ...event,
-        is_joined: res.is_joined,
-        current_participants: res.current_participants,
-      });
-      notify(
-        res.is_joined ? EVENT_MESSAGES.DETAIL_JOIN_SUCCESS : EVENT_MESSAGES.DETAIL_LEAVE_SUCCESS
-      );
-    } catch (err: unknown) {
-      const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data
-        ?.detail;
-      notify(typeof detail === "string" ? detail : EVENT_MESSAGES.DETAIL_ACTION_ERROR, "error");
-    } finally {
-      setLoadingAction(false);
+    // Người tổ chức luôn là participant và backend không cho tự huỷ tham gia
+    if (isCreator && event.is_joined) {
+      notify(EVENT_MESSAGES.DETAIL_CREATOR_LEAVE_LOCKED, "error");
+      return;
     }
+    await runAction("join", async () => {
+      try {
+        const res = await eventService.toggleJoin(event.event_id);
+        onEventUpdated({
+          ...event,
+          is_joined: res.is_joined,
+          current_participants: res.current_participants,
+        });
+        notify(
+          res.is_joined ? EVENT_MESSAGES.DETAIL_JOIN_SUCCESS : EVENT_MESSAGES.DETAIL_LEAVE_SUCCESS
+        );
+      } catch (err: unknown) {
+        const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data
+          ?.detail;
+        notify(typeof detail === "string" ? detail : EVENT_MESSAGES.DETAIL_ACTION_ERROR, "error");
+      }
+    });
   };
 
   const handleCancelEvent = async () => {
     setShowCancelConfirm(false);
-    try {
-      setLoadingAction(true);
-      await eventService.cancelEvent(event.event_id);
-      notify(EVENT_MESSAGES.DETAIL_CANCEL_SUCCESS);
-      onEventUpdated({ ...event, status: "CANCELLED" });
-    } catch (err: unknown) {
-      const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data
-        ?.detail;
-      notify(typeof detail === "string" ? detail : EVENT_MESSAGES.DETAIL_ACTION_ERROR, "error");
-    } finally {
-      setLoadingAction(false);
-    }
+    await runAction("cancel", async () => {
+      try {
+        await eventService.cancelEvent(event.event_id);
+        notify(EVENT_MESSAGES.DETAIL_CANCEL_SUCCESS);
+        onEventUpdated({ ...event, status: "CANCELLED" });
+      } catch (err: unknown) {
+        const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data
+          ?.detail;
+        notify(typeof detail === "string" ? detail : EVENT_MESSAGES.DETAIL_ACTION_ERROR, "error");
+      }
+    });
   };
 
   const handleReview = async (status: "APPROVED" | "REJECTED") => {
@@ -216,7 +285,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
     notify(res.message);
   };
 
-  return (
+  // Render qua portal ra document.body: tránh việc overlay `position: fixed` bị
+  // neo/lệch hoặc cắt bởi các khối cha có transform/overflow (khiến vùng bấm của nút
+  // không khớp với vị trí hiển thị).
+  return createPortal(
     <>
       <div className="event-modal-overlay" data-testid="event-detail-modal-overlay">
         <div className="event-modal-box large" data-testid="event-detail-modal">
@@ -446,22 +518,41 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     )}
 
                     {/* 2. Tham gia / Hủy tham gia */}
-                    {event.status === "APPROVED" && (
+                    {event.status === "APPROVED" && isCreator && event.is_joined ? (
+                      // Người tổ chức không thể tự huỷ tham gia (backend trả 400) nên
+                      // hiển thị nhãn cố định thay vì nút bấm luôn thất bại.
                       <button
                         type="button"
-                        className={`btn-action-primary ${event.is_joined ? "btn-cancel" : ""}`}
-                        data-testid="btn-toggle-join"
-                        disabled={loadingAction || ended || (!event.is_joined && isFull)}
-                        onClick={handleToggleJoin}
+                        className="btn-action-primary"
+                        data-testid="btn-creator-joined"
+                        disabled
+                        title={EVENT_MESSAGES.DETAIL_CREATOR_LEAVE_LOCKED}
                       >
-                        {ended
-                          ? EVENT_MESSAGES.DETAIL_ENDED
-                          : event.is_joined
-                          ? EVENT_MESSAGES.DETAIL_LEAVE
-                          : isFull
-                          ? EVENT_MESSAGES.DETAIL_FULL
-                          : `${EVENT_MESSAGES.DETAIL_JOIN} (${event.current_participants}/${event.max_participants})`}
+                        👑 {EVENT_MESSAGES.DETAIL_CREATOR_LEAVE_LOCKED}
                       </button>
+                    ) : (
+                      event.status === "APPROVED" && (
+                        <button
+                          type="button"
+                          className={`btn-action-primary ${event.is_joined ? "btn-cancel" : ""}`}
+                          data-testid="btn-toggle-join"
+                          disabled={pendingActions.join || ended || (!event.is_joined && isFull)}
+                          aria-busy={pendingActions.join}
+                          onClick={handleToggleJoin}
+                        >
+                          {pendingActions.join
+                            ? event.is_joined
+                              ? EVENT_MESSAGES.DETAIL_LEAVING
+                              : EVENT_MESSAGES.DETAIL_JOINING
+                            : ended
+                            ? EVENT_MESSAGES.DETAIL_ENDED
+                            : event.is_joined
+                            ? EVENT_MESSAGES.DETAIL_LEAVE
+                            : isFull
+                            ? EVENT_MESSAGES.DETAIL_FULL
+                            : `${EVENT_MESSAGES.DETAIL_JOIN} (${event.current_participants}/${event.max_participants})`}
+                        </button>
+                      )
                     )}
 
                     {/* 3. Quan tâm */}
@@ -469,22 +560,25 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                       type="button"
                       className={`btn-action-secondary ${event.is_interested ? "active" : ""}`}
                       data-testid="btn-toggle-interest"
-                      disabled={loadingAction || ended || event.status !== "APPROVED"}
+                      disabled={pendingActions.interest || ended || event.status !== "APPROVED"}
+                      aria-busy={pendingActions.interest}
                       onClick={handleToggleInterest}
                     >
-                      {event.is_interested
+                      {pendingActions.interest
+                        ? `⏳ ${EVENT_MESSAGES.DETAIL_PROCESSING}`
+                        : event.is_interested
                         ? `❤️ ${EVENT_MESSAGES.DETAIL_INTERESTED} (${event.interested_count})`
                         : `🤍 ${EVENT_MESSAGES.DETAIL_INTEREST} (${event.interested_count})`}
                     </button>
 
                     {/* 4. Chỉnh sửa / Hủy sự kiện cho người tổ chức */}
-                    {canManage && event.status !== "CANCELLED" && !ended && (
+                    {canManage && event.status !== "CANCELLED" && !ended && !started && (
                       <button
                         type="button"
                         className="btn-action-secondary"
                         data-testid="btn-edit-event"
                         onClick={() => setIsEditOpen(true)}
-                        disabled={loadingAction}
+                        disabled={pendingActions.cancel}
                       >
                         ✏️ {EVENT_MESSAGES.DETAIL_EDIT}
                       </button>
@@ -495,9 +589,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                         type="button"
                         className="btn-action-secondary btn-danger-outline"
                         onClick={() => setShowCancelConfirm(true)}
-                        disabled={loadingAction}
+                        disabled={pendingActions.cancel}
+                        aria-busy={pendingActions.cancel}
                       >
-                        {EVENT_MESSAGES.DETAIL_CANCEL_EVENT}
+                        {pendingActions.cancel
+                          ? EVENT_MESSAGES.DETAIL_CANCELLING
+                          : EVENT_MESSAGES.DETAIL_CANCEL_EVENT}
                       </button>
                     )}
                   </div>
@@ -579,8 +676,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 type="button"
                 className="btn-create-event btn-danger-solid"
                 onClick={handleCancelEvent}
+                disabled={pendingActions.cancel}
+                aria-busy={pendingActions.cancel}
               >
-                {EVENT_MESSAGES.DETAIL_CANCEL_EVENT}
+                {pendingActions.cancel
+                  ? EVENT_MESSAGES.DETAIL_CANCELLING
+                  : EVENT_MESSAGES.DETAIL_CANCEL_EVENT}
               </button>
             </div>
           </div>
@@ -605,7 +706,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         onCheckinSuccess={handleCheckinSuccess}
         onToast={onToast}
       />
-    </>
+    </>,
+    document.body
   );
 };
 

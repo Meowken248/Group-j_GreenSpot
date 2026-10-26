@@ -398,6 +398,24 @@ describe("Feature 21: Sự kiện và chiến dịch Chủ Nhật Xanh (Frontend
     expect(screen.getAllByText(/kết thúc/i).length).toBeGreaterThan(0);
   });
 
+  // 11. Người tổ chức: không thể tự hủy tham gia (backend trả 400) => UI không hiện nút
+  it("TC-10b: Người tổ chức thấy nhãn cố định thay vì nút Hủy tham gia", () => {
+    render(
+      <EventDetailModal
+        event={{ ...mockSampleEvent, is_joined: true }}
+        isOpen={true}
+        onClose={vi.fn()}
+        isLoggedIn={true}
+        currentUserId="user-creator-1"
+        onOpenLogin={vi.fn()}
+        onEventUpdated={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByTestId("btn-toggle-join")).not.toBeInTheDocument();
+    expect(screen.getByTestId("btn-creator-joined")).toBeDisabled();
+  });
+
   // 11. Xem toàn bộ người tham gia
   it("TC-11: Tải toàn bộ danh sách người tham gia khi bấm xem tất cả", async () => {
     vi.mocked(eventService.getParticipants).mockResolvedValue([

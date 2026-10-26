@@ -74,6 +74,7 @@ export const EVENT_MESSAGES = {
   DETAIL_INTERESTED: "Đã quan tâm",
   DETAIL_EDIT: "Chỉnh sửa sự kiện",
   DETAIL_CANCEL_EVENT: "Hủy sự kiện này",
+  DETAIL_CREATOR_LEAVE_LOCKED: "Bạn là người tổ chức sự kiện này",
   DETAIL_CANCEL_CONFIRM: "Bạn có chắc chắn muốn hủy sự kiện này? Toàn bộ người tham gia sẽ nhận thông báo.",
   DETAIL_CANCEL_SUCCESS: "Đã hủy sự kiện và thông báo tới người tham gia.",
   DETAIL_VIEW_ALL_PARTICIPANTS: "Xem tất cả người tham gia",
@@ -87,6 +88,10 @@ export const EVENT_MESSAGES = {
   DETAIL_JOIN_SUCCESS: "Đăng ký tham gia sự kiện thành công!",
   DETAIL_LEAVE_SUCCESS: "Đã hủy tham gia sự kiện.",
   DETAIL_ACTION_ERROR: "Không thể cập nhật trạng thái sự kiện. Vui lòng thử lại.",
+  DETAIL_JOINING: "Đang đăng ký tham gia…",
+  DETAIL_LEAVING: "Đang hủy tham gia…",
+  DETAIL_PROCESSING: "Đang cập nhật…",
+  DETAIL_CANCELLING: "Đang hủy sự kiện…",
   DETAIL_GUEST_LOGIN: "Bạn cần đăng nhập để tương tác với sự kiện.",
 
   // Check-in

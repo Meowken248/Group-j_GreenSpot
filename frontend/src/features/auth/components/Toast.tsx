@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { createPortal } from "react-dom";
 import type { ToastState } from "../types/auth.types";
 import "../styles/Toast.scss";
 
@@ -33,7 +34,7 @@ export const Toast: React.FC<ToastProps> = ({
 
   if (!activeMessage) return null;
 
-  return (
+  return createPortal(
     <div className="toast-container" aria-live="assertive">
       <div className={`toast-item toast-${activeType}`} role="alert">
         <span className="toast-icon">
@@ -41,7 +42,8 @@ export const Toast: React.FC<ToastProps> = ({
         </span>
         <span className="toast-message">{activeMessage}</span>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

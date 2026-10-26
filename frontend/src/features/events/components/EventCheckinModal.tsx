@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { GreenEvent, CheckinResponse } from "../types/event.types";
@@ -232,7 +233,7 @@ export const EventCheckinModal: React.FC<EventCheckinModalProps> = ({
     }
   };
 
-  return (
+  return createPortal(
     <div className="event-modal-overlay" data-testid="checkin-modal-overlay">
       <div className="event-modal-box large" data-testid="checkin-modal">
         <div className="modal-header">
@@ -379,7 +380,8 @@ export const EventCheckinModal: React.FC<EventCheckinModalProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

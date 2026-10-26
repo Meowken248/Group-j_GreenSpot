@@ -73,8 +73,19 @@ export const isEventEnded = (
   event: Pick<GreenEvent, "start_time" | "end_time" | "is_ended">,
   now: number = Date.now()
 ): boolean => {
-  if (typeof event.is_ended === "boolean") return event.is_ended;
-  return getEventEndTime(event) <= now;
+  // Luôn so sánh với giờ hiện tại trước: cờ is_ended lấy từ server có thể đã cũ
+  // (danh sách chỉ tải 1 lần), khiến nút vẫn bấm được nhưng backend từ chối.
+  if (getEventEndTime(event) <= now) return true;
+  return event.is_ended === true;
+};
+
+/** Sự kiện đã bắt đầu chưa (backend khóa chỉnh sửa kể từ giờ bắt đầu). */
+export const isEventStarted = (
+  event: Pick<GreenEvent, "start_time">,
+  now: number = Date.now()
+): boolean => {
+  const start = new Date(event.start_time).getTime();
+  return !Number.isNaN(start) && start <= now;
 };
 
 /** Khoảng thời gian mở check-in của sự kiện. */
