@@ -21,6 +21,9 @@ interface EventDetailModalProps {
   onClose: () => void;
   isLoggedIn: boolean;
   currentUserId?: string;
+  /** Vai trò ADMIN: backend cho phép quản lý (sửa/huỷ) mọi sự kiện */
+  isAdmin?: boolean;
+  /** Có quyền duyệt sự kiện: ADMIN hoặc mã quyền RBAC CAMPAIGNS:UPDATE */
   canApprove?: boolean;
   onOpenLogin: () => void;
   onEventUpdated: (updatedEvent: GreenEvent) => void;
@@ -41,6 +44,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   onClose,
   isLoggedIn,
   currentUserId,
+  isAdmin = false,
   canApprove = false,
   onOpenLogin,
   onEventUpdated,
@@ -145,7 +149,9 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   const isFull = event.current_participants >= event.max_participants;
   const isCreator = Boolean(currentUserId && event.creator_id === currentUserId);
   const checkinWindowState = getCheckinWindowState(event);
-  const canManage = isCreator || canApprove;
+  // Khớp backend: update_event/cancel_event chỉ cho người tạo hoặc ADMIN (is_admin).
+  // Quyền duyệt (canApprove) không đồng nghĩa với quyền sửa/huỷ sự kiện của người khác.
+  const canManage = isCreator || isAdmin;
 
   const notify = (message: string, type: "success" | "error" = "success") => {
     if (onToast) onToast(message, type);
@@ -432,7 +438,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Khối duyệt sự kiện cho Quản trị viên */}
+                  {/* Khối duyệt sự kiện cho người có quyền duyệt (ADMIN / CAMPAIGNS:UPDATE) */}
                   {canApprove && event.status === "PENDING" && (
                     <div className="admin-review-box" data-testid="detail-admin-review">
                       <h4>🛡️ Phê duyệt sự kiện</h4>

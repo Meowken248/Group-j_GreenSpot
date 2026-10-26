@@ -11,6 +11,7 @@ export const EventsPage: React.FC<EventsPageProps> = ({ onNavigateToLogin }) => 
   const isLoggedIn = !!token;
 
   let currentUserId: string | undefined;
+  let isAdmin = false;
   let canApprove = false;
   try {
     const rawUserInfo = localStorage.getItem(AUTH_STORAGE_KEYS.USER_INFO);
@@ -18,7 +19,9 @@ export const EventsPage: React.FC<EventsPageProps> = ({ onNavigateToLogin }) => 
       const parsed = JSON.parse(rawUserInfo);
       currentUserId = parsed.user_id || parsed.id;
       const permissions: string[] = Array.isArray(parsed.permissions) ? parsed.permissions : [];
-      canApprove = parsed.role === "ADMIN" || permissions.includes("CAMPAIGNS:UPDATE");
+      // Vai trò ADMIN được toàn quyền; các vai trò khác cần đúng mã quyền RBAC
+      isAdmin = parsed.role === "ADMIN";
+      canApprove = isAdmin || permissions.includes("CAMPAIGNS:UPDATE");
     }
   } catch {
     // ignore
@@ -37,6 +40,7 @@ export const EventsPage: React.FC<EventsPageProps> = ({ onNavigateToLogin }) => 
       <EventsList
         isLoggedIn={isLoggedIn}
         currentUserId={currentUserId}
+        isAdmin={isAdmin}
         canApprove={canApprove}
         onOpenLogin={handleOpenLogin}
       />

@@ -24,6 +24,7 @@ Danh sách ca kiểm thử:
 15. TC-15: Giới hạn Điểm Xanh theo ngày (150 GP/ngày).
 16. TC-16: Nhắc nhở sự kiện - chống gửi trùng (dedupe).
 17. TC-17: Duyệt sự kiện - tạo thông báo cho người tạo.
+18. TC-18: Quyền duyệt theo RBAC (CAMPAIGNS:UPDATE) - xem & lọc được sự kiện PENDING.
 """
 
 import unittest
@@ -43,7 +44,7 @@ from app.models.event import (
     EventStatus,
 )
 from app.models.notification import Notification
-from app.models.rbac import Role, User
+from app.models.rbac import Permission, Role, RolePermission, User
 from app.schemas.event import CheckinRequest, EventCreate, EventReviewRequest, EventUpdate
 from app.services.event_service import (
     DAILY_GP_CAP,
@@ -62,6 +63,7 @@ class TestGreenSundayEventsFeature21(unittest.IsolatedAsyncioTestCase):
         self.service = EventService(self.session)
         self.notify_start = datetime.now(timezone.utc)
         self.user_ids = []
+        self.temp_role_ids = []
 
         role_rows = (await self.session.execute(select(Role.role_code, Role.role_id))).all()
         self.roles = {code: rid for code, rid in role_rows}
@@ -97,6 +99,14 @@ class TestGreenSundayEventsFeature21(unittest.IsolatedAsyncioTestCase):
                 delete(Notification).where(Notification.created_at >= self.notify_start)
             )
             await self.session.execute(delete(User).where(User.user_id.in_(self.user_ids)))
+            # Dọn vai trò tạm dùng cho test phân quyền RBAC (sau khi đã xoá user)
+            if self.temp_role_ids:
+                await self.session.execute(
+                    delete(RolePermission).where(RolePermission.role_id.in_(self.temp_role_ids))
+                )
+                await self.session.execute(
+                    delete(Role).where(Role.role_id.in_(self.temp_role_ids))
+                )
             await self.session.commit()
         finally:
             await self.session.close()
@@ -111,6 +121,55 @@ class TestGreenSundayEventsFeature21(unittest.IsolatedAsyncioTestCase):
             role_id=self.roles[role_code],
             status="active",
             total_green_points=points,
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
+        )
+        self.session.add(user)
+        self.user_ids.append(user.user_id)
+        return user
+
+    async def _make_role_with_permission(self, permission_code: str) -> Role:
+        """Tạo vai trò tạm (dọn dẹp trong tearDown) gắn đúng 1 mã quyền RBAC."""
+        perm_id = (
+            await self.session.execute(
+                select(Permission.permission_id).where(
+                    Permission.permission_code == permission_code
+                )
+            )
+        ).scalar_one_or_none()
+        self.assertIsNotNone(
+            perm_id,
+            f"Thiếu quyền {permission_code} trong CSDL - hãy chạy seed RBAC trước khi test",
+        )
+
+        now = datetime.now(timezone.utc)
+        role = Role(
+            role_code=f"TEST_REVIEWER_{uuid.uuid4().hex[:6].upper()}",
+            role_name="Kiểm duyệt viên thử nghiệm",
+            description="Vai trò tạm chỉ dùng cho unit test Feature 21",
+            is_system=False,
+            scope="DISTRICT",
+            version=1,
+            created_at=now,
+            updated_at=now,
+        )
+        self.session.add(role)
+        await self.session.flush()
+
+        self.temp_role_ids.append(role.role_id)
+        self.session.add(RolePermission(role_id=role.role_id, permission_id=perm_id))
+        await self.session.flush()
+        return role
+
+    async def _make_user_with_role(self, prefix: str, full_name: str, role_id: int) -> User:
+        user = User(
+            user_id=uuid.uuid4(),
+            email=f"test_{prefix}_{uuid.uuid4().hex[:8]}@greenspot.vn",
+            password_hash="$2b$12$dummyhashforunittestonly12345678901234567890",
+            full_name=full_name,
+            role_id=role_id,
+            status="active",
+            total_green_points=0,
             created_at=datetime.now(timezone.utc),
             updated_at=datetime.now(timezone.utc),
         )
@@ -330,9 +389,18 @@ class TestGreenSundayEventsFeature21(unittest.IsolatedAsyncioTestCase):
 
         # Admin lọc danh sách theo trạng thái phục vụ màn duyệt
         admin_pending = await self.service.list_events(
-            current_user_id=self.admin.user_id, status_filter="PENDING", is_admin=True
+            current_user_id=self.admin.user_id, status_filter="PENDING"
         )
         self.assertIn(ev_pending.event_id, {e.event_id for e in admin_pending.items})
+
+        # Người không có quyền duyệt không được lọc theo trạng thái (tránh lộ PENDING)
+        with self.assertRaises(HTTPException) as ctx_status:
+            await self.service.list_events(
+                current_user_id=self.user2.user_id,
+                status_filter="PENDING",
+                can_review=False,
+            )
+        self.assertEqual(ctx_status.exception.status_code, 403)
 
     # -------------------------------------------------------------------------
     # TC-06: Lọc theo quận/huyện và thời gian
@@ -615,6 +683,44 @@ class TestGreenSundayEventsFeature21(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(ctx_perm.exception.status_code, 403)
 
     # -------------------------------------------------------------------------
+    # TC-13b: Chỉnh sửa nội dung sự kiện diễn ra trong 24 giờ (không đổi giờ)
+    # -------------------------------------------------------------------------
+    async def test_tc13b_update_content_of_imminent_event(self):
+        now = datetime.now(timezone.utc)
+        same_start = now + timedelta(hours=6)
+        ev = await self._make_event(
+            status=EventStatus.APPROVED.value,
+            start_time=same_start,
+            end_time=now + timedelta(hours=9),
+        )
+        await self.session.commit()
+
+        # Frontend luôn gửi kèm start_time hiện tại => backend phải so sánh giá trị
+        # để không chặn nhầm việc chỉ sửa nội dung.
+        updated = await self.service.update_event(
+            ev.event_id,
+            self.user1.user_id,
+            EventUpdate(
+                version=1,
+                title="Đổi tiêu đề, giữ nguyên khung giờ cũ",
+                start_time=same_start,
+                end_time=now + timedelta(hours=9),
+            ),
+        )
+        self.assertEqual(updated.title, "Đổi tiêu đề, giữ nguyên khung giờ cũ")
+        self.assertEqual(updated.status, EventStatus.PENDING.value)
+        self.assertEqual(updated.version, 2)
+
+        # Nhưng nếu dời giờ bắt đầu vào trong 24 giờ tới thì bị chặn
+        with self.assertRaises(HTTPException) as ctx_soon:
+            await self.service.update_event(
+                ev.event_id,
+                self.user1.user_id,
+                EventUpdate(version=2, start_time=now + timedelta(hours=2)),
+            )
+        self.assertEqual(ctx_soon.exception.status_code, 400)
+
+    # -------------------------------------------------------------------------
     # TC-14: Huỷ sự kiện - thông báo người tham gia, chặn tương tác sau huỷ
     # -------------------------------------------------------------------------
     async def test_tc14_cancel_event_notifies_and_blocks(self):
@@ -756,6 +862,53 @@ class TestGreenSundayEventsFeature21(unittest.IsolatedAsyncioTestCase):
         # Từ chối bắt buộc có lý do
         with self.assertRaises(ValidationError):
             EventReviewRequest(status="REJECTED", reject_reason="")
+
+    # -------------------------------------------------------------------------
+    # TC-18: Quyền duyệt theo RBAC (CAMPAIGNS:UPDATE) - không chỉ ADMIN
+    # -------------------------------------------------------------------------
+    async def test_tc18_reviewer_permission_via_rbac(self):
+        reviewer_role = await self._make_role_with_permission("CAMPAIGNS:UPDATE")
+        reviewer = await self._make_user_with_role(
+            "reviewer", "Lê Thị Kiểm Duyệt", reviewer_role.role_id
+        )
+        pending_ev = await self._make_event(status=EventStatus.PENDING.value)
+        await self.session.commit()
+
+        # Vai trò tạm có CAMPAIGNS:UPDATE nhưng không phải ADMIN
+        self.assertFalse(await self.service.is_admin(reviewer.user_id))
+        self.assertTrue(await self.service.can_review(reviewer.user_id))
+        # Người dùng CITIZEN thường và khách vãng lai không có quyền duyệt
+        self.assertFalse(await self.service.can_review(self.user2.user_id))
+        self.assertFalse(await self.service.can_review(None))
+
+        # Người duyệt xem được chi tiết sự kiện PENDING, người khác thì không (404)
+        detail = await self.service.get_event_detail(
+            pending_ev.event_id, current_user_id=reviewer.user_id
+        )
+        self.assertEqual(detail.event_id, pending_ev.event_id)
+        with self.assertRaises(HTTPException) as ctx_detail:
+            await self.service.get_event_detail(
+                pending_ev.event_id, current_user_id=self.user2.user_id
+            )
+        self.assertEqual(ctx_detail.exception.status_code, 404)
+
+        # Màn duyệt sự kiện: lọc theo trạng thái (không truyền can_review => tự suy ra)
+        reviewer_pending = await self.service.list_events(
+            current_user_id=reviewer.user_id,
+            status_filter="PENDING",
+            time_filter="all",
+            page=1,
+            page_size=50,
+        )
+        self.assertIn(pending_ev.event_id, {e.event_id for e in reviewer_pending.items})
+
+        with self.assertRaises(HTTPException) as ctx_list:
+            await self.service.list_events(
+                current_user_id=self.user2.user_id,
+                status_filter="PENDING",
+                time_filter="all",
+            )
+        self.assertEqual(ctx_list.exception.status_code, 403)
 
 
 if __name__ == "__main__":

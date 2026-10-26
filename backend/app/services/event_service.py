@@ -17,7 +17,7 @@ from app.models.event import (
     EventStatus,
 )
 from app.models.notification import Notification
-from app.models.rbac import Role, User
+from app.models.rbac import Permission, Role, RolePermission, User
 from app.schemas.event import (
     CheckinRequest,
     CheckinResponse,
@@ -121,15 +121,38 @@ class EventService:
         code = (await self.db.execute(q)).scalar_one_or_none()
         return code == "ADMIN"
 
+    async def can_review(self, user_id: Optional[uuid.UUID]) -> bool:
+        """Quyền duyệt sự kiện: vai trò ADMIN hoặc có quyền RBAC ``CAMPAIGNS:UPDATE``.
+
+        Dùng chung cho cả API duyệt sự kiện (``require_permission``) và các truy vấn
+        danh sách/xem chi tiết để tránh trường hợp Quản lý quận duyệt được sự kiện
+        nhưng lại không tải được danh sách PENDING.
+        """
+        if not user_id:
+            return False
+        if await self.is_admin(user_id):
+            return True
+        q = (
+            select(Permission.permission_id)
+            .join(RolePermission, RolePermission.permission_id == Permission.permission_id)
+            .join(User, User.role_id == RolePermission.role_id)
+            .where(
+                User.user_id == user_id,
+                User.deleted_at.is_(None),
+                Permission.permission_code == "CAMPAIGNS:UPDATE",
+            )
+        )
+        return (await self.db.execute(q)).first() is not None
+
     async def _can_view(self, event: Event, viewer_id: Optional[uuid.UUID]) -> bool:
-        """Sự kiện chưa duyệt chỉ hiển thị với người tạo và Quản trị viên."""
+        """Sự kiện chưa duyệt chỉ hiển thị với người tạo và người có quyền duyệt."""
         if event.status == EventStatus.APPROVED.value:
             return True
         if not viewer_id:
             return False
         if event.creator_id == viewer_id:
             return True
-        return await self.is_admin(viewer_id)
+        return await self.can_review(viewer_id)
 
     def _ensure_interactable(self, event: Event, now: datetime) -> None:
         if event.status != EventStatus.APPROVED.value:
@@ -272,10 +295,16 @@ class EventService:
         page: int = 1,
         page_size: int = 12,
         status_filter: Optional[str] = None,
-        is_admin: bool = False,
+        can_review: Optional[bool] = None,
     ) -> EventListResponse:
-        """Lấy danh sách sự kiện kèm bộ lọc và phân trang (Màn 1/4)."""
+        """Lấy danh sách sự kiện kèm bộ lọc và phân trang (Màn 1/4).
+
+        ``can_review`` cho phép người có quyền duyệt (ADMIN hoặc ``CAMPAIGNS:UPDATE``)
+        lọc theo trạng thái; nếu bỏ trống thì tự suy ra từ ``current_user_id`` để mọi
+        lời gọi cũ vẫn nhận đúng quyền.
+        """
         now = datetime.now(timezone.utc)
+        reviewer = can_review if can_review is not None else await self.can_review(current_user_id)
         query = select(Event).where(Event.is_deleted == False)  # noqa: E712
 
         if my_events and current_user_id:
@@ -289,8 +318,14 @@ class EventService:
                     Event.event_id.in_(participated_event_ids_query),
                 )
             )
-        elif status_filter and is_admin:
-            # Quản trị viên xem theo trạng thái (phục vụ màn duyệt sự kiện)
+        elif status_filter:
+            # Chỉ người có quyền duyệt mới được lọc theo trạng thái (màn duyệt sự kiện),
+            # tránh lộ các sự kiện PENDING/REJECTED ra danh sách công khai.
+            if not reviewer:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Chỉ Quản trị viên hoặc người có quyền duyệt sự kiện mới được lọc theo trạng thái.",
+                )
             query = query.where(Event.status == status_filter.upper())
         else:
             # Danh sách công khai: chỉ xem sự kiện APPROVED
@@ -373,7 +408,7 @@ class EventService:
         if event.creator_id != editor_id and not editor_is_admin:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Chỉ người tổ chức sự kiện mới có quyền chỉnh sửa.",
+                detail="Chỉ người tổ chức sự kiện hoặc Quản trị viên mới có quyền chỉnh sửa.",
             )
         if event.status == EventStatus.CANCELLED.value:
             raise HTTPException(
@@ -401,7 +436,14 @@ class EventService:
         new_start = _as_utc(data.start_time) if data.start_time else _as_utc(event.start_time)
         new_end = _as_utc(data.end_time) if data.end_time else _as_utc(event.end_time)
 
-        if new_start < now + timedelta(hours=24):
+        # Quy tắc 24 giờ chỉ áp dụng khi người tổ chức thực sự đổi giờ bắt đầu;
+        # nhờ vậy vẫn chỉnh sửa được nội dung của sự kiện diễn ra trong 24 giờ tới.
+        # (Frontend luôn gửi kèm start_time hiện tại nên phải so sánh giá trị, không chỉ
+        # kiểm tra sự tồn tại của trường.)
+        start_time_changed = data.start_time is not None and (
+            abs((_as_utc(data.start_time) - _as_utc(event.start_time)).total_seconds()) >= 1
+        )
+        if start_time_changed and new_start < now + timedelta(hours=24):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Thời gian bắt đầu sự kiện phải sau thời điểm hiện tại ít nhất 24 giờ.",
@@ -937,7 +979,7 @@ class EventService:
                     current_participants=event.current_participants,
                     interested_count=event.interested_count,
                     creator_id=event.creator_id,
-                    creator_name=(creator.full_name or "Người tổ chức") if creator else "Quản trị viên",
+                    creator_name=(creator.full_name or "Người tổ chức") if creator else "Người tổ chức",
                     creator_avatar=getattr(creator, "avatar_url", None) if creator else None,
                     status=event.status,
                     reject_reason=event.reject_reason,

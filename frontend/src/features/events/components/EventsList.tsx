@@ -20,6 +20,9 @@ const PAGE_SIZE = 12;
 interface EventsListProps {
   isLoggedIn: boolean;
   currentUserId?: string;
+  /** Vai trò ADMIN: được quản lý (sửa/huỷ) mọi sự kiện, khớp quy tắc backend */
+  isAdmin?: boolean;
+  /** Có quyền duyệt sự kiện: ADMIN hoặc mã quyền RBAC CAMPAIGNS:UPDATE */
   canApprove?: boolean;
   onOpenLogin: () => void;
 }
@@ -27,6 +30,7 @@ interface EventsListProps {
 export const EventsList: React.FC<EventsListProps> = ({
   isLoggedIn,
   currentUserId,
+  isAdmin = false,
   canApprove = false,
   onOpenLogin,
 }) => {
@@ -565,6 +569,7 @@ export const EventsList: React.FC<EventsListProps> = ({
           onClose={() => setSelectedEvent(null)}
           isLoggedIn={isLoggedIn}
           currentUserId={currentUserId}
+          isAdmin={isAdmin}
           canApprove={canApprove}
           onOpenLogin={onOpenLogin}
           onEventUpdated={handleEventUpdated}

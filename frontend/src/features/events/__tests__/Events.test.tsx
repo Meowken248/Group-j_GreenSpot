@@ -448,5 +448,77 @@ describe("Feature 21: Sự kiện và chiến dịch Chủ Nhật Xanh (Frontend
       expect(screen.getByText("Lê Văn Tham Gia")).toBeInTheDocument();
     });
   });
+
+  // 12. Người có quyền duyệt nhưng không phải ADMIN/người tạo: không được sửa/huỷ
+  it("TC-12: Kiểm duyệt viên không thấy nút sửa/huỷ sự kiện của người khác", () => {
+    render(
+      <EventDetailModal
+        event={mockSampleEvent}
+        isOpen={true}
+        onClose={vi.fn()}
+        isLoggedIn={true}
+        currentUserId="moderator-1"
+        canApprove={true}
+        onOpenLogin={vi.fn()}
+        onEventUpdated={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByTestId("btn-edit-event")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Huỷ sự kiện/i)).not.toBeInTheDocument();
+  });
+
+  // 13. ADMIN được quản lý sự kiện của người tổ chức khác (khớp backend)
+  it("TC-13: ADMIN thấy nút sửa sự kiện của người tổ chức khác", () => {
+    render(
+      <EventDetailModal
+        event={mockSampleEvent}
+        isOpen={true}
+        onClose={vi.fn()}
+        isLoggedIn={true}
+        currentUserId="admin-1"
+        isAdmin={true}
+        canApprove={true}
+        onOpenLogin={vi.fn()}
+        onEventUpdated={vi.fn()}
+      />
+    );
+
+    expect(screen.getByTestId("btn-edit-event")).toBeInTheDocument();
+  });
+
+  // 14. Sự kiện diễn ra trong 24 giờ: chỉ sửa nội dung (giữ nguyên giờ) vẫn lưu được
+  it("TC-14: Sửa nội dung sự kiện diễn ra trong 24 giờ mà không đổi giờ bắt đầu", async () => {
+    const imminentEvent: GreenEvent = {
+      ...mockSampleEvent,
+      start_time: new Date(Date.now() + 6 * 3600 * 1000).toISOString(),
+      end_time: new Date(Date.now() + 9 * 3600 * 1000).toISOString(),
+    };
+    vi.mocked(eventService.updateEvent).mockResolvedValue({
+      ...imminentEvent,
+      title: "Cập nhật nội dung sát giờ",
+    });
+
+    render(
+      <CreateEventModal
+        isOpen={true}
+        event={imminentEvent}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    fireEvent.change(screen.getByTestId("input-event-title"), {
+      target: { value: "Cập nhật nội dung sát giờ" },
+    });
+    fireEvent.click(screen.getByTestId("btn-submit-create-event"));
+
+    await waitFor(() => {
+      expect(eventService.updateEvent).toHaveBeenCalledWith(
+        imminentEvent.event_id,
+        expect.objectContaining({ title: "Cập nhật nội dung sát giờ", version: 1 })
+      );
+    });
+  });
 });
 

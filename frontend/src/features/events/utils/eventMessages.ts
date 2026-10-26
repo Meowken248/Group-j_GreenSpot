@@ -63,7 +63,8 @@ export const EVENT_MESSAGES = {
 
   // Chi tiết
   DETAIL_TITLE: "Chi tiết Sự kiện Chủ Nhật Xanh",
-  DETAIL_STATUS_PENDING: "Sự kiện đang chờ Quản trị viên phê duyệt. Chỉ bạn và Quản trị viên nhìn thấy sự kiện này.",
+  DETAIL_STATUS_PENDING:
+    "Sự kiện đang chờ phê duyệt. Chỉ bạn, Quản trị viên và người có quyền duyệt sự kiện nhìn thấy sự kiện này.",
   DETAIL_STATUS_REJECTED: "Sự kiện đã bị từ chối duyệt.",
   DETAIL_STATUS_CANCELLED: "Sự kiện đã bị hủy bỏ bởi ban tổ chức.",
   DETAIL_ENDED: "Sự kiện đã kết thúc. Bạn không thể đăng ký hoặc check-in nữa.",

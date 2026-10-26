@@ -114,7 +114,11 @@ async def list_events(
     search: Optional[str] = Query(None, description="Tìm kiếm theo tiêu đề hoặc địa chỉ sự kiện"),
     my_events: bool = Query(False, description="Lọc sự kiện của tôi (do tôi tạo hoặc tham gia)"),
     status: Optional[str] = Query(
-        None, description="Lọc theo trạng thái (chỉ Quản trị viên được xem PENDING/REJECTED)"
+        None,
+        description=(
+            "Lọc theo trạng thái (chỉ Quản trị viên hoặc vai trò có quyền "
+            "CAMPAIGNS:UPDATE được xem PENDING/REJECTED)"
+        ),
     ),
     page: int = Query(1, ge=1, description="Số trang"),
     page_size: int = Query(12, ge=1, le=50, description="Số mục mỗi trang"),
@@ -123,7 +127,7 @@ async def list_events(
 ):
     service = EventService(db)
     current_user_id = optional_user.user_id if optional_user else None
-    is_admin = await service.is_admin(current_user_id)
+    can_review = await service.can_review(current_user_id)
     return await service.list_events(
         current_user_id=current_user_id,
         district=district,
@@ -133,7 +137,7 @@ async def list_events(
         page=page,
         page_size=page_size,
         status_filter=status,
-        is_admin=is_admin,
+        can_review=can_review,
     )
 
 

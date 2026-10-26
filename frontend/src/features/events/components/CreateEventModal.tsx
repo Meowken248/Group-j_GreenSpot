@@ -262,8 +262,12 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
     if (!startTime) errors.startTime = EVENT_MESSAGES.VALIDATION_START_REQUIRED;
     else {
       const startMs = new Date(startTime).getTime();
+      // Backend chỉ áp quy tắc 24 giờ khi giờ bắt đầu thực sự bị thay đổi, nên khi chỉ sửa
+      // nội dung của sự kiện diễn ra trong 24 giờ tới (giữ nguyên giờ) thì vẫn cho lưu.
+      const keepsOriginalStart =
+        isEdit && event ? startTime === isoToLocalInput(event.start_time) : false;
       if (Number.isNaN(startMs)) errors.startTime = EVENT_MESSAGES.VALIDATION_START_REQUIRED;
-      else if (startMs < Date.now() + MIN_LEAD_TIME_MS)
+      else if (startMs < Date.now() + MIN_LEAD_TIME_MS && !keepsOriginalStart)
         errors.startTime = EVENT_MESSAGES.VALIDATION_START_MIN_24H;
       if (endTime) {
         const endMs = new Date(endTime).getTime();
