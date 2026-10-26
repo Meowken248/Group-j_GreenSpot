@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 import uuid
 import pytest
+from pydantic import ValidationError
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
@@ -322,16 +323,17 @@ async def test_01_create_flood_sos_and_format_iso_code(service):
 
 def test_02_validation_empty_victims_raises_error():
     """Màn 1/5: Bỏ trống hoặc nhập số người cần cứu <= 0 phải báo lỗi validation."""
-    with pytest.raises(Exception):
-        CreateFloodSosRequest(
-            victim_name="Test Citizen",
-            victim_phone="0901112233",
-            total_victims=0,  # Invalid: < 1
-            description="Cần cứu hộ",
-            latitude=10.75,
-            longitude=106.68,
-            address_text="Quận 8, TP.HCM",
-        )
+    invalid_data = {
+        "victim_name": "Test Citizen",
+        "victim_phone": "0901112233",
+        "total_victims": 0,  # Invalid: < 1
+        "description": "Cần cứu hộ",
+        "latitude": 10.75,
+        "longitude": 106.68,
+        "address_text": "Quận 8, TP.HCM",
+    }
+    with pytest.raises(ValidationError):
+        CreateFloodSosRequest.model_validate(invalid_data)
 
 
 @pytest.mark.asyncio
