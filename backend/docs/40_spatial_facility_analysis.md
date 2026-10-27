@@ -270,7 +270,7 @@ Phục vụ Màn 3/3 (Xem chi tiết, đánh giá mức độ phơi nhiễm và 
 ---
 
 ### 4.3. `POST /api/v1/spatial/facilities/alert` (Gửi cảnh báo khẩn cấp)
-Phục vụ Màn 3/3: Cán bộ phát lệnh gửi thông báo cảnh báo đến người phụ trách cơ sở.
+Phục vụ  Cán bộ phát lệnh gửi thông báo cảnh báo đến người phụ trách cơ sở.
 
 - **Request Body:**
 ```json

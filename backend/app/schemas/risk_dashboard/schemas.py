@@ -41,7 +41,7 @@ class TopDistrictAlertItem(BaseModel):
 
 
 class OverviewMetricsResponse(BaseModel):
-    """Dữ liệu phản hồi cho Màn 1/3: Tổng quan rủi ro đô thị"""
+    """Dữ liệu phản hồi cho  Tổng quan rủi ro đô thị"""
     overall_risk_score: float
     overall_risk_label: str  # VD: "58/100 - Mức rủi ro trung bình"
     high_risk_district_count: int
@@ -95,7 +95,7 @@ class PeriodComparisonStats(BaseModel):
 
 
 class FilterAnalysisResponse(BaseModel):
-    """Dữ liệu phản hồi cho Màn 2/3: Lọc & phân tích chuyên sâu"""
+    """Dữ liệu phản hồi cho  Lọc & phân tích chuyên sâu"""
     has_data: bool
     empty_message: Optional[str] = None
     summary_table: QuantitativeStats
@@ -105,7 +105,7 @@ class FilterAnalysisResponse(BaseModel):
 
 
 class DistrictDetailResponse(BaseModel):
-    """Dữ liệu phản hồi cho Màn 3/3: Popup Chi tiết quận"""
+    """Dữ liệu phản hồi cho  Popup Chi tiết quận"""
     unit_id: Optional[int] = None
     district_name: str
     risk_score: float

@@ -1,9 +1,9 @@
 """
 API Router cho Dashboard phân tích rủi ro đô thị (STT 42).
 Bao gồm:
-- Màn 1/3: Tổng quan rủi ro đô thị (Executive Overview)
-- Màn 2/3: Lọc & phân tích chuyên sâu (Deep-dive Risk Analysis & Comparison)
-- Màn 3/3: Popup Chi tiết quận (District Detail)
+-  Tổng quan rủi ro đô thị (Executive Overview)
+-  Lọc & phân tích chuyên sâu (Deep-dive Risk Analysis & Comparison)
+-  Popup Chi tiết quận (District Detail)
 - Xuất báo cáo định dạng Excel / PDF
 """
 
@@ -75,7 +75,7 @@ async def verify_risk_dashboard_access(
 @router.get(
     "/overview",
     response_model=OverviewMetricsResponse,
-    summary="Màn 1/3: Tổng quan rủi ro đô thị toàn thành phố",
+    summary=" Tổng quan rủi ro đô thị toàn thành phố",
 )
 async def get_overview_dashboard(
     db: AsyncSession = Depends(get_db),
@@ -98,7 +98,7 @@ async def get_overview_dashboard(
 @router.post(
     "/analysis",
     response_model=FilterAnalysisResponse,
-    summary="Màn 2/3: Lọc & phân tích chuyên sâu theo địa bàn và loại rủi ro (POST)",
+    summary=" Lọc & phân tích chuyên sâu theo địa bàn và loại rủi ro (POST)",
 )
 async def analyze_filtered_risks_post(
     payload: FilterAnalysisRequest,
@@ -118,7 +118,7 @@ async def analyze_filtered_risks_post(
 @router.get(
     "/analysis",
     response_model=FilterAnalysisResponse,
-    summary="Màn 2/3: Lọc & phân tích chuyên sâu (GET Query)",
+    summary=" Lọc & phân tích chuyên sâu (GET Query)",
 )
 async def analyze_filtered_risks_get(
     period: str = Query("THIS_MONTH", description="THIS_MONTH, THIS_QUARTER, LAST_6_MONTHS, CUSTOM"),
@@ -147,7 +147,7 @@ async def analyze_filtered_risks_get(
 @router.get(
     "/district/{district_id_or_name}",
     response_model=DistrictDetailResponse,
-    summary="Màn 3/3: Popup Chi tiết quận khi nhấp vào danh sách cảnh báo hoặc biểu đồ",
+    summary=" Popup Chi tiết quận khi nhấp vào danh sách cảnh báo hoặc biểu đồ",
 )
 async def get_district_popup_detail(
     district_id_or_name: str,

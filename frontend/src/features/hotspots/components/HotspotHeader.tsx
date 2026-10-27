@@ -1,4 +1,5 @@
 import React from "react";
+import { navigateToRoute } from "../../../routes/appRoutes";
 
 interface HotspotHeaderProps {
   activeScreen: "map" | "forecast";
@@ -15,7 +16,14 @@ export const HotspotHeader: React.FC<HotspotHeaderProps> = ({
 }) => {
   return (
     <header className="hotspot-header">
-      <div className="header-left">
+      <div
+        className="header-left"
+        style={{ cursor: "pointer" }}
+        onClick={() => {
+          navigateToRoute("map");
+        }}
+        title="Quay lại Bản đồ số WebGIS TP.HCM"
+      >
         <span className="brand-icon" role="img" aria-label="hotspot-analytics">
           🔥
         </span>

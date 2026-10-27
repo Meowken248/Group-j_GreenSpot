@@ -257,7 +257,7 @@ body.dark-mode {
 }
 
 /* =========================================================================
-   MÀN 1/3: KHUNG CHIA 3 CỘT THEO CHIỀU NGANG
+    KHUNG CHIA 3 CỘT THEO CHIỀU NGANG
    ========================================================================= */
 .settings-grid {
   display: grid;
@@ -520,7 +520,7 @@ body.dark-mode {
 }
 
 /* =========================================================================
-   MÀN 2/3: ĐỔI MẬT KHẨU
+    ĐỔI MẬT KHẨU
    ========================================================================= */
 .settings-password-form {
   max-width: 600px;
@@ -855,6 +855,7 @@ body.dark-mode {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -865,6 +866,7 @@ body.dark-mode {
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -876,6 +878,7 @@ body.dark-mode {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, Header, status
 from fastapi.responses import JSONResponse
-from sqlalchemy import select, func, and_, update
+from sqlalchemy import select, func, and_, update, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -495,10 +495,20 @@ async def login_citizen(
             }
         )
 
-    # 2. Tìm tài khoản người dùng
-    user_query = select(User).where(User.email == clean_email)
+    # 2. Tìm tài khoản người dùng (hỗ trợ nhập 'admin' hoặc email quản trị)
+    if clean_email in ("admin", "administrator"):
+        user_query = select(User).where(
+            or_(
+                User.email == "admin",
+                User.email == "admin@greenspot.vn",
+                User.email == "admin@ecoreport.gov.vn",
+            )
+        )
+    else:
+        user_query = select(User).where(User.email == clean_email)
+
     user_result = await db.execute(user_query)
-    user = user_result.scalar_one_or_none()
+    user = user_result.scalars().first()
 
     if not user:
         failed_count, now_locked = await record_login_failure(db, clean_email)

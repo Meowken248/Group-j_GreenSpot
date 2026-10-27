@@ -4,9 +4,9 @@ Unit & Integration Tests cho STT 42: Dashboard phân tích rủi ro đô thị
 Được tổ chức trong thư mục phân tầng: tests/risk_dashboard/
 
 Kiểm thử toàn diện:
-- Màn 1/3: Tổng quan chỉ số, biểu đồ cột 22 quận/huyện + TP. Thủ Đức, biểu đồ xu hướng 30 ngày, top 5 cảnh báo, ngưỡng khẩn cấp (>80).
-- Màn 2/3: Lọc & phân tích chuyên sâu theo kỳ/loại rủi ro, bảng số liệu định lượng, cơ cấu phần trăm, so sánh kỳ trước (% tăng/giảm).
-- Màn 3/3: Popup Chi tiết quận, sự cố tồn đọng, cơ sở thiết yếu bị đe dọa, điều hướng bản đồ GIS.
+-  Tổng quan chỉ số, biểu đồ cột 22 quận/huyện + TP. Thủ Đức, biểu đồ xu hướng 30 ngày, top 5 cảnh báo, ngưỡng khẩn cấp (>80).
+-  Lọc & phân tích chuyên sâu theo kỳ/loại rủi ro, bảng số liệu định lượng, cơ cấu phần trăm, so sánh kỳ trước (% tăng/giảm).
+-  Popup Chi tiết quận, sự cố tồn đọng, cơ sở thiết yếu bị đe dọa, điều hướng bản đồ GIS.
 - Xuất báo cáo CSV / Excel.
 - RBAC kiểm soát quyền truy cập lãnh đạo.
 """
@@ -213,7 +213,7 @@ def mock_service():
 
 @pytest.mark.asyncio
 async def test_01_overview_metrics_calculation(mock_service):
-    """Kiểm tra tính toán Màn 1/3: Thang điểm chung, số quận nguy cơ cao, sự cố đang mở"""
+    """Kiểm tra tính toán  Thang điểm chung, số quận nguy cơ cao, sự cố đang mở"""
     mock_db = AsyncMock()
     res: OverviewMetricsResponse = await mock_service.get_overview_dashboard(mock_db)
 
@@ -244,7 +244,7 @@ async def test_02_critical_alert_threshold_over_80(mock_service):
 
 @pytest.mark.asyncio
 async def test_03_filtered_analysis_this_month(mock_service):
-    """Kiểm tra Màn 2/3: Bảng số liệu định lượng và so sánh kỳ trước"""
+    """Kiểm tra  Bảng số liệu định lượng và so sánh kỳ trước"""
     mock_db = AsyncMock()
     req = FilterAnalysisRequest(period="THIS_MONTH")
     res: FilterAnalysisResponse = await mock_service.get_filtered_analysis(mock_db, req)
@@ -278,7 +278,7 @@ async def test_04_filtered_analysis_risk_types(mock_service):
 
 @pytest.mark.asyncio
 async def test_05_district_detail_popup(mock_service):
-    """Kiểm tra Màn 3/3: Popup Chi tiết quận và cơ sở thiết yếu bị đe dọa"""
+    """Kiểm tra  Popup Chi tiết quận và cơ sở thiết yếu bị đe dọa"""
     mock_db = AsyncMock()
     res: DistrictDetailResponse = await mock_service.get_district_detail(mock_db, district_name="Quận Bình Tân")
 

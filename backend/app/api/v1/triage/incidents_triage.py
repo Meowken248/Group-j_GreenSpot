@@ -1,8 +1,8 @@
 """
 API Router: AI Tự động tóm tắt nội dung sự cố & Đề xuất mức ưu tiên xử lý (STT 39)
-Màn 1/3: Chi tiết sự cố + Tóm tắt AI
-Màn 2/3: Bảng giải trình căn cứ ra quyết định của thuật toán AI (Explainable AI - XAI)
-Màn 3/3: Popup Tùy chỉnh và điều chỉnh mức độ ưu tiên xử lý sự cố (Human-in-the-loop)
+ Chi tiết sự cố + Tóm tắt AI
+ Bảng giải trình căn cứ ra quyết định của thuật toán AI (Explainable AI - XAI)
+ Popup Tùy chỉnh và điều chỉnh mức độ ưu tiên xử lý sự cố (Human-in-the-loop)
 """
 
 import uuid
@@ -81,7 +81,7 @@ async def get_incident_triage_detail(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Màn 1/3 & Màn 2/3: Lấy thông tin chi tiết sự cố, tóm tắt AI và bảng giải trình XAI
+    Màn 1/3 &  Lấy thông tin chi tiết sự cố, tóm tắt AI và bảng giải trình XAI
     """
     inc = await triage_repository.get_incident_detail_with_relations(db, incident_id)
     if not inc:

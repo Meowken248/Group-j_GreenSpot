@@ -42,9 +42,9 @@ describe("Settings Domain Feature Tests (Chức năng 7)", () => {
   });
 
   // =========================================================================
-  // I. MÀN 1/3: CÀI ĐẶT CHUNG (3 CỘT GIAO DIỆN, NGÔN NGỮ, LƯU CÀI ĐẶT)
+  // I.  CÀI ĐẶT CHUNG (3 CỘT GIAO DIỆN, NGÔN NGỮ, LƯU CÀI ĐẶT)
   // =========================================================================
-  describe("Màn 1/3: Cài đặt chung & Xem trước tức thì (General Settings Tab)", () => {
+  describe(" Cài đặt chung & Xem trước tức thì (General Settings Tab)", () => {
     it("Hiển thị đầy đủ 3 khối: GIAO DIỆN, NGÔN NGỮ, LƯU CÀI ĐẶT", () => {
       const currentPrefs = { theme: "LIGHT" as const, language: "VI" as const, version: 1 };
       render(
@@ -179,9 +179,9 @@ describe("Settings Domain Feature Tests (Chức năng 7)", () => {
   });
 
   // =========================================================================
-  // III. MÀN 2/3: ĐỔI MẬT KHẨU & POPUP XÁC NHẬN HỦY
+  // III.  ĐỔI MẬT KHẨU & POPUP XÁC NHẬN HỦY
   // =========================================================================
-  describe("Màn 2/3: Đổi mật khẩu (Change Password Tab)", () => {
+  describe(" Đổi mật khẩu (Change Password Tab)", () => {
     it("Hiển thị đầy đủ form đổi mật khẩu và các quy chuẩn", () => {
       render(
         <ChangePasswordTab
@@ -249,9 +249,9 @@ describe("Settings Domain Feature Tests (Chức năng 7)", () => {
   });
 
   // =========================================================================
-  // IV. MÀN 3/3: POPUP ĐÃ LƯU CÀI ĐẶT
+  // IV.  POPUP ĐÃ LƯU CÀI ĐẶT
   // =========================================================================
-  describe("Màn 3/3: Popup ĐÃ LƯU CÀI ĐẶT (SettingsSavedModal)", () => {
+  describe(" Popup ĐÃ LƯU CÀI ĐẶT (SettingsSavedModal)", () => {
     it("Hiển thị đầy đủ thông tin xác nhận và đóng được khi bấm nút Đóng", () => {
       const onClose = vi.fn();
       const savedPrefs = { theme: "DARK" as const, language: "VI" as const, version: 2 };

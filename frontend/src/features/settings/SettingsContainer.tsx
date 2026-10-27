@@ -184,9 +184,8 @@ export const SettingsContainer: React.FC<SettingsContainerProps> = ({
         <nav className="settings-page__tabs" aria-label="Settings Tabs">
           <button
             type="button"
-            className={`settings-page__tab-btn ${
-              activeTab === "general" ? "settings-page__tab-btn--active" : ""
-            }`}
+            className={`settings-page__tab-btn ${activeTab === "general" ? "settings-page__tab-btn--active" : ""
+              }`}
             onClick={() => setActiveTab("general")}
           >
             <span>⚙️</span>
@@ -195,9 +194,8 @@ export const SettingsContainer: React.FC<SettingsContainerProps> = ({
 
           <button
             type="button"
-            className={`settings-page__tab-btn ${
-              activeTab === "password" ? "settings-page__tab-btn--active" : ""
-            }`}
+            className={`settings-page__tab-btn ${activeTab === "password" ? "settings-page__tab-btn--active" : ""
+              }`}
             onClick={() => setActiveTab("password")}
           >
             <span>🔒</span>
@@ -229,7 +227,7 @@ export const SettingsContainer: React.FC<SettingsContainerProps> = ({
       {/* KHUNG FOOTER CHUNG */}
       <SettingsFooter currentLang={previewPrefs.language} />
 
-      {/* MÀN 3/3: POPUP ĐÃ LƯU CÀI ĐẶT */}
+      {/*  POPUP ĐÃ LƯU CÀI ĐẶT */}
       <SettingsSavedModal
         isOpen={isSavedModalOpen}
         onClose={() => setIsSavedModalOpen(false)}

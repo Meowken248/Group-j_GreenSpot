@@ -145,5 +145,8 @@ lerna-debug.log*
 *.temp
 BackEnd/uploads/*
 !BackEnd/uploads/.gitkeep
+BackEnd/storage/exports/*
+!BackEnd/storage/exports/.gitkeep
 uploads/*
 !uploads/.gitkeep
+
