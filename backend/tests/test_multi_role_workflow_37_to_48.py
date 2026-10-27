@@ -468,7 +468,7 @@ class TestMultiRoleWorkflow37To48:
             actual_sent_count=1,
             status="BROADCASTED",
             created_by=creator_uuid,
-            broadcasted_at=datetime.utcnow(),
+            broadcasted_at=datetime.now(timezone.utc),
         )
 
         mock_alert_repo = MagicMock()
