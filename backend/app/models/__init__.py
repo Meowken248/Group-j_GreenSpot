@@ -149,6 +149,15 @@ from app.models.flood_sos import (
     FloodSosChatMessage,
 )
 
+# 21. Điều phối tác nghiệp & hiện trường (STT 43)
+from app.models.dispatch import DispatchOrder
+
+# 22. Phân tích điểm nóng & dự báo (STT 44)
+from app.models.hotspots import HotspotCluster, HotspotDailyForecast
+
+# 23. Xuất dữ liệu sự cố (STT 47)
+from app.models.incident_export import ExportedIncidentFile
+
 __all__ = [
     "Base",
     "TimestampMixin",
@@ -242,5 +251,10 @@ __all__ = [
     "FloodSosChatMessage",
     # Incident Data Export (STT 47)
     "ExportedIncidentFile",
+    # Dispatch (STT 43)
+    "DispatchOrder",
+    # Hotspots & Forecasting (STT 44)
+    "HotspotCluster",
+    "HotspotDailyForecast",
 ]
 
