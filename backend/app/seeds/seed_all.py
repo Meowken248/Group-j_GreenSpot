@@ -40,6 +40,7 @@ from app.seeds.seed_birthdays import seed_birthdays
 from app.seeds.triage.seed_data import seed_triage_and_spatial_data
 from app.seeds.seed_chatbot import seed_chatbot_data
 from app.seeds.seed_events import seed_events_data
+from app.seeds.seed_recycling_facilities import seed_recycling_facilities_data
 
 
 async def run_seed_all():
@@ -98,6 +99,9 @@ async def run_seed_all():
 
     print("\n👉 [BƯỚC 16/16] Nạp dữ liệu Sự kiện và Chiến dịch Chủ Nhật Xanh (STT 21)...")
     await seed_events_data()
+
+    print("\n👉 [BƯỚC 17/17] Nạp mạng lưới Trạm Tái chế & Điểm Tiếp nhận kèm mã QR (STT 23)...")
+    await seed_recycling_facilities_data()
 
     print("\n" + "=" * 70)
     print("🎉 HOÀN TẤT NẠP TOÀN BỘ CƠ SỞ DỮ LIỆU TOÀN HỆ THỐNG THÀNH CÔNG 100%!")
