@@ -4,10 +4,11 @@
  * File   : FrontEnd/src/features/admin_dashboard/services/dashboardApi.ts
  * Tầng   : Frontend Service Layer
  *
- * Mọi request đều trỏ tới /api/v1/admin-dashboard/*.
+ * Mọi request đều sử dụng axios client chung (api) trỏ tới /api/v1/admin-dashboard/*.
  * Hàm exportReport kích hoạt tải file trực tiếp qua Blob URL.
  */
 
+import api from "../../../api/client";
 import type {
   ActivityDashboardResponse,
   DailyReportResponse,
@@ -26,33 +27,18 @@ export async function fetchDashboardOverview(
   fromDate?: string,
   toDate?: string
 ): Promise<ActivityDashboardResponse> {
-  let url = `${API_BASE}/overview`;
-
-  const params = new URLSearchParams();
+  const params: Record<string, string> = {};
   if (filter === "custom" && fromDate && toDate) {
-    params.set("start_date", fromDate);
-    params.set("end_date", toDate);
+    params.start_date = fromDate;
+    params.end_date = toDate;
   } else if (typeof filter === "number") {
-    params.set("period_days", String(filter));
+    params.period_days = String(filter);
   }
 
-  const query = params.toString();
-  if (query) url += `?${query}`;
-
-  const res = await fetch(url, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
+  const res = await api.get<ActivityDashboardResponse>(`${API_BASE}/overview`, {
+    params,
   });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: "Lỗi kết nối máy chủ." }));
-    throw new Error(
-      err.detail ?? "Không thể đồng bộ dữ liệu thống kê hoạt động. Vui lòng kiểm tra lại dịch vụ Analytics."
-    );
-  }
-
-  return res.json() as Promise<ActivityDashboardResponse>;
+  return res.data;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -65,25 +51,15 @@ export async function fetchDailyTable(
   page = 1,
   pageSize = 30
 ): Promise<DailyReportResponse> {
-  const params = new URLSearchParams({
-    from_date: fromDate,
-    to_date: toDate,
-    page: String(page),
-    page_size: String(pageSize),
+  const res = await api.get<DailyReportResponse>(`${API_BASE}/daily-table`, {
+    params: {
+      from_date: fromDate,
+      to_date: toDate,
+      page: String(page),
+      page_size: String(pageSize),
+    },
   });
-
-  const res = await fetch(`${API_BASE}/daily-table?${params.toString()}`, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: "Lỗi kết nối máy chủ." }));
-    throw new Error(err.detail ?? "Không thể tải dữ liệu bảng thống kê.");
-  }
-
-  return res.json() as Promise<DailyReportResponse>;
+  return res.data;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -91,27 +67,15 @@ export async function fetchDailyTable(
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function exportReport(request: ExportRequest): Promise<void> {
-  const res = await fetch(`${API_BASE}/export`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(request),
+  const res = await api.post(`${API_BASE}/export`, request, {
+    responseType: "blob",
   });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({
-      detail: "Không thể tạo tệp xuất dữ liệu do lỗi bộ nhớ tạm. Vui lòng thử lại.",
-    }));
-    throw new Error(err.detail);
-  }
-
-  // Tự động kích hoạt tải file từ Blob
-  const blob = await res.blob();
-  const contentDisposition = res.headers.get("Content-Disposition") ?? "";
+  const blob = new Blob([res.data]);
+  const contentDisposition = (res.headers["content-disposition"] as string) ?? "";
   const filenameMatch = contentDisposition.match(/filename="?([^";\n]+)"?/);
   const filename =
-    filenameMatch?.[1] ??
-    `ThongKe_HeThong.${request.format}`;
+    filenameMatch?.[1] ?? `ThongKe_HeThong.${request.format}`;
 
   const objectUrl = URL.createObjectURL(blob);
   const anchor = document.createElement("a");

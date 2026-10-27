@@ -53,8 +53,8 @@ class AdminDashboardRepository(IAdminDashboardRepository):
         sql = text("""
             WITH date_series AS (
                 SELECT generate_series(
-                    :start_date::date,
-                    :end_date::date,
+                    CAST(:start_date AS DATE),
+                    CAST(:end_date AS DATE),
                     INTERVAL '1 day'
                 )::date AS stat_date
             ),
@@ -63,7 +63,7 @@ class AdminDashboardRepository(IAdminDashboardRepository):
                     u.created_at::date AS cnt_date,
                     COUNT(u.user_id)   AS new_users
                 FROM users u
-                WHERE u.created_at::date BETWEEN :start_date::date AND :end_date::date
+                WHERE u.created_at::date BETWEEN CAST(:start_date AS DATE) AND CAST(:end_date AS DATE)
                   AND u.deleted_at IS NULL
                 GROUP BY u.created_at::date
             ),
@@ -72,7 +72,7 @@ class AdminDashboardRepository(IAdminDashboardRepository):
                     p.created_at::date AS cnt_date,
                     COUNT(p.post_id)   AS new_posts
                 FROM posts p
-                WHERE p.created_at::date BETWEEN :start_date::date AND :end_date::date
+                WHERE p.created_at::date BETWEEN CAST(:start_date AS DATE) AND CAST(:end_date AS DATE)
                   AND p.deleted_at IS NULL
                 GROUP BY p.created_at::date
             ),
@@ -80,8 +80,8 @@ class AdminDashboardRepository(IAdminDashboardRepository):
                 SELECT
                     fg.created_at::date AS cnt_date,
                     COUNT(fg.group_id)  AS new_groups
-                FROM friend_groups fg
-                WHERE fg.created_at::date BETWEEN :start_date::date AND :end_date::date
+                FROM community_groups fg
+                WHERE fg.created_at::date BETWEEN CAST(:start_date AS DATE) AND CAST(:end_date AS DATE)
                 GROUP BY fg.created_at::date
             )
             SELECT
@@ -125,19 +125,19 @@ class AdminDashboardRepository(IAdminDashboardRepository):
                 (
                     SELECT COUNT(u.user_id)
                     FROM users u
-                    WHERE u.created_at::date BETWEEN :start_date::date AND :end_date::date
+                    WHERE u.created_at::date BETWEEN CAST(:start_date AS DATE) AND CAST(:end_date AS DATE)
                       AND u.deleted_at IS NULL
                 )::int AS total_users,
                 (
                     SELECT COUNT(p.post_id)
                     FROM posts p
-                    WHERE p.created_at::date BETWEEN :start_date::date AND :end_date::date
+                    WHERE p.created_at::date BETWEEN CAST(:start_date AS DATE) AND CAST(:end_date AS DATE)
                       AND p.deleted_at IS NULL
                 )::int AS total_posts,
                 (
                     SELECT COUNT(fg.group_id)
-                    FROM friend_groups fg
-                    WHERE fg.created_at::date BETWEEN :start_date::date AND :end_date::date
+                    FROM community_groups fg
+                    WHERE fg.created_at::date BETWEEN CAST(:start_date AS DATE) AND CAST(:end_date AS DATE)
                 )::int AS total_groups
         """)
 
@@ -170,19 +170,19 @@ class AdminDashboardRepository(IAdminDashboardRepository):
                 (
                     SELECT COUNT(u.user_id)
                     FROM users u
-                    WHERE u.created_at::date BETWEEN :start_date::date AND :end_date::date
+                    WHERE u.created_at::date BETWEEN CAST(:start_date AS DATE) AND CAST(:end_date AS DATE)
                       AND u.deleted_at IS NULL
                 )::int AS total_users,
                 (
                     SELECT COUNT(p.post_id)
                     FROM posts p
-                    WHERE p.created_at::date BETWEEN :start_date::date AND :end_date::date
+                    WHERE p.created_at::date BETWEEN CAST(:start_date AS DATE) AND CAST(:end_date AS DATE)
                       AND p.deleted_at IS NULL
                 )::int AS total_posts,
                 (
                     SELECT COUNT(fg.group_id)
-                    FROM friend_groups fg
-                    WHERE fg.created_at::date BETWEEN :start_date::date AND :end_date::date
+                    FROM community_groups fg
+                    WHERE fg.created_at::date BETWEEN CAST(:start_date AS DATE) AND CAST(:end_date AS DATE)
                 )::int AS total_groups
         """)
 
@@ -222,8 +222,8 @@ class AdminDashboardRepository(IAdminDashboardRepository):
         count_sql = text("""
             SELECT COUNT(*)::int AS total_days
             FROM generate_series(
-                :start_date::date,
-                :end_date::date,
+                CAST(:start_date AS DATE),
+                CAST(:end_date AS DATE),
                 INTERVAL '1 day'
             ) AS gs(d)
         """)
@@ -237,8 +237,8 @@ class AdminDashboardRepository(IAdminDashboardRepository):
         data_sql = text("""
             WITH date_series AS (
                 SELECT generate_series(
-                    :start_date::date,
-                    :end_date::date,
+                    CAST(:start_date AS DATE),
+                    CAST(:end_date AS DATE),
                     INTERVAL '1 day'
                 )::date AS stat_date
             ),
@@ -247,7 +247,7 @@ class AdminDashboardRepository(IAdminDashboardRepository):
                     u.created_at::date AS cnt_date,
                     COUNT(u.user_id)   AS new_users
                 FROM users u
-                WHERE u.created_at::date BETWEEN :start_date::date AND :end_date::date
+                WHERE u.created_at::date BETWEEN CAST(:start_date AS DATE) AND CAST(:end_date AS DATE)
                   AND u.deleted_at IS NULL
                 GROUP BY u.created_at::date
             ),
@@ -256,7 +256,7 @@ class AdminDashboardRepository(IAdminDashboardRepository):
                     p.created_at::date AS cnt_date,
                     COUNT(p.post_id)   AS new_posts
                 FROM posts p
-                WHERE p.created_at::date BETWEEN :start_date::date AND :end_date::date
+                WHERE p.created_at::date BETWEEN CAST(:start_date AS DATE) AND CAST(:end_date AS DATE)
                   AND p.deleted_at IS NULL
                 GROUP BY p.created_at::date
             ),
@@ -264,8 +264,8 @@ class AdminDashboardRepository(IAdminDashboardRepository):
                 SELECT
                     fg.created_at::date AS cnt_date,
                     COUNT(fg.group_id)  AS new_groups
-                FROM friend_groups fg
-                WHERE fg.created_at::date BETWEEN :start_date::date AND :end_date::date
+                FROM community_groups fg
+                WHERE fg.created_at::date BETWEEN CAST(:start_date AS DATE) AND CAST(:end_date AS DATE)
                 GROUP BY fg.created_at::date
             )
             SELECT
