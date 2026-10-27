@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import type { DistrictDetailResponse } from "../types/riskDashboard.types";
+import { navigateToRoute } from "../../../routes/appRoutes";
 
 interface Screen3DistrictPopupProps {
   districtData: DistrictDetailResponse | null;
@@ -113,7 +114,7 @@ export const Screen3DistrictPopup: React.FC<Screen3DistrictPopupProps> = ({
             type="button"
             className="btn-map-view"
             onClick={() => {
-              window.location.hash = `#hotspots?district=${encodeURIComponent(districtData.district_name)}`;
+              navigateToRoute("hotspots", { district: districtData.district_name });
               onClose();
             }}
             style={{ background: "#dc2626", borderColor: "#b91c1c", color: "#ffffff" }}
@@ -128,7 +129,7 @@ export const Screen3DistrictPopup: React.FC<Screen3DistrictPopupProps> = ({
             type="button"
             className="btn-map-view"
             onClick={() => {
-              window.location.hash = `#dispatch?district=${encodeURIComponent(districtData.district_name)}`;
+              navigateToRoute("dispatch", { district: districtData.district_name });
               onClose();
             }}
             style={{ background: "#2563eb", borderColor: "#1d4ed8", color: "#ffffff" }}

@@ -1,6 +1,7 @@
 import React from "react";
 import type { IModuleViewLockedViewProps } from "../types/permissionGuard.interface";
 import { usePermissions } from "../services/permissionGuard";
+import { navigateToRoute } from "../../../routes/appRoutes";
 
 export const ModuleViewLockedView: React.FC<IModuleViewLockedViewProps> = ({
   moduleCode,
@@ -14,7 +15,7 @@ export const ModuleViewLockedView: React.FC<IModuleViewLockedViewProps> = ({
     if (onNavigateHome) {
       onNavigateHome();
     } else {
-      window.location.hash = "#map";
+      navigateToRoute("map");
     }
   };
 
@@ -22,7 +23,7 @@ export const ModuleViewLockedView: React.FC<IModuleViewLockedViewProps> = ({
     if (onNavigateToAuth) {
       onNavigateToAuth();
     } else {
-      window.location.hash = "#auth";
+      navigateToRoute("auth");
     }
   };
 

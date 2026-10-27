@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { TriageEvaluationData, TriageScreenStep } from "../types";
 import { triageService } from "../services/triageService";
+import { navigateToRoute } from "../../../routes/appRoutes";
 
 interface IncidentTriageViewProps {
   data: TriageEvaluationData;
@@ -122,9 +123,9 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
         target_deadline_hours: data.sla_resolve_hours || 4,
       };
       localStorage.setItem("greenspot_prefill_dispatch", JSON.stringify(prefill));
-      window.location.hash = "#dispatch";
+      navigateToRoute("dispatch");
     } catch {
-      window.location.hash = "#dispatch";
+      navigateToRoute("dispatch");
     }
   };
 

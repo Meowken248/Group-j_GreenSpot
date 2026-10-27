@@ -3,6 +3,7 @@ import type { IModulePermissionGuardProps } from "../types/permissionGuard.inter
 import { useModulePermissions, usePermissions } from "../services/permissionGuard";
 import { ModuleViewLockedView } from "./ModuleViewLockedView";
 import { AccessDeniedView } from "../../../components/AccessDeniedView";
+import { navigateToRoute } from "../../../routes/appRoutes";
 
 /**
  * Khung bảo vệ đa phân hệ RBAC (Universal RBAC Guard Component)
@@ -20,11 +21,11 @@ export const ModulePermissionGuard: React.FC<IModulePermissionGuardProps> = ({
   const { currentUser } = usePermissions();
 
   const handleNavigateHome = () => {
-    window.location.hash = "#map";
+    navigateToRoute("map");
   };
 
   const handleNavigateToAuth = () => {
-    window.location.hash = "#auth";
+    navigateToRoute("auth");
   };
 
   // TẦNG 1: Chặn truy cập nếu tài khoản không có quyền ACCESS

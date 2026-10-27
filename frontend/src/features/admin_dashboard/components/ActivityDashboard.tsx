@@ -19,6 +19,7 @@ import type {
   LoadingState,
   PeriodFilter,
 } from "../types/dashboard.types";
+import { navigateToRoute } from "../../../routes/appRoutes";
 import "../styles/dashboard.scss";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -162,11 +163,11 @@ export const ActivityDashboard: React.FC<ActivityDashboardProps> = ({
 
   const isLoading = loadState === "loading";
 
-  const handleNav = (hash: string) => {
+  const handleNav = (target: string) => {
     if (onNavigateModule) {
-      onNavigateModule(hash);
+      onNavigateModule(target);
     } else {
-      window.location.hash = hash;
+      navigateToRoute(target);
     }
   };
 

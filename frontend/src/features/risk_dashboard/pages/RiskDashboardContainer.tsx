@@ -11,6 +11,7 @@ import { ExecutiveFooter } from "../components/ExecutiveFooter";
 import { Screen1Overview } from "../components/Screen1Overview";
 import { Screen2Analysis } from "../components/Screen2Analysis";
 import { Screen3DistrictPopup } from "../components/Screen3DistrictPopup";
+import { navigateToRoute } from "../../../routes/appRoutes";
 import "../styles/riskDashboard.scss";
 
 interface RiskDashboardContainerProps {
@@ -124,9 +125,11 @@ export const RiskDashboardContainer: React.FC<RiskDashboardContainerProps> = ({
     if (onNavigateToMap) {
       onNavigateToMap(detail.latitude, detail.longitude, detail.district_name);
     } else {
-      window.location.hash = `#map?lat=${detail.latitude}&lng=${detail.longitude}&district=${encodeURIComponent(
-        detail.district_name
-      )}`;
+      navigateToRoute("map", {
+        lat: String(detail.latitude),
+        lng: String(detail.longitude),
+        district: detail.district_name,
+      });
     }
   };
 

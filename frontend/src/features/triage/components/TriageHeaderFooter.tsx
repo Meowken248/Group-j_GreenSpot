@@ -1,4 +1,5 @@
 import React from "react";
+import { navigateToRoute } from "../../../routes/appRoutes";
 
 interface HeaderProps {
   currentTab: "triage" | "spatial";
@@ -17,7 +18,7 @@ export const TriageHeader: React.FC<HeaderProps> = ({
         className="header-branding"
         style={{ cursor: "pointer" }}
         onClick={() => {
-          window.location.hash = "#map";
+          navigateToRoute("map");
         }}
         title="Quay lại Bản đồ số WebGIS TP.HCM"
       >

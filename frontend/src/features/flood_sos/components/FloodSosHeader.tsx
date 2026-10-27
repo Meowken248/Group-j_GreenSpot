@@ -1,5 +1,6 @@
 import React from "react";
 import type { ActiveSosRoleView } from "../types/flood_sos.types";
+import { navigateToRoute } from "../../../routes/appRoutes";
 
 interface FloodSosHeaderProps {
   activeView: ActiveSosRoleView;
@@ -19,7 +20,7 @@ export const FloodSosHeader: React.FC<FloodSosHeaderProps> = ({
           className="brand"
           style={{ cursor: "pointer" }}
           onClick={() => {
-            window.location.hash = "#map";
+            navigateToRoute("map");
           }}
           title="Quay lại Bản đồ số WebGIS TP.HCM"
         >

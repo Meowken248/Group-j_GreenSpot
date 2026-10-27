@@ -29,6 +29,7 @@ export const AdminDashboardContainer: React.FC<AdminDashboardContainerProps> = (
   onNavigateHome,
 }) => {
   const [currentView, setCurrentView] = useState<AdminDashboardView>(initialView);
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState<boolean>(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
   const [exportRange, setExportRange] = useState<{ fromDate: string; toDate: string }>({
     fromDate: "",
@@ -60,11 +61,10 @@ export const AdminDashboardContainer: React.FC<AdminDashboardContainerProps> = (
     setIsExportModalOpen(true);
   };
 
-  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState<boolean>(false);
-
-  const navigateToModule = (hash: string) => {
+  const navigateToModule = (path: string) => {
     setIsAdminMenuOpen(false);
-    window.location.hash = hash;
+    window.history.pushState(null, "", path);
+    window.dispatchEvent(new PopStateEvent("popstate"));
   };
 
   return (
@@ -76,7 +76,10 @@ export const AdminDashboardContainer: React.FC<AdminDashboardContainerProps> = (
           style={{ cursor: "pointer" }}
           onClick={() => {
             if (onNavigateHome) onNavigateHome();
-            else window.location.hash = "#map";
+            else {
+              window.history.pushState(null, "", "/map");
+              window.dispatchEvent(new PopStateEvent("popstate"));
+            }
           }}
           title="Về bản đồ số WebGIS"
         >
@@ -210,20 +213,20 @@ export const AdminDashboardContainer: React.FC<AdminDashboardContainerProps> = (
             }}
           >
             {[
-              { label: "Thống kê hoạt động hệ thống", icon: "📈", hash: "#admin-dashboard" },
-              { label: "Xuất dữ liệu sự cố (Excel/PDF)", icon: "📊", hash: "#incident-export" },
-              { label: "Cứu hộ ngập lụt (Flood SOS)", icon: "🆘", hash: "#flood-sos" },
-              { label: "Cảnh báo khẩn cấp & điểm danh", icon: "🚨", hash: "#emergency-alert" },
-              { label: "Dự báo điểm nóng môi trường", icon: "🔥", hash: "#hotspots" },
-              { label: "Điều phối hiện trường & lực lượng", icon: "🚚", hash: "#dispatch" },
-              { label: "Bảng điều khiển rủi ro đô thị", icon: "🛡️", hash: "#risk-dashboard" },
-              { label: "Lộ trình di chuyển tránh ngập", icon: "🧭", hash: "#navigation" },
-              { label: "AI Triage phân loại sự cố", icon: "🤖", hash: "#triage" },
-              { label: "Bản đồ số WebGIS cơ sở", icon: "🗺️", hash: "#map" },
-              { label: "Trợ lý giọng nói ảo rảnh tay", icon: "🎙️", hash: "#voice" },
+              { label: "Thống kê hoạt động hệ thống", icon: "📈", path: "/admin/activity-dashboard" },
+              { label: "Xuất dữ liệu sự cố (Excel/PDF)", icon: "📊", path: "/reports/incident-export" },
+              { label: "Cứu hộ ngập lụt (Flood SOS)", icon: "🆘", path: "/emergency/flood-sos" },
+              { label: "Cảnh báo khẩn cấp & điểm danh", icon: "🚨", path: "/emergency/alerts" },
+              { label: "Dự báo điểm nóng môi trường", icon: "🔥", path: "/analytics/hotspots" },
+              { label: "Điều phối hiện trường & lực lượng", icon: "🚚", path: "/operations/dispatch" },
+              { label: "Bảng điều khiển rủi ro đô thị", icon: "🛡️", path: "/analytics/urban-risk" },
+              { label: "Lộ trình di chuyển tránh ngập", icon: "🧭", path: "/navigation/safe-route" },
+              { label: "AI Triage phân loại sự cố", icon: "🤖", path: "/incidents/ai-triage" },
+              { label: "Bản đồ số WebGIS cơ sở", icon: "🗺️", path: "/map" },
+              { label: "Trợ lý giọng nói ảo rảnh tay", icon: "🎙️", path: "/assistant/voice" },
             ].map((mod) => (
               <button
-                key={mod.hash}
+                key={mod.path}
                 type="button"
                 className="filter-btn"
                 style={{
@@ -231,11 +234,11 @@ export const AdminDashboardContainer: React.FC<AdminDashboardContainerProps> = (
                   fontSize: "0.78rem",
                   justifyContent: "flex-start",
                   padding: "0 10px",
-                  background: mod.hash === "#admin-dashboard" ? "rgba(16, 185, 129, 0.15)" : "transparent",
-                  color: mod.hash === "#admin-dashboard" ? "#10b981" : "#f1f5f9",
+                  background: mod.path === "/admin/activity-dashboard" ? "rgba(16, 185, 129, 0.15)" : "transparent",
+                  color: mod.path === "/admin/activity-dashboard" ? "#10b981" : "#f1f5f9",
                   border: "none",
                 }}
-                onClick={() => navigateToModule(mod.hash)}
+                onClick={() => navigateToModule(mod.path)}
               >
                 <span style={{ marginRight: "6px" }}>{mod.icon}</span>
                 <span>{mod.label}</span>

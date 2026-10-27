@@ -48,44 +48,11 @@ import { QRScanContainer } from "./features/qr_scan/QRScanContainer";
 import { LuckyWheelContainer } from "./features/lucky_wheel/LuckyWheelContainer";
 import { MilestoneContainer } from "./features/milestone/MilestoneContainer";
 import api from "./api/client";
+import { APP_ROUTES, resolveTabFromUrl, navigateToRoute } from "./routes/appRoutes";
+import type { ActiveTab } from "./routes/appRoutes";
 import "./App.css";
 
-export type ActiveTab =
-  | "map"
-  | "dashboard"
-  | "auth"
-  | "rbac"
-  | "users"
-  | "profile"
-  | "friends"
-  | "voice"
-  | "dedup"
-  | "settings"
-  | "penalties"
-  | "penalty-reports"
-  | "posts"
-  | "triage"
-  | "navigation"
-  | "risk-dashboard"
-  | "dispatch"
-  | "hotspots"
-  | "emergency-alert"
-  | "safety-check"
-  | "flood-sos"
-  | "report"
-  | "incidents"
-  | "rewards"
-  | "challenges"
-  | "audit-logs"
-  | "handbook"
-  | "leaderboard"
-  | "heatmap"
-  | "qr-scan"
-  | "lucky-wheel"
-  | "milestone"
-  | "incident-export"
-  | "admin-dashboard";
-
+export type { ActiveTab };
 export type TabType = ActiveTab;
 
 // Hàm kiểm tra trạng thái đăng nhập thực tế của phiên hiện tại
@@ -101,145 +68,25 @@ const checkIsLoggedIn = (): boolean => {
 
 function App() {
   const [authRedirectUrl, setAuthRedirectUrl] = useState<string | undefined>(() => {
-    const hash = window.location.hash.toLowerCase();
-    const path = window.location.pathname.toLowerCase();
     const isLogged = checkIsLoggedIn();
     if (!isLogged) {
-      if (hash === "#profile" || path === "/profile") return "/profile";
-      if (hash === "#friends" || path === "/friends") return "/friends";
-      if (hash === "#dashboard" || path === "/dashboard") return "/dashboard";
-      if (hash === "#users" || path === "/users") return "/users";
-      if (hash === "#rbac" || path === "/rbac") return "/rbac";
-      if (hash === "#dedup" || path === "/dedup") return "/dedup";
-      if (hash === "#settings" || path === "/settings") return "/settings";
-      if (hash === "#penalty-reports" || path === "/penalty-reports") return "/penalty-reports";
-      if (hash === "#risk-dashboard" || hash === "#urban-risk" || path === "/risk-dashboard") return "/risk-dashboard";
-      if (hash === "#dispatch" || hash === "#operations-dispatch" || path === "/dispatch") return "/dispatch";
-      if (hash === "#hotspots" || hash === "#hotspot-analytics" || path === "/hotspots") return "/hotspots";
-      if (hash === "#emergency-alert" || path === "/emergency-alert") return "/emergency-alert";
-      if (hash === "#safety-check" || path === "/safety-check") return "/safety-check";
-    }
-    if ((hash === "#report" || window.location.pathname.toLowerCase() === "/report") && !isLogged) {
-      return "/report";
-    }
-    if ((hash === "#incidents" || window.location.pathname.toLowerCase() === "/incidents") && !isLogged) {
-      return "/incidents";
+      const resolved = resolveTabFromUrl();
+      const route = APP_ROUTES[resolved];
+      if (route && route.requiresAuth) {
+        return route.path;
+      }
     }
     return undefined;
   });
 
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
-    const hash = window.location.hash.toLowerCase();
-    const path = window.location.pathname.toLowerCase();
+    const resolved = resolveTabFromUrl();
     const isLogged = checkIsLoggedIn();
-
-    if (hash === "#hotspots" || hash === "#hotspot-analytics" || path === "/hotspots") {
-      if (!isLogged) return "auth";
-      return "hotspots";
+    const route = APP_ROUTES[resolved];
+    if (route && route.requiresAuth && !isLogged) {
+      return "auth";
     }
-    if (hash === "#flood-sos" || path === "/flood-sos") {
-      return "flood-sos";
-    }
-    if (hash === "#incident-export" || hash === "#export-incidents" || path === "/incident-export") {
-      return "incident-export";
-    }
-    if (
-      hash === "#admin-dashboard" ||
-      hash === "#system-activity" ||
-      hash === "#admin-stats" ||
-      path === "/admin-dashboard"
-    ) {
-      return "admin-dashboard";
-    }
-    if (hash === "#emergency-alert" || path === "/emergency-alert") {
-      if (!isLogged) return "auth";
-      return "emergency-alert";
-    }
-    if (hash === "#safety-check" || path === "/safety-check") {
-      if (!isLogged) return "auth";
-      return "safety-check";
-    }
-    if (hash === "#dispatch" || hash === "#operations-dispatch" || path === "/dispatch") {
-      if (!isLogged) return "auth";
-      return "dispatch";
-    }
-    if (hash === "#risk-dashboard" || hash === "#urban-risk" || path === "/risk-dashboard") {
-      if (!isLogged) return "auth";
-      return "risk-dashboard";
-    }
-    if (hash === "#navigation" || path === "/navigation") return "navigation";
-    if (hash === "#map" || path === "/map") return "map";
-    if (hash === "#penalties" || path === "/penalties") {
-      if (!isLogged) return "auth";
-      return "penalties";
-    }
-    if (hash === "#posts" || hash === "#create-post" || path === "/posts" || path === "/create-post") {
-      if (!isLogged) return "auth";
-      return "posts";
-    }
-    if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") return "auth";
-    if (hash === "#voice" || path === "/voice") {
-      if (!isLogged) return "auth";
-      return "voice";
-    }
-
-    // Khách vãng lai chưa đăng nhập: Không được phép vào các trang cài đặt, phân tích khí hậu, bạn bè, profile, quản trị, trùng lặp
-    if (hash === "#penalty-reports" || path === "/penalty-reports") {
-      if (!isLogged) return "auth";
-      return "penalty-reports";
-    }
-    if (hash === "#settings" || path === "/settings") {
-      if (!isLogged) return "auth";
-      return "settings";
-    }
-    if (hash === "#dashboard" || path === "/dashboard") {
-      if (!isLogged) return "auth";
-      return "dashboard";
-    }
-    if (hash === "#friends" || path === "/friends") {
-      if (!isLogged) return "auth";
-      return "friends";
-    }
-    if (hash === "#profile" || path === "/profile") {
-      if (!isLogged) return "auth";
-      return "profile";
-    }
-    if (hash === "#users" || path === "/users") {
-      if (!isLogged) return "auth";
-      return "users";
-    }
-    if (hash === "#rbac" || path === "/rbac") {
-      if (!isLogged) return "auth";
-      return "rbac";
-    }
-    if (hash === "#dedup" || path === "/dedup") {
-      if (!isLogged) return "auth";
-      return "dedup";
-    }
-    if (hash === "#triage" || path === "/triage") {
-      if (!isLogged) return "auth";
-      return "triage";
-    }
-    if (hash === "#report" || path === "/report") {
-      if (!isLogged) return "auth";
-      return "report";
-    }
-    if (hash === "#incidents" || path === "/incidents") {
-      if (!isLogged) return "auth";
-      return "incidents";
-    }
-    if (hash === "#wallet" || hash === "#rewards" || hash === "#policy" || hash === "#catalog" || hash === "#vouchers") return "rewards";
-    if (hash === "#challenges") return "challenges";
-    if (hash === "#audit-logs" || hash === "#audit") return "audit-logs";
-    if (hash === "#handbook" || hash === "#guide") return "handbook";
-    if (hash === "#leaderboard" || hash === "#ranking") return "leaderboard";
-    if (hash === "#heatmap" || hash === "#climate-map") return "heatmap";
-    if (hash === "#qr-scan" || hash === "#qr" || hash === "#scan") return "qr-scan";
-    if (hash === "#lucky-wheel" || hash === "#wheel" || hash === "#spin") return "lucky-wheel";
-    if (hash === "#milestone" || hash === "#tier-progress" || hash === "#tier") return "milestone";
-    // Mặc định: khi chưa đăng nhập, hiển thị Bản đồ WebGIS công cộng
-    if (!isLogged) return "map";
-    return "profile";
+    return resolved;
   });
   const [backendStatus, setBackendStatus] = useState<string | null>(null);
   const [checkingBackend, setCheckingBackend] = useState(false);
@@ -381,9 +228,9 @@ function App() {
     };
   }, [openDropdown, showDrawer]);
 
-  const navigateTo = (tab: ActiveTab, hash?: string) => {
+  const navigateTo = (tab: ActiveTab, _pathOrHash?: string) => {
     setActiveTab(tab);
-    if (hash) window.location.hash = hash;
+    navigateToRoute(tab);
     setOpenDropdown(null);
     setShowDrawer(false);
   };
@@ -413,219 +260,58 @@ function App() {
     return () => window.removeEventListener("auth_change", handleAuthChange);
   }, []);
 
-  // Lắng nghe sự kiện hashchange để đồng bộ view khi thay đổi URL
+  // Lắng nghe cả popstate (HTML5 History API) và hashchange (tương thích ngược) để đồng bộ view khi thay đổi URL
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash;
+    const handleUrlSync = () => {
+      const resolved = resolveTabFromUrl(window.location.pathname, window.location.hash);
       const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
       const isLogged = !!token;
+      const route = APP_ROUTES[resolved];
 
-      if (hash === "#map") {
-        setActiveTab("map");
-      } else if (hash === "#dashboard") {
-        if (!isLogged) {
-          setAuthRedirectUrl("/dashboard");
-          setActiveTab("auth");
-          window.location.hash = "#login";
-        } else {
-          setActiveTab("dashboard");
-        }
-      } else if (hash === "#friends") {
-        if (!isLogged) {
-          setAuthRedirectUrl("/friends");
-          setActiveTab("auth");
-          window.location.hash = "#login";
-        } else {
-          setActiveTab("friends");
-        }
-      } else if (hash === "#auth" || hash === "#login" || hash === "#register" || hash === "#devices") {
+      if (route && route.requiresAuth && !isLogged) {
+        setAuthRedirectUrl(route.path);
         setActiveTab("auth");
-      } else if (hash === "#users") {
-        if (!isLogged) {
-          setAuthRedirectUrl("/users");
-          setActiveTab("auth");
-          window.location.hash = "#login";
-        } else {
-          setActiveTab("users");
-        }
-      } else if (hash === "#rbac") {
-        if (!isLogged) {
-          setAuthRedirectUrl("/rbac");
-          setActiveTab("auth");
-          window.location.hash = "#login";
-        } else {
-          setActiveTab("rbac");
-        }
-      } else if (hash === "#voice") {
-        if (!isLogged) {
-          setAuthRedirectUrl("/voice");
-          setActiveTab("auth");
-          window.location.hash = "#login";
-        } else {
-          setActiveTab("voice");
-        }
-      } else if (hash === "#dedup" || window.location.pathname === "/dedup") {
-        if (!isLogged) {
-          setAuthRedirectUrl("/dedup");
-          setActiveTab("auth");
-          window.location.hash = "#login";
-        } else {
-          setActiveTab("dedup");
-        }
-      } else if (hash === "#triage" || window.location.pathname === "/triage") {
-        if (!isLogged) {
-          setAuthRedirectUrl("/triage");
-          setActiveTab("auth");
-          window.location.hash = "#login";
-        } else {
-          setActiveTab("triage");
-        }
-      } else if (hash === "#navigation" || window.location.pathname === "/navigation") {
-        setActiveTab("navigation");
-      } else if (hash === "#penalties") {
-        setActiveTab("penalties");
-      } else if (hash === "#posts" || hash === "#create-post") {
-        if (!isLogged) {
-          setAuthRedirectUrl("/posts");
-          setActiveTab("auth");
-          window.location.hash = "#login";
-        } else {
-          setActiveTab("posts");
-        }
-      } else if (hash === "#penalty-reports" || window.location.pathname === "/penalty-reports") {
-        if (!isLogged) {
-          setAuthRedirectUrl("/penalty-reports");
-          setActiveTab("auth");
-          window.location.hash = "#login";
-        } else {
-          setActiveTab("penalty-reports");
-        }
-      } else if (hash === "#dispatch" || hash === "#operations-dispatch" || window.location.pathname === "/dispatch") {
-        if (!isLogged) {
-          setAuthRedirectUrl("/dispatch");
-          setActiveTab("auth");
-          window.location.hash = "#login";
-        } else {
-          setActiveTab("dispatch");
-        }
-      } else if (hash === "#hotspots" || hash === "#hotspot-analytics" || window.location.pathname === "/hotspots") {
-        if (!isLogged) {
-          setAuthRedirectUrl("/hotspots");
-          setActiveTab("auth");
-          window.location.hash = "#login";
-        } else {
-          setActiveTab("hotspots");
-        }
-      } else if (hash === "#profile") {
-        if (!isLogged) {
-          setAuthRedirectUrl("/profile");
-          setActiveTab("auth");
-          window.location.hash = "#login";
-        } else {
-          setActiveTab("profile");
-        }
-      } else if (hash === "#report") {
-        if (!isLogged) {
-          setAuthRedirectUrl("/report");
-          setActiveTab("auth");
-          window.location.hash = "#login";
-        } else {
-          setActiveTab("report");
-        }
-      } else if (hash === "#incidents") {
-        if (!isLogged) {
-          setAuthRedirectUrl("/incidents");
-          setActiveTab("auth");
-          window.location.hash = "#login";
-        } else {
-          setActiveTab("incidents");
-        }
-      } else if (hash === "#wallet" || hash === "#rewards" || hash === "#policy" || hash === "#catalog" || hash === "#vouchers") {
-        setActiveTab("rewards");
-      } else if (hash === "#challenges") {
-        setActiveTab("challenges");
-      } else if (hash === "#audit-logs" || hash === "#audit") {
-        setActiveTab("audit-logs");
-      } else if (hash === "#handbook" || hash === "#guide") {
-        setActiveTab("handbook");
-      } else if (hash === "#leaderboard" || hash === "#ranking") {
-        setActiveTab("leaderboard");
-      } else if (hash === "#heatmap" || hash === "#climate-map") {
-        setActiveTab("heatmap");
-      } else if (hash === "#qr-scan" || hash === "#qr" || hash === "#scan") {
-        setActiveTab("qr-scan");
-      } else if (hash === "#lucky-wheel" || hash === "#wheel" || hash === "#spin") {
-        setActiveTab("lucky-wheel");
-      } else if (hash === "#milestone" || hash === "#tier-progress" || hash === "#tier") {
-        setActiveTab("milestone");
+        navigateToRoute("auth", undefined, true);
+        return;
+      }
+
+      setActiveTab(resolved);
+
+      // Nếu người dùng vào bằng hash cũ (VD: #admin-dashboard), tự động chuẩn hóa URL đẹp (/admin/activity-dashboard)
+      if (window.location.hash && window.location.hash.startsWith("#")) {
+        navigateToRoute(resolved, undefined, true);
       }
     };
-    window.addEventListener("hashchange", handleHashChange);
-    return () => window.removeEventListener("hashchange", handleHashChange);
+
+    // Kiểm tra và chuẩn hóa ngay khi mount nếu có hash
+    if (window.location.hash && window.location.hash.startsWith("#")) {
+      const initialTab = resolveTabFromUrl();
+      navigateToRoute(initialTab, undefined, true);
+    }
+
+    window.addEventListener("popstate", handleUrlSync);
+    window.addEventListener("hashchange", handleUrlSync);
+    return () => {
+      window.removeEventListener("popstate", handleUrlSync);
+      window.removeEventListener("hashchange", handleUrlSync);
+    };
   }, []);
 
   // Tự động đẩy người dùng về màn hình đăng nhập nếu ở các tab yêu cầu tài khoản mà chưa có currentUser
   useEffect(() => {
     if (!currentUser) {
-      if (activeTab === "profile") {
-        setAuthRedirectUrl("/profile");
+      const route = APP_ROUTES[activeTab];
+      if (route && route.requiresAuth) {
+        setAuthRedirectUrl(route.path);
         setActiveTab("auth");
-        window.location.hash = "#login";
-      } else if (activeTab === "friends") {
-        setAuthRedirectUrl("/friends");
-        setActiveTab("auth");
-        window.location.hash = "#login";
-      } else if (activeTab === "dashboard") {
-        setAuthRedirectUrl("/dashboard");
-        setActiveTab("auth");
-        window.location.hash = "#login";
-      } else if (activeTab === "users") {
-        setAuthRedirectUrl("/users");
-        setActiveTab("auth");
-        window.location.hash = "#login";
-      } else if (activeTab === "rbac") {
-        setAuthRedirectUrl("/rbac");
-        setActiveTab("auth");
-        window.location.hash = "#login";
-      } else if (activeTab === "dedup") {
-        setAuthRedirectUrl("/dedup");
-        setActiveTab("auth");
-        window.location.hash = "#login";
-      } else if (activeTab === "posts") {
-        setAuthRedirectUrl("/posts");
-        setActiveTab("auth");
-        window.location.hash = "#login";
-      } else if (activeTab === "triage") {
-        setAuthRedirectUrl("/triage");
-        setActiveTab("auth");
-        window.location.hash = "#login";
-      } else if (activeTab === "penalty-reports") {
-        setAuthRedirectUrl("/penalty-reports");
-        setActiveTab("auth");
-        window.location.hash = "#login";
-      } else if (activeTab === "dispatch") {
-        setAuthRedirectUrl("/dispatch");
-        setActiveTab("auth");
-        window.location.hash = "#login";
-      } else if (activeTab === "hotspots") {
-        setAuthRedirectUrl("/hotspots");
-        setActiveTab("auth");
-        window.location.hash = "#login";
-      } else if (activeTab === "report" && !checkIsLoggedIn()) {
-        setAuthRedirectUrl("/report");
-        setActiveTab("auth");
-        window.location.hash = "#login";
-      } else if (activeTab === "incidents" && !checkIsLoggedIn()) {
-        setAuthRedirectUrl("/incidents");
-        setActiveTab("auth");
-        window.location.hash = "#login";
+        navigateToRoute("auth", undefined, true);
       }
     }
   }, [activeTab, currentUser]);
 
   const handleRelogin = (redirectUrl?: string) => {
     setSessionExpiredOpen(false);
-    const target = redirectUrl || window.location.hash || `#${activeTab}`;
+    const target = redirectUrl || window.location.pathname || APP_ROUTES[activeTab].path;
     sessionStorage.setItem("greenspot_target_hash", target);
     setAuthRedirectUrl(target);
     localStorage.removeItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
@@ -645,85 +331,37 @@ function App() {
     let raw = targetRedirect || authRedirectUrl || stored || "";
     if (
       !raw &&
-      window.location.hash &&
-      !["#auth", "#login", "#register", "#devices"].includes(window.location.hash.toLowerCase())
+      window.location.pathname &&
+      window.location.pathname !== "/" &&
+      !window.location.pathname.startsWith("/auth")
     ) {
-      raw = window.location.hash;
+      raw = window.location.pathname;
     }
 
     setAuthRedirectUrl(undefined);
-    const target = raw.trim().toLowerCase();
+    const target = raw.trim();
 
     // 2. Chuyển hướng chính xác về chức năng đích tương ứng
-    if (target.includes("challenges")) {
-      setActiveTab("challenges");
-      window.location.hash = "#challenges";
-    } else if (target.includes("audit")) {
-      setActiveTab("audit-logs");
-      window.location.hash = "#audit-logs";
-    } else if (target.includes("handbook") || target.includes("guide")) {
-      setActiveTab("handbook");
-      window.location.hash = "#handbook";
-    } else if (target.includes("wallet") || target.includes("rewards")) {
-      setActiveTab("rewards");
-      window.location.hash = "#wallet";
-    } else if (target.includes("policy")) {
-      setActiveTab("rewards");
-      window.location.hash = "#policy";
-    } else if (target.includes("catalog")) {
-      setActiveTab("rewards");
-      window.location.hash = "#catalog";
-    } else if (target.includes("voucher")) {
-      setActiveTab("rewards");
-      window.location.hash = "#vouchers";
-    } else if (target.includes("leaderboard") || target.includes("ranking")) {
-      setActiveTab("leaderboard");
-      window.location.hash = "#leaderboard";
-    } else if (target.includes("heatmap") || target.includes("climate")) {
-      setActiveTab("heatmap");
-      window.location.hash = "#heatmap";
-    } else if (target.includes("qr")) {
-      setActiveTab("qr-scan");
-      window.location.hash = "#qr-scan";
-    } else if (target.includes("wheel") || target.includes("lucky") || target.includes("spin")) {
-      setActiveTab("lucky-wheel");
-      window.location.hash = "#lucky-wheel";
-    } else if (target.includes("milestone") || target.includes("tier")) {
-      setActiveTab("milestone");
-      window.location.hash = "#milestone";
-    } else if (target.includes("users")) {
-      setActiveTab("users");
-      window.location.hash = "#users";
-    } else if (target.includes("rbac")) {
-      setActiveTab("rbac");
-      window.location.hash = "#rbac";
-    } else if (target.includes("dashboard")) {
-      setActiveTab("dashboard");
-      window.location.hash = "#dashboard";
-    } else if (target.includes("devices")) {
-      setAuthRedirectUrl("/devices");
-      setActiveTab("auth");
-      window.location.hash = "#devices";
-    } else if (target.includes("map")) {
-      setActiveTab("map");
-      window.location.hash = "#map";
-    } else {
-      // Nếu không có bất kỳ URL nào được chỉ định trước đó:
-      // Phân quyền theo vai trò vừa đăng nhập: ADMIN -> #users, CITIZEN -> #challenges
-      try {
-        const userRaw = localStorage.getItem(AUTH_STORAGE_KEYS.USER_INFO);
-        const u = userRaw ? JSON.parse(userRaw) : null;
-        if (u?.role === "ADMIN") {
-          setActiveTab("users");
-          window.location.hash = "#users";
-        } else {
-          setActiveTab("challenges");
-          window.location.hash = "#challenges";
-        }
-      } catch {
-        setActiveTab("challenges");
-        window.location.hash = "#challenges";
+    if (target) {
+      const resolved = resolveTabFromUrl(target, target);
+      if (resolved && resolved !== "map") {
+        navigateTo(resolved);
+        return;
       }
+    }
+
+    // Nếu không có bất kỳ URL nào được chỉ định trước đó:
+    // Phân quyền theo vai trò vừa đăng nhập: ADMIN -> users, CITIZEN -> challenges
+    try {
+      const userRaw = localStorage.getItem(AUTH_STORAGE_KEYS.USER_INFO);
+      const u = userRaw ? JSON.parse(userRaw) : null;
+      if (u?.role === "ADMIN") {
+        navigateTo("users");
+      } else {
+        navigateTo("challenges");
+      }
+    } catch {
+      navigateTo("challenges");
     }
   };
 
@@ -733,8 +371,7 @@ function App() {
     if (stored) {
       handleLoginSuccess(stored);
     } else {
-      setActiveTab("map");
-      window.location.hash = "#map";
+      navigateTo("map");
     }
   };
 
@@ -1922,51 +1559,38 @@ function App() {
             <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
               <VoiceAssistant
                 onClose={() => {
-                  setActiveTab("map");
-                  window.location.hash = "#map";
+                  navigateTo("map");
                 }}
                 onNavigateToFeature={(target, payload) => {
                   if (target === "dashboard_aqi") {
-                    setActiveTab("dashboard");
-                    window.location.hash = "#dashboard";
+                    navigateTo("dashboard");
                   } else if (target === "map_flood" || target === "navigation") {
                     if (payload) {
                       try {
                         localStorage.setItem("greenspot_nav_destination", JSON.stringify(payload));
                       } catch { }
                     }
-                    setActiveTab("navigation");
-                    window.location.hash = "#navigation";
+                    navigateTo("navigation");
                   } else if (target === "dispatch" || target === "operations_dispatch") {
-                    setActiveTab("dispatch");
-                    window.location.hash = "#dispatch";
+                    navigateTo("dispatch");
                   } else if (target === "risk_dashboard" || target === "urban_risk") {
-                    setActiveTab("risk-dashboard");
-                    window.location.hash = "#risk-dashboard";
+                    navigateTo("risk-dashboard");
                   } else if (target === "hotspots") {
-                    setActiveTab("hotspots");
-                    window.location.hash = "#hotspots";
+                    navigateTo("hotspots");
                   } else if (target === "dedup") {
-                    setActiveTab("dedup");
-                    window.location.hash = "#dedup";
+                    navigateTo("dedup");
                   } else if (target === "flood_sos" || target === "sos") {
-                    setActiveTab("flood-sos");
-                    window.location.hash = "#flood-sos";
+                    navigateTo("flood-sos");
                   } else if (target === "incident_export" || target === "export") {
-                    setActiveTab("incident-export");
-                    window.location.hash = "#incident-export";
+                    navigateTo("incident-export");
                   } else if (target === "admin_dashboard" || target === "stats" || target === "system_activity") {
-                    setActiveTab("admin-dashboard");
-                    window.location.hash = "#admin-dashboard";
+                    navigateTo("admin-dashboard");
                   } else if (target === "/report-incident") {
-                    setActiveTab("triage");
-                    window.location.hash = "#triage";
+                    navigateTo("triage");
                   } else if (target === "/wallet") {
-                    setActiveTab("profile");
-                    window.location.hash = "#profile";
+                    navigateTo("profile");
                   } else {
-                    setActiveTab("map");
-                    window.location.hash = "#map";
+                    navigateTo("map");
                   }
                 }}
               />

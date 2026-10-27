@@ -199,7 +199,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             type="button"
             onClick={() => {
               onClose();
-              window.location.hash = "#incident-export";
+              window.history.pushState(null, "", "/reports/incident-export");
+              window.dispatchEvent(new PopStateEvent("popstate"));
             }}
             style={{
               background: "transparent",

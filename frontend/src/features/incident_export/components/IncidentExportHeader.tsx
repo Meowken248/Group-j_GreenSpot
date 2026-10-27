@@ -1,5 +1,6 @@
 import React from "react";
 import { IconBell, IconFileSpreadsheet, IconBarChart, IconSliders } from "./ExportIcons";
+import { navigateToRoute } from "../../../routes/appRoutes";
 
 interface IncidentExportHeaderProps {
   activeTab?: string;
@@ -16,7 +17,7 @@ export const IncidentExportHeader: React.FC<IncidentExportHeaderProps> = ({
           className="brand-section"
           style={{ cursor: "pointer" }}
           onClick={() => {
-            window.location.hash = "#map";
+            navigateToRoute("map");
           }}
           title="Về bản đồ số WebGIS"
         >
@@ -44,7 +45,7 @@ export const IncidentExportHeader: React.FC<IncidentExportHeaderProps> = ({
             className="nav-item"
             title="Bảng thống kê hoạt động hệ thống"
             onClick={() => {
-              window.location.hash = "#admin-dashboard";
+              navigateToRoute("admin-dashboard");
             }}
           >
             <IconBarChart size={16} style={{ display: "inline", marginRight: "6px" }} />
@@ -55,7 +56,7 @@ export const IncidentExportHeader: React.FC<IncidentExportHeaderProps> = ({
             className="nav-item"
             title="Bảng điều khiển rủi ro đô thị"
             onClick={() => {
-              window.location.hash = "#risk-dashboard";
+              navigateToRoute("risk-dashboard");
             }}
           >
             <IconSliders size={16} style={{ display: "inline", marginRight: "6px" }} />
