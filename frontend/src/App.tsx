@@ -123,7 +123,7 @@ function App() {
     if (hash === "#events" || path === "/events") {
       return "events";
     }
-    if (hash === "#fundraiser" || path === "/fundraiser") {
+    if (hash === "#fundraiser" || hash === "#fundraiser-admin" || path === "/fundraiser" || path === "/fundraiser-admin") {
       return "fundraiser";
     }
     if (hash === "#hotspots" || hash === "#hotspot-analytics" || path === "/hotspots") {
@@ -612,7 +612,7 @@ function App() {
         } else {
           setActiveTab("recycling_facilities");
         }
-      } else if (hash === "#fundraiser" || window.location.pathname === "/fundraiser") {
+      } else if (hash === "#fundraiser" || hash === "#fundraiser-admin" || window.location.pathname === "/fundraiser" || window.location.pathname === "/fundraiser-admin") {
         setActiveTab("fundraiser");
       } else if (hash === "#events" || window.location.pathname === "/events") {
         setActiveTab("events");
@@ -1417,6 +1417,16 @@ function App() {
                           <span>Phân quyền vai trò RBAC</span>
                         </button>
                       )}
+
+                      <button
+                        type="button"
+                        className="dropdown-menu-action"
+                        onClick={() => navigateTo("fundraiser", "#fundraiser-admin")}
+                        data-testid="user-menu-fundraiser-admin"
+                      >
+                        <span className="action-icon">💚</span>
+                        <span>Trung tâm Quản trị Gây quỹ</span>
+                      </button>
                     </>
                   )}
 
@@ -1952,6 +1962,7 @@ function App() {
         <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
           <FundraiserContainer
             currentUser={currentUser}
+            initialAdminMode={window.location.hash === "#fundraiser-admin" || window.location.hash.startsWith("#fundraiser/admin")}
             onNavigateToLogin={() => {
               setAuthRedirectUrl("/fundraiser");
               setActiveTab("auth");

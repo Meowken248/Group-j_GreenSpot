@@ -17,11 +17,13 @@ interface FundraiserContainerProps {
     full_name?: string;
     role?: string;
   } | null;
+  initialAdminMode?: boolean;
   onNavigateToLogin?: () => void;
 }
 
 export const FundraiserContainer: React.FC<FundraiserContainerProps> = ({
   currentUser,
+  initialAdminMode = false,
   onNavigateToLogin = () => {
     window.location.hash = "#login";
   },
@@ -53,8 +55,32 @@ export const FundraiserContainer: React.FC<FundraiserContainerProps> = ({
     resolvedUser?.role_id === 1;
 
   // View Mode: public (Trang Khám phá) vs admin (Trung tâm Quản trị)
-  const [viewMode, setViewMode] = useState<"public" | "admin">("public");
+  const isHashAdmin =
+    typeof window !== "undefined" &&
+    (window.location.hash === "#fundraiser-admin" ||
+      window.location.hash.startsWith("#fundraiser/admin"));
+
+  const [viewMode, setViewMode] = useState<"public" | "admin">(() => {
+    if (initialAdminMode || isHashAdmin) return "admin";
+    return "public";
+  });
   const [systemPendingCount, setSystemPendingCount] = useState<number>(0);
+
+  useEffect(() => {
+    if (initialAdminMode) {
+      setViewMode("admin");
+    }
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash === "#fundraiser-admin" || hash.startsWith("#fundraiser/admin")) {
+        setViewMode("admin");
+      } else if (hash === "#fundraiser") {
+        setViewMode("public");
+      }
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, [initialAdminMode]);
 
   // Filters & Pagination State
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -199,7 +225,10 @@ export const FundraiserContainer: React.FC<FundraiserContainerProps> = ({
             <button
               type="button"
               className={`btn-mode-switch ${viewMode === "public" ? "active" : ""}`}
-              onClick={() => setViewMode("public")}
+              onClick={() => {
+                setViewMode("public");
+                window.location.hash = "#fundraiser";
+              }}
               data-testid="btn-mode-public"
             >
               🌱 Trang Cộng Đồng (Khám Phá)
@@ -207,7 +236,10 @@ export const FundraiserContainer: React.FC<FundraiserContainerProps> = ({
             <button
               type="button"
               className={`btn-mode-switch ${viewMode === "admin" ? "active" : ""}`}
-              onClick={() => setViewMode("admin")}
+              onClick={() => {
+                setViewMode("admin");
+                window.location.hash = "#fundraiser-admin";
+              }}
               data-testid="btn-mode-admin"
             >
               🛡️ Trung Tâm Quản Trị & Duyệt Quỹ

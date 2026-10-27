@@ -75,22 +75,24 @@ export const AdminFundraiserDashboard: React.FC<AdminFundraiserDashboardProps> =
   // Lọc danh sách chiến dịch theo điều kiện
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter((camp) => {
+      if (!camp) return false;
       // Lọc trạng thái
       if (statusFilter !== "all" && camp.status !== statusFilter) {
         return false;
       }
-      // Lọc địa bàn
+      // Lọc địa bàn an toàn tuyệt đối
+      const districtStr = camp.district || "";
       if (
         provinceFilter &&
         provinceFilter !== "Toàn quốc" &&
-        !camp.district.toLowerCase().includes(provinceFilter.toLowerCase())
+        !districtStr.toLowerCase().includes(provinceFilter.toLowerCase())
       ) {
         return false;
       }
-      // Tìm kiếm theo tên hoặc người tạo
+      // Tìm kiếm theo tên hoặc người tạo an toàn tuyệt đối
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase().trim();
-        const matchTitle = camp.title.toLowerCase().includes(query);
+        const matchTitle = (camp.title || "").toLowerCase().includes(query);
         const matchCreator = (camp.creator_name || "").toLowerCase().includes(query);
         const matchBank = (camp.bank_account_name || "").toLowerCase().includes(query);
         if (!matchTitle && !matchCreator && !matchBank) return false;
@@ -347,14 +349,14 @@ export const AdminFundraiserDashboard: React.FC<AdminFundraiserDashboardProps> =
                           <span className="creator-name">
                             {camp.creator_name || "Thành viên GreenSpot"}
                           </span>
-                          <span className="creator-id">ID: {camp.creator_id?.slice(0, 8)}...</span>
+                          <span className="creator-id">ID: {(camp.creator_id || "").slice(0, 8)}...</span>
                         </div>
                       </td>
 
                       <td>
                         <div className="cell-finance">
-                          <span className="donated-amt">{formatVND(camp.total_donated)}</span>
-                          <span className="target-amt">/ {formatVND(camp.target_amount)}</span>
+                          <span className="donated-amt">{formatVND(camp.total_donated || 0)}</span>
+                          <span className="target-amt">/ {formatVND(camp.target_amount || 0)}</span>
                           <div className="mini-progress-bar">
                             <div
                               className="fill"

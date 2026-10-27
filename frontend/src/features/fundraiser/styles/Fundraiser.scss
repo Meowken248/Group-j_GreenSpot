@@ -1267,6 +1267,9 @@ $fund-blue-border: #bae6fd;
   border-radius: 12px;
   margin-bottom: 1.5rem;
   box-shadow: 0 4px 15px rgba(15, 23, 42, 0.15);
+  position: relative;
+  z-index: 50;
+  pointer-events: auto;
 
   @media (max-width: 768px) {
     flex-direction: column;
@@ -1308,11 +1311,20 @@ $fund-blue-border: #bae6fd;
       font-size: 0.85rem;
       font-weight: 600;
       cursor: pointer;
+      position: relative;
+      z-index: 51;
+      pointer-events: auto;
+      user-select: none;
       transition: all 0.2s ease;
 
       &:hover {
         background: rgba(255, 255, 255, 0.2);
         color: #ffffff;
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: translateY(0);
       }
 
       &.active {
@@ -1329,6 +1341,7 @@ $fund-blue-border: #bae6fd;
         font-weight: 800;
         padding: 0.1rem 0.45rem;
         border-radius: 999px;
+        pointer-events: none;
       }
     }
   }
