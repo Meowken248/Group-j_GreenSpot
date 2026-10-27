@@ -21,6 +21,7 @@ class RecyclingFacilityItem(BaseModel):
     contact_phone: Optional[str] = None
     managing_org: Optional[str] = None
     is_active: bool
+    version: int = 1
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -82,6 +83,7 @@ class RecyclingFacilityUpdateRequest(BaseModel):
     open_time: str
     close_time: str
     is_active: bool
+    version: Optional[int] = None
     contact_phone: Optional[str] = Field(None, max_length=20)
     managing_org: Optional[str] = Field(None, max_length=150)
 
