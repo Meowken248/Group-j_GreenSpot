@@ -144,3 +144,4 @@ export const fundraiserService = {
     return this.uploadImage(file);
   },
 };
+

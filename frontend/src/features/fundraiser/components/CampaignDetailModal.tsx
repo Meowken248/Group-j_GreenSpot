@@ -8,6 +8,7 @@ import { fundraiserService } from "../services/fundraiserService";
 import { DonationModal } from "./DonationModal";
 import { ExpenseReportView } from "./ExpenseReportView";
 import { CampaignDeleteModal } from "./CampaignDeleteModal";
+import { CampaignShareModal } from "./CampaignShareModal";
 
 interface CampaignDetailModalProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ export const CampaignDetailModal: React.FC<CampaignDetailModalProps> = ({
   const [showDonationModal, setShowDonationModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEditDescModal, setShowEditDescModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [editDescText, setEditDescText] = useState(campaign.description);
   const [isUpdatingDesc, setIsUpdatingDesc] = useState(false);
 
@@ -120,11 +122,6 @@ export const CampaignDetailModal: React.FC<CampaignDetailModalProps> = ({
     setExpenses((prev) => [newExp, ...prev]);
     showToast("Đã thêm khoản chi");
     fundraiserService.getCampaignDetail(campId).then(onCampaignUpdated).catch(() => {});
-  };
-
-  const handleShareClick = () => {
-    navigator.clipboard?.writeText(window.location.href);
-    showToast("Đã sao chép liên kết chiến dịch vào bộ nhớ tạm!");
   };
 
   const handleUpdateDescription = async () => {
@@ -443,14 +440,15 @@ export const CampaignDetailModal: React.FC<CampaignDetailModalProps> = ({
 
         {/* FOOTER NÚT THAO TÁC */}
         <div className="modal-footer">
-          <div style={{ display: "flex", gap: "0.5rem" }}>
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
             <button
               type="button"
-              className="btn-cancel"
-              onClick={handleShareClick}
+              className="btn-share-action"
+              onClick={() => setShowShareModal(true)}
               data-testid="btn-share-campaign"
             >
-              🔗 Chia sẻ
+              <span className="share-icon">🔗</span>
+              <span>Chia sẻ</span>
             </button>
 
             {/* Thao tác của người tạo */}
@@ -669,6 +667,16 @@ export const CampaignDetailModal: React.FC<CampaignDetailModalProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* POPUP CHIA SẺ CHIẾN DỊCH CHUẨN MXH */}
+      {showShareModal && (
+        <CampaignShareModal
+          isOpen={showShareModal}
+          campaign={campaign}
+          onClose={() => setShowShareModal(false)}
+          onShowToast={(msg) => showToast(msg)}
+        />
       )}
     </div>
   );

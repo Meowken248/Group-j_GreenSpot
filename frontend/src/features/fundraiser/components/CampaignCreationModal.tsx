@@ -504,3 +504,4 @@ export const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
     </div>
   );
 };
+

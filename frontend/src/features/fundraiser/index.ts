@@ -6,5 +6,6 @@ export * from "./components/CampaignDetailModal";
 export * from "./components/DonationModal";
 export * from "./components/ExpenseReportView";
 export * from "./components/CampaignDeleteModal";
+export * from "./components/CampaignShareModal";
 export * from "./FundraiserContainer";
 export { default } from "./FundraiserContainer";
