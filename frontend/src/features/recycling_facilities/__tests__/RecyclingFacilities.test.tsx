@@ -145,7 +145,7 @@ describe("Quản trị Mạng lưới Trạm Tái chế & Điểm Tiếp nhận"
       });
 
       expect(screen.getByText("Vai trò: Admin")).toBeInTheDocument();
-      expect(screen.getByText("MẠNG LƯỚI TRẠM TÁI CHẾ & ĐIỂM TIẾP NHẬN")).toBeInTheDocument();
+      expect(screen.getByText("DANH SÁCH TRẠM TÁI CHẾ")).toBeInTheDocument();
     });
   });
 
@@ -276,7 +276,7 @@ describe("Quản trị Mạng lưới Trạm Tái chế & Điểm Tiếp nhận"
       fireEvent.click(saveBtn);
 
       await waitFor(() => {
-        expect(screen.getByText("Vui lòng nhập tên trạm tái chế")).toBeInTheDocument();
+        expect(screen.getByText("Vui lòng nhập tên trạm")).toBeInTheDocument();
       });
 
       expect(onSave).not.toHaveBeenCalled();
@@ -311,7 +311,7 @@ describe("Quản trị Mạng lưới Trạm Tái chế & Điểm Tiếp nhận"
       fireEvent.click(saveBtn);
 
       await waitFor(() => {
-        expect(screen.getByText("Giờ mở cửa phải trước giờ đóng cửa")).toBeInTheDocument();
+        expect(screen.getByText("Giờ đóng cửa phải sau giờ mở cửa")).toBeInTheDocument();
       });
 
       expect(onSave).not.toHaveBeenCalled();
@@ -351,6 +351,64 @@ describe("Quản trị Mạng lưới Trạm Tái chế & Điểm Tiếp nhận"
         );
       });
     });
+
+    it("hiển thị cảnh báo ẩn khỏi bản đồ khi chuyển sang Tạm ngưng", () => {
+      render(
+        <FacilityFormView
+          mode="edit"
+          initialItem={{ ...mockFacilities[0], is_active: false }}
+          districts={mockDistricts}
+          onSaveCreate={vi.fn()}
+          onSaveUpdate={vi.fn()}
+          onCancelRequest={vi.fn()}
+        />
+      );
+
+      expect(
+        screen.getByText("Trạm sẽ bị ẩn khỏi bản đồ và kết quả tra cứu của công dân")
+      ).toBeInTheDocument();
+    });
+
+    it("hiển thị thông báo xung đột version và nút Tải lại khi gặp lỗi 409", async () => {
+      const onReload = vi.fn();
+      const mockConflictUpdate = vi.fn().mockRejectedValue({
+        response: {
+          data: {
+            detail: "Trạm đã được thay đổi bởi người khác. Vui lòng tải lại",
+          },
+        },
+      });
+
+      render(
+        <FacilityFormView
+          mode="edit"
+          initialItem={mockFacilities[0]}
+          districts={mockDistricts}
+          onSaveCreate={vi.fn()}
+          onSaveUpdate={mockConflictUpdate}
+          onCancelRequest={vi.fn()}
+          onReload={onReload}
+        />
+      );
+
+      // Thay đổi tên để enable nút Cập nhật
+      const nameInput = screen.getByDisplayValue("Điểm Tiếp Nhận Rác Tái Chế Nguyễn Huệ");
+      fireEvent.change(nameInput, { target: { value: "Tên Trạm Đã Bị Sửa" } });
+
+      const updateBtn = screen.getByRole("button", { name: "Cập nhật" });
+      fireEvent.click(updateBtn);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("Trạm đã được thay đổi bởi người khác. Vui lòng tải lại")
+        ).toBeInTheDocument();
+      });
+
+      const reloadBtn = screen.getByRole("button", { name: /Tải lại/i });
+      expect(reloadBtn).toBeInTheDocument();
+      fireEvent.click(reloadBtn);
+      expect(onReload).toHaveBeenCalled();
+    });
   });
 
   describe("6. Màn 4 & 5: Xoá mềm trạm và phản hồi thành công", () => {
@@ -364,11 +422,12 @@ describe("Quản trị Mạng lưới Trạm Tái chế & Điểm Tiếp nhận"
         />
       );
 
-      expect(screen.getByText("Xác nhận xoá trạm tái chế")).toBeInTheDocument();
+      expect(screen.getByText("XÁC NHẬN XOÁ")).toBeInTheDocument();
       expect(
-        screen.getByText(/Mã QR đã cấp cho trạm này sẽ bị vô hiệu hoá/)
+        screen.getByText("Trạm sẽ bị gỡ khỏi bản đồ và mã QR sẽ không còn hiệu lực")
       ).toBeInTheDocument();
-      expect(screen.getByText("Xác nhận xoá")).toBeInTheDocument();
+      expect(screen.getByText("Dữ liệu liên quan sẽ bị ảnh hưởng")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Xoá" })).toBeInTheDocument();
     });
 
     it("hiển thị modal xoá thành công sau khi hoàn tất", () => {
@@ -380,9 +439,9 @@ describe("Quản trị Mạng lưới Trạm Tái chế & Điểm Tiếp nhận"
         />
       );
 
-      expect(screen.getByText("Xoá trạm thành công")).toBeInTheDocument();
+      expect(screen.getByText("ĐÃ XOÁ THÀNH CÔNG")).toBeInTheDocument();
       expect(
-        screen.getByText(/đã được xoá an toàn khỏi hệ thống/)
+        screen.getByText("Danh sách đã được cập nhật")
       ).toBeInTheDocument();
     });
   });

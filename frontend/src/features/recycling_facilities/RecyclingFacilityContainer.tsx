@@ -7,6 +7,7 @@ import type {
 } from "./types/recyclingFacility.types";
 import {
   fetchRecyclingFacilities,
+  fetchFacilityDetail,
   createRecyclingFacility,
   updateRecyclingFacility,
   deleteRecyclingFacility,
@@ -229,6 +230,18 @@ export const RecyclingFacilityContainer: React.FC<RecyclingFacilityContainerProp
     fetchFacilities();
   };
 
+  // Nạp lại chi tiết trạm khi xảy ra xung đột version (Optimistic locking 409)
+  const handleReloadFacility = async () => {
+    if (!selectedFacility) return;
+    try {
+      const refreshed = await fetchFacilityDetail(selectedFacility.facility_id);
+      setSelectedFacility(refreshed);
+      showToast("Đã tải lại dữ liệu mới nhất từ máy chủ", "info");
+    } catch {
+      fetchFacilities();
+    }
+  };
+
   // Mở popup xác nhận xóa (Màn 4)
   const handleOpenDelete = (item: RecyclingFacilityItem) => {
     setDeletingFacility(item);
@@ -341,6 +354,7 @@ export const RecyclingFacilityContainer: React.FC<RecyclingFacilityContainerProp
             onSaveCreate={handleSaveCreate}
             onSaveUpdate={handleSaveUpdate}
             onCancelRequest={handleCancelForm}
+            onReload={handleReloadFacility}
           />
         )}
       </main>
