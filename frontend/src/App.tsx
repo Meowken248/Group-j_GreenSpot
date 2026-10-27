@@ -42,6 +42,7 @@ import {
 import type { ThemeMode } from "./features/settings";
 import { AiAssistantWidget, AiAssistantPage } from "./features/ai_assistant";
 import { EventsPage } from "./features/events";
+import { FundraiserContainer } from "./features/fundraiser";
 import api from "./api/client";
 import "./App.css";
 
@@ -71,7 +72,8 @@ export type TabType =
   | "dispatch"
   | "hotspots"
   | "ai-assistant"
-  | "events";
+  | "events"
+  | "fundraiser";
 
 export type ActiveTab = TabType;
 
@@ -120,6 +122,9 @@ function App() {
 
     if (hash === "#events" || path === "/events") {
       return "events";
+    }
+    if (hash === "#fundraiser" || path === "/fundraiser") {
+      return "fundraiser";
     }
     if (hash === "#hotspots" || hash === "#hotspot-analytics" || path === "/hotspots") {
       if (!isLogged) return "auth";
@@ -395,7 +400,7 @@ function App() {
     "waste_categories",
     "recycling_facilities",
   ].includes(activeTab);
-  const isCommunityActive = ["posts", "groups", "messages", "friends", "voice", "ai-assistant"].includes(activeTab);
+  const isCommunityActive = ["posts", "groups", "messages", "friends", "voice", "ai-assistant", "events", "fundraiser"].includes(activeTab);
   const isPenaltiesActive = activeTab === "penalties";
 
   useEffect(() => {
@@ -607,6 +612,10 @@ function App() {
         } else {
           setActiveTab("recycling_facilities");
         }
+      } else if (hash === "#fundraiser" || window.location.pathname === "/fundraiser") {
+        setActiveTab("fundraiser");
+      } else if (hash === "#events" || window.location.pathname === "/events") {
+        setActiveTab("events");
       }
     };
     window.addEventListener("hashchange", handleHashChange);
@@ -1198,6 +1207,34 @@ function App() {
                     <span className="panel-item-desc">Hỏi đáp phân loại rác, quy định & nền tảng</span>
                   </div>
                   {activeTab === "ai-assistant" && <span className="active-indicator">●</span>}
+                </button>
+
+                <button
+                  type="button"
+                  className={`panel-item-btn ${activeTab === "events" ? "active" : ""}`}
+                  onClick={() => navigateTo("events", "#events")}
+                  data-testid="nav-tab-events"
+                >
+                  <span className="panel-item-icon">📅</span>
+                  <div className="panel-item-content">
+                    <span className="panel-item-title">Sự kiện Chủ Nhật Xanh</span>
+                    <span className="panel-item-desc">Chiến dịch dọn vệ sinh & hoạt động môi trường</span>
+                  </div>
+                  {activeTab === "events" && <span className="active-indicator">●</span>}
+                </button>
+
+                <button
+                  type="button"
+                  className={`panel-item-btn ${activeTab === "fundraiser" ? "active" : ""}`}
+                  onClick={() => navigateTo("fundraiser", "#fundraiser")}
+                  data-testid="nav-tab-fundraiser"
+                >
+                  <span className="panel-item-icon">💚</span>
+                  <div className="panel-item-content">
+                    <span className="panel-item-title">Gây quỹ cộng đồng</span>
+                    <span className="panel-item-desc">Chung tay tài trợ các dự án môi trường xanh</span>
+                  </div>
+                  {activeTab === "fundraiser" && <span className="active-indicator">●</span>}
                 </button>
               </div>
             )}
@@ -1911,6 +1948,17 @@ function App() {
             />
           </div>
         )
+      ) : activeTab === "fundraiser" ? (
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+          <FundraiserContainer
+            currentUser={currentUser}
+            onNavigateToLogin={() => {
+              setAuthRedirectUrl("/fundraiser");
+              setActiveTab("auth");
+              window.location.hash = "#login";
+            }}
+          />
+        </div>
       ) : (
         /* Mặc định an toàn cho khách vãng lai và tab map: Bản đồ số WebGIS công cộng */
         <ModulePermissionGuard

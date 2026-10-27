@@ -1,0 +1,913 @@
+// =========================================================================
+// FUNDRAISER STYLESHEET (SASS - .scss)
+// Chức năng 20: Gây quỹ cộng đồng (GreenSpot EcoReport)
+// Tuân thủ 100% Quy tắc 4 của PROJECT_RULES.md & Design Taste Standards
+// =========================================================================
+
+$fund-primary: #10b981;
+$fund-primary-hover: #059669;
+$fund-primary-active: #047857;
+$fund-primary-light: #ecfdf5;
+$fund-primary-border: #a7f3d0;
+
+$fund-text-dark: #0f172a;
+$fund-text-main: #1e293b;
+$fund-text-muted: #64748b;
+$fund-text-white: #ffffff;
+
+$fund-bg-page: #f8fafc;
+$fund-bg-card: #ffffff;
+$fund-border: #e2e8f0;
+
+$fund-danger: #ef4444;
+$fund-danger-hover: #dc2626;
+$fund-danger-light: #fef2f2;
+$fund-danger-border: #fecaca;
+
+$fund-warning: #f59e0b;
+$fund-warning-light: #fffbeb;
+$fund-warning-border: #fde68a;
+
+$fund-blue: #0284c7;
+$fund-blue-light: #f0f9ff;
+$fund-blue-border: #bae6fd;
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin card-shadow {
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+}
+
+@mixin modal-shadow {
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+}
+
+@mixin transition-smooth {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// -------------------------------------------------------------------------
+// 1. Khung trang chính Fundraiser Container
+// -------------------------------------------------------------------------
+.fundraiser-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+  box-sizing: border-box;
+
+  .fundraiser-hero-banner {
+    background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
+    border-radius: 16px;
+    padding: 2.25rem 2rem;
+    color: #ffffff;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+    @include card-shadow;
+
+    &::after {
+      content: "🌱";
+      position: absolute;
+      right: 2rem;
+      bottom: -1rem;
+      font-size: 7rem;
+      opacity: 0.15;
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.18);
+      color: #a7f3d0;
+      padding: 0.3rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 0.75rem;
+    }
+
+    h1 {
+      font-size: 1.85rem;
+      font-weight: 800;
+      margin: 0 0 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.975rem;
+      color: #d1fae5;
+      max-width: 720px;
+      line-height: 1.55;
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Top Box: Bộ lọc & Thao tác
+  // -----------------------------------------------------------------------
+  .fundraiser-filters-panel {
+    background: $fund-bg-card;
+    border: 1px solid $fund-border;
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.75rem;
+    @include card-shadow;
+
+    .filters-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+
+      .search-box-wrapper {
+        flex: 1 1 280px;
+        position: relative;
+
+        .search-icon {
+          position: absolute;
+          left: 0.85rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: $fund-text-muted;
+          font-size: 0.95rem;
+        }
+
+        input {
+          width: 100%;
+          padding: 0.65rem 1rem 0.65rem 2.4rem;
+          border: 1px solid $fund-border;
+          border-radius: 8px;
+          font-size: 0.9rem;
+          background: #f8fafc;
+          box-sizing: border-box;
+          @include transition-smooth;
+
+          &:focus {
+            outline: none;
+            background: #ffffff;
+            border-color: $fund-primary;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+          }
+        }
+      }
+
+      .filter-select {
+        min-width: 170px;
+        padding: 0.65rem 1rem;
+        border: 1px solid $fund-border;
+        border-radius: 8px;
+        background: #f8fafc;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: $fund-text-main;
+        cursor: pointer;
+        box-sizing: border-box;
+        @include transition-smooth;
+
+        &:focus {
+          outline: none;
+          background: #ffffff;
+          border-color: $fund-primary;
+        }
+      }
+
+      .btn-create-campaign {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.65rem 1.25rem;
+        background: $fund-primary;
+        color: #ffffff;
+        font-weight: 600;
+        font-size: 0.9rem;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        @include transition-smooth;
+
+        &:hover {
+          background: $fund-primary-hover;
+          transform: translateY(-1px);
+        }
+      }
+    }
+
+    .sub-filters-row {
+      margin-top: 1rem;
+      padding-top: 0.85rem;
+      border-top: 1px solid #f1f5f9;
+      @include flex-between;
+
+      .tab-my-campaigns {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.85rem;
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: $fund-text-muted;
+        cursor: pointer;
+        @include transition-smooth;
+
+        &.active {
+          background: $fund-primary-light;
+          color: $fund-primary-active;
+          border-color: $fund-primary-border;
+        }
+
+        &:hover:not(.active) {
+          background: #f1f5f9;
+          color: $fund-text-main;
+        }
+      }
+
+      .total-count {
+        font-size: 0.825rem;
+        color: $fund-text-muted;
+      }
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Danh sách thẻ chiến dịch Grid (Màn 1)
+  // -----------------------------------------------------------------------
+  .campaigns-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+
+    .campaign-card {
+      background: $fund-bg-card;
+      border: 1px solid $fund-border;
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      @include card-shadow;
+      @include transition-smooth;
+
+      &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+      }
+
+      &.card-faded {
+        opacity: 0.65;
+        filter: grayscale(0.2);
+      }
+
+      .card-media {
+        position: relative;
+        width: 100%;
+        height: 180px;
+        background: #0f172a;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .status-badge {
+          position: absolute;
+          top: 0.75rem;
+          right: 0.75rem;
+          padding: 0.25rem 0.65rem;
+          border-radius: 6px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          letter-spacing: 0.02em;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+
+          &.status-approved {
+            background: #10b981;
+            color: #ffffff;
+          }
+          &.status-completed {
+            background: #2563eb;
+            color: #ffffff;
+          }
+          &.status-closed {
+            background: #64748b;
+            color: #ffffff;
+          }
+          &.status-pending {
+            background: #f59e0b;
+            color: #ffffff;
+          }
+          &.status-rejected {
+            background: #ef4444;
+            color: #ffffff;
+          }
+        }
+
+        .district-tag {
+          position: absolute;
+          bottom: 0.75rem;
+          left: 0.75rem;
+          background: rgba(15, 23, 42, 0.75);
+          backdrop-filter: blur(4px);
+          color: #ffffff;
+          padding: 0.25rem 0.55rem;
+          border-radius: 4px;
+          font-size: 0.725rem;
+          font-weight: 600;
+        }
+      }
+
+      .card-body {
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+
+        .card-title {
+          font-size: 1.05rem;
+          font-weight: 700;
+          color: $fund-text-dark;
+          margin: 0 0 0.5rem;
+          line-height: 1.4;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+
+        .card-creator {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.8rem;
+          color: $fund-text-muted;
+          margin-bottom: 1rem;
+
+          .creator-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: $fund-primary-light;
+            color: $fund-primary-active;
+            @include flex-center;
+            font-size: 0.75rem;
+            font-weight: 700;
+          }
+        }
+
+        // Thanh tiến độ gây quỹ
+        .progress-box {
+          margin-top: auto;
+          margin-bottom: 1rem;
+
+          .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+
+            .progress-bar-fill {
+              height: 100%;
+              background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+              border-radius: 999px;
+              @include transition-smooth;
+
+              &.completed {
+                background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+              }
+            }
+          }
+
+          .progress-metrics {
+            @include flex-between;
+            font-size: 0.85rem;
+
+            .donated-amount {
+              font-weight: 700;
+              color: $fund-text-dark;
+              font-variant-numeric: tabular-nums;
+            }
+
+            .target-amount {
+              color: $fund-text-muted;
+              font-size: 0.775rem;
+            }
+          }
+
+          .meta-sub-row {
+            @include flex-between;
+            margin-top: 0.35rem;
+            font-size: 0.75rem;
+            color: $fund-text-muted;
+
+            .percent-tag {
+              color: $fund-primary-active;
+              font-weight: 700;
+            }
+          }
+        }
+
+        .btn-view-detail {
+          width: 100%;
+          padding: 0.65rem 1rem;
+          background: #f8fafc;
+          border: 1px solid $fund-border;
+          border-radius: 8px;
+          color: $fund-text-main;
+          font-weight: 600;
+          font-size: 0.875rem;
+          cursor: pointer;
+          @include transition-smooth;
+
+          &:hover {
+            background: $fund-primary-light;
+            color: $fund-primary-active;
+            border-color: $fund-primary-border;
+          }
+        }
+      }
+    }
+  }
+
+  // Khối trống (Empty state)
+  .fundraiser-empty-box {
+    text-align: center;
+    padding: 4rem 1.5rem;
+    background: #ffffff;
+    border: 1px dashed $fund-border;
+    border-radius: 14px;
+    margin: 2rem 0;
+
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      display: inline-block;
+    }
+
+    h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: $fund-text-main;
+      margin: 0 0 0.5rem;
+    }
+
+    p {
+      font-size: 0.9rem;
+      color: $fund-text-muted;
+      margin: 0 0 1.5rem;
+    }
+
+    .btn-create-empty {
+      padding: 0.65rem 1.5rem;
+      background: $fund-primary;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+
+      &:hover {
+        background: $fund-primary-hover;
+      }
+    }
+  }
+
+  // Phân trang
+  .pagination-bar {
+    @include flex-center;
+    gap: 0.5rem;
+    margin-top: 2.5rem;
+
+    .btn-page {
+      padding: 0.4rem 0.8rem;
+      border: 1px solid $fund-border;
+      background: #ffffff;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      @include transition-smooth;
+
+      &:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      &:hover:not(:disabled) {
+        border-color: $fund-primary;
+        color: $fund-primary;
+      }
+    }
+
+    .page-info {
+      font-size: 0.85rem;
+      color: $fund-text-muted;
+      margin: 0 0.5rem;
+    }
+  }
+}
+
+// -------------------------------------------------------------------------
+// 2. Modals & Popups Chung (Màn 2, Màn 3, Màn 4, Màn 5, Màn 6)
+// -------------------------------------------------------------------------
+.fund-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  @include flex-center;
+  z-index: 9999;
+  padding: 1rem;
+  box-sizing: border-box;
+
+  .fund-modal-box {
+    background: #ffffff;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 780px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    @include modal-shadow;
+
+    &.size-large {
+      max-width: 960px;
+    }
+
+    &.size-small {
+      max-width: 460px;
+    }
+
+    .modal-header {
+      @include flex-between;
+      padding: 1.15rem 1.5rem;
+      border-bottom: 1px solid $fund-border;
+      background: #ffffff;
+
+      .header-title-group {
+        .popup-badge {
+          display: block;
+          font-size: 0.7rem;
+          font-weight: 800;
+          color: $fund-primary-active;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          margin-bottom: 0.2rem;
+        }
+
+        h2, h3 {
+          margin: 0;
+          font-size: 1.25rem;
+          font-weight: 800;
+          color: $fund-text-dark;
+        }
+      }
+
+      .btn-close-modal {
+        background: transparent;
+        border: none;
+        font-size: 1.5rem;
+        color: $fund-text-muted;
+        cursor: pointer;
+        padding: 0.25rem;
+        line-height: 1;
+        @include transition-smooth;
+
+        &:hover {
+          color: $fund-text-dark;
+        }
+      }
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+      flex: 1;
+
+      // 3 Khối theo chiều ngang (Màn 2)
+      .form-section-card {
+        background: #f8fafc;
+        border: 1px solid $fund-border;
+        border-radius: 10px;
+        padding: 1.25rem;
+        margin-bottom: 1.25rem;
+
+        .section-heading {
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: $fund-text-dark;
+          margin: 0 0 1rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .form-group {
+          margin-bottom: 1rem;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: $fund-text-main;
+            margin-bottom: 0.4rem;
+
+            .req {
+              color: $fund-danger;
+            }
+          }
+
+          input, textarea, select {
+            width: 100%;
+            padding: 0.65rem 0.85rem;
+            border: 1px solid $fund-border;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            background: #ffffff;
+            box-sizing: border-box;
+            @include transition-smooth;
+
+            &:focus {
+              outline: none;
+              border-color: $fund-primary;
+              box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+            }
+
+            &.has-error {
+              border-color: $fund-danger;
+              background: $fund-danger-light;
+            }
+
+            &:disabled {
+              background: #f1f5f9;
+              color: #94a3b8;
+              cursor: not-allowed;
+            }
+          }
+
+          .field-error-text {
+            font-size: 0.775rem;
+            color: $fund-danger;
+            margin-top: 0.35rem;
+          }
+
+          .char-counter {
+            font-size: 0.75rem;
+            color: $fund-text-muted;
+            text-align: right;
+            margin-top: 0.25rem;
+
+            &.overflow {
+              color: $fund-danger;
+              font-weight: 700;
+            }
+          }
+        }
+      }
+
+      // Khối chọn mức tiền nhanh (Màn 4)
+      .preset-amounts-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+
+        .btn-preset {
+          padding: 0.75rem 1rem;
+          background: #f8fafc;
+          border: 1px solid $fund-border;
+          border-radius: 8px;
+          font-weight: 700;
+          font-size: 0.95rem;
+          color: $fund-text-dark;
+          cursor: pointer;
+          @include transition-smooth;
+
+          &.active {
+            background: $fund-primary-light;
+            border-color: $fund-primary;
+            color: $fund-primary-active;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+          }
+
+          &:hover:not(.active) {
+            background: #f1f5f9;
+          }
+        }
+      }
+
+      // Top Box Báo Cáo Tài Chính 3 Khối (Màn 5)
+      .financial-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+
+        .summary-card {
+          padding: 1rem;
+          border-radius: 10px;
+          border: 1px solid transparent;
+
+          .sum-label {
+            font-size: 0.775rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.35rem;
+          }
+
+          .sum-value {
+            font-size: 1.25rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+          }
+
+          &.card-donated {
+            background: $fund-primary-light;
+            border-color: $fund-primary-border;
+            color: #065f46;
+          }
+
+          &.card-spent {
+            background: #fff7ed;
+            border-color: #fed7aa;
+            color: #9a3412;
+          }
+
+          &.card-balance {
+            background: $fund-blue-light;
+            border-color: $fund-blue-border;
+            color: #0369a1;
+          }
+        }
+      }
+    }
+
+    .modal-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid $fund-border;
+      background: #f8fafc;
+      @include flex-between;
+
+      .footer-actions-right {
+        display: flex;
+        gap: 0.75rem;
+        margin-left: auto;
+
+        .btn-cancel {
+          padding: 0.6rem 1.25rem;
+          background: #ffffff;
+          border: 1px solid $fund-border;
+          border-radius: 8px;
+          font-weight: 600;
+          color: $fund-text-main;
+          cursor: pointer;
+          @include transition-smooth;
+
+          &:hover {
+            background: #f1f5f9;
+          }
+        }
+
+        .btn-submit-primary {
+          padding: 0.6rem 1.5rem;
+          background: $fund-primary;
+          color: #ffffff;
+          border: none;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+          @include transition-smooth;
+
+          &:hover:not(:disabled) {
+            background: $fund-primary-hover;
+          }
+
+          &:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+          }
+        }
+
+        .btn-delete-confirm {
+          padding: 0.6rem 1.5rem;
+          background: $fund-danger;
+          color: #ffffff;
+          border: none;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+
+          &:hover {
+            background: $fund-danger-hover;
+          }
+        }
+
+        .btn-close-early-confirm {
+          padding: 0.6rem 1.5rem;
+          background: $fund-warning;
+          color: #ffffff;
+          border: none;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+
+          &:hover {
+            background: #d97706;
+          }
+        }
+      }
+    }
+  }
+}
+
+// -------------------------------------------------------------------------
+// 3. Tab System cho Màn 3 Chi Tiết
+// -------------------------------------------------------------------------
+.campaign-detail-tabs-nav {
+  display: flex;
+  border-bottom: 2px solid #f1f5f9;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+
+  .btn-tab {
+    padding: 0.75rem 1.25rem;
+    background: transparent;
+    border: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: $fund-text-muted;
+    cursor: pointer;
+    position: relative;
+    @include transition-smooth;
+
+    &.active {
+      color: $fund-primary-active;
+
+      &::after {
+        content: "";
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: $fund-primary;
+      }
+    }
+  }
+}
+
+// Lightbox phóng to ảnh chứng từ
+.proof-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.9);
+  backdrop-filter: blur(8px);
+  @include flex-center;
+  z-index: 10001;
+  padding: 1.5rem;
+
+  .lightbox-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+
+    img {
+      max-width: 100%;
+      max-height: 85vh;
+      border-radius: 8px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .btn-close-lightbox {
+      position: absolute;
+      top: -2.5rem;
+      right: 0;
+      background: transparent;
+      border: none;
+      color: #ffffff;
+      font-size: 2rem;
+      cursor: pointer;
+    }
+  }
+}
