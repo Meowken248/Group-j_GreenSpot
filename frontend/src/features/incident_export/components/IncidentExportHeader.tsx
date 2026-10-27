@@ -18,7 +18,7 @@ export const IncidentExportHeader: React.FC<IncidentExportHeaderProps> = ({
           </div>
           <div className="brand-titles">
             <h1>HỆ THỐNG GIÁM SÁT MÔI TRƯỜNG GREENSPOT</h1>
-            <span>Cổng trích xuất & Báo cáo số liệu sự cố đô thị (STT 47)</span>
+            <span>Cổng trích xuất & Báo cáo số liệu sự cố đô thị </span>
           </div>
         </div>
 

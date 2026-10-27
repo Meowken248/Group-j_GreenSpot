@@ -278,7 +278,7 @@ function App() {
           theme: nextTheme,
           language: updated.language,
           version: updated.version,
-        }).catch(() => {});
+        }).catch(() => { });
       }
     } catch {
       applyThemeToDocument(nextTheme);
@@ -883,7 +883,7 @@ function App() {
                   </button>
                 )}
 
-{hasRiskDashboardAccess && (
+                {hasRiskDashboardAccess && (
                   <button
                     type="button"
                     className={`panel-item-btn ${activeTab === "risk-dashboard" ? "active" : ""}`}
@@ -1116,7 +1116,7 @@ function App() {
                     <span className="panel-item-icon">📊</span>
                     <div className="panel-item-content">
                       <span className="panel-item-title">Xuất dữ liệu sự cố (Excel/PDF)</span>
-                      <span className="panel-item-desc">Trích xuất danh sách sự cố theo bộ lọc (STT 47)</span>
+                      <span className="panel-item-desc">Trích xuất danh sách sự cố theo bộ lọc </span>
                     </div>
                     {activeTab === "incident-export" && <span className="active-indicator">●</span>}
                   </button>
@@ -1128,7 +1128,7 @@ function App() {
           {/* NHÓM 4: TRA CỨU XỬ PHẠT (Nút trực tiếp) */}
           <button
             type="button"
-className={`nav-group-btn single-btn ${isPenaltiesActive ? "active" : ""}`}
+            className={`nav-group-btn single-btn ${isPenaltiesActive ? "active" : ""}`}
             onClick={() => navigateTo("penalties", "#penalties")}
             title="Tra cứu quy định xử phạt vi phạm hành chính (Nghị định 45/2022/NĐ-CP)"
           >
@@ -1137,7 +1137,7 @@ className={`nav-group-btn single-btn ${isPenaltiesActive ? "active" : ""}`}
           </button>
         </nav>
 
-{/* KHỐI PHẢI: TIỆN ÍCH & TÀI KHOẢN */}
+        {/* KHỐI PHẢI: TIỆN ÍCH & TÀI KHOẢN */}
         <div className="header-right-actions">
           {/* Nút Cứu hộ khẩn cấp Flood SOS (Nổi bật, trực tiếp cho người dân vùng ngập) */}
           <button
@@ -1223,9 +1223,8 @@ className={`nav-group-btn single-btn ${isPenaltiesActive ? "active" : ""}`}
                 </div>
                 {backendStatus && (
                   <div
-                    className={`status-pill ${
-                      backendStatus.startsWith("Online") ? "success" : "warning"
-                    }`}
+                    className={`status-pill ${backendStatus.startsWith("Online") ? "success" : "warning"
+                      }`}
                   >
                     {backendStatus}
                   </div>
@@ -1471,571 +1470,571 @@ className={`nav-group-btn single-btn ${isPenaltiesActive ? "active" : ""}`}
 
       {/* KHUNG NỘI DUNG CHÍNH (BÊN DƯỚI TOP HEADER) */}
       <main className="app-main-viewport">
-      {activeTab === "auth" ? (
-        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-          <AuthContainer
-            initialView={
-              authRedirectUrl === "/devices" || window.location.hash === "#devices"
-                ? "devices"
-                : authRedirectUrl
-                  ? "login"
-                  : undefined
-            }
-            redirectUrl={authRedirectUrl}
-            onLoginSuccess={handleLoginSuccess}
-            onExitAuth={handleExitAuth}
-          />
-        </div>
-      ) : activeTab === "report" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#090d16" }}>
-          <ReportContainer
-            onNavigateTab={(tab) => {
-              setActiveTab(tab as TabType);
-              window.location.hash = `#${tab}`;
-            }}
-            onRequireLogin={(redirectUrl) => {
-              setAuthRedirectUrl(redirectUrl);
-              setActiveTab("auth");
-              window.location.hash = "#login";
-            }}
-          />
-        </div>
-      ) : activeTab === "incidents" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#0b1120" }}>
-          <IncidentManagementContainer
-            onNavigateToMap={(_lat, _lng) => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
-          />
-        </div>
-      ) : activeTab === "profile" ? (
-        !currentUser ? (
+        {activeTab === "auth" ? (
           <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
             <AuthContainer
-              initialView="login"
-              redirectUrl="/profile"
-              onExitAuth={() => {
-                setActiveTab("map");
-                window.location.hash = "#map";
-              }}
+              initialView={
+                authRedirectUrl === "/devices" || window.location.hash === "#devices"
+                  ? "devices"
+                  : authRedirectUrl
+                    ? "login"
+                    : undefined
+              }
+              redirectUrl={authRedirectUrl}
+              onLoginSuccess={handleLoginSuccess}
+              onExitAuth={handleExitAuth}
             />
           </div>
-        ) : (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-            <ProfileContainer
-              onBackToMap={() => {
-                setActiveTab("map");
-                window.location.hash = "#map";
+        ) : activeTab === "report" ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#090d16" }}>
+            <ReportContainer
+              onNavigateTab={(tab) => {
+                setActiveTab(tab as TabType);
+                window.location.hash = `#${tab}`;
               }}
-              onNavigateToAqi={() => {
-                setActiveTab("dashboard");
-                window.location.hash = "#dashboard";
-              }}
-              onNavigateToAuth={() => {
-                setAuthRedirectUrl("/profile");
+              onRequireLogin={(redirectUrl) => {
+                setAuthRedirectUrl(redirectUrl);
                 setActiveTab("auth");
                 window.location.hash = "#login";
               }}
             />
           </div>
-        )
-      ) : activeTab === "rbac" ? (
-        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-          <RbacContainer
-            onExit={() => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
-            onNavigateToAuth={() => {
-              sessionStorage.setItem("greenspot_target_hash", "#rbac");
-              setAuthRedirectUrl("/rbac");
-              setActiveTab("auth");
-              window.location.hash = "#login";
-            }}
-          />
-        </div>
-      ) : activeTab === "friends" ? (
-        !currentUser ? (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-            <AuthContainer
-              initialView="login"
-              redirectUrl="/friends"
-              onExitAuth={() => {
+        ) : activeTab === "incidents" ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#0b1120" }}>
+            <IncidentManagementContainer
+              onNavigateToMap={(_lat, _lng) => {
                 setActiveTab("map");
                 window.location.hash = "#map";
               }}
             />
           </div>
-        ) : (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-            <FriendsContainer
-              currentUser={currentUser}
-              onBackToHome={() => {
-                setActiveTab("map");
-                window.location.hash = "#map";
-              }}
-              onNavigateToProfile={() => {
-                setActiveTab("profile");
-                window.location.hash = "#profile";
-              }}
-            />
-          </div>
-        )
-      ) : activeTab === "users" ? (
-        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-          <UserManagementContainer
-            onBackToHome={() => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
-            onNavigateToAuth={() => {
-              sessionStorage.setItem("greenspot_target_hash", "#users");
-              setAuthRedirectUrl("/users");
-              setActiveTab("auth");
-              window.location.hash = "#login";
-            }}
-          />
-        </div>
-      ) : activeTab === "dedup" ? (
-        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-          <DeduplicationDashboard
-            currentUser={currentUser}
-            onBackToHome={() => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
-          />
-        </div>
-      ) : activeTab === "rewards" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
-          <RewardsContainer
-            onBackToHome={() => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
-            onNavigateToAuth={() => {
-              const currentH = window.location.hash || "#wallet";
-              sessionStorage.setItem("greenspot_target_hash", currentH);
-              setAuthRedirectUrl(currentH);
-              setActiveTab("auth");
-              window.location.hash = "#login";
-            }}
-          />
-        </div>
-      ) : activeTab === "challenges" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
-          <WeeklyChallengesContainer
-            onBackToHome={() => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
-            onNavigateToAuth={() => {
-              sessionStorage.setItem("greenspot_target_hash", "#challenges");
-              setAuthRedirectUrl("/challenges");
-              setActiveTab("auth");
-              window.location.hash = "#login";
-            }}
-            onNavigateToWallet={() => {
-              setActiveTab("rewards");
-              window.location.hash = "#wallet";
-            }}
-          />
-        </div>
-      ) : activeTab === "audit-logs" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
-          <AuditLogContainer
-            onBackToHome={() => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
-            onNavigateToAuth={() => {
-              sessionStorage.setItem("greenspot_target_hash", "#audit-logs");
-              setAuthRedirectUrl("/audit-logs");
-              setActiveTab("auth");
-              window.location.hash = "#login";
-            }}
-          />
-        </div>
-      ) : activeTab === "handbook" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
-          <WasteHandbookContainer
-            onBackToHome={() => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
-            onNavigateToMap={(_facilityType) => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
-          />
-        </div>
-      ) : activeTab === "leaderboard" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
-          <LeaderboardContainer
-            onNavigateLogin={() => {
-              sessionStorage.setItem("greenspot_target_hash", "#leaderboard");
-              setAuthRedirectUrl("/leaderboard");
-              setActiveTab("auth");
-              window.location.hash = "#login";
-            }}
-            onNavigateHeatmap={(_districtCode) => {
-              setActiveTab("heatmap");
-              window.location.hash = "#heatmap";
-            }}
-          />
-        </div>
-      ) : activeTab === "heatmap" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#0b0f19" }}>
-          <MultiModeHeatmapContainer
-            onNavigateDistrictReport={(_districtCode) => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
-          />
-        </div>
-      ) : activeTab === "qr-scan" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
-          <QRScanContainer
-            onBackToHome={() => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
-            onNavigateWallet={() => {
-              setActiveTab("rewards");
-              window.location.hash = "#wallet";
-            }}
-            onNavigateLogin={() => {
-              sessionStorage.setItem("greenspot_target_hash", "#qr-scan");
-              setAuthRedirectUrl("/qr-scan");
-              setActiveTab("auth");
-              window.location.hash = "#login";
-            }}
-          />
-        </div>
-      ) : activeTab === "lucky-wheel" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
-          <LuckyWheelContainer
-            onBackToHome={() => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
-            onNavigateLogin={() => {
-              sessionStorage.setItem("greenspot_target_hash", "#lucky-wheel");
-              setAuthRedirectUrl("/lucky-wheel");
-              setActiveTab("auth");
-              window.location.hash = "#login";
-            }}
-          />
-        </div>
-      ) : activeTab === "milestone" ? (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
-          <MilestoneContainer
-            onBackToHome={() => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
-            onNavigateLogin={() => {
-              sessionStorage.setItem("greenspot_target_hash", "#milestone");
-              setAuthRedirectUrl("/milestone");
-              setActiveTab("auth");
-              window.location.hash = "#login";
-            }}
-          />
-        </div>
-      ) : activeTab === "triage" ? (
-        <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
-          <TriageAppDashboard />
-        </div>
-      ) : activeTab === "navigation" ? (
-        <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
-          <FloodNavigationContainer />
-        </div>
-      ) : activeTab === "risk-dashboard" ? (
-        !currentUser ? (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-            <AuthContainer
-              initialView="login"
-              redirectUrl="/risk-dashboard"
-              onExitAuth={() => {
-                setActiveTab("map");
-                window.location.hash = "#map";
-              }}
-            />
-          </div>
-        ) : (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
-            <RiskDashboardContainer
-              currentUser={currentUser}
-              onBackToHome={() => {
-                setActiveTab("map");
-                window.location.hash = "#map";
-              }}
-              onNavigateToMap={(lat, lng, districtName) => {
-                setActiveTab("map");
-                window.location.hash = `#map?lat=${lat}&lng=${lng}&district=${encodeURIComponent(districtName)}`;
-              }}
-            />
-          </div>
-        )
-      ) : activeTab === "dispatch" ? (
-        !currentUser ? (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-            <AuthContainer
-              initialView="login"
-              redirectUrl="/dispatch"
-              onExitAuth={() => {
-                setActiveTab("map");
-                window.location.hash = "#map";
-              }}
-            />
-          </div>
-        ) : (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
-            <DispatchContainer />
-          </div>
-        )
-      ) : activeTab === "hotspots" ? (
-        !currentUser ? (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-            <AuthContainer
-              initialView="login"
-              redirectUrl="/hotspots"
-              onExitAuth={() => {
-                setActiveTab("map");
-                window.location.hash = "#map";
-              }}
-            />
-          </div>
-        ) : (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
-            <HotspotContainer
-              currentUser={currentUser}
-              onNavigateToDispatch={(prefill, activeOrderId) => {
-                if (activeOrderId) {
-                  setActiveTab("dispatch");
-                  window.location.hash = `#dispatch?order_id=${encodeURIComponent(activeOrderId)}`;
-                } else {
-                  if (prefill) {
-                    try {
-                      localStorage.setItem("greenspot_prefill_dispatch", JSON.stringify(prefill));
-                    } catch {
-                      // Ignored
-                    }
-                  }
-                  setActiveTab("dispatch");
-                  window.location.hash = "#dispatch?action=create";
-                }
-              }}
-            />
-          </div>
-        )
-      ) : activeTab === "settings" ? (
-        !currentUser ? (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-            <AuthContainer
-              initialView="login"
-              redirectUrl="/settings"
-              onExitAuth={() => {
-                setActiveTab("map");
-                window.location.hash = "#map";
-              }}
-            />
-          </div>
-        ) : (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-            <SettingsContainer
-              currentUser={currentUser}
-              onBackToMap={() => {
-                setActiveTab("map");
-                window.location.hash = "#map";
-              }}
-              onNavigateToAuth={() => {
-                setAuthRedirectUrl("/settings");
-                setActiveTab("auth");
-                window.location.hash = "#login";
-              }}
-            />
-          </div>
-        )
-      ) : activeTab === "dashboard" ? (
-        !currentUser ? (
-          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
-            <AuthContainer
-              initialView="login"
-              redirectUrl="/dashboard"
-              onExitAuth={() => {
-                setActiveTab("map");
-                window.location.hash = "#map";
-              }}
-            />
-          </div>
-        ) : (
-          <ModulePermissionGuard
-            moduleCode="AIR_QUALITY"
-            moduleName="Chỉ số chất lượng không khí AQI & Khí hậu"
-          >
-            <AirQualityDashboard
-              onBackToMap={() => {
-                setActiveTab("map");
-                window.location.hash = "#map";
-              }}
-            />
-          </ModulePermissionGuard>
-        )
-      ) : activeTab === "voice" ? (
-        !currentUser ? (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-            <AuthContainer
-              initialView="login"
-              redirectUrl="/voice"
-              onExitAuth={() => {
-                setActiveTab("map");
-                window.location.hash = "#map";
-              }}
-            />
-          </div>
-        ) : (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-            <VoiceAssistant
-              onClose={() => {
-                setActiveTab("map");
-                window.location.hash = "#map";
-              }}
-              onNavigateToFeature={(target, payload) => {
-                if (target === "dashboard_aqi") {
-                  setActiveTab("dashboard");
-                  window.location.hash = "#dashboard";
-                } else if (target === "map_flood" || target === "navigation") {
-                  if (payload) {
-                    try {
-                      localStorage.setItem("greenspot_nav_destination", JSON.stringify(payload));
-                    } catch {}
-                  }
-                  setActiveTab("navigation");
-                  window.location.hash = "#navigation";
-                } else if (target === "dispatch" || target === "operations_dispatch") {
-                  setActiveTab("dispatch");
-                  window.location.hash = "#dispatch";
-                } else if (target === "risk_dashboard" || target === "urban_risk") {
-                  setActiveTab("risk-dashboard");
-                  window.location.hash = "#risk-dashboard";
-                } else if (target === "hotspots") {
-                  setActiveTab("hotspots");
-                  window.location.hash = "#hotspots";
-                } else if (target === "dedup") {
-                  setActiveTab("dedup");
-                  window.location.hash = "#dedup";
-                } else if (target === "/report-incident") {
-                  setActiveTab("triage");
-                  window.location.hash = "#triage";
-                } else if (target === "/wallet") {
-                  setActiveTab("profile");
-                  window.location.hash = "#profile";
-                } else {
+        ) : activeTab === "profile" ? (
+          !currentUser ? (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+              <AuthContainer
+                initialView="login"
+                redirectUrl="/profile"
+                onExitAuth={() => {
                   setActiveTab("map");
                   window.location.hash = "#map";
-                }
+                }}
+              />
+            </div>
+          ) : (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+              <ProfileContainer
+                onBackToMap={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+                onNavigateToAqi={() => {
+                  setActiveTab("dashboard");
+                  window.location.hash = "#dashboard";
+                }}
+                onNavigateToAuth={() => {
+                  setAuthRedirectUrl("/profile");
+                  setActiveTab("auth");
+                  window.location.hash = "#login";
+                }}
+              />
+            </div>
+          )
+        ) : activeTab === "rbac" ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <RbacContainer
+              onExit={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              onNavigateToAuth={() => {
+                sessionStorage.setItem("greenspot_target_hash", "#rbac");
+                setAuthRedirectUrl("/rbac");
+                setActiveTab("auth");
+                window.location.hash = "#login";
               }}
             />
           </div>
-        )
-      ) : activeTab === "penalty-reports" ? (
-        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-          <ModulePermissionGuard
-            moduleCode="CITIZEN_FEEDBACK"
-            moduleName="Quản lý Phản ánh Vi phạm Môi trường"
-          >
-            <PenaltyReportsDashboard
-              currentUser={currentUser}
-              onBackToPenalties={() => {
-                setActiveTab("penalties");
-                window.location.hash = "#penalties";
+        ) : activeTab === "friends" ? (
+          !currentUser ? (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+              <AuthContainer
+                initialView="login"
+                redirectUrl="/friends"
+                onExitAuth={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+              />
+            </div>
+          ) : (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+              <FriendsContainer
+                currentUser={currentUser}
+                onBackToHome={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+                onNavigateToProfile={() => {
+                  setActiveTab("profile");
+                  window.location.hash = "#profile";
+                }}
+              />
+            </div>
+          )
+        ) : activeTab === "users" ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <UserManagementContainer
+              onBackToHome={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              onNavigateToAuth={() => {
+                sessionStorage.setItem("greenspot_target_hash", "#users");
+                setAuthRedirectUrl("/users");
+                setActiveTab("auth");
+                window.location.hash = "#login";
               }}
             />
-          </ModulePermissionGuard>
-        </div>
-      ) : activeTab === "penalties" ? (
-        <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-          <PenaltyLookupContainer
-            currentUser={currentUser}
-            onNavigateToAuth={() => {
-              setAuthRedirectUrl("/penalties");
-              setActiveTab("auth");
-              window.location.hash = "#login";
-            }}
-            onNavigateToReport={() => {
-              setActiveTab("report");
-              window.location.hash = "#report";
-            }}
-          />
-        </div>
-      ) : activeTab === "posts" ? (
-        !currentUser ? (
+          </div>
+        ) : activeTab === "dedup" ? (
           <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-            <AuthContainer
-              initialView="login"
-              redirectUrl="/posts"
-              onExitAuth={() => {
+            <DeduplicationDashboard
+              currentUser={currentUser}
+              onBackToHome={() => {
                 setActiveTab("map");
                 window.location.hash = "#map";
               }}
             />
           </div>
-        ) : (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
-            <PostCreatorContainer
-              onNavigateHome={() => {
+        ) : activeTab === "rewards" ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <RewardsContainer
+              onBackToHome={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              onNavigateToAuth={() => {
+                const currentH = window.location.hash || "#wallet";
+                sessionStorage.setItem("greenspot_target_hash", currentH);
+                setAuthRedirectUrl(currentH);
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+            />
+          </div>
+        ) : activeTab === "challenges" ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <WeeklyChallengesContainer
+              onBackToHome={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              onNavigateToAuth={() => {
+                sessionStorage.setItem("greenspot_target_hash", "#challenges");
+                setAuthRedirectUrl("/challenges");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+              onNavigateToWallet={() => {
+                setActiveTab("rewards");
+                window.location.hash = "#wallet";
+              }}
+            />
+          </div>
+        ) : activeTab === "audit-logs" ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <AuditLogContainer
+              onBackToHome={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              onNavigateToAuth={() => {
+                sessionStorage.setItem("greenspot_target_hash", "#audit-logs");
+                setAuthRedirectUrl("/audit-logs");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+            />
+          </div>
+        ) : activeTab === "handbook" ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <WasteHandbookContainer
+              onBackToHome={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              onNavigateToMap={(_facilityType) => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : activeTab === "leaderboard" ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <LeaderboardContainer
+              onNavigateLogin={() => {
+                sessionStorage.setItem("greenspot_target_hash", "#leaderboard");
+                setAuthRedirectUrl("/leaderboard");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+              onNavigateHeatmap={(_districtCode) => {
+                setActiveTab("heatmap");
+                window.location.hash = "#heatmap";
+              }}
+            />
+          </div>
+        ) : activeTab === "heatmap" ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#0b0f19" }}>
+            <MultiModeHeatmapContainer
+              onNavigateDistrictReport={(_districtCode) => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
+          </div>
+        ) : activeTab === "qr-scan" ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <QRScanContainer
+              onBackToHome={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              onNavigateWallet={() => {
+                setActiveTab("rewards");
+                window.location.hash = "#wallet";
+              }}
+              onNavigateLogin={() => {
+                sessionStorage.setItem("greenspot_target_hash", "#qr-scan");
+                setAuthRedirectUrl("/qr-scan");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+            />
+          </div>
+        ) : activeTab === "lucky-wheel" ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <LuckyWheelContainer
+              onBackToHome={() => {
                 setActiveTab("map");
                 window.location.hash = "#map";
               }}
               onNavigateLogin={() => {
-                setAuthRedirectUrl("/posts");
+                sessionStorage.setItem("greenspot_target_hash", "#lucky-wheel");
+                setAuthRedirectUrl("/lucky-wheel");
                 setActiveTab("auth");
                 window.location.hash = "#login";
               }}
-              onViewCreatedPost={(_postId) => {
-                setActiveTab("profile");
-                window.location.hash = "#profile";
+            />
+          </div>
+        ) : activeTab === "milestone" ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <MilestoneContainer
+              onBackToHome={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              onNavigateLogin={() => {
+                sessionStorage.setItem("greenspot_target_hash", "#milestone");
+                setAuthRedirectUrl("/milestone");
+                setActiveTab("auth");
+                window.location.hash = "#login";
               }}
             />
           </div>
-        )
-      ) : activeTab === "emergency-alert" || activeTab === "safety-check" ? (
-        <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
-          <EmergencyAlertContainer
-            initialView={activeTab === "safety-check" ? "SAFETY_CHECK" : "CONSOLE"}
-            currentUser={currentUser}
-            onNavigateHome={() => {
-              setActiveTab("map");
-              window.location.hash = "#map";
-            }}
-            onNavigateFeed={() => {
-              setActiveTab("posts");
-              window.location.hash = "#create-post";
-            }}
-            onNavigateSafeRoute={() => {
-              setActiveTab("navigation");
-              window.location.hash = "#navigation";
-            }}
-          />
-        </div>
-      ) : activeTab === "flood-sos" ? (
-        <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
-          <FloodSosContainer />
-        </div>
-      ) : activeTab === "incident-export" ? (
-        <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
-          <IncidentExportContainer />
-        </div>
-      ) : (
-        <ModulePermissionGuard
-          moduleCode="GIS_MAP"
-          moduleName="Bản đồ số WebGIS"
-        >
-          <EcoMap />
-        </ModulePermissionGuard>
-      )}
+        ) : activeTab === "triage" ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+            <TriageAppDashboard />
+          </div>
+        ) : activeTab === "navigation" ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+            <FloodNavigationContainer />
+          </div>
+        ) : activeTab === "risk-dashboard" ? (
+          !currentUser ? (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+              <AuthContainer
+                initialView="login"
+                redirectUrl="/risk-dashboard"
+                onExitAuth={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+              />
+            </div>
+          ) : (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+              <RiskDashboardContainer
+                currentUser={currentUser}
+                onBackToHome={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+                onNavigateToMap={(lat, lng, districtName) => {
+                  setActiveTab("map");
+                  window.location.hash = `#map?lat=${lat}&lng=${lng}&district=${encodeURIComponent(districtName)}`;
+                }}
+              />
+            </div>
+          )
+        ) : activeTab === "dispatch" ? (
+          !currentUser ? (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+              <AuthContainer
+                initialView="login"
+                redirectUrl="/dispatch"
+                onExitAuth={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+              />
+            </div>
+          ) : (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+              <DispatchContainer />
+            </div>
+          )
+        ) : activeTab === "hotspots" ? (
+          !currentUser ? (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+              <AuthContainer
+                initialView="login"
+                redirectUrl="/hotspots"
+                onExitAuth={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+              />
+            </div>
+          ) : (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+              <HotspotContainer
+                currentUser={currentUser}
+                onNavigateToDispatch={(prefill, activeOrderId) => {
+                  if (activeOrderId) {
+                    setActiveTab("dispatch");
+                    window.location.hash = `#dispatch?order_id=${encodeURIComponent(activeOrderId)}`;
+                  } else {
+                    if (prefill) {
+                      try {
+                        localStorage.setItem("greenspot_prefill_dispatch", JSON.stringify(prefill));
+                      } catch {
+                        // Ignored
+                      }
+                    }
+                    setActiveTab("dispatch");
+                    window.location.hash = "#dispatch?action=create";
+                  }
+                }}
+              />
+            </div>
+          )
+        ) : activeTab === "settings" ? (
+          !currentUser ? (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+              <AuthContainer
+                initialView="login"
+                redirectUrl="/settings"
+                onExitAuth={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+              />
+            </div>
+          ) : (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+              <SettingsContainer
+                currentUser={currentUser}
+                onBackToMap={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+                onNavigateToAuth={() => {
+                  setAuthRedirectUrl("/settings");
+                  setActiveTab("auth");
+                  window.location.hash = "#login";
+                }}
+              />
+            </div>
+          )
+        ) : activeTab === "dashboard" ? (
+          !currentUser ? (
+            <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+              <AuthContainer
+                initialView="login"
+                redirectUrl="/dashboard"
+                onExitAuth={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+              />
+            </div>
+          ) : (
+            <ModulePermissionGuard
+              moduleCode="AIR_QUALITY"
+              moduleName="Chỉ số chất lượng không khí AQI & Khí hậu"
+            >
+              <AirQualityDashboard
+                onBackToMap={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+              />
+            </ModulePermissionGuard>
+          )
+        ) : activeTab === "voice" ? (
+          !currentUser ? (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+              <AuthContainer
+                initialView="login"
+                redirectUrl="/voice"
+                onExitAuth={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+              />
+            </div>
+          ) : (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+              <VoiceAssistant
+                onClose={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+                onNavigateToFeature={(target, payload) => {
+                  if (target === "dashboard_aqi") {
+                    setActiveTab("dashboard");
+                    window.location.hash = "#dashboard";
+                  } else if (target === "map_flood" || target === "navigation") {
+                    if (payload) {
+                      try {
+                        localStorage.setItem("greenspot_nav_destination", JSON.stringify(payload));
+                      } catch { }
+                    }
+                    setActiveTab("navigation");
+                    window.location.hash = "#navigation";
+                  } else if (target === "dispatch" || target === "operations_dispatch") {
+                    setActiveTab("dispatch");
+                    window.location.hash = "#dispatch";
+                  } else if (target === "risk_dashboard" || target === "urban_risk") {
+                    setActiveTab("risk-dashboard");
+                    window.location.hash = "#risk-dashboard";
+                  } else if (target === "hotspots") {
+                    setActiveTab("hotspots");
+                    window.location.hash = "#hotspots";
+                  } else if (target === "dedup") {
+                    setActiveTab("dedup");
+                    window.location.hash = "#dedup";
+                  } else if (target === "/report-incident") {
+                    setActiveTab("triage");
+                    window.location.hash = "#triage";
+                  } else if (target === "/wallet") {
+                    setActiveTab("profile");
+                    window.location.hash = "#profile";
+                  } else {
+                    setActiveTab("map");
+                    window.location.hash = "#map";
+                  }
+                }}
+              />
+            </div>
+          )
+        ) : activeTab === "penalty-reports" ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <ModulePermissionGuard
+              moduleCode="CITIZEN_FEEDBACK"
+              moduleName="Quản lý Phản ánh Vi phạm Môi trường"
+            >
+              <PenaltyReportsDashboard
+                currentUser={currentUser}
+                onBackToPenalties={() => {
+                  setActiveTab("penalties");
+                  window.location.hash = "#penalties";
+                }}
+              />
+            </ModulePermissionGuard>
+          </div>
+        ) : activeTab === "penalties" ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+            <PenaltyLookupContainer
+              currentUser={currentUser}
+              onNavigateToAuth={() => {
+                setAuthRedirectUrl("/penalties");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+              onNavigateToReport={() => {
+                setActiveTab("report");
+                window.location.hash = "#report";
+              }}
+            />
+          </div>
+        ) : activeTab === "posts" ? (
+          !currentUser ? (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+              <AuthContainer
+                initialView="login"
+                redirectUrl="/posts"
+                onExitAuth={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+              />
+            </div>
+          ) : (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+              <PostCreatorContainer
+                onNavigateHome={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+                onNavigateLogin={() => {
+                  setAuthRedirectUrl("/posts");
+                  setActiveTab("auth");
+                  window.location.hash = "#login";
+                }}
+                onViewCreatedPost={(_postId) => {
+                  setActiveTab("profile");
+                  window.location.hash = "#profile";
+                }}
+              />
+            </div>
+          )
+        ) : activeTab === "emergency-alert" || activeTab === "safety-check" ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+            <EmergencyAlertContainer
+              initialView={activeTab === "safety-check" ? "SAFETY_CHECK" : "CONSOLE"}
+              currentUser={currentUser}
+              onNavigateHome={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+              onNavigateFeed={() => {
+                setActiveTab("posts");
+                window.location.hash = "#create-post";
+              }}
+              onNavigateSafeRoute={() => {
+                setActiveTab("navigation");
+                window.location.hash = "#navigation";
+              }}
+            />
+          </div>
+        ) : activeTab === "flood-sos" ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+            <FloodSosContainer />
+          </div>
+        ) : activeTab === "incident-export" ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+            <IncidentExportContainer />
+          </div>
+        ) : (
+          <ModulePermissionGuard
+            moduleCode="GIS_MAP"
+            moduleName="Bản đồ số WebGIS"
+          >
+            <EcoMap />
+          </ModulePermissionGuard>
+        )}
       </main>
 
       {/* NÚT TRỢ LÝ GIỌNG NÓI NHANH NỔI (CHỈ HIỂN THỊ KHI ĐÃ ĐĂNG NHẬP VÀ KHÔNG Ở TAB VOICE) */}
