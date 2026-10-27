@@ -11,9 +11,9 @@
 
 1. [PHẦN 1: KIẾN TRÚC TỔNG QUAN & CLEAN ARCHITECTURE 6 TẦNG](#phần-1-kiến-trúc-tổng-quan--clean-architecture-6-tầng)
 2. [PHẦN 2: ĐẶC TẢ CHI TIẾT 3 MÀN HÌNH NGHIỆP VỤ & ÁNH XẠ MÃ NGUỒN](#phần-2-đặc-tả-chi-tiết-3-màn-hình-nghiệp-vụ--ánh-xạ-mã-nguồn)
-   - [2.1. Màn 1/3: Chi Tiết Sự Cố & Tóm Tắt AI (3 Khối: THÔNG TIN SỰ CỐ, TÓM TẮT AI, ƯU TIÊN)](#21-màn-13-chi-tiết-sự-cố--tóm-tắt-ai-3-khối-thông-tin-sự-cố-tóm-tắt-ai-ưu-tiên)
-   - [2.2. Màn 2/3: Bảng Giải Trình Căn Cứ Ra Quyết Định Của Thuật Toán AI (XAI) (2 Khối: PHÂN TÍCH, QUYẾT ĐỊNH)](#22-màn-23-bảng-giải-trình-căn-cứ-ra-quyết-định-của-thuật-toán-ai-xai-2-khối-phân-tích-quyết-định)
-   - [2.3. Màn 3/3: Popup Đổi Mức Ưu Tiên (Human-in-the-Loop) & Lối Tắt Điều Hướng STT 43](#23-màn-33-popup-đổi-mức-ưu-tiên-human-in-the-loop--lối-tắt-điều-hướng-stt-43)
+   - [2.1.  Chi Tiết Sự Cố & Tóm Tắt AI (3 Khối: THÔNG TIN SỰ CỐ, TÓM TẮT AI, ƯU TIÊN)](#21-màn-13-chi-tiết-sự-cố--tóm-tắt-ai-3-khối-thông-tin-sự-cố-tóm-tắt-ai-ưu-tiên)
+   - [2.2.  Bảng Giải Trình Căn Cứ Ra Quyết Định Của Thuật Toán AI (XAI) (2 Khối: PHÂN TÍCH, QUYẾT ĐỊNH)](#22-màn-23-bảng-giải-trình-căn-cứ-ra-quyết-định-của-thuật-toán-ai-xai-2-khối-phân-tích-quyết-định)
+   - [2.3.  Popup Đổi Mức Ưu Tiên (Human-in-the-Loop) & Lối Tắt Điều Hướng STT 43](#23-màn-33-popup-đổi-mức-ưu-tiên-human-in-the-loop--lối-tắt-điều-hướng-stt-43)
 3. [PHẦN 3: CHI TIẾT MÃ NGUỒN CỐT LÕI PHÍA BACKEND](#phần-3-chi-tiết-mã-nguồn-cốt-lõi-phía-backend)
    - [3.1. Domain Entities & Database Models](#31-domain-entities--database-models)
    - [3.2. CSDL Migration (Alembic)](#32-csdl-migration-alembic)
@@ -75,7 +75,7 @@ BackEnd/app/
 
 # PHẦN 2: ĐẶC TẢ CHI TIẾT 3 MÀN HÌNH NGHIỆP VỤ & ÁNH XẠ MÃ NGUỒN
 
-### 2.1. Màn 1/3: Chi Tiết Sự Cố & Tóm Tắt AI (3 Khối: THÔNG TIN SỰ CỐ, TÓM TẮT AI, ƯU TIÊN)
+### 2.1.  Chi Tiết Sự Cố & Tóm Tắt AI (3 Khối: THÔNG TIN SỰ CỐ, TÓM TẮT AI, ƯU TIÊN)
 - **Đối tượng sử dụng:** Cán bộ tiếp nhận thông tin, Cán bộ thẩm định hiện trường, Điều phối viên.
 - **Mã nguồn FrontEnd:** [IncidentTriageView.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/triage/components/IncidentTriageView.tsx#L195-L353) (Dòng 195–353).
 - **Mã nguồn BackEnd:**
@@ -106,7 +106,7 @@ BackEnd/app/
 
 ---
 
-### 2.2. Màn 2/3: Bảng Giải Trình Căn Cứ Ra Quyết Định Của Thuật Toán AI (XAI) (2 Khối: PHÂN TÍCH, QUYẾT ĐỊNH)
+### 2.2.  Bảng Giải Trình Căn Cứ Ra Quyết Định Của Thuật Toán AI (XAI) (2 Khối: PHÂN TÍCH, QUYẾT ĐỊNH)
 - **Đối tượng sử dụng:** Cán bộ thẩm định, Điều phối viên cần đối soát cơ sở tính toán khoa học trước khi phê duyệt.
 - **Mã nguồn FrontEnd:** [IncidentTriageView.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/triage/components/IncidentTriageView.tsx#L359-L479) (Dòng 359–479).
 - **Mã nguồn BackEnd:**
@@ -129,7 +129,7 @@ BackEnd/app/
 
 ---
 
-### 2.3. Màn 3/3: Popup Đổi Mức Ưu Tiên (Human-in-the-Loop) & Lối Tắt Điều Hướng STT 43
+### 2.3.  Popup Đổi Mức Ưu Tiên (Human-in-the-Loop) & Lối Tắt Điều Hướng STT 43
 - **Đối tượng sử dụng:** Cán bộ muốn can thiệp, điều chỉnh mức ưu tiên theo thực tế hiện trường.
 - **Mã nguồn FrontEnd:** [IncidentTriageView.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/triage/components/IncidentTriageView.tsx#L485-L556) (Dòng 485–556).
 - **Mã nguồn BackEnd:**
@@ -409,9 +409,9 @@ BackEnd/app/
 | **15** | Backend Pytest (12 tests) | [test_ai_triage.py](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/triage/test_ai_triage.py) | L21 - L281 | Bộ kiểm thử tự động 12 tiêu chí Clean Architecture & OCC |
 | **16** | TypeScript Data Contracts | [index.ts](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/triage/types/index.ts) | L1 - L138 | Type definitions cho STT 39 và STT 40 |
 | **17** | Axios API Client | [triageService.ts](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/triage/services/triageService.ts) | L13 - L56 | 6 phương thức kết nối backend cho STT 39 |
-| **18** | Giao diện Màn 1/3: Tóm tắt AI | [IncidentTriageView.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/triage/components/IncidentTriageView.tsx) | L195 - L353 | 3 Khối: THÔNG TIN SỰ CỐ, TÓM TẮT AI (Tạo lại 2s), ƯU TIÊN |
-| **19** | Giao diện Màn 2/3: Giải trình XAI | [IncidentTriageView.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/triage/components/IncidentTriageView.tsx) | L359 - L479 | 2 Khối: PHÂN TÍCH (Công thức TPS + Risk factors), QUYẾT ĐỊNH |
-| **20** | Giao diện Màn 3/3: Popup Human | [IncidentTriageView.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/triage/components/IncidentTriageView.tsx) | L485 - L556 | Modal Popup ĐỔI MỨC ƯU TIÊN, ô ghi chú $\le 200$ ký tự, phím Esc |
+| **18** | Giao diện  Tóm tắt AI | [IncidentTriageView.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/triage/components/IncidentTriageView.tsx) | L195 - L353 | 3 Khối: THÔNG TIN SỰ CỐ, TÓM TẮT AI (Tạo lại 2s), ƯU TIÊN |
+| **19** | Giao diện  Giải trình XAI | [IncidentTriageView.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/triage/components/IncidentTriageView.tsx) | L359 - L479 | 2 Khối: PHÂN TÍCH (Công thức TPS + Risk factors), QUYẾT ĐỊNH |
+| **20** | Giao diện  Popup Human | [IncidentTriageView.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/triage/components/IncidentTriageView.tsx) | L485 - L556 | Modal Popup ĐỔI MỨC ƯU TIÊN, ô ghi chú $\le 200$ ký tự, phím Esc |
 | **21** | Lối tắt Điều phối sang STT 43 | [IncidentTriageView.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/triage/components/IncidentTriageView.tsx) | L89 - L129 | Prefill `localStorage` và điều hướng URL hash `#dispatch` |
 | **22** | Header & Footer Phân Hệ | [TriageHeaderFooter.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/triage/components/TriageHeaderFooter.tsx) | L1 - L70 | Brand icon, Tab switch Triage/Spatial, chuông báo, footer |
 | **23** | Trang Quản Trị Trung Tâm | [TriageAppDashboard.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/triage/pages/TriageAppDashboard.tsx) | L1 - L154 | Thanh chọn sự cố, xử lý loading/error, nạp dữ liệu chi tiết |

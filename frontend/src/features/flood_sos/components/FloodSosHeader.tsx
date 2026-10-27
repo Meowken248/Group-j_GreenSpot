@@ -15,7 +15,14 @@ export const FloodSosHeader: React.FC<FloodSosHeaderProps> = ({
   return (
     <header className="sos-header" data-testid="sos-header">
       <div className="header-content">
-        <div className="brand">
+        <div
+          className="brand"
+          style={{ cursor: "pointer" }}
+          onClick={() => {
+            window.location.hash = "#map";
+          }}
+          title="Quay lại Bản đồ số WebGIS TP.HCM"
+        >
           <div className="brand-logo" aria-label="Logo Cứu hộ khẩn cấp">
             🚨
           </div>

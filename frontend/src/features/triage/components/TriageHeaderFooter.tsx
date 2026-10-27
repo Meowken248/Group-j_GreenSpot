@@ -13,7 +13,14 @@ export const TriageHeader: React.FC<HeaderProps> = ({
 }) => {
   return (
     <header className="triage-global-header">
-      <div className="header-branding">
+      <div
+        className="header-branding"
+        style={{ cursor: "pointer" }}
+        onClick={() => {
+          window.location.hash = "#map";
+        }}
+        title="Quay lại Bản đồ số WebGIS TP.HCM"
+      >
         <div className="brand-icon">🌱</div>
         <div className="brand-title">
           Green<span>Spot</span> Admin

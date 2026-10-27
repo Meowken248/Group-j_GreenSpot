@@ -410,7 +410,7 @@ export const Screen6FieldTracking: React.FC<Screen6FieldTrackingProps> = ({
             }}
             data-testid="btn-nav-flood-safe"
             style={{ background: "#0284c7", color: "#ffffff", borderColor: "#0369a1" }}
-            title="Mở Bản đồ né ngập (STT 41) dẫn đường an toàn cho đội cơ động đến hiện trường"
+            title="Mở Bản đồ né ngập dẫn đường an toàn cho đội cơ động đến hiện trường"
           >
             <span>🌊</span>
             <span>Chỉ dẫn né ngập đến sự cố</span>

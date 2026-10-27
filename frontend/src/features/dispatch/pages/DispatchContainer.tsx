@@ -864,6 +864,9 @@ export const DispatchContainer: React.FC = () => {
 
       {/* Header Chuẩn với Chuyển vai trò & Thông báo */}
       <DispatchHeader
+        onBackToHome={() => {
+          window.location.hash = "#map";
+        }}
         activeTab={
           currentScreen === "LIST"
             ? "Lệnh điều phối"

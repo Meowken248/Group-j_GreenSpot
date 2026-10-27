@@ -148,7 +148,7 @@ const MOCK_DETAIL: HotspotDetailResponse = {
 };
 
 describe("Spatial Hotspot Analytics & 7-Day Forecasting (STT 44)", () => {
-  describe("Màn 1/3: Bản đồ điểm nóng KDE & Top 5", () => {
+  describe(" Bản đồ điểm nóng KDE & Top 5", () => {
     it("Hiển thị đầy đủ bộ lọc, số lượng cụm điểm nóng và danh sách Top 5", () => {
       render(
         <Screen1HotspotMap
@@ -282,7 +282,7 @@ describe("Spatial Hotspot Analytics & 7-Day Forecasting (STT 44)", () => {
     });
   });
 
-  describe("Màn 2/3: Dự báo 7 ngày & Khoảng tin cậy 95%", () => {
+  describe(" Dự báo 7 ngày & Khoảng tin cậy 95%", () => {
     it("Hiển thị biểu đồ SVG, dải tin cậy 95%, độ chính xác 87.5% và cảnh báo thời tiết", () => {
       render(
         <Screen2ForecastDashboard
@@ -324,7 +324,7 @@ describe("Spatial Hotspot Analytics & 7-Day Forecasting (STT 44)", () => {
     });
   });
 
-  describe("Màn 3/3: Modal Chi tiết điểm nóng & Điều động STT 43", () => {
+  describe(" Modal Chi tiết điểm nóng & Điều động STT 43", () => {
     it("Hiển thị thông tin tổng hợp, thông báo lệnh đang chạy và kích hoạt Tạo lệnh xử lý", () => {
       const onClose = vi.fn();
       const onCreate = vi.fn();

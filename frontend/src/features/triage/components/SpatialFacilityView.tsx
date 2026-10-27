@@ -74,7 +74,7 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
   // SCREEN_1_MAP_BUFFER -> SCREEN_2_FACILITY_LIST -> SCREEN_3_FACILITY_DETAIL
   const [currentStep, setCurrentStep] = useState<SpatialScreenStep>("SCREEN_1_MAP_BUFFER");
 
-  // State Màn 1/3: Bán kính quét & Checkbox loại cơ sở
+  // State  Bán kính quét & Checkbox loại cơ sở
   const [radiusMeters, setRadiusMeters] = useState<number>(1000.0); // Mặc định 1 km
   const [selectedTypes, setSelectedTypes] = useState<string[]>([
     "Trường học",
@@ -84,11 +84,11 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
   const [typeSelectionError, setTypeSelectionError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState<boolean>(false);
 
-  // State Màn 2/3: Kết quả tìm kiếm & Bộ lọc nhanh
+  // State  Kết quả tìm kiếm & Bộ lọc nhanh
   const [searchResponse, setSearchResponse] = useState<FacilityListResponse | null>(null);
   const [activeFilterType, setActiveFilterType] = useState<string>("ALL");
 
-  // State Màn 3/3: Hồ sơ chi tiết cơ sở được chọn
+  // State  Hồ sơ chi tiết cơ sở được chọn
   const [selectedFacilityDetail, setSelectedFacilityDetail] = useState<FacilityDetailProfile | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState<boolean>(false);
   const [isSendingAlert, setIsSendingAlert] = useState<boolean>(false);
@@ -401,7 +401,7 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
       )}
 
       {/* =========================================================================
-          MÀN 1/3: BẢN ĐỒ VÙNG ĐỆM & TÙY CHỌN BÁN KÍNH (HÌNH 4.40)
+           BẢN ĐỒ VÙNG ĐỆM & TÙY CHỌN BÁN KÍNH (HÌNH 4.40)
           2 KHỐI THEO CHIỀU NGANG: BẢN ĐỒ (Trái) | TUỲ CHỌN (Phải)
          ========================================================================= */}
       {currentStep === "SCREEN_1_MAP_BUFFER" && (
@@ -557,7 +557,7 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
       )}
 
       {/* =========================================================================
-          MÀN 2/3: BẢNG TỔNG HỢP DANH SÁCH CƠ SỞ THIẾT YẾU TRONG VÙNG ĐỆM (HÌNH 4.40)
+           BẢNG TỔNG HỢP DANH SÁCH CƠ SỞ THIẾT YẾU TRONG VÙNG ĐỆM (HÌNH 4.40)
           2 KHỐI: BỘ LỌC (Trái) | DANH SÁCH (Phải)
          ========================================================================= */}
       {currentStep === "SCREEN_2_FACILITY_LIST" && searchResponse && (
@@ -677,7 +677,7 @@ export const SpatialFacilityView: React.FC<SpatialFacilityViewProps> = ({
       )}
 
       {/* =========================================================================
-          MÀN 3/3: HỒ SƠ CHI TIẾT CƠ SỞ & CÔNG CỤ ĐIỀU HÀNH (HÌNH 4.40)
+           HỒ SƠ CHI TIẾT CƠ SỞ & CÔNG CỤ ĐIỀU HÀNH (HÌNH 4.40)
           2 KHỐI: THÔNG TIN CƠ SỞ (Trái) | HÀNH ĐỘNG (Phải)
          ========================================================================= */}
       {currentStep === "SCREEN_3_FACILITY_DETAIL" && selectedFacilityDetail && (

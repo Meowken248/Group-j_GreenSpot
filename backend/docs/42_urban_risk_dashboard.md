@@ -11,9 +11,9 @@
 
 1. [PHẦN 1: KIẾN TRÚC TỔNG QUAN & CLEAN ARCHITECTURE 6 TẦNG](#phần-1-kiến-trúc-tổng-quan--clean-architecture-6-tầng)
 2. [PHẦN 2: ĐẶC TẢ CHI TIẾT 3 MÀN HÌNH NGHIỆP VỤ & ÁNH XẠ MÃ NGUỒN](#phần-2-đặc-tả-chi-tiết-3-màn-hình-nghiệp-vụ--ánh-xạ-mã-nguồn)
-   - [2.1. Màn 1/3: Dashboard Tổng Quan Rủi Ro Đô Thị Toàn Thành Phố (3 Khối: CHỈ SỐ, BIỂU ĐỒ, CẢNH BÁO)](#21-màn-13-dashboard-tổng-quan-rủi-ro-đô-thị-toàn-thành-phố-3-khối-chỉ-số-biểu-đồ-cảnh-báo)
-   - [2.2. Màn 2/3: Lọc & Phân Tích Chuyên Sâu Theo Địa Bàn & Loại Rủi Ro (3 Khối: BỘ LỌC, KẾT QUẢ, SO SÁNH)](#22-màn-23-lọc--phân-tích-chuyên-sâu-theo-địa-bàn--loại-rủi-ro-3-khối-bộ-lọc-kết-quả-so-sánh)
-   - [2.3. Màn 3/3: Popup Chi Tiết Quận & Lối Tắt Điều Hướng Bản Đồ GIS (STT 33 / STT 44 / STT 43)](#23-màn-33-popup-chi-tiết-quận--lối-tắt-điều-hướng-bản-đồ-gis-stt-33--stt-44--stt-43)
+   - [2.1.  Dashboard Tổng Quan Rủi Ro Đô Thị Toàn Thành Phố (3 Khối: CHỈ SỐ, BIỂU ĐỒ, CẢNH BÁO)](#21-màn-13-dashboard-tổng-quan-rủi-ro-đô-thị-toàn-thành-phố-3-khối-chỉ-số-biểu-đồ-cảnh-báo)
+   - [2.2.  Lọc & Phân Tích Chuyên Sâu Theo Địa Bàn & Loại Rủi Ro (3 Khối: BỘ LỌC, KẾT QUẢ, SO SÁNH)](#22-màn-23-lọc--phân-tích-chuyên-sâu-theo-địa-bàn--loại-rủi-ro-3-khối-bộ-lọc-kết-quả-so-sánh)
+   - [2.3.  Popup Chi Tiết Quận & Lối Tắt Điều Hướng Bản Đồ GIS (STT 33 / STT 44 / STT 43)](#23-màn-33-popup-chi-tiết-quận--lối-tắt-điều-hướng-bản-đồ-gis-stt-33--stt-44--stt-43)
 3. [PHẦN 3: CHI TIẾT MÃ NGUỒN CỐT LÕI PHÍA BACKEND](#phần-3-chi-tiết-mã-nguồn-cốt-lõi-phía-backend)
    - [3.1. Domain Entities & Database Models](#31-domain-entities--database-models)
    - [3.2. Data Transfer Objects (Pydantic v2 Schemas)](#32-data-transfer-objects-pydantic-v2-schemas)
@@ -72,7 +72,7 @@ BackEnd/app/
 
 # PHẦN 2: ĐẶC TẢ CHI TIẾT 3 MÀN HÌNH NGHIỆP VỤ & ÁNH XẠ MÃ NGUỒN
 
-### 2.1. Màn 1/3: Dashboard Tổng Quan Rủi Ro Đô Thị Toàn Thành Phố (3 Khối: CHỈ SỐ, BIỂU ĐỒ, CẢNH BÁO)
+### 2.1.  Dashboard Tổng Quan Rủi Ro Đô Thị Toàn Thành Phố (3 Khối: CHỈ SỐ, BIỂU ĐỒ, CẢNH BÁO)
 - **Đối tượng sử dụng:** Lãnh đạo Sở, Ban Giám đốc, Ban Chỉ huy PCTT & TKCN.
 - **Mã nguồn FrontEnd:** [Screen1Overview.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/risk_dashboard/components/Screen1Overview.tsx) (157 dòng).
 - **Mã nguồn BackEnd:**
@@ -89,11 +89,11 @@ BackEnd/app/
      - **Biểu đồ đường (Trend Line Chart):** Đường biểu diễn xu hướng chỉ số rủi ro môi trường và số lượng sự cố tích tụ trong 30 ngày gần nhất — Dòng 85–90.
   3. **Khối "CẢNH BÁO" (Cột phải):**
      - Bảng xếp hạng Top 5 khu vực khẩn cấp nhất: Badge thứ tự ($1 \to 5$), tên quận (Quận Bình Tân, Quận 8, Huyện Hóc Môn, TP. Thủ Đức, Quận Bình Thạnh), số lượng bãi rác và điểm ngập, huy hiệu điểm rủi ro — Dòng 95–153.
-     - Tương tác: Nhấp chuột vào bất kỳ quận nào trong danh sách cảnh báo hoặc biểu đồ cột để mở ngay **Màn 3/3: Popup Chi tiết quận** — Dòng 115, 156.
+     - Tương tác: Nhấp chuột vào bất kỳ quận nào trong danh sách cảnh báo hoặc biểu đồ cột để mở ngay ** Popup Chi tiết quận** — Dòng 115, 156.
 
 ---
 
-### 2.2. Màn 2/3: Lọc & Phân Tích Chuyên Sâu Theo Địa Bàn & Loại Rủi Ro (3 Khối: BỘ LỌC, KẾT QUẢ, SO SÁNH)
+### 2.2.  Lọc & Phân Tích Chuyên Sâu Theo Địa Bàn & Loại Rủi Ro (3 Khối: BỘ LỌC, KẾT QUẢ, SO SÁNH)
 - **Đối tượng sử dụng:** Chuyên viên phân tích dữ liệu, Cán bộ tham mưu tổng hợp.
 - **Mã nguồn FrontEnd:** [Screen2Analysis.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/risk_dashboard/components/Screen2Analysis.tsx) (380 dòng).
 - **Mã nguồn BackEnd:**
@@ -116,7 +116,7 @@ BackEnd/app/
 
 ---
 
-### 2.3. Màn 3/3: Popup Chi Tiết Quận & Lối Tắt Điều Hướng Bản Đồ GIS (STT 33 / STT 44 / STT 43)
+### 2.3.  Popup Chi Tiết Quận & Lối Tắt Điều Hướng Bản Đồ GIS (STT 33 / STT 44 / STT 43)
 - **Đối tượng sử dụng:** Lãnh đạo khi cần chỉ đạo xử lý trọng điểm từng địa bàn.
 - **Mã nguồn FrontEnd:** [Screen3DistrictPopup.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/risk_dashboard/components/Screen3DistrictPopup.tsx) (155 dòng).
 - **Mã nguồn BackEnd:**
@@ -358,9 +358,9 @@ BackEnd/app/
 ### 5.1. Backend Unit & Integration Tests (Pytest - 7 Tiêu Chí)
 - **Đường dẫn tệp:** [test_urban_risk_dashboard.py](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/risk_dashboard/test_urban_risk_dashboard.py) (362 dòng).
 - Bao phủ 7 tiêu chí cốt lõi:
-  1. `test_01_overview_metrics_calculation`: Kiểm tra tính toán Màn 1/3: Thang điểm chung $58/100$, 4 quận nguy cơ cao, 128 sự cố đang mở, 30 ngày xu hướng, 5 cảnh báo (Dòng 214–230).
+  1. `test_01_overview_metrics_calculation`: Kiểm tra tính toán  Thang điểm chung $58/100$, 4 quận nguy cơ cao, 128 sự cố đang mở, 30 ngày xu hướng, 5 cảnh báo (Dòng 214–230).
   2. `test_02_critical_alert_threshold_over_80`: Kiểm tra quy tắc cảnh báo khẩn cấp khi có quận vượt ngưỡng 80 điểm (Quận Bình Tân $84.5 > 80$) (Dòng 232–243).
-  3. `test_03_filtered_analysis_this_month`: Kiểm tra Màn 2/3: Bảng số liệu định lượng (142 sự cố, $385.5m^3$, $92.5\%$ SLA) và so sánh kỳ trước giảm $14.5\%$ tích cực (Dòng 245–261).
+  3. `test_03_filtered_analysis_this_month`: Kiểm tra  Bảng số liệu định lượng (142 sự cố, $385.5m^3$, $92.5\%$ SLA) và so sánh kỳ trước giảm $14.5\%$ tích cực (Dòng 245–261).
   4. `test_04_filtered_analysis_risk_types`: Kiểm tra lọc theo danh sách loại rủi ro cụ thể và chuẩn hóa tổng tỷ lệ phần trăm $100\%$ (Dòng 263–277).
   5. `test_05_district_detail_popup`: Kiểm tra Màn 3/3 Popup: Điểm rủi ro, sự cố tồn đọng, cơ sở thiết yếu bị đe dọa và đường dẫn liên kết bản đồ GIS (Dòng 279–293).
   6. `test_06_http_endpoints_integration`: Kiểm thử tích hợp toàn bộ RESTful API endpoints (`/overview`, `/analysis`, `/district/{id}`, `/export`) (Dòng 295–334).
@@ -371,8 +371,8 @@ BackEnd/app/
 ### 5.2. Frontend UI/UX Component Tests (Vitest - 5 Tiêu Chí)
 - **Đường dẫn tệp:** [riskDashboard.test.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/risk_dashboard/__tests__/riskDashboard.test.tsx) (270 dòng).
 - Bao phủ 5 kịch bản trải nghiệm người dùng:
-  1. **Màn 1/3:** Hiển thị đúng 3 khối ngang CHỈ SỐ, BIỂU ĐỒ, CẢNH BÁO và tương tác click vào quận mở popup chi tiết (Dòng 131–158).
-  2. **Màn 2/3:** Hiển thị đúng 3 khối ngang BỘ LỌC, KẾT QUẢ, SO SÁNH, bảng số liệu định lượng, so sánh giảm $14.5\%$ và nút xuất Excel (Dòng 160–201).
+  1. **** Hiển thị đúng 3 khối ngang CHỈ SỐ, BIỂU ĐỒ, CẢNH BÁO và tương tác click vào quận mở popup chi tiết (Dòng 131–158).
+  2. **** Hiển thị đúng 3 khối ngang BỘ LỌC, KẾT QUẢ, SO SÁNH, bảng số liệu định lượng, so sánh giảm $14.5\%$ và nút xuất Excel (Dòng 160–201).
   3. **Màn 3/3 Popup:** Hiển thị đúng các trường dữ liệu POPUP, CHI TIẾT QUẬN, điểm rủi ro, sự cố tồn đọng, cơ sở thiết yếu và nút "Xem bản đồ" / "Đóng" (Dòng 203–232).
   4. **Màn 3/3 Popup (Phím Esc):** Đóng popup nhanh chóng khi nhấn phím `Escape` (Dòng 234–248).
   5. **ExecutiveHeader:** Kích hoạt chuông cảnh báo khẩn cấp nhấp nháy đỏ (`active-emergency`) khi có quận vượt ngưỡng 80 điểm (Dòng 250–268).
@@ -397,12 +397,12 @@ BackEnd/app/
 | **12** | Phân quyền RBAC Guard | [router.py](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/risk_dashboard/router.py) | L35 - L73 | `verify_risk_dashboard_access` chặn người dùng không đủ quyền (403) |
 | **13** | Router RESTful API | [router.py](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/risk_dashboard/router.py) | L75 - L231 | 5 Endpoints khai thác tổng quan, phân tích, popup và xuất báo cáo |
 | **14** | Frontend API Client | [riskDashboardApi.ts](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/risk_dashboard/services/riskDashboardApi.ts) | L11 - L46 | Axios client kết nối 4 nghiệp vụ backend |
-| **15** | Màn 1/3: Tổng quan rủi ro | [Screen1Overview.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/risk_dashboard/components/Screen1Overview.tsx) | L1 - L157 | 3 Khối: CHỈ SỐ (3 thẻ metric), BIỂU ĐỒ, CẢNH BÁO (Top 5 khẩn cấp) |
+| **15** |  Tổng quan rủi ro | [Screen1Overview.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/risk_dashboard/components/Screen1Overview.tsx) | L1 - L157 | 3 Khối: CHỈ SỐ (3 thẻ metric), BIỂU ĐỒ, CẢNH BÁO (Top 5 khẩn cấp) |
 | **16** | Biểu đồ cột 22 Quận & Thủ Đức | [BarChart.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/risk_dashboard/components/BarChart.tsx) | - | Biểu đồ cột SVG, đường đứt nét ngưỡng khẩn cấp 80, tương tác chọn quận |
 | **17** | Biểu đồ đường xu hướng | [TrendLineChart.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/risk_dashboard/components/TrendLineChart.tsx) | - | Biểu đồ đường SVG xu hướng chỉ số rủi ro 30 ngày gần nhất |
-| **18** | Màn 2/3: Phân tích chuyên sâu | [Screen2Analysis.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/risk_dashboard/components/Screen2Analysis.tsx) | L1 - L380 | 3 Khối: BỘ LỌC, KẾT QUẢ (Định lượng + Donut), SO SÁNH kỳ trước |
+| **18** |  Phân tích chuyên sâu | [Screen2Analysis.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/risk_dashboard/components/Screen2Analysis.tsx) | L1 - L380 | 3 Khối: BỘ LỌC, KẾT QUẢ (Định lượng + Donut), SO SÁNH kỳ trước |
 | **19** | Biểu đồ tròn cơ cấu rủi ro | [DonutPieChart.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/risk_dashboard/components/DonutPieChart.tsx) | - | Donut Chart SVG cơ cấu 4 nhóm rủi ro: Rác sinh hoạt, Ngập, Nguy hại, Khói |
-| **20** | Màn 3/3: Popup Chi tiết quận | [Screen3DistrictPopup.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/risk_dashboard/components/Screen3DistrictPopup.tsx) | L1 - L155 | Modal POPUP, CHI TIẾT QUẬN, đe dọa buffer 300m, nút STT 33/44/43 |
+| **20** |  Popup Chi tiết quận | [Screen3DistrictPopup.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/risk_dashboard/components/Screen3DistrictPopup.tsx) | L1 - L155 | Modal POPUP, CHI TIẾT QUẬN, đe dọa buffer 300m, nút STT 33/44/43 |
 | **21** | Header Chuông cảnh báo đỏ | [ExecutiveHeader.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/risk_dashboard/components/ExecutiveHeader.tsx) | - | Chuông cảnh báo nhấp nháy đỏ (`active-emergency`) khi có quận $> 80$ |
 | **22** | Quản trị đa màn & Liên kết | [RiskDashboardContainer.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/risk_dashboard/pages/RiskDashboardContainer.tsx) | - | Chuyển đổi tab Màn 1/2, mở Modal Màn 3, liên kết sang STT 44 & STT 43 |
 | **23** | Backend Pytest (7 tests) | [test_urban_risk_dashboard.py](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/risk_dashboard/test_urban_risk_dashboard.py) | L214 - L362 | Bộ kiểm thử tự động 7 tiêu chí Clean Architecture & RBAC |

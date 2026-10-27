@@ -304,10 +304,10 @@ export const HotspotContainer: React.FC<HotspotContainerProps> = ({
               {toast.type === "success"
                 ? "✅"
                 : toast.type === "warning"
-                ? "⚠️"
-                : toast.type === "error"
-                ? "❌"
-                : "ℹ️"}
+                  ? "⚠️"
+                  : toast.type === "error"
+                    ? "❌"
+                    : "ℹ️"}
             </span>
             <span>{toast.message}</span>
           </div>
@@ -359,7 +359,7 @@ export const HotspotContainer: React.FC<HotspotContainerProps> = ({
         )}
       </main>
 
-      {/* Màn 3/3: Popup Chi tiết điểm nóng */}
+      {/*  Popup Chi tiết điểm nóng */}
       <Screen3HotspotDetailModal
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}

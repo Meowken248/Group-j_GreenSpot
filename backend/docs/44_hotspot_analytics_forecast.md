@@ -11,9 +11,9 @@
 
 1. [PHẦN 1: KIẾN TRÚC TỔNG QUAN & CLEAN ARCHITECTURE 6 TẦNG](#phần-1-kiến-trúc-tổng-quan--clean-architecture-6-tầng)
 2. [PHẦN 2: ĐẶC TẢ CHI TIẾT 3 MÀN HÌNH NGHIỆP VỤ & ÁNH XẠ MÃ NGUỒN](#phần-2-đặc-tả-chi-tiết-3-màn-hình-nghiệp-vụ--ánh-xạ-mã-nguồn)
-   - [2.1. Màn 1/3: Bản Đồ Cụm Điểm Nóng Môi Trường KDE & Bảng Xếp Hạng Top 5](#21-màn-13-bản-đồ-cụm-điểm-nóng-môi-trường-kde--bảng-xếp-hạng-top-5)
-   - [2.2. Màn 2/3: Dự Báo Xu Hướng Chuỗi Thời Gian 7 Ngày & Xuất Báo Cáo](#22-màn-23-dự-báo-xu-hướng-chuỗi-thời-gian-7-ngày--xuất-báo-cáo)
-   - [2.3. Màn 3/3: Cửa Sổ Chi Tiết Điểm Nóng & Điền Sẵn Lệnh Điều Phối Hiện Trường (STT 43)](#23-màn-33-cửa-sổ-chi-tiết-điểm-nóng--điền-sẵn-lệnh-điều-phối-hiện-trường-stt-43)
+   - [2.1.  Bản Đồ Cụm Điểm Nóng Môi Trường KDE & Bảng Xếp Hạng Top 5](#21-màn-13-bản-đồ-cụm-điểm-nóng-môi-trường-kde--bảng-xếp-hạng-top-5)
+   - [2.2.  Dự Báo Xu Hướng Chuỗi Thời Gian 7 Ngày & Xuất Báo Cáo](#22-màn-23-dự-báo-xu-hướng-chuỗi-thời-gian-7-ngày--xuất-báo-cáo)
+   - [2.3.  Cửa Sổ Chi Tiết Điểm Nóng & Điền Sẵn Lệnh Điều Phối Hiện Trường (STT 43)](#23-màn-33-cửa-sổ-chi-tiết-điểm-nóng--điền-sẵn-lệnh-điều-phối-hiện-trường-stt-43)
 3. [PHẦN 3: CHI TIẾT MÃ NGUỒN CỐT LÕI PHÍA BACKEND](#phần-3-chi-tiết-mã-nguồn-cốt-lõi-phía-backend)
    - [3.1. Domain Entities & Database Models](#31-domain-entities--database-models)
    - [3.2. Data Transfer Objects (Pydantic v2 Schemas)](#32-data-transfer-objects-pydantic-v2-schemas)
@@ -72,7 +72,7 @@ BackEnd/app/
 
 # PHẦN 2: ĐẶC TẢ CHI TIẾT 3 MÀN HÌNH NGHIỆP VỤ & ÁNH XẠ MÃ NGUỒN
 
-### 2.1. Màn 1/3: Bản Đồ Cụm Điểm Nóng Môi Trường KDE & Bảng Xếp Hạng Top 5
+### 2.1.  Bản Đồ Cụm Điểm Nóng Môi Trường KDE & Bảng Xếp Hạng Top 5
 - **Đối tượng sử dụng:** Cán bộ quản lý môi trường, Chuyên viên phân tích đô thị, Ban chỉ đạo.
 - **Mã nguồn FrontEnd:** [Screen1HotspotMap.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/hotspots/components/Screen1HotspotMap.tsx) (565 dòng).
 - **Mã nguồn BackEnd:**
@@ -102,7 +102,7 @@ BackEnd/app/
 
 ---
 
-### 2.2. Màn 2/3: Dự Báo Xu Hướng Chuỗi Thời Gian 7 Ngày & Xuất Báo Cáo
+### 2.2.  Dự Báo Xu Hướng Chuỗi Thời Gian 7 Ngày & Xuất Báo Cáo
 - **Đối tượng sử dụng:** Chuyên viên phân tích mô hình, Chỉ huy điều hành tác nghiệp đô thị.
 - **Mã nguồn FrontEnd:** [Screen2ForecastDashboard.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/hotspots/components/Screen2ForecastDashboard.tsx) (345 dòng).
 - **Mã nguồn BackEnd:**
@@ -128,7 +128,7 @@ BackEnd/app/
 
 ---
 
-### 2.3. Màn 3/3: Cửa Sổ Chi Tiết Điểm Nóng & Điền Sẵn Lệnh Điều Phối Hiện Trường (STT 43)
+### 2.3.  Cửa Sổ Chi Tiết Điểm Nóng & Điền Sẵn Lệnh Điều Phối Hiện Trường (STT 43)
 - **Đối tượng sử dụng:** Cán bộ trực ban phân tích, người phụ trách chuyển giao tác nghiệp hiện trường.
 - **Mã nguồn FrontEnd:** [Screen3HotspotDetailModal.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/hotspots/components/Screen3HotspotDetailModal.tsx) (167 dòng).
 - **Mã nguồn BackEnd:**
@@ -172,16 +172,16 @@ BackEnd/app/
 
 ### 3.2. Data Transfer Objects (Pydantic v2 Schemas)
 - **Đường dẫn tệp:** [schemas.py](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/schemas/hotspots/schemas.py) (119 dòng).
-- **Nhóm Màn 1/3: Bản đồ điểm nóng (Dòng 11 - 51):**
+- **Nhóm  Bản đồ điểm nóng (Dòng 11 - 51):**
   - `HotspotClusterItem`: Chuẩn hóa thông tin từng cụm (tọa độ, bán kính, điểm KDE, nhãn mức độ, màu sắc HEX, dự báo 48h, mã lệnh điều phối, version) (Dòng 11 - 33).
   - `HotspotFilterRequest`: Bộ lọc đầu vào (`incident_type`, `time_range`, `start_date`, `end_date`) (Dòng 35 - 41).
   - `HotspotMapResponse`: Danh sách cụm `clusters`, mảng `top_5_hotspots`, `total_clusters`, `has_data`, `status_message`, `tile_server_status` (Dòng 43 - 51).
-- **Nhóm Màn 2/3: Dự báo 7 ngày & Xuất báo cáo (Dòng 55 - 105):**
+- **Nhóm  Dự báo 7 ngày & Xuất báo cáo (Dòng 55 - 105):**
   - `AreaOptionItem`: Danh sách combobox (`target_id`, `target_name`, `target_type`, `district`) (Dòng 55 - 61).
   - `DailyForecastItem`: Dữ liệu từng ngày (`day_offset`, `date_str`, `day_label`, `predicted_incidents`, `ci_lower_95`, `ci_upper_95`, `rainfall_mm`, `tidal_peak_m`, `risk_level`, `risk_label`, `risk_reason`) (Dòng 63 - 76).
   - `ForecastResponse`: Tổng hợp chuỗi 7 ngày, `model_accuracy_pct` (87.5%), `peak_risk_day`, `peak_risk_summary`, `weather_warning`, `status_message` (Dòng 78 - 90).
   - `ExportReportRequest` & `ExportReportResponse`: Kích hoạt xuất tệp PDF/Excel kèm tên tệp và đường dẫn tải (Dòng 92 - 105).
-- **Nhóm Màn 3/3: Modal Chi tiết & Prefill STT 43 (Dòng 109 - 119):**
+- **Nhóm  Modal Chi tiết & Prefill STT 43 (Dòng 109 - 119):**
   - `HotspotDetailResponse`: Chứa `hotspot`, cờ `has_active_dispatch`, `active_order_code`, `active_order_id`, và `dispatch_prefill` (Dictionary điền sẵn các trường thông tin phục vụ Màn 2/6 của STT 43).
 
 ---
@@ -413,14 +413,14 @@ BackEnd/app/
 ### 5.2. Frontend UI/UX Component Tests (Vitest - 10 Tiêu Chí)
 - **Đường dẫn tệp:** [hotspot.test.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/hotspots/__tests__/hotspot.test.tsx) (384 dòng).
 - Bộ kiểm thử 10 kịch bản trải nghiệm người dùng:
-  1. **Màn 1/3:** Hiển thị đầy đủ bộ lọc, số lượng cụm điểm nóng và danh sách Top 5 (Dòng 152 - 174).
-  2. **Màn 1/3:** Thay đổi bộ lọc loại sự cố và khoảng thời gian kích hoạt callback chính xác (Dòng 176 - 206).
-  3. **Màn 1/3:** Hiển thị giao diện rỗng (Empty state) khi bộ lọc không có dữ liệu (Dòng 208 - 230).
-  4. **Màn 1/3:** Hiển thị hộp thông báo lỗi khi máy chủ Tile GIS gián đoạn và cho phép thử tải lại (Dòng 232 - 256).
-  5. **Màn 1/3:** Tương tác nhấp chọn cụm điểm nóng hoặc mục trong Top 5 kích hoạt chọn điểm nóng (Dòng 258 - 282).
-  6. **Màn 2/3:** Hiển thị biểu đồ SVG, dải bóng mờ tin cậy 95%, độ chính xác mô hình 87.5% và cảnh báo thời tiết (Dòng 286 - 306).
-  7. **Màn 2/3:** Bấm nút Xuất báo cáo kích hoạt gọi hàm xuất tệp PDF (Dòng 308 - 324).
-  8. **Màn 3/3:** Popup hiển thị đầy đủ thông số kỹ thuật, cảnh báo lệnh đang thực thi và nút kích hoạt Tạo lệnh xử lý (Dòng 328 - 358).
+  1. **** Hiển thị đầy đủ bộ lọc, số lượng cụm điểm nóng và danh sách Top 5 (Dòng 152 - 174).
+  2. **** Thay đổi bộ lọc loại sự cố và khoảng thời gian kích hoạt callback chính xác (Dòng 176 - 206).
+  3. **** Hiển thị giao diện rỗng (Empty state) khi bộ lọc không có dữ liệu (Dòng 208 - 230).
+  4. **** Hiển thị hộp thông báo lỗi khi máy chủ Tile GIS gián đoạn và cho phép thử tải lại (Dòng 232 - 256).
+  5. **** Tương tác nhấp chọn cụm điểm nóng hoặc mục trong Top 5 kích hoạt chọn điểm nóng (Dòng 258 - 282).
+  6. **** Hiển thị biểu đồ SVG, dải bóng mờ tin cậy 95%, độ chính xác mô hình 87.5% và cảnh báo thời tiết (Dòng 286 - 306).
+  7. **** Bấm nút Xuất báo cáo kích hoạt gọi hàm xuất tệp PDF (Dòng 308 - 324).
+  8. **** Popup hiển thị đầy đủ thông số kỹ thuật, cảnh báo lệnh đang thực thi và nút kích hoạt Tạo lệnh xử lý (Dòng 328 - 358).
   9. **Header:** Chuyển đổi linh hoạt và mượt mà giữa hai tab Bản đồ KDE và Dự báo 7 ngày (Dòng 362 - 376).
   10. **Footer:** Hiển thị đúng thông tin bản quyền và liên hệ hỗ trợ (Dòng 378 - 382).
 
@@ -446,11 +446,11 @@ BackEnd/app/
 | **14** | Phân quyền RBAC Guard | [router.py](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/hotspots/router.py) | L33 - L61 | `verify_hotspot_access` chặn người dùng không đủ quyền (403 Forbidden) |
 | **15** | Router RESTful API | [router.py](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/hotspots/router.py) | L63 - L135 | 5 Endpoints khai thác bản đồ, khu vực, dự báo và chi tiết |
 | **16** | Frontend API Client | [hotspotApi.ts](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/hotspots/services/hotspotApi.ts) | L240 - L391 | Axios client gọi 5 endpoints kèm chiến lược dữ liệu fallback |
-| **17** | Màn 1/3: Bản đồ Leaflet GIS | [Screen1HotspotMap.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/hotspots/components/Screen1HotspotMap.tsx) | L60 - L240 | Khởi tạo Leaflet WebGIS, vẽ vùng nhiệt KDE, bản đồ đường/vệ tinh |
-| **18** | Màn 1/3: Bộ lọc & Top 5 | [Screen1HotspotMap.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/hotspots/components/Screen1HotspotMap.tsx) | L260 - L561 | Cột bộ lọc trái, bản đồ giữa và danh sách Top 5 điểm nóng phải |
-| **19** | Màn 2/3: Biểu đồ SVG 95% CI | [Screen2ForecastDashboard.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/hotspots/components/Screen2ForecastDashboard.tsx) | L27 - L216 | Vẽ đường xu hướng và dải bóng mờ tin cậy 95% bằng SVG thuần túy |
-| **20** | Màn 2/3: Xuất báo cáo | [Screen2ForecastDashboard.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/hotspots/components/Screen2ForecastDashboard.tsx) | L329 - L340 | Nút xuất báo cáo PDF/Excel và tải tệp về máy tính |
-| **21** | Màn 3/3: Modal Chi tiết | [Screen3HotspotDetailModal.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/hotspots/components/Screen3HotspotDetailModal.tsx) | L56 - L163 | Hiển thị 7 chỉ số, cảnh báo lệnh đang chạy, nút chuyển giao STT 43 |
+| **17** |  Bản đồ Leaflet GIS | [Screen1HotspotMap.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/hotspots/components/Screen1HotspotMap.tsx) | L60 - L240 | Khởi tạo Leaflet WebGIS, vẽ vùng nhiệt KDE, bản đồ đường/vệ tinh |
+| **18** |  Bộ lọc & Top 5 | [Screen1HotspotMap.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/hotspots/components/Screen1HotspotMap.tsx) | L260 - L561 | Cột bộ lọc trái, bản đồ giữa và danh sách Top 5 điểm nóng phải |
+| **19** |  Biểu đồ SVG 95% CI | [Screen2ForecastDashboard.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/hotspots/components/Screen2ForecastDashboard.tsx) | L27 - L216 | Vẽ đường xu hướng và dải bóng mờ tin cậy 95% bằng SVG thuần túy |
+| **20** |  Xuất báo cáo | [Screen2ForecastDashboard.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/hotspots/components/Screen2ForecastDashboard.tsx) | L329 - L340 | Nút xuất báo cáo PDF/Excel và tải tệp về máy tính |
+| **21** |  Modal Chi tiết | [Screen3HotspotDetailModal.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/hotspots/components/Screen3HotspotDetailModal.tsx) | L56 - L163 | Hiển thị 7 chỉ số, cảnh báo lệnh đang chạy, nút chuyển giao STT 43 |
 | **22** | Điều hướng & Tích hợp STT 42/43 | [HotspotContainer.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/hotspots/pages/HotspotContainer.tsx) | L150 - L283 | Bắt hash `#hotspot?district=...` từ STT 42 và chuyển lệnh sang STT 43 |
 | **23** | Backend Pytest (7 tests) | [test_hotspot_analytics.py](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/hotspots/test_hotspot_analytics.py) | L62 - L195 | Bộ kiểm thử tự động 7 tiêu chí Clean Architecture & RBAC |
 | **24** | Frontend Vitest (10 tests) | [hotspot.test.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/hotspots/__tests__/hotspot.test.tsx) | L150 - L383 | Bộ kiểm thử tự động 10 kịch bản UI/UX tương tác full màn hình |

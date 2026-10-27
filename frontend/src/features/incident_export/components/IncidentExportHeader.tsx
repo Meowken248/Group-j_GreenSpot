@@ -12,7 +12,14 @@ export const IncidentExportHeader: React.FC<IncidentExportHeaderProps> = ({
     <header className="export-header" data-testid="export-header">
       <div className="header-inner">
         {/* Logo & Tên hệ thống */}
-        <div className="brand-section">
+        <div
+          className="brand-section"
+          style={{ cursor: "pointer" }}
+          onClick={() => {
+            window.location.hash = "#map";
+          }}
+          title="Về bản đồ số WebGIS"
+        >
           <div className="brand-icon" aria-label="Logo GreenSpot">
             🌱
           </div>
@@ -32,13 +39,27 @@ export const IncidentExportHeader: React.FC<IncidentExportHeaderProps> = ({
             <IconFileSpreadsheet size={16} style={{ display: "inline", marginRight: "6px" }} />
             Trích xuất sự cố
           </button>
-          <button type="button" className="nav-item" title="Bộ lọc & Thống kê">
+          <button
+            type="button"
+            className="nav-item"
+            title="Bảng thống kê hoạt động hệ thống"
+            onClick={() => {
+              window.location.hash = "#admin-dashboard";
+            }}
+          >
             <IconBarChart size={16} style={{ display: "inline", marginRight: "6px" }} />
             Thống kê báo cáo
           </button>
-          <button type="button" className="nav-item" title="Cấu hình hệ thống">
+          <button
+            type="button"
+            className="nav-item"
+            title="Bảng điều khiển rủi ro đô thị"
+            onClick={() => {
+              window.location.hash = "#risk-dashboard";
+            }}
+          >
             <IconSliders size={16} style={{ display: "inline", marginRight: "6px" }} />
-            Cấu hình
+            Rủi ro đô thị
           </button>
         </nav>
 

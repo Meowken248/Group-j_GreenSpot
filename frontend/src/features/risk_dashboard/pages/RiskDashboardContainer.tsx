@@ -271,7 +271,7 @@ export const RiskDashboardContainer: React.FC<RiskDashboardContainerProps> = ({
       {/* 5. FOOTER: bản quyền | liên hệ | chính sách */}
       <ExecutiveFooter />
 
-      {/* 6. MÀN 3/3: POPUP CHI TIẾT QUẬN (MODAL OVERLAY) */}
+      {/* 6.  POPUP CHI TIẾT QUẬN (MODAL OVERLAY) */}
       <Screen3DistrictPopup
         districtData={popupData}
         isOpen={isPopupOpen}

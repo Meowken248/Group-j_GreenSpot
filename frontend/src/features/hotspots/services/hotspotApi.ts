@@ -169,7 +169,7 @@ export const FALLBACK_TOP5: TopHotspotItem[] = [
 
 export const hotspotApi = {
   /**
-   * Màn 1/3: Lấy dữ liệu bản đồ điểm nóng KDE và Top 5 điểm nóng đô thị
+   *  Lấy dữ liệu bản đồ điểm nóng KDE và Top 5 điểm nóng đô thị
    */
   async getHotspotMap(params: HotspotFilterParams = {}): Promise<HotspotMapResponse> {
     const searchParams = new URLSearchParams();
@@ -200,8 +200,8 @@ export const hotspotApi = {
           c.severity_level === "CRITICAL"
             ? "VERY_CRITICAL"
             : c.severity_level === "SEVERE"
-            ? "CRITICAL"
-            : c.risk_level || "POTENTIAL_RISK",
+              ? "CRITICAL"
+              : c.risk_level || "POTENTIAL_RISK",
         trend: c.trend_description || c.trend || "",
         forecast_48h: c.forecast_48h || "",
         district: c.district,
@@ -220,8 +220,8 @@ export const hotspotApi = {
             t.severity_level === "CRITICAL"
               ? "VERY_CRITICAL"
               : t.severity_level === "SEVERE"
-              ? "CRITICAL"
-              : t.risk_level || "POTENTIAL_RISK",
+                ? "CRITICAL"
+                : t.risk_level || "POTENTIAL_RISK",
           trend: t.trend_description || t.trend || "",
         })
       );
@@ -263,7 +263,7 @@ export const hotspotApi = {
   },
 
   /**
-   * Màn 2/3: Lấy danh sách Quận/Huyện và Điểm nóng cho combobox khu vực
+   *  Lấy danh sách Quận/Huyện và Điểm nóng cho combobox khu vực
    */
   async getAvailableAreas(): Promise<AreaOptionItem[]> {
     const res = await api.get<any[]>(`${BASE_URL}/areas`);
@@ -275,7 +275,7 @@ export const hotspotApi = {
   },
 
   /**
-   * Màn 2/3: Lấy dữ liệu chuỗi dự báo 7 ngày kèm khoảng tin cậy 95%
+   *  Lấy dữ liệu chuỗi dự báo 7 ngày kèm khoảng tin cậy 95%
    */
   async get7DayForecast(
     targetId: string,
@@ -321,7 +321,7 @@ export const hotspotApi = {
   },
 
   /**
-   * Màn 2/3: Yêu cầu xuất báo cáo dự báo định dạng PDF / Excel
+   *  Yêu cầu xuất báo cáo dự báo định dạng PDF / Excel
    */
   async exportForecastReport(payload: ExportReportRequest): Promise<ExportReportResponse> {
     const res = await api.post<ExportReportResponse>(`${BASE_URL}/forecast/export`, payload);
@@ -329,7 +329,7 @@ export const hotspotApi = {
   },
 
   /**
-   * Màn 3/3: Xem chi tiết điểm nóng và chuẩn bị dữ liệu điều động hiện trường STT 43
+   *  Xem chi tiết điểm nóng và chuẩn bị dữ liệu điều động hiện trường STT 43
    */
   async getHotspotDetail(hotspotId: string): Promise<HotspotDetailResponse> {
     const res = await api.get<any>(`${BASE_URL}/${encodeURIComponent(hotspotId)}`);
@@ -347,8 +347,8 @@ export const hotspotApi = {
         h.severity_level === "CRITICAL"
           ? "VERY_CRITICAL"
           : h.severity_level === "SEVERE"
-          ? "CRITICAL"
-          : h.risk_level || "POTENTIAL_RISK",
+            ? "CRITICAL"
+            : h.risk_level || "POTENTIAL_RISK",
       risk_level_label: h.severity_label || h.risk_level_label || "Rất nghiêm trọng",
       trend: h.trend_description || h.trend || "",
       forecast_48h: h.forecast_48h || "",
@@ -366,27 +366,27 @@ export const hotspotApi = {
       ),
       suggested_dispatch: data.dispatch_prefill
         ? {
-            title: data.dispatch_prefill.title,
-            incident_type: data.dispatch_prefill.category,
-            priority: data.dispatch_prefill.suggested_priority || "URGENT",
-            district: data.dispatch_prefill.district,
-            address: data.dispatch_prefill.location_address,
-            latitude: data.dispatch_prefill.latitude,
-            longitude: data.dispatch_prefill.longitude,
-            target_deadline_hours: data.dispatch_prefill.suggested_priority === "URGENT" ? 4 : 8,
-            description: `Cụm điểm nóng KDE mật độ cao ${h.incident_count} phản ánh tại ${h.name}. Yêu cầu điều động lực lượng xử lý hiện trường.`,
-          }
+          title: data.dispatch_prefill.title,
+          incident_type: data.dispatch_prefill.category,
+          priority: data.dispatch_prefill.suggested_priority || "URGENT",
+          district: data.dispatch_prefill.district,
+          address: data.dispatch_prefill.location_address,
+          latitude: data.dispatch_prefill.latitude,
+          longitude: data.dispatch_prefill.longitude,
+          target_deadline_hours: data.dispatch_prefill.suggested_priority === "URGENT" ? 4 : 8,
+          description: `Cụm điểm nóng KDE mật độ cao ${h.incident_count} phản ánh tại ${h.name}. Yêu cầu điều động lực lượng xử lý hiện trường.`,
+        }
         : data.suggested_dispatch || {
-            title: `Xử lý điểm nóng ${h.name || h.title}`,
-            incident_type: h.incident_type_label || "Rác thải",
-            priority: "URGENT",
-            district: h.district,
-            address: h.name || h.title,
-            latitude: h.latitude,
-            longitude: h.longitude,
-            target_deadline_hours: 4,
-            description: `Xử lý khẩn cấp điểm nóng ô nhiễm ${h.name || h.title}`,
-          },
+          title: `Xử lý điểm nóng ${h.name || h.title}`,
+          incident_type: h.incident_type_label || "Rác thải",
+          priority: "URGENT",
+          district: h.district,
+          address: h.name || h.title,
+          latitude: h.latitude,
+          longitude: h.longitude,
+          target_deadline_hours: 4,
+          description: `Xử lý khẩn cấp điểm nóng ô nhiễm ${h.name || h.title}`,
+        },
     };
   },
 };

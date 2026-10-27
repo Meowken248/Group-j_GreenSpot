@@ -49,7 +49,7 @@ export const ExecutiveHeader: React.FC<ExecutiveHeaderProps> = ({
           title="Bấm để chuyển màn hình điều hành"
           style={{ cursor: "pointer", border: "none" }}
         >
-          {activeScreen === 1 ? "Màn 1/3: Tổng quan rủi ro ➔" : "Màn 2/3: Lọc & phân tích ➔"}
+          {activeScreen === 1 ? " Tổng quan rủi ro ➔" : " Lọc & phân tích ➔"}
         </button>
       </div>
 
