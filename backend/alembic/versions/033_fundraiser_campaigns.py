@@ -96,3 +96,4 @@ def downgrade() -> None:
     op.drop_table('fundraiser_expenses')
     op.drop_table('fundraiser_donations')
     op.drop_table('fundraiser_campaigns')
+

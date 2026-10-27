@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import type { FundraiserCampaignItem } from "../types/fundraiser.types";
-import { HCMC_DISTRICTS } from "../types/fundraiser.types";
+import { HCMC_DISTRICTS, VIETNAM_PROVINCES } from "../types/fundraiser.types";
 
 interface CampaignListPanelProps {
   campaigns: FundraiserCampaignItem[];
@@ -83,12 +83,28 @@ export const CampaignListPanel: React.FC<CampaignListPanelProps> = ({
     <div className="campaign-list-panel-view" data-testid="campaign-list-panel">
       {/* 1. HERO BANNER */}
       <div className="fundraiser-hero-banner">
-        <span className="hero-badge">CỘNG ĐỒNG XANH • TP. HỒ CHÍ MINH</span>
-        <h1>Gây Quỹ Môi Trường Đô Thị</h1>
+        <span className="hero-badge">CỘNG ĐỒNG XANH • TOÀN QUỐC VIỆT NAM</span>
+        <h1>Gây Quỹ Môi Trường Đô Thị Toàn Quốc</h1>
         <p>
-          Chung tay ủng hộ các chiến dịch làm sạch kênh rạch, phủ xanh công viên,
-          giáo dục phân loại rác học đường và bảo tồn hệ sinh thái tự nhiên.
+          Chung tay ủng hộ các chiến dịch làm sạch biển đảo, hồi sinh kênh rạch, phủ xanh rừng đầu nguồn
+          và bảo tồn đa dạng sinh thái khắp 63 tỉnh thành Việt Nam.
         </p>
+
+        {/* CAM KẾT BẢO CHỨNG MINH BẠCH DOANH NGHIỆP */}
+        <div className="trust-guarantee-strip">
+          <div className="guarantee-item">
+            <span className="icon">🛡️</span>
+            <span>100% Định danh CCCD / ĐKKD</span>
+          </div>
+          <div className="guarantee-item">
+            <span className="icon">🧾</span>
+            <span>Công khai hóa đơn sao kê</span>
+          </div>
+          <div className="guarantee-item">
+            <span className="icon">💳</span>
+            <span>Quét VietQR Napas247 một chạm</span>
+          </div>
+        </div>
       </div>
 
       {/* 2. KHUNG BỘ LỌC (TOP BOX - MÀN 1) */}
@@ -98,7 +114,7 @@ export const CampaignListPanel: React.FC<CampaignListPanelProps> = ({
             <span className="search-icon">🔍</span>
             <input
               type="text"
-              placeholder="Tìm theo tên chiến dịch…"
+              placeholder="Tìm theo tên chiến dịch hoặc địa phương…"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               data-testid="input-search-campaign"
@@ -124,12 +140,21 @@ export const CampaignListPanel: React.FC<CampaignListPanelProps> = ({
             onChange={(e) => onDistrictChange(e.target.value)}
             data-testid="select-district-filter"
           >
-            <option value="">Toàn bộ 22 quận/huyện</option>
-            {HCMC_DISTRICTS.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
+            <option value="">Toàn quốc (Tất cả địa bàn)</option>
+            <optgroup label="Tỉnh / Thành phố Việt Nam">
+              {VIETNAM_PROVINCES.filter((p) => p !== "Toàn quốc").map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Chi tiết Quận/Huyện TP.HCM">
+              {HCMC_DISTRICTS.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </optgroup>
           </select>
 
           <button
@@ -271,7 +296,12 @@ export const CampaignListPanel: React.FC<CampaignListPanelProps> = ({
                     <div className="creator-avatar">
                       {camp.creator_name ? camp.creator_name[0].toUpperCase() : "U"}
                     </div>
-                    <span>Khởi xướng bởi {camp.creator_name || "Thành viên GreenSpot"}</span>
+                    <div className="creator-details">
+                      <span className="creator-name">Khởi xướng bởi {camp.creator_name || "Thành viên GreenSpot"}</span>
+                      <span className="verified-badge-mini" title="Tài khoản và tổ chức đã được Ban điều hành GreenSpot xác minh">
+                        ✓ Đã xác minh
+                      </span>
+                    </div>
                   </div>
 
                   {/* Thanh tiến độ gây quỹ */}
@@ -292,6 +322,7 @@ export const CampaignListPanel: React.FC<CampaignListPanelProps> = ({
 
                     <div className="meta-sub-row">
                       <span className="percent-tag">Đạt {percentAchieved}%</span>
+                      <span className="donors-count">👥 {camp.donation_count || 0} lượt ủng hộ</span>
                       <span>
                         {camp.status === "closed"
                           ? "Đã kết thúc"

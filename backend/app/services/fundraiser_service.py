@@ -134,7 +134,7 @@ class FundraiserService:
             else:
                 query = query.where(FundraiserCampaign.status == norm_status)
 
-        if district_filter and district_filter.strip() and district_filter != "Tất cả":
+        if district_filter and district_filter.strip() and district_filter not in ("Tất cả", "Toàn quốc"):
             query = query.where(FundraiserCampaign.district.ilike(f"%{district_filter.strip()}%"))
 
         if search and search.strip():
@@ -647,3 +647,4 @@ class FundraiserService:
         db.add(audit)
         await db.commit()
         return await cls.get_campaign_detail(db, camp.campaign_id, current_admin)
+

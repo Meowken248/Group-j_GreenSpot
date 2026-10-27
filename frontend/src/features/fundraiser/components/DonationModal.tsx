@@ -40,6 +40,35 @@ export const DonationModal: React.FC<DonationModalProps> = ({
 
   const currentAmount = selectedPreset !== null ? selectedPreset : parseInt(customAmountRaw.replace(/\D/g, ""), 10) || 0;
 
+  // Xác định mã ngân hàng cho VietQR chuẩn Napas247
+  const getBankCode = (bName?: string | null) => {
+    const s = (bName || "").toLowerCase();
+    if (s.includes("techcombank")) return "TCB";
+    if (s.includes("vietcombank")) return "VCB";
+    if (s.includes("vietinbank") || s.includes("công thương")) return "CTG";
+    if (s.includes("bidv") || s.includes("đầu tư")) return "BIDV";
+    if (s.includes("quân đội") || s.includes("mbbank") || s.includes("mb")) return "MB";
+    if (s.includes("sacombank")) return "STB";
+    if (s.includes("acb") || s.includes("á châu")) return "ACB";
+    if (s.includes("vpbank")) return "VPB";
+    if (s.includes("tpbank")) return "TPB";
+    return "VCB";
+  };
+
+  const bankCode = getBankCode(campaign.bank_name);
+  const bankAccountNo = campaign.bank_account_number || "19038291038472";
+  const bankAccountOwner = campaign.bank_account_name || "BAN DIEU HANH QUY XANH";
+  const qrTransferContent = `Ung ho ${campaign.campaign_id?.slice(0, 6) || "XANH"} ${campaign.title.slice(0, 18)}`;
+
+  const vietQrUrl = `https://img.vietqr.io/image/${bankCode}-${bankAccountNo}-compact2.png?amount=${currentAmount > 0 ? currentAmount : 50000}&addInfo=${encodeURIComponent(qrTransferContent)}&accountName=${encodeURIComponent(bankAccountOwner)}`;
+
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const handleCopy = (text: string, field: string) => {
+    navigator.clipboard?.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
   const handlePresetClick = (amount: number) => {
     setSelectedPreset(amount);
     setCustomAmountRaw("");
@@ -185,6 +214,73 @@ export const DonationModal: React.FC<DonationModalProps> = ({
                 }}
                 data-testid="input-custom-donation-amount"
               />
+            </div>
+          </div>
+
+          {/* KHỐI VIETQR THANH TOÁN TỰ ĐỘNG CHUẨN NAPAS247 */}
+          <div className="vietqr-payment-card" data-testid="vietqr-payment-card">
+            <div className="vietqr-card-header">
+              <span className="napas-badge">NAPAS 24/7 • VIETQR</span>
+              <span className="qr-title">Quét mã ngân hàng chuyển khoản nhanh</span>
+            </div>
+
+            <div className="vietqr-card-body">
+              <div className="qr-image-wrapper">
+                <img
+                  src={vietQrUrl}
+                  alt="Mã VietQR thanh toán tự động"
+                  className="qr-img"
+                  onError={(e) => {
+                    // Fallback placeholder nếu mạng offline
+                    (e.target as HTMLElement).style.display = "none";
+                  }}
+                />
+                <span className="qr-guide-text">Mở app Ngân hàng hoặc Ví để quét</span>
+              </div>
+
+              <div className="bank-details-box">
+                <div className="bank-row">
+                  <span className="label">Ngân hàng:</span>
+                  <span className="val bold">{campaign.bank_name || "Ngân hàng Việt Nam"}</span>
+                </div>
+                <div className="bank-row">
+                  <span className="label">Số tài khoản:</span>
+                  <div className="copy-val-wrap">
+                    <span className="val highlight">{bankAccountNo}</span>
+                    <button
+                      type="button"
+                      className="btn-copy-mini"
+                      onClick={() => handleCopy(bankAccountNo, "acc")}
+                    >
+                      {copiedField === "acc" ? "✓ Đã chép" : "Sao chép"}
+                    </button>
+                  </div>
+                </div>
+                <div className="bank-row">
+                  <span className="label">Chủ tài khoản:</span>
+                  <span className="val uppercase">{bankAccountOwner}</span>
+                </div>
+                <div className="bank-row">
+                  <span className="label">Số tiền:</span>
+                  <div className="copy-val-wrap">
+                    <span className="val amount-text">
+                      {new Intl.NumberFormat("vi-VN").format(currentAmount > 0 ? currentAmount : 50000)} đ
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* KHỐI CAM KẾT BẢO CHỨNG MINH BẠCH */}
+          <div className="trust-assurance-card">
+            <span className="shield-icon">🛡️</span>
+            <div className="trust-text">
+              <strong>Cam kết bảo trợ tài chính GreenSpot:</strong>
+              <p>
+                100% số tiền ủng hộ được chuyển vào tài khoản thiện nguyện đã kiểm duyệt CCCD/ĐKKD.
+                Chủ quỹ có nghĩa vụ công khai minh chứng và hóa đơn chứng từ giải ngân cho toàn thể cộng đồng.
+              </p>
             </div>
           </div>
 

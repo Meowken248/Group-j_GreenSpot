@@ -34,12 +34,6 @@ async def seed_fundraisers():
         creator_user = users[0]
         donor_user = users[1] if len(users) > 1 else users[0]
 
-        # 2. Kiểm tra nếu đã có dữ liệu chiến dịch thì không ghi đè
-        existing = await session.execute(select(FundraiserCampaign).limit(1))
-        if existing.scalars().first():
-            print("[INFO] Đã tồn tại dữ liệu chiến dịch gây quỹ trong DB, bỏ qua seeder.")
-            return
-
         today = date.today()
 
         campaigns_data = [
@@ -203,6 +197,111 @@ async def seed_fundraisers():
                 ],
             },
             {
+                "title": "Trồng 1.000 cây thông ba lá phục hồi rừng phòng hộ Langbiang",
+                "description": "Chiến dịch phủ xanh 2 hecta đồi trọc tại huyện Lạc Dương và chân núi Langbiang, tỉnh Lâm Đồng. Cây thông ba lá bản địa giúp giữ nước đầu nguồn, chống sạt lở đất trong mùa mưa bão và bảo tồn hệ sinh thái cao nguyên.",
+                "cover_image_url": "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1200&q=80",
+                "target_amount": 40000000,
+                "total_donated": 28000000,
+                "donation_count": 3,
+                "total_spent": 15000000,
+                "district": "Lâm Đồng",
+                "end_date": today + timedelta(days=35),
+                "bank_account_name": "QUY BAO TON RUNG DA LAT",
+                "bank_account_number": "21510001889988",
+                "bank_name": "Ngân hàng Đầu tư và Phát triển Việt Nam (BIDV)",
+                "status": FundraiserStatus.APPROVED.value,
+                "rejection_reason": None,
+                "donations": [
+                    {
+                        "donor_name": "Nhóm Yêu Rừng Tây Nguyên",
+                        "amount": 15000000,
+                        "message": "Góp mầm xanh cho đại ngàn!",
+                        "is_anonymous": False,
+                        "donor_id": None,
+                    },
+                    {
+                        "donor_name": "Trần Văn Nam",
+                        "amount": 10000000,
+                        "message": "Vì màu xanh của cao nguyên ngàn hoa.",
+                        "is_anonymous": False,
+                        "donor_id": donor_user.user_id,
+                    },
+                    {
+                        "donor_name": "Mạnh thường quân giấu tên",
+                        "amount": 3000000,
+                        "message": "Ủng hộ dự án rừng Langbiang.",
+                        "is_anonymous": True,
+                        "donor_id": None,
+                    },
+                ],
+                "expenses": [
+                    {
+                        "content": "Mua 1.000 cây thông ba lá giống 2 năm tuổi từ Viện Nghiên cứu Lâm nghiệp Tây Nguyên",
+                        "amount": 15000000,
+                        "expense_date": today - timedelta(days=4),
+                        "proof_image_url": "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=800&q=80",
+                    }
+                ],
+            },
+            {
+                "title": "Chiến dịch làm sạch rác biển Sơn Trà & Bảo vệ rạn san hô",
+                "description": "Huy động 120 tình nguyện viên lặn biển vớt rác lưới ma, túi nylon và dọn sạch 3km bờ đá bán đảo Sơn Trà, TP. Đà Nẵng, bảo vệ các bãi rùa đẻ và rạn san hô tự nhiên.",
+                "cover_image_url": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80",
+                "target_amount": 35000000,
+                "total_donated": 18500000,
+                "donation_count": 2,
+                "total_spent": 6000000,
+                "district": "Đà Nẵng",
+                "end_date": today + timedelta(days=20),
+                "bank_account_name": "CLB LAN BIEN BAO VE SAN HO DA NANG",
+                "bank_account_number": "0041000345678",
+                "bank_name": "Ngân hàng Ngoại thương Việt Nam (Vietcombank)",
+                "status": FundraiserStatus.APPROVED.value,
+                "rejection_reason": None,
+                "donations": [
+                    {
+                        "donor_name": "Hiệp hội Du lịch Sinh thái Đà Nẵng",
+                        "amount": 12000000,
+                        "message": "Chung tay bảo vệ báu vật Sơn Trà.",
+                        "is_anonymous": False,
+                        "donor_id": None,
+                    },
+                    {
+                        "donor_name": "Huỳnh Anh Tú",
+                        "amount": 6500000,
+                        "message": "Bảo vệ biển quê hương miền Trung!",
+                        "is_anonymous": False,
+                        "donor_id": creator_user.user_id,
+                    },
+                ],
+                "expenses": [
+                    {
+                        "content": "Thuê 6 thuyền cứu hộ, bình khí lặn chuyên dụng và bao tải đựng rác đáy biển",
+                        "amount": 6000000,
+                        "expense_date": today - timedelta(days=1),
+                        "proof_image_url": "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=800&q=80",
+                    }
+                ],
+            },
+            {
+                "title": "Phục hồi dải xanh sinh thái bãi bồi sông Hồng",
+                "description": "Dự án cải tạo 1.500m bờ bãi ven cầu Long Biên, Hà Nội thành công viên sinh thái cộng đồng, trồng tre ngà và cỏ vetiver lọc nước ngầm tự nhiên.",
+                "cover_image_url": "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=1200&q=80",
+                "target_amount": 60000000,
+                "total_donated": 0,
+                "donation_count": 0,
+                "total_spent": 0,
+                "district": "Hà Nội",
+                "end_date": today + timedelta(days=75),
+                "status": FundraiserStatus.PENDING.value,
+                "bank_account_name": "HOI KIEN TRUC CANH QUAN HA NOI",
+                "bank_account_number": "118002699888",
+                "bank_name": "Ngân hàng Công Thương Việt Nam (VietinBank)",
+                "rejection_reason": None,
+                "donations": [],
+                "expenses": [],
+            },
+            {
                 "title": "Mô hình vườn rau hữu cơ từ rác thải nhà bếp tái chế",
                 "description": "Xây dựng 10 cụm ủ rác hữu cơ nuôi trùn quế và trồng rau sạch tại các khu phố thuộc Quận 7. Dự án đang chờ duyệt kế hoạch phân bổ điểm ủ rác từ chính quyền.",
                 "cover_image_url": "https://images.unsplash.com/photo-1592417817098-8f3d6910985b?auto=format&fit=crop&w=1200&q=80",
@@ -240,7 +339,14 @@ async def seed_fundraisers():
             },
         ]
 
+        added_count = 0
         for item in campaigns_data:
+            existing_camp = await session.execute(
+                select(FundraiserCampaign).where(FundraiserCampaign.title == item["title"])
+            )
+            if existing_camp.scalars().first():
+                continue
+
             donations_list = item.pop("donations")
             expenses_list = item.pop("expenses")
 
@@ -267,10 +373,12 @@ async def seed_fundraisers():
                     **exp,
                 )
                 session.add(expense_obj)
+            added_count += 1
 
         await session.commit()
-        print(f"[SUCCESS] Đã nạp thành công {len(campaigns_data)} chiến dịch gây quỹ mẫu thực tế!")
+        print(f"[SUCCESS] Đã nạp thêm {added_count} chiến dịch gây quỹ mới vào hệ thống!")
 
 
 if __name__ == "__main__":
     asyncio.run(seed_fundraisers())
+

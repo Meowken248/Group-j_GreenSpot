@@ -159,3 +159,4 @@ class FundraiserExpense(Base, TimestampMixin):
         "FundraiserCampaign", back_populates="expenses"
     )
     creator: Mapped["User"] = relationship("User", foreign_keys=[created_by])
+

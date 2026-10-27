@@ -7,6 +7,8 @@ import { CampaignDetailModal } from "../components/CampaignDetailModal";
 import { DonationModal } from "../components/DonationModal";
 import { ExpenseReportView } from "../components/ExpenseReportView";
 import { CampaignDeleteModal } from "../components/CampaignDeleteModal";
+import { CampaignShareModal } from "../components/CampaignShareModal";
+import { FundraiserContainer } from "../FundraiserContainer";
 import { fundraiserService } from "../services/fundraiserService";
 import type {
   FundraiserCampaignItem,
@@ -710,6 +712,69 @@ describe("Feature 20: Gây quỹ cộng đồng (Fundraiser)", () => {
         "reject",
         "Thiếu chứng từ kế hoạch chi tiết"
       );
+    });
+  });
+
+  // ==========================================
+  // NÂNG CẤP MỚI: ADMIN DASHBOARD, VIETQR & CSS MXH
+  // ==========================================
+  it("Test 19: DonationModal hiển thị khối VietQR Napas247 và thông tin ngân hàng", () => {
+    render(
+      <DonationModal
+        isOpen={true}
+        campaign={mockCampaigns[0]}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    expect(screen.getByTestId("vietqr-payment-card")).toBeInTheDocument();
+    expect(screen.getByText(/NAPAS 24\/7 • VIETQR/i)).toBeInTheDocument();
+    expect(screen.getByText(/HUYNH ANH TU/i)).toBeInTheDocument();
+    expect(screen.getByText(/0123456789/i)).toBeInTheDocument();
+    expect(screen.getByText(/Cam kết bảo trợ tài chính GreenSpot/i)).toBeInTheDocument();
+  });
+
+  it("Test 20: CampaignShareModal có footer nút chia sẻ chuẩn MXH", () => {
+    render(
+      <CampaignShareModal
+        isOpen={true}
+        campaign={mockCampaigns[0]}
+        onClose={vi.fn()}
+        onShowToast={vi.fn()}
+      />
+    );
+
+    expect(screen.getByTestId("btn-close-share")).toBeInTheDocument();
+    expect(screen.getByTestId("btn-confirm-share")).toBeInTheDocument();
+    expect(screen.getByText("Chia sẻ ngay")).toBeInTheDocument();
+  });
+
+  it("Test 21: FundraiserContainer hiển thị thanh chuyển đổi chế độ Quản trị khi người dùng là Admin", async () => {
+    (fundraiserService.listCampaigns as any).mockResolvedValue({
+      items: mockCampaigns,
+      total: mockCampaigns.length,
+      page: 1,
+      page_size: 12,
+    });
+
+    render(
+      <FundraiserContainer
+        currentUser={{ id: "admin-1", role: "ADMIN", username: "admin" }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("admin-mode-switch-bar")).toBeInTheDocument();
+      expect(screen.getByTestId("btn-mode-admin")).toBeInTheDocument();
+      expect(screen.getByTestId("btn-mode-public")).toBeInTheDocument();
+    });
+
+    // Bấm chuyển sang tab Admin
+    fireEvent.click(screen.getByTestId("btn-mode-admin"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("admin-fundraiser-dashboard")).toBeInTheDocument();
     });
   });
 });

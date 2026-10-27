@@ -7,6 +7,7 @@ import { fundraiserService } from "./services/fundraiserService";
 import { CampaignListPanel } from "./components/CampaignListPanel";
 import { CampaignCreationModal } from "./components/CampaignCreationModal";
 import { CampaignDetailModal } from "./components/CampaignDetailModal";
+import { AdminFundraiserDashboard } from "./components/AdminFundraiserDashboard";
 import "./styles/Fundraiser.scss";
 
 interface FundraiserContainerProps {
@@ -50,6 +51,10 @@ export const FundraiserContainer: React.FC<FundraiserContainerProps> = ({
     resolvedUser?.role === "ADMIN" ||
     resolvedUser?.role === "admin" ||
     resolvedUser?.role_id === 1;
+
+  // View Mode: public (Trang Khám phá) vs admin (Trung tâm Quản trị)
+  const [viewMode, setViewMode] = useState<"public" | "admin">("public");
+  const [systemPendingCount, setSystemPendingCount] = useState<number>(0);
 
   // Filters & Pagination State
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -105,6 +110,15 @@ export const FundraiserContainer: React.FC<FundraiserContainerProps> = ({
           page_size: 10,
         });
         setPendingCampaignCount(myPendingRes.total || 0);
+      }
+
+      // Nếu là Admin, đếm tổng số chiến dịch pending toàn hệ thống
+      if (isAdmin) {
+        const adminPendingRes = await fundraiserService.listCampaigns({
+          status: "pending",
+          page_size: 1,
+        });
+        setSystemPendingCount(adminPendingRes.total || 0);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Không thể tải danh sách chiến dịch";
@@ -174,28 +188,66 @@ export const FundraiserContainer: React.FC<FundraiserContainerProps> = ({
 
   return (
     <div className="fundraiser-container" data-testid="fundraiser-module">
-      <CampaignListPanel
-        campaigns={campaigns}
-        total={total}
-        currentPage={currentPage}
-        pageSize={pageSize}
-        isLoading={isLoading}
-        error={error}
-        statusFilter={statusFilter}
-        districtFilter={districtFilter}
-        searchQuery={searchQuery}
-        myCampaignsOnly={myCampaignsOnly}
-        isLoggedIn={isLoggedIn}
-        onStatusChange={handleStatusChange}
-        onDistrictChange={handleDistrictChange}
-        onSearchChange={handleSearchChange}
-        onMyCampaignsToggle={handleMyCampaignsToggle}
-        onPageChange={handlePageChange}
-        onSelectCampaign={handleSelectCampaign}
-        onOpenCreateModal={() => setIsCreateModalOpen(true)}
-        onRetry={fetchCampaigns}
-        onNavigateToLogin={onNavigateToLogin}
-      />
+      {/* THANH CHUYỂN ĐỔI CHẾ ĐỘ DÀNH CHO ADMIN */}
+      {isAdmin && (
+        <div className="fundraiser-admin-switch-bar" data-testid="admin-mode-switch-bar">
+          <div className="switch-label">
+            <span className="badge-admin">QUẢN TRỊ VIÊN HỆ THỐNG</span>
+            <span>Chế độ hiển thị:</span>
+          </div>
+          <div className="switch-buttons">
+            <button
+              type="button"
+              className={`btn-mode-switch ${viewMode === "public" ? "active" : ""}`}
+              onClick={() => setViewMode("public")}
+              data-testid="btn-mode-public"
+            >
+              🌱 Trang Cộng Đồng (Khám Phá)
+            </button>
+            <button
+              type="button"
+              className={`btn-mode-switch ${viewMode === "admin" ? "active" : ""}`}
+              onClick={() => setViewMode("admin")}
+              data-testid="btn-mode-admin"
+            >
+              🛡️ Trung Tâm Quản Trị & Duyệt Quỹ
+              {systemPendingCount > 0 && (
+                <span className="pending-badge-counter">{systemPendingCount}</span>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {viewMode === "admin" && isAdmin ? (
+        <AdminFundraiserDashboard
+          onSelectCampaign={handleSelectCampaign}
+          onRefreshList={fetchCampaigns}
+        />
+      ) : (
+        <CampaignListPanel
+          campaigns={campaigns}
+          total={total}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          isLoading={isLoading}
+          error={error}
+          statusFilter={statusFilter}
+          districtFilter={districtFilter}
+          searchQuery={searchQuery}
+          myCampaignsOnly={myCampaignsOnly}
+          isLoggedIn={isLoggedIn}
+          onStatusChange={handleStatusChange}
+          onDistrictChange={handleDistrictChange}
+          onSearchChange={handleSearchChange}
+          onMyCampaignsToggle={handleMyCampaignsToggle}
+          onPageChange={handlePageChange}
+          onSelectCampaign={handleSelectCampaign}
+          onOpenCreateModal={() => setIsCreateModalOpen(true)}
+          onRetry={fetchCampaigns}
+          onNavigateToLogin={onNavigateToLogin}
+        />
+      )}
 
       {/* Màn 2: Modal tạo chiến dịch */}
       {isCreateModalOpen && (

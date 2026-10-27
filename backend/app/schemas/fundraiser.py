@@ -4,6 +4,20 @@ from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator
 
 
+VIETNAM_PROVINCES = {
+    "Hà Nội", "Hải Phòng", "Quảng Ninh", "Bắc Ninh", "Hải Dương", "Hưng Yên",
+    "Hà Nam", "Nam Định", "Ninh Bình", "Thái Bình", "Vĩnh Phúc", "Hà Giang",
+    "Cao Bằng", "Bắc Kạn", "Tuyên Quang", "Lào Cai", "Yên Bái", "Thái Nguyên",
+    "Lạng Sơn", "Bắc Giang", "Phú Thọ", "Điện Biên", "Lai Châu", "Sơn La",
+    "Hòa Bình", "Đà Nẵng", "Thừa Thiên Huế", "Quảng Nam", "Quảng Ngãi",
+    "Bình Định", "Phú Yên", "Khánh Hòa", "Ninh Thuận", "Bình Thuận", "Thanh Hóa",
+    "Nghệ An", "Hà Tĩnh", "Quảng Bình", "Quảng Trị", "Kon Tum", "Gia Lai",
+    "Đắk Lắk", "Đắk Nông", "Lâm Đồng", "TP. Hồ Chí Minh", "Cần Thơ", "Bình Dương",
+    "Đồng Nai", "Bà Rịa - Vũng Tàu", "Tây Ninh", "Bình Phước", "Long An",
+    "Tiền Giang", "Bến Tre", "Trà Vinh", "Vĩnh Long", "Đồng Tháp", "An Giang",
+    "Kiên Giang", "Hậu Giang", "Sóc Trăng", "Bạc Liêu", "Cà Mau", "Toàn quốc",
+}
+
 VALID_DISTRICTS = {
     "Quận 1", "Quận 3", "Quận 4", "Quận 5", "Quận 6", "Quận 7", "Quận 8",
     "Quận 10", "Quận 11", "Quận 12", "Quận Bình Thạnh", "Quận Bình Tân",
@@ -55,13 +69,20 @@ class FundraiserCampaignBase(BaseModel):
     @classmethod
     def validate_district(cls, v: str) -> str:
         s = v.strip()
-        if s not in VALID_DISTRICTS:
-            # Cho phép nếu có tiền tố Quận/Huyện linh hoạt
-            matched = [d for d in VALID_DISTRICTS if s.lower() in d.lower()]
-            if matched:
-                return matched[0]
-            raise ValueError(f"Quận/huyện '{s}' không thuộc phạm vi 22 quận/huyện TP.HCM")
-        return s
+        if not s or len(s) < 2:
+            raise ValueError("Vui lòng chọn địa bàn hợp lệ")
+        # Khớp với Tỉnh/Thành Việt Nam
+        matched_province = [p for p in VIETNAM_PROVINCES if s.lower() == p.lower()]
+        if matched_province:
+            return matched_province[0]
+        # Khớp với Quận/Huyện TP.HCM
+        matched_district = [d for d in VALID_DISTRICTS if s.lower() in d.lower()]
+        if matched_district:
+            return matched_district[0]
+        # Cho phép các địa bàn toàn quốc hợp lệ
+        if len(s) <= 100:
+            return s
+        raise ValueError(f"Địa bàn '{s}' vượt quá 100 ký tự")
 
 
 class FundraiserCampaignCreateRequest(FundraiserCampaignBase):
@@ -176,3 +197,4 @@ class FundraiserCampaignListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+

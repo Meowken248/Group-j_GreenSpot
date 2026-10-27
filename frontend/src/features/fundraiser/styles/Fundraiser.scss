@@ -954,3 +954,1009 @@ $fund-blue-border: #bae6fd;
     box-shadow: 0 1px 2px rgba(16, 185, 129, 0.1);
   }
 }
+
+/* ==========================================================================
+   BUTTON TOÀN CỤC CHUẨN DOANH NGHIỆP (PHÒNG TRÁNH MẤT CSS)
+   ========================================================================== */
+.btn-cancel,
+.btn-modal-cancel,
+.btn-share-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.25rem;
+  background: #ffffff;
+  color: #334155;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  line-height: 1.2;
+
+  &:hover:not(:disabled) {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    color: #0f172a;
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-submit-primary,
+.btn-modal-confirm,
+.btn-share-confirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.5rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+  line-height: 1.2;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.2);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+}
+
+/* ==========================================================================
+   DẢI BẢO CHỨNG MINH BẠCH & TÍCH XANH (TRUST & VERIFIED)
+   ========================================================================== */
+.trust-guarantee-strip {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+
+  .guarantee-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(8px);
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+
+    .icon {
+      font-size: 1rem;
+    }
+  }
+}
+
+.creator-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+
+  .creator-name {
+    font-weight: 600;
+    color: #334155;
+  }
+
+  .verified-badge-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #059669;
+    background: #ecfdf5;
+    padding: 0.1rem 0.45rem;
+    border-radius: 4px;
+    width: fit-content;
+  }
+}
+
+.donors-count {
+  font-weight: 600;
+  color: #0284c7;
+}
+
+/* ==========================================================================
+   CARD VIETQR NAPAS 24/7 THANH TOÁN TỰ ĐỘNG
+   ========================================================================== */
+.vietqr-payment-card {
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+
+  .vietqr-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid #e2e8f0;
+
+    .napas-badge {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #0369a1;
+      background: #e0f2fe;
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+    }
+
+    .qr-title {
+      font-size: 0.825rem;
+      font-weight: 700;
+      color: #475569;
+    }
+  }
+
+  .vietqr-card-body {
+    display: flex;
+    gap: 1.25rem;
+    align-items: center;
+
+    @media (max-width: 640px) {
+      flex-direction: column;
+    }
+
+    .qr-image-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #ffffff;
+      padding: 0.75rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+
+      .qr-img {
+        width: 150px;
+        height: 150px;
+        object-fit: contain;
+      }
+
+      .qr-guide-text {
+        font-size: 0.7rem;
+        color: #64748b;
+        font-weight: 600;
+        margin-top: 0.4rem;
+        text-align: center;
+      }
+    }
+
+    .bank-details-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
+      .bank-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.85rem;
+
+        .label {
+          color: #64748b;
+        }
+
+        .val {
+          color: #1e293b;
+
+          &.bold {
+            font-weight: 700;
+          }
+
+          &.highlight {
+            font-family: monospace;
+            font-size: 1rem;
+            font-weight: 800;
+            color: #065f46;
+            letter-spacing: 0.03em;
+          }
+
+          &.uppercase {
+            font-weight: 700;
+            text-transform: uppercase;
+          }
+
+          &.amount-text {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #10b981;
+          }
+        }
+
+        .copy-val-wrap {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+
+          .btn-copy-mini {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #334155;
+            cursor: pointer;
+            transition: all 0.15s;
+
+            &:hover {
+              background: #e2e8f0;
+              color: #0f172a;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+.trust-assurance-card {
+  display: flex;
+  gap: 0.85rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.25rem;
+
+  .shield-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .trust-text {
+    font-size: 0.825rem;
+    color: #166534;
+    line-height: 1.45;
+
+    strong {
+      display: block;
+      margin-bottom: 0.2rem;
+      font-weight: 700;
+    }
+
+    p {
+      margin: 0;
+      color: #15803d;
+    }
+  }
+}
+
+/* ==========================================================================
+   THANH CHUYỂN CHẾ ĐỘ ADMIN (MODE SWITCHER)
+   ========================================================================== */
+.fundraiser-admin-switch-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1e293b;
+  color: #ffffff;
+  padding: 0.85rem 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.15);
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+
+  .switch-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+
+    .badge-admin {
+      background: #f59e0b;
+      color: #ffffff;
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 0.25rem 0.55rem;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+    }
+  }
+
+  .switch-buttons {
+    display: flex;
+    gap: 0.5rem;
+
+    .btn-mode-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1.15rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+      }
+
+      &.active {
+        background: #10b981;
+        color: #ffffff;
+        border-color: #10b981;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+      }
+
+      .pending-badge-counter {
+        background: #ef4444;
+        color: #ffffff;
+        font-size: 0.7rem;
+        font-weight: 800;
+        padding: 0.1rem 0.45rem;
+        border-radius: 999px;
+      }
+    }
+  }
+}
+
+/* ==========================================================================
+   DASHBOARD QUẢN TRỊ ADMIN (ADMIN FUNDRAISER DASHBOARD)
+   ========================================================================== */
+.admin-fundraiser-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  .admin-toast-badge {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #065f46;
+    color: #ffffff;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    z-index: 10050;
+    animation: modalPopIn 0.25s ease-out;
+  }
+
+  .admin-header-card {
+    background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+    color: #ffffff;
+    border-radius: 16px;
+    padding: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 10px 25px rgba(6, 78, 59, 0.2);
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    .header-info {
+      max-width: 750px;
+
+      .admin-badge-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.725rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        color: #6ee7b7;
+        margin-bottom: 0.5rem;
+      }
+
+      h2 {
+        margin: 0 0 0.5rem;
+        font-size: 1.65rem;
+        font-weight: 800;
+      }
+
+      p {
+        margin: 0;
+        font-size: 0.95rem;
+        color: #a7f3d0;
+        line-height: 1.5;
+      }
+    }
+
+    .btn-refresh-admin {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #ffffff;
+      padding: 0.65rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+
+      &:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.35);
+        transform: translateY(-1px);
+      }
+    }
+  }
+
+  /* 4 KPI CARDS */
+  .admin-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+
+    @media (max-width: 1024px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    @media (max-width: 640px) {
+      grid-template-columns: 1fr;
+    }
+
+    .kpi-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 1.25rem;
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+      transition: transform 0.2s;
+
+      &:hover {
+        transform: translateY(-2px);
+      }
+
+      .kpi-icon {
+        font-size: 2rem;
+        width: 52px;
+        height: 52px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f1f5f9;
+        border-radius: 12px;
+        flex-shrink: 0;
+      }
+
+      .kpi-content {
+        display: flex;
+        flex-direction: column;
+
+        .kpi-label {
+          font-size: 0.775rem;
+          font-weight: 700;
+          color: #64748b;
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+        }
+
+        .kpi-value {
+          font-size: 1.35rem;
+          font-weight: 800;
+          color: #0f172a;
+          margin: 0.2rem 0;
+
+          &.highlight {
+            color: #d97706;
+          }
+        }
+
+        .kpi-desc {
+          font-size: 0.725rem;
+          color: #94a3b8;
+        }
+      }
+
+      &.total-raised .kpi-icon {
+        background: #ecfdf5;
+      }
+      &.total-spent .kpi-icon {
+        background: #fff7ed;
+      }
+      &.active-campaigns .kpi-icon {
+        background: #f0fdf4;
+      }
+      &.pending-review .kpi-icon {
+        background: #fef3c7;
+      }
+    }
+  }
+
+  /* TOOLBAR & BỘ LỌC ADMIN */
+  .admin-toolbar-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    .tabs-switcher {
+      display: flex;
+      gap: 0.75rem;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 0.75rem;
+
+      .tab-btn {
+        background: none;
+        border: none;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #64748b;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover {
+          background: #f8fafc;
+          color: #0f172a;
+        }
+
+        &.active {
+          background: #ecfdf5;
+          color: #047857;
+        }
+      }
+    }
+
+    .filters-control-row {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+
+      @media (max-width: 768px) {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search-input-wrap {
+        flex: 1;
+        position: relative;
+
+        .icon {
+          position: absolute;
+          left: 0.85rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #94a3b8;
+        }
+
+        input {
+          width: 100%;
+          padding: 0.65rem 0.85rem 0.65rem 2.4rem;
+          border: 1px solid #cbd5e1;
+          border-radius: 8px;
+          font-size: 0.875rem;
+          box-sizing: border-box;
+
+          &:focus {
+            outline: none;
+            border-color: #10b981;
+          }
+        }
+      }
+
+      .select-status,
+      .select-province {
+        padding: 0.65rem 1rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #334155;
+        background: #ffffff;
+        cursor: pointer;
+
+        &:focus {
+          outline: none;
+          border-color: #10b981;
+        }
+      }
+    }
+  }
+
+  /* BẢNG DỮ LIỆU DATA TABLE */
+  .admin-table-container {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    overflow-x: auto;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+
+    .admin-data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+
+      thead tr {
+        background: #f8fafc;
+        border-bottom: 1.5px solid #e2e8f0;
+
+        th {
+          padding: 1rem 1.25rem;
+          text-align: left;
+          font-weight: 700;
+          color: #475569;
+          font-size: 0.8rem;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+      }
+
+      tbody tr {
+        border-bottom: 1px solid #f1f5f9;
+        transition: background 0.15s;
+
+        &:hover {
+          background: #f8fafc;
+        }
+
+        &.row-highlight-pending {
+          background: #fffbeb;
+
+          &:hover {
+            background: #fef3c7;
+          }
+        }
+
+        td {
+          padding: 1rem 1.25rem;
+          vertical-align: middle;
+        }
+      }
+    }
+
+    .cell-campaign-info {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+
+      .thumb-img {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        object-fit: cover;
+        flex-shrink: 0;
+      }
+
+      .info-text {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+
+        .campaign-title-link {
+          font-size: 0.925rem;
+          color: #0f172a;
+          cursor: pointer;
+          font-weight: 700;
+
+          &:hover {
+            color: #059669;
+            text-decoration: underline;
+          }
+        }
+
+        .district-tag {
+          font-size: 0.75rem;
+          color: #64748b;
+          font-weight: 600;
+        }
+      }
+    }
+
+    .cell-creator {
+      display: flex;
+      flex-direction: column;
+
+      .creator-name {
+        font-weight: 600;
+        color: #1e293b;
+      }
+
+      .creator-id {
+        font-size: 0.72rem;
+        color: #94a3b8;
+        font-family: monospace;
+      }
+    }
+
+    .cell-finance {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+
+      .donated-amt {
+        font-weight: 800;
+        color: #065f46;
+      }
+
+      .target-amt {
+        font-size: 0.775rem;
+        color: #64748b;
+      }
+
+      .mini-progress-bar {
+        width: 100%;
+        height: 6px;
+        background: #e2e8f0;
+        border-radius: 999px;
+        overflow: hidden;
+
+        .fill {
+          height: 100%;
+          background: #10b981;
+          border-radius: 999px;
+        }
+      }
+
+      .percent-text {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #10b981;
+      }
+    }
+
+    .cell-bank {
+      display: flex;
+      flex-direction: column;
+      font-size: 0.8rem;
+      color: #475569;
+
+      .bank-name {
+        color: #0f172a;
+      }
+
+      .bank-acc {
+        font-family: monospace;
+        font-weight: 700;
+        color: #0369a1;
+      }
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 0.3rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+
+      &.status-pending {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      &.status-approved {
+        background: #ecfdf5;
+        color: #065f46;
+      }
+      &.status-completed {
+        background: #e0f2fe;
+        color: #0369a1;
+      }
+      &.status-closed {
+        background: #f1f5f9;
+        color: #475569;
+      }
+      &.status-rejected {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+    }
+
+    .quick-review-btns {
+      display: flex;
+      gap: 0.4rem;
+
+      .btn-quick-approve {
+        padding: 0.4rem 0.75rem;
+        background: #10b981;
+        color: #ffffff;
+        border: none;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.775rem;
+        cursor: pointer;
+        transition: all 0.15s;
+
+        &:hover {
+          background: #059669;
+          transform: translateY(-1px);
+        }
+      }
+
+      .btn-quick-reject {
+        padding: 0.4rem 0.75rem;
+        background: #ef4444;
+        color: #ffffff;
+        border: none;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.775rem;
+        cursor: pointer;
+        transition: all 0.15s;
+
+        &:hover {
+          background: #dc2626;
+          transform: translateY(-1px);
+        }
+      }
+    }
+
+    .btn-view-detail {
+      padding: 0.45rem 0.85rem;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.15s;
+
+      &:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+      }
+    }
+  }
+
+  /* TAB KIỂM SOÁT HÓA ĐƠN */
+  .admin-audit-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    .audit-alert-box {
+      display: flex;
+      gap: 1rem;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 1.25rem;
+      color: #1e40af;
+
+      .icon {
+        font-size: 1.75rem;
+      }
+
+      p {
+        margin: 0.35rem 0 0;
+        font-size: 0.85rem;
+        color: #1e3a8a;
+      }
+    }
+
+    .audit-campaign-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+
+      .audit-campaign-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1.25rem;
+
+        .audit-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.85rem;
+
+          h4 {
+            margin: 0 0 0.25rem;
+            font-size: 1.05rem;
+          }
+
+          .district {
+            font-size: 0.8rem;
+            color: #64748b;
+          }
+
+          .audit-stats {
+            display: flex;
+            gap: 0.75rem;
+            font-size: 0.85rem;
+            align-items: center;
+
+            .badge-spent {
+              font-weight: 800;
+              color: #c2410c;
+            }
+
+            .badge-donated {
+              color: #475569;
+            }
+
+            .badge-warning {
+              background: #fef2f2;
+              color: #dc2626;
+              padding: 0.2rem 0.5rem;
+              border-radius: 4px;
+              font-weight: 700;
+              font-size: 0.75rem;
+            }
+          }
+        }
+
+        .btn-open-audit-detail {
+          padding: 0.5rem 1rem;
+          background: #ecfdf5;
+          color: #047857;
+          border: 1px solid #a7f3d0;
+          border-radius: 6px;
+          font-size: 0.85rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+
+          &:hover {
+            background: #d1fae5;
+          }
+        }
+      }
+    }
+  }
+
+  .admin-empty-state,
+  .admin-loading-state,
+  .admin-error-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 3rem;
+    text-align: center;
+    color: #64748b;
+
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+  }
+}
+

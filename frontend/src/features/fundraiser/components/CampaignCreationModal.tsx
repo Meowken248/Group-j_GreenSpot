@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import type { FundraiserCampaignCreateInput } from "../types/fundraiser.types";
-import { HCMC_DISTRICTS } from "../types/fundraiser.types";
+import { HCMC_DISTRICTS, VIETNAM_PROVINCES } from "../types/fundraiser.types";
 import { fundraiserService } from "../services/fundraiserService";
 
 interface CampaignCreationModalProps {
@@ -355,7 +355,7 @@ export const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
 
             <div className="form-group" style={{ marginTop: "0.5rem" }}>
               <label htmlFor="create-district">
-                Địa bàn triển khai (Quận/Huyện) <span className="req">*</span>
+                Địa bàn triển khai (Tỉnh / Thành phố hoặc Quận/Huyện) <span className="req">*</span>
               </label>
               <select
                 id="create-district"
@@ -363,11 +363,20 @@ export const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 onChange={(e) => setDistrict(e.target.value)}
                 data-testid="select-campaign-district"
               >
-                {HCMC_DISTRICTS.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
+                <optgroup label="Các Tỉnh / Thành phố Việt Nam">
+                  {VIETNAM_PROVINCES.filter((p) => p !== "Toàn quốc").map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Chi tiết Quận/Huyện TP.HCM">
+                  {HCMC_DISTRICTS.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </optgroup>
               </select>
             </div>
           </div>

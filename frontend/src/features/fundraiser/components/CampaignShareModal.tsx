@@ -540,32 +540,32 @@ export const CampaignShareModal: React.FC<CampaignShareModalProps> = ({
           </div>
         </div>
 
-        {/* Footer hành động */}
-        <div className="modal-footer" style={{ padding: "1rem 1.5rem" }}>
-          <div className="footer-actions-right">
+        {/* Footer hành động chuẩn MXH */}
+        <div className="share-modal-footer">
+          <button
+            type="button"
+            className="btn-share-cancel"
+            onClick={onClose}
+            disabled={isSubmitting}
+            data-testid="btn-close-share"
+          >
+            Đóng
+          </button>
+          {selectedOption !== "LINK" && (
             <button
               type="button"
-              className="btn-cancel"
-              onClick={onClose}
+              className="btn-share-confirm"
+              onClick={handleConfirmShare}
               disabled={isSubmitting}
+              data-testid="btn-confirm-share"
             >
-              Đóng
+              {isSubmitting ? "Đang chia sẻ..." : "Chia sẻ ngay"}
             </button>
-            {selectedOption !== "LINK" && (
-              <button
-                type="button"
-                className="btn-submit-primary"
-                onClick={handleConfirmShare}
-                disabled={isSubmitting}
-                data-testid="btn-confirm-share"
-              >
-                {isSubmitting ? "Đang chia sẻ..." : "Chia sẻ ngay"}
-              </button>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
 export default CampaignShareModal;
+
