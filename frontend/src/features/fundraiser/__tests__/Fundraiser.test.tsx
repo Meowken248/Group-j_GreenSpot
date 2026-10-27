@@ -9,6 +9,7 @@ import { ExpenseReportView } from "../components/ExpenseReportView";
 import { CampaignDeleteModal } from "../components/CampaignDeleteModal";
 import { CampaignShareModal } from "../components/CampaignShareModal";
 import { FundraiserContainer } from "../FundraiserContainer";
+import { AdminFundraiserDashboard } from "../components/AdminFundraiserDashboard";
 import { fundraiserService } from "../services/fundraiserService";
 import type {
   FundraiserCampaignItem,
@@ -776,5 +777,31 @@ describe("Feature 20: Gây quỹ cộng đồng (Fundraiser)", () => {
     await waitFor(() => {
       expect(screen.getByTestId("admin-fundraiser-dashboard")).toBeInTheDocument();
     });
+  });
+
+  it("Test 22: AdminFundraiserDashboard hiển thị bảng quản trị và duyệt chiến dịch", async () => {
+    (fundraiserService.listCampaigns as any).mockResolvedValue({
+      items: mockCampaigns,
+      total: mockCampaigns.length,
+      page: 1,
+      page_size: 50,
+    });
+
+    render(
+      <AdminFundraiserDashboard
+        onSelectCampaign={vi.fn()}
+        onRefreshList={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Bảng Quản Trị Quỹ Môi Trường GreenSpot")).toBeInTheDocument();
+      expect(screen.getByText("Tổng quỹ đã huy động")).toBeInTheDocument();
+      expect(screen.getByText("Tổng ngân sách đã giải ngân")).toBeInTheDocument();
+      expect(screen.getByText("Chiến dịch đang hoạt động")).toBeInTheDocument();
+      expect(screen.getByText("Chiến dịch chờ duyệt gấp")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("admin-campaigns-table")).toBeInTheDocument();
   });
 });

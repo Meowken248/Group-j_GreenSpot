@@ -8,7 +8,88 @@ interface AdminFundraiserDashboardProps {
   onRefreshList: () => void;
 }
 
-export const AdminFundraiserDashboard: React.FC<AdminFundraiserDashboardProps> = ({
+const extractErrorMessage = (err: any): string => {
+  const detail = err?.response?.data?.detail;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((d: any) => d.msg || (typeof d === "string" ? d : JSON.stringify(d)))
+      .join("; ");
+  }
+  if (detail && typeof detail === "object") {
+    return JSON.stringify(detail);
+  }
+  return err?.message || "Không thể tải dữ liệu quản trị";
+};
+
+class AdminDashboardErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("AdminFundraiserDashboard Error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div
+          className="admin-error-card"
+          style={{
+            margin: "2rem auto",
+            maxWidth: "600px",
+            padding: "2rem",
+            textAlign: "center",
+            background: "#fff",
+            borderRadius: "16px",
+            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.08)",
+            border: "1px solid #fed7aa",
+          }}
+        >
+          <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>🛡️</div>
+          <h3 style={{ color: "#9a3412", marginBottom: "0.5rem" }}>
+            Không thể hiển thị Bảng Quản Trị Gây Quỹ
+          </h3>
+          <p style={{ color: "#475569", fontSize: "0.9rem", marginBottom: "1.2rem" }}>
+            Hệ thống gặp sự cố khi dựng giao diện quản trị:{" "}
+            {this.state.error?.message || "Lỗi không xác định"}
+          </p>
+          <button
+            type="button"
+            className="btn-refresh-admin"
+            style={{
+              padding: "0.6rem 1.5rem",
+              background: "#059669",
+              color: "#fff",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontWeight: 600,
+            }}
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              window.location.reload();
+            }}
+          >
+            🔄 Tải lại Bảng Quản Trị
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const AdminFundraiserDashboardInternal: React.FC<AdminFundraiserDashboardProps> = ({
   onSelectCampaign,
   onRefreshList,
 }) => {
@@ -37,14 +118,14 @@ export const AdminFundraiserDashboard: React.FC<AdminFundraiserDashboardProps> =
     setIsLoading(true);
     setError(null);
     try {
-      // Admin lấy danh sách tối đa 100 chiến dịch
+      // Admin lấy danh sách tối đa 50 chiến dịch an toàn
       const res = await fundraiserService.listCampaigns({
         page: 1,
-        page_size: 100,
+        page_size: 50,
       });
-      setCampaigns(res.items || []);
+      setCampaigns(Array.isArray(res?.items) ? res.items : []);
     } catch (err: any) {
-      setError(err?.response?.data?.detail || "Không thể tải dữ liệu quản trị");
+      setError(extractErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -59,21 +140,24 @@ export const AdminFundraiserDashboard: React.FC<AdminFundraiserDashboardProps> =
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const formatVND = (num: number) => {
-    return new Intl.NumberFormat("vi-VN").format(num) + " đ";
+  const formatVND = (num: number | undefined | null) => {
+    const val = typeof num === "number" && !isNaN(num) ? num : 0;
+    return new Intl.NumberFormat("vi-VN").format(val) + " đ";
   };
 
   // Tính toán KPI Thống kê
   const kpiStats = useMemo(() => {
-    const totalRaised = campaigns.reduce((acc, c) => acc + (c.total_donated || 0), 0);
-    const totalSpent = campaigns.reduce((acc, c) => acc + (c.total_spent || 0), 0);
-    const activeCount = campaigns.filter((c) => c.status === "approved").length;
-    const pendingCount = campaigns.filter((c) => c.status === "pending").length;
+    const list = Array.isArray(campaigns) ? campaigns : [];
+    const totalRaised = list.reduce((acc, c) => acc + (Number(c?.total_donated) || 0), 0);
+    const totalSpent = list.reduce((acc, c) => acc + (Number(c?.total_spent) || 0), 0);
+    const activeCount = list.filter((c) => c?.status === "approved").length;
+    const pendingCount = list.filter((c) => c?.status === "pending").length;
     return { totalRaised, totalSpent, activeCount, pendingCount };
   }, [campaigns]);
 
   // Lọc danh sách chiến dịch theo điều kiện
   const filteredCampaigns = useMemo(() => {
+    if (!Array.isArray(campaigns)) return [];
     return campaigns.filter((camp) => {
       if (!camp) return false;
       // Lọc trạng thái
@@ -81,7 +165,7 @@ export const AdminFundraiserDashboard: React.FC<AdminFundraiserDashboardProps> =
         return false;
       }
       // Lọc địa bàn an toàn tuyệt đối
-      const districtStr = camp.district || "";
+      const districtStr = String(camp.district || "");
       if (
         provinceFilter &&
         provinceFilter !== "Toàn quốc" &&
@@ -92,9 +176,9 @@ export const AdminFundraiserDashboard: React.FC<AdminFundraiserDashboardProps> =
       // Tìm kiếm theo tên hoặc người tạo an toàn tuyệt đối
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase().trim();
-        const matchTitle = (camp.title || "").toLowerCase().includes(query);
-        const matchCreator = (camp.creator_name || "").toLowerCase().includes(query);
-        const matchBank = (camp.bank_account_name || "").toLowerCase().includes(query);
+        const matchTitle = String(camp.title || "").toLowerCase().includes(query);
+        const matchCreator = String(camp.creator_name || "").toLowerCase().includes(query);
+        const matchBank = String(camp.bank_account_name || "").toLowerCase().includes(query);
         if (!matchTitle && !matchCreator && !matchBank) return false;
       }
       return true;
@@ -449,22 +533,24 @@ export const AdminFundraiserDashboard: React.FC<AdminFundraiserDashboardProps> =
           </div>
 
           <div className="audit-campaign-list">
-            {campaigns
-              .filter((c) => (c.total_spent || 0) > 0 || c.status === "closed")
+            {(Array.isArray(campaigns) ? campaigns : [])
+              .filter((c) => (Number(c?.total_spent) || 0) > 0 || c?.status === "closed")
               .map((camp) => {
                 const campId = camp.campaign_id || camp.id || "";
-                const isOverBudget = (camp.total_spent || 0) > (camp.total_donated || 0);
+                const spent = Number(camp.total_spent) || 0;
+                const donated = Number(camp.total_donated) || 0;
+                const isOverBudget = spent > donated;
 
                 return (
                   <div key={campId} className="audit-campaign-card">
                     <div className="audit-header">
                       <div>
-                        <h4>{camp.title}</h4>
-                        <span className="district">📍 {camp.district}</span>
+                        <h4>{camp.title || "Chiến dịch chưa đặt tên"}</h4>
+                        <span className="district">📍 {camp.district || "Toàn quốc"}</span>
                       </div>
                       <div className="audit-stats">
-                        <span className="badge-spent">Đã chi: {formatVND(camp.total_spent || 0)}</span>
-                        <span className="badge-donated">/ Thu được: {formatVND(camp.total_donated)}</span>
+                        <span className="badge-spent">Đã chi: {formatVND(spent)}</span>
+                        <span className="badge-donated">/ Thu được: {formatVND(donated)}</span>
                         {isOverBudget && (
                           <span className="badge-warning">⚠️ Vượt ngân sách gây quỹ</span>
                         )}
@@ -511,7 +597,7 @@ export const AdminFundraiserDashboard: React.FC<AdminFundraiserDashboardProps> =
                 <br />
                 Địa bàn: <strong>{reviewingCampaign.district}</strong>
                 <br />
-                Mục tiêu: <strong>{formatVND(reviewingCampaign.target_amount)}</strong>
+                Mục tiêu: <strong>{formatVND(reviewingCampaign.target_amount || 0)}</strong>
               </div>
 
               <div style={{ display: "flex", gap: "1.5rem", marginBottom: "1rem" }}>
@@ -601,6 +687,14 @@ export const AdminFundraiserDashboard: React.FC<AdminFundraiserDashboardProps> =
         </div>
       )}
     </div>
+  );
+};
+
+export const AdminFundraiserDashboard: React.FC<AdminFundraiserDashboardProps> = (props) => {
+  return (
+    <AdminDashboardErrorBoundary>
+      <AdminFundraiserDashboardInternal {...props} />
+    </AdminDashboardErrorBoundary>
   );
 };
 

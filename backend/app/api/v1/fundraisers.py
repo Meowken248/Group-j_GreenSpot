@@ -103,7 +103,7 @@ async def list_campaigns(
     search: Optional[str] = Query(None, description="Tìm theo tên chiến dịch"),
     my_campaigns: bool = Query(False, description="Chỉ lấy chiến dịch do tôi tạo"),
     page: int = Query(1, ge=1, description="Số trang"),
-    page_size: int = Query(12, ge=1, le=50, description="Số mục mỗi trang (mặc định 12)"),
+    page_size: int = Query(12, ge=1, le=100, description="Số mục mỗi trang (mặc định 12)"),
     db: AsyncSession = Depends(get_db),
     optional_user: Optional[User] = Depends(get_optional_user),
 ):
