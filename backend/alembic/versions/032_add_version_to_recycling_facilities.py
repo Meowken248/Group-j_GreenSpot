@@ -30,3 +30,4 @@ def upgrade() -> None:
 def downgrade() -> None:
     # Gỡ bỏ cột version nếu rollback
     op.drop_column('recycling_facilities', 'version')
+

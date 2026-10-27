@@ -180,3 +180,4 @@ async def seed_recycling_facilities_data():
 
 if __name__ == "__main__":
     asyncio.run(seed_recycling_facilities_data())
+
