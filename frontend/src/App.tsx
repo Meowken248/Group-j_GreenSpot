@@ -27,6 +27,7 @@ import { HotspotContainer } from "./features/hotspots";
 import { EmergencyAlertContainer } from "./features/emergency_alert";
 import { FloodSosContainer } from "./features/flood_sos";
 import { IncidentExportContainer } from "./features/incident_export";
+import { AdminDashboardContainer } from "./features/admin_dashboard";
 import {
   SettingsContainer,
   applyThemeToDocument,
@@ -82,7 +83,8 @@ export type ActiveTab =
   | "qr-scan"
   | "lucky-wheel"
   | "milestone"
-  | "incident-export";
+  | "incident-export"
+  | "admin-dashboard";
 
 export type TabType = ActiveTab;
 
@@ -140,6 +142,14 @@ function App() {
     }
     if (hash === "#incident-export" || hash === "#export-incidents" || path === "/incident-export") {
       return "incident-export";
+    }
+    if (
+      hash === "#admin-dashboard" ||
+      hash === "#system-activity" ||
+      hash === "#admin-stats" ||
+      path === "/admin-dashboard"
+    ) {
+      return "admin-dashboard";
     }
     if (hash === "#emergency-alert" || path === "/emergency-alert") {
       if (!isLogged) return "auth";
@@ -1120,6 +1130,20 @@ function App() {
                     </div>
                     {activeTab === "incident-export" && <span className="active-indicator">●</span>}
                   </button>
+
+                  <button
+                    type="button"
+                    className={`panel-item-btn ${activeTab === "admin-dashboard" ? "active" : ""}`}
+                    onClick={() => navigateTo("admin-dashboard", "#admin-dashboard")}
+                    data-testid="tab-btn-admin-dashboard-menu"
+                  >
+                    <span className="panel-item-icon">📈</span>
+                    <div className="panel-item-content">
+                      <span className="panel-item-title">Thống kê hoạt động hệ thống</span>
+                      <span className="panel-item-desc">KPIs người dùng mới, bài đăng, nhóm theo ngày</span>
+                    </div>
+                    {activeTab === "admin-dashboard" && <span className="active-indicator">●</span>}
+                  </button>
                 </div>
               )}
             </div>
@@ -1925,6 +1949,15 @@ function App() {
                   } else if (target === "dedup") {
                     setActiveTab("dedup");
                     window.location.hash = "#dedup";
+                  } else if (target === "flood_sos" || target === "sos") {
+                    setActiveTab("flood-sos");
+                    window.location.hash = "#flood-sos";
+                  } else if (target === "incident_export" || target === "export") {
+                    setActiveTab("incident-export");
+                    window.location.hash = "#incident-export";
+                  } else if (target === "admin_dashboard" || target === "stats" || target === "system_activity") {
+                    setActiveTab("admin-dashboard");
+                    window.location.hash = "#admin-dashboard";
                   } else if (target === "/report-incident") {
                     setActiveTab("triage");
                     window.location.hash = "#triage";
@@ -2026,6 +2059,15 @@ function App() {
         ) : activeTab === "incident-export" ? (
           <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
             <IncidentExportContainer />
+          </div>
+        ) : activeTab === "admin-dashboard" ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+            <AdminDashboardContainer
+              onNavigateHome={() => {
+                setActiveTab("map");
+                window.location.hash = "#map";
+              }}
+            />
           </div>
         ) : (
           <ModulePermissionGuard
