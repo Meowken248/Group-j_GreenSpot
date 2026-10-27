@@ -1,0 +1,89 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: ecoreport_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ecoreport_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ecoreport_backend
+    restart: always
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/ecoreport_db
+      WATCHFILES_FORCE_POLLING: "true"
+      # =========================================================================
+      # CẤU HÌNH GỬI EMAIL THẬT (GMAIL / OUTLOOK SMTP) - KHAI BÁO TẠI backend/.env
+      # =========================================================================
+      # Không khai báo SMTP_* ở đây để tránh ghi đè cấu hình trong backend/.env
+      # (biến môi trường container có độ ưu tiên cao hơn env_file của pydantic).
+      # 1. Sao chép backend/.env.example -> backend/.env
+      # 2. Điền SMTP_USER (Gmail của bạn) và SMTP_PASSWORD (Google App Password 16 ký tự,
+      #    tạo tại https://myaccount.google.com/apppasswords - KHÔNG dùng mật khẩu Gmail thường).
+      # 3. Chạy: docker compose up -d --force-recreate backend
+      # =========================================================================
+      # =========================================================================
+      # CẤU HÌNH TRỢ LÝ AI (KIRA AI / OPENAI-COMPATIBLE LLM) - CHỨC NĂNG 24
+      # =========================================================================
+      # Không khai báo KIRA_* ở đây để tránh ghi đè cấu hình trong backend/.env
+      # (biến môi trường container có độ ưu tiên cao hơn env_file của pydantic).
+      # Sao chép backend/.env.example -> backend/.env và điền KIRA_API_KEY.
+      # =========================================================================
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+
+  dashboard:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ecoreport_dashboard
+    restart: always
+    working_dir: /app/air_quality
+    command: [ "streamlit", "run", "app.py", "--server.port", "8501", "--server.address", "0.0.0.0", "--server.headless", "true" ]
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - backend
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ecoreport_frontend
+    restart: always
+    command: [ "sh", "-c", "pnpm install --prefer-offline --store-dir /root/.local/share/pnpm/store && pnpm dev --host 0.0.0.0" ]
+    environment:
+      VITE_API_URL: http://127.0.0.1:8000
+      BACKEND_PROXY_URL: http://backend:8000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+
