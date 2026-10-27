@@ -19,6 +19,12 @@ vi.mock("../services/incidentExportApi", () => ({
     generateExport: vi.fn(),
     checkExportStatus: vi.fn(),
     getDownloadUrl: vi.fn((id: string) => `/api/v1/incidents/export/${id}/download`),
+    downloadFile: vi.fn().mockResolvedValue({
+      data: new Blob(["mock-binary-data"], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      }),
+      fileName: "BaoCao_SuCo_20261026_143000.xlsx",
+    }),
   },
 }));
 

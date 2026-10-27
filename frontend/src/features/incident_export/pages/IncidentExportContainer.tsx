@@ -1,10 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { IncidentExportHeader } from "../components/IncidentExportHeader";
 import { IncidentExportFooter } from "../components/IncidentExportFooter";
-import {
-  IncidentExportConsole,
-  ConsoleImperativeHandle,
-} from "../components/IncidentExportConsole";
+import { IncidentExportConsole } from "../components/IncidentExportConsole";
+import type { ConsoleImperativeHandle } from "../components/IncidentExportConsole";
 import { ExportFormatModal } from "../components/ExportFormatModal";
 import { ExportSuccessModal } from "../components/ExportSuccessModal";
 import { ExportEmptyWarningModal } from "../components/ExportEmptyWarningModal";

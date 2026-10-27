@@ -58,4 +58,20 @@ export const incidentExportApi = {
   getDownloadUrl(exportId: string): string {
     return `${api.defaults.baseURL || ""}${BASE_URL}/${exportId}/download`;
   },
+
+  /**
+   * Tải dữ liệu nhị phân (Blob) tệp Excel/PDF trực tiếp từ backend
+   */
+  async downloadFile(exportId: string): Promise<{ data: Blob; fileName?: string }> {
+    const res = await api.get(`${BASE_URL}/${exportId}/download`, {
+      responseType: "blob",
+    });
+    const disposition = (res.headers["content-disposition"] as string) || "";
+    let fileName: string | undefined;
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    if (match && match[1]) {
+      fileName = match[1];
+    }
+    return { data: res.data as Blob, fileName };
+  },
 };

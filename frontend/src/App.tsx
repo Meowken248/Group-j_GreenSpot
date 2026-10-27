@@ -26,6 +26,7 @@ import { DispatchContainer } from "./features/dispatch";
 import { HotspotContainer } from "./features/hotspots";
 import { EmergencyAlertContainer } from "./features/emergency_alert";
 import { FloodSosContainer } from "./features/flood_sos";
+import { IncidentExportContainer } from "./features/incident_export";
 import {
   SettingsContainer,
   applyThemeToDocument,
@@ -80,7 +81,8 @@ export type ActiveTab =
   | "heatmap"
   | "qr-scan"
   | "lucky-wheel"
-  | "milestone";
+  | "milestone"
+  | "incident-export";
 
 export type TabType = ActiveTab;
 
@@ -135,6 +137,9 @@ function App() {
     }
     if (hash === "#flood-sos" || path === "/flood-sos") {
       return "flood-sos";
+    }
+    if (hash === "#incident-export" || hash === "#export-incidents" || path === "/incident-export") {
+      return "incident-export";
     }
     if (hash === "#emergency-alert" || path === "/emergency-alert") {
       if (!isLogged) return "auth";
@@ -1101,6 +1106,20 @@ function App() {
                     </div>
                     {activeTab === "flood-sos" && <span className="active-indicator">●</span>}
                   </button>
+
+                  <button
+                    type="button"
+                    className={`panel-item-btn ${activeTab === "incident-export" ? "active" : ""}`}
+                    onClick={() => navigateTo("incident-export", "#incident-export")}
+                    data-testid="tab-btn-incident-export-menu"
+                  >
+                    <span className="panel-item-icon">📊</span>
+                    <div className="panel-item-content">
+                      <span className="panel-item-title">Xuất dữ liệu sự cố (Excel/PDF)</span>
+                      <span className="panel-item-desc">Trích xuất danh sách sự cố theo bộ lọc (STT 47)</span>
+                    </div>
+                    {activeTab === "incident-export" && <span className="active-indicator">●</span>}
+                  </button>
                 </div>
               )}
             </div>
@@ -2004,6 +2023,10 @@ className={`nav-group-btn single-btn ${isPenaltiesActive ? "active" : ""}`}
       ) : activeTab === "flood-sos" ? (
         <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
           <FloodSosContainer />
+        </div>
+      ) : activeTab === "incident-export" ? (
+        <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+          <IncidentExportContainer />
         </div>
       ) : (
         <ModulePermissionGuard

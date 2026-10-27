@@ -6,6 +6,7 @@ import {
   IconFileSpreadsheet,
   IconFilePdf,
 } from "./ExportIcons";
+import { incidentExportApi } from "../services/incidentExportApi";
 import type { ExportCreatedResponse } from "../types/incident_export.types";
 
 interface ExportSuccessModalProps {
@@ -57,7 +58,7 @@ export const ExportSuccessModal: React.FC<ExportSuccessModalProps> = ({
     return `${mins} phút ${secs < 10 ? "0" : ""}${secs} giây`;
   };
 
-  const handleDownloadClick = () => {
+  const handleDownloadClick = async () => {
     if (isExpired) return;
 
     // Toast thông báo
@@ -67,13 +68,34 @@ export const ExportSuccessModal: React.FC<ExportSuccessModalProps> = ({
       onDownloadTriggered(exportResult.file_name);
     }
 
-    // Kích hoạt thẻ <a> download tệp an toàn
-    const anchor = document.createElement("a");
-    anchor.href = exportResult.download_url;
-    anchor.setAttribute("download", exportResult.file_name);
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
+    try {
+      // 1. Tải dữ liệu nhị phân nguyên bản (Blob) từ backend qua API client
+      const { data: blob, fileName } = await incidentExportApi.downloadFile(exportResult.export_id);
+      const targetFileName = fileName || exportResult.file_name;
+
+      // 2. Tạo URL an toàn từ Blob nhị phân thực tế
+      const blobUrl = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = blobUrl;
+      anchor.setAttribute("download", targetFileName);
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+
+      // Thu hồi bộ nhớ object URL
+      setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+      }, 1000);
+    } catch {
+      // Fallback: nếu lỗi mạng blob, dùng URL trực tiếp từ API client
+      const directUrl = incidentExportApi.getDownloadUrl(exportResult.export_id);
+      const anchor = document.createElement("a");
+      anchor.href = directUrl;
+      anchor.setAttribute("download", exportResult.file_name);
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+    }
 
     // Xoá toast sau 4 giây
     setTimeout(() => {
