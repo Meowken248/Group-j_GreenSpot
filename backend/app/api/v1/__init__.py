@@ -29,6 +29,7 @@ from app.api.v1.dispatch.router import router as dispatch_router
 from app.api.v1.hotspots.router import router as hotspots_router
 from app.api.v1.chatbot import router as chatbot_router
 from app.api.v1.events import router as events_router
+from app.api.v1.fundraisers import router as fundraisers_router
 
 api_v1_router = APIRouter()
 api_v1_router.include_router(auth_router)
@@ -61,3 +62,4 @@ api_v1_router.include_router(dispatch_router)
 api_v1_router.include_router(hotspots_router)
 api_v1_router.include_router(chatbot_router)
 api_v1_router.include_router(events_router)
+api_v1_router.include_router(fundraisers_router)
