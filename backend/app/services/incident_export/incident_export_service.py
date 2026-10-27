@@ -5,17 +5,18 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import openpyxl
-from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
-from openpyxl.utils import get_column_letter
+import openpyxl  # type: ignore[import-untyped]
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side  # type: ignore[import-untyped]
+from openpyxl.utils import get_column_letter  # type: ignore[import-untyped]
+from openpyxl.worksheet.worksheet import Worksheet  # type: ignore[import-untyped]
 
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.units import inch, cm
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import (
+from reportlab.lib import colors  # type: ignore[import-untyped]
+from reportlab.lib.pagesizes import A4  # type: ignore[import-untyped]
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet  # type: ignore[import-untyped]
+from reportlab.lib.units import inch, cm  # type: ignore[import-untyped]
+from reportlab.pdfbase import pdfmetrics  # type: ignore[import-untyped]
+from reportlab.pdfbase.ttfonts import TTFont  # type: ignore[import-untyped]
+from reportlab.platypus import (  # type: ignore[import-untyped]
     HRFlowable,
     Paragraph,
     SimpleDocTemplate,
@@ -291,7 +292,7 @@ class IncidentExportService:
     ) -> None:
         """Tạo bảng tính Excel (.xlsx) với phong cách thiết kế sang trọng, chuyên nghiệp"""
         wb = openpyxl.Workbook()
-        ws = wb.active
+        ws: Worksheet = wb.active  # type: ignore[assignment]
         ws.title = "Danh Sách Sự Cố"
 
         # Đặt font & màu chủ đạo
@@ -376,9 +377,12 @@ class IncidentExportService:
         # Tự động co giãn độ rộng cột
         for col in ws.columns:
             max_len = 0
-            col_letter = get_column_letter(col[0].column)
+            first_col_idx = col[0].column  # type: ignore[union-attr]
+            if first_col_idx is None:
+                continue
+            col_letter = get_column_letter(first_col_idx)
             for cell in col:
-                if cell.row < start_row:
+                if cell.row < start_row:  # type: ignore[operator]
                     continue
                 val = str(cell.value or "")
                 if len(val) > max_len:
@@ -500,7 +504,7 @@ class IncidentExportService:
             alignment=1,
         )
 
-        story = []
+        story: List[Any] = []
 
         # 1. Quốc hiệu - Tiêu ngữ & Đơn vị chủ quản
         header_data = [

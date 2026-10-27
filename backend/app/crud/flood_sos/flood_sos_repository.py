@@ -5,7 +5,7 @@ Triển khai toàn bộ câu truy vấn CSDL 100% Explicit SQL (PostGIS / Havers
 
 from datetime import datetime, timezone
 import math
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 import uuid
 from sqlalchemy import text, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -235,7 +235,7 @@ class FloodSosRepository(IFloodSosRepository):
               AND deleted_at IS NULL
         """)
 
-        res = await db.execute(
+        res: Any = await db.execute(
             update_sql,
             {
                 "vol_id": volunteer_id,
@@ -300,7 +300,7 @@ class FloodSosRepository(IFloodSosRepository):
               AND deleted_at IS NULL
         """)
 
-        res = await db.execute(
+        res: Any = await db.execute(
             update_sql,
             {
                 "status": status,
@@ -356,7 +356,7 @@ class FloodSosRepository(IFloodSosRepository):
             .order_by(FloodSosChatMessage.created_at.asc())
         )
         res = await db.execute(stmt)
-        return res.scalars().all()
+        return list(res.scalars().all())
 
     async def cancel_sos_request(
         self,
@@ -389,7 +389,7 @@ class FloodSosRepository(IFloodSosRepository):
               AND deleted_at IS NULL
         """)
 
-        res = await db.execute(
+        res: Any = await db.execute(
             update_sql,
             {
                 "cancel_reason": cancel_reason,
