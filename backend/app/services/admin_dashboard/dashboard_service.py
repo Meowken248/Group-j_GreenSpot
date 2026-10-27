@@ -64,7 +64,7 @@ class AdminDashboardService:
         end_date: Optional[date] = None,
     ) -> ActivityDashboardResponse:
         """
-        Lấy toàn bộ dữ liệu cho Màn 1/3:
+        Lấy toàn bộ dữ liệu cho 
           - KPI cards (tổng + % tăng trưởng).
           - Chuỗi dữ liệu theo ngày cho biểu đồ đường.
 
@@ -146,6 +146,9 @@ class AdminDashboardService:
         Lấy bảng dữ liệu chi tiết theo ngày với phân trang.
         Tính summary row (tổng lũy kế + trung bình ngày) từ toàn bộ kỳ.
         """
+        if from_date > to_date:
+            raise ValueError("Ngày bắt đầu không được lớn hơn ngày kết thúc.")
+
         # Dữ liệu trang hiện tại
         page_rows, total_count = await self._repo.get_daily_table(
             db, from_date, to_date, page, page_size
@@ -310,9 +313,11 @@ class AdminDashboardService:
             cell.fill = summary_fill
 
         # ── Auto column width ──────────────────────────────────────────────
-        for col in ws.columns:
-            max_len = max((len(str(c.value or "")) for c in col), default=10)
-            ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 30)
+        from openpyxl.utils import get_column_letter
+
+        col_widths = [16, 20, 20, 18]
+        for col_idx, width in enumerate(col_widths, start=1):
+            ws.column_dimensions[get_column_letter(col_idx)].width = width
 
         # ── Save to bytes ──────────────────────────────────────────────────
         buf = io.BytesIO()

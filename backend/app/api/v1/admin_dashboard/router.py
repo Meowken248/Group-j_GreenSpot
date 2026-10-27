@@ -11,9 +11,9 @@ Quy tắc   :
   - Tất cả response lỗi tuân thủ mã HTTP RESTful chuẩn.
 
 Endpoints:
-  GET  /api/v1/admin-dashboard/overview      - Màn 1/3: Dashboard tổng quan
+  GET  /api/v1/admin-dashboard/overview      -  Dashboard tổng quan
   GET  /api/v1/admin-dashboard/daily-table   - Màn 2/3: Bảng chi tiết theo ngày
-  POST /api/v1/admin-dashboard/export        - Màn 3/3: Xuất báo cáo Excel/PDF
+  POST /api/v1/admin-dashboard/export        -  Xuất báo cáo Excel/PDF
 """
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ _service = AdminDashboardService()
 @router.get(
     "/overview",
     response_model=ActivityDashboardResponse,
-    summary="Màn 1/3: Lấy KPI cards + dữ liệu biểu đồ đường theo ngày",
+    summary=" Lấy KPI cards + dữ liệu biểu đồ đường theo ngày",
     description=(
         "Trả về 3 thẻ KPI (người dùng mới, bài đăng mới, nhóm mới) kèm % tăng trưởng "
         "so với kỳ trước và chuỗi dữ liệu theo ngày cho Multi-line Trend Chart.\n\n"
@@ -161,7 +161,7 @@ async def get_daily_table(
 
 @router.post(
     "/export",
-    summary="Màn 3/3: Xuất báo cáo thống kê dạng Excel (.xlsx) hoặc PDF (.pdf)",
+    summary=" Xuất báo cáo thống kê dạng Excel (.xlsx) hoặc PDF (.pdf)",
     description=(
         "Sinh tệp báo cáo và trả về stream tải xuống.\n\n"
         "**Body JSON:**\n"
