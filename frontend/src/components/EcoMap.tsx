@@ -1008,7 +1008,7 @@ function EcoMap({ initialCategory = "all" }: EcoMapProps = {}) {
   };
 
   return (
-    <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden", userSelect: "none" }}>
+    <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden", userSelect: "none" }}>
       
       {/* 1. SIDEBAR ĐIỀU HÀNH WEBGIS ĐA NĂNG TOÀN DIỆN (Swiss / Linear Architecture) */}
       <MapControlSidebar

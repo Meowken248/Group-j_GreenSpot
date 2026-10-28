@@ -1,7 +1,8 @@
 import sys
 import docx
 
-sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 doc = docx.Document("Báo Cáo (3).docx")
 
 with open("scratch/features_25_27_extracted.txt", "w", encoding="utf-8") as out:

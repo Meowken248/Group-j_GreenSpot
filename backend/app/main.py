@@ -59,7 +59,14 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
 )
+
+from fastapi.staticfiles import StaticFiles
+from app.core.config import UPLOAD_DIR
+
+# Mount thư mục lưu trữ tệp đính kèm và ảnh hồ sơ
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 app.include_router(api_v1_router, prefix="/api/v1")
 

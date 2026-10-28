@@ -1,9 +1,13 @@
 import uuid
-from typing import Optional
-from fastapi import APIRouter, Depends, Query, status
+from typing import Optional, Tuple
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.models.rbac import User, UserSession
+from app.models.alert_notification import Notification
+from app.api.v1.auth import get_current_user_and_session
 from app.schemas.alert_notification import (
     NotificationListResponse,
     NotificationMarkReadRequest,
@@ -12,7 +16,7 @@ from app.schemas.alert_notification import (
 )
 from app.services.notification_service import NotificationService
 
-router = APIRouter(prefix="/notifications", tags=["Chức năng 29: Điều phối Thông báo Đẩy Thời gian thực"])
+router = APIRouter(prefix="/notifications", tags=["Chức năng 29: Điều phối Thông báo Đẩy Thời gian thực & Notifications"])
 
 
 @router.get("", response_model=NotificationListResponse)
@@ -20,7 +24,7 @@ async def list_notifications(
     user_id: Optional[uuid.UUID] = Query(None, description="ID người dùng để lấy thông báo riêng (nếu có)"),
     only_unread: bool = Query(False, description="Chỉ lấy tin chưa đọc"),
     page: int = Query(1, ge=1),
-    limit: int = Query(10, ge=1, le=50),
+    limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -55,6 +59,33 @@ async def mark_notifications_read(
         notification_ids=req.notification_ids,
     )
     return {"status": "success", "marked_read_count": updated_count}
+
+
+@router.patch("/{notification_id}/read")
+async def patch_notification_read(
+    notification_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Đánh dấu 1 thông báo cụ thể là đã đọc"""
+    updated_count = await NotificationService.mark_as_read(
+        db,
+        notification_ids=[notification_id],
+    )
+    return {"status": "success", "marked_read_count": updated_count}
+
+
+@router.post("/mark-all-read")
+async def mark_all_notifications_as_read(
+    user_id: Optional[uuid.UUID] = Query(None),
+    db: AsyncSession = Depends(get_db),
+):
+    """Đánh dấu tất cả thông báo là đã đọc"""
+    updated_count = await NotificationService.mark_as_read(
+        db,
+        user_id=user_id,
+        notification_ids=None,
+    )
+    return {"status": "success", "message": "Đã đánh dấu tất cả thông báo là đã đọc.", "marked_read_count": updated_count}
 
 
 @router.delete("/{notification_id}")

@@ -800,23 +800,25 @@ for m in mockups:
     sidebar_html = "\n      ".join(sidebar_parts)
 
     table_rows_html = ""
-    for r in m["table_rows"]:
-        table_rows_html += f"<tr><td>{r[0]}</td><td>{r[1]}</td><td>{r[2]}</td></tr>\n"
+    table_rows = m.get("table_rows")
+    if isinstance(table_rows, list):
+        for r in table_rows:
+            table_rows_html += f"<tr><td>{r[0]}</td><td>{r[1]}</td><td>{r[2]}</td></tr>\n"
 
     html = (
         template
-        .replace("__URL__", m["url"])
+        .replace("__URL__", str(m["url"]))
         .replace("__SIDEBAR_HTML__", sidebar_html)
-        .replace("__TITLE__", m["title"])
-        .replace("__LEFT_CARD_TITLE__", m["left_card_title"])
-        .replace("__LEFT_CARD_CONTENT__", m["left_card_content"])
-        .replace("__RIGHT_CARD_TITLE__", m["right_card_title"])
-        .replace("__RIGHT_CARD_CONTENT__", m["right_card_content"])
+        .replace("__TITLE__", str(m["title"]))
+        .replace("__LEFT_CARD_TITLE__", str(m["left_card_title"]))
+        .replace("__LEFT_CARD_CONTENT__", str(m["left_card_content"]))
+        .replace("__RIGHT_CARD_TITLE__", str(m["right_card_title"]))
+        .replace("__RIGHT_CARD_CONTENT__", str(m["right_card_content"]))
         .replace("__TABLE_ROWS_HTML__", table_rows_html)
     )
 
     temp_html = os.path.abspath(f"scratch/temp_{m['id']}.html")
-    out_png = os.path.join(OUT_DIR, m["filename"])
+    out_png = os.path.join(OUT_DIR, str(m["filename"]))
 
     with open(temp_html, "w", encoding="utf-8") as f:
         f.write(html)

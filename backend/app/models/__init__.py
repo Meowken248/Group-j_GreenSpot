@@ -24,12 +24,15 @@ from app.models.spatial import (
     RecyclingFacility,
 )
 
-# 3. Sự cố Môi trường Đô thị (Incidents & Media)
+# 3. Sự cố Môi trường Đô thị (Incidents, Media & Audit Logs)
 from app.models.incident import (
     WasteCategory,
     Incident,
     IncidentMedia,
 )
+from app.models.audit_log import IncidentAuditLog
+from app.models.deduplication import IncidentDuplicateCluster
+from app.models.incident_export import ExportedIncidentFile
 
 # 4. Trạm Quan trắc Cảm biến IoT & Dữ liệu Khí tượng
 from app.models.iot import (
@@ -94,7 +97,7 @@ from app.models.milestone import (
     MilestonePost,
 )
 
-# 13. Cảnh báo Môi trường, Thông báo Đẩy & Tra cứu Công khai (Chức năng 28, 29, 30)
+# 13. Cảnh báo Môi trường, Thông báo Đẩy & Tra cứu Công khai
 from app.models.alert_notification import (
     AlertSeverity,
     AlertStatus,
@@ -105,11 +108,66 @@ from app.models.alert_notification import (
     IncidentVerification,
 )
 
-# 14. Quản trị Ngưỡng Cảnh báo & Báo cáo Công khai (Chức năng 34, 36)
+# 14. Quản trị Ngưỡng Cảnh báo & Báo cáo Công khai
 from app.models.system_config import (
     SystemConfig,
     PublicReport,
 )
+
+# 15. Trợ lý giọng nói rảnh tay (Hands-free Voice Assistant)
+from app.models.voice_assistant import (
+    VoiceSampleCommand,
+    VoiceInteractionLog,
+    VoiceActionType,
+    VoiceCategory,
+)
+
+# 16. Trang cá nhân, Hộ chiếu Xanh, Huy hiệu & Lịch sử đóng góp (Profile Domain)
+from app.models.profile import (
+    CitizenLevel,
+    Badge,
+    UserBadge,
+    UserActivity,
+    Post,
+)
+from app.models.post import PostTaggedFriend
+
+# 17. Kết bạn và theo dõi (Friends & Follows Domain)
+from app.models.friends import (
+    FriendRequest,
+    Friendship,
+    UserFollow,
+    FriendRequestStatus,
+)
+
+# 18. Cài đặt người dùng (User Settings Domain)
+from app.models.settings import UserSettings
+
+# 19. Tra cứu quy định xử phạt vi phạm hành chính (Penalty Regulations Domain)
+from app.models.penalty import PenaltyRegulation, PenaltyReport
+
+# 20. Cảnh báo khẩn cấp theo vị trí & Safety Check (STT 45)
+from app.models.emergency_alert import (
+    UserDeviceLocation,
+    EmergencyBroadcastAlert,
+    EmergencyAlertRecipient,
+    EmergencySOSSignal,
+    UserSafetyCheck,
+    SafetyCheckFriendDelivery,
+)
+
+# 21. Cứu hộ ngập cộng đồng (Flood SOS - STT 46)
+from app.models.flood_sos import (
+    FloodSosRequest,
+    VolunteerProfile,
+    FloodSosChatMessage,
+)
+
+# 22. Điều phối tác nghiệp & hiện trường (STT 43)
+from app.models.dispatch import DispatchOrder
+
+# 23. Phân tích điểm nóng & dự báo (STT 44)
+from app.models.hotspots import HotspotCluster, HotspotDailyForecast
 
 __all__ = [
     "Base",
@@ -141,14 +199,6 @@ __all__ = [
     "LuckyWheelSpin",
     # Feature 36
     "MilestonePost",
-    # Features 25, 26, 27
-    "GreenChallenge",
-    "UserChallenge",
-    "AuditLog",
-    "WasteHandbookItem",
-    # Features 32, 33
-    "CommunityGroup",
-    "DistrictEnvironmentalStat",
     # Spatial & Green Facilities
     "AdministrativeUnit",
     "EssentialFacility",
@@ -157,8 +207,11 @@ __all__ = [
     "WasteCategory",
     "Incident",
     "IncidentMedia",
+    "IncidentAuditLog",
+    "IncidentDuplicateCluster",
     # IoT Sensors
     "IoTSensorStation",
+    "AirQualityRecord",
     # Flood, Tide & Safe Navigation
     "TideStation",
     "TideHarmonicConstituent",
@@ -172,7 +225,7 @@ __all__ = [
     "FloodCauseType",
     "FloodSeverityLevel",
     "RouteSafetyStatus",
-    # Environmental Alerts & Public Tracking (Chức năng 28, 29, 30)
+    # Environmental Alerts & Public Tracking
     "AlertSeverity",
     "AlertStatus",
     "NotificationType",
@@ -180,8 +233,47 @@ __all__ = [
     "Notification",
     "IncidentSubscription",
     "IncidentVerification",
-    # System Configs & Reports (Chức năng 34 & 36)
+    # System Configs & Reports
     "SystemConfig",
     "PublicReport",
+    # Voice Assistant
+    "VoiceSampleCommand",
+    "VoiceInteractionLog",
+    "VoiceActionType",
+    "VoiceCategory",
+    # Profile & Green Passport Domain
+    "CitizenLevel",
+    "Badge",
+    "UserBadge",
+    "UserActivity",
+    "Post",
+    "PostTaggedFriend",
+    # Friends & Follows Domain
+    "FriendRequest",
+    "Friendship",
+    "UserFollow",
+    "FriendRequestStatus",
+    # User Settings Domain
+    "UserSettings",
+    # Penalty Regulations Domain
+    "PenaltyRegulation",
+    "PenaltyReport",
+    # Emergency Alert & Safety Check (STT 45)
+    "UserDeviceLocation",
+    "EmergencyBroadcastAlert",
+    "EmergencyAlertRecipient",
+    "EmergencySOSSignal",
+    "UserSafetyCheck",
+    "SafetyCheckFriendDelivery",
+    # Flood SOS Community Rescue (STT 46)
+    "FloodSosRequest",
+    "VolunteerProfile",
+    "FloodSosChatMessage",
+    # Incident Data Export (STT 47)
+    "ExportedIncidentFile",
+    # Dispatch (STT 43)
+    "DispatchOrder",
+    # Hotspots & Forecasting (STT 44)
+    "HotspotCluster",
+    "HotspotDailyForecast",
 ]
-
