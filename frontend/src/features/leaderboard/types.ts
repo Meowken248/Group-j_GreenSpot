@@ -7,6 +7,8 @@ export interface IndividualLeaderboardItem {
   tier_name: string;
   tier_code: string;
   badge_icon: string;
+  district_code?: string;
+  district_name?: string;
 }
 
 export interface MyRankResponse {
@@ -23,6 +25,7 @@ export interface MyRankResponse {
 export interface IndividualLeaderboardResponse {
   top_10: IndividualLeaderboardItem[];
   my_rank?: MyRankResponse | null;
+  selected_district?: string | null;
 }
 
 export interface GroupLeaderboardItem {
@@ -54,6 +57,21 @@ export interface DistrictLeaderboardItem {
 export interface DistrictLeaderboardResponse {
   cycle: "WEEK" | "MONTH" | "ALL" | string;
   districts: DistrictLeaderboardItem[];
+}
+
+export interface LeaderboardSnapshotWinnerItem {
+  rank: number;
+  user_id: string;
+  full_name: string;
+  points_rewarded: number;
+  title: string;
+}
+
+export interface LeaderboardSnapshotResponse {
+  cycle: string;
+  snapshot_date: string;
+  winners: LeaderboardSnapshotWinnerItem[];
+  message: string;
 }
 
 export type LeaderboardTab = "INDIVIDUAL" | "GROUP" | "DISTRICT";

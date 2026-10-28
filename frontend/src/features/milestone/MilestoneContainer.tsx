@@ -364,6 +364,7 @@ interface CommunityFeedProps {
 function CommunityFeed({ refreshKey }: CommunityFeedProps) {
   const [posts, setPosts] = useState<MilestonePostItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setLoading(true);
@@ -374,6 +375,8 @@ function CommunityFeed({ refreshKey }: CommunityFeedProps) {
   }, [refreshKey]);
 
   const handleLike = async (postId: string, idx: number) => {
+    if (likedPosts.has(postId)) return;
+    setLikedPosts(new Set(likedPosts).add(postId));
     try {
       const res = await milestoneApi.likePost(postId);
       setPosts((prev) =>
@@ -406,7 +409,11 @@ function CommunityFeed({ refreshKey }: CommunityFeedProps) {
               </div>
               <p className="ms-feed-content">{post.content}</p>
               <div className="ms-feed-meta">
-                <button className="ms-feed-like-btn" onClick={() => handleLike(post.post_id, idx)}>
+                <button
+                  className="ms-feed-like-btn"
+                  style={{ color: likedPosts.has(post.post_id) ? "#ef4444" : "#64748b" }}
+                  onClick={() => handleLike(post.post_id, idx)}
+                >
                   ❤️ {post.likes_count}
                 </button>
                 <span>{new Date(post.created_at).toLocaleDateString("vi-VN")}</span>
@@ -415,6 +422,163 @@ function CommunityFeed({ refreshKey }: CommunityFeedProps) {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// [CN 36 10/10] Giấy Chứng Nhận Công Dân Xanh Điện Tử
+// ============================================================
+function DigitalCertificateCard({ progression }: { progression: MilestoneProgressionResponse }) {
+  const citizenName = localStorage.getItem("user_full_name") || "Nguyễn Văn An";
+  const certId = `CERT-HCM-2026-${progression.current_tier.tier_code}-8869`;
+  const todayStr = new Date().toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", alignItems: "center" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", width: "100%", maxWidth: "820px", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#0f172a" }}>
+            📜 Chứng Nhận Công Dân Xanh Điện Tử (Digital Eco-Certificate)
+          </h3>
+          <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "#64748b" }}>
+            Chứng chỉ xác thực đóng góp môi trường đô thị chính thức của UBND TP.HCM & Dự án GreenSpot
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={handlePrint}
+          style={{
+            background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+            color: "#ffffff",
+            border: "none",
+            padding: "10px 20px",
+            borderRadius: "8px",
+            fontWeight: 700,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            boxShadow: "0 4px 10px rgba(5, 150, 105, 0.25)",
+          }}
+        >
+          🖨️ Xuất File In / PDF Chứng Nhận
+        </button>
+      </div>
+
+      {/* Khung Bằng Khen / Giấy Chứng Nhận Trang Trọng */}
+      <div
+        className="ms-certificate-printable"
+        style={{
+          width: "100%",
+          maxWidth: "820px",
+          background: "#fffdfa",
+          border: "12px solid #b45309",
+          outline: "3px solid #d97706",
+          outlineOffset: "-8px",
+          padding: "42px 50px",
+          borderRadius: "8px",
+          boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+          textAlign: "center",
+          fontFamily: "'Times New Roman', Times, serif",
+          boxSizing: "border-box",
+        }}
+      >
+        <div style={{ textTransform: "uppercase", letterSpacing: "1px", color: "#78350f", fontSize: "0.9rem", fontWeight: 700 }}>
+          CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
+        </div>
+        <div style={{ fontSize: "0.85rem", color: "#92400e", fontStyle: "italic", marginBottom: "16px" }}>
+          Độc lập – Tự do – Hạnh phúc
+        </div>
+        <div style={{ width: "140px", height: "1.5px", background: "#d97706", margin: "0 auto 20px" }} />
+
+        <div style={{ textTransform: "uppercase", fontSize: "0.95rem", color: "#065f46", fontWeight: 700, letterSpacing: "0.5px" }}>
+          SỞ TÀI NGUYÊN VÀ MÔI TRƯỜNG TP. HỒ CHÍ MINH
+        </div>
+        <div style={{ fontSize: "0.85rem", color: "#64748b", marginBottom: "18px" }}>
+          HỆ THỐNG GIÁM SÁT MÔI TRƯỜNG & ĐỘNG LỰC CÔNG DÂN XANH (GREENSPOT)
+        </div>
+
+        <h1 style={{ fontSize: "2.2rem", fontWeight: 900, color: "#92400e", margin: "14px 0 6px", letterSpacing: "1px" }}>
+          GIẤY CHỨNG NHẬN
+        </h1>
+        <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#047857", marginBottom: "20px" }}>
+          DANH HIỆU CÔNG DÂN XANH TIÊU BIỂU
+        </div>
+
+        <div style={{ fontSize: "1rem", color: "#475569", margin: "6px 0" }}>
+          Trân trọng chứng nhận và vinh danh:
+        </div>
+        <div style={{ fontSize: "2.1rem", fontWeight: 800, color: "#0f172a", margin: "8px 0", fontFamily: "sans-serif" }}>
+          {citizenName}
+        </div>
+
+        <p style={{ maxWidth: "640px", margin: "14px auto", fontSize: "1rem", color: "#334155", lineHeight: 1.6 }}>
+          Đã có đóng góp xuất sắc trong phong trào phân loại rác tại nguồn, tích cực tham gia các thử thách bảo vệ môi trường và chung tay xây dựng TP. Hồ Chí Minh xanh – sạch – đáng sống.
+        </p>
+
+        <div style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "14px",
+          background: "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)",
+          border: "1px solid #f59e0b",
+          padding: "8px 24px",
+          borderRadius: "30px",
+          margin: "10px 0 20px",
+        }}>
+          <span style={{ fontSize: "2rem" }}>{progression.current_tier.badge_icon}</span>
+          <div style={{ textAlign: "left" }}>
+            <div style={{ fontSize: "0.75rem", color: "#92400e", textTransform: "uppercase", fontWeight: 700 }}>
+              Cấp Bậc Đạt Được
+            </div>
+            <div style={{ fontSize: "1.2rem", fontWeight: 800, color: "#78350f" }}>
+              CÔNG DÂN XANH {progression.current_tier.tier_name.toUpperCase()}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginTop: "18px", borderTop: "1px dashed #cbd5e1", paddingTop: "18px", textAlign: "left" }}>
+          <div>
+            <div style={{ fontSize: "0.8rem", color: "#64748b" }}>Mã chứng chỉ điện tử:</div>
+            <code style={{ fontSize: "0.95rem", fontWeight: 700, color: "#0f172a" }}>{certId}</code>
+            <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "4px" }}>
+              Tổng điểm cống hiến trọn đời: <b>{progression.current_points.toLocaleString()} Điểm Xanh</b>
+            </div>
+          </div>
+
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: "0.85rem", color: "#475569" }}>
+              TP. Hồ Chí Minh, ngày {todayStr}
+            </div>
+            <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#065f46", marginTop: "4px" }}>
+              BAN ĐIỀU HÀNH GREENSPOT TP.HCM
+            </div>
+            <div style={{
+              display: "inline-block",
+              marginTop: "8px",
+              border: "2px solid #dc2626",
+              borderRadius: "50%",
+              width: "72px",
+              height: "72px",
+              padding: "6px",
+              color: "#dc2626",
+              fontSize: "0.6rem",
+              fontWeight: 800,
+              textTransform: "uppercase",
+              transform: "rotate(-12deg)",
+              boxSizing: "border-box",
+            }}>
+              UBND TP.HCM<br />★ GREENSPOT ★<br />CHỨNG THỰC
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -433,7 +597,7 @@ export function MilestoneContainer({ onBackToHome, onNavigateLogin, onNavigateFe
   const [progression, setProgression] = useState<MilestoneProgressionResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeView, setActiveView] = useState<"celebration" | "post" | "roadmap" | "feed">("roadmap");
+  const [activeView, setActiveView] = useState<"celebration" | "post" | "roadmap" | "feed" | "certificate">("roadmap");
   const [showCelebration, setShowCelebration] = useState(false);
   const [feedRefreshKey, setFeedRefreshKey] = useState(0);
 
@@ -497,7 +661,7 @@ export function MilestoneContainer({ onBackToHome, onNavigateLogin, onNavigateFe
         <div style={{ display: "flex", gap: "0.5rem" }}>
           {progression && !loading && (
             <button className="ms-back-btn" onClick={handleTriggerCelebration}>
-              🎉 Chúc mừng
+              🎉 Xem Lại Hiệu Ứng Thăng Cấp
             </button>
           )}
           {onBackToHome && (
@@ -515,6 +679,12 @@ export function MilestoneContainer({ onBackToHome, onNavigateLogin, onNavigateFe
           onClick={() => setActiveView("roadmap")}
         >
           🗺️ Lộ trình cấp
+        </button>
+        <button
+          className={activeView === "certificate" ? "active" : ""}
+          onClick={() => setActiveView("certificate")}
+        >
+          📜 Giấy chứng nhận
         </button>
         <button
           className={activeView === "post" ? "active" : ""}
@@ -553,6 +723,7 @@ export function MilestoneContainer({ onBackToHome, onNavigateLogin, onNavigateFe
       ) : progression ? (
         <>
           {activeView === "roadmap" && <TierProgressionMap progression={progression} />}
+          {activeView === "certificate" && <DigitalCertificateCard progression={progression} />}
           {activeView === "post" && (
             <PostEditor
               progression={progression}

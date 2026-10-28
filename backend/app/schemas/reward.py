@@ -287,3 +287,21 @@ class MarkVoucherUsedResponse(BaseModel):
     status: str
     used_at: datetime
     message: str
+
+
+class VerifyVoucherRequest(BaseModel):
+    voucher_code: str
+
+
+class VerifyVoucherResponse(BaseModel):
+    valid: bool
+    voucher_id: str
+    voucher_code: str
+    reward_title: str
+    brand: Optional[str] = None
+    user_name: str
+    points_spent: int
+    redeemed_at: datetime
+    used_at: datetime
+    message: str
+

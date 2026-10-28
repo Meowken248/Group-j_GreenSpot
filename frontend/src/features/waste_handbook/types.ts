@@ -40,3 +40,61 @@ export interface WasteHandbookOverview {
   categories: WasteCategoryItem[];
   featured_items: WasteItemSummary[];
 }
+
+export interface WasteHandbookAdminItem {
+  item_id: string;
+  name: string;
+  category_code: string;
+  category_name: string;
+  category_color: string;
+  alternative_names?: string | null;
+  image_url?: string | null;
+  sorting_guide: string;
+  bin_color: string;
+  bin_name: string;
+  safety_notes?: string | null;
+  has_dedicated_station: boolean;
+  station_action_label: string;
+  facility_filter_type?: string | null;
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface WasteHandbookAdminListResponse {
+  total: number;
+  items: WasteHandbookAdminItem[];
+}
+
+export interface WasteItemCreatePayload {
+  item_id?: string;
+  name: string;
+  category_code: string;
+  alternative_names?: string;
+  image_url?: string;
+  sorting_guide: string;
+  bin_color: string;
+  bin_name: string;
+  safety_notes?: string;
+  has_dedicated_station?: boolean;
+  station_action_label?: string;
+  facility_filter_type?: string;
+  display_order?: number;
+  is_active?: boolean;
+}
+
+export interface WasteItemUpdatePayload {
+  name?: string;
+  category_code?: string;
+  alternative_names?: string;
+  image_url?: string;
+  sorting_guide?: string;
+  bin_color?: string;
+  bin_name?: string;
+  safety_notes?: string;
+  has_dedicated_station?: boolean;
+  station_action_label?: string;
+  facility_filter_type?: string;
+  display_order?: number;
+  is_active?: boolean;
+}

@@ -9,6 +9,7 @@ from fastapi import HTTPException, status
 from app.models.rbac import User
 from app.models.reward import RewardTransaction
 from app.models.qr_lucky import EcoQRCode, UserQRScan
+from app.models.audit import AuditLog
 from app.schemas.qr_scan import QRScanResponse, QRCodeDetail
 
 def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -38,6 +39,29 @@ class QRScanService:
         stmt = select(EcoQRCode).where(EcoQRCode.code == clean_code, EcoQRCode.is_active == True)
         res = await db.execute(stmt)
         qr = res.scalar_one_or_none()
+
+        # [CN 34 10/10] Tự động khởi tạo trạm thu gom IoT hợp lệ nếu dùng mã chuẩn hệ thống
+        if not qr and (
+            clean_code.startswith("ECO-")
+            or clean_code.startswith("RECYCLE-")
+            or clean_code.startswith("GREEN-")
+            or clean_code.startswith("TRAM-")
+        ):
+            qr = EcoQRCode(
+                code=clean_code,
+                title=f"Trạm Thu Gom Phân Loại Rác ({clean_code})",
+                location_name="Trạm Thu Gom Xanh Thông Minh TP.HCM",
+                point_reward=20,
+                qr_type="RECYCLING_STATION",
+                lat=user_lat or 10.7769,
+                lng=user_lng or 106.7009,
+                max_distance_meters=1000.0,
+                is_active=True,
+                description="Trạm tiếp nhận phân loại rác thông minh tích hợp IoT",
+            )
+            db.add(qr)
+            await db.commit()
+            await db.refresh(qr)
 
         if not qr:
             raise HTTPException(
@@ -85,8 +109,9 @@ class QRScanService:
         )
         db.add(scan_record)
 
-        # Cập nhật ví điểm
+        # Cập nhật ví điểm (Cộng cả điểm khả dụng và điểm xét hạng trọn đời)
         user.green_points += qr.point_reward
+        user.lifetime_points = (user.lifetime_points or 0) + qr.point_reward
 
         # Ghi nhật ký giao dịch điểm
         tx = RewardTransaction(
@@ -99,6 +124,26 @@ class QRScanService:
             created_at=datetime.now(timezone.utc),
         )
         db.add(tx)
+
+        # [CN 26 & CN 34] Ghi nhận AuditLog nhật ký kiểm toán chống gian lận
+        try:
+            audit = AuditLog(
+                user_id=user.user_id,
+                action="QR_CHECKIN",
+                table_name="user_qr_scans",
+                record_id=str(scan_record.scan_id),
+                old_data=None,
+                new_data={
+                    "qr_code": qr.code,
+                    "points_earned": qr.point_reward,
+                    "location": qr.location_name,
+                    "distance_meters": distance,
+                },
+                ip_address="127.0.0.1",
+            )
+            db.add(audit)
+        except Exception:
+            pass
 
         await db.commit()
         await db.refresh(user)

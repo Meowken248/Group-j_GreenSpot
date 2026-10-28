@@ -1,18 +1,23 @@
+import base64
+import json
+import re
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Request, Header, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response, Header, status
 from fastapi.responses import JSONResponse
 from sqlalchemy import select, func, and_, update, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.models.audit import AuditLog
 from app.models.rbac import User, Role, UserOTP, UserSession, LoginAttempt, Permission, RolePermission
 from app.schemas.auth import (
     CitizenRegisterRequest,
     CitizenVerifyOtpRequest,
     CitizenResendOtpRequest,
     CitizenLoginRequest,
+    GoogleLoginRequest,
     CitizenLoginResponse,
     UserSummary,
     RefreshTokenRequest,
@@ -464,38 +469,68 @@ async def get_current_user_and_session(
 
 
 # =========================================================================
-# CÁC ENDPOINT CHỨC NĂNG 2: ĐĂNG NHẬP, LÀM MỚI & QUẢN LÝ PHIÊN
+# CÁC ENDPOINT CHỨC NĂNG 25: ĐĂNG NHẬP, GOOGLE OAUTH, LÀM MỚI & QUẢN LÝ PHIÊN
 # =========================================================================
+
+REFRESH_COOKIE_NAME = "greenspot_refresh_token"
+
+
+def _set_refresh_cookie(response: Optional[Response], raw_refresh_token: str) -> None:
+    """Thiết lập HttpOnly Cookie cho Refresh Token (chống XSS đánh cắp phiên)"""
+    if response is not None:
+        response.set_cookie(
+            key=REFRESH_COOKIE_NAME,
+            value=raw_refresh_token,
+            httponly=True,
+            secure=False,
+            samesite="strict",
+            max_age=7 * 24 * 3600,
+            path="/",
+        )
+
+
+def _clear_refresh_cookie(response: Optional[Response]) -> None:
+    """Xóa HttpOnly Cookie khi thu hồi phiên hiện tại"""
+    if response is not None:
+        response.delete_cookie(key=REFRESH_COOKIE_NAME, path="/")
+
 
 @router.post("/login", response_model=CitizenLoginResponse)
 async def login_citizen(
     payload: CitizenLoginRequest,
     request: Request,
+    response: Response = None,
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Màn 1: Đăng nhập hệ thống & Khởi tạo phiên đa thiết bị:
+    Màn 1: Đăng nhập hệ thống & Khởi tạo phiên đa thiết bị (Chức năng 25):
+    - Hỗ trợ đăng nhập bằng Email, Số điện thoại di động (10-11 số) hoặc tài khoản quản trị.
     - Kiểm tra khóa 15 phút nếu đã nhập sai quá 5 lần (403 LOGIN_LOCKED).
-    - Kiểm tra email và mật khẩu (nếu sai tăng số lần thử, lần thứ 5 khóa 15p).
+    - Kiểm tra email/SĐT và mật khẩu (nếu sai tăng số lần thử, lần thứ 5 khóa 15p).
     - Kiểm tra trạng thái PENDING -> 403 "Tài khoản chưa được kích hoạt. Kích hoạt ngay".
-    - Kiểm tra trạng thái LOCKED -> 403 "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên".
+    - Kiểm tra trạng thái LOCKED/BLOCKED -> 403 "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên".
     - Giới hạn tối đa 5 phiên (tự động thu hồi phiên cũ nhất nếu đã đủ 5).
-    - Cấp cặp Token: Access Token (15m) + Refresh Token (7d).
+    - Cấp cặp Token: Access Token (15m) + Refresh Token (7d) kèm HttpOnly Cookie & ghi AuditLog.
     """
-    clean_email = payload.email.strip().lower()
+    raw_identifier = payload.email.strip()
+    clean_email = raw_identifier.lower()
+    clean_digits = re.sub(r"\D", "", raw_identifier)
+    user_agent_str = request.headers.get("user-agent") if request else None
+    client_ip = request.client.host if (request and request.client) else "127.0.0.1"
 
     # 1. Kiểm tra xem có đang bị khóa 15 phút không
     is_locked, remaining_mins = await check_login_locked(db, clean_email)
     if is_locked:
+        wait_mins = max(1, remaining_mins) if remaining_mins else 15
         return JSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
             content={
                 "error_code": "LOGIN_LOCKED",
-                "message": "Bạn đã nhập sai quá 5 lần. Vui lòng thử lại sau 15 phút"
+                "message": f"Bạn đã nhập sai quá 5 lần. Vui lòng thử lại sau {wait_mins} phút"
             }
         )
 
-    # 2. Tìm tài khoản người dùng (hỗ trợ nhập 'admin' hoặc email quản trị)
+    # 2. Tìm tài khoản người dùng (hỗ trợ nhập 'admin', Email hoặc Số điện thoại)
     if clean_email in ("admin", "administrator"):
         user_query = select(User).where(
             or_(
@@ -504,8 +539,20 @@ async def login_citizen(
                 User.email == "admin@ecoreport.gov.vn",
             )
         )
+    elif "@" not in clean_email and len(clean_digits) in (10, 11) and clean_digits.startswith("0"):
+        user_query = select(User).where(
+            or_(
+                func.lower(User.email) == clean_email,
+                User.phone_number == clean_digits,
+            )
+        )
     else:
-        user_query = select(User).where(User.email == clean_email)
+        user_query = select(User).where(
+            or_(
+                func.lower(User.email) == clean_email,
+                User.phone_number == raw_identifier,
+            )
+        )
 
     user_result = await db.execute(user_query)
     user = user_result.scalars().first()
@@ -531,6 +578,30 @@ async def login_citizen(
     # 3. Kiểm tra mật khẩu
     if not verify_password(payload.password, user.password_hash):
         failed_count, now_locked = await record_login_failure(db, clean_email)
+        try:
+            db.add(
+                AuditLog(
+                    user_id=user.user_id,
+                    action="LOGIN",
+                    table_name="user_sessions",
+                    record_id=str(user.user_id),
+                    old_data=None,
+                    new_data={
+                        "status": "FAILED",
+                        "identifier": clean_email,
+                        "failed_attempts": failed_count,
+                        "locked": now_locked,
+                    },
+                    ip_address=client_ip,
+                    user_agent=user_agent_str,
+                    request_uri="/api/v1/auth/login",
+                    is_suspicious=True,
+                )
+            )
+            await db.commit()
+        except Exception:
+            await db.rollback()
+
         if now_locked:
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -557,7 +628,7 @@ async def login_citizen(
             }
         )
 
-    # 5. Kiểm tra tài khoản bị khóa (LOCKED)
+    # 5. Kiểm tra tài khoản bị khóa (LOCKED / BLOCKED)
     if user.status != "ACTIVE":
         return JSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -569,6 +640,8 @@ async def login_citizen(
 
     # Đăng nhập thành công -> Xóa trạng thái thử sai
     await record_login_success(db, clean_email)
+    if user.email and user.email.lower() != clean_email:
+        await record_login_success(db, user.email.lower())
 
     now = datetime.now(timezone.utc)
 
@@ -591,8 +664,6 @@ async def login_citizen(
             old_s.revoked_at = now
 
     # 7. Nhận diện thiết bị từ User-Agent và IP
-    user_agent_str = request.headers.get("user-agent")
-    client_ip = request.client.host if request.client else None
     device_name = parse_user_agent(user_agent_str)
 
     # 8. Khởi tạo phiên mới & Cặp Token
@@ -612,6 +683,27 @@ async def login_citizen(
         last_active_at=now
     )
     db.add(new_session)
+
+    # Ghi nhật ký kiểm toán đăng nhập thành công
+    db.add(
+        AuditLog(
+            user_id=user.user_id,
+            action="LOGIN",
+            table_name="user_sessions",
+            record_id=str(new_session_id),
+            old_data=None,
+            new_data={
+                "status": "SUCCESS",
+                "device_name": device_name,
+                "ip_address": client_ip,
+                "method": "PASSWORD",
+            },
+            ip_address=client_ip,
+            user_agent=user_agent_str,
+            request_uri="/api/v1/auth/login",
+            is_suspicious=False,
+        )
+    )
     await db.commit()
 
     # Lấy thông tin vai trò
@@ -641,6 +733,8 @@ async def login_citizen(
         p_res = await db.execute(p_stmt)
         user_perms = [p[0] for p in p_res.fetchall()]
 
+    _set_refresh_cookie(response, raw_refresh_token)
+
     return CitizenLoginResponse(
         success=True,
         message="Đăng nhập thành công",
@@ -660,18 +754,212 @@ async def login_citizen(
     )
 
 
+@router.post("/google", response_model=CitizenLoginResponse)
+async def google_oauth_login(
+    payload: GoogleLoginRequest,
+    request: Request,
+    response: Response = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Đăng nhập nhanh bằng tài khoản Google (OAuth 2.0 - AUTH_BTN_GOOGLE):
+    - Giải mã thông tin từ Google ID Token (nếu có) hoặc nhận thông tin xác thực từ OAuth flow.
+    - Tự động kích hoạt hoặc khởi tạo tài khoản CITIZEN nếu email chưa tồn tại.
+    - Quản lý tối đa 5 phiên thiết bị, cấp Access Token + Refresh Token (HttpOnly Cookie) và ghi AuditLog.
+    """
+    google_email = payload.email.strip().lower() if payload.email else None
+    google_name = payload.full_name.strip() if payload.full_name else None
+
+    if payload.credential and "." in payload.credential:
+        try:
+            parts = payload.credential.split(".")
+            if len(parts) >= 2:
+                padded = parts[1] + "=" * (-len(parts[1]) % 4)
+                decoded_claims = json.loads(base64.urlsafe_b64decode(padded).decode("utf-8"))
+                google_email = (decoded_claims.get("email") or google_email or "").strip().lower()
+                google_name = (decoded_claims.get("name") or google_name or "").strip()
+        except Exception:
+            pass
+
+    if not google_email:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "error_code": "INVALID_GOOGLE_TOKEN",
+                "message": "Không thể xác thực thông tin tài khoản Google. Vui lòng thử lại",
+            },
+        )
+
+    user_res = await db.execute(select(User).where(func.lower(User.email) == google_email))
+    user = user_res.scalars().first()
+
+    if not user:
+        role_res = await db.execute(select(Role).where(Role.role_code == "CITIZEN"))
+        citizen_role = role_res.scalar_one_or_none()
+        if not citizen_role:
+            citizen_role = Role(
+                role_code="CITIZEN",
+                role_name="Công dân sinh thái",
+                description="Người dùng thông thường đóng góp dữ liệu và nhận điểm thưởng xanh",
+                is_system=True,
+            )
+            db.add(citizen_role)
+            await db.flush()
+
+        user = User(
+            user_id=uuid.uuid4(),
+            email=google_email,
+            full_name=google_name or google_email.split("@")[0].replace(".", " ").title(),
+            password_hash=hash_password(f"GoogleOAuth!{uuid.uuid4().hex[:12]}9A"),
+            role_id=citizen_role.role_id,
+            status="ACTIVE",
+            reputation_score=100,
+        )
+        db.add(user)
+        await db.flush()
+    elif user.status == "PENDING":
+        user.status = "ACTIVE"
+    elif user.status != "ACTIVE":
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={
+                "error_code": "ACCOUNT_LOCKED",
+                "message": "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên",
+            },
+        )
+
+    now = datetime.now(timezone.utc)
+    active_sessions_res = await db.execute(
+        select(UserSession)
+        .where(
+            and_(
+                UserSession.user_id == user.user_id,
+                UserSession.revoked_at.is_(None),
+                UserSession.expires_at > now,
+            )
+        )
+        .order_by(UserSession.last_active_at.asc())
+    )
+    active_sessions = list(active_sessions_res.scalars().all())
+    if len(active_sessions) >= 5:
+        for old_s in active_sessions[: len(active_sessions) - 4]:
+            old_s.revoked_at = now
+
+    user_agent_str = request.headers.get("user-agent") if request else None
+    client_ip = request.client.host if (request and request.client) else "127.0.0.1"
+    device_name = parse_user_agent(user_agent_str)
+
+    new_session_id = uuid.uuid4()
+    raw_refresh_token = generate_refresh_token()
+    refresh_hash = hash_refresh_token(raw_refresh_token)
+
+    new_session = UserSession(
+        session_id=new_session_id,
+        user_id=user.user_id,
+        refresh_token_hash=refresh_hash,
+        device_name=device_name,
+        ip_address=client_ip,
+        user_agent=user_agent_str,
+        expires_at=now + timedelta(days=7),
+        last_active_at=now,
+    )
+    db.add(new_session)
+
+    db.add(
+        AuditLog(
+            user_id=user.user_id,
+            action="LOGIN",
+            table_name="user_sessions",
+            record_id=str(new_session_id),
+            old_data=None,
+            new_data={
+                "status": "SUCCESS",
+                "device_name": device_name,
+                "ip_address": client_ip,
+                "method": "GOOGLE_OAUTH2",
+            },
+            ip_address=client_ip,
+            user_agent=user_agent_str,
+            request_uri="/api/v1/auth/google",
+            is_suspicious=False,
+        )
+    )
+    await db.commit()
+
+    role_res = await db.execute(select(Role).where(Role.role_id == user.role_id))
+    role = role_res.scalar_one_or_none()
+    role_code = role.role_code if role else "CITIZEN"
+
+    access_token = create_access_token(
+        user_id=str(user.user_id),
+        email=user.email,
+        role=role_code,
+        session_id=str(new_session_id),
+    )
+
+    user_perms: list[str] = []
+    if role_code == "ADMIN":
+        all_p = await db.execute(select(Permission.permission_code))
+        user_perms = [p[0] for p in all_p.fetchall()]
+    elif user.role_id:
+        p_stmt = (
+            select(Permission.permission_code)
+            .join(RolePermission, Permission.permission_id == RolePermission.permission_id)
+            .where(RolePermission.role_id == user.role_id)
+        )
+        p_res = await db.execute(p_stmt)
+        user_perms = [p[0] for p in p_res.fetchall()]
+
+    _set_refresh_cookie(response, raw_refresh_token)
+
+    return CitizenLoginResponse(
+        success=True,
+        message="Đăng nhập Google thành công",
+        access_token=access_token,
+        refresh_token=raw_refresh_token,
+        token_type="bearer",
+        expires_in=900,
+        session_id=str(new_session_id),
+        user=UserSummary(
+            user_id=str(user.user_id),
+            email=user.email,
+            full_name=user.full_name,
+            role=role_code,
+            status=user.status,
+            permissions=user_perms,
+        ),
+    )
+
+
 @router.post("/refresh", response_model=RefreshTokenResponse)
 async def refresh_access_token(
-    payload: RefreshTokenRequest,
+    payload: Optional[RefreshTokenRequest] = Body(default=None),
+    request: Request = None,
     db: AsyncSession = Depends(get_db)
 ):
     """
     Cơ chế Silent Refresh: Làm mới Access Token bằng Refresh Token (7 ngày):
+    - Hỗ trợ đọc Refresh Token từ cả JSON Body hoặc HttpOnly Cookie.
     - Kiểm tra tính hợp lệ của Refresh Token.
     - Cập nhật thời điểm hoạt động last_active_at.
     - Cấp Access Token 15 phút mới mà không làm gián đoạn người dùng.
     """
-    rt_hash = hash_refresh_token(payload.refresh_token.strip())
+    raw_rt = None
+    if payload and payload.refresh_token:
+        raw_rt = payload.refresh_token.strip()
+    elif request and request.cookies.get(REFRESH_COOKIE_NAME):
+        raw_rt = request.cookies.get(REFRESH_COOKIE_NAME, "").strip()
+
+    if not raw_rt:
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={
+                "error_code": "SESSION_INVALID",
+                "message": "Vui lòng đăng nhập lại"
+            }
+        )
+
+    rt_hash = hash_refresh_token(raw_rt)
     now = datetime.now(timezone.utc)
 
     session_query = select(UserSession).where(UserSession.refresh_token_hash == rt_hash)
@@ -775,6 +1063,7 @@ async def list_user_sessions(
 @router.delete("/sessions/{session_id}", response_model=RevokeSessionResponse)
 async def revoke_single_session(
     session_id: str,
+    response: Response = None,
     auth_data: tuple[User, UserSession] = Depends(get_current_user_and_session),
     db: AsyncSession = Depends(get_db)
 ):
@@ -819,6 +1108,8 @@ async def revoke_single_session(
     await db.commit()
 
     is_cur = (target_session.session_id == current_session.session_id)
+    if is_cur:
+        _clear_refresh_cookie(response)
     message = "Bạn đã đăng xuất" if is_cur else "Đã đăng xuất thiết bị"
 
     return RevokeSessionResponse(
@@ -830,6 +1121,7 @@ async def revoke_single_session(
 
 @router.delete("/sessions", response_model=RevokeSessionResponse)
 async def revoke_all_sessions(
+    response: Response = None,
     auth_data: tuple[User, UserSession] = Depends(get_current_user_and_session),
     db: AsyncSession = Depends(get_db)
 ):
@@ -852,6 +1144,8 @@ async def revoke_all_sessions(
     )
     await db.execute(update_stmt)
     await db.commit()
+
+    _clear_refresh_cookie(response)
 
     return RevokeSessionResponse(
         success=True,

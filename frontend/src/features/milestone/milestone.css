@@ -850,3 +850,23 @@
   .ms-header { flex-direction: column; gap: 1rem; text-align: center; }
   .ms-view-toggle { flex-wrap: wrap; justify-content: center; }
 }
+
+/* In ấn Giấy Chứng Nhận Công Dân Xanh Tiêu Biểu */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .ms-certificate-printable,
+  .ms-certificate-printable * {
+    visibility: visible;
+  }
+  .ms-certificate-printable {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+}

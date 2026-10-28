@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { heatmapApi } from "./heatmapApi";
 import type {
   HeatmapMode,
@@ -35,6 +37,12 @@ export const MultiModeHeatmapContainer: React.FC<Props> = ({
   const [data, setData] = useState<MultiModeHeatmapResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // [CN 33 10/10] Chế độ xem: WebGIS Leaflet thực tế vs Lược đồ Radar SVG
+  const [viewType, setViewType] = useState<"LEAFLET" | "RADAR">("LEAFLET");
+  const leafletContainerRef = useRef<HTMLDivElement | null>(null);
+  const leafletMapRef = useRef<L.Map | null>(null);
+  const layerGroupRef = useRef<L.LayerGroup | null>(null);
 
   // Search filter for sidebar
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -120,6 +128,87 @@ export const MultiModeHeatmapContainer: React.FC<Props> = ({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // [CN 33 10/10] Khởi tạo và đồng bộ hóa lớp bản đồ WebGIS Leaflet
+  useEffect(() => {
+    if (viewType !== "LEAFLET" || !leafletContainerRef.current) return;
+
+    if (!leafletMapRef.current) {
+      const map = L.map(leafletContainerRef.current, {
+        center: [10.7769, 106.7009],
+        zoom: 11,
+        minZoom: 9,
+        maxZoom: 16,
+      });
+
+      L.tileLayer("https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", {
+        subdomains: ["0", "1", "2", "3"],
+        attribution: "© Google Maps & GreenSpot WebGIS",
+        maxZoom: 18,
+      }).addTo(map);
+
+      const layerGroup = L.layerGroup().addTo(map);
+      leafletMapRef.current = map;
+      layerGroupRef.current = layerGroup;
+    }
+
+    const lg = layerGroupRef.current;
+    if (lg && data?.points) {
+      lg.clearLayers();
+
+      data.points.forEach((p) => {
+        // Quầng nhiệt vi khí hậu vệ tinh
+        const outerCircle = L.circle([p.lat, p.lng], {
+          radius: mode === "TEMPERATURE" ? 3800 : mode === "AQI" ? 3400 : 3600,
+          color: p.color_hex,
+          fillColor: p.color_hex,
+          fillOpacity: p.is_warning ? 0.38 : 0.22,
+          weight: 1,
+        });
+
+        // Điểm đánh dấu tâm khu vực
+        const coreMarker = L.circleMarker([p.lat, p.lng], {
+          radius: 15,
+          color: "#ffffff",
+          fillColor: p.color_hex,
+          fillOpacity: 0.95,
+          weight: 2,
+        });
+
+        const valText = mode === "TEMPERATURE" ? `${p.value}°C` : Math.round(p.value);
+        const tooltipHtml = `
+          <div style="font-family: inherit; font-size: 13px; line-height: 1.4; padding: 2px;">
+            <div style="font-weight: 700; color: #0f172a; margin-bottom: 3px;">${p.district_name}</div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${p.color_hex};"></span>
+              <span>${mode}: <b>${valText}</b> (${p.level_label})</span>
+            </div>
+            ${p.is_warning ? `<div style="color: #dc2626; font-size: 11px; margin-top: 4px; font-weight: 600;">⚠️ ${p.warning_message || "Khu vực cảnh báo!"}</div>` : ""}
+            <div style="color: #059669; font-size: 11px; margin-top: 4px; font-weight: 600;">👉 Bấm để xem chi tiết & giải pháp</div>
+          </div>
+        `;
+
+        coreMarker.bindTooltip(tooltipHtml, { direction: "top", offset: [0, -10] });
+        outerCircle.bindTooltip(tooltipHtml, { direction: "top", offset: [0, -10] });
+
+        coreMarker.on("click", () => handleOpenZoneDetail(p.district_code));
+        outerCircle.on("click", () => handleOpenZoneDetail(p.district_code));
+
+        lg.addLayer(outerCircle);
+        lg.addLayer(coreMarker);
+      });
+    }
+  }, [viewType, data, mode, handleOpenZoneDetail]);
+
+  // Hủy map khi unmount
+  useEffect(() => {
+    return () => {
+      if (leafletMapRef.current) {
+        leafletMapRef.current.remove();
+        leafletMapRef.current = null;
+      }
+    };
   }, []);
 
   // Active warnings in current mode
@@ -211,19 +300,60 @@ export const MultiModeHeatmapContainer: React.FC<Props> = ({
         <div className="hm-stage-layout">
           {/* GIS Heatmap Canvas Card */}
           <div className="hm-canvas-card">
-            <div className="hm-canvas-header">
+            <div className="hm-canvas-header" style={{ flexWrap: "wrap", gap: "10px" }}>
               <div className="hm-canvas-title">
                 <span>
                   {mode === "AQI" ? "🟢 Lớp bản đồ nhiệt AQI" : mode === "TEMPERATURE" ? "🔥 Lớp nhiệt độ vi khí hậu" : "🔴 Điểm nóng rủi ro ô nhiễm"}
                 </span>
               </div>
-              <span className="hm-timestamp-badge">
-                Chế độ: {mode === "AQI" ? "Chất lượng không khí" : mode === "TEMPERATURE" ? "Nhiệt độ bề mặt" : "Rủi ro rác thải"}
-              </span>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                {/* [CN 33 10/10] Chuyển đổi giữa WebGIS Leaflet thực tế và Lược đồ Radar SVG */}
+                <div style={{ display: "flex", background: "#f1f5f9", padding: "3px", borderRadius: "8px" }}>
+                  <button
+                    type="button"
+                    onClick={() => setViewType("LEAFLET")}
+                    style={{
+                      padding: "5px 12px",
+                      borderRadius: "6px",
+                      fontSize: "0.8rem",
+                      fontWeight: 700,
+                      border: "none",
+                      background: viewType === "LEAFLET" ? "#10b981" : "transparent",
+                      color: viewType === "LEAFLET" ? "#ffffff" : "#475569",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    🗺️ WebGIS Thực Tế
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewType("RADAR")}
+                    style={{
+                      padding: "5px 12px",
+                      borderRadius: "6px",
+                      fontSize: "0.8rem",
+                      fontWeight: 700,
+                      border: "none",
+                      background: viewType === "RADAR" ? "#1e293b" : "transparent",
+                      color: viewType === "RADAR" ? "#ffffff" : "#475569",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    🕸️ Radar Tọa Độ
+                  </button>
+                </div>
+
+                <span className="hm-timestamp-badge">
+                  {mode === "AQI" ? "Chất lượng không khí" : mode === "TEMPERATURE" ? "Nhiệt độ bề mặt" : "Rủi ro rác thải"}
+                </span>
+              </div>
             </div>
 
-            {/* Interactive SVG GIS Map */}
-            <div className="hm-svg-container">
+            {/* Interactive GIS Map Container */}
+            <div className="hm-svg-container" style={{ position: "relative" }}>
               {loading && (
                 <div className="hm-loading-overlay">
                   <div className="hm-spinner" />
@@ -233,113 +363,126 @@ export const MultiModeHeatmapContainer: React.FC<Props> = ({
                 </div>
               )}
 
-              <svg
-                viewBox="0 0 760 460"
-                className="hm-svg-viewport"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                {/* Background grid lines for GIS radar look */}
-                <defs>
-                  <radialGradient id="mapGlow" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor="#1e293b" stopOpacity="0.8" />
-                    <stop offset="100%" stopColor="#0f172a" stopOpacity="1" />
-                  </radialGradient>
-                  <filter id="glowFilter" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
-                    <feMerge>
-                      <feMergeNode in="blur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                </defs>
+              {viewType === "LEAFLET" ? (
+                <div
+                  ref={leafletContainerRef}
+                  style={{
+                    width: "100%",
+                    height: "460px",
+                    borderRadius: "12px",
+                    zIndex: 1,
+                    overflow: "hidden",
+                  }}
+                />
+              ) : (
+                <svg
+                  viewBox="0 0 760 460"
+                  className="hm-svg-viewport"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  {/* Background grid lines for GIS radar look */}
+                  <defs>
+                    <radialGradient id="mapGlow" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stopColor="#1e293b" stopOpacity="0.8" />
+                      <stop offset="100%" stopColor="#0f172a" stopOpacity="1" />
+                    </radialGradient>
+                    <filter id="glowFilter" x="-50%" y="-50%" width="200%" height="200%">
+                      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
 
-                <rect width="760" height="460" fill="url(#mapGlow)" rx="12" />
+                  <rect width="760" height="460" fill="url(#mapGlow)" rx="12" />
 
-                {/* Grid lines */}
-                {[100, 200, 300, 400].map((y) => (
-                  <line
-                    key={y}
-                    x1="20"
-                    y1={y}
-                    x2="740"
-                    y2={y}
-                    stroke="rgba(255, 255, 255, 0.05)"
-                    strokeDasharray="4 4"
-                  />
-                ))}
-                {[150, 300, 450, 600].map((x) => (
-                  <line
-                    key={x}
-                    x1={x}
-                    y1="20"
-                    x2={x}
-                    y2="440"
-                    stroke="rgba(255, 255, 255, 0.05)"
-                    strokeDasharray="4 4"
-                  />
-                ))}
+                  {/* Grid lines */}
+                  {[100, 200, 300, 400].map((y) => (
+                    <line
+                      key={y}
+                      x1="20"
+                      y1={y}
+                      x2="740"
+                      y2={y}
+                      stroke="rgba(255, 255, 255, 0.05)"
+                      strokeDasharray="4 4"
+                    />
+                  ))}
+                  {[150, 300, 450, 600].map((x) => (
+                    <line
+                      key={x}
+                      x1={x}
+                      y1="20"
+                      x2={x}
+                      y2="440"
+                      stroke="rgba(255, 255, 255, 0.05)"
+                      strokeDasharray="4 4"
+                    />
+                  ))}
 
-                {/* Heatmap Nodes / Bubbles for each District */}
-                {data?.points.map((p: HeatmapPoint) => {
-                  const { x, y } = projectToSvg(p.lng, p.lat);
-                  const radius = mode === "TEMPERATURE" ? 22 : mode === "AQI" ? 24 : 26;
+                  {/* Heatmap Nodes / Bubbles for each District */}
+                  {data?.points.map((p: HeatmapPoint) => {
+                    const { x, y } = projectToSvg(p.lng, p.lat);
+                    const radius = mode === "TEMPERATURE" ? 22 : mode === "AQI" ? 24 : 26;
 
-                  return (
-                    <g
-                      key={p.district_code}
-                      className={`hm-district-bubble ${p.is_warning ? "hm-bubble-warning" : ""}`}
-                      onClick={() => handleOpenZoneDetail(p.district_code)}
-                    >
-                      {/* Ambient heat aura */}
-                      <circle
-                        cx={x}
-                        cy={y}
-                        r={radius * 1.8}
-                        fill={p.color_hex}
-                        opacity={p.is_warning ? 0.35 : 0.18}
-                        filter="url(#glowFilter)"
-                      />
-
-                      {/* Main District Node */}
-                      <circle
-                        cx={x}
-                        cy={y}
-                        r={radius}
-                        fill={p.color_hex}
-                        stroke="#ffffff"
-                        strokeWidth="1.5"
-                        strokeOpacity="0.8"
-                      />
-
-                      {/* Value inside circle */}
-                      <text
-                        x={x}
-                        y={y - 2}
-                        textAnchor="middle"
-                        fill="#ffffff"
-                        fontSize="10"
-                        fontWeight="bold"
-                        pointerEvents="none"
+                    return (
+                      <g
+                        key={p.district_code}
+                        className={`hm-district-bubble ${p.is_warning ? "hm-bubble-warning" : ""}`}
+                        onClick={() => handleOpenZoneDetail(p.district_code)}
                       >
-                        {mode === "TEMPERATURE" ? `${p.value}°` : Math.round(p.value)}
-                      </text>
+                        {/* Ambient heat aura */}
+                        <circle
+                          cx={x}
+                          cy={y}
+                          r={radius * 1.8}
+                          fill={p.color_hex}
+                          opacity={p.is_warning ? 0.35 : 0.18}
+                          filter="url(#glowFilter)"
+                        />
 
-                      {/* Warning Icon or District Name Label */}
-                      <text
-                        x={x}
-                        y={y + 11}
-                        textAnchor="middle"
-                        fill="#f8fafc"
-                        fontSize="8.5"
-                        fontWeight="600"
-                        pointerEvents="none"
-                      >
-                        {p.is_warning ? "⚠️" : p.district_name.replace("Quận ", "Q.").replace("Huyện ", "H.")}
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
+                        {/* Main District Node */}
+                        <circle
+                          cx={x}
+                          cy={y}
+                          r={radius}
+                          fill={p.color_hex}
+                          stroke="#ffffff"
+                          strokeWidth="1.5"
+                          strokeOpacity="0.8"
+                        />
+
+                        {/* Value inside circle */}
+                        <text
+                          x={x}
+                          y={y - 2}
+                          textAnchor="middle"
+                          fill="#ffffff"
+                          fontSize="10"
+                          fontWeight="bold"
+                          pointerEvents="none"
+                        >
+                          {mode === "TEMPERATURE" ? `${p.value}°` : Math.round(p.value)}
+                        </text>
+
+                        {/* Warning Icon or District Name Label */}
+                        <text
+                          x={x}
+                          y={y + 11}
+                          textAnchor="middle"
+                          fill="#f8fafc"
+                          fontSize="8.5"
+                          fontWeight="600"
+                          pointerEvents="none"
+                        >
+                          {p.is_warning ? "⚠️" : p.district_name.replace("Quận ", "Q.").replace("Huyện ", "H.")}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
+              )}
             </div>
 
             {/* Legends Bar */}
@@ -540,13 +683,33 @@ export const MultiModeHeatmapContainer: React.FC<Props> = ({
                   </div>
                 </div>
 
-                {/* Modal Actions per Table 141 */}
-                <div className="hm-modal-actions">
+                {/* Modal Actions per Table 141 & Cross-feature Integration */}
+                <div className="hm-modal-actions" style={{ flexWrap: "wrap", gap: "8px" }}>
                   <button
                     className="hm-btn-secondary"
                     onClick={() => setSelectedZone(null)}
                   >
                     Đóng
+                  </button>
+                  <button
+                    className="hm-btn-secondary"
+                    style={{ background: "#ecfdf5", border: "1px solid #10b981", color: "#065f46" }}
+                    onClick={() => {
+                      setSelectedZone(null);
+                      window.location.hash = "challenges";
+                    }}
+                  >
+                    🌱 Làm thử thách tuần (#challenges)
+                  </button>
+                  <button
+                    className="hm-btn-secondary"
+                    style={{ background: "#fef3c7", border: "1px solid #f59e0b", color: "#92400e" }}
+                    onClick={() => {
+                      setSelectedZone(null);
+                      window.location.hash = "leaderboard";
+                    }}
+                  >
+                    🏆 BXH quận (#leaderboard)
                   </button>
                   <button
                     className="hm-btn-primary"
@@ -560,7 +723,7 @@ export const MultiModeHeatmapContainer: React.FC<Props> = ({
                     }}
                   >
                     <span>📊</span>
-                    <span>Xem chi tiết quận</span>
+                    <span>Báo cáo chi tiết</span>
                   </button>
                 </div>
               </>

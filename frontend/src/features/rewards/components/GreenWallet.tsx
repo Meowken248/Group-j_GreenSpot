@@ -95,7 +95,7 @@ export const GreenWallet: React.FC<GreenWalletProps> = ({
       setTxDetail(detail);
       setDetailModalOpen(true);
     } catch (err: unknown) {
-      alert("Không thể tải chi tiết chứng từ giao dịch");
+      setErrorMsg("Không thể tải chi tiết chứng từ giao dịch");
     } finally {
       setLoadingDetail(false);
     }
@@ -109,7 +109,7 @@ export const GreenWallet: React.FC<GreenWalletProps> = ({
         timeRange
       );
     } catch (err: unknown) {
-      alert("Không thể kết xuất sao kê lúc này. Vui lòng thử lại!");
+      setErrorMsg("Không thể kết xuất sao kê lúc này. Vui lòng thử lại!");
     } finally {
       setIsExporting(false);
     }
@@ -212,9 +212,9 @@ export const GreenWallet: React.FC<GreenWalletProps> = ({
         <div className="wallet-dashboard-3cols">
           {/* KHỐI 1 (CỘT TRÁI): SỐ DƯ */}
           <div className="wallet-block block-balance">
-            <div className="block-tag">KHỐI SỐ DƯ</div>
+            <div className="block-tag">KHỐI SỐ DƯ KHẢ DỤNG</div>
             <div className="balance-headline">
-              <span className="balance-label">Điểm hiện có</span>
+              <span className="balance-label">Số dư khả dụng (Dùng để đổi quà)</span>
               <div className="balance-big-display">
                 <span className="balance-number">
                   {wallet.green_points.toLocaleString("vi-VN")}
@@ -224,9 +224,31 @@ export const GreenWallet: React.FC<GreenWalletProps> = ({
             </div>
 
             <div className="wallet-tier-section">
-              <div className="tier-tag-badge">
-                <span className="tier-icon">{wallet.current_tier.badge_icon}</span>
-                <strong className="tier-name">{wallet.current_tier.tier_name}</strong>
+              <div className="tier-tag-badge" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                <div>
+                  <span className="tier-icon">{wallet.current_tier.badge_icon}</span>
+                  <strong className="tier-name">{wallet.current_tier.tier_name}</strong>
+                </div>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    padding: "2px 8px",
+                    borderRadius: "999px",
+                    background: "#ecfdf5",
+                    color: "#047857",
+                    border: "1px solid #6ee7b7",
+                  }}
+                >
+                  🎁 Ưu đãi đổi quà:{" "}
+                  {wallet.current_tier.tier_code === "DIAMOND"
+                    ? "-15%"
+                    : wallet.current_tier.tier_code === "GOLD"
+                    ? "-10%"
+                    : wallet.current_tier.tier_code === "SILVER"
+                    ? "-5%"
+                    : "0%"}
+                </span>
               </div>
               <div className="progress-bar-track">
                 <div
@@ -237,7 +259,7 @@ export const GreenWallet: React.FC<GreenWalletProps> = ({
               <div className="tier-next-hint">
                 {wallet.points_to_next_tier > 0 ? (
                   <>
-                    Còn <strong>{wallet.points_to_next_tier} điểm</strong> để lên{" "}
+                    Còn <strong>{wallet.points_to_next_tier} điểm xét hạng</strong> để lên{" "}
                     {wallet.next_tier?.tier_name}
                   </>
                 ) : (
@@ -247,8 +269,9 @@ export const GreenWallet: React.FC<GreenWalletProps> = ({
             </div>
 
             <div className="lifetime-footnote">
-              Tổng điểm tích lũy trọn đời:{" "}
-              <strong>{wallet.lifetime_points.toLocaleString("vi-VN")}</strong> điểm
+              🏆 Điểm xét Hạng trọn đời:{" "}
+              <strong>{wallet.lifetime_points.toLocaleString("vi-VN")}</strong> điểm{" "}
+              <span style={{ fontSize: "11px", opacity: 0.85 }}>(Bảo toàn 100% khi đổi quà)</span>
             </div>
           </div>
 

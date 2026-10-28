@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
+from app.models.audit import AuditLog
 from app.models.rbac import User, Role, Permission, RolePermission, UserSession
 from app.schemas.rbac import (
     RoleItemResponse,
@@ -46,6 +47,13 @@ MODULE_DEFINITIONS: List[dict] = [
 ]
 
 SYSTEM_ORDER = {"ADMIN": 1, "DISTRICT_MANAGER": 2, "RESPONDER": 3, "CITIZEN": 4}
+
+
+async def _resolve_audit_user_id(db: AsyncSession, user_id: Optional[uuid.UUID]) -> Optional[uuid.UUID]:
+    if not user_id:
+        return None
+    res = await db.execute(select(User.user_id).where(User.user_id == user_id))
+    return res.scalar_one_or_none()
 
 
 async def get_current_active_user(
@@ -280,6 +288,27 @@ async def create_custom_role(
         version=1,
     )
     db.add(new_role)
+    await db.flush()
+
+    db.add(
+        AuditLog(
+            user_id=await _resolve_audit_user_id(db, current_admin.user_id),
+            action="UPDATE_ROLE",
+            table_name="roles",
+            record_id=str(new_role.role_id),
+            old_data=None,
+            new_data={
+                "operation": "CREATE_ROLE",
+                "role_code": new_role.role_code,
+                "role_name": new_role.role_name,
+                "scope": new_role.scope,
+            },
+            ip_address="127.0.0.1",
+            user_agent="Admin RBAC Matrix",
+            request_uri="/api/v1/rbac/roles",
+            is_suspicious=False,
+        )
+    )
     await db.commit()
     await db.refresh(new_role)
 
@@ -437,7 +466,8 @@ async def update_role_permissions(
     # Loại bỏ các ô không áp dụng:
     # - Hàng ROLE chỉ dành riêng cho Admin
     valid_perm_ids = []
-    for p_code in requested_perms:
+    valid_perm_codes = []
+    for p_code in sorted(requested_perms):
         if ":" not in p_code:
             continue
         mod, act = p_code.split(":")
@@ -446,6 +476,7 @@ async def update_role_permissions(
             continue
         if p_code in perm_dict:
             valid_perm_ids.append(perm_dict[p_code])
+            valid_perm_codes.append(p_code)
 
     # 6. Cập nhật role_permissions
     await db.execute(delete(RolePermission).where(RolePermission.role_id == role_id))
@@ -463,8 +494,29 @@ async def update_role_permissions(
         .values(revoked_at=datetime.now(timezone.utc))
     )
 
+    old_ver = role.version or 1
     # 8. Tăng version OCC
-    role.version = (role.version or 1) + 1
+    role.version = old_ver + 1
+
+    db.add(
+        AuditLog(
+            user_id=await _resolve_audit_user_id(db, current_admin.user_id),
+            action="UPDATE_ROLE",
+            table_name="role_permissions",
+            record_id=str(role_id),
+            old_data={"role_code": role.role_code, "role_name": role.role_name, "version": old_ver},
+            new_data={
+                "role_code": role.role_code,
+                "role_name": role.role_name,
+                "version": role.version,
+                "permissions_count": len(valid_perm_codes),
+            },
+            ip_address="127.0.0.1",
+            user_agent="Admin RBAC Matrix",
+            request_uri=f"/api/v1/rbac/roles/{role_id}/permissions",
+            is_suspicious=True,
+        )
+    )
     await db.commit()
 
     return UpdateRolePermissionsResponse(
@@ -473,7 +525,6 @@ async def update_role_permissions(
         role_id=role_id,
         new_version=role.version,
     )
-
 
 
 @router.delete("/roles/{role_id}")
@@ -514,6 +565,21 @@ async def delete_custom_role(
                 "user_count": user_count,
             },
         )
+
+    db.add(
+        AuditLog(
+            user_id=await _resolve_audit_user_id(db, current_admin.user_id),
+            action="UPDATE_ROLE",
+            table_name="roles",
+            record_id=str(role_id),
+            old_data={"role_code": role.role_code, "role_name": role.role_name, "scope": role.scope},
+            new_data=None,
+            ip_address="127.0.0.1",
+            user_agent="Admin RBAC Matrix",
+            request_uri=f"/api/v1/rbac/roles/{role_id}",
+            is_suspicious=True,
+        )
+    )
 
     # Xóa vai trò
     await db.delete(role)
@@ -566,6 +632,21 @@ async def reassign_and_delete_role(
     await db.execute(
         text("UPDATE users SET role_id = :target_id WHERE role_id = :old_id"),
         {"target_id": payload.target_role_id, "old_id": role_id},
+    )
+
+    db.add(
+        AuditLog(
+            user_id=await _resolve_audit_user_id(db, current_admin.user_id),
+            action="UPDATE_ROLE",
+            table_name="roles",
+            record_id=str(role_id),
+            old_data={"deleted_role_code": role.role_code, "deleted_role_name": role.role_name},
+            new_data={"reassigned_to_role_id": target_role.role_id, "reassigned_to_role_name": target_role.role_name},
+            ip_address="127.0.0.1",
+            user_agent="Admin RBAC Matrix",
+            request_uri=f"/api/v1/rbac/roles/{role_id}/reassign-and-delete",
+            is_suspicious=True,
+        )
     )
 
     # 4. Xóa vai trò cũ

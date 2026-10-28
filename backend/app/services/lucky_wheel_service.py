@@ -7,8 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 
 from app.models.rbac import User
-from app.models.reward import RewardTransaction
+from app.models.reward import RewardTransaction, UserVoucher, CitizenReward
 from app.models.qr_lucky import LuckyWheelSpin
+from app.models.audit import AuditLog
 from app.schemas.lucky_wheel import (
     WheelSlotItem,
     WheelStatusResponse,
@@ -25,7 +26,7 @@ WHEEL_SLOTS: List[WheelSlotItem] = [
     WheelSlotItem(slot_index=4, reward_type="BADGE", reward_name="Huy hiệu Người gieo mầm", points_won=10, badge_won="Người gieo mầm", icon="🎖️", color="#f59e0b"),
     WheelSlotItem(slot_index=5, reward_type="BADGE", reward_name="Huy hiệu Trái tim xanh", points_won=20, badge_won="Trái tim xanh", icon="💚", color="#ec4899"),
     WheelSlotItem(slot_index=6, reward_type="VOUCHER", reward_name="Voucher ưu đãi sinh thái", points_won=5, voucher_code="ECO-LUCKY-20", icon="🎟️", color="#8b5cf6"),
-    WheelSlotItem(slot_index=7, reward_type="LUCK", reward_name="Chúc may mắn lần sau", points_won=2, icon="🍀", color="#64748b"),
+    WheelSlotItem(slot_index=7, reward_type="LUCK", reward_name="Khích lệ sống xanh (+2đ)", points_won=2, icon="🍀", color="#64748b"),
 ]
 
 # Tỷ trọng xác suất quay (tổng = 100)
@@ -118,19 +119,62 @@ class LuckyWheelService:
         )
         db.add(spin_record)
 
-        # 4. Cộng điểm vào tài khoản nếu có
+        # 4. Cộng điểm vào tài khoản nếu có (Cộng cả điểm khả dụng và điểm xét hạng trọn đời)
         if slot.points_won > 0:
             user.green_points += slot.points_won
+            user.lifetime_points = (user.lifetime_points or 0) + slot.points_won
             tx = RewardTransaction(
                 transaction_id=uuid.uuid4(),
                 user_id=user.user_id,
                 points_amount=slot.points_won,
                 balance_after=user.green_points,
-                transaction_type="EARN",
+                transaction_type="LUCKY_WHEEL_SPIN",
                 description=f"Quay thưởng may mắn: {slot.reward_name}",
                 created_at=datetime.now(timezone.utc),
             )
             db.add(tx)
+
+        # [CN 26 & CN 35] Ghi nhận AuditLog nhật ký kiểm toán quay thưởng
+        try:
+            audit = AuditLog(
+                user_id=user.user_id,
+                action="LUCKY_WHEEL_SPIN",
+                table_name="lucky_wheel_spins",
+                record_id=str(spin_record.spin_id),
+                old_data=None,
+                new_data={
+                    "slot_index": slot.slot_index,
+                    "reward_name": slot.reward_name,
+                    "points_won": slot.points_won,
+                    "badge_won": slot.badge_won,
+                },
+                ip_address="127.0.0.1",
+            )
+            db.add(audit)
+        except Exception:
+            pass
+
+        # 5. Nếu trúng Voucher, tự động phát hành UserVoucher vào ví cá nhân của công dân
+        if slot.reward_type == "VOUCHER":
+            # Tra cứu reward tương ứng
+            rew_stmt = select(CitizenReward).limit(1)
+            rew_obj = (await db.execute(rew_stmt)).scalar_one_or_none()
+            reward_id = rew_obj.reward_id if rew_obj else 1
+
+            unique_code = f"LUCKY-{user.user_id.hex[:4].upper()}-{uuid.uuid4().hex[:6].upper()}"
+            voucher = UserVoucher(
+                voucher_id=uuid.uuid4(),
+                user_id=user.user_id,
+                reward_id=reward_id,
+                voucher_code=unique_code,
+                points_spent=0,
+                status="ACTIVE",
+                terms_and_conditions="Voucher sinh thái quà tặng đặc biệt từ Vòng quay may mắn hằng ngày GreenSpot. Hạn dùng 30 ngày.",
+                qr_data=f"GREENSPOT-VOUCHER:{unique_code}",
+                redeemed_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=30),
+            )
+            db.add(voucher)
 
         await db.commit()
         await db.refresh(user)

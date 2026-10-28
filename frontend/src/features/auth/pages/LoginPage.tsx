@@ -6,11 +6,11 @@ import { Toast } from "../components/Toast";
 import type { ToastState } from "../types/auth.types";
 import { AUTH_STORAGE_KEYS } from "../types/auth.types";
 import {
-  validateEmail,
+  validateLoginIdentifier,
   validateLoginPassword,
   sanitizeRedirectUrl,
 } from "../utils/validators";
-import { loginCitizen, resendOtp } from "../services/authService";
+import { loginCitizen, loginWithGoogle, resendOtp } from "../services/authService";
 import { resetSessionExpired } from "../services/sessionManager";
 import api from "../../../api/client";
 import "../styles/RegisterPage.scss";
@@ -48,6 +48,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   }>({});
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(() => {
     if (activatedNotice) {
@@ -87,9 +88,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     }
   }, [onLoginSuccess, onLogoClick, redirectParam, initialEmail]);
 
-  // onBlur ô Email
+  // onBlur ô Email / Số điện thoại
   const handleEmailBlur = () => {
-    const err = validateEmail(email);
+    const err = validateLoginIdentifier(email);
     setErrors((prev) => ({
       ...prev,
       email: err || undefined,
@@ -151,12 +152,72 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     }
   };
 
+  // Bấm Đăng nhập với Google (OAuth 2.0 - AUTH_BTN_GOOGLE)
+  const handleGoogleLogin = async () => {
+    if (isSubmitting || isGoogleLoading) return;
+    setIsGoogleLoading(true);
+    setErrors({});
+
+    try {
+      const candidateEmail =
+        email.trim() && email.includes("@")
+          ? email.trim().toLowerCase()
+          : "citizen.oauth@greenspot.vn";
+      const result = await loginWithGoogle({
+        email: candidateEmail,
+        full_name: candidateEmail === "citizen.oauth@greenspot.vn" ? "Công Dân Số Google" : undefined,
+      });
+
+      if (result.success && result.data) {
+        setToast({
+          id: Date.now(),
+          type: "success",
+          message: "Đăng nhập Google thành công",
+        });
+
+        localStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, result.data.access_token);
+        localStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, result.data.refresh_token);
+        localStorage.setItem(AUTH_STORAGE_KEYS.USER_INFO, JSON.stringify(result.data.user));
+
+        api.defaults.headers.common.Authorization = `Bearer ${result.data.access_token}`;
+        resetSessionExpired();
+        window.dispatchEvent(new Event("auth_change"));
+
+        const rawRedirect = redirectParam || new URLSearchParams(window.location.search).get("redirect");
+        const targetUrl = sanitizeRedirectUrl(rawRedirect, "");
+
+        setTimeout(() => {
+          if (onLoginSuccess) {
+            onLoginSuccess(targetUrl);
+          } else if (onLogoClick) {
+            onLogoClick();
+          }
+        }, 450);
+        return;
+      }
+
+      setToast({
+        id: Date.now(),
+        type: "error",
+        message: result.message || "Không thể đăng nhập bằng Google. Vui lòng thử lại",
+      });
+    } catch {
+      setToast({
+        id: Date.now(),
+        type: "error",
+        message: "Không thể kết nối đến máy chủ. Vui lòng thử lại",
+      });
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
   // Bấm Đăng nhập (hoặc nhấn phím Enter trong bất kỳ ô nào)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // 1. Kiểm tra hợp lệ client toàn bộ các ô
-    const emailErr = validateEmail(email);
+    const emailErr = validateLoginIdentifier(email);
     const passErr = validateLoginPassword(password);
 
     if (emailErr || passErr) {
@@ -194,7 +255,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           message: "Đăng nhập thành công",
         });
 
-        // Hai token được lưu vào localStorage theo đặc tả
+        // Hai token được lưu vào localStorage theo đặc tả (cùng với HttpOnly Cookie từ Backend)
         localStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, result.data.access_token);
         localStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, result.data.refresh_token);
         localStorage.setItem(AUTH_STORAGE_KEYS.USER_INFO, JSON.stringify(result.data.user));
@@ -236,7 +297,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         // Đã sai 5 lần trong 15 phút: chữ đỏ dưới ô Mật khẩu, ô Mật khẩu bị xóa
         setErrors({
           passwordHasError: true,
-          password: "Bạn đã nhập sai quá 5 lần. Vui lòng thử lại sau 15 phút",
+          password: result.message || "Bạn đã nhập sai quá 5 lần. Vui lòng thử lại sau 15 phút",
         });
         setPassword("");
       } else if (result.status === "NOT_ACTIVATED") {
@@ -326,22 +387,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           </div>
 
           <form className="login-form" onSubmit={handleSubmit} noValidate>
-            {/* Ô Email */}
+            {/* Ô Email / Số điện thoại (AUTH_TXT_USERNAME) */}
             <div className="form-group">
               <input
                 ref={emailRef}
                 type="text"
                 inputMode="email"
                 id="login-email"
+                data-ui-id="AUTH_TXT_USERNAME"
                 name="email"
                 className={`form-input ${errors.emailHasError ? "has-error" : ""}`}
-                placeholder="Email hoặc tên tài khoản (admin)"
+                placeholder="Email, Số điện thoại hoặc tên tài khoản (admin)"
                 maxLength={254}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 onBlur={handleEmailBlur}
-                autoComplete="email"
-                disabled={isSubmitting}
+                autoComplete="username"
+                disabled={isSubmitting || isGoogleLoading}
                 aria-invalid={errors.emailHasError}
                 aria-describedby={errors.email ? "login-email-error" : undefined}
               />
@@ -352,20 +414,22 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               )}
             </div>
 
-            {/* Ô Mật khẩu */}
-            <PasswordInput
-              inputRef={passwordRef}
-              id="login-password"
-              name="password"
-              placeholder="Mật khẩu"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onBlur={handlePasswordBlur}
-              autoComplete="current-password"
-              disabled={isSubmitting}
-              hasError={errors.passwordHasError}
-              errorMessage={errors.password}
-            />
+            {/* Ô Mật khẩu (AUTH_TXT_PASSWORD) */}
+            <div data-ui-id="AUTH_TXT_PASSWORD">
+              <PasswordInput
+                inputRef={passwordRef}
+                id="login-password"
+                name="password"
+                placeholder="Mật khẩu"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onBlur={handlePasswordBlur}
+                autoComplete="current-password"
+                disabled={isSubmitting || isGoogleLoading}
+                hasError={errors.passwordHasError}
+                errorMessage={errors.password}
+              />
+            </div>
 
             {/* Nút Quên mật khẩu? */}
             <div className="form-extra-actions">
@@ -373,17 +437,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 type="button"
                 className="btn-forgot-password"
                 onClick={handleForgotPassword}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isGoogleLoading}
               >
                 Quên mật khẩu?
               </button>
             </div>
 
-            {/* Nút Đăng nhập */}
+            {/* Nút Đăng nhập (AUTH_BTN_SUBMIT) */}
             <button
               type="submit"
+              id="AUTH_BTN_SUBMIT"
+              data-ui-id="AUTH_BTN_SUBMIT"
               className="btn-submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isGoogleLoading}
             >
               {isSubmitting ? (
                 <>
@@ -395,13 +461,47 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               )}
             </button>
 
+            <div className="oauth-divider">
+              <span>Hoặc tiếp tục nhanh với</span>
+            </div>
+
+            {/* Nút Đăng nhập với Google (AUTH_BTN_GOOGLE) */}
+            <button
+              type="button"
+              id="AUTH_BTN_GOOGLE"
+              data-ui-id="AUTH_BTN_GOOGLE"
+              className="btn-google-oauth"
+              onClick={handleGoogleLogin}
+              disabled={isSubmitting || isGoogleLoading}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="#4285F4"
+                  d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z"
+                />
+              </svg>
+              <span>{isGoogleLoading ? "Đang xác thực Google..." : "Đăng nhập với Google"}</span>
+            </button>
+
             {/* Chuyển sang Đăng ký */}
             <div className="switch-auth-action">
               <button
                 type="button"
                 className="btn-switch-register"
                 onClick={onNavigateToRegister}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isGoogleLoading}
               >
                 Chưa có tài khoản?
                 <span>Đăng ký ngay</span>

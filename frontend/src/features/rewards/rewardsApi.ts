@@ -1,4 +1,5 @@
 import api from "../../api/client";
+import { AUTH_STORAGE_KEYS } from "../auth/types/auth.types";
 import type {
   PointPolicyResponse,
   DailyLimitsPolicyResponse,
@@ -8,6 +9,15 @@ import type {
   TransactionHistoryResponse,
   TransactionDetailResponse,
 } from "./types";
+
+const getValidAuthToken = (): string => {
+  return (
+    localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN) ||
+    localStorage.getItem("eco_access_token") ||
+    localStorage.getItem("token") ||
+    ""
+  );
+};
 
 export const rewardsApi = {
   /**
@@ -73,7 +83,7 @@ export const rewardsApi = {
    * Tải tệp sao kê CSV
    */
   async downloadStatementCsv(flowType?: string, timeRange = "30_DAYS"): Promise<void> {
-    const token = localStorage.getItem("eco_access_token");
+    const token = getValidAuthToken();
     const baseUrl = api.defaults.baseURL || "http://localhost:8000";
     const url = new URL(`${baseUrl}/api/v1/rewards/export-statement`);
     if (flowType) url.searchParams.set("flow_type", flowType);
@@ -164,7 +174,7 @@ export const rewardsApi = {
    * [Chức năng 30 - Màn 6] Xuất báo cáo thống kê quy đổi ra tệp CSV
    */
   async downloadAnalyticsCsv(timeRange = "MONTH"): Promise<void> {
-    const token = localStorage.getItem("eco_access_token");
+    const token = getValidAuthToken();
     const baseUrl = api.defaults.baseURL || "http://localhost:8000";
     const url = new URL(`${baseUrl}/api/v1/rewards/analytics/export`);
     url.searchParams.set("time_range", timeRange);
@@ -225,6 +235,16 @@ export const rewardsApi = {
     const res = await api.post<import("./types").MarkVoucherUsedResponse>(
       `/api/v1/rewards/my-vouchers/${voucherId}/use`
     );
+    return res.data;
+  },
+
+  /**
+   * [Chức năng 31] Cổng đối soát thu ngân / đối tác POS: Kiểm tra và kích hoạt voucher bằng mã code
+   */
+  async verifyVoucher(voucherCode: string): Promise<import("./types").VerifyVoucherResponse> {
+    const res = await api.post<import("./types").VerifyVoucherResponse>("/api/v1/rewards/verify-voucher", {
+      voucher_code: voucherCode,
+    });
     return res.data;
   },
 };

@@ -22,6 +22,13 @@ export const LeaderboardContainer: React.FC<Props> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<LeaderboardTab>("INDIVIDUAL");
   const [cycle, setCycle] = useState<CycleFilter>("WEEK");
+  const [selectedDistrict, setSelectedDistrict] = useState<string>("ALL");
+
+  // [CN 32 10/10] Chốt sổ thi đua & trao thưởng Top 3
+  const [snapshotModalOpen, setSnapshotModalOpen] = useState(false);
+  const [isTakingSnapshot, setIsTakingSnapshot] = useState(false);
+  const [snapshotResult, setSnapshotResult] = useState<import("./types").LeaderboardSnapshotResponse | null>(null);
+  const [snapshotError, setSnapshotError] = useState<string | null>(null);
 
   // State for Individual tab
   const [individualData, setIndividualData] = useState<IndividualLeaderboardResponse | null>(null);
@@ -40,18 +47,21 @@ export const LeaderboardContainer: React.FC<Props> = ({
   const [errorDistrict, setErrorDistrict] = useState<string | null>(null);
 
   // 1. Fetch Individual Leaderboard
-  const fetchIndividual = useCallback(async () => {
+  const fetchIndividual = useCallback(async (dist = selectedDistrict, c = cycle) => {
     setLoadingIndividual(true);
     setErrorIndividual(null);
     try {
-      const data = await leaderboardApi.getIndividualLeaderboard();
+      const data = await leaderboardApi.getIndividualLeaderboard({
+        district: dist !== "ALL" ? dist : undefined,
+        cycle: c,
+      });
       setIndividualData(data);
     } catch {
       setErrorIndividual("Không thể tải bảng xếp hạng. Vui lòng thử lại");
     } finally {
       setLoadingIndividual(false);
     }
-  }, []);
+  }, [selectedDistrict, cycle]);
 
   // 2. Fetch Group Leaderboard
   const fetchGroups = useCallback(async (c: CycleFilter) => {
@@ -83,15 +93,17 @@ export const LeaderboardContainer: React.FC<Props> = ({
 
   // Initial load
   useEffect(() => {
-    fetchIndividual();
-  }, [fetchIndividual]);
+    fetchIndividual(selectedDistrict, cycle);
+  }, [fetchIndividual, selectedDistrict, cycle]);
 
   // Tab switch effect
   const handleTabChange = (tab: LeaderboardTab) => {
     setActiveTab(tab);
-    if (tab === "GROUP" && (!groupData || groupData.cycle !== cycle)) {
+    if (tab === "INDIVIDUAL") {
+      fetchIndividual(selectedDistrict, cycle);
+    } else if (tab === "GROUP") {
       fetchGroups(cycle);
-    } else if (tab === "DISTRICT" && (!districtData || districtData.cycle !== cycle)) {
+    } else if (tab === "DISTRICT") {
       fetchDistricts(cycle);
     }
   };
@@ -99,10 +111,33 @@ export const LeaderboardContainer: React.FC<Props> = ({
   // Cycle switch effect
   const handleCycleChange = (newCycle: CycleFilter) => {
     setCycle(newCycle);
-    if (activeTab === "GROUP") {
+    if (activeTab === "INDIVIDUAL") {
+      fetchIndividual(selectedDistrict, newCycle);
+    } else if (activeTab === "GROUP") {
       fetchGroups(newCycle);
     } else if (activeTab === "DISTRICT") {
       fetchDistricts(newCycle);
+    }
+  };
+
+  // [CN 32] Admin Snapshot & Thưởng Top 3
+  const handleTakeSnapshot = async () => {
+    setIsTakingSnapshot(true);
+    setSnapshotError(null);
+    setSnapshotResult(null);
+    try {
+      const res = await leaderboardApi.takeAdminSnapshot(cycle);
+      setSnapshotResult(res);
+      setSnapshotModalOpen(true);
+      if (activeTab === "INDIVIDUAL") fetchIndividual(selectedDistrict, cycle);
+      else if (activeTab === "GROUP") fetchGroups(cycle);
+      else if (activeTab === "DISTRICT") fetchDistricts(cycle);
+    } catch (err: any) {
+      const detail = err.response?.data?.detail || "Không thể chốt sổ. Yêu cầu quyền Quản trị viên (Admin).";
+      setSnapshotError(detail);
+      setSnapshotModalOpen(true);
+    } finally {
+      setIsTakingSnapshot(false);
     }
   };
 
@@ -115,7 +150,7 @@ export const LeaderboardContainer: React.FC<Props> = ({
   return (
     <div className="lb-page-container">
       {/* Header Banner */}
-      <div className="lb-header">
+      <div className="lb-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "14px" }}>
         <div>
           <div className="lb-header-title">
             <span>🏆</span>
@@ -125,10 +160,32 @@ export const LeaderboardContainer: React.FC<Props> = ({
             Tôn vinh các cá nhân, tập thể và địa phương tiên phong vì môi trường bền vững. Tích lũy Điểm Xanh qua từng hành động bảo vệ TP.HCM!
           </p>
         </div>
+
+        <button
+          type="button"
+          onClick={handleTakeSnapshot}
+          disabled={isTakingSnapshot}
+          style={{
+            background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+            color: "#ffffff",
+            border: "none",
+            padding: "10px 18px",
+            borderRadius: "8px",
+            fontWeight: 700,
+            cursor: "pointer",
+            boxShadow: "0 4px 10px rgba(245, 158, 11, 0.3)",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            fontSize: "0.9rem",
+          }}
+        >
+          {isTakingSnapshot ? "⏳ Đang Chốt Sổ…" : "👑 Chốt Mùa Giải & Trao Thưởng Top 3"}
+        </button>
       </div>
 
-      {/* Tabs and Cycle Filter bar */}
-      <div className="lb-tabs-container">
+      {/* Tabs, District Filter and Cycle Filter bar */}
+      <div className="lb-tabs-container" style={{ flexWrap: "wrap", gap: "10px" }}>
         <div className="lb-nav-tabs">
           <button
             className={`lb-tab-btn ${activeTab === "INDIVIDUAL" ? "active" : ""}`}
@@ -153,7 +210,52 @@ export const LeaderboardContainer: React.FC<Props> = ({
           </button>
         </div>
 
-        {activeTab !== "INDIVIDUAL" && (
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginLeft: "auto" }}>
+          {/* Bộ lọc Quận huyện cho tab Cá nhân */}
+          {activeTab === "INDIVIDUAL" && (
+            <select
+              value={selectedDistrict}
+              onChange={(e) => {
+                setSelectedDistrict(e.target.value);
+                fetchIndividual(e.target.value, cycle);
+              }}
+              style={{
+                padding: "8px 12px",
+                borderRadius: "8px",
+                border: "1px solid #cbd5e1",
+                background: "#ffffff",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+                color: "#1e293b",
+                cursor: "pointer",
+              }}
+            >
+              <option value="ALL">🌐 Toàn TP. Hồ Chí Minh</option>
+              <option value="QUAN_1">Quận 1</option>
+              <option value="QUAN_3">Quận 3</option>
+              <option value="QUAN_4">Quận 4</option>
+              <option value="QUAN_5">Quận 5</option>
+              <option value="QUAN_6">Quận 6</option>
+              <option value="QUAN_7">Quận 7</option>
+              <option value="QUAN_8">Quận 8</option>
+              <option value="QUAN_10">Quận 10</option>
+              <option value="QUAN_11">Quận 11</option>
+              <option value="QUAN_12">Quận 12</option>
+              <option value="BINH_THANH">Bình Thạnh</option>
+              <option value="THU_DUC">TP. Thủ Đức</option>
+              <option value="GO_VAP">Gò Vấp</option>
+              <option value="PHU_NHUAN">Phú Nhuận</option>
+              <option value="TAN_BINH">Tân Bình</option>
+              <option value="TAN_PHU">Tân Phú</option>
+              <option value="BINH_TAN">Bình Tân</option>
+              <option value="NHA_BE">Nhà Bè</option>
+              <option value="HOC_MON">Hóc Môn</option>
+              <option value="BINH_CHANH">Bình Chánh</option>
+              <option value="CU_CHI">Củ Chi</option>
+              <option value="CAN_GIO">Cần Giờ</option>
+            </select>
+          )}
+
           <div className="lb-cycle-filters">
             {(["WEEK", "MONTH", "ALL"] as CycleFilter[]).map((c) => (
               <button
@@ -165,7 +267,7 @@ export const LeaderboardContainer: React.FC<Props> = ({
               </button>
             ))}
           </div>
-        )}
+        </div>
       </div>
 
       {/* TAB 1: INDIVIDUAL (MÀN 1) */}
@@ -174,7 +276,7 @@ export const LeaderboardContainer: React.FC<Props> = ({
           {errorIndividual ? (
             <div className="lb-error-box">
               <p className="lb-error-msg">{errorIndividual}</p>
-              <button className="lb-retry-btn" onClick={fetchIndividual}>
+              <button className="lb-retry-btn" onClick={() => fetchIndividual()}>
                 Thử lại
               </button>
             </div>
@@ -519,6 +621,99 @@ export const LeaderboardContainer: React.FC<Props> = ({
             >
               Đóng
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* [CN 32 10/10] Popup Vinh danh & Trao thưởng Top 3 Mùa Giải */}
+      {snapshotModalOpen && (
+        <div className="lb-modal-overlay" onClick={() => setSnapshotModalOpen(false)}>
+          <div className="lb-modal-card" style={{ maxWidth: "520px" }} onClick={(e) => e.stopPropagation()}>
+            <button className="lb-modal-close" onClick={() => setSnapshotModalOpen(false)}>
+              ✕
+            </button>
+
+            {snapshotError ? (
+              <div style={{ textAlign: "center", padding: "12px 0" }}>
+                <div style={{ fontSize: "2.5rem", marginBottom: "8px" }}>⚠️</div>
+                <h3 style={{ fontSize: "1.2rem", fontWeight: 700, color: "#ef4444", margin: "0 0 8px" }}>
+                  Chưa Thể Chốt Sổ Thi Đua
+                </h3>
+                <p style={{ color: "#64748b", fontSize: "0.9rem" }}>{snapshotError}</p>
+                <p style={{ fontSize: "0.8rem", color: "#94a3b8" }}>
+                  Mẹo demo: Bạn có thể chọn menu Avatar góc trên để đăng nhập tài khoản Quản trị viên (Admin) hoặc thực hiện chốt sổ trên hệ thống.
+                </p>
+                <button
+                  className="lb-login-btn"
+                  style={{ marginTop: "16px" }}
+                  onClick={() => setSnapshotModalOpen(false)}
+                >
+                  Đã hiểu
+                </button>
+              </div>
+            ) : snapshotResult ? (
+              <div>
+                <div style={{ textAlign: "center", marginBottom: "16px" }}>
+                  <div style={{ fontSize: "3rem", marginBottom: "4px" }}>🎉👑</div>
+                  <h3 style={{ fontSize: "1.3rem", fontWeight: 800, color: "#d97706", margin: "0 0 6px" }}>
+                    VINH DANH TOP 3 CÔNG DÂN XANH
+                  </h3>
+                  <span style={{ fontSize: "0.8rem", background: "#fef3c7", color: "#92400e", padding: "3px 10px", borderRadius: "12px", fontWeight: 600 }}>
+                    Kỳ: {cycleLabels[snapshotResult.cycle as CycleFilter] || snapshotResult.cycle} • {snapshotResult.snapshot_date}
+                  </span>
+                </div>
+
+                <p style={{ fontSize: "0.85rem", color: "#475569", textAlign: "center", marginBottom: "16px" }}>
+                  Hệ thống đã tự động cộng Điểm Xanh vinh danh và ghi nhận chứng từ vào Sổ cái Biến động điểm!
+                </p>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "18px" }}>
+                  {snapshotResult.winners.map((w) => (
+                    <div
+                      key={w.rank}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "12px 16px",
+                        borderRadius: "10px",
+                        background: w.rank === 1 ? "linear-gradient(135deg, #fef9c3 0%, #fef08a 100%)" : w.rank === 2 ? "#f1f5f9" : "#ffedd5",
+                        border: "1px solid rgba(0,0,0,0.06)",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <span style={{ fontSize: "1.6rem" }}>
+                          {w.rank === 1 ? "🥇" : w.rank === 2 ? "🥈" : "🥉"}
+                        </span>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#0f172a" }}>
+                            {w.full_name}
+                          </div>
+                          <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{w.title}</div>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <span style={{ fontWeight: 800, color: "#16a34a", fontSize: "1.05rem" }}>
+                          +{w.points_rewarded} đ
+                        </span>
+                        <div style={{ fontSize: "0.7rem", color: "#15803d" }}>Thưởng vinh danh</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ background: "#f8fafc", padding: "10px 14px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.75rem", color: "#64748b", marginBottom: "16px" }}>
+                  🛡️ <strong>Chứng từ kiểm toán:</strong> Đã băm chuỗi SHA-256 Merkle và lưu tại <code>AuditLog</code> (#audit-logs).
+                </div>
+
+                <button
+                  className="lb-login-btn"
+                  onClick={() => setSnapshotModalOpen(false)}
+                >
+                  Xác nhận đóng
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       )}

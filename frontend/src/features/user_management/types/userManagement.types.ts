@@ -59,6 +59,7 @@ export interface ChangeRolePayload {
 
 export interface ChangeStatusPayload {
   status: 'ACTIVE' | 'BLOCKED';
+  reason?: string;
 }
 
 export interface ResetPasswordPayload {

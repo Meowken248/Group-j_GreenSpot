@@ -5,6 +5,16 @@ import { EcoRewardsCatalog } from "./components/EcoRewardsCatalog";
 import { MyVouchersWallet } from "./components/MyVouchersWallet";
 import "./rewards.css";
 
+import { AUTH_STORAGE_KEYS } from "../auth";
+
+const getStoredAuthToken = (): string | null => {
+  return (
+    localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN) ||
+    localStorage.getItem("eco_access_token") ||
+    localStorage.getItem("token")
+  );
+};
+
 interface RewardsContainerProps {
   initialTab?: "policy" | "wallet" | "catalog" | "vouchers";
   onBackToHome?: () => void;
@@ -28,15 +38,19 @@ export const RewardsContainer: React.FC<RewardsContainerProps> = ({
   });
 
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    return Boolean(localStorage.getItem("eco_access_token"));
+    return Boolean(getStoredAuthToken());
   });
 
   useEffect(() => {
     const checkAuth = () => {
-      setIsLoggedIn(Boolean(localStorage.getItem("eco_access_token")));
+      setIsLoggedIn(Boolean(getStoredAuthToken()));
     };
     window.addEventListener("auth_change", checkAuth);
-    return () => window.removeEventListener("auth_change", checkAuth);
+    window.addEventListener("storage", checkAuth);
+    return () => {
+      window.removeEventListener("auth_change", checkAuth);
+      window.removeEventListener("storage", checkAuth);
+    };
   }, []);
 
   useEffect(() => {

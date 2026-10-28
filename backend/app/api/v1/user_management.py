@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
+from app.models.audit import AuditLog
 from app.models.rbac import User, Role, UserSession
 from app.schemas.user_management import (
     RoleOptionItem,
@@ -19,7 +20,7 @@ from app.schemas.user_management import (
     ChangeUserStatusRequest,
     AdminResetPasswordRequest,
 )
-from app.api.v1.rbac import get_current_active_user, require_admin_user, SYSTEM_ORDER
+from app.api.v1.rbac import get_current_active_user, require_admin_user, SYSTEM_ORDER, _resolve_audit_user_id
 from app.utils.security import hash_password, verify_password
 
 router = APIRouter(prefix="/users", tags=["Quản lý người dùng & Tài khoản"])
@@ -143,7 +144,7 @@ async def list_users(
             )
         )
 
-    # 8. Thống kê tổng quan
+    # 8. Thống kê tổng quan (bao gồm tổng số vai trò trong hệ thống)
     stats_query = select(
         func.count(User.user_id).label("total_all"),
         func.count(User.user_id).filter(User.status == "ACTIVE").label("total_active"),
@@ -151,6 +152,9 @@ async def list_users(
     )
     stats_res = await db.execute(stats_query)
     s_row = stats_res.fetchone()
+
+    roles_cnt_res = await db.execute(select(func.count(Role.role_id)))
+    roles_count = roles_cnt_res.scalar() or 4
 
     total_pages = math.ceil(total / limit) if limit > 0 else 1
 
@@ -164,6 +168,7 @@ async def list_users(
             "total_users": s_row[0] if s_row else 0,
             "active_users": s_row[1] if s_row else 0,
             "blocked_users": s_row[2] if s_row else 0,
+            "roles_count": roles_count,
             "total_all": s_row[0] if s_row else 0,
             "total_active": s_row[1] if s_row else 0,
             "total_blocked": s_row[2] if s_row else 0,
@@ -184,6 +189,7 @@ async def create_user_by_admin(
     - Kiểm tra số điện thoại chưa tồn tại nếu có (400 PHONE_EXISTS)
     - Mật khẩu được mã hóa an toàn bằng PBKDF2-HMAC-SHA256
     - Tài khoản ở trạng thái ACTIVE ngay lập tức để người dùng có thể đăng nhập làm việc
+    - Ghi nhận vào Nhật ký kiểm toán an ninh (AuditLog)
     """
     # 1. Kiểm tra vai trò
     role_res = await db.execute(select(Role).where(Role.role_id == payload.role_id))
@@ -230,6 +236,28 @@ async def create_user_by_admin(
         reputation_score=100,
     )
     db.add(new_user)
+
+    db.add(
+        AuditLog(
+            user_id=await _resolve_audit_user_id(db, current_admin.user_id),
+            action="CREATE_USER",
+            table_name="users",
+            record_id=str(new_user_id),
+            old_data=None,
+            new_data={
+                "email": clean_email,
+                "full_name": payload.full_name,
+                "phone_number": clean_phone,
+                "role_code": role_obj.role_code,
+                "role_name": role_obj.role_name,
+                "status": payload.status,
+            },
+            ip_address="127.0.0.1",
+            user_agent="Admin User Management",
+            request_uri="/api/v1/users",
+            is_suspicious=(role_obj.role_code == "ADMIN"),
+        )
+    )
     await db.commit()
     await db.refresh(new_user)
 
@@ -263,6 +291,7 @@ async def change_user_role(
     Admin thay đổi vai trò của người dùng:
     - Chặn Admin tự tước quyền của chính mình (400 CANNOT_DEMOTE_SELF)
     - Cập nhật vai trò mới và thu hồi phiên cũ để quyền hạn có hiệu lực ngay
+    - Ghi nhận vào Nhật ký kiểm toán an ninh (AuditLog)
     """
     try:
         target_uuid = uuid.UUID(user_id)
@@ -300,6 +329,10 @@ async def change_user_role(
             },
         )
 
+    old_role_code = target_user.role.role_code if target_user.role else "UNKNOWN"
+    old_role_name = target_user.role.role_name if target_user.role else "Chưa gán"
+    old_role_id = target_user.role_id
+
     # 4. Cập nhật vai trò
     target_user.role_id = new_role.role_id
 
@@ -309,6 +342,31 @@ async def change_user_role(
         update(UserSession)
         .where(UserSession.user_id == target_uuid, UserSession.revoked_at.is_(None))
         .values(revoked_at=now)
+    )
+
+    db.add(
+        AuditLog(
+            user_id=await _resolve_audit_user_id(db, current_admin.user_id),
+            action="UPDATE_ROLE",
+            table_name="users",
+            record_id=str(target_user.user_id),
+            old_data={
+                "email": target_user.email,
+                "role_id": old_role_id,
+                "role_code": old_role_code,
+                "role_name": old_role_name,
+            },
+            new_data={
+                "email": target_user.email,
+                "role_id": new_role.role_id,
+                "role_code": new_role.role_code,
+                "role_name": new_role.role_name,
+            },
+            ip_address="127.0.0.1",
+            user_agent="Admin User Management",
+            request_uri=f"/api/v1/users/{user_id}/role",
+            is_suspicious=(new_role.role_code == "ADMIN" or old_role_code == "ADMIN"),
+        )
     )
     await db.commit()
     await db.refresh(target_user)
@@ -342,7 +400,9 @@ async def change_user_status(
     """
     Admin Khóa (BLOCKED) hoặc Mở khóa (ACTIVE) tài khoản người dùng:
     - Chặn Admin tự khóa tài khoản của chính mình (400 CANNOT_BLOCK_SELF)
+    - Kiểm tra lý do khóa tài khoản nếu truyền chuỗi rỗng (400 RBAC_002)
     - Nếu khóa tài khoản: Thu hồi toàn bộ phiên đăng nhập ngay lập tức
+    - Ghi nhận vào Nhật ký kiểm toán an ninh (AuditLog)
     """
     try:
         target_uuid = uuid.UUID(user_id)
@@ -350,6 +410,15 @@ async def change_user_status(
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"error_code": "INVALID_UUID", "message": "ID người dùng không hợp lệ"},
+        )
+
+    if payload.status == "BLOCKED" and payload.reason is not None and not payload.reason.strip():
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "error_code": "RBAC_002",
+                "message": "Vui lòng nhập lý do khóa tài khoản để ghi nhận kiểm toán an ninh",
+            },
         )
 
     u_res = await db.execute(select(User).options(selectinload(User.role)).where(User.user_id == target_uuid))
@@ -370,6 +439,7 @@ async def change_user_status(
             },
         )
 
+    old_status = target_user.status
     target_user.status = payload.status
 
     # Nếu khóa -> thu hồi tất cả phiên ngay lập tức
@@ -380,6 +450,31 @@ async def change_user_status(
             .where(UserSession.user_id == target_uuid, UserSession.revoked_at.is_(None))
             .values(revoked_at=now)
         )
+
+    audit_reason = (
+        payload.reason.strip()
+        if (payload.reason and payload.reason.strip())
+        else ("Khóa tài khoản theo quyết định quản trị" if payload.status == "BLOCKED" else "Mở khóa tài khoản hoạt động trở lại")
+    )
+
+    db.add(
+        AuditLog(
+            user_id=await _resolve_audit_user_id(db, current_admin.user_id),
+            action="LOCK_USER" if payload.status == "BLOCKED" else "UNLOCK_USER",
+            table_name="users",
+            record_id=str(target_user.user_id),
+            old_data={"email": target_user.email, "status": old_status},
+            new_data={
+                "email": target_user.email,
+                "status": payload.status,
+                "reason": audit_reason,
+            },
+            ip_address="127.0.0.1",
+            user_agent="Admin User Management",
+            request_uri=f"/api/v1/users/{user_id}/status",
+            is_suspicious=(payload.status == "BLOCKED"),
+        )
+    )
 
     await db.commit()
     await db.refresh(target_user)
@@ -414,6 +509,7 @@ async def reset_user_password(
     """
     Admin đặt lại mật khẩu mới cho người dùng:
     - Mã hóa mật khẩu mới và thu hồi tất cả phiên đăng nhập cũ
+    - Ghi nhận vào Nhật ký kiểm toán an ninh (AuditLog)
     """
     try:
         target_uuid = uuid.UUID(user_id)
@@ -450,6 +546,21 @@ async def reset_user_password(
         .where(UserSession.user_id == target_uuid, UserSession.revoked_at.is_(None))
         .values(revoked_at=now)
     )
+
+    db.add(
+        AuditLog(
+            user_id=await _resolve_audit_user_id(db, current_admin.user_id),
+            action="RESET_PASSWORD",
+            table_name="users",
+            record_id=str(target_user.user_id),
+            old_data={"email": target_user.email, "password": "******"},
+            new_data={"email": target_user.email, "password": "******", "sessions_revoked": True},
+            ip_address="127.0.0.1",
+            user_agent="Admin User Management",
+            request_uri=f"/api/v1/users/{user_id}/reset-password",
+            is_suspicious=False,
+        )
+    )
     await db.commit()
 
     return {"success": True, "message": f"Đã đặt lại mật khẩu thành công cho người dùng {target_user.full_name}"}
@@ -464,6 +575,7 @@ async def delete_user_by_admin(
     """
     Admin xóa người dùng khỏi hệ thống:
     - Chặn Admin tự xóa chính mình (400 CANNOT_DELETE_SELF)
+    - Ghi nhận vào Nhật ký kiểm toán an ninh (AuditLog)
     """
     try:
         target_uuid = uuid.UUID(user_id)
@@ -490,7 +602,30 @@ async def delete_user_by_admin(
             },
         )
 
+    deleted_email = target_user.email
+    deleted_name = target_user.full_name
+    deleted_role_id = target_user.role_id
+
+    db.add(
+        AuditLog(
+            user_id=await _resolve_audit_user_id(db, current_admin.user_id),
+            action="DELETE_USER",
+            table_name="users",
+            record_id=str(target_user.user_id),
+            old_data={
+                "email": deleted_email,
+                "full_name": deleted_name,
+                "role_id": deleted_role_id,
+            },
+            new_data=None,
+            ip_address="127.0.0.1",
+            user_agent="Admin User Management",
+            request_uri=f"/api/v1/users/{user_id}",
+            is_suspicious=True,
+        )
+    )
+
     await db.delete(target_user)
     await db.commit()
 
-    return {"success": True, "message": f"Đã xoá tài khoản {target_user.email} thành công"}
+    return {"success": True, "message": f"Đã xoá tài khoản {deleted_email} thành công"}

@@ -13,6 +13,8 @@ from fastapi import HTTPException, status
 
 from app.models.rbac import User
 from app.models.reward import RewardTransaction, CitizenReward, UserVoucher
+from sqlalchemy.orm import selectinload
+from app.models.audit import AuditLog
 from app.schemas.reward import (
     PointPolicyItem,
     TierInfo,
@@ -37,6 +39,7 @@ from app.schemas.reward import (
     UserVoucherItem,
     UserVoucherListResponse,
     MarkVoucherUsedResponse,
+    VerifyVoucherResponse,
 )
 
 # --------------------------------------------------------------------------
@@ -234,14 +237,18 @@ class RewardService:
         if user_id:
             user = await self.db.get(User, user_id)
             if user:
-                cur_tier, nxt_tier, pts_needed, progress = calculate_tier_details(user.green_points)
+                qualifying_points = max(int(user.lifetime_points or 0), int(user.green_points or 0))
+                cur_tier, nxt_tier, pts_needed, progress = calculate_tier_details(qualifying_points)
+                discount_map = {"BRONZE": 0, "SILVER": 5, "GOLD": 10, "DIAMOND": 15}
                 user_summary = {
                     "user_id": str(user.user_id),
                     "full_name": user.full_name,
                     "green_points": user.green_points,
-                    "lifetime_points": user.lifetime_points,
+                    "lifetime_points": qualifying_points,
+                    "tier_code": cur_tier.tier_code,
                     "tier_name": cur_tier.tier_name,
                     "badge_icon": cur_tier.badge_icon,
+                    "discount_percent": discount_map.get(cur_tier.tier_code, 0),
                     "next_tier_name": nxt_tier.tier_name if nxt_tier else None,
                     "points_to_next_tier": pts_needed,
                     "progress_percent": progress,
@@ -397,12 +404,14 @@ class RewardService:
         if current_daily_points + points_to_add > daily_cap:
             points_to_add = daily_cap - current_daily_points
 
-        old_points = user.green_points
-        old_tier, _, _, _ = calculate_tier_details(old_points)
+        old_points = int(user.green_points or 0)
+        old_qualifying = max(int(user.lifetime_points or 0), old_points)
+        old_tier, _, _, _ = calculate_tier_details(old_qualifying)
 
         new_balance = old_points + points_to_add
+        new_lifetime = max(int(user.lifetime_points or 0), old_points) + points_to_add
         user.green_points = new_balance
-        user.lifetime_points = user.lifetime_points + points_to_add
+        user.lifetime_points = new_lifetime
 
         # 3. Tạo bản ghi giao dịch trong sổ cái reward_transactions
         tx_id = uuid.uuid4()
@@ -420,10 +429,30 @@ class RewardService:
             created_at=datetime.now(timezone.utc),
         )
         self.db.add(transaction)
+
+        # Ghi vết Audit Log khi tích điểm
+        audit = AuditLog(
+            user_id=user_id,
+            action="REWARD_POINTS",
+            table_name="reward_transactions",
+            record_id=str(tx_id),
+            old_data={"green_points": old_points, "lifetime_points": old_qualifying},
+            new_data={
+                "action_type": req.action_type,
+                "points_awarded": points_to_add,
+                "green_points": new_balance,
+                "lifetime_points": new_lifetime,
+            },
+            ip_address="127.0.0.1",
+            user_agent="GreenSpot Reward Engine",
+            request_uri="/api/v1/rewards/claim",
+            is_suspicious=(points_to_add > 500),
+        )
+        self.db.add(audit)
         await self.db.commit()
         await self.db.refresh(user)
 
-        new_tier, next_tier, points_to_next, _ = calculate_tier_details(new_balance)
+        new_tier, next_tier, points_to_next, _ = calculate_tier_details(new_lifetime)
         tier_upgraded = new_tier.tier_code != old_tier.tier_code
 
         tx_code = format_transaction_code(tx_id)
@@ -492,14 +521,15 @@ class RewardService:
         )
         total_tx = await self.db.scalar(tx_count_query) or 0
 
-        cur_tier, next_tier, points_needed, progress = calculate_tier_details(user.green_points)
+        qualifying_points = max(int(user.lifetime_points or 0), int(user.green_points or 0))
+        cur_tier, next_tier, points_needed, progress = calculate_tier_details(qualifying_points)
 
         return WalletSummaryResponse(
             user_id=str(user.user_id),
             full_name=user.full_name,
             email=user.email,
             green_points=user.green_points,
-            lifetime_points=user.lifetime_points,
+            lifetime_points=qualifying_points,
             current_tier=cur_tier,
             next_tier=next_tier,
             points_to_next_tier=points_needed,
@@ -972,6 +1002,27 @@ class RewardService:
             is_active=True,
         )
         self.db.add(reward)
+        await self.db.flush()
+
+        audit = AuditLog(
+            user_id=None,
+            action="UPDATE_DATA",
+            table_name="citizen_rewards",
+            record_id=str(reward.reward_id),
+            old_data=None,
+            new_data={
+                "reward_code": reward.reward_code,
+                "title": reward.title,
+                "brand": reward.brand,
+                "points_required": reward.points_required,
+                "stock_quantity": reward.stock_quantity,
+            },
+            ip_address="127.0.0.1",
+            user_agent="Admin Portal Reward Catalog",
+            request_uri="/api/v1/rewards/catalog",
+            is_suspicious=False,
+        )
+        self.db.add(audit)
         await self.db.commit()
         await self.db.refresh(reward)
 
@@ -1044,6 +1095,25 @@ class RewardService:
         if req.is_active is not None:
             r.is_active = req.is_active
 
+        audit = AuditLog(
+            user_id=None,
+            action="UPDATE_DATA",
+            table_name="citizen_rewards",
+            record_id=str(r.reward_id),
+            old_data=None,
+            new_data={
+                "title": r.title,
+                "brand": r.brand,
+                "points_required": r.points_required,
+                "stock_quantity": r.stock_quantity,
+                "is_active": r.is_active,
+            },
+            ip_address="127.0.0.1",
+            user_agent="Admin Portal Reward Catalog",
+            request_uri=f"/api/v1/rewards/catalog/{reward_id}",
+            is_suspicious=False,
+        )
+        self.db.add(audit)
         await self.db.commit()
         await self.db.refresh(r)
 
@@ -1266,13 +1336,16 @@ class RewardService:
     async def redeem_reward(self, user_id: uuid.UUID, reward_id: int) -> RedeemRewardResponse:
         """
         Thực hiện đổi Điểm Xanh lấy E-Voucher / Quà tặng sinh thái.
-        Kiểm tra số dư, trừ điểm ACID, sinh mã Voucher duy nhất, mã QR và hạn dùng.
+        Kiểm tra số dư, khóa dòng (Row-level lock) chống Race Condition, áp dụng chiết khấu Hạng hội viên,
+        trừ điểm ACID (không làm giảm lifetime_points), sinh mã Voucher duy nhất, mã QR và hạn dùng.
         """
-        user = await self.db.get(User, user_id)
+        user_stmt = select(User).where(User.user_id == user_id).with_for_update()
+        user = (await self.db.execute(user_stmt)).scalar_one_or_none()
         if not user:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Người dùng không tồn tại")
 
-        reward = await self.db.get(CitizenReward, reward_id)
+        reward_stmt = select(CitizenReward).where(CitizenReward.reward_id == reward_id).with_for_update()
+        reward = (await self.db.execute(reward_stmt)).scalar_one_or_none()
         if not reward or not reward.is_active:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quà tặng không tồn tại hoặc đã ngừng áp dụng")
 
@@ -1283,14 +1356,25 @@ class RewardService:
         if reward.stock_quantity <= 0:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Phần quà này hiện đã hết hàng trong kho")
 
-        if user.green_points < reward.points_required:
+        # Tính ưu đãi chiết khấu theo Hạng hội viên (dựa trên lifetime_points tích lũy trọn đời)
+        qualifying_points = max(int(user.lifetime_points or 0), int(user.green_points or 0))
+        cur_tier, _, _, _ = calculate_tier_details(qualifying_points)
+        discount_rates = {"BRONZE": 0.0, "SILVER": 0.05, "GOLD": 0.10, "DIAMOND": 0.15}
+        discount_rate = discount_rates.get(cur_tier.tier_code, 0.0)
+        effective_cost = max(1, int(round(reward.points_required * (1.0 - discount_rate))))
+        saved_points = max(0, reward.points_required - effective_cost)
+
+        if user.green_points < effective_cost:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Số dư Điểm Xanh không đủ (cần {reward.points_required} điểm, hiện có {user.green_points} điểm)",
+                detail=f"Số dư Điểm Xanh không đủ (cần {effective_cost} điểm sau ưu đãi {cur_tier.tier_name}, hiện có {user.green_points} điểm)",
             )
 
         balance_before = user.green_points
-        user.green_points -= reward.points_required
+        # Đảm bảo lifetime_points luôn được bảo toàn >= số dư tích lũy trước khi đổi quà
+        if (user.lifetime_points or 0) < balance_before:
+            user.lifetime_points = balance_before
+        user.green_points -= effective_cost
         reward.stock_quantity -= 1
         reward.total_redeemed += 1
 
@@ -1321,7 +1405,7 @@ class RewardService:
             user_id=user_id,
             reward_id=reward_id,
             voucher_code=voucher_code,
-            points_spent=reward.points_required,
+            points_spent=effective_cost,
             status="ACTIVE",
             terms_and_conditions=terms,
             qr_data=qr_data,
@@ -1330,30 +1414,56 @@ class RewardService:
         )
         self.db.add(voucher)
 
+        discount_note = f" [Ưu đãi {cur_tier.tier_name} -{int(discount_rate*100)}%, tiết kiệm {saved_points}đ]" if saved_points > 0 else ""
         tx = RewardTransaction(
             transaction_id=uuid.uuid4(),
             user_id=user_id,
             reward_id=reward_id,
             transaction_type="REDEEM_GIFT",
-            points_amount=-reward.points_required,
+            points_amount=-effective_cost,
             balance_after=user.green_points,
-            description=f"Đổi {reward.title} (Mã #{voucher_code})",
+            description=f"Đổi {reward.title} (Mã #{voucher_code}){discount_note}",
             created_at=now,
         )
         self.db.add(tx)
 
+        audit = AuditLog(
+            user_id=user_id,
+            action="REDEEM_REWARD",
+            table_name="user_vouchers",
+            record_id=str(voucher_id),
+            old_data={"green_points": balance_before, "stock_quantity": reward.stock_quantity + 1},
+            new_data={
+                "voucher_code": voucher_code,
+                "reward_title": reward.title,
+                "points_spent": effective_cost,
+                "tier_discount_saved": saved_points,
+                "green_points": user.green_points,
+                "stock_quantity": reward.stock_quantity,
+            },
+            ip_address="127.0.0.1",
+            user_agent="Citizen Reward Store",
+            request_uri="/api/v1/rewards/redeem",
+            is_suspicious=False,
+        )
+        self.db.add(audit)
+
         await self.db.commit()
+
+        msg_str = f"Đổi thành công {reward.title}! Mã voucher: {voucher_code}"
+        if saved_points > 0:
+            msg_str += f" (Đặc quyền {cur_tier.tier_name} giảm {int(discount_rate*100)}%: chỉ tốn {effective_cost}đ thay vì {reward.points_required}đ!)"
 
         return RedeemRewardResponse(
             voucher_id=str(voucher_id),
             voucher_code=voucher_code,
             reward_title=reward.title,
-            points_spent=reward.points_required,
+            points_spent=effective_cost,
             balance_after=user.green_points,
             qr_data=qr_data,
             expires_at=expires_at,
             status="ACTIVE",
-            message=f"Đổi thành công {reward.title}! Mã voucher: {voucher_code}",
+            message=msg_str,
         )
 
     async def get_user_vouchers(
@@ -1519,6 +1629,27 @@ class RewardService:
         voucher.used_at = now
         await self.db.commit()
 
+        # [CN 26 & CN 31] Ghi nhận AuditLog nhật ký kiểm toán đối soát voucher
+        try:
+            audit = AuditLog(
+                user_id=user_id,
+                action="VERIFY_VOUCHER",
+                table_name="user_vouchers",
+                record_id=str(voucher.voucher_id),
+                old_data={"status": "ACTIVE"},
+                new_data={
+                    "status": "USED",
+                    "voucher_code": voucher.voucher_code,
+                    "used_at": now.isoformat(),
+                    "source": "CITIZEN_WALLET_CONFIRM",
+                },
+                ip_address="127.0.0.1",
+            )
+            self.db.add(audit)
+            await self.db.commit()
+        except Exception as e:
+            logger.warning(f"Audit log recording failed in mark_voucher_used: {e}")
+
         return MarkVoucherUsedResponse(
             voucher_id=str(voucher.voucher_id),
             voucher_code=voucher.voucher_code,
@@ -1526,3 +1657,79 @@ class RewardService:
             used_at=now,
             message="Đã cập nhật trạng thái voucher: Đã sử dụng",
         )
+
+    async def verify_voucher(
+        self,
+        voucher_code: str,
+        verifier_admin_id: Optional[uuid.UUID] = None,
+    ) -> VerifyVoucherResponse:
+        """
+        [Chức năng 31] Thu ngân / Quản trị viên đối soát và kích hoạt voucher bằng mã QR hoặc mã code.
+        """
+        clean_code = voucher_code.strip().upper()
+        stmt = (
+            select(UserVoucher)
+            .options(selectinload(UserVoucher.reward), selectinload(UserVoucher.user))
+            .where(func.upper(UserVoucher.voucher_code) == clean_code)
+        )
+        res = await self.db.execute(stmt)
+        voucher = res.scalar_one_or_none()
+
+        if not voucher:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Không tìm thấy voucher với mã '{clean_code}' trong hệ thống",
+            )
+
+        if voucher.status == "USED":
+            used_str = voucher.used_at.strftime("%H:%M %d/%m/%Y") if voucher.used_at else "trước đó"
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Voucher '{clean_code}' đã được sử dụng vào lúc {used_str}. Không thể tái sử dụng!",
+            )
+
+        now = datetime.now(timezone.utc)
+        if voucher.status == "EXPIRED" or (voucher.expires_at and voucher.expires_at <= now):
+            voucher.status = "EXPIRED"
+            await self.db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Voucher '{clean_code}' đã hết hạn sử dụng. Không hợp lệ để đổi quà!",
+            )
+
+        voucher.status = "USED"
+        voucher.used_at = now
+        await self.db.commit()
+
+        # Tạo log kiểm toán an ninh (Tamper-evident)
+        try:
+            audit = AuditLog(
+                user_id=verifier_admin_id or voucher.user_id,
+                action="VERIFY_VOUCHER",
+                table_name="user_vouchers",
+                record_id=str(voucher.voucher_id),
+                old_data={"status": "ACTIVE"},
+                new_data={"status": "USED", "voucher_code": voucher.voucher_code, "used_at": now.isoformat()},
+                ip_address="127.0.0.1",
+                user_agent="POS Voucher Verification",
+                request_uri="/api/v1/rewards/vouchers/verify",
+                is_suspicious=False,
+            )
+            self.db.add(audit)
+            await self.db.commit()
+        except Exception:
+            pass
+
+        return VerifyVoucherResponse(
+            valid=True,
+            voucher_id=str(voucher.voucher_id),
+            voucher_code=voucher.voucher_code,
+            reward_title=voucher.reward.title if voucher.reward else "Quà tặng sinh thái",
+            brand=voucher.reward.brand if voucher.reward else "GreenSpot ESG",
+            user_name=voucher.user.full_name if voucher.user else "Khách hàng",
+            points_spent=voucher.points_spent,
+            redeemed_at=voucher.redeemed_at,
+            used_at=now,
+            message="Xác thực thành công! Voucher hợp lệ và đã được kích hoạt sử dụng tại quầy.",
+        )
+

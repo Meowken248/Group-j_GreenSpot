@@ -13,10 +13,25 @@ async def lifespan(app: FastAPI):
     from app.database import engine, Base
     import app.models  # noqa: F401
     try:
+        from sqlalchemy import text
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            try:
+                await conn.execute(text("""
+                    ALTER TABLE notifications 
+                    ADD COLUMN IF NOT EXISTS alert_id UUID,
+                    ADD COLUMN IF NOT EXISTS incident_id UUID,
+                    ADD COLUMN IF NOT EXISTS severity VARCHAR(20) DEFAULT 'INFO',
+                    ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE,
+                    ADD COLUMN IF NOT EXISTS target_url VARCHAR(255)
+                """))
+                await conn.execute(text("""
+                    ALTER TABLE notifications ALTER COLUMN user_id DROP NOT NULL
+                """))
+            except Exception as schema_err:
+                print(f"[Schema Notice] {schema_err}")
     except Exception as e:
-        print(f"[Database Error] Không thể tự động tạo bảng: {e}")
+        print(f"[Database Error] {e}")
 
     # Khởi động tiến trình background runtime đồng bộ số liệu IoT và cảnh báo
     worker_task = asyncio.create_task(run_periodic_runtime_worker())

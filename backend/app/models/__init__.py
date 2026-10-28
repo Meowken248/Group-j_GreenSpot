@@ -94,6 +94,23 @@ from app.models.milestone import (
     MilestonePost,
 )
 
+# 13. Cảnh báo Môi trường, Thông báo Đẩy & Tra cứu Công khai (Chức năng 28, 29, 30)
+from app.models.alert_notification import (
+    AlertSeverity,
+    AlertStatus,
+    NotificationType,
+    EnvironmentalAlert,
+    Notification,
+    IncidentSubscription,
+    IncidentVerification,
+)
+
+# 14. Quản trị Ngưỡng Cảnh báo & Báo cáo Công khai (Chức năng 34, 36)
+from app.models.system_config import (
+    SystemConfig,
+    PublicReport,
+)
+
 __all__ = [
     "Base",
     "TimestampMixin",
@@ -155,4 +172,16 @@ __all__ = [
     "FloodCauseType",
     "FloodSeverityLevel",
     "RouteSafetyStatus",
+    # Environmental Alerts & Public Tracking (Chức năng 28, 29, 30)
+    "AlertSeverity",
+    "AlertStatus",
+    "NotificationType",
+    "EnvironmentalAlert",
+    "Notification",
+    "IncidentSubscription",
+    "IncidentVerification",
+    # System Configs & Reports (Chức năng 34 & 36)
+    "SystemConfig",
+    "PublicReport",
 ]
+

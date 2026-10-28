@@ -254,7 +254,7 @@ export const DeviceManagementPage: React.FC<DeviceManagementPageProps> = ({
             </p>
           </div>
 
-          <div className="devices-list-container">
+          <div className="devices-list-container" id="AUTH_TBL_SESSIONS" data-ui-id="AUTH_TBL_SESSIONS">
             {/* 1. Trạng thái đang tải: 2 dòng giả skeleton */}
             {isLoading && (
               <>
@@ -306,7 +306,7 @@ export const DeviceManagementPage: React.FC<DeviceManagementPageProps> = ({
                         )}
                       </div>
 
-                      <div className="device-sub-detail">
+                      <div className="device-sub-detail" style={{ fontVariantNumeric: "tabular-nums" }}>
                         {session.ip_address ? `IP: ${session.ip_address} • ` : ""}
                         Hoạt động: {formatTime(session.last_active_at)}
                       </div>

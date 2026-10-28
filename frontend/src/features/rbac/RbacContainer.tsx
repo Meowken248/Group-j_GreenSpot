@@ -93,6 +93,16 @@ export const RbacContainer: React.FC<RbacContainerProps> = ({
         <nav className="header-nav-links" aria-label="Điều hướng phân quyền">
           <button
             type="button"
+            className="nav-tab-link"
+            onClick={() => {
+              window.location.hash = "#users";
+            }}
+            title="Chuyển sang Quản lý Người dùng & Tài khoản"
+          >
+            👥 Quản lý người dùng
+          </button>
+          <button
+            type="button"
             className={`nav-tab-link ${currentView === "list" ? "active" : ""}`}
             onClick={() => setCurrentView("list")}
           >

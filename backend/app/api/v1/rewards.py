@@ -37,6 +37,8 @@ from app.schemas.reward import (
     UserVoucherItem,
     UserVoucherListResponse,
     MarkVoucherUsedResponse,
+    VerifyVoucherRequest,
+    VerifyVoucherResponse,
 )
 
 router = APIRouter(prefix="/rewards", tags=["Điểm thưởng, Ví điểm, Danh mục quà tặng & Voucher (28, 29, 30, 31)"])
@@ -443,3 +445,25 @@ async def mark_voucher_as_used(
     """
     service = RewardService(db)
     return await service.mark_voucher_used(user_id=current_user.user_id, voucher_id=voucher_id)
+
+
+@router.post(
+    "/verify-voucher",
+    response_model=VerifyVoucherResponse,
+    summary="Thu ngân / Quản trị viên đối soát và kích hoạt voucher bằng mã (Chức năng 31)",
+)
+async def verify_voucher_endpoint(
+    payload: VerifyVoucherRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Điểm đối soát dành cho thu ngân đối tác hoặc Ban quản trị:
+    Kiểm tra mã voucher, hạn sử dụng và kích hoạt sử dụng ngay tại quầy.
+    """
+    service = RewardService(db)
+    return await service.verify_voucher(
+        voucher_code=payload.voucher_code,
+        verifier_admin_id=current_user.user_id,
+    )
+

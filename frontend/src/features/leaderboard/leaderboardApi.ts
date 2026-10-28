@@ -7,8 +7,10 @@ import type {
 } from "./types";
 
 export const leaderboardApi = {
-  getIndividualLeaderboard: async (): Promise<IndividualLeaderboardResponse> => {
-    const res = await api.get<IndividualLeaderboardResponse>("/api/v1/gamification/leaderboard/individual");
+  getIndividualLeaderboard: async (params?: { district?: string; cycle?: CycleFilter }): Promise<IndividualLeaderboardResponse> => {
+    const res = await api.get<IndividualLeaderboardResponse>("/api/v1/gamification/leaderboard/individual", {
+      params,
+    });
     return res.data;
   },
 
@@ -23,6 +25,15 @@ export const leaderboardApi = {
     const res = await api.get<DistrictLeaderboardResponse>("/api/v1/gamification/leaderboard/districts", {
       params: { cycle },
     });
+    return res.data;
+  },
+
+  takeAdminSnapshot: async (cycle: CycleFilter = "WEEK"): Promise<import("./types").LeaderboardSnapshotResponse> => {
+    const res = await api.post<import("./types").LeaderboardSnapshotResponse>(
+      "/api/v1/gamification/leaderboard/admin/snapshot",
+      null,
+      { params: { cycle } }
+    );
     return res.data;
   },
 };

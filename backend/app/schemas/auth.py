@@ -30,9 +30,16 @@ class UserSummary(BaseModel):
 
 
 class CitizenLoginRequest(BaseModel):
-    """Payload gửi lên từ Màn hình Đăng nhập (hỗ trợ Email hoặc Tên tài khoản admin)"""
-    email: str = Field(..., min_length=1, max_length=254, description="Địa chỉ email hoặc tài khoản đăng nhập")
+    """Payload gửi lên từ Màn hình Đăng nhập (hỗ trợ Email, Số điện thoại hoặc Tên tài khoản admin)"""
+    email: str = Field(..., min_length=1, max_length=254, description="Địa chỉ email, số điện thoại hoặc tài khoản đăng nhập")
     password: str = Field(..., min_length=1, max_length=128, description="Mật khẩu tài khoản")
+
+
+class GoogleLoginRequest(BaseModel):
+    """Payload đăng nhập nhanh qua Google OAuth 2.0 (AUTH_BTN_GOOGLE)"""
+    credential: Optional[str] = Field(default=None, description="Google ID Token JWT hoặc mã xác thực OAuth")
+    email: Optional[EmailStr] = Field(default=None, description="Email Google (hỗ trợ chế độ giả lập OAuth local)")
+    full_name: Optional[str] = Field(default=None, max_length=150, description="Họ tên hiển thị từ Google")
 
 
 class CitizenLoginResponse(BaseModel):
@@ -48,8 +55,8 @@ class CitizenLoginResponse(BaseModel):
 
 
 class RefreshTokenRequest(BaseModel):
-    """Payload làm mới Token"""
-    refresh_token: str = Field(..., description="Refresh Token 64 bytes đã cấp khi đăng nhập")
+    """Payload làm mới Token (Hỗ trợ truyền qua Body hoặc tự động đọc từ HttpOnly Cookie)"""
+    refresh_token: Optional[str] = Field(default=None, description="Refresh Token 64 bytes đã cấp khi đăng nhập")
 
 
 class RefreshTokenResponse(BaseModel):

@@ -79,7 +79,7 @@ export const GreenPointsPolicy: React.FC<GreenPointsPolicyProps> = ({
     } catch (err: unknown) {
       const anyErr = err as { response?: { data?: { detail?: string } }; message?: string };
       const msg = anyErr?.response?.data?.detail || anyErr?.message || "Không thể nhận điểm lúc này";
-      alert(msg);
+      setErrorMsg(msg);
     } finally {
       setActionLoading(null);
     }
@@ -212,7 +212,7 @@ export const GreenPointsPolicy: React.FC<GreenPointsPolicyProps> = ({
             {isLoggedIn && policyData.user_summary ? (
               <div className="user-score-panel">
                 <div className="score-hero-box">
-                  <span className="score-label">Điểm của tôi:</span>
+                  <span className="score-label">Số dư khả dụng (Đổi quà):</span>
                   <div className="score-number-display">
                     <strong className="points-number">
                       {policyData.user_summary.green_points.toLocaleString("vi-VN")}
@@ -220,11 +220,24 @@ export const GreenPointsPolicy: React.FC<GreenPointsPolicyProps> = ({
                     <span className="points-unit">Điểm Xanh</span>
                   </div>
                   <div className="lifetime-tag">
-                    Tổng điểm tích lũy trọn đời:{" "}
+                    🏆 Điểm xét Hạng trọn đời:{" "}
                     <strong>
                       {policyData.user_summary.lifetime_points.toLocaleString("vi-VN")}
                     </strong>{" "}
                     điểm
+                  </div>
+                  <div
+                    style={{
+                      marginTop: "8px",
+                      padding: "6px 10px",
+                      borderRadius: "8px",
+                      background: "rgba(16, 185, 129, 0.12)",
+                      color: "#065f46",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    🛡️ Cam kết Bảo toàn Hạng: Đổi quà chỉ trừ Số dư khả dụng, không bao giờ làm tụt Hạng danh hiệu!
                   </div>
                 </div>
 

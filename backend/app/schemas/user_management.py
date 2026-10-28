@@ -118,8 +118,9 @@ class ChangeUserRoleRequest(BaseModel):
 
 
 class ChangeUserStatusRequest(BaseModel):
-    """Yêu cầu thay đổi trạng thái tài khoản (Khóa / Mở khóa)"""
+    """Yêu cầu thay đổi trạng thái tài khoản (Khóa / Mở khóa) kèm lý do kiểm toán (RBAC_002)"""
     status: str = Field(..., description="Trạng thái mới: ACTIVE hoặc BLOCKED")
+    reason: Optional[str] = Field(default=None, max_length=500, description="Lý do khóa hoặc mở khóa tài khoản (ghi nhận vào Audit Log)")
 
     @field_validator("status")
     @classmethod

@@ -330,7 +330,11 @@ export const BUILDING_COLOR_THEMES: Record<
 
 export type StyleKey = keyof typeof MAP_STYLES;
 
-function EcoMap() {
+export interface EcoMapProps {
+  initialCategory?: EcoCategory | "all";
+}
+
+function EcoMap({ initialCategory = "all" }: EcoMapProps = {}) {
   const mapRef = useRef<MapRef>(null);
 
   // Trạng thái đóng/mở Sidebar điều hành WebGIS (thu gọn giải phóng 100% diện tích bản đồ)
@@ -390,7 +394,14 @@ function EcoMap() {
   // Bảng màu sắc 3D cho các tòa nhà kiến trúc đô thị
   const [building3DTheme, setBuilding3DTheme] = useState<BuildingColorTheme>("rainbow");
   const [showDistricts, setShowDistricts] = useState<boolean>(false);
-  const [selectedCategory, setSelectedCategory] = useState<EcoCategory | "all">("all");
+  const [selectedCategory, setSelectedCategory] = useState<EcoCategory | "all">(initialCategory || "all");
+
+  useEffect(() => {
+    if (initialCategory) {
+      setSelectedCategory(initialCategory);
+    }
+  }, [initialCategory]);
+
 
   // Heatmap States (Bản đồ nhiệt: Nhiệt độ thời tiết, Chỉ số AQI, Mật độ rủi ro)
   const [activeHeatmap, setActiveHeatmap] = useState<"none" | "temperature" | "aqi" | "risk">("none");

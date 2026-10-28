@@ -70,6 +70,7 @@ class User(Base, TimestampMixin):
     reputation_score: Mapped[int] = mapped_column(Integer, default=100)
     green_points: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     lifetime_points: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    district_code: Mapped[Optional[str]] = mapped_column(String(50), default="QUAN_1", nullable=True)
 
     role: Mapped["Role"] = relationship(back_populates="users")
     sessions: Mapped[List["UserSession"]] = relationship(back_populates="user", cascade="all, delete-orphan")

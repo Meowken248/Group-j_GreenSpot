@@ -4,6 +4,7 @@ import type {
   CreateRewardRequest,
   UpdateRewardRequest,
   RedemptionAnalyticsResponse,
+  WalletSummaryResponse,
 } from "../types";
 import { rewardsApi } from "../rewardsApi";
 
@@ -63,8 +64,9 @@ export const EcoRewardsCatalog: React.FC<EcoRewardsCatalogProps> = ({
 
   // Đổi quà nhanh
   const [redeemingId, setRedeemingId] = useState<number | null>(null);
+  const [userWallet, setUserWallet] = useState<WalletSummaryResponse | null>(null);
 
-  // Tải danh mục
+  // Tải danh mục & thông tin hạng hội viên
   const loadCatalog = async () => {
     setIsLoading(true);
     setErrorMessage(null);
@@ -76,6 +78,12 @@ export const EcoRewardsCatalog: React.FC<EcoRewardsCatalogProps> = ({
       setItems(data.items);
       setTotalActive(data.total_active);
       setTotalOutOfStock(data.total_out_of_stock);
+      try {
+        const w = await rewardsApi.getWalletSummary();
+        setUserWallet(w);
+      } catch {
+        // Guest mode
+      }
     } catch {
       setErrorMessage("Không thể tải danh mục quà tặng. Vui lòng thử lại");
     } finally {
@@ -713,6 +721,69 @@ export const EcoRewardsCatalog: React.FC<EcoRewardsCatalogProps> = ({
         </div>
       </div>
 
+      {/* BĂNG RÔN ĐẶC QUYỀN HẠNG HỘI VIÊN & QUỸ TÀI TRỢ ESG/CSR */}
+      {(() => {
+        const tierCode = userWallet?.current_tier?.tier_code || "BRONZE";
+        const discountPct =
+          tierCode === "DIAMOND" ? 15 : tierCode === "GOLD" ? 10 : tierCode === "SILVER" ? 5 : 0;
+        return (
+          <div
+            style={{
+              marginBottom: "18px",
+              padding: "14px 18px",
+              borderRadius: "12px",
+              background: "linear-gradient(135deg, #ecfdf5 0%, #f0f9ff 100%)",
+              border: "1px solid #6ee7b7",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "12px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+              {userWallet ? (
+                <>
+                  <span
+                    style={{
+                      padding: "5px 12px",
+                      borderRadius: "999px",
+                      background: "#059669",
+                      color: "#ffffff",
+                      fontWeight: 700,
+                      fontSize: "12.5px",
+                    }}
+                  >
+                    💳 Số dư khả dụng: {userWallet.green_points.toLocaleString("vi-VN")} Điểm Xanh
+                  </span>
+                  <span
+                    style={{
+                      padding: "5px 12px",
+                      borderRadius: "999px",
+                      background: "#fef3c7",
+                      color: "#92400e",
+                      border: "1px solid #fde68a",
+                      fontWeight: 700,
+                      fontSize: "12.5px",
+                    }}
+                  >
+                    {userWallet.current_tier.badge_icon} {userWallet.current_tier.tier_name} • Đặc quyền giảm{" "}
+                    {discountPct}% điểm đổi quà
+                  </span>
+                </>
+              ) : (
+                <span style={{ fontSize: "13px", fontWeight: 600, color: "#065f46" }}>
+                  💡 Đăng nhập để áp dụng chiết khấu đổi quà theo Hạng Công dân Xanh (Bạc -5%, Vàng -10%, Kim Cương -15%)
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: "12px", color: "#047857", fontWeight: 600 }}>
+              🌱 Nguồn vốn: 100% Quỹ Tài trợ CSR / ESG từ Doanh nghiệp đối tác (Kiểm soát theo định mức tồn kho)
+            </div>
+          </div>
+        );
+      })()}
+
       {/* BỐ CỤC 3 KHỐI THEO CHUẨN BÁO CÁO */}
       <div className="catalog-layout-grid">
         {/* KHỐI 1: BỘ LỌC (CỘT TRÁI) */}
@@ -825,7 +896,7 @@ export const EcoRewardsCatalog: React.FC<EcoRewardsCatalogProps> = ({
                         <td className="col-info">
                           <strong className="reward-item-title">{item.title}</strong>
                           <div className="reward-item-meta">
-                            <span className="brand-badge">{item.brand || "GreenSpot ESG"}</span>
+                            <span className="brand-badge">🌱 Quỹ ESG: {item.brand || "GreenSpot ESG"}</span>
                             <span className="code-text">#{item.reward_code}</span>
                           </div>
                         </td>
@@ -840,7 +911,25 @@ export const EcoRewardsCatalog: React.FC<EcoRewardsCatalogProps> = ({
                           <span className="expiry-text">{formatDateStr(item.expiry_date)}</span>
                         </td>
                         <td className="col-points">
-                          <span className="points-pill">{item.points_required} đ</span>
+                          {(() => {
+                            const tierCode = userWallet?.current_tier?.tier_code || "BRONZE";
+                            const rate =
+                              tierCode === "DIAMOND" ? 0.15 : tierCode === "GOLD" ? 0.1 : tierCode === "SILVER" ? 0.05 : 0;
+                            const discounted = Math.max(1, Math.round(item.points_required * (1 - rate)));
+                            if (rate > 0 && discounted < item.points_required) {
+                              return (
+                                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px" }}>
+                                  <span style={{ textDecoration: "line-through", fontSize: "11px", color: "#94a3b8" }}>
+                                    {item.points_required} đ
+                                  </span>
+                                  <span className="points-pill" style={{ background: "#dcfce7", color: "#15803d", fontWeight: 800 }}>
+                                    {discounted} đ (-{Math.round(rate * 100)}%)
+                                  </span>
+                                </div>
+                              );
+                            }
+                            return <span className="points-pill">{item.points_required} đ</span>;
+                          })()}
                         </td>
                         <td className="col-actions">
                           <div className="table-btn-row">

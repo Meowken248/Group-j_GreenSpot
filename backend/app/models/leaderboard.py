@@ -38,4 +38,6 @@ class DistrictEnvironmentalStat(Base):
     cleanup_rate: Mapped[float] = mapped_column(Float, default=90.0, nullable=False)
     resolved_incidents: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     green_index: Mapped[float] = mapped_column(Float, default=80.0, nullable=False)
+    primary_pollutant: Mapped[str] = mapped_column(String(50), default="PM2.5", nullable=False)
+    health_advice: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

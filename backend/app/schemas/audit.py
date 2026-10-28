@@ -19,6 +19,16 @@ class AuditLogItemResponse(BaseModel):
     user_agent: str
     device_info: str
     is_suspicious: bool
+    suspicious_reason: Optional[str] = None
+
+class AuditStatisticsResponse(BaseModel):
+    total_this_week: int
+    login_total: int
+    login_success: int
+    login_failed: int
+    role_changes_count: int
+    suspicious_count: int
+    calculated_at: datetime
 
 class AuditLogDetailResponse(AuditLogItemResponse):
     old_data: Optional[Dict[str, Any]] = None
@@ -26,6 +36,10 @@ class AuditLogDetailResponse(AuditLogItemResponse):
     diff: Optional[Dict[str, Any]] = None
     request_uri: Optional[str] = None
     has_data_changes: bool = True
+    integrity_hash: Optional[str] = None
+    prev_log_id: Optional[int] = None
+    prev_integrity_hash: Optional[str] = None
+    chain_verified: bool = True
 
 class AuditLogListResponse(BaseModel):
     total: int
@@ -48,3 +62,22 @@ class AuditExportResponse(BaseModel):
     summary_text: str
     generated_at: datetime
     message: str = "Đã xuất nhật ký thành công"
+
+class AuditBlockVerificationItem(BaseModel):
+    log_id: int
+    action: str
+    created_at: datetime
+    actor_name: str
+    prev_hash_prefix: str
+    current_hash: str
+    is_valid: bool = True
+
+class AuditChainVerificationResponse(BaseModel):
+    is_valid: bool
+    total_records_checked: int
+    genesis_hash: str
+    merkle_root_hash: str
+    verified_at: datetime
+    broken_at_log_id: Optional[int] = None
+    message: str
+    blocks_sample: List[AuditBlockVerificationItem] = []

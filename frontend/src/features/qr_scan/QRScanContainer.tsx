@@ -39,10 +39,24 @@ export const QRScanContainer: React.FC<Props> = ({
   const [showManualModal, setShowManualModal] = useState<boolean>(false);
   const [manualCode, setManualCode] = useState<string>("");
 
+  // [CN 34 10/10] Phân loại rác nộp & Mô phỏng Trạm thông minh Dynamic OTP
+  const [selectedWaste, setSelectedWaste] = useState<string>("BOTTLE");
+  const [showStationSimulator, setShowStationSimulator] = useState<boolean>(false);
+  const [stationCountdown, setStationCountdown] = useState<number>(60);
+
   // Result Modals
   const [successResult, setSuccessResult] = useState<QRScanResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
+
+  // Bộ đếm ngược 60 giây mô phỏng mã QR động tại trạm IoT (Dynamic Station OTP)
+  useEffect(() => {
+    if (!showStationSimulator) return;
+    const interval = setInterval(() => {
+      setStationCountdown((prev) => (prev <= 1 ? 60 : prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [showStationSimulator]);
 
   // Detect GPS Location for anti-fraud radius check
   useEffect(() => {
@@ -337,6 +351,7 @@ export const QRScanContainer: React.FC<Props> = ({
   }, [successResult, errorMessage, showManualModal]);
 
   const sampleCodes = [
+    { code: "ECO-STATION-BT-01", title: "Trạm IoT Thông Minh Bình Thạnh" },
     { code: "ECO-BIN-101", title: "Trạm Ve Chai Xanh Q1" },
     { code: "PIN-UBND-P4", title: "Thùng thu pin Q3" },
     { code: "RECYCLE-BT-02", title: "Trạm thông minh Bình Thạnh" },
@@ -358,7 +373,7 @@ export const QRScanContainer: React.FC<Props> = ({
       <canvas ref={canvasRef} style={{ display: "none" }} />
 
       {/* Header */}
-      <div className="qr-header">
+      <div className="qr-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
         <div>
           <div className="qr-title">
             <span>📷</span>
@@ -368,7 +383,149 @@ export const QRScanContainer: React.FC<Props> = ({
             Hỗ trợ quét trực tiếp qua camera điện thoại/laptop hoặc tải ảnh chụp mã QR từ máy để tích lũy Điểm Xanh ngay lập tức!
           </p>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setShowStationSimulator(!showStationSimulator)}
+          style={{
+            background: showStationSimulator ? "#0f172a" : "#10b981",
+            color: "#ffffff",
+            border: "none",
+            padding: "10px 16px",
+            borderRadius: "8px",
+            fontWeight: 700,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            fontSize: "0.85rem",
+            boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
+          }}
+        >
+          {showStationSimulator ? "✖ Đóng Mô Phỏng Trạm" : "📺 Mô Phỏng Trạm Thu Gom IoT"}
+        </button>
       </div>
+
+      {/* [CN 34 10/10] Phân loại rác nộp tại trạm */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        background: "#ffffff",
+        padding: "12px 18px",
+        borderRadius: "12px",
+        border: "1px solid #e2e8f0",
+        flexWrap: "wrap",
+        boxShadow: "0 2px 4px rgba(0,0,0,0.03)",
+      }}>
+        <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#334155" }}>
+          ♻️ Loại rác nộp tại trạm hôm nay:
+        </span>
+        {[
+          { key: "BOTTLE", label: "🍾 Chai nhựa PET", pts: "+20đ" },
+          { key: "CAN", label: "🥫 Vỏ lon nhôm", pts: "+20đ" },
+          { key: "BATTERY", label: "🔋 Pin & Rác điện tử", pts: "+30đ" },
+          { key: "PAPER", label: "📦 Giấy & Carton", pts: "+15đ" },
+        ].map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            onClick={() => setSelectedWaste(item.key)}
+            style={{
+              padding: "6px 14px",
+              borderRadius: "8px",
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              border: selectedWaste === item.key ? "2px solid #10b981" : "1px solid #cbd5e1",
+              background: selectedWaste === item.key ? "#ecfdf5" : "#ffffff",
+              color: selectedWaste === item.key ? "#047857" : "#475569",
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+          >
+            {item.label} <b style={{ color: selectedWaste === item.key ? "#059669" : "#64748b" }}>({item.pts})</b>
+          </button>
+        ))}
+      </div>
+
+      {/* [CN 34 10/10] BẢNG MÔ PHỎNG MÀN HÌNH TRẠM THU GOM THÔNG MINH IOT */}
+      {showStationSimulator && (
+        <div style={{
+          background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+          color: "#ffffff",
+          padding: "20px",
+          borderRadius: "14px",
+          border: "1px solid #334155",
+          boxShadow: "0 10px 25px -5px rgba(15, 23, 42, 0.4)",
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ background: "#065f46", color: "#34d399", padding: "3px 10px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 700, border: "1px solid #059669" }}>
+                  MÀN HÌNH TRẠM IOT THÔNG MINH
+                </span>
+                <span style={{ fontSize: "0.85rem", color: "#94a3b8" }}>Chống chụp ảnh gian lận bằng Dynamic OTP</span>
+              </div>
+              <h3 style={{ margin: "6px 0 0", fontSize: "1.2rem", fontWeight: 700, color: "#f8fafc" }}>
+                Trạm Thu Gom Phân Loại Rác Tự Động (Kiosk Screen)
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowStationSimulator(false)}
+              style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: "1.2rem" }}
+            >
+              ✕
+            </button>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "20px", flexWrap: "wrap", background: "rgba(255,255,255,0.04)", padding: "16px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <div style={{ background: "#ffffff", padding: "12px", borderRadius: "10px", textAlign: "center" }}>
+              <div style={{ width: "120px", height: "120px", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "8px", border: "2px dashed #059669" }}>
+                <span style={{ fontSize: "3rem" }}>🏁</span>
+              </div>
+              <span style={{ display: "block", color: "#0f172a", fontSize: "0.75rem", fontWeight: 700, marginTop: "6px" }}>
+                MÃ: ECO-STATION-BT-01
+              </span>
+            </div>
+
+            <div style={{ flex: 1, minWidth: "240px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+                <span style={{ fontSize: "0.9rem", color: "#e2e8f0" }}>⏱️ Mã QR tự làm mới sau:</span>
+                <span style={{ background: "#0284c7", color: "#ffffff", padding: "2px 8px", borderRadius: "4px", fontWeight: 700, fontSize: "0.85rem" }}>
+                  {stationCountdown}s
+                </span>
+              </div>
+              <div style={{ width: "100%", height: "6px", background: "rgba(255,255,255,0.1)", borderRadius: "3px", overflow: "hidden", marginBottom: "14px" }}>
+                <div style={{ width: `${(stationCountdown / 60) * 100}%`, height: "100%", background: "#10b981", transition: "width 1s linear" }} />
+              </div>
+              <p style={{ margin: "0 0 12px", fontSize: "0.85rem", color: "#94a3b8", lineHeight: 1.5 }}>
+                Tại các trạm IoT thực tế, màn hình Kiosk đổi mã QR mỗi 60 giây và đối chiếu tọa độ GPS máy khách để chống gian lận tuyệt đối.
+              </p>
+              <button
+                type="button"
+                onClick={() => handleExecuteScan("ECO-STATION-BT-01")}
+                disabled={submitting}
+                style={{
+                  background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                  color: "#ffffff",
+                  border: "none",
+                  padding: "10px 18px",
+                  borderRadius: "8px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  boxShadow: "0 4px 10px rgba(16, 185, 129, 0.3)",
+                }}
+              >
+                {submitting ? "Đang xử lý…" : "⚡ Quét Mã Này Ngay (Test 1-Click)"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Camera Viewfinder Card */}
       <div className="qr-scanner-card">

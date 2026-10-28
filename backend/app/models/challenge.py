@@ -45,6 +45,7 @@ class UserChallenge(Base):
     status: Mapped[str] = mapped_column(String(30), default="NOT_STARTED", nullable=False)  # NOT_STARTED | PENDING | COMPLETED
     evidence_image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     evidence_note: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    rejection_reason: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     claimed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

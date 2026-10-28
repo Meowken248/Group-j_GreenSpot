@@ -41,7 +41,8 @@ class MilestoneService:
                 detail="Không tìm thấy thông tin công dân trên hệ thống",
             )
 
-        current_points = user.green_points or 0
+        # [CN 36 10/10] Tính tiến độ cấp bậc dựa trên Điểm xét hạng trọn đời (Bảo toàn 100% khi đổi quà)
+        current_points = max(int(user.lifetime_points or 0), int(user.green_points or 0))
         cur_tier, nxt_tier, pts_needed, progress = calculate_tier_details(current_points)
 
         # Build list of all tiers with status

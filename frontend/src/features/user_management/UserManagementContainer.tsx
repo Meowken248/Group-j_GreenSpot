@@ -166,12 +166,15 @@ export const UserManagementContainer: React.FC<UserManagementContainerProps> = (
   };
 
   // Thao tác xác nhận Khóa / Mở khóa / Xóa
-  const handleConfirmAction = async () => {
+  const handleConfirmAction = async (reason?: string) => {
     if (!confirmState.user) return;
     const u = confirmState.user;
 
     if (confirmState.actionType === 'BLOCK') {
-      await userManagementService.changeUserStatus(u.user_id, { status: 'BLOCKED' });
+      await userManagementService.changeUserStatus(u.user_id, {
+        status: 'BLOCKED',
+        reason: reason || 'Vi phạm quy chế sử dụng hệ thống GreenSpot',
+      });
       showToast(`Đã khóa tài khoản ${u.email} và chấm dứt các phiên đang hoạt động!`);
     } else if (confirmState.actionType === 'UNBLOCK') {
       await userManagementService.changeUserStatus(u.user_id, { status: 'ACTIVE' });
@@ -320,6 +323,25 @@ export const UserManagementContainer: React.FC<UserManagementContainerProps> = (
             )}
             <button
               type="button"
+              className="btn btn-secondary"
+              onClick={() => {
+                window.location.hash = '#rbac';
+              }}
+              style={{
+                padding: '9px 16px',
+                borderRadius: '8px',
+                border: '1px solid #10b981',
+                background: '#ecfdf5',
+                color: '#065f46',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '14px',
+              }}
+            >
+              📊 Ma trận Phân quyền RBAC
+            </button>
+            <button
+              type="button"
               className="btn-primary-action"
               onClick={() => setIsCreateOpen(true)}
             >
@@ -334,7 +356,7 @@ export const UserManagementContainer: React.FC<UserManagementContainerProps> = (
           <div className="stat-card">
             <div className="stat-icon-wrapper icon-total">👥</div>
             <div className="stat-content">
-              <span className="stat-value">{summary.total_users}</span>
+              <span className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{summary.total_users ?? 0}</span>
               <span className="stat-label">Tổng số người dùng</span>
             </div>
           </div>
@@ -342,7 +364,7 @@ export const UserManagementContainer: React.FC<UserManagementContainerProps> = (
           <div className="stat-card">
             <div className="stat-icon-wrapper icon-active">🟢</div>
             <div className="stat-content">
-              <span className="stat-value">{summary.active_users}</span>
+              <span className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{summary.active_users ?? 0}</span>
               <span className="stat-label">Đang hoạt động</span>
             </div>
           </div>
@@ -350,7 +372,7 @@ export const UserManagementContainer: React.FC<UserManagementContainerProps> = (
           <div className="stat-card">
             <div className="stat-icon-wrapper icon-blocked">🔴</div>
             <div className="stat-content">
-              <span className="stat-value">{summary.blocked_users}</span>
+              <span className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{summary.blocked_users ?? 0}</span>
               <span className="stat-label">Tài khoản bị khóa</span>
             </div>
           </div>
@@ -358,7 +380,7 @@ export const UserManagementContainer: React.FC<UserManagementContainerProps> = (
           <div className="stat-card">
             <div className="stat-icon-wrapper icon-roles">🛡️</div>
             <div className="stat-content">
-              <span className="stat-value">{summary.roles_count}</span>
+              <span className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{summary.roles_count ?? roleOptions.length ?? 4}</span>
               <span className="stat-label">Tổng số vai trò</span>
             </div>
           </div>
@@ -373,6 +395,8 @@ export const UserManagementContainer: React.FC<UserManagementContainerProps> = (
                 <span className="search-icon">🔍</span>
                 <input
                   type="text"
+                  id="USR_TXT_SEARCH"
+                  data-ui-id="USR_TXT_SEARCH"
                   className="search-input"
                   placeholder="Tìm theo họ tên, email hoặc số điện thoại..."
                   value={searchTerm}
@@ -382,6 +406,8 @@ export const UserManagementContainer: React.FC<UserManagementContainerProps> = (
 
               {/* Lọc theo Vai trò */}
               <select
+                id="USR_DDL_ROLE_FILTER"
+                data-ui-id="USR_DDL_ROLE_FILTER"
                 className="filter-select"
                 value={selectedRoleId}
                 onChange={handleRoleFilterChange}
@@ -423,7 +449,7 @@ export const UserManagementContainer: React.FC<UserManagementContainerProps> = (
           </div>
 
           {/* Bảng danh sách người dùng */}
-          <div className="um-table-responsive">
+          <div className="um-table-responsive" id="USR_TBL_LIST" data-ui-id="USR_TBL_LIST">
             <table className="um-table">
               <thead>
                 <tr>

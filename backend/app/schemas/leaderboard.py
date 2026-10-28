@@ -11,6 +11,8 @@ class IndividualLeaderboardItem(BaseModel):
     tier_name: str
     tier_code: str
     badge_icon: str
+    district_code: Optional[str] = None
+    district_name: Optional[str] = None
 
 class MyRankResponse(BaseModel):
     is_logged_in: bool = True
@@ -25,6 +27,7 @@ class MyRankResponse(BaseModel):
 class IndividualLeaderboardResponse(BaseModel):
     top_10: List[IndividualLeaderboardItem]
     my_rank: Optional[MyRankResponse] = None
+    selected_district: Optional[str] = None
 
 class GroupLeaderboardItem(BaseModel):
     rank: int
@@ -40,6 +43,34 @@ class GroupLeaderboardResponse(BaseModel):
     cycle: str # WEEK | MONTH | ALL
     groups: List[GroupLeaderboardItem]
 
+class CreateCommunityGroupRequest(BaseModel):
+    group_id: Optional[str] = None
+    name: str
+    description: Optional[str] = None
+    avatar_url: Optional[str] = None
+    member_count: int = 1
+
+class UpdateCommunityGroupRequest(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    avatar_url: Optional[str] = None
+    member_count: Optional[int] = None
+    is_active: Optional[bool] = None
+
+class CommunityGroupResponse(BaseModel):
+    group_id: str
+    name: str
+    description: Optional[str] = None
+    avatar_url: Optional[str] = None
+    member_count: int
+    total_points: int
+    weekly_points: int
+    monthly_points: int
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
 class DistrictLeaderboardItem(BaseModel):
     rank: int
     district_code: str
@@ -52,3 +83,17 @@ class DistrictLeaderboardItem(BaseModel):
 class DistrictLeaderboardResponse(BaseModel):
     cycle: str # WEEK | MONTH | ALL
     districts: List[DistrictLeaderboardItem]
+
+class LeaderboardSnapshotRewardItem(BaseModel):
+    rank: int
+    user_id: str
+    full_name: str
+    points_rewarded: int
+    title: str
+
+class LeaderboardSnapshotResponse(BaseModel):
+    cycle: str
+    snapshot_date: str
+    winners: List[LeaderboardSnapshotRewardItem]
+    message: str
+

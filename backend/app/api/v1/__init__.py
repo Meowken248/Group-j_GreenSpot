@@ -16,6 +16,10 @@ from app.api.v1.heatmap import router as heatmap_router
 from app.api.v1.qr_scan import router as qr_scan_router
 from app.api.v1.lucky_wheel import router as lucky_wheel_router
 from app.api.v1.milestone import router as milestone_router
+from app.api.v1.alerts import router as alerts_router
+from app.api.v1.notifications import router as notifications_router
+from app.api.v1.public_tracking import router as public_tracking_router
+from app.api.v1.public_reports import router as public_reports_router
 
 api_v1_router = APIRouter()
 api_v1_router.include_router(auth_router)
@@ -30,6 +34,10 @@ api_v1_router.include_router(heatmap_router)
 api_v1_router.include_router(qr_scan_router)
 api_v1_router.include_router(lucky_wheel_router)
 api_v1_router.include_router(milestone_router)
+api_v1_router.include_router(alerts_router)
+api_v1_router.include_router(notifications_router)
+api_v1_router.include_router(public_tracking_router)
+api_v1_router.include_router(public_reports_router)
 api_v1_router.include_router(eco_locations_router)
 api_v1_router.include_router(spatial_router)
 api_v1_router.include_router(weather_router)

@@ -161,7 +161,7 @@ export const LuckyWheelContainer: React.FC<Props> = ({
     { slot_index: 4, reward_type: "BADGE", reward_name: "Người gieo mầm", points_won: 10, icon: "🎖️", color: "#f59e0b" },
     { slot_index: 5, reward_type: "BADGE", reward_name: "Trái tim xanh", points_won: 20, icon: "💚", color: "#ec4899" },
     { slot_index: 6, reward_type: "VOUCHER", reward_name: "Voucher 20%", points_won: 5, icon: "🎟️", color: "#8b5cf6" },
-    { slot_index: 7, reward_type: "LUCK", reward_name: "Chúc may mắn", points_won: 2, icon: "🍀", color: "#64748b" },
+    { slot_index: 7, reward_type: "LUCK", reward_name: "Khích lệ sống xanh (+2đ)", points_won: 2, icon: "🍀", color: "#64748b" },
   ];
 
   return (
@@ -176,6 +176,41 @@ export const LuckyWheelContainer: React.FC<Props> = ({
           <p className="lw-subtitle">
             Mỗi ngày một lượt quay miễn phí! Cơ hội nhận Điểm Xanh, huy hiệu danh dự độc quyền và voucher ưu đãi xanh cùng cộng đồng TP.HCM.
           </p>
+        </div>
+      </div>
+
+      {/* [CN 35 10/10] Banner cơ chế động viên lối sống xanh & kiểm toán */}
+      <div style={{
+        background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)",
+        border: "1px solid #a7f3d0",
+        borderRadius: "12px",
+        padding: "12px 18px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexWrap: "wrap",
+        gap: "10px",
+        boxShadow: "0 2px 4px rgba(16, 185, 129, 0.08)",
+        marginBottom: "16px",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "1.5rem" }}>🌱</span>
+          <div>
+            <div style={{ fontWeight: 700, color: "#065f46", fontSize: "0.95rem" }}>
+              Cơ chế Động viên Thói quen Sống Xanh Mỗi Ngày
+            </div>
+            <div style={{ fontSize: "0.8rem", color: "#047857" }}>
+              Mỗi lượt quay cộng trực tiếp vào Số dư và Điểm xét hạng trọn đời (Bảo toàn 100% khi đổi quà).
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <span style={{ background: "#d1fae5", color: "#065f46", padding: "4px 10px", borderRadius: "20px", fontSize: "0.8rem", fontWeight: 700 }}>
+            🛡️ Chuẩn kiểm toán SHA-256
+          </span>
+          <span style={{ background: "#fef3c7", color: "#92400e", padding: "4px 10px", borderRadius: "20px", fontSize: "0.8rem", fontWeight: 700 }}>
+            1 Lượt / Ngày
+          </span>
         </div>
       </div>
 

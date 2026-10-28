@@ -51,7 +51,7 @@ export const validateFullName = (value: string): string | null => {
  */
 export const validateEmail = (value: string): string | null => {
   if (!value || value.trim().length === 0) {
-    return 'Vui lòng nhập email hoặc tài khoản';
+    return 'Vui lòng nhập email';
   }
 
   // Hỗ trợ đăng nhập nhanh bằng tài khoản quản trị viên đặc biệt (admin)
@@ -86,6 +86,36 @@ export const validateEmail = (value: string): string | null => {
   }
 
   return null;
+};
+
+/**
+ * Kiểm tra định danh đăng nhập tại Màn Đăng nhập (AUTH_TXT_USERNAME - Chức năng 25):
+ * Hỗ trợ đăng nhập bằng:
+ * 1. Email chuẩn RFC
+ * 2. Số điện thoại di động Việt Nam (10-11 chữ số bắt đầu bằng số 0)
+ * 3. Tài khoản quản trị viên ('admin' / 'administrator')
+ */
+export const validateLoginIdentifier = (value: string): string | null => {
+  if (!value || value.trim().length === 0) {
+    return 'Vui lòng nhập email hoặc số điện thoại';
+  }
+
+  const trimmed = value.trim();
+  const trimmedLower = trimmed.toLowerCase();
+  if (trimmedLower === 'admin' || trimmedLower === 'administrator') {
+    return null;
+  }
+
+  // Nếu người dùng nhập toàn chữ số (hoặc định dạng số điện thoại)
+  const digitsOnly = trimmed.replace(/[\s.-]/g, '');
+  if (/^\d+$/.test(digitsOnly)) {
+    if (/^0\d{9,10}$/.test(digitsOnly)) {
+      return null;
+    }
+    return 'Số điện thoại phải bắt đầu bằng số 0 và gồm 10–11 chữ số';
+  }
+
+  return validateEmail(value);
 };
 
 /**
@@ -167,7 +197,7 @@ export const validateLoginPassword = (value: string): string | null => {
  * - Chỉ chấp nhận đường dẫn nội bộ bắt đầu bằng đúng 1 dấu / và không bắt đầu bằng //
  * - Nếu sai hoặc không có, trả về defaultPath ('/geo-feed')
  */
-export const sanitizeRedirectUrl = (redirectParam: string | null | undefined, defaultPath = ''): string => {
+export const sanitizeRedirectUrl = (redirectParam: string | null | undefined, defaultPath = '/geo-feed'): string => {
   if (!redirectParam) return defaultPath;
   const trimmed = redirectParam.trim();
   if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {

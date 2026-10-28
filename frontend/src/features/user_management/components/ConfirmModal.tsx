@@ -8,8 +8,17 @@ interface ConfirmModalProps {
   user: UserItem | null;
   actionType: ConfirmActionType;
   onClose: () => void;
-  onConfirm: () => Promise<void>;
+  onConfirm: (reason?: string) => Promise<void>;
 }
+
+const DEFAULT_LOCK_REASON = 'Vi phạm quy chế sử dụng hệ thống GreenSpot';
+
+const LOCK_REASON_PRESETS = [
+  'Vi phạm quy chế sử dụng hệ thống GreenSpot',
+  'Báo cáo sai sự thật lặp lại nhiều lần',
+  'Phát hiện truy cập bất thường cần xác minh an ninh',
+  'Tạm khóa theo quyết định điều tra của Quản trị viên',
+];
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   isOpen,
@@ -20,21 +29,38 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [lockReason, setLockReason] = useState<string>(DEFAULT_LOCK_REASON);
 
   React.useEffect(() => {
     setErrorMsg(null);
-  }, [isOpen]);
+    if (isOpen && actionType === 'BLOCK') {
+      setLockReason(DEFAULT_LOCK_REASON);
+    }
+  }, [isOpen, actionType]);
 
   if (!isOpen || !user) return null;
 
   const handleConfirm = async () => {
+    if (actionType === 'BLOCK' && !lockReason.trim()) {
+      setErrorMsg('RBAC_002: Vui lòng nhập lý do khóa tài khoản để ghi nhận kiểm toán an ninh');
+      return;
+    }
+
     try {
       setLoading(true);
       setErrorMsg(null);
-      await onConfirm();
+      if (actionType === 'BLOCK') {
+        await onConfirm(lockReason.trim());
+      } else {
+        await onConfirm();
+      }
       onClose();
     } catch (err: any) {
-      const msg = err.response?.data?.detail || err.message || 'Thao tác không thành công';
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.detail ||
+        err.message ||
+        'Thao tác không thành công';
       setErrorMsg(msg);
     } finally {
       setLoading(false);
@@ -119,6 +145,67 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           )}
 
           <div className="confirm-desc-box">{config.desc}</div>
+
+          {actionType === 'BLOCK' && (
+            <div style={{ marginTop: '14px' }}>
+              <label
+                htmlFor="um-lock-reason-input"
+                style={{
+                  display: 'block',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: '#334155',
+                  marginBottom: '6px',
+                }}
+              >
+                Lý do khóa tài khoản (Ghi nhận vào Audit Log) <span style={{ color: '#dc2626' }}>*</span>
+              </label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                {LOCK_REASON_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => {
+                      setLockReason(preset);
+                      setErrorMsg(null);
+                    }}
+                    style={{
+                      fontSize: '11.5px',
+                      padding: '4px 10px',
+                      borderRadius: '999px',
+                      border: lockReason === preset ? '1px solid #059669' : '1px solid #cbd5e1',
+                      background: lockReason === preset ? '#ecfdf5' : '#f8fafc',
+                      color: lockReason === preset ? '#065f46' : '#475569',
+                      cursor: 'pointer',
+                      fontWeight: lockReason === preset ? 600 : 500,
+                    }}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                id="um-lock-reason-input"
+                rows={2}
+                value={lockReason}
+                onChange={(e) => {
+                  setLockReason(e.target.value);
+                  if (errorMsg) setErrorMsg(null);
+                }}
+                placeholder="Nhập lý do khóa tài khoản để lưu vết kiểm toán an ninh..."
+                style={{
+                  width: '100%',
+                  padding: '9px 12px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '13.5px',
+                  color: '#0f172a',
+                  boxSizing: 'border-box',
+                  resize: 'vertical',
+                }}
+              />
+            </div>
+          )}
         </div>
 
         <div className="um-modal-footer">

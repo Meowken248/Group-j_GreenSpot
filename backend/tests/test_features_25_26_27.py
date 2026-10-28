@@ -159,6 +159,101 @@ class TestFeatures252627(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(res.points_awarded, 0)
         self.assertIn("24h", res.message)
 
+    async def test_feature_25_admin_crud_challenge(self):
+        """Test Admin can create, update, toggle-active, and delete a challenge"""
+        from app.schemas.challenge import ChallengeCreateRequest, ChallengeUpdateRequest
+
+        # 1. Create
+        create_req = ChallengeCreateRequest(
+            title="Thử thách dọn công viên",
+            description="Thu gom rác tại công viên gần nhà trong 30 phút",
+            points_reward=45,
+            category="COMMUNITY",
+            icon="trash",
+            requirements="Chụp ảnh bao rác đã gom được tại công viên",
+            is_auto_verify=False,
+            is_active=True,
+            order_index=10
+        )
+        ch = await ChallengeService.admin_create_challenge(self.db, create_req, self.test_admin_id)
+        self.assertTrue(ch.challenge_id.startswith("CHALLENGE_"))
+        self.assertEqual(ch.points_reward, 45)
+
+        # 2. Toggle active
+        new_active = await ChallengeService.admin_toggle_challenge_active(self.db, ch.challenge_id, self.test_admin_id)
+        self.assertFalse(new_active)
+
+        # 3. Update
+        update_req = ChallengeUpdateRequest(points_reward=60, title="Thử thách dọn công viên nâng cấp")
+        updated_ch = await ChallengeService.admin_update_challenge(self.db, ch.challenge_id, update_req, self.test_admin_id)
+        self.assertEqual(updated_ch.points_reward, 60)
+        self.assertEqual(updated_ch.title, "Thử thách dọn công viên nâng cấp")
+
+        # 4. List admin
+        admin_list = await ChallengeService.admin_get_all_challenges(self.db)
+        self.assertTrue(any(c.challenge_id == ch.challenge_id for c in admin_list.challenges))
+
+        # 5. Delete
+        await ChallengeService.admin_delete_challenge(self.db, ch.challenge_id, self.test_admin_id)
+        deleted_check = await self.db.get(GreenChallenge, ch.challenge_id)
+        self.assertIsNone(deleted_check)
+
+    async def test_feature_25_admin_verification_workflow(self):
+        """Test Admin can review submissions: reject with reason, citizen resubmits, admin approves"""
+        from app.schemas.challenge import AdminReviewSubmissionRequest
+
+        # 1. Citizen submits manual challenge
+        payload = ChallengeSubmitRequest(
+            evidence_image_url="https://example.com/submission1.jpg",
+            evidence_note="Ảnh chụp chưa rõ lắm"
+        )
+        res = await ChallengeService.submit_challenge(
+            db=self.db,
+            challenge_id="CHALLENGE_NO_PLASTIC_BAG",
+            user_id=self.test_user_id,
+            payload=payload
+        )
+        self.assertEqual(res.status, "PENDING")
+
+        # 2. Admin retrieves submissions
+        subs_resp = await ChallengeService.admin_get_submissions(self.db, status_filter="PENDING")
+        user_sub = next((s for s in subs_resp.submissions if s.user_id == str(self.test_user_id)), None)
+        self.assertIsNotNone(user_sub)
+
+        # 3. Admin rejects with reason
+        sub_uuid = uuid.UUID(user_sub.id)
+        reject_req = AdminReviewSubmissionRequest(
+            action="REJECT",
+            rejection_reason="Ảnh bị mờ và không thấy túi tái sử dụng"
+        )
+        review_res = await ChallengeService.admin_review_submission(self.db, sub_uuid, reject_req, self.test_admin)
+        self.assertEqual(review_res.new_status, "REJECTED")
+
+        # Verify citizen sees REJECTED status with rejection_reason
+        weekly_view = await ChallengeService.get_weekly_challenges(self.db, self.test_user_id)
+        ch_item = next(c for c in weekly_view.challenges if c.challenge_id == "CHALLENGE_NO_PLASTIC_BAG")
+        self.assertEqual(ch_item.status, "REJECTED")
+        self.assertEqual(ch_item.rejection_reason, "Ảnh bị mờ và không thấy túi tái sử dụng")
+
+        # 4. Citizen resubmits
+        payload2 = ChallengeSubmitRequest(
+            evidence_image_url="https://example.com/clear_bag.jpg",
+            evidence_note="Ảnh chụp lại rất nét"
+        )
+        res2 = await ChallengeService.submit_challenge(
+            db=self.db,
+            challenge_id="CHALLENGE_NO_PLASTIC_BAG",
+            user_id=self.test_user_id,
+            payload=payload2
+        )
+        self.assertEqual(res2.status, "PENDING")
+
+        # 5. Admin approves submission
+        approve_req = AdminReviewSubmissionRequest(action="APPROVE")
+        approve_res = await ChallengeService.admin_review_submission(self.db, sub_uuid, approve_req, self.test_admin)
+        self.assertEqual(approve_res.new_status, "COMPLETED")
+        self.assertGreaterEqual(approve_res.points_awarded, 30)
+
     # ==========================================
     # TESTS FOR FEATURE 26: AUDIT LOGS
     # ==========================================
@@ -252,6 +347,33 @@ class TestFeatures252627(unittest.IsolatedAsyncioTestCase):
         self.assertGreaterEqual(export_res.total_records, 1)
         self.assertIn("thành công", export_res.message)
 
+    async def test_feature_26_statistics_and_suspicious_detection(self):
+        """Test audit statistics card calculations and anomaly detection"""
+        # Create a suspicious log (>500 points)
+        susp_log = AuditLog(
+            user_id=self.test_admin_id,
+            action="REWARD_POINTS",
+            table_name="citizen_rewards",
+            record_id="wallet-test-01",
+            old_data={"points": 10},
+            new_data={"points_awarded": 1000},
+            ip_address="10.0.0.1",
+            user_agent="Automated Test Script",
+            request_uri="/api/v1/challenges/submit",
+            is_suspicious=True
+        )
+        self.db.add(susp_log)
+        await self.db.commit()
+
+        # Query statistics
+        stats = await AuditService.get_audit_statistics(self.db)
+        self.assertGreaterEqual(stats.total_this_week, 1)
+        self.assertGreaterEqual(stats.suspicious_count, 1)
+
+        # Query with is_suspicious filter
+        susp_list = await AuditService.get_audit_logs(self.db, is_suspicious=True)
+        self.assertTrue(all(item.is_suspicious for item in susp_list.items))
+
     # ==========================================
     # TESTS FOR FEATURE 27: WASTE HANDBOOK
     # ==========================================
@@ -282,7 +404,83 @@ class TestFeatures252627(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(detail.category_code, "HAZARDOUS")
         self.assertEqual(detail.station_action_label, "Tìm điểm thu gom")
         self.assertTrue(detail.has_dedicated_station)
+        self.assertEqual(detail.facility_filter_type, "recycling")
         self.assertIn("đỏ", detail.bin_name.lower())
+
+    async def test_feature_27_admin_crud(self):
+        """Test Admin can create, update, and delete waste items in the dictionary"""
+        from app.schemas.waste_handbook import WasteItemCreateRequest, WasteItemUpdateRequest
+
+        # 1. Create new item
+        create_req = WasteItemCreateRequest(
+            name="Vỏ chai thủy tinh bia",
+            category_code="RECYCLABLE",
+            alternative_names="chai bia sài gòn, chai nước ngọt thủy tinh",
+            sorting_guide="Tráng sạch nước cặn, xếp cẩn thận vào thùng tái chế hoặc bán cho vựa ve chai",
+            has_dedicated_station=True
+        )
+        item = await WasteHandbookService.admin_create_item(self.db, create_req, self.test_admin_id)
+        self.assertTrue(item.item_id.startswith("ITEM_"))
+        self.assertEqual(item.category_code, "RECYCLABLE")
+
+        # 2. Update item
+        update_req = WasteItemUpdateRequest(safety_notes="Tránh để vỡ gây nguy hiểm cho người thu gom")
+        updated_item = await WasteHandbookService.admin_update_item(self.db, item.item_id, update_req, self.test_admin_id)
+        self.assertEqual(updated_item.safety_notes, "Tránh để vỡ gây nguy hiểm cho người thu gom")
+
+        # 3. Admin list
+        admin_list = await WasteHandbookService.admin_get_items(self.db, query="thủy tinh bia")
+        self.assertTrue(any(it.item_id == item.item_id for it in admin_list.items))
+
+        # 4. Delete item
+        await WasteHandbookService.admin_delete_item(self.db, item.item_id, self.test_admin_id)
+        deleted_check = await self.db.get(WasteHandbookItem, item.item_id)
+        self.assertIsNone(deleted_check)
+
+    async def test_official_25_26_27_security_and_rbac_upgrades(self):
+        """Test SHA-256 integrity_hash, real file export content, AUD_002 read-only protection, and RBAC_002 lock reason validation"""
+        from app.api.v1.audit_logs import block_delete_audit_logs
+        from app.api.v1.user_management import change_user_status
+        from app.schemas.user_management import ChangeUserStatusRequest
+
+        # 1. Verify AUD_002 Read-Only immutability protection
+        del_resp = await block_delete_audit_logs(log_id=999999, current_admin=self.test_admin, db=self.db)
+        self.assertEqual(del_resp.status_code, 403)
+        self.assertIn("AUD_002", del_resp.body.decode("utf-8"))
+
+        # 2. Verify SHA-256 integrity_hash on audit detail
+        logs_list = await AuditService.get_audit_logs(self.db, action="DELETE_AUDIT_ATTEMPT", limit=5)
+        self.assertGreaterEqual(logs_list.total, 1)
+        latest_id = logs_list.items[0].log_id
+        detail = await AuditService.get_audit_log_detail(self.db, latest_id)
+        self.assertIsNotNone(detail.integrity_hash)
+        self.assertEqual(len(detail.integrity_hash), 64)
+
+        # 3. Verify real CSV & PDF/HTML export content generation
+        csv_content, csv_mime, csv_ext = await AuditService.generate_export_file_content(
+            self.db, format_type="EXCEL"
+        )
+        self.assertTrue(csv_content.startswith("\ufeff"))
+        self.assertEqual(csv_ext, "csv")
+
+        html_content, html_mime, html_ext = await AuditService.generate_export_file_content(
+            self.db, format_type="PDF"
+        )
+        self.assertIn("BÁO CÁO NHẬT KÝ KIỂM TOÁN AN NINH", html_content)
+        self.assertEqual(html_ext, "html")
+
+        # 4. Verify RBAC_002 lock reason validation when reason is empty string
+        empty_reason_req = ChangeUserStatusRequest(status="BLOCKED", reason="   ")
+        status_resp = await change_user_status(
+            user_id=str(self.test_user_id),
+            payload=empty_reason_req,
+            current_admin=self.test_admin,
+            db=self.db,
+        )
+        self.assertEqual(status_resp.status_code, 400)
+        self.assertIn("RBAC_002", status_resp.body.decode("utf-8"))
 
 if __name__ == '__main__':
     unittest.main()
+
+

@@ -250,7 +250,7 @@ export const loginCitizen = async (payload: { email: string; password: string })
         return {
           success: false,
           status: "LOGIN_LOCKED",
-          message: "Bạn đã nhập sai quá 5 lần. Vui lòng thử lại sau 15 phút",
+          message: data?.message || "Bạn đã nhập sai quá 5 lần. Vui lòng thử lại sau 15 phút",
         };
       }
 
@@ -285,6 +285,52 @@ export const loginCitizen = async (payload: { email: string; password: string })
         success: false,
         status: "NETWORK_ERROR",
         message: data?.message || "Không thể kết nối đến máy chủ. Vui lòng thử lại",
+      };
+    }
+    return {
+      success: false,
+      status: "NETWORK_ERROR",
+      message: "Không thể kết nối đến máy chủ. Vui lòng thử lại",
+    };
+  }
+};
+
+export const loginWithGoogle = async (payload: {
+  credential?: string;
+  email?: string;
+  full_name?: string;
+}): Promise<LoginResult> => {
+  resetSessionExpired();
+  try {
+    const response = await api.post("/api/v1/auth/google", payload);
+    return {
+      success: true,
+      status: "SUCCESS",
+      message: response.data?.message || "Đăng nhập Google thành công",
+      data: response.data,
+    };
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      if (!error.response) {
+        return {
+          success: false,
+          status: "NETWORK_ERROR",
+          message: "Không thể kết nối đến máy chủ. Vui lòng thử lại",
+        };
+      }
+      const status = error.response.status;
+      const data = error.response.data;
+      if (status === 403 && data?.error_code === "ACCOUNT_LOCKED") {
+        return {
+          success: false,
+          status: "ACCOUNT_LOCKED",
+          message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên",
+        };
+      }
+      return {
+        success: false,
+        status: "NETWORK_ERROR",
+        message: data?.message || "Không thể xác thực Google. Vui lòng thử lại",
       };
     }
     return {

@@ -11,7 +11,7 @@ RUN npm install -g pnpm && \
     pnpm config set fetch-retry-maxtimeout 180000 && \
     pnpm config set fetch-timeout 180000 && \
     pnpm config set network-concurrency 3 && \
-    pnpm install
+    pnpm install --no-frozen-lockfile
 
 COPY . .
 

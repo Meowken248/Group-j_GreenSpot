@@ -282,3 +282,20 @@ export interface MarkVoucherUsedResponse {
   used_at: string;
   message: string;
 }
+
+export interface VerifyVoucherRequest {
+  voucher_code: string;
+}
+
+export interface VerifyVoucherResponse {
+  valid: boolean;
+  voucher_id: string;
+  voucher_code: string;
+  reward_title: string;
+  brand?: string | null;
+  user_name: string;
+  points_spent: number;
+  redeemed_at: string;
+  used_at: string;
+  message: string;
+}
