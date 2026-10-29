@@ -163,7 +163,7 @@ SAMPLE_FRIEND_USERS = [
 async def seed_friends_data():
     """Hàm nạp dữ liệu mẫu miền Kết bạn và Theo dõi (Feature STT 6)"""
     print("🤝 Bắt đầu nạp dữ liệu mẫu miền Kết bạn và Theo dõi (Feature STT 6)...")
-    url = settings.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+    url = settings.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://").split("?")[0]
     conn = await asyncpg.connect(url)
 
     try:
@@ -190,7 +190,8 @@ async def seed_friends_data():
         target_emails = [
             "admin@gmail.com",
             "citizen@ecoreport.gov.vn",
-            "ddatmguyen2023+test@gmail.com"
+            "ddatmguyen2023+test@gmail.com",
+            "admin@gmail.com",
         ]
         
         main_user_uuids = []

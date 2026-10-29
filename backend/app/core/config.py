@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     KIRA_API_KEY: str = ""
     KIRA_API_URL: str = "https://kiraai.vn/api/v1/chat/completions"
     KIRA_MODEL: str = "kira-mini-1.0"
-    KIRA_TIMEOUT_SECONDS: float = 30.0
+    KIRA_TIMEOUT_SECONDS: float = 45.0
 
     # Cấu hình gửi email OTP thật (Gmail / Outlook SMTP).
     # Khai báo trong backend/.env (xem backend/.env.example) thay vì docker-compose.yml.

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import Optional, Any
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -11,20 +11,32 @@ from app.models.base import TimestampMixin
 
 
 class AuditLog(Base):
-    """Nhật ký kiểm toán hệ thống ghi lại mọi thao tác thêm, sửa, xóa danh mục rác thải & SLA"""
+    """
+    Nhật ký kiểm toán hệ thống toàn diện:
+    - Chức năng 22: Ghi lại thao tác thêm, sửa, xóa danh mục rác thải & SLA.
+    - Chức năng 26: Nhật ký kiểm toán Audit Log (Bảng 11 trong báo cáo).
+    Ghi nhận bất biến các thao tác quan trọng (đăng nhập, đổi quyền, sửa dữ liệu, cộng/trừ điểm).
+    """
     __tablename__ = "audit_logs"
+    __table_args__ = {"extend_existing": True}
 
     log_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
+    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True, index=True)
     user_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    action: Mapped[str] = mapped_column(String(50), nullable=False)
-    table_name: Mapped[str] = mapped_column(String(50), nullable=False, default="waste_categories")
-    record_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    action: Mapped[str] = mapped_column(String(50), nullable=False, index=True)  # LOGIN, UPDATE_ROLE, UPDATE_DATA, REWARD_POINTS, EXPORT_AUDIT_LOG
+    table_name: Mapped[str] = mapped_column(String(100), nullable=False, default="waste_categories", index=True)
+    record_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    old_data: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB, nullable=True)
+    new_data: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB, nullable=True)
     old_values: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)
     new_values: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)
     ip_address: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     user_agent: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    request_uri: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    is_suspicious: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
+
+    user: Mapped[Optional["User"]] = relationship()
 
 
 class IncidentAuditLog(Base, TimestampMixin):
@@ -57,10 +69,7 @@ class IncidentAuditLog(Base, TimestampMixin):
     # Dữ liệu bổ sung: chi tiết các factors, kết quả gửi SMS/Email cảnh báo cơ sở, cự ly cơ sở...
     metadata_json: Mapped[Optional[dict]] = mapped_column("metadata", JSONB, nullable=True)
 
-    # Optimistic locking & Soft delete (Tuân thủ Quy tắc 6 & 7)
-    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Quan hệ hai chiều với Incident (back_populates audit_logs)
+    incident: Mapped["Incident"] = relationship("Incident", back_populates="audit_logs")
+    performed_by_user: Mapped[Optional["User"]] = relationship("User")
 
-    # Relationships
-    incident = relationship("Incident", foreign_keys=[incident_id], lazy="selectin")
-    operator = relationship("User", foreign_keys=[performed_by], lazy="selectin")

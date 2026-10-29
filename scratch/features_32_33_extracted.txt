@@ -1,0 +1,380 @@
+P[1737]: 32. Bảng xếp hạng vinh danh Top Công dân Xanh (cá nhân, nhóm, quận)
+P[1782]: 33. Bản đồ nhiệt môi trường và khí hậu đa chế độ: AQI, nhiệt độ, điểm số rủi ro
+P[1550]: Mục đích:
+ Thiết lập hàng rào kỹ thuật và cơ chế phòng ngừa gian lận chặt chẽ, bảo đảm tính minh bạch, công bằng của hệ thống điểm thưởng và nâng cao độ tin cậy của dữ liệu môi trường.
+P[1551]: Bảng hiển thị:
+P[1554]: Hình 4.28: Giao diện Hệ thống Nhật ký kiểm toán an ninh Audit Log và truy vết biến động dữ liệu
+P[1555]: Mô tả:
+ Popup hiện ở chính giữa màn hình, đè lên giao diện hiện tại ngay khi công dân hoàn tất bất kỳ một hành động xanh nào được hệ thống ghi nhận điểm. Phần nền phía sau được phủ lớp mờ và người dùng không thao tác được với phần nền.
+P[1556]: Popup gồm dòng nhỏ "POPUP", tiêu đề in đậm "+10 ĐIỂM XANH" (hoặc số điểm tương ứng của hành động: +2 điểm, +30 điểm, +50 điểm, +100 điểm...), dòng nội dung giải thích "Bạn vừa nhận điểm từ hành động xanh" (ghi rõ hành vi vừa hoàn thành), cùng hai nút chức năng:
+P[1557]: Nút "Xem ví điểm": Điều hướng trực tiếp sang trang Quản lý ví điểm và Lịch sử biến động điểm (Màn hình 38) để kiểm tra số dư và chi tiết giao dịch cộng điểm.
+P[1558]: Nút "Đóng": Đóng popup và cho phép người dùng tiếp tục thao tác trên màn hình hiện tại.
+P[1559]: Quy tắc hoạt động:
+ Điểm thưởng được cộng tức thời vào số dư ví cá nhân. Popup có thể tự động đóng sau 5 giây nếu người dùng không bấm nút, hoặc đóng ngay khi bấm "Đóng" hay nhấp ra ngoài vùng nền mờ.
+P[1560]: Mục đích:
+ Cung cấp phản hồi thị giác tức thì (Instant Feedback) xác nhận thành quả đóng góp của công dân, tạo động lực tinh thần mạnh mẽ giúp người dùng duy trì lối sống xanh mỗi ngày.
+P[1561]: Bảng hiển thị:
+P[1564]: 29. Ví điểm và lịch sử biến động điểm xanh
+P[1566]: Mô tả:
+ Giao diện đóng vai trò bảng điều khiển tài chính sinh thái cá nhân (Green Wallet Dashboard), nơi công dân quản lý tài sản số Điểm Xanh đã tích lũy, theo dõi cấp độ danh hiệu Công dân Xanh và thực hiện các thao tác đổi quà hoặc truy cập nhật ký biến động điểm. Màn hình dùng khung chung gồm Header (logo, menu, chuông, avatar) và Footer (bản quyền, liên hệ, chính sách). Phần giữa được chia thành 3 khối theo chiều ngang từ trái sang phải:
+P[1567]: Khối "SỐ DƯ" (Cột trái):
+P[1568]: Điểm hiện có: Hiển thị nổi bật con số Điểm Xanh khả dụng mà người dùng có thể sử dụng để quy đổi quà tặng (VD: "1.450 Điểm Xanh").
+P[1569]: Cấp hiện tại: Tên và biểu tượng cấp bậc Công dân Xanh (Hạng Đồng, Bạc, Vàng, Kim Cương) kèm thanh tiến trình thăng hạng tiếp theo.
+P[1570]: Khối "TÓM TẮT" (Cột giữa):
+P[1571]: Điểm kiếm tuần này: Tổng hợp số điểm người dùng đã tích lũy thành công từ đầu tuần đến thời điểm hiện tại (VD: "+180 điểm tuần này").
+P[1572]: Điểm đã dùng: Tổng số điểm người dùng đã tiêu dùng để đổi quà tặng hoặc phiếu mua sắm từ trước đến nay (VD: "500 điểm đã đổi quà").
+P[1573]: Khối "HÀNH ĐỘNG" (Cột phải):
+P[1574]: Nút "Đổi quà": Điều hướng người dùng sang Cửa hàng quà tặng xanh (Màn 39) để sử dụng điểm đổi lấy quà lưu niệm, cây xanh hoặc voucher tiêu dùng.
+P[1575]: Nút "Xem lịch sử": Chuyển sang Màn 2 (Lịch sử biến động) để tra cứu sao kê từng giao dịch cộng/trừ điểm.
+P[1576]: Khung thao tác & Quy tắc hoạt động:
+P[1577]: Bắt buộc người dùng phải đăng nhập tài khoản để xem ví điểm.
+P[1578]: Số dư điểm được hệ thống cập nhật tự động theo thời gian thực ngay khi có hành vi được cộng hoặc trừ điểm.
+P[1579]: Mục đích:
+ Cung cấp bức tranh toàn diện và minh bạch về tài sản điểm thưởng, giúp công dân thấy rõ giá trị thực tế của các hành động bảo vệ môi trường mình đã đóng góp, tạo động lực duy trì lối sống xanh.
+P[1580]: Bảng hiển thị:
+P[1583]: Mô tả:
+ Giao diện đóng vai trò sao kê chi tiết nhật ký giao dịch điểm thưởng (Point Statement Ledger), minh bạch hóa mọi biến động cộng/trừ điểm phát sinh trong suốt quá trình hoạt động của tài khoản. Màn hình dùng khung chung gồm Header và Footer. Phần giữa chia làm 2 khối:
+P[1584]: Khối "BỘ LỌC" (Cột trái):
+P[1585]: Cộng / Trừ: Cho phép lọc xem "Tất cả", riêng "Điểm cộng (+)" (từ báo cáo sự cố, check-in, thử thách) hoặc riêng "Điểm trừ (-)" (từ đổi quà hoặc bị xử phạt gian lận).
+P[1586]: Khoảng thời gian: Tùy chọn lọc theo "7 ngày qua", "30 ngày qua", "Tháng này" hoặc chọn khoảng ngày cụ thể.
+P[1587]: Khối "LỊCH SỬ" (Cột phải):
+P[1588]: Danh sách giao dịch: Mỗi dòng hiển thị: Nội dung biến động | Số điểm biến động (tô màu xanh lá kèm dấu "+" nếu cộng, màu cam kèm dấu "-" nếu trừ) | Ngày giờ giao dịch (VD: "Nghiệm thu dọn sạch bãi rác Lê Lợi | +100 điểm | 14:30 15/09/2026").
+P[1589]: Nút "Xem chi tiết": Nằm trên từng dòng giao dịch, cho phép nhấp vào để mở Màn 3 (Popup chi tiết giao dịch).
+P[1590]: Quy tắc hoạt động:
+ Danh sách tự động sắp xếp theo thứ tự thời gian mới nhất lên đầu. Tải tối đa 15 giao dịch mỗi lần và tự động nạp thêm khi cuộn trang xuống dưới.
+P[1591]: Mục đích:
+ Đảm bảo tính rõ ràng, minh bạch và có thể kiểm chứng của hệ sinh thái điểm thưởng, giúp người dân dễ dàng theo dõi và đối chiếu xem các đóng góp của mình đã được ghi nhận đúng và đủ hay chưa.
+P[1592]: Bảng hiển thị:
+P[1595]: Hình 4.29: Giao diện Trung tâm điều phối tác nghiệp và phân công lệnh xử lý hiện trường
+P[1596]: Mô tả:
+ Popup hiện ở chính giữa màn hình, đè lên Màn 2 khi người dùng nhấp xem chi tiết một dòng biến động điểm. Phần nền phía sau được phủ lớp mờ và người dùng không thao tác được với phần nền.
+P[1597]: Popup gồm dòng nhỏ "POPUP", tiêu đề in đậm "CHI TIẾT GIAO DỊCH", hiển thị chi tiết các trường thông tin đối chứng:
+P[1598]: Hành động: Nêu rõ tên hành vi hoặc sự cố phát sinh điểm (VD: "Thưởng nghiệm thu dọn sạch bãi rác tự phát #RC-8492", hoặc "Đổi E-Voucher mua sắm Co.opmart 50.000đ").
+P[1599]: Số điểm (±điểm): Hiển thị rõ số điểm biến động (+100 điểm hoặc -250 điểm) kèm trạng thái giao dịch "Thành công".
+P[1600]: Thời gian: Mốc thời gian chính xác (ngày, giờ, phút, giây) hệ thống ghi nhận giao dịch vào cơ sở dữ liệu.
+P[1601]: Mã giao dịch: Mã định danh duy nhất của giao dịch (Transaction ID, VD: "#TX-98420194") phục vụ việc tra cứu và đối soát khiếu nại.
+P[1602]: Nút "Đóng": Đóng popup và quay về giao diện sao kê ở Màn 2.
+P[1603]: Quy tắc hoạt động:
+ Người dùng có thể bấm nút "Đóng", bấm phím Esc hoặc nhấp chuột ra ngoài vùng nền mờ để đóng popup nhanh.
+P[1604]: Mục đích:
+ Cung cấp chứng từ đối soát điện tử đầy đủ có mã giao dịch duy nhất, giúp công dân lưu lại làm bằng chứng hoặc gửi yêu cầu hỗ trợ đến ban quản trị khi có thắc mắc về điểm thưởng.
+P[1605]: Bảng hiển thị:
+P[1608]: 30. Quản trị CRUD danh mục quà tặng xanh và kho voucher
+P[1610]: Mô tả:
+ Giao diện đóng vai trò trung tâm quản lý danh mục phần thưởng và kho voucher đổi điểm sinh thái dành cho Quản trị viên (Admin), cho phép theo dõi số lượng tồn kho, tìm kiếm, lọc trạng thái và điều phối các tác vụ CRUD (Thêm, Sửa, Xóa). Màn hình dùng khung chung gồm Header (logo, menu quản trị, chuông, avatar) và Footer (bản quyền, liên hệ, chính sách). Phần giữa được chia thành 3 khối theo chiều ngang từ trái sang phải:
+P[1611]: Khối "BỘ LỌC" (Cột trái):
+P[1612]: Ô tìm kiếm: Nhập tên quà tặng hoặc thương hiệu/nhà tài trợ ESG.
+P[1613]: Trạng thái tồn kho: Tùy chọn lọc giữa "Tất cả", "Còn hàng" hoặc "Hết hàng".
+P[1614]: Nút "Áp dụng": Thực hiện lọc danh sách quà hiển thị ở cột giữa.
+P[1615]: Khối "DANH SÁCH QUÀ" (Cột giữa):
+P[1616]: Danh sách hàng: Mỗi hàng hiển thị: Ảnh đại diện quà tặng | Tên quà | Số lượng tồn kho | Hạn sử dụng của voucher | Điểm cần đổi.
+P[1617]: Nút "Sửa": Nằm trên từng hàng quà tặng, nhấp vào để mở Màn 3 (Sửa quà).
+P[1618]: Nút "Xoá": Nằm trên từng hàng quà tặng, nhấp vào để kích hoạt mở Màn 4 (Popup xác nhận xoá quà).
+P[1619]: Khối "THAO TÁC" (Cột phải):
+P[1620]: Nút "Thêm quà": Mở Màn 2 (Thêm quà mới vào kho).
+P[1621]: Nút "Xem thống kê": Chuyển sang Màn 6 (Thống kê lượt đổi quà).
+P[1622]: Khung thao tác & Quy tắc hoạt động:
+P[1623]: Chỉ tài khoản có vai trò Quản trị viên (Admin) mới có quyền truy cập màn hình này.
+P[1624]: Quà tặng khi số lượng tồn về 0 sẽ tự động gắn nhãn "Hết hàng" và tạm ẩn khỏi danh mục đổi của công dân phía người dùng.
+P[1625]: Mục đích:
+ Giúp ban quản trị nắm bắt chính xác số lượng tồn kho quà tặng và voucher sinh thái theo thời gian thực, chủ động điều phối nguồn cung ứng để phục vụ người dân đổi điểm.
+P[1626]: Bảng hiển thị:
+P[1629]: Mô tả:
+ Giao diện đóng vai trò biểu mẫu khởi tạo một quà tặng sinh thái hoặc lô voucher mới vào kho hệ thống. Màn hình dùng khung chung gồm Header và Footer. Phần giữa chia làm 3 khối:
+P[1630]: Khối "THÔNG TIN" (Cột trái):
+P[1631]: Ô "Tên quà": Nhập tên quà tặng, tối đa 150 ký tự (VD: "Bình giữ nhiệt Eco Inox 500ml", "E-Voucher Co.opmart 50.000đ").
+P[1632]: Ô "Mô tả": Nhập thông tin chi tiết về sản phẩm, tiêu chuẩn sống xanh hoặc hướng dẫn áp dụng voucher, tối đa 1.000 ký tự.
+P[1633]: Khung "Ảnh": Tải lên 01 ảnh sản phẩm rõ nét (định dạng JPG/PNG, dung lượng tối đa 5MB) có hiển thị xem trước.
+P[1634]: Khối "KHO VOUCHER" (Cột giữa):
+P[1635]: Ô "Số lượng tồn": Nhập tổng số lượng quà/voucher phát hành (từ 1 đến 10.000).
+P[1636]: Ô "Hạn dùng": Bộ chọn ngày (DatePicker) xác định thời hạn áp dụng của voucher/quà tặng, phải sau ngày hiện tại.
+P[1637]: Ô "Điểm cần đổi": Nhập số Điểm Xanh mà công dân phải tích lũy để đổi quà (tối thiểu 10 điểm).
+P[1638]: Khối "LƯU" (Cột phải):
+P[1639]: Nút "Lưu": Gửi dữ liệu tạo mới lên máy chủ. Tạo thành công sẽ chuyển về Màn 1.
+P[1640]: Nút "Huỷ": Hủy thao tác thêm mới và quay về Màn 1.
+P[1641]: Quy tắc hoạt động:
+ Bắt buộc nhập đầy đủ tất cả các trường. Số lượng tồn kho và điểm cần đổi phải là số nguyên dương hợp lệ.
+P[1642]: Mục đích:
+ Mở rộng danh mục quà tặng xanh phong phú, thu hút tài trợ từ các doanh nghiệp ESG và tạo thêm nhiều lựa chọn quy đổi hấp dẫn cho công dân.
+P[1643]: Bảng hiển thị:
+P[1646]: Mô tả:
+ Giao diện đóng vai trò biểu mẫu cập nhật thông tin, điều chỉnh số lượng tồn kho hoặc gia hạn thời gian áp dụng của một quà tặng/voucher đã có trên hệ thống. Màn hình dùng khung chung gồm Header và Footer. Phần giữa chia làm 3 khối:
+P[1647]: Khối "THÔNG TIN" (Cột trái):
+P[1648]: Dữ liệu cũ điền sẵn: Hệ thống tự động nạp sẵn thông tin hiện tại của quà tặng gồm: Tên quà, Mô tả chi tiết và Ảnh hiện tại (hỗ trợ bấm nút thay ảnh mới).
+P[1649]: Khối "KHO VOUCHER" (Cột giữa):
+P[1650]: Chỉnh sửa kho: Cho phép cập nhật lại: Số lượng tồn kho (nhập thêm khi nhập kho lô mới), Hạn dùng và Điểm cần đổi.
+P[1651]: Khối "LƯU" (Cột phải):
+P[1652]: Nút "Cập nhật": Lưu toàn bộ thông tin chỉnh sửa vào cơ sở dữ liệu.
+P[1653]: Nút "Huỷ": Hủy các thay đổi vừa chỉnh sửa và quay lại Màn 1.
+P[1654]: Quy tắc hoạt động:
+ Không cho phép sửa đổi số lượng tồn kho nhỏ hơn số lượng voucher mà người dùng đã đổi nhưng chưa sử dụng.
+P[1655]: Mục đích:
+ Cho phép quản trị viên linh hoạt cập nhật số lượng nhập kho, gia hạn voucher và điều chỉnh điểm quy đổi tương ứng với từng giai đoạn chiến dịch.
+P[1656]: Bảng hiển thị:
+P[1659]: Mô tả:
+ Popup hiện ở chính giữa màn hình, đè lên Màn 1 khi quản trị viên bấm nút "Xoá" tại một hàng quà tặng. Phần nền phía sau được phủ lớp mờ và người dùng không thao tác được với phần nền.
+P[1660]: Popup gồm dòng nhỏ "POPUP", tiêu đề in đậm màu đỏ cảnh báo "XOÁ QUÀ TẶNG?", dòng nội dung giải thích "Voucher chưa đổi sẽ bị huỷ" (nêu rõ các voucher chưa có người đổi sẽ bị thu hồi và xóa khỏi danh mục công khai), cùng hai nút chức năng:
+P[1661]: Nút "Xoá": Xác nhận xóa vĩnh viễn quà tặng khỏi danh mục. Kích hoạt mở Màn 5 (Thông báo xoá thành công).
+P[1662]: Nút "Huỷ": Hủy thao tác xóa, đóng popup và giữ nguyên quà tặng trong danh sách.
+P[1663]: Quy tắc hoạt động:
+ Nếu quà tặng đã có người dùng đổi voucher và voucher còn hạn, hệ thống chỉ vô hiệu hóa hiển thị đổi mới (Soft Delete) chứ không xóa mã voucher của công dân đã sở hữu.
+P[1664]: Mục đích:
+ Ngăn chặn hành vi vô tình bấm nhầm xóa quà tặng, đồng thời cảnh báo rõ ràng trách nhiệm đối với các voucher đang tồn kho.
+P[1665]: Bảng hiển thị:
+P[1668]: Mô tả:
+ Popup hiện ở chính giữa màn hình, đè lên Màn 1 ngay sau khi máy chủ hoàn tất xử lý xóa quà tặng. Phần nền phía sau được phủ lớp mờ và người dùng không thao tác được với phần nền.
+P[1669]: Popup gồm dòng nhỏ "POPUP", tiêu đề in đậm "ĐÃ XOÁ QUÀ TẶNG", dòng nội dung xác nhận "Danh sách đã cập nhật" và một nút chức năng: nút "Đóng".
+P[1670]: Khi quản trị viên bấm nút "Đóng" (hoặc bấm phím Esc / nhấp ra ngoài nền mờ), popup đóng lại, màn hình quay về Màn 1 và dòng quà tặng đó đã biến mất khỏi danh sách.
+P[1671]: Mục đích:
+ Xác nhận dứt khoát kết quả thao tác xóa dữ liệu, giúp quản trị viên nắm rõ trạng thái danh mục kho hiện tại.
+P[1672]: Bảng hiển thị:
+P[1676]: Hình 4.30: Giao diện Quy trình thẩm định chất lượng xử lý và ký số nghiệm thu hoàn thành
+P[1677]: Mô tả:
+ Giao diện đóng vai trò bảng điều khiển phân tích số liệu quy đổi quà tặng (Redemption Analytics Dashboard), cung cấp các biểu đồ trực quan về xu hướng đổi quà của cộng đồng để phục vụ công tác lập kế hoạch tiếp nhận tài trợ. Màn hình dùng khung chung gồm Header và Footer. Phần giữa chia làm 3 khối theo chiều ngang từ trái sang phải:
+P[1678]: Khối "BỘ LỌC" (Cột trái):
+P[1679]: Khoảng thời gian: Cho phép lọc số liệu thống kê theo "Tuần này", "Tháng này", "Quý này" hoặc chọn khoảng ngày tùy chỉnh (từ ngày - đến ngày).
+P[1680]: Khối "BIỂU ĐỒ" (Cột giữa):
+P[1681]: Biểu đồ cột: Thể hiện số lượt đổi phân bổ theo từng loại quà tặng/voucher cụ thể.
+P[1682]: Biểu đồ đường: Thể hiện biến thiên xu hướng số lượt đổi điểm theo từng ngày trong giai đoạn được chọn.
+P[1683]: Khối "TOP" (Cột phải):
+P[1684]: Quà đổi nhiều nhất: Danh sách xếp hạng các vật phẩm được công dân ưa chuộng nhất kèm tỷ lệ phần trăm (VD: Top 1: Bình giữ nhiệt Eco - 45% tổng lượt đổi).
+P[1685]: Nút "Xuất báo cáo": Trích xuất toàn bộ dữ liệu thống kê ra tệp Excel (.xlsx) hoặc PDF phục vụ báo cáo định kỳ cho các nhà tài trợ ESG.
+P[1686]: Quy tắc hoạt động:
+ Biểu đồ tự động cập nhật ngay khi quản trị viên thay đổi bộ lọc thời gian ở cột trái.
+P[1687]: Mục đích:
+ Cung cấp dữ liệu định lượng chính xác giúp ban quản trị đánh giá mức độ hấp dẫn của từng loại quà tặng, từ đó tối ưu hóa ngân sách và cơ cấu danh mục quà trong tương lai.
+P[1688]: Bảng hiển thị:
+P[1691]: 31. Quản lý danh sách quà tặng cá nhân đã đổi
+P[1693]: Mô tả:
+ Giao diện đóng vai trò kho lưu trữ voucher và quà tặng cá nhân (My Rewards / Voucher Wallet), nơi công dân quản lý toàn bộ các phần thưởng sinh thái, phiếu ưu đãi mua sắm đã quy đổi thành công từ Điểm Xanh. Màn hình dùng khung chung gồm Header (logo, menu, chuông, avatar) và Footer (bản quyền, liên hệ, chính sách). Phần giữa được chia thành 2 khối theo chiều ngang từ trái sang phải:
+P[1694]: Khối "BỘ LỌC" (Cột trái):
+P[1695]: Tùy chọn lọc trạng thái: Gồm 3 bộ lọc nhanh:
+P[1696]: Còn hạn: Danh sách các voucher đang có hiệu lực, sẵn sàng mang đi sử dụng tại chuỗi cửa hàng đối tác.
+P[1697]: Đã dùng: Các voucher người dùng đã sử dụng và đánh dấu hoàn tất.
+P[1698]: Hết hạn: Các voucher đã quá thời hạn sử dụng quy định.
+P[1699]: Khối "DANH SÁCH" (Cột phải):
+P[1700]: Danh sách thẻ quà tặng: Mỗi thẻ hiển thị: Ảnh đại diện quà tặng/thương hiệu | Tên quà (VD: "E-Voucher Co.opmart 50.000đ") | Hạn dùng (VD: "HSD: 30/11/2026") | Nhãn trạng thái (Còn hạn / Đã dùng / Hết hạn).
+P[1701]: Nút "Xem chi tiết": Nằm trên từng thẻ quà tặng, cho phép nhấp vào để mở Màn 2 (Chi tiết voucher).
+P[1702]: Khung thao tác & Quy tắc hoạt động:
+P[1703]: Bắt buộc người dùng phải đăng nhập tài khoản để xem kho quà cá nhân.
+P[1704]: Mặc định hệ thống hiển thị danh sách voucher "Còn hạn", sắp xếp ưu tiên các voucher có hạn dùng gần nhất lên đầu để nhắc nhở công dân kịp thời sử dụng.
+P[1705]: Mục đích:
+ Giúp công dân dễ dàng theo dõi, quản lý và sử dụng các phần quà đã quy đổi từ điểm tích lũy môi trường, tránh tình trạng bỏ quên hoặc để voucher bị quá hạn lãng phí.
+P[1706]: Bảng hiển thị:
+P[1709]: Mô tả:
+ Giao diện đóng vai trò màn hình xuất trình chứng từ điện tử (Voucher Redemption Screen), cung cấp mã vạch, mã QR và chuỗi ký tự để thu ngân quét hoặc nhập khi thanh toán tại quầy đối tác. Màn hình dùng khung chung gồm Header và Footer. Phần giữa chia làm 2 khối:
+P[1710]: Khối "VOUCHER" (Cột trái):
+P[1711]: Tên quà | Mã voucher: Tên đầy đủ của quà tặng kèm chuỗi mã voucher dạng chữ và số in hoa (VD: "ECO-CP-84920").
+P[1712]: Mã QR: Hình ảnh mã QR động sắc nét, hỗ trợ máy quét mã vạch tại siêu thị/cửa hàng quét trực tiếp từ màn hình điện thoại.
+P[1713]: Hạn dùng: Mốc thời gian ngày, giờ hết hạn chính xác của voucher.
+P[1714]: Khối "HƯỚNG DẪN" (Cột phải):
+P[1715]: Điều kiện sử dụng: Quy định chi tiết về phạm vi áp dụng, danh sách chi nhánh cửa hàng chấp nhận voucher và chính sách không quy đổi thành tiền mặt.
+P[1716]: Nút "Sao chép mã": Sao chép chuỗi mã voucher vào bộ nhớ tạm (clipboard) để người dùng dán khi mua sắm trực tuyến.
+P[1717]: Nút "Đánh dấu đã dùng": Kích hoạt mở Màn 3 (Popup xác nhận đã dùng).
+P[1718]: Quy tắc hoạt động:
+ Đối với voucher đã sử dụng hoặc hết hạn: Mã QR bị làm mờ, nút "Đánh dấu đã dùng" bị vô hiệu hóa và hiển thị tem đóng dấu chìm "ĐÃ DÙNG" hoặc "HẾT HẠN".
+P[1719]: Mục đích:
+ Cung cấp phương thức xuất trình voucher tiện lợi, chuẩn hóa và bảo mật tại quầy thanh toán hoặc khi mua hàng online, tối ưu hóa trải nghiệm của người dân khi thụ hưởng thành quả sống xanh.
+P[1720]: Bảng hiển thị:
+P[1723]: Hình 4.31: Giao diện Phân cấp quản lý hành chính liên thông 3 cấp và chuyển tiếp hồ sơ thẩm quyền
+P[1724]: Mô tả:
+ Popup hiện ở chính giữa màn hình, đè lên Màn 2 khi người dùng bấm nút "Đánh dấu đã dùng". Phần nền phía sau được phủ lớp mờ và người dùng không thao tác được với phần nền.
+P[1725]: Popup gồm dòng nhỏ "POPUP", tiêu đề in đậm "ĐÁNH DẤU ĐÃ DÙNG?", dòng nội dung cảnh báo "Voucher sẽ không dùng lại được" (giải thích rõ ràng sau khi xác nhận, voucher sẽ chuyển trạng thái vĩnh viễn và không thể quét lại), cùng hai nút chức năng:
+P[1726]: Nút "Xác nhận": Chuyển trạng thái voucher sang "Đã dùng", đóng popup và quay về Màn 2 với giao diện voucher đã được đóng dấu khóa.
+P[1727]: Nút "Huỷ": Hủy thao tác, đóng popup và giữ nguyên trạng thái khả dụng của voucher.
+P[1728]: Quy tắc hoạt động:
+ Người dùng có thể bấm nút "Huỷ", bấm phím Esc hoặc nhấp chuột ra ngoài vùng nền mờ để đóng popup nhanh.
+P[1729]: Mục đích:
+ Ngăn chặn việc vô tình bấm nhầm làm mất trạng thái khả dụng của voucher, đồng thời giúp công dân tự quản lý ngăn nắp kho voucher cá nhân, tránh nhầm lẫn giữa các voucher đã sử dụng và chưa sử dụng.
+P[1734]: Bảng hiển thị:
+P[1737]: 32. Bảng xếp hạng vinh danh Top Công dân Xanh (cá nhân, nhóm, quận)
+P[1739]: Mô tả:
+ Giao diện đóng vai trò bảng vinh danh thành tích cá nhân (Individual Leaderboard), tôn vinh những công dân có đóng góp tích cực nhất trong phong trào giám sát môi trường, dọn sạch bãi rác và tham gia các chiến dịch cộng đồng. Màn hình dùng khung chung gồm Header (logo, menu, chuông, avatar) và Footer (bản quyền, liên hệ, chính sách). Phần giữa được chia thành 3 khối theo chiều ngang từ trái sang phải:
+P[1740]: Khối "TAB" (Cột trái):
+P[1741]: Hệ thống chuyển tab xếp hạng: Gồm 3 nút: "Cá nhân" (đang chọn), "Nhóm", "Quận". Nhấp chọn để chuyển sang Màn 2 hoặc Màn 3.
+P[1742]: Khối "TOP 10" (Cột giữa):
+P[1743]: Danh sách 10 cá nhân dẫn đầu: Mỗi dòng hiển thị: Vị trí thứ hạng (Hạng 1, 2, 3 được gắn biểu tượng huy hiệu Vàng, Bạc, Đồng nổi bật) | Ảnh đại diện và tên công dân | Tổng số Điểm Xanh tích lũy | Huy hiệu danh hiệu (Hạng Kim Cương / Vàng).
+P[1744]: Khối "HẠNG CỦA TÔI" (Cột phải):
+P[1745]: Vị trí của bản thân: Hiển thị thứ hạng hiện tại của chính người dùng trên bảng tổng sắp toàn thành phố (VD: "Hạng 142 / 15.000 công dân") | Số điểm hiện tại | Khoảng cách điểm để vươn lên Top 100.
+P[1746]: Khung thao tác & Quy tắc hoạt động:
+P[1747]: Bảng xếp hạng mở công khai cho mọi người dùng theo dõi.
+P[1748]: Người dùng chưa đăng nhập vẫn xem được danh sách Top 10 ở cột giữa, nhưng cột phải sẽ hiển thị nút "Đăng nhập để xem thứ hạng của bạn".
+P[1749]: Dữ liệu thứ hạng được hệ thống tính toán và tự động đồng bộ định kỳ hàng giờ.
+P[1750]: Mục đích:
+ Vinh danh các cá nhân tiêu biểu, kích thích tinh thần thi đua tích cực giữa các công dân thông qua cơ chế Gamification, từ đó nuôi dưỡng thói quen sống xanh và trách nhiệm với môi trường lâu dài.
+P[1751]: Bảng hiển thị:
+P[1754]: Mô tả:
+ Giao diện đóng vai trò bảng vinh danh các tổ chức, câu lạc bộ và đội đồng hành tình nguyện xanh (Community Group Leaderboard), ghi nhận sức mạnh tập thể trong việc ra quân làm sạch điểm nóng ô nhiễm. Màn hình dùng khung chung gồm Header và Footer. Phần giữa chia làm 3 khối:
+P[1755]: Khối "TAB" (Cột trái):
+P[1756]: Trạng thái tab: Hiển thị rõ ràng "Tab đang chọn: Nhóm" cùng các nút chuyển đổi qua lại giữa Cá nhân và Quận.
+P[1757]: Khối "TOP NHÓM" (Cột giữa):
+P[1758]: Danh sách xếp hạng nhóm: Mỗi dòng hiển thị: Thứ hạng (Hạng 1, 2, 3...) | Ảnh đại diện và tên nhóm | Số lượng thành viên | Tổng điểm xanh tích lũy của toàn nhóm. Người dùng có thể nhấp vào tên nhóm để xem trang cộng đồng của nhóm đó.
+P[1759]: Khối "LỌC" (Cột phải):
+P[1760]: Bộ lọc thời gian: Cho phép lọc phong trào thi đua theo 3 chu kỳ:
+P[1761]: Tuần: Bảng xếp hạng theo điểm nhóm tích lũy trong tuần (làm mới vào 00:00 thứ Hai).
+P[1762]: Tháng: Bảng xếp hạng thi đua trong tháng hiện tại.
+P[1763]: Tất cả: Bảng tổng sắp điểm trọn đời của các nhóm từ khi thành lập.
+P[1764]: Quy tắc hoạt động:
+ Tổng điểm của nhóm bằng tổng điểm đóng góp của tất cả thành viên trong nhóm tích lũy qua các chiến dịch "Chủ Nhật Xanh" và báo cáo rác thải được nghiệm thu.
+P[1765]: Mục đích:
+ Thúc đẩy phong trào hoạt động đội nhóm, tạo động lực cạnh tranh lành mạnh giữa các câu lạc bộ thanh niên, hội phụ nữ và nhóm tình nguyện viên trên địa bàn đô thị.
+P[1766]: Bảng hiển thị:
+P[1769]: Hình 4.32: Giao diện Giám sát hạn mức thời gian xử lý SLA theo thời gian thực và tự động kích hoạt cảnh báo trễ hạn
+P[1770]: Mô tả:
+ Giao diện đóng vai trò bảng xếp hạng chỉ số môi trường và mức độ tích cực tham gia của 22 quận/huyện và TP. Thủ Đức (District Environmental Index Ranking), cung cấp góc nhìn vĩ mô về kết quả bảo vệ môi trường trên toàn thành phố. Màn hình dùng khung chung gồm Header và Footer. Phần giữa chia làm 3 khối:
+P[1771]: Khối "TAB" (Cột trái):
+P[1772]: Trạng thái tab: Hiển thị rõ ràng "Tab đang chọn: Quận" cùng hệ thống điều hướng tab.
+P[1773]: Khối "TOP QUẬN" (Cột giữa):
+P[1774]: Danh sách xếp hạng địa bàn hành chính: Mỗi dòng hiển thị: Thứ hạng | Tên Quận/Huyện | Chỉ số xanh tổng hợp (tính theo: Tỷ lệ nghiệm thu dọn sạch bãi rác thành công, Tổng số báo cáo sự cố được xử lý dứt điểm đúng hạn và Tỷ lệ công dân tham gia hành động xanh).
+P[1775]: Khối "LỌC" (Cột phải):
+P[1776]: Bộ lọc chu kỳ: Cho phép tra cứu số liệu theo "Tuần", "Tháng" hoặc "Tất cả".
+P[1777]: Quy tắc hoạt động:
+ Chỉ số xanh của quận được thuật toán máy chủ tính toán tự động dựa trên mức độ hài lòng của công dân và tốc độ giải tỏa các bãi rác tự phát trên địa bàn.
+P[1778]: Mục đích:
+ Tạo cơ chế giám sát xã hội và động lực thi đua giữa chính quyền và người dân các quận/huyện, giúp các cơ quan quản lý đô thị nhận diện các địa bàn tiêu biểu cũng như khu vực cần tăng cường nguồn lực xử lý rác thải.
+P[1779]: Bảng hiển thị:
+P[1782]: 33. Bản đồ nhiệt môi trường và khí hậu đa chế độ: AQI, nhiệt độ, điểm số rủi ro
+P[1784]: Mô tả:
+ Giao diện đóng vai trò bản đồ nhiệt chuyên đề quan trắc chất lượng không khí (Air Quality Index Heatmap), mô phỏng mức độ ô nhiễm bụi mịn PM2.5 và khí thải đô thị theo thời gian thực trên nền bản đồ GIS không gian. Màn hình dùng khung chung gồm Header (logo, menu, chuông, avatar) và Footer (bản quyền, liên hệ, chính sách). Phần giữa được chia thành 3 khối theo chiều ngang từ trái sang phải:
+P[1785]: Khối "CHẾ ĐỘ" (Cột trái):
+P[1786]: Hệ thống chuyển đổi chế độ bản đồ: Gồm 3 nút chức năng: "AQI" (đang kích hoạt), "Nhiệt độ", "Điểm rủi ro". Nhấp chọn để chuyển sang Màn 2 hoặc Màn 3.
+P[1787]: Khối "BẢN ĐỒ" (Cột giữa):
+P[1788]: Lớp nhiệt AQI theo màu: Bản đồ GIS tương tác phủ lớp dải màu nhiệt (Heatmap overlay) thể hiện chất lượng không khí trên 22 quận/huyện. Cho phép người dùng thu phóng, kéo di chuyển bản đồ và nhấp vào từng khu vực để mở Màn 4 (Popup chi tiết khu vực).
+P[1789]: Khối "CHÚ GIẢI" (Cột phải):
+P[1790]: Thang AQI từ tốt đến nguy hại: Bảng phân cấp chất lượng không khí theo tiêu chuẩn quốc gia:
+P[1791]: 0 – 50 (Xanh lá): Tốt, không ảnh hưởng sức khỏe.
+P[1792]: 51 – 100 (Vàng): Trung bình.
+P[1793]: 101 – 150 (Cam): Kém, nhóm người nhạy cảm nên hạn chế ra ngoài.
+P[1794]: 151 – 200 (Đỏ): Xấu, có hại cho sức khỏe mọi người.
+P[1795]: 201 – 300 (Tím): Rất xấu, cảnh báo khẩn cấp.
+P[1796]: > 300 (Nâu): Nguy hại, nguy hiểm sức khỏe nghiêm trọng.
+P[1797]: Quy tắc hoạt động:
+ Dữ liệu AQI được tổng hợp từ hệ thống trạm quan trắc tự động và cảm biến IoT môi trường, tự động đồng bộ làm mới mỗi 30 phút.
+P[1798]: Mục đích:
+ Cung cấp bức tranh trực quan về chất lượng không khí trên toàn đô thị, giúp người dân chủ động bảo vệ sức khỏe đường hô hấp và hỗ trợ chính quyền cảnh báo kịp thời các điểm nóng ô nhiễm khói bụi.
+P[1799]: Bảng hiển thị:
+P[1802]: Mô tả:
+ Giao diện đóng vai trò bản đồ nhiệt độ bề mặt đô thị và hiệu ứng đảo nhiệt (Urban Heat Island Map), hiển thị mức độ nóng bức và bức xạ nhiệt vi khí hậu trên từng địa bàn. Màn hình dùng khung chung gồm Header và Footer. Phần giữa chia làm 3 khối:
+P[1803]: Khối "CHẾ ĐỘ" (Cột trái):
+P[1804]: Trạng thái chế độ: Hiển thị rõ ràng "Đang chọn: Nhiệt độ" cùng các nút chuyển đổi chế độ AQI và Điểm rủi ro.
+P[1805]: Khối "BẢN ĐỒ" (Cột giữa):
+P[1806]: Lớp nhiệt theo nhiệt độ: Bản đồ phủ dải màu nhiệt biểu thị nhiệt độ môi trường đo bằng độ C (°C). Các khu vực mật độ xây dựng cao, ít cây xanh thể hiện quầng nhiệt màu đỏ cam; các khu vực gần sông rạch, công viên cây xanh thể hiện màu xanh dịu mát.
+P[1807]: Khối "CHÚ GIẢI" (Cột phải):
+P[1808]: Thang nhiệt độ (°C): Thang phân cấp nhiệt độ môi trường:
+P[1809]: Dưới 26°C (Xanh dương): Mát mẻ.
+P[1810]: 26°C – 32°C (Xanh lá - Vàng): Dễ chịu.
+P[1811]: 33°C – 37°C (Cam): Nắng nóng.
+P[1812]: Trên 38°C (Đỏ thẫm): Nắng nóng gay gắt / Hiện tượng đảo nhiệt đô thị.
+P[1813]: Quy tắc hoạt động:
+ Người dùng có thể nhấp chuột vào bất kỳ vùng nhiệt nào trên bản đồ để mở Màn 4 xem thông số chi tiết.
+P[1814]: Mục đích:
+ Hỗ trợ công tác giám sát biến đổi khí hậu và hiện tượng đảo nhiệt đô thị, giúp các nhà quản lý môi trường nhận diện những khu vực thiếu bóng mát để ưu tiên phát động các chiến dịch trồng cây xanh.
+P[1815]: Bảng hiển thị:
+P[1818]: Mô tả:
+ Giao diện đóng vai trò bản đồ phân tích nguy cơ ô nhiễm tổng hợp (Environmental Risk Score Heatmap), tích hợp dữ liệu mật độ bãi rác tự phát, tần suất xả trộm, chất lượng nguồn nước và mật độ dân cư để tính toán điểm rủi ro từ 0 đến 100. Màn hình dùng khung chung gồm Header và Footer. Phần giữa chia làm 3 khối:
+P[1819]: Khối "CHẾ ĐỘ" (Cột trái):
+P[1820]: Trạng thái chế độ: Hiển thị rõ ràng "Đang chọn: Điểm rủi ro" cùng các nút chuyển đổi chế độ khác.
+P[1821]: Khối "BẢN ĐỒ" (Cột giữa):
+P[1822]: Lớp nhiệt điểm rủi ro 0 – 100: Bản đồ hiển thị các quầng nhiệt nguy cơ. Khu vực có nhiều bãi rác tự phát chưa được thu gom hoặc có nhiều phản ánh xả thải độc hại sẽ hiện các đốm nhiệt màu đỏ lan tỏa.
+P[1823]: Khối "CHÚ GIẢI" (Cột phải):
+P[1824]: Mức rủi ro thấp – cao: Thang đo phân cấp nguy cơ ô nhiễm:
+P[1825]: 0 – 25 (Xanh lá): Rủi ro thấp (Khu vực xanh, vệ sinh đảm bảo).
+P[1826]: 26 – 50 (Vàng): Rủi ro trung bình.
+P[1827]: 51 – 75 (Cam): Rủi ro cao (Nhiều bãi rác tự phát, ùn ứ rác sinh hoạt).
+P[1828]: 76 – 100 (Đỏ đậm): Rủi ro cực độ (Điểm nóng ô nhiễm nghiêm trọng, cần giải tỏa ngay).
+P[1829]: Quy tắc hoạt động:
+ Điểm số rủi ro của từng khu vực được máy chủ tự động tính toán dựa trên số lượng báo cáo ô nhiễm chưa giải quyết và thời gian tồn lưu của các bãi rác ngoài thực địa.
+P[1830]: Mục đích:
+ Cung cấp công cụ dự báo và điều phối nguồn lực môi trường thông minh, giúp lực lượng thu gom và chính quyền ưu tiên xử lý dứt điểm các điểm nóng có nguy cơ bùng phát dịch bệnh hoặc ô nhiễm nguồn nước.
+P[1831]: Bảng hiển thị:
+P[1834]: Hình 4.33: Giao diện Trung tâm điều phối thông báo đẩy thời gian thực qua WebSocket và Push Service
+P[1835]: Mô tả:
+ Popup hiện ở chính giữa màn hình, đè lên bản đồ (Màn 1, 2 hoặc 3) khi người dùng nhấp chọn một quận/huyện cụ thể. Phần nền phía sau được phủ lớp mờ và người dùng không thao tác được với phần nền.
+P[1836]: Popup gồm dòng nhỏ "POPUP", tiêu đề in đậm "CHI TIẾT KHU VỰC", hiển thị tổng hợp đa chiều các chỉ số môi trường của địa bàn được chọn:
+P[1837]: Tên Quận: Tên đơn vị hành chính (VD: "Quận Bình Thạnh").
+P[1838]: Chỉ số AQI: Giá trị số thực tế kèm phân cấp (VD: "AQI: 125 - Kém").
+P[1839]: Nhiệt độ: Giá trị nhiệt độ đo được (VD: "Nhiệt độ: 34.5°C").
+P[1840]: Điểm rủi ro: Điểm số nguy cơ tổng hợp (VD: "Điểm rủi ro: 68/100 - Mức cao").
+P[1841]: Khung nút chức năng:
+P[1842]: Nút "Xem chi tiết quận": Điều hướng người dùng tới trang Báo cáo giám sát môi trường toàn diện của quận đó để xem danh sách các bãi rác và sự kiện dọn dẹp đang diễn ra.
+P[1843]: Nút "Đóng": Đóng popup và quay lại bản đồ nhiệt đang xem.
+P[1844]: Mục đích:
+ Cung cấp bảng tóm tắt chỉ số sinh thái toàn diện và đa chiều cho từng địa phương, giúp người dân và nhà quản lý nắm bắt nhanh hiện trạng môi trường trong một cửa sổ duy nhất.
+P[1845]: Bảng hiển thị:
+P[1848]: 34. Quét mã QR nhận điểm: quét mã dán tại điểm thu gom, sự kiện hoặc trạm tái chế để cộng điểm
+
+=== TABLES ===
+T[2][3]: 3 | AQI | Chỉ số chất lượng không khí | Air Quality Index
+T[3][5]:  | 5 | Trang cá nhân (Timeline): ảnh bìa, avatar, bài đăng, Green Passport, huy hiệu, lịch sử đóng góp | 13/10/2026 |  | 
+T[3][32]:  | 32 | Bảng xếp hạng vinh danh Top Công dân Xanh (cá nhân, nhóm, quận) | 03/11/2026 |  | 
+T[3][33]:  | 33 | Bản đồ nhiệt môi trường và khí hậu đa chế độ: AQI, nhiệt độ, điểm số rủi ro | 10/11/2026 |  | 
+T[3][35]:  | 35 | Vòng quay may mắn hằng ngày: mỗi ngày một lượt quay, trúng điểm xanh hoặc huy hiệu, hiển thị lịch sử lượt quay | 24/11/2026 |  | 
+T[4][4]: 4 | 07/11/2026 | 14:00 | Phòng máy B2.04 | Cả nhóm (4 thành viên) | Kiểm thử tích hợp giao diện (Front-end) và xử lý API (Back-end) cho các phân hệ bản đồ nhiệt (Heatmap), báo cáo GPS ngoại tuyến, quy trình điều phối hiện trường và thẩm định ảnh trước-sau. | Các thành viên khớp API đúng tiến độ.
+T[5][8]: Xác thực | Lấy thông tin cá nhân (Profile) | GET | /api/v1/auth/me | Lấy toàn bộ thông tin hồ sơ, huy hiệu, điểm Công dân Xanh của tài khoản đang đăng nhập.
+T[5][25]: Bản đồ GIS | Dữ liệu bản đồ nhiệt (Heatmap) | GET | /api/v1/map/heatmap-data | Truy vấn tọa độ và trọng số mức độ nghiêm trọng phục vụ hiển thị lớp bản đồ nhiệt điểm nóng.
+T[5][54]: Tích hợp | Đồng bộ chỉ số chất lượng không khí (AQI) thời gian thực | GET | /api/v1/integrations/air-quality | Lấy dữ liệu trạm quan trắc không khí để phân tích tương quan với điểm nóng đốt rác trộm.
+T[5][55]: Tích hợp | Đồng bộ dữ liệu thời tiết (Mưa, gió, nhiệt độ) | GET | /api/v1/integrations/weather | Dự báo nguy cơ bãi rác bị nước mưa rửa trôi làm ô nhiễm nguồn nước ngầm.
+T[7][9]: 9 | location | GEOMETRY(Point,4326) | NOT NULL | Tọa độ không gian WGS84 chính xác của điểm sự cố phục vụ tính toán không gian PostGIS.
+T[7][10]: 10 | masked_location | GEOMETRY(Point,4326) | NULL | Tọa độ đã làm mờ ngẫu nhiên (bán kính 100-300m) hiển thị bản đồ cộng đồng để bảo vệ công dân.
+T[11][3]: Mật khẩu | Bắt buộc. Từ 8 đến 32 ký tự, không chứa khoảng trắng, có ít nhất 1 chữ hoa, 1 chữ thường, 1 chữ số và 1 ký tự đặc biệt thuộc tập `!@#$%^&*()_+-=[]{}
+T[12][7]: Mật khẩu không đạt quy tắc | Mật khẩu phải từ 8 đến 32 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt | Giống dòng trên, hiển thị ở ô Mật khẩu.
+T[12][11]: Bấm "Đăng ký" khi mọi ô hợp lệ | Không có message | Nút "Đăng ký" chuyển sang trạng thái đang xử lý (vòng quay, vô hiệu hóa), 4 ô nhập và nút "Đã có tài khoản? Đăng nhập" cũng bị vô hiệu hóa cho đến khi có kết quả.
+T[16][2]: Mật khẩu | Bắt buộc. Tối đa 32 ký tự. Không kiểm tra độ mạnh ở màn đăng nhập, để không lộ quy tắc đặt mật khẩu.
+T[17][7]: Bấm "Đăng nhập" khi mọi ô hợp lệ | Không có message | Nút "Đăng nhập" chuyển sang trạng thái đang xử lý (vòng quay, vô hiệu hóa). 2 ô nhập và nút "Quên mật khẩu?" cũng bị vô hiệu hóa cho đến khi có kết quả.
+T[19][5]: Bấm "Đăng xuất" (đang chờ máy chủ) | Không có message | Nút "Đăng xuất" hiện vòng quay, hai nút bị vô hiệu hóa, không đóng được Popup.
+T[23][9]: Bấm "Lưu" khi mọi trường hợp lệ | Không có message | Nút "Lưu" chuyển sang trạng thái đang xử lý (vòng quay, vô hiệu hóa). Các ô nhập, nút chọn Phạm vi và nút "Huỷ" cũng bị vô hiệu hóa cho đến khi có kết quả.
+T[24][14]: Bấm "Lưu thay đổi" | Không có message | Nút "Lưu thay đổi" chuyển sang trạng thái đang xử lý (vòng quay, vô hiệu hóa). Mọi ô tích và nút "Huỷ" cũng bị vô hiệu hóa cho đến khi có kết quả.
+T[25][4]: Bấm "Xoá" (đang chờ máy chủ) | Không có message | Nút "Xoá" hiện vòng quay, hai nút bị vô hiệu hóa, không đóng được Popup.
+T[27][8]: Bấm "Xem thêm" | Không có message | Nút "Xem thêm" hiện vòng quay và bị vô hiệu hóa, sau đó 20 dòng kế tiếp được nối vào cuối danh sách. Đã tải hết thì nút biến mất.
+T[28][5]: Bấm "Lưu" (đang chờ máy chủ) | Không có message | Nút "Lưu" hiện vòng quay, các lựa chọn và hai nút bị vô hiệu hóa, không đóng được Popup.
+T[29][3]: Bấm "Xoá" (đang chờ máy chủ) | Không có message | Nút "Xoá" hiện vòng quay, hai nút bị vô hiệu hóa, không đóng được Popup.
+T[31][5]: Tải thông tin hồ sơ thành công (trang của mình) | Không có message | Cột trái hiển thị ảnh bìa, avatar, họ tên, "{N} bạn bè" và nút "Chỉnh sửa hồ sơ". Cột phải hiển thị giới thiệu, ngày tham gia, nhãn cấp, huy hiệu nổi bật và 2 liên kết.
+T[31][10]: Người dùng chưa có huy hiệu nào | Chưa có huy hiệu nào | Dòng chữ xám ở vị trí "Huy hiệu nổi bật".
+T[31][18]: Bấm "Xem thêm" | Không có message | Nút hiện vòng quay và bị vô hiệu hóa, sau đó 10 bài kế tiếp được nối vào cuối danh sách. Đã tải hết thì nút biến mất.
+T[31][22]: Bấm liên kết "Green Passport & huy hiệu", nhãn cấp hoặc một biểu tượng huy hiệu | Không có message | Chuyển sang Màn 2 của cùng người dùng.
+T[32][3]: Mở màn hình, đang tải | Không có message | Hiển thị Header, liên kết quay lại, 2 cột. Cột trái có thẻ hộ chiếu giả (skeleton), cột phải có 6 ô huy hiệu giả.
+T[32][8]: Tải huy hiệu thành công (trang của mình) | Không có message | Phần "Đã nhận ({X})" và phần "Chưa mở khoá ({Y})" hiển thị theo thứ tự quy định.
+T[32][9]: Tải huy hiệu thành công (trang của người khác) | Không có message | Chỉ hiển thị phần "Đã nhận ({X})". Không có phần "Chưa mở khoá".
+T[32][10]: Chưa nhận huy hiệu nào (trang của mình) | Bạn chưa có huy hiệu nào. Hãy tham gia thử thách xanh để nhận huy hiệu đầu tiên | Dòng chữ xám ở phần "Đã nhận (0)". Phần "Chưa mở khoá" vẫn hiển thị.
+T[32][11]: Chưa nhận huy hiệu nào (trang của người khác) | Chưa có huy hiệu nào | Dòng chữ xám ở phần "Đã nhận (0)".
+T[32][12]: Đã mở khoá tất cả huy hiệu đang hoạt động (trang của mình) | Bạn đã mở khoá tất cả huy hiệu | Phần "Chưa mở khoá (0)" hiển thị dòng chữ xám này.
+T[32][13]: Rê chuột hoặc chạm giữ vào một huy hiệu | Không có message | Hiện chú thích gồm tên và mô tả huy hiệu. Ở huy hiệu chưa mở khoá, chú thích có thêm dòng "Điều kiện: {điều kiện}".
+T[32][14]: Tải huy hiệu thất bại do lỗi máy chủ hoặc mất kết nối | Không thể tải huy hiệu. Vui lòng thử lại | Toast đỏ hiện 3 giây. Cột phải hiển thị dòng chữ đỏ cùng nội dung kèm liên kết "Tải lại". Cột trái không bị ảnh hưởng.
+T[33][16]: Bấm "Xem thêm" | Không có message | Nút hiện vòng quay và bị vô hiệu hóa, sau đó 20 dòng kế tiếp được nối vào cuối danh sách (cùng bộ lọc đang áp dụng). Đã tải hết thì nút biến mất.
+T[34][18]: Bấm "Lưu" khi mọi trường hợp lệ | Không có message | Nút "Lưu" chuyển sang trạng thái đang xử lý (vòng quay, vô hiệu hóa). Các ô nhập, 2 nút đổi ảnh và nút "Huỷ" cũng bị vô hiệu hóa cho đến khi có kết quả.
+T[65][5]: Có tin nhắn mới đến | Không có message | Hội thoại nhảy lên đầu danh sách, tin cuối và huy hiệu số tin chưa đọc được cập nhật
+T[77][5]: Đang tải tệp lên và đóng watermark | "Đang xử lý ảnh…" | Ảnh nhỏ hiện vòng quay loading, nút "Tiếp tục" bị làm mờ
+T[78][5]: Đang chờ nhận dạng sau khi dừng ghi | "Đang nhận dạng giọng nói…" | Khung văn bản hiện vòng quay loading, nút "Dùng văn bản này" bị làm mờ
+T[79][3]: Đang bắt tín hiệu GPS | "Đang xác định vị trí…" | Bản đồ có vòng quay loading, nút "Xác nhận vị trí" bị làm mờ
+T[94][2]: Đang bắt tín hiệu GPS | "Đang xác định vị trí…" | Bản đồ có vòng quay loading, nút "Check-in" bị làm mờ
+T[96][5]: Đang tải danh sách | "Đang tải dữ liệu…" | Vòng quay loading thay cho danh sách
+T[101][5]: Đang tải danh sách | "Đang tải dữ liệu…" | Vòng quay loading thay cho danh sách
+T[108][3]: Đang tải danh sách | "Đang tải dữ liệu…" | Vòng quay loading thay cho danh sách
+T[113][2]: Đang tải danh sách | "Đang tải dữ liệu…" | Vòng quay loading thay cho danh sách
+T[113][3]: Cuộn xuống cuối danh sách | "Đang tải thêm…" | Vòng quay nhỏ dưới dòng cuối, tải thêm 20 dòng
+T[114][2]: Đang tải chi tiết | "Đang tải dữ liệu…" | Vòng quay loading trong từng khối
+T[120][3]: Tích lũy đủ điểm để thăng cấp danh hiệu mới | "Chúc mừng bạn đã thăng lên Hạng Vàng!" | Hiển thị huy hiệu cấp bậc mới kèm hiệu ứng chúc mừng
+T[122][2]: Điểm cộng giúp công dân thăng hạng mới | "+{n} điểm xanh! Chúc mừng bạn đã thăng lên Hạng Vàng" | Popup hiển thị dòng điểm kèm biểu tượng huy hiệu thăng hạng mới
+T[123][5]: Điểm tích lũy giúp thăng hạng danh hiệu | "Chúc mừng bạn đã đạt danh hiệu Công dân Xanh Hạng Vàng!" | Hiển thị huy hiệu cấp bậc mới kèm hiệu ứng vinh danh
+T[131][4]: Đang tổng hợp số liệu thống kê | Không có message | Khối biểu đồ hiển thị vòng quay loading
+T[137][4]: Đang tổng hợp số liệu xếp hạng quận | Không có message | Cột Top Quận hiển thị vòng quay loading
+T[138][1]: Tải lớp bản đồ nhiệt AQI thành công | Không có message | Bản đồ hiển thị lớp màu phủ tương ứng với số liệu AQI của từng khu vực
+T[138][3]: Khu vực có chỉ số AQI vượt mức rất xấu (> 200) | "Cảnh báo: Không khí ở mức rất xấu tại {tên quận}" | Vùng ô nhiễm nhấp nháy viền màu tím/nâu trên bản đồ
+T[138][4]: Bấm chuyển sang chế độ Nhiệt độ hoặc Điểm rủi ro | Không có message | Chuyển sang Màn 2 hoặc Màn 3 tương ứng
+T[139][1]: Tải lớp bản đồ nhiệt độ thành công | Không có message | Bản đồ hiển thị lớp màu nhiệt độ bề mặt chính xác
+T[139][3]: Nhiệt độ đo được vượt quá 39°C | "Cảnh báo nắng nóng gay gắt tại {tên quận}" | Khu vực hiển thị màu đỏ đậm kèm biểu tượng cảnh báo nhiệt
+T[139][4]: Đang nạp dữ liệu nhiệt độ vệ tinh | Không có message | Bản đồ hiển thị vòng quay loading mờ
+T[139][5]: Lỗi mạng khi tải lớp nhiệt độ | "Không thể tải dữ liệu nhiệt độ. Vui lòng thử lại" | Hiện dòng thông báo lỗi kèm nút "Thử lại"
+T[141][1]: Nhấp chọn vùng trên bản đồ | Không có message | Hiện popup chi tiết với đầy đủ 4 thông số: Quận, AQI, Nhiệt độ, Điểm rủi ro
+T[141][3]: Bấm nút "Đóng", bấm Esc hoặc nhấp ngoài popup | Không có message | Đóng popup ngay lập tức, giữ nguyên giao diện bản đồ nhiệt đang thao tác
+T[145][1]: Chưa đăng nhập mà bấm "Quay ngay" | "Vui lòng đăng nhập để tham gia vòng quay may mắn" | Popup nhắc đăng nhập kèm nút chuyển về STT 02
+T[145][2]: Bấm "Quay ngay" khi còn 1 lượt | Không có message | Vòng quay bắt đầu chuyển động xoay tròn, nút "Quay ngay" tạm khóa
+T[145][4]: Vòng quay dừng lại tại ô phần thưởng | Không có message | Kích hoạt mở Màn 2 (Popup Kết quả trúng thưởng)
+T[146][2]: Quay trúng huy hiệu danh dự | "Chúc mừng bạn nhận được huy hiệu '{tên huy hiệu}'!" | Hiện popup hiển thị hình ảnh huy hiệu độc quyền
+T[150][1]: Mở giao diện bài chúc mừng | Không có message | Tự động nạp sẵn hình ảnh huy hiệu và văn bản mẫu
+T[156][4]: AI đang phân tích dữ liệu ngầm | "AI đang phân tích dữ liệu hình ảnh và toạ độ…" | Cột nhóm trùng hiển thị vòng quay loading
+T[160][2]: Bấm nút "Tạo lại tóm tắt" | "Đang tạo lại bản tóm tắt AI…" | Khối giữa hiển thị vòng quay loading, sau 2 giây cập nhật nội dung mới
+T[167][5]: Đang nạp dữ liệu triều cường thời gian thực | Không có message | Các khối hiển thị vòng quay loading phân tích
+T[170][4]: Đang nạp và tổng hợp dữ liệu toàn thành phố | Không có message | Các khối hiển thị vòng quay loading mờ
+T[172][2]: Bấm nút "Xem bản đồ" | Không có message | Đóng popup, chuyển sang Bản đồ nhiệt GIS (STT 33)
+T[179][1]: Tải bản đồ phân tích điểm nóng thành công | "Đã tải xong dữ liệu phân tích cụm điểm nóng ([Số_Cụm] điểm nóng phát hiện)." | Bản đồ hiển thị các quầng nhiệt độ màu gradient rõ ràng, cột phải hiển thị Top 5 điểm nóng kèm chỉ số sự cố.

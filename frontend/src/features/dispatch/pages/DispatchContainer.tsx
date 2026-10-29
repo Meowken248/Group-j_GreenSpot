@@ -20,6 +20,7 @@ import { Screen4CancelModal } from "../components/Screen4CancelModal";
 import { Screen5CancelSuccessModal } from "../components/Screen5CancelSuccessModal";
 import { Screen6FieldTracking } from "../components/Screen6FieldTracking";
 import { ScreenAcceptOrderModal } from "../components/ScreenAcceptOrderModal";
+import { navigateToRoute } from "../../../routes/appRoutes";
 import "../styles/dispatch.scss";
 
 type ScreenMode = "LIST" | "CREATE" | "EDIT" | "TRACKING";
@@ -427,21 +428,20 @@ export const DispatchContainer: React.FC = () => {
       }
     } catch {}
 
-    // 2. Kiểm tra Hash params (?order_id=... hoặc ?district=...)
-    const hash = window.location.hash;
-    if (hash.includes("order_id=")) {
-      const urlParams = new URLSearchParams(hash.split("?")[1] || "");
+    // 2. Kiểm tra params (?order_id=... hoặc ?district=...) từ search hoặc hash
+    const searchString = window.location.search
+      ? window.location.search.slice(1)
+      : (window.location.hash.split("?")[1] || "");
+    if (searchString) {
+      const urlParams = new URLSearchParams(searchString);
       const orderId = urlParams.get("order_id");
+      const dist = urlParams.get("district");
       if (orderId) {
         const matchedOrder = orders.find((o) => o.order_id === orderId || o.order_code === orderId);
         if (matchedOrder) {
           loadTrackingData(matchedOrder);
         }
-      }
-    } else if (hash.includes("district=")) {
-      const urlParams = new URLSearchParams(hash.split("?")[1] || "");
-      const dist = urlParams.get("district");
-      if (dist) {
+      } else if (dist) {
         setFilters((prev) => ({ ...prev, search: dist }));
       }
     }
@@ -864,6 +864,9 @@ export const DispatchContainer: React.FC = () => {
 
       {/* Header Chuẩn với Chuyển vai trò & Thông báo */}
       <DispatchHeader
+        onBackToHome={() => {
+          navigateToRoute("map");
+        }}
         activeTab={
           currentScreen === "LIST"
             ? "Lệnh điều phối"

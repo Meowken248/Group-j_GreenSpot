@@ -1,4 +1,5 @@
 import React from 'react';
+import { navigateToRoute } from '../../../../routes/appRoutes';
 
 interface MergeSuccessModalProps {
   isOpen: boolean;
@@ -22,7 +23,7 @@ export const MergeSuccessModal: React.FC<MergeSuccessModalProps> = ({
     if (onNavigateToTriage) {
       onNavigateToTriage();
     } else {
-      window.location.hash = "#triage";
+      navigateToRoute("triage");
     }
   };
 
@@ -31,7 +32,7 @@ export const MergeSuccessModal: React.FC<MergeSuccessModalProps> = ({
     if (onNavigateToDispatch) {
       onNavigateToDispatch();
     } else {
-      window.location.hash = "#dispatch";
+      navigateToRoute("dispatch");
     }
   };
 

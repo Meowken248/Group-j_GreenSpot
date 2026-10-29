@@ -43,39 +43,27 @@ import type { ThemeMode } from "./features/settings";
 import { AiAssistantWidget, AiAssistantPage } from "./features/ai_assistant";
 import { EventsPage } from "./features/events";
 import { FundraiserContainer } from "./features/fundraiser";
+import { EmergencyAlertContainer } from "./features/emergency_alert";
+import { FloodSosContainer } from "./features/flood_sos";
+import { IncidentExportContainer } from "./features/incident_export";
+import { AdminDashboardContainer } from "./features/admin_dashboard";
+import { RewardsContainer } from "./features/rewards";
+import { WeeklyChallengesContainer } from "./features/challenges/WeeklyChallengesContainer";
+import { AuditLogContainer } from "./features/audit_logs/AuditLogContainer";
+import { WasteHandbookContainer } from "./features/waste_handbook/WasteHandbookContainer";
+import { LeaderboardContainer } from "./features/leaderboard/LeaderboardContainer";
+import { MultiModeHeatmapContainer } from "./features/heatmap/MultiModeHeatmapContainer";
+import { QRScanContainer } from "./features/qr_scan/QRScanContainer";
+import { LuckyWheelContainer } from "./features/lucky_wheel/LuckyWheelContainer";
+import { MilestoneContainer } from "./features/milestone/MilestoneContainer";
+import { navigateToRoute } from "./routes/appRoutes";
+import type { ActiveTab } from "./routes/appRoutes";
+
 import api from "./api/client";
 import "./App.css";
 
-export type TabType =
-  | "map"
-  | "dashboard"
-  | "auth"
-  | "rbac"
-  | "users"
-  | "profile"
-  | "friends"
-  | "voice"
-  | "report"
-  | "incidents"
-  | "waste_categories"
-  | "recycling_facilities"
-  | "dedup"
-  | "settings"
-  | "penalties"
-  | "penalty-reports"
-  | "posts"
-  | "messages"
-  | "groups"
-  | "triage"
-  | "navigation"
-  | "risk-dashboard"
-  | "dispatch"
-  | "hotspots"
-  | "ai-assistant"
-  | "events"
-  | "fundraiser";
-
-export type ActiveTab = TabType;
+export type { ActiveTab };
+export type TabType = ActiveTab;
 
 // Hàm kiểm tra trạng thái đăng nhập thực tế của phiên hiện tại
 const checkIsLoggedIn = (): boolean => {
@@ -384,6 +372,11 @@ function App() {
 
   const navigateTo = (tab: ActiveTab, hash?: string) => {
     setActiveTab(tab);
+    try {
+      navigateToRoute(tab);
+    } catch {
+      // ignore
+    }
     if (hash) window.location.hash = hash;
     setOpenDropdown(null);
     setShowDrawer(false);
@@ -1254,6 +1247,17 @@ function App() {
 
         {/* KHỐI PHẢI: TIỆN ÍCH & TÀI KHOẢN */}
         <div className="header-right-actions">
+          {/* Nút SOS Cứu hộ khẩn cấp */}
+          <button
+            type="button"
+            className={`quick-sos-btn ${activeTab === "flood-sos" ? "active" : ""}`}
+            onClick={() => navigateTo("flood-sos", "#flood-sos")}
+            title="Cứu nạn ngập lụt khẩn cấp (Flood SOS - STT 46)"
+            data-testid="quick-sos-btn"
+          >
+            <span className="sos-pulse-icon">🚨</span>
+            <span>SOS NGẬP LỤT</span>
+          </button>
           {/* Nút đổi Theme Sáng / Tối */}
           <button
             type="button"
@@ -1970,7 +1974,163 @@ function App() {
             }}
           />
         </div>
-      ) : (
+              ) : activeTab === "rewards" ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <RewardsContainer
+              onBackToHome={() => {
+                navigateTo("map", "#map");
+              }}
+              onNavigateToAuth={() => {
+                const currentH = window.location.hash || "#wallet";
+                sessionStorage.setItem("greenspot_target_hash", currentH);
+                setAuthRedirectUrl(currentH);
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+            />
+          </div>
+        ) : activeTab === "challenges" ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <WeeklyChallengesContainer
+              onBackToHome={() => {
+                navigateTo("map", "#map");
+              }}
+              onNavigateToAuth={() => {
+                sessionStorage.setItem("greenspot_target_hash", "#challenges");
+                setAuthRedirectUrl("/challenges");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+              onNavigateToWallet={() => {
+                navigateTo("rewards", "#wallet");
+              }}
+            />
+          </div>
+        ) : activeTab === "audit-logs" ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <AuditLogContainer
+              onBackToHome={() => {
+                navigateTo("map", "#map");
+              }}
+              onNavigateToAuth={() => {
+                sessionStorage.setItem("greenspot_target_hash", "#audit-logs");
+                setAuthRedirectUrl("/audit-logs");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+            />
+          </div>
+        ) : activeTab === "handbook" ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <WasteHandbookContainer
+              onBackToHome={() => {
+                navigateTo("map", "#map");
+              }}
+              onNavigateToMap={(_facilityType) => {
+                navigateTo("map", "#map");
+              }}
+            />
+          </div>
+        ) : activeTab === "leaderboard" ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <LeaderboardContainer
+              onNavigateLogin={() => {
+                sessionStorage.setItem("greenspot_target_hash", "#leaderboard");
+                setAuthRedirectUrl("/leaderboard");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+              onNavigateHeatmap={(_districtCode) => {
+                navigateTo("heatmap", "#heatmap");
+              }}
+            />
+          </div>
+        ) : activeTab === "heatmap" ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#0b0f19" }}>
+            <MultiModeHeatmapContainer
+              onNavigateDistrictReport={(_districtCode) => {
+                navigateTo("map", "#map");
+              }}
+            />
+          </div>
+        ) : activeTab === "qr-scan" ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <QRScanContainer
+              onBackToHome={() => {
+                navigateTo("map", "#map");
+              }}
+              onNavigateWallet={() => {
+                navigateTo("rewards", "#wallet");
+              }}
+              onNavigateLogin={() => {
+                sessionStorage.setItem("greenspot_target_hash", "#qr-scan");
+                setAuthRedirectUrl("/qr-scan");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+            />
+          </div>
+        ) : activeTab === "lucky-wheel" ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <LuckyWheelContainer
+              onBackToHome={() => {
+                navigateTo("map", "#map");
+              }}
+              onNavigateLogin={() => {
+                sessionStorage.setItem("greenspot_target_hash", "#lucky-wheel");
+                setAuthRedirectUrl("/lucky-wheel");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+            />
+          </div>
+        ) : activeTab === "milestone" ? (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc" }}>
+            <MilestoneContainer
+              onBackToHome={() => {
+                navigateTo("map", "#map");
+              }}
+              onNavigateLogin={() => {
+                sessionStorage.setItem("greenspot_target_hash", "#milestone");
+                setAuthRedirectUrl("/milestone");
+                setActiveTab("auth");
+                window.location.hash = "#login";
+              }}
+            />
+          </div>
+        ) : activeTab === "emergency-alert" || activeTab === "safety-check" ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+            <EmergencyAlertContainer
+              initialView={activeTab === "safety-check" ? "SAFETY_CHECK" : "CONSOLE"}
+              currentUser={currentUser}
+              onNavigateHome={() => {
+                navigateTo("map", "#map");
+              }}
+              onNavigateFeed={() => {
+                navigateTo("posts", "#posts");
+              }}
+              onNavigateSafeRoute={() => {
+                navigateTo("navigation", "#navigation");
+              }}
+            />
+          </div>
+        ) : activeTab === "flood-sos" ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+            <FloodSosContainer />
+          </div>
+        ) : activeTab === "incident-export" ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+            <IncidentExportContainer />
+          </div>
+        ) : activeTab === "admin-dashboard" ? (
+          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+            <AdminDashboardContainer
+              onNavigateHome={() => {
+                navigateTo("map", "#map");
+              }}
+            />
+          </div>
+) : (
         /* Mặc định an toàn cho khách vãng lai và tab map: Bản đồ số WebGIS công cộng */
         <ModulePermissionGuard
           moduleCode="GIS_MAP"

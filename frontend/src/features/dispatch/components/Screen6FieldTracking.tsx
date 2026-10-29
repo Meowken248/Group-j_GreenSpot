@@ -4,6 +4,7 @@ import type {
   CloseDispatchOrderRequest,
 } from "../types/dispatch.types";
 import { DispatchMap } from "./DispatchMap";
+import { navigateToRoute } from "../../../routes/appRoutes";
 
 interface Screen6FieldTrackingProps {
   trackingData: FieldTrackingResponse;
@@ -403,9 +404,9 @@ export const Screen6FieldTracking: React.FC<Screen6FieldTrackingProps> = ({
                   destAddress: incident_address,
                 };
                 localStorage.setItem("greenspot_nav_destination", JSON.stringify(navData));
-                window.location.hash = "#navigation";
+                navigateToRoute("navigation");
               } catch {
-                window.location.hash = "#navigation";
+                navigateToRoute("navigation");
               }
             }}
             data-testid="btn-nav-flood-safe"

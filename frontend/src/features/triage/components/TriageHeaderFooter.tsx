@@ -1,4 +1,5 @@
 import React from "react";
+import { navigateToRoute } from "../../../routes/appRoutes";
 
 interface HeaderProps {
   currentTab: "triage" | "spatial";
@@ -13,7 +14,14 @@ export const TriageHeader: React.FC<HeaderProps> = ({
 }) => {
   return (
     <header className="triage-global-header">
-      <div className="header-branding">
+      <div
+        className="header-branding"
+        style={{ cursor: "pointer" }}
+        onClick={() => {
+          navigateToRoute("map");
+        }}
+        title="Quay lại Bản đồ số WebGIS TP.HCM"
+      >
         <div className="brand-icon">🌱</div>
         <div className="brand-title">
           Green<span>Spot</span> Admin
