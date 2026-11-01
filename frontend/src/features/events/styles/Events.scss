@@ -1,0 +1,1696 @@
+// =========================================================================
+// SỰ KIỆN VÀ CHIẾN DỊCH CHỦ NHẬT XANH (FEATURE 21 - STYLESHEET)
+// Tuân thủ 100% Quy tắc 4 của PROJECT_RULES.md (Variables, Mixins, Nesting)
+// =========================================================================
+
+$event-primary: #10b981;
+$event-primary-hover: #059669;
+$event-primary-light: #ecfdf5;
+$event-primary-border: #a7f3d0;
+
+$event-bg-light: #f8fafc;
+$event-card-bg: #ffffff;
+$event-border: #e2e8f0;
+
+$event-text-main: #0f172a;
+$event-text-muted: #64748b;
+$event-text-white: #ffffff;
+
+$event-danger: #ef4444;
+$event-danger-bg: #fef2f2;
+$event-warning: #f59e0b;
+$event-warning-bg: #fffbeb;
+$event-info: #3b82f6;
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin card-shadow {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+}
+
+@mixin modal-shadow {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+@mixin transition-all {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// =========================================================================
+// 1. TRANG DANH SÁCH SỰ KIỆN (MÀN 1/4)
+// =========================================================================
+.events-feature-container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+  box-sizing: border-box;
+
+  // Header thanh công cụ & Thao tác
+  .events-header-toolbar {
+    @include flex-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid $event-border;
+
+    .toolbar-title-group {
+      .badge-tag {
+        display: inline-block;
+        padding: 0.2rem 0.6rem;
+        background: $event-primary-light;
+        color: $event-primary-hover;
+        border: 1px solid $event-primary-border;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        margin-bottom: 0.35rem;
+      }
+
+      h1 {
+        font-size: 1.65rem;
+        font-weight: 800;
+        color: $event-text-main;
+        margin: 0 0 0.25rem;
+        letter-spacing: -0.02em;
+      }
+
+      p {
+        font-size: 0.9rem;
+        color: $event-text-muted;
+        margin: 0;
+      }
+    }
+
+    .toolbar-actions-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      // Style của .btn-my-events-toggle / .btn-create-event được khai báo ở cấp
+      // gốc (mục 1b) vì modal được portal ra document.body, không còn nằm trong
+      // .events-feature-container nên selector lồng sẽ không khớp.
+    }
+  }
+
+  // Khung bộ lọc
+  .events-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    background: $event-card-bg;
+    border: 1px solid $event-border;
+    border-radius: 14px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    @include card-shadow;
+
+    .search-box-wrapper {
+      flex: 1;
+      min-width: 260px;
+      position: relative;
+
+      .search-icon {
+        position: absolute;
+        left: 0.85rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 1rem;
+        color: $event-text-muted;
+      }
+
+      input {
+        width: 100%;
+        padding: 0.65rem 1rem 0.65rem 2.4rem;
+        border: 1px solid $event-border;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        color: $event-text-main;
+        background: #f8fafc;
+        outline: none;
+        box-sizing: border-box;
+        @include transition-all;
+
+        &:focus {
+          border-color: $event-primary;
+          background: #ffffff;
+          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
+      }
+    }
+
+    .district-filter-wrapper {
+      min-width: 200px;
+
+      select {
+        width: 100%;
+        padding: 0.65rem 1rem;
+        border: 1px solid $event-border;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        color: $event-text-main;
+        background: #ffffff;
+        outline: none;
+        cursor: pointer;
+        @include transition-all;
+
+        &:focus {
+          border-color: $event-primary;
+        }
+      }
+    }
+
+    .time-filter-pills {
+      display: flex;
+      gap: 0.4rem;
+
+      .pill-btn {
+        padding: 0.5rem 0.85rem;
+        border: 1px solid $event-border;
+        border-radius: 8px;
+        background: #ffffff;
+        font-family: inherit;
+        font-size: 0.825rem;
+        font-weight: 600;
+        color: $event-text-muted;
+        cursor: pointer;
+        @include transition-all;
+
+        &.active {
+          background: $event-text-main;
+          color: #ffffff;
+          border-color: $event-text-main;
+        }
+
+        &:hover:not(.active) {
+          border-color: #cbd5e1;
+          color: $event-text-main;
+        }
+      }
+    }
+  }
+
+  // Danh sách sự kiện (Lưới 3 cột)
+  .events-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1.5rem;
+
+    .event-card {
+      background: $event-card-bg;
+      border: 1px solid $event-border;
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      @include card-shadow;
+      @include transition-all;
+      cursor: pointer;
+
+      &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.08);
+        border-color: $event-primary-border;
+      }
+
+      .card-media {
+        position: relative;
+        height: 190px;
+        background: #f1f5f9;
+        overflow: hidden;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          @include transition-all;
+        }
+
+        .status-badge {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          padding: 0.3rem 0.75rem;
+          border-radius: 20px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: #ffffff;
+          backdrop-filter: blur(4px);
+
+          &.status-APPROVED {
+            background: rgba(16, 185, 129, 0.9);
+          }
+          &.status-PENDING {
+            background: rgba(245, 158, 11, 0.9);
+          }
+          &.status-REJECTED {
+            background: rgba(239, 68, 68, 0.9);
+          }
+          &.status-CANCELLED {
+            background: rgba(100, 116, 139, 0.9);
+          }
+        }
+
+        .district-tag {
+          position: absolute;
+          bottom: 12px;
+          left: 12px;
+          background: rgba(15, 23, 42, 0.75);
+          color: #ffffff;
+          font-size: 0.75rem;
+          font-weight: 600;
+          padding: 0.25rem 0.65rem;
+          border-radius: 6px;
+        }
+      }
+
+      &:hover .card-media img {
+        transform: scale(1.04);
+      }
+
+      .card-content {
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+
+        .event-time-row {
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          font-size: 0.8rem;
+          font-weight: 700;
+          color: $event-primary;
+          margin-bottom: 0.5rem;
+          text-transform: uppercase;
+        }
+
+        .event-title {
+          font-size: 1.1rem;
+          font-weight: 700;
+          color: $event-text-main;
+          line-height: 1.4;
+          margin: 0 0 0.5rem;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+
+        .event-address {
+          font-size: 0.825rem;
+          color: $event-text-muted;
+          margin-bottom: 1rem;
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow: hidden;
+        }
+
+        .card-progress-section {
+          margin-top: auto;
+          margin-bottom: 1rem;
+
+          .progress-labels {
+            @include flex-between;
+            font-size: 0.8rem;
+            color: $event-text-muted;
+            margin-bottom: 0.35rem;
+
+            .count-strong {
+              font-weight: 700;
+              color: $event-text-main;
+            }
+          }
+
+          .progress-bar-bg {
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 9999px;
+            overflow: hidden;
+
+            .progress-fill {
+              height: 100%;
+              background: $event-primary;
+              border-radius: 9999px;
+              transition: width 0.3s ease;
+            }
+          }
+        }
+
+        .card-footer-actions {
+          @include flex-between;
+          padding-top: 0.85rem;
+          border-top: 1px solid #f1f5f9;
+
+          .interested-meta {
+            font-size: 0.8rem;
+            color: $event-text-muted;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+          }
+
+          .btn-card-detail {
+            padding: 0.45rem 0.9rem;
+            background: $event-primary-light;
+            color: $event-primary-hover;
+            border: 1px solid $event-primary-border;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.825rem;
+            font-weight: 700;
+            cursor: pointer;
+            @include transition-all;
+
+            &:hover {
+              background: $event-primary;
+              color: #ffffff;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Trạng thái trống
+  .empty-events-placeholder {
+    text-align: center;
+    padding: 4rem 1rem;
+    background: $event-card-bg;
+    border: 1px dashed $event-border;
+    border-radius: 16px;
+
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: $event-text-main;
+      margin: 0 0 0.5rem;
+    }
+
+    p {
+      font-size: 0.875rem;
+      color: $event-text-muted;
+      margin: 0;
+    }
+  }
+}
+
+// =========================================================================
+// 1b. NÚT DÙNG CHUNG (TOOLBAR + MODAL)
+// Modal được render qua portal vào document.body nên KHÔNG còn là con của
+// .events-feature-container => phải khai báo ở cấp gốc thì mới ăn style.
+// =========================================================================
+.btn-my-events-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1rem;
+  background: #ffffff;
+  border: 1px solid $event-border;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: $event-text-main;
+  cursor: pointer;
+  white-space: nowrap;
+  box-sizing: border-box;
+  @include transition-all;
+
+  &.active {
+    background: $event-primary-light;
+    border-color: $event-primary;
+    color: $event-primary-hover;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: $event-primary;
+  }
+}
+
+.btn-create-event {
+  @include flex-center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  background: linear-gradient(135deg, $event-primary 0%, $event-primary-hover 100%);
+  color: $event-text-white;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: nowrap;
+  box-sizing: border-box;
+  @include transition-all;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(16, 185, 129, 0.35);
+  }
+}
+
+// =========================================================================
+// 2. MODAL DÙNG CHUNG (TẠO SỰ KIỆN, CHI TIẾT, CHECK-IN GPS)
+// =========================================================================
+.event-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  @include flex-center;
+  z-index: 10000;
+  padding: 1rem;
+  box-sizing: border-box;
+  // Cho phép cuộn khi màn hình thấp: trước đây modal cao hơn viewport làm nút cuối
+  // bị che/cắt, người dùng bấm không tới.
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  .event-modal-box {
+    background: #ffffff;
+    border-radius: 18px;
+    width: 100%;
+    max-width: 780px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    // margin auto (thay vì chỉ align-items: center) để không bị cắt mép trên khi overflow
+    margin: auto;
+    @include modal-shadow;
+
+    &.large {
+      max-width: 960px;
+    }
+
+    .modal-header {
+      @include flex-between;
+      padding: 1.15rem 1.5rem;
+      border-bottom: 1px solid $event-border;
+      background: #ffffff;
+      flex-shrink: 0;
+
+      .modal-title-wrap {
+        h2 {
+          font-size: 1.25rem;
+          font-weight: 800;
+          color: $event-text-main;
+          margin: 0;
+        }
+        .modal-sub {
+          font-size: 0.8rem;
+          color: $event-text-muted;
+          margin: 0.2rem 0 0;
+        }
+      }
+
+      .btn-close-modal {
+        background: transparent;
+        border: none;
+        font-family: inherit;
+        font-size: 1.5rem;
+        color: $event-text-muted;
+        cursor: pointer;
+        padding: 0.25rem;
+        line-height: 1;
+        border-radius: 6px;
+        @include transition-all;
+
+        &:hover {
+          color: $event-text-main;
+          background: #f1f5f9;
+        }
+      }
+    }
+
+    .modal-body-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+      box-sizing: border-box;
+    }
+
+    .modal-footer {
+      @include flex-between;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid $event-border;
+      background: #f8fafc;
+      flex-shrink: 0;
+    }
+  }
+}
+
+// =========================================================================
+// 3. FORM TẠO SỰ KIỆN MỚI (MÀN 2/4)
+// =========================================================================
+.create-event-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: $event-text-main;
+
+      .required-star {
+        color: $event-danger;
+        margin-left: 2px;
+      }
+
+      .char-hint {
+        font-weight: 400;
+        color: $event-text-muted;
+        float: right;
+      }
+    }
+
+    input[type="text"],
+    input[type="datetime-local"],
+    input[type="number"],
+    select,
+    textarea {
+      padding: 0.65rem 0.9rem;
+      border: 1px solid $event-border;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      color: $event-text-main;
+      background: #ffffff;
+      outline: none;
+      box-sizing: border-box;
+      font-family: inherit;
+      @include transition-all;
+
+      &:focus {
+        border-color: $event-primary;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+      }
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+  }
+
+  .form-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+
+    @media (max-width: 600px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // Khung upload ảnh bìa
+  .cover-upload-area {
+    border: 2px dashed $event-border;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    background: #f8fafc;
+    cursor: pointer;
+    @include transition-all;
+    position: relative;
+    overflow: hidden;
+
+    &:hover {
+      border-color: $event-primary;
+      background: $event-primary-light;
+    }
+
+    .preview-cover-img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+
+    .upload-prompt {
+      .upload-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+      }
+      .upload-title {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: $event-text-main;
+        margin-bottom: 0.25rem;
+      }
+      .upload-rule {
+        font-size: 0.75rem;
+        color: $event-text-muted;
+      }
+    }
+  }
+
+  // Khung chọn tọa độ trên bản đồ WebGIS
+  .map-picker-container {
+    height: 240px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid $event-border;
+    position: relative;
+    background: #e2e8f0;
+  }
+}
+
+// =========================================================================
+// 4. CHI TIẾT SỰ KIỆN & TƯƠNG TÁC (MÀN 3/4)
+// =========================================================================
+.event-detail-view {
+  .detail-hero-banner {
+    position: relative;
+    height: 260px;
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .banner-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.2) 0%, rgba(15, 23, 42, 0.85) 100%);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+
+      .hero-title {
+        font-size: 1.45rem;
+        font-weight: 800;
+        color: #ffffff;
+        margin: 0 0 0.5rem;
+        line-height: 1.35;
+      }
+
+      .hero-meta-row {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        color: #e2e8f0;
+        font-size: 0.85rem;
+      }
+    }
+  }
+
+  .detail-content-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 1.5rem;
+
+    @media (max-width: 800px) {
+      grid-template-columns: 1fr;
+    }
+
+    .detail-main-col {
+      .section-block {
+        margin-bottom: 1.5rem;
+
+        h4 {
+          font-size: 1rem;
+          font-weight: 700;
+          color: $event-text-main;
+          margin: 0 0 0.75rem;
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+        }
+
+        .desc-text {
+          font-size: 0.9rem;
+          line-height: 1.6;
+          color: #334155;
+          white-space: pre-line;
+        }
+      }
+
+      .participants-avatar-list {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+
+        .participant-avatar-item {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          border: 2px solid #ffffff;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          background: #e2e8f0;
+          overflow: hidden;
+          @include flex-center;
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: $event-primary-hover;
+
+          img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+        }
+      }
+    }
+
+    .detail-side-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+
+      .info-box-card {
+        background: #f8fafc;
+        border: 1px solid $event-border;
+        border-radius: 12px;
+        padding: 1.15rem;
+
+        .info-row {
+          display: flex;
+          gap: 0.75rem;
+          margin-bottom: 0.85rem;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          .info-icon {
+            font-size: 1.25rem;
+          }
+
+          .info-text {
+            .info-label {
+              font-size: 0.75rem;
+              color: $event-text-muted;
+              text-transform: uppercase;
+              font-weight: 700;
+            }
+            .info-val {
+              font-size: 0.875rem;
+              font-weight: 600;
+              color: $event-text-main;
+            }
+          }
+        }
+      }
+
+      .action-buttons-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        // Đảm bảo vùng bấm luôn nằm trên bản đồ/ảnh nền của cột nội dung
+        position: relative;
+        z-index: 2;
+
+        button {
+          touch-action: manipulation;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-action-primary {
+          width: 100%;
+          padding: 0.8rem;
+          background: $event-primary;
+          color: #ffffff;
+          border: none;
+          border-radius: 10px;
+          font-family: inherit;
+          font-size: 0.95rem;
+          font-weight: 700;
+          cursor: pointer;
+          @include transition-all;
+
+          &:hover:not(:disabled) {
+            background: $event-primary-hover;
+          }
+
+          &:disabled {
+            background: #cbd5e1;
+            color: #f8fafc;
+            cursor: not-allowed;
+          }
+
+          &.btn-checkin-gold {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            animation: pulseGlow 2s infinite;
+          }
+        }
+
+        .btn-action-secondary {
+          width: 100%;
+          padding: 0.75rem;
+          background: #ffffff;
+          border: 1px solid $event-border;
+          border-radius: 10px;
+          font-family: inherit;
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: $event-text-main;
+          cursor: pointer;
+          @include transition-all;
+
+          &:hover:not(:disabled) {
+            border-color: $event-primary;
+            background: $event-primary-light;
+            color: $event-primary-hover;
+          }
+
+          // Trước đây nút phụ bị disable nhưng KHÔNG đổi giao diện, nên người dùng
+          // tưởng nút hỏng ("lúc ấn được lúc không").
+          &:disabled {
+            background: #f1f5f9;
+            border-color: $event-border;
+            color: #94a3b8;
+            cursor: not-allowed;
+            opacity: 0.85;
+          }
+
+          &.active {
+            background: #fef2f2;
+            color: #ef4444;
+            border-color: #fecaca;
+          }
+
+          &.active:disabled {
+            background: #fef2f2;
+            color: #f87171;
+            border-color: #fecaca;
+          }
+        }
+      }
+    }
+  }
+}
+
+// =========================================================================
+// 5. MÀN HÌNH CHECK-IN GPS TẠI HIỆN TRƯỜNG & POPUP (MÀN 4/4)
+// =========================================================================
+.gps-checkin-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  .checkin-status-bar {
+    @include flex-between;
+    background: #f8fafc;
+    border: 1px solid $event-border;
+    border-radius: 10px;
+    padding: 0.85rem 1.15rem;
+
+    .distance-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+
+      &.in-radius {
+        color: $event-primary-hover;
+      }
+      &.out-radius {
+        color: $event-danger;
+      }
+    }
+
+    .accuracy-indicator {
+      font-size: 0.8rem;
+      color: $event-text-muted;
+    }
+  }
+
+  .checkin-map-stage {
+    height: 380px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid $event-border;
+    position: relative;
+    background: #e2e8f0;
+  }
+
+  .checkin-instructions-box {
+    background: $event-primary-light;
+    border: 1px solid $event-primary-border;
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    font-size: 0.825rem;
+    color: #065f46;
+    line-height: 1.45;
+
+    ul {
+      margin: 0.35rem 0 0;
+      padding-left: 1.25rem;
+    }
+  }
+}
+
+// POPUP KẾT QUẢ CHECK-IN
+.checkin-result-popup {
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+
+  .result-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+
+  .result-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0 0 0.5rem;
+
+    &.success {
+      color: $event-primary-hover;
+    }
+    &.error {
+      color: $event-danger;
+    }
+  }
+
+  .points-celebration-card {
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border: 2px dashed $event-primary;
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin: 1.25rem auto;
+    max-width: 320px;
+
+    .points-number {
+      font-size: 2.25rem;
+      font-weight: 900;
+      color: $event-primary-hover;
+      letter-spacing: -0.02em;
+    }
+
+    .points-sub {
+      font-size: 0.85rem;
+      color: #047857;
+      font-weight: 600;
+    }
+  }
+
+  .result-desc {
+    font-size: 0.9rem;
+    color: $event-text-muted;
+    margin-bottom: 1.5rem;
+  }
+
+  .btn-finish-checkin {
+    padding: 0.75rem 2rem;
+    background: $event-primary;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    @include transition-all;
+
+    &:hover {
+      background: $event-primary-hover;
+      transform: translateY(-1px);
+    }
+  }
+}
+
+// Widget Lối tắt trên Sidebar Bảng tin MXH (FeedLeftSidebar)
+.feed-events-sidebar-widget {
+  background: linear-gradient(135deg, #f0fdf4 0%, #e6fcf5 100%);
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin: 0.75rem 0;
+
+  .widget-header-flex {
+    @include flex-between;
+    margin-bottom: 0.4rem;
+
+    .widget-badge {
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: #15803d;
+      text-transform: uppercase;
+    }
+
+    .widget-icon {
+      font-size: 1rem;
+    }
+  }
+
+  .widget-event-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #14532d;
+    margin-bottom: 0.25rem;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .widget-event-time {
+    font-size: 0.75rem;
+    color: #166534;
+    margin-bottom: 0.65rem;
+  }
+
+  .widget-btn-explore {
+    width: 100%;
+    padding: 0.45rem;
+    background: #10b981;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.775rem;
+    font-weight: 700;
+    cursor: pointer;
+    @include transition-all;
+
+    &:hover {
+      background: #059669;
+    }
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  }
+  50% {
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.55);
+  }
+}
+
+// =========================================================================
+// 6. BỔ SUNG: TRẠNG THÁI DANH SÁCH, DUYỆT SỰ KIỆN, TIỆN ÍCH BIỂU MẪU
+// =========================================================================
+
+.events-main-page {
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.events-loading-state,
+.events-error-state {
+  padding: 2.5rem 1rem;
+  border-radius: 12px;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.9rem;
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+}
+
+.events-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  color: #b91c1c;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.events-loading-more,
+.events-list-end {
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.events-scroll-sentinel {
+  height: 1px;
+  width: 100%;
+}
+
+.event-card-ended {
+  opacity: 0.75;
+  filter: grayscale(0.35);
+}
+
+.card-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-card-join {
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 0.7rem;
+  background: #ecfdf5;
+  color: #047857;
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: #d1fae5;
+  }
+
+  &:disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+    cursor: not-allowed;
+  }
+}
+
+.badge-joined {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+// --- Duyệt sự kiện ---
+.admin-approval-panel {
+  background: #ffffff;
+  border: 1px solid #d1fae5;
+  border-radius: 14px;
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+
+  .admin-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.85rem;
+
+    h2 {
+      margin: 0;
+      font-size: 1.05rem;
+      color: #065f46;
+    }
+  }
+
+  .admin-panel-empty {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #64748b;
+  }
+
+  .admin-pending-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .admin-pending-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.75rem 0.9rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.65rem;
+  }
+
+  .admin-pending-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+
+    strong {
+      font-size: 0.9rem;
+      color: #0f172a;
+    }
+
+    span {
+      font-size: 0.76rem;
+      color: #64748b;
+    }
+  }
+
+  .admin-pending-actions {
+    display: flex;
+    gap: 0.45rem;
+    align-items: flex-start;
+  }
+
+  .admin-reject-form {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    textarea {
+      width: 100%;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 0.55rem 0.7rem;
+      font-size: 0.82rem;
+      resize: vertical;
+    }
+  }
+
+  .admin-reject-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+}
+
+.btn-admin-approve,
+.btn-admin-reject {
+  border: none;
+  border-radius: 8px;
+  padding: 0.42rem 0.8rem;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-admin-approve {
+  background: #10b981;
+  color: #ffffff;
+
+  &:hover {
+    background: #059669;
+  }
+}
+
+.btn-admin-reject {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+
+  &:hover {
+    background: #fee2e2;
+  }
+}
+
+.btn-admin-approve:disabled,
+.btn-admin-reject:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+// --- Tiện ích biểu mẫu ---
+.form-alert {
+  background: #fef2f2;
+  color: #b91c1c;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  border: 1px solid #fecaca;
+}
+
+.field-error {
+  display: block;
+  margin-top: 0.3rem;
+  color: #dc2626;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.field-hint {
+  display: block;
+  margin-top: 0.35rem;
+  color: #64748b;
+  font-size: 0.74rem;
+}
+
+.input-invalid {
+  border-color: #f87171 !important;
+  background: #fff5f5;
+}
+
+.address-input-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+
+  input {
+    flex: 1;
+  }
+}
+
+.cover-preview-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.cover-preview-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.cover-file-input {
+  display: none;
+}
+
+.cover-url-input {
+  width: 100%;
+  margin-top: 0.55rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.78rem;
+}
+
+.upload-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 1.5rem 1rem;
+  border: 2px dashed #a7f3d0;
+  border-radius: 10px;
+  background: #f0fdf4;
+  cursor: pointer;
+}
+
+.discard-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 12000;
+  padding: 1rem;
+}
+
+.discard-confirm-box {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 1.4rem 1.5rem;
+  width: min(420px, 100%);
+  box-shadow: 0 24px 50px rgba(15, 23, 42, 0.28);
+
+  h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.05rem;
+    color: #0f172a;
+  }
+
+  p {
+    margin: 0 0 1.1rem;
+    font-size: 0.86rem;
+    color: #475569;
+    line-height: 1.5;
+  }
+}
+
+.discard-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+// --- Chi tiết sự kiện ---
+.detail-status-note {
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.1rem;
+  font-size: 0.85rem;
+  border: 1px solid transparent;
+}
+
+.status-note-PENDING {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.status-note-REJECTED {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.status-note-CANCELLED {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+.detail-ended-note {
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.1rem;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  color: #475569;
+  font-size: 0.84rem;
+}
+
+.detail-map-container {
+  height: 220px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #e2e8f0;
+}
+
+.muted-text {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.btn-link-participants {
+  margin-top: 0.5rem;
+  border: none;
+  background: none;
+  color: #047857;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.btn-danger-outline {
+  color: #dc2626 !important;
+  border-color: #fecaca !important;
+}
+
+.btn-danger-solid {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+// Trạng thái disabled phải nhìn thấy rõ, tránh cảm giác "nút hỏng"
+.btn-create-event:disabled,
+.btn-my-events-toggle:disabled,
+.btn-card-detail:disabled,
+.btn-link-participants:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.btn-checkin-done {
+  background: #059669 !important;
+  color: #ffffff;
+}
+
+.admin-review-box {
+  margin-top: 1rem;
+  padding: 0.9rem;
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  border-radius: 10px;
+
+  h4 {
+    margin: 0 0 0.65rem;
+    font-size: 0.88rem;
+    color: #92400e;
+  }
+
+  .admin-review-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .admin-reject-form {
+    margin-top: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    textarea {
+      width: 100%;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 0.5rem 0.65rem;
+      font-size: 0.8rem;
+      resize: vertical;
+    }
+  }
+}
+
+// --- Modal danh sách người tham gia ---
+.participants-modal-box {
+  background: #ffffff;
+  border-radius: 16px;
+  width: min(520px, 94vw);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.3);
+}
+
+.participants-modal-body {
+  padding: 1rem 1.25rem 1.25rem;
+  overflow-y: auto;
+}
+
+.participants-full-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px dashed #e2e8f0;
+  }
+}
+
+.participant-avatar-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #d1fae5;
+  color: #047857;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.8rem;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.participant-name {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.participant-joined-at {
+  margin-left: auto;
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+// --- Check-in bổ sung ---
+.checkin-failure-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  border-radius: 10px;
+  padding: 0.8rem 0.9rem;
+  margin-bottom: 1rem;
+  font-size: 0.82rem;
+
+  .failure-icon {
+    font-size: 1.1rem;
+  }
+
+  p {
+    margin: 0.2rem 0 0;
+  }
+
+  button {
+    margin-left: auto;
+    background: #ffffff;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    border-radius: 8px;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+}
+
+.checkin-result-meta {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin-bottom: 0.4rem;
+  text-align: center;
+}
+
+.gps-status-note {
+  font-size: 0.8rem;
+  color: #0369a1;
+  margin: 0.4rem 0 0.6rem;
+
+  &.error {
+    color: #b91c1c;
+  }
+}
+
+.accuracy-indicator.accuracy-warning {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+

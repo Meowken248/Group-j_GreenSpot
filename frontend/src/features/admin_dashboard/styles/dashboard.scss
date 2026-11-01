@@ -1,0 +1,950 @@
+/**
+ * SCSS Design System cho Admin System Activity Dashboard (STT 48).
+ *
+ * File   : FrontEnd/src/features/admin_dashboard/styles/dashboard.scss
+ * Nguyên tắc: 100% SCSS variables, mixins, BEM nesting — không dùng Tailwind.
+ * Palette: Dark-tech, xanh môi trường, glassmorphism premium.
+ */
+
+// ─── Design Tokens ───────────────────────────────────────────────────────────
+
+// Brand colors
+$green-primary    : #10b981;
+$green-hover      : #059669;
+$green-glow       : rgba(16, 185, 129, 0.25);
+$blue-chart       : #3b82f6;
+$orange-chart     : #f97316;
+
+// Background / Surface
+$bg-dark          : #0a0f1a;
+$bg-panel         : rgba(15, 23, 42, 0.9);
+$bg-card          : rgba(22, 33, 55, 0.85);
+$bg-hover         : rgba(30, 45, 70, 0.75);
+
+// Border / Glass
+$border-glass     : rgba(255, 255, 255, 0.08);
+$border-glass-hover: rgba(16, 185, 129, 0.4);
+$border-accent    : rgba(59, 130, 246, 0.35);
+
+// Text
+$text-primary     : #f1f5f9;
+$text-secondary   : #94a3b8;
+$text-muted       : #64748b;
+$text-accent      : $green-primary;
+
+// Status
+$color-success    : #22c55e;
+$color-warning    : #f59e0b;
+$color-danger     : #ef4444;
+$color-info       : #3b82f6;
+
+// Dimensions
+$header-h         : 68px;
+$footer-h         : 52px;
+$sidebar-w        : 280px;
+$radius-card      : 16px;
+$radius-btn       : 9999px;
+
+// Transitions
+$ease-smooth      : cubic-bezier(0.4, 0, 0.2, 1);
+$transition-base  : all 0.25s $ease-smooth;
+
+// ─── Mixins ──────────────────────────────────────────────────────────────────
+
+@mixin glass-panel {
+  background   : $bg-panel;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border       : 1px solid $border-glass;
+  border-radius: $radius-card;
+}
+
+@mixin flex-center {
+  display    : flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin pill-button($bg: $green-primary, $text: #fff) {
+  display        : inline-flex;
+  align-items    : center;
+  justify-content: center;
+  gap            : 8px;
+  padding        : 11px 24px;
+  border-radius  : $radius-btn;
+  border         : none;
+  background     : $bg;
+  color          : $text;
+  font-weight    : 600;
+  font-size      : 0.875rem;
+  letter-spacing : 0.02em;
+  cursor         : pointer;
+  transition     : $transition-base;
+  white-space    : nowrap;
+
+  &:hover {
+    filter   : brightness(1.12);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+  }
+  &:active { transform: translateY(0); }
+  &:disabled {
+    opacity: 0.45;
+    cursor : not-allowed;
+    transform: none;
+  }
+}
+
+@mixin card-shadow {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35), 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+// ─── Google Font ─────────────────────────────────────────────────────────────
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+// ─── Reset cơ bản ────────────────────────────────────────────────────────────
+
+.adm-dash {
+  font-family : "Inter", "Segoe UI", sans-serif;
+  color       : $text-primary;
+  background  : $bg-dark;
+  min-height  : 100vh;
+  display     : flex;
+  flex-direction: column;
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  // ── HEADER ────────────────────────────────────────────────────────────────
+
+  &__header {
+    @include glass-panel;
+    border-radius: 0;
+    border-top   : none;
+    border-left  : none;
+    border-right : none;
+    border-bottom: 1px solid $border-glass;
+    height       : $header-h;
+    padding      : 0 28px;
+    display      : flex;
+    align-items  : center;
+    justify-content: space-between;
+    position     : sticky;
+    top          : 0;
+    z-index      : 100;
+    flex-shrink  : 0;
+
+    &-brand {
+      display    : flex;
+      align-items: center;
+      gap        : 12px;
+
+      .logo-icon {
+        width          : 40px;
+        height         : 40px;
+        background     : linear-gradient(135deg, $green-primary, #065f46);
+        border-radius  : 10px;
+        @include flex-center;
+        font-size      : 1.4rem;
+        flex-shrink    : 0;
+        box-shadow     : 0 0 16px $green-glow;
+      }
+      .brand-titles {
+        h1 {
+          font-size  : 0.95rem;
+          font-weight: 700;
+          color      : $text-primary;
+          line-height: 1.2;
+          margin     : 0;
+        }
+        span {
+          font-size: 0.72rem;
+          color    : $text-secondary;
+        }
+      }
+    }
+
+    &-nav {
+      display : flex;
+      gap     : 4px;
+
+      .nav-btn {
+        display     : flex;
+        align-items : center;
+        gap         : 6px;
+        padding     : 8px 16px;
+        border-radius: 8px;
+        border      : 1px solid transparent;
+        background  : transparent;
+        color       : $text-secondary;
+        font-size   : 0.83rem;
+        font-weight : 500;
+        cursor      : pointer;
+        transition  : $transition-base;
+
+        &:hover {
+          background: $bg-hover;
+          color     : $text-primary;
+          border-color: $border-glass;
+        }
+
+        &--active {
+          background  : rgba(16, 185, 129, 0.12);
+          color       : $green-primary;
+          border-color: rgba(16, 185, 129, 0.3);
+        }
+      }
+    }
+
+    &-controls {
+      display    : flex;
+      align-items: center;
+      gap        : 12px;
+
+      .bell-btn {
+        position    : relative;
+        width       : 38px;
+        height      : 38px;
+        border-radius: 50%;
+        border      : 1px solid $border-glass;
+        background  : $bg-card;
+        color       : $text-secondary;
+        @include flex-center;
+        cursor      : pointer;
+        transition  : $transition-base;
+
+        &:hover { border-color: $border-glass-hover; color: $text-primary; }
+
+        .badge {
+          position    : absolute;
+          top         : 7px;
+          right       : 7px;
+          width       : 8px;
+          height      : 8px;
+          background  : $color-danger;
+          border-radius: 50%;
+          border      : 1.5px solid $bg-dark;
+        }
+      }
+
+      .avatar-box {
+        display    : flex;
+        align-items: center;
+        gap        : 10px;
+        padding    : 6px 12px;
+        border-radius: 10px;
+        border     : 1px solid $border-glass;
+        background : $bg-card;
+        cursor     : pointer;
+        transition : $transition-base;
+
+        &:hover { border-color: $border-glass-hover; }
+
+        .av-img {
+          width          : 34px;
+          height         : 34px;
+          border-radius  : 50%;
+          background     : linear-gradient(135deg, $green-primary, #065f46);
+          @include flex-center;
+          font-weight    : 700;
+          font-size      : 0.85rem;
+          color          : #fff;
+          flex-shrink    : 0;
+        }
+
+        .av-meta {
+          .av-name  { font-size: 0.82rem; font-weight: 600; color: $text-primary; }
+          .av-role  { font-size: 0.7rem;  color: $text-muted; }
+        }
+      }
+    }
+  }
+
+  // ── MAIN BODY ─────────────────────────────────────────────────────────────
+
+  &__body {
+    flex    : 1;
+    padding : 24px 28px;
+    display : flex;
+    flex-direction: column;
+    gap     : 24px;
+    overflow: auto;
+  }
+
+  // ── PAGE TITLE ────────────────────────────────────────────────────────────
+
+  &__page-header {
+    display      : flex;
+    align-items  : center;
+    justify-content: space-between;
+    flex-wrap    : wrap;
+    gap          : 12px;
+
+    .page-title {
+      font-size  : 1.35rem;
+      font-weight: 700;
+      color      : $text-primary;
+      display    : flex;
+      align-items: center;
+      gap        : 10px;
+
+      .title-badge {
+        font-size  : 0.7rem;
+        font-weight: 600;
+        padding    : 3px 10px;
+        border-radius: $radius-btn;
+        background : rgba(16, 185, 129, 0.12);
+        color      : $green-primary;
+        border     : 1px solid rgba(16, 185, 129, 0.25);
+        letter-spacing: 0.08em;
+      }
+    }
+
+    .updated-at {
+      font-size: 0.78rem;
+      color    : $text-muted;
+      display  : flex;
+      align-items: center;
+      gap      : 6px;
+    }
+  }
+
+  // ── 3-COLUMN LAYOUT ───────────────────────────────────────────────────────
+
+  &__cols {
+    display              : grid;
+    grid-template-columns: 260px 1fr 220px;
+    gap                  : 20px;
+    align-items          : start;
+
+    @media (max-width: 1100px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // ── KPI CARDS (Cột trái) ──────────────────────────────────────────────────
+
+  &__kpi-col {
+    display       : flex;
+    flex-direction: column;
+    gap           : 14px;
+
+    .section-label {
+      font-size   : 0.7rem;
+      font-weight : 700;
+      letter-spacing: 0.12em;
+      color       : $text-muted;
+      text-transform: uppercase;
+      padding-left: 4px;
+    }
+  }
+
+  &__kpi-card {
+    @include glass-panel;
+    @include card-shadow;
+    padding   : 18px 20px;
+    transition: $transition-base;
+    cursor    : default;
+
+    &:hover {
+      border-color: $border-glass-hover;
+      transform   : translateY(-2px);
+    }
+
+    .kpi-icon {
+      width        : 40px;
+      height       : 40px;
+      border-radius: 10px;
+      @include flex-center;
+      font-size    : 1.2rem;
+      margin-bottom: 12px;
+
+      &--users  { background: rgba(59, 130, 246, 0.15); }
+      &--posts  { background: rgba(16, 185, 129, 0.15); }
+      &--groups { background: rgba(249, 115, 22, 0.15); }
+    }
+
+    .kpi-label {
+      font-size  : 0.75rem;
+      color      : $text-secondary;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .kpi-value {
+      font-size  : 1.75rem;
+      font-weight: 700;
+      color      : $text-primary;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .kpi-growth {
+      display    : flex;
+      align-items: center;
+      gap        : 5px;
+      font-size  : 0.78rem;
+      font-weight: 600;
+
+      &--up   { color: $color-success; }
+      &--down { color: $color-danger; }
+      &--flat { color: $text-muted; }
+
+      .trend-vs { color: $text-muted; font-weight: 400; font-size: 0.72rem; }
+    }
+  }
+
+  // ── CHART (Cột giữa) ──────────────────────────────────────────────────────
+
+  &__chart-col {
+    @include glass-panel;
+    @include card-shadow;
+    padding: 24px;
+    min-height: 380px;
+    display: flex;
+    flex-direction: column;
+
+    .chart-header {
+      display      : flex;
+      align-items  : center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+
+      .chart-title {
+        font-size  : 0.9rem;
+        font-weight: 700;
+        color      : $text-primary;
+      }
+
+      .chart-legend {
+        display: flex;
+        gap    : 16px;
+
+        .legend-item {
+          display    : flex;
+          align-items: center;
+          gap        : 6px;
+          font-size  : 0.75rem;
+          color      : $text-secondary;
+
+          .dot {
+            width        : 10px;
+            height       : 10px;
+            border-radius: 50%;
+          }
+        }
+      }
+    }
+
+    .chart-canvas-wrap {
+      flex    : 1;
+      position: relative;
+      min-height: 280px;
+    }
+
+    .chart-empty {
+      @include flex-center;
+      flex-direction: column;
+      gap      : 12px;
+      height   : 280px;
+      color    : $text-muted;
+      font-size: 0.9rem;
+
+      .empty-icon { font-size: 2.5rem; opacity: 0.5; }
+    }
+
+    .chart-error {
+      @include flex-center;
+      flex-direction: column;
+      gap      : 14px;
+      height   : 280px;
+      color    : $text-secondary;
+
+      .error-msg {
+        font-size  : 0.85rem;
+        text-align : center;
+        line-height: 1.5;
+      }
+
+      .retry-btn {
+        @include pill-button(rgba(59, 130, 246, 0.15), $color-info);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        font-size: 0.82rem;
+        padding: 9px 20px;
+      }
+    }
+  }
+
+  // ── FILTER (Cột phải) ─────────────────────────────────────────────────────
+
+  &__filter-col {
+    display       : flex;
+    flex-direction: column;
+    gap           : 12px;
+
+    .section-label {
+      font-size   : 0.7rem;
+      font-weight : 700;
+      letter-spacing: 0.12em;
+      color       : $text-muted;
+      text-transform: uppercase;
+      padding-left: 4px;
+    }
+
+    .filter-btn {
+      @include pill-button(rgba(255,255,255,0.05), $text-secondary);
+      border     : 1px solid $border-glass;
+      width      : 100%;
+      justify-content: center;
+
+      &--active {
+        background: rgba(16, 185, 129, 0.12);
+        color     : $green-primary;
+        border-color: rgba(16, 185, 129, 0.4);
+        box-shadow: 0 0 16px $green-glow;
+      }
+    }
+
+    .custom-range-box {
+      @include glass-panel;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+
+      label {
+        font-size: 0.75rem;
+        color    : $text-secondary;
+        font-weight: 500;
+      }
+
+      input[type="date"] {
+        width        : 100%;
+        padding      : 9px 12px;
+        border-radius: 8px;
+        border       : 1px solid $border-glass;
+        background   : rgba(255,255,255,0.04);
+        color        : $text-primary;
+        font-size    : 0.83rem;
+        outline      : none;
+        transition   : $transition-base;
+
+        &:focus { border-color: $border-glass-hover; }
+        &::-webkit-calendar-picker-indicator { filter: invert(0.7); }
+      }
+
+      .apply-btn {
+        @include pill-button;
+        width: 100%;
+      }
+    }
+  }
+
+  // ── TABLE PAGE (Màn 2/3) ──────────────────────────────────────────────────
+
+  &__table-layout {
+    display              : grid;
+    grid-template-columns: 240px 1fr 200px;
+    gap                  : 20px;
+    align-items          : start;
+
+    @media (max-width: 1000px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__filter-panel {
+    @include glass-panel;
+    @include card-shadow;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+
+    .section-label {
+      font-size   : 0.7rem;
+      font-weight : 700;
+      letter-spacing: 0.12em;
+      color       : $text-muted;
+      text-transform: uppercase;
+    }
+
+    label {
+      font-size : 0.78rem;
+      color     : $text-secondary;
+      font-weight: 500;
+      display   : block;
+      margin-bottom: 4px;
+    }
+
+    input[type="date"] {
+      width        : 100%;
+      padding      : 9px 12px;
+      border-radius: 8px;
+      border       : 1px solid $border-glass;
+      background   : rgba(255,255,255,0.04);
+      color        : $text-primary;
+      font-size    : 0.83rem;
+      outline      : none;
+      transition   : $transition-base;
+
+      &:focus   { border-color: $border-glass-hover; }
+      &.invalid { border-color: $color-danger; box-shadow: 0 0 0 2px rgba(239,68,68,0.15); }
+      &::-webkit-calendar-picker-indicator { filter: invert(0.7); }
+    }
+
+    .filter-error {
+      font-size: 0.72rem;
+      color    : $color-danger;
+      margin-top: -8px;
+    }
+
+    .apply-btn {
+      @include pill-button;
+      width: 100%;
+    }
+
+    .apply-btn:disabled {
+      opacity: 0.45;
+      cursor : not-allowed;
+    }
+  }
+
+  &__table-panel {
+    @include glass-panel;
+    @include card-shadow;
+    overflow: hidden;
+
+    .table-msg {
+      padding  : 12px 20px;
+      font-size: 0.78rem;
+      color    : $text-secondary;
+      border-bottom: 1px solid $border-glass;
+
+      &--error { color: $color-danger; }
+    }
+
+    .data-table {
+      width          : 100%;
+      border-collapse: collapse;
+
+      thead tr {
+        background : rgba(16, 185, 129, 0.08);
+        border-bottom: 1px solid $border-glass;
+      }
+
+      th {
+        padding   : 12px 16px;
+        font-size : 0.75rem;
+        font-weight: 700;
+        color     : $text-secondary;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        text-align: right;
+
+        &:first-child { text-align: left; }
+      }
+
+      tbody tr {
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        transition   : $transition-base;
+
+        &:hover { background: $bg-hover; }
+        &:last-child { border-bottom: none; }
+      }
+
+      td {
+        padding  : 12px 16px;
+        font-size: 0.84rem;
+        color    : $text-primary;
+        text-align: right;
+
+        &:first-child {
+          text-align : left;
+          color      : $text-secondary;
+          font-weight: 500;
+        }
+      }
+
+      .summary-row {
+        background: rgba(16, 185, 129, 0.06);
+        border-top: 2px solid rgba(16, 185, 129, 0.2);
+
+        td {
+          font-weight: 700;
+          color      : $green-primary;
+
+          &:first-child { color: $green-primary; }
+        }
+      }
+    }
+
+    .table-empty {
+      @include flex-center;
+      flex-direction: column;
+      gap           : 12px;
+      padding       : 48px 20px;
+      color         : $text-muted;
+      font-size     : 0.9rem;
+
+      .empty-icon { font-size: 2.5rem; opacity: 0.4; }
+
+      .change-filter {
+        font-size: 0.78rem;
+        color    : $text-secondary;
+      }
+    }
+
+    .pagination {
+      display      : flex;
+      align-items  : center;
+      justify-content: space-between;
+      padding      : 12px 20px;
+      border-top   : 1px solid $border-glass;
+      font-size    : 0.78rem;
+      color        : $text-secondary;
+
+      .page-controls {
+        display: flex;
+        gap    : 6px;
+
+        button {
+          padding      : 6px 12px;
+          border-radius: 6px;
+          border       : 1px solid $border-glass;
+          background   : transparent;
+          color        : $text-secondary;
+          cursor       : pointer;
+          transition   : $transition-base;
+          font-size    : 0.78rem;
+
+          &:hover:not(:disabled) {
+            border-color: $border-glass-hover;
+            color       : $text-primary;
+          }
+          &:disabled { opacity: 0.35; cursor: not-allowed; }
+          &.active {
+            background  : rgba(16, 185, 129, 0.12);
+            color       : $green-primary;
+            border-color: rgba(16, 185, 129, 0.3);
+          }
+        }
+      }
+    }
+  }
+
+  &__action-panel {
+    @include glass-panel;
+    @include card-shadow;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    .section-label {
+      font-size   : 0.7rem;
+      font-weight : 700;
+      letter-spacing: 0.12em;
+      color       : $text-muted;
+      text-transform: uppercase;
+    }
+
+    .export-btn {
+      @include pill-button;
+      width: 100%;
+    }
+
+    .action-hint {
+      font-size: 0.72rem;
+      color    : $text-muted;
+      text-align: center;
+      line-height: 1.4;
+    }
+  }
+
+  // ── FOOTER ────────────────────────────────────────────────────────────────
+
+  &__footer {
+    border-top     : 1px solid $border-glass;
+    padding        : 14px 28px;
+    display        : flex;
+    align-items    : center;
+    justify-content: space-between;
+    font-size      : 0.73rem;
+    color          : $text-muted;
+    flex-shrink    : 0;
+
+    a {
+      color          : $text-muted;
+      text-decoration: none;
+      transition     : $transition-base;
+      &:hover { color: $text-secondary; }
+    }
+
+    .footer-links {
+      display: flex;
+      gap    : 16px;
+    }
+  }
+}
+
+// ─── MODAL OVERLAY (Màn 3/3 – Popup Xuất Thống Kê) ───────────────────────────
+
+.adm-dash-modal {
+  position  : fixed;
+  inset     : 0;
+  z-index   : 9999;
+  @include flex-center;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation : fadeInOverlay 0.2s ease;
+
+  @keyframes fadeInOverlay {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  &__box {
+    @include glass-panel;
+    @include card-shadow;
+    width    : 440px;
+    max-width: 95vw;
+    padding  : 32px;
+    border   : 1.5px dashed rgba(249, 115, 22, 0.5);
+    animation: slideUpModal 0.25s $ease-smooth;
+    position : relative;
+
+    @keyframes slideUpModal {
+      from { opacity: 0; transform: translateY(20px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0)    scale(1); }
+    }
+  }
+
+  &__label {
+    font-size  : 0.65rem;
+    letter-spacing: 0.2em;
+    color      : $text-muted;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  &__title {
+    font-size  : 1.5rem;
+    font-weight: 800;
+    color      : $text-primary;
+    margin-bottom: 24px;
+    line-height: 1.1;
+  }
+
+  &__format-group {
+    margin-bottom: 24px;
+
+    .format-label {
+      font-size  : 0.78rem;
+      color      : $text-secondary;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .format-options {
+      display: flex;
+      gap    : 10px;
+    }
+
+    .format-option {
+      flex           : 1;
+      display        : flex;
+      align-items    : center;
+      gap            : 10px;
+      padding        : 14px 16px;
+      border-radius  : 12px;
+      border         : 1.5px solid $border-glass;
+      background     : $bg-card;
+      cursor         : pointer;
+      transition     : $transition-base;
+
+      input[type="radio"] { display: none; }
+
+      .fmt-icon { font-size: 1.4rem; }
+
+      .fmt-info {
+        .fmt-name { font-size: 0.82rem; font-weight: 600; color: $text-primary; }
+        .fmt-desc { font-size: 0.7rem; color: $text-muted; }
+      }
+
+      &--selected {
+        border-color: $green-primary;
+        background  : rgba(16, 185, 129, 0.08);
+        box-shadow  : 0 0 16px $green-glow;
+      }
+    }
+  }
+
+  &__error {
+    display    : flex;
+    align-items: center;
+    gap        : 8px;
+    padding    : 10px 14px;
+    border-radius: 8px;
+    background : rgba(239, 68, 68, 0.1);
+    border     : 1px solid rgba(239, 68, 68, 0.25);
+    font-size  : 0.78rem;
+    color      : $color-danger;
+    margin-bottom: 16px;
+  }
+
+  &__actions {
+    display       : flex;
+    flex-direction: column;
+    gap           : 10px;
+  }
+
+  &__export-btn {
+    @include pill-button;
+    width    : 100%;
+    font-size: 0.95rem;
+
+    .spinner {
+      width        : 18px;
+      height       : 18px;
+      border       : 2px solid rgba(255,255,255,0.3);
+      border-top   : 2px solid #fff;
+      border-radius: 50%;
+      animation    : spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  }
+
+  &__cancel-btn {
+    @include pill-button(rgba(255,255,255,0.05), $text-secondary);
+    border : 1px solid $border-glass;
+    width  : 100%;
+    font-size: 0.875rem;
+  }
+}
+
+// ─── Loading skeleton ──────────────────────────────────────────────────────
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.04) 0%,
+    rgba(255,255,255,0.09) 50%,
+    rgba(255,255,255,0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation      : shimmer 1.5s ease-in-out infinite;
+  border-radius  : 8px;
+
+  @keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position:  200% 0; }
+  }
+}
+
+.skeleton-kpi   { height: 120px; width: 100%; }
+.skeleton-chart { height: 300px; width: 100%; }

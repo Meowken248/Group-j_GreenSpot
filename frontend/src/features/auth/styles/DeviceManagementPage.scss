@@ -1,0 +1,252 @@
+@use './variables' as *;
+@use './mixins' as *;
+
+.devices-page-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at 10% 20%, rgba($primary-50, 0.8) 0%, rgba($neutral-50, 1) 90%);
+  font-family: $font-family;
+  color: $neutral-800;
+  box-sizing: border-box;
+
+  .devices-main-content {
+    flex: 1;
+    @include flex-center;
+    padding: 2.5rem 1.25rem;
+    box-sizing: border-box;
+
+    @include mobile {
+      padding: 1.5rem 1rem;
+    }
+  }
+
+  .devices-card {
+    width: 100%;
+    max-width: 620px;
+    background-color: #ffffff;
+    border: 1px solid $neutral-200;
+    border-radius: $radius-xl;
+    padding: 2.5rem 2.25rem;
+    box-shadow: $shadow-xl;
+    box-sizing: border-box;
+    transition: $transition-normal;
+
+    @include mobile {
+      padding: 1.75rem 1.25rem;
+    }
+
+    .card-header-section {
+      text-align: center;
+      margin-bottom: 2rem;
+
+      .badge-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        background-color: $primary-50;
+        border: 1px solid $primary-200;
+        border-radius: 9999px;
+        color: $primary-700;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+      }
+
+      .card-title {
+        font-size: 1.65rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: $neutral-900;
+        margin: 0 0 0.5rem 0;
+      }
+
+      .card-subtitle {
+        font-size: 0.92rem;
+        color: $neutral-500;
+        line-height: 1.5;
+        margin: 0;
+      }
+    }
+
+    // Danh sách thiết bị
+    .devices-list-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 2rem;
+
+      // 2 dòng giả skeleton khi đang tải
+      .skeleton-row {
+        height: 72px;
+        background: linear-gradient(90deg, $neutral-100 25%, $neutral-200 37%, $neutral-100 63%);
+        background-size: 400% 100%;
+        animation: skeletonShimmer 1.4s ease infinite;
+        border-radius: $radius-md;
+        border: 1px solid $neutral-200;
+      }
+
+      // Thông báo lỗi khi tải thất bại kèm link Tải lại
+      .fetch-error-box {
+        padding: 1.25rem;
+        background-color: $error-50;
+        border: 1px solid rgba($error-500, 0.25);
+        border-radius: $radius-md;
+        text-align: center;
+        color: $error-700;
+        font-size: 0.92rem;
+
+        .btn-retry-link {
+          background: none;
+          border: none;
+          color: $primary-700;
+          font-weight: 700;
+          text-decoration: underline;
+          cursor: pointer;
+          margin-left: 6px;
+          font-size: inherit;
+
+          &:hover {
+            color: $primary-800;
+          }
+        }
+      }
+
+      // Từng dòng thiết bị
+      .device-item-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.25rem;
+        border: 1px solid $neutral-200;
+        border-radius: $radius-md;
+        background-color: #ffffff;
+        transition: $transition-fast;
+
+        &:hover {
+          border-color: $neutral-300;
+          box-shadow: $shadow-sm;
+        }
+
+        &.is-current-device {
+          border-color: $primary-200;
+          background-color: rgba($primary-50, 0.4);
+        }
+
+        .device-info-col {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+
+          .device-icon-box {
+            width: 40px;
+            height: 40px;
+            border-radius: $radius-md;
+            background-color: $neutral-100;
+            color: $neutral-600;
+            @include flex-center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+
+            &.current-icon {
+              background-color: $primary-100;
+              color: $primary-700;
+            }
+          }
+
+          .device-text-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+
+            .device-name-heading {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              font-size: 0.98rem;
+              font-weight: 700;
+              color: $neutral-800;
+
+              .current-badge {
+                font-size: 0.72rem;
+                font-weight: 700;
+                background-color: $primary-500;
+                color: #ffffff;
+                padding: 2px 8px;
+                border-radius: 9999px;
+                letter-spacing: 0.02em;
+              }
+            }
+
+            .device-sub-detail {
+              font-size: 0.82rem;
+              color: $neutral-500;
+            }
+          }
+        }
+
+        .device-action-col {
+          .btn-revoke-device {
+            background-color: transparent;
+            border: 1px solid $neutral-300;
+            color: $neutral-700;
+            font-family: $font-family;
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: $radius-sm;
+            cursor: pointer;
+            transition: $transition-fast;
+
+            &:hover:not(:disabled) {
+              background-color: $error-50;
+              border-color: $error-400;
+              color: $error-600;
+            }
+
+            &:disabled {
+              opacity: 0.5;
+              cursor: not-allowed;
+            }
+          }
+        }
+      }
+    }
+
+    // Nút "Đăng xuất tất cả"
+    .btn-logout-all {
+      width: 100%;
+      height: 46px;
+      background-color: #ffffff;
+      color: $error-600;
+      border: 1px solid $error-400;
+      font-family: $font-family;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: $radius-md;
+      cursor: pointer;
+      transition: $transition-fast;
+      @include flex-center;
+      gap: 8px;
+
+      &:hover:not(:disabled) {
+        background-color: $error-600;
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba($error-600, 0.25);
+      }
+
+      &:disabled {
+        border-color: $neutral-300;
+        color: $neutral-400;
+        cursor: not-allowed;
+        background-color: $neutral-50;
+      }
+    }
+  }
+}
+
+@keyframes skeletonShimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
