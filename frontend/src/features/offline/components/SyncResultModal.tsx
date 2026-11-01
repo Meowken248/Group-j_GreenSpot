@@ -168,7 +168,7 @@ export const SyncResultModal: React.FC<SyncResultModalProps> = ({
               <div className="error-summary-box">
                 <span className="sub-title">Các mục chưa gửi được:</span>
                 <ul>
-                  {result.errors.slice(0, 3).map((err, i) => (
+                  {(result.errors || []).slice(0, 3).map((err, i) => (
                     <li key={i}>
                       <strong>{err.title}:</strong> {err.error}
                     </li>
@@ -188,7 +188,7 @@ export const SyncResultModal: React.FC<SyncResultModalProps> = ({
                 của bạn.
               </p>
               <div className="error-details-box">
-                {result.errors.slice(0, 3).map((err, i) => (
+                {(result.errors || []).slice(0, 3).map((err, i) => (
                   <div key={i} className="error-item">
                     <span className="err-title">{err.title}</span>
                     <span className="err-msg">{err.error}</span>
