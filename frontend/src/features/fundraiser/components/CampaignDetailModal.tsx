@@ -329,6 +329,33 @@ export const CampaignDetailModal: React.FC<CampaignDetailModalProps> = ({
                 {campaign.description}
               </div>
 
+              {/* KHỐI BẢO CHỨNG TÍN NHIỆM & MINH BẠCH DOANH NGHIỆP */}
+              <div
+                style={{
+                  marginTop: "1.5rem",
+                  padding: "1.1rem 1.25rem",
+                  background: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                  borderRadius: "10px",
+                }}
+                data-testid="enterprise-trust-box"
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                  <span style={{ fontSize: "1.2rem" }}>🛡️</span>
+                  <span style={{ fontWeight: 800, fontSize: "0.9rem", color: "#065f46", textTransform: "uppercase" }}>
+                    Cam Kết Bảo Chứng Minh Bạch & An Toàn Tài Chính
+                  </span>
+                </div>
+                <div style={{ fontSize: "0.85rem", color: "#334155", lineHeight: 1.6 }}>
+                  <div>• <strong>Người khởi xướng:</strong> {campaign.creator_name || "Thành viên GreenSpot"} (Đã xác minh hồ sơ định danh)</div>
+                  <div>• <strong>Địa bàn triển khai:</strong> {campaign.district}</div>
+                  <div>• <strong>Nguyên tắc giải ngân:</strong> 100% tiền quyên góp được chuyển vào tài khoản dự án đã được Ban Quản Trị thẩm định. Người kêu gọi có nghĩa vụ cập nhật đầy đủ hóa đơn chứng từ ở tab <em>Báo cáo sử dụng</em> trong vòng 30 ngày.</div>
+                  <div style={{ marginTop: "0.4rem", fontSize: "0.8rem", color: "#64748b" }}>
+                    ⚖️ Chiến dịch được giám sát cộng đồng theo chuẩn minh bạch tài trợ thiện nguyện (Nghị định 93/2021/NĐ-CP).
+                  </div>
+                </div>
+              </div>
+
               {/* Thông tin tài khoản nhận bí mật (Chỉ Admin hoặc Creator thấy) */}
               {(isAdmin || isCreator) && campaign.bank_account_number && (
                 <div
