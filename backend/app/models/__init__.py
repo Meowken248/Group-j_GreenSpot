@@ -200,6 +200,12 @@ from app.models.dispatch import DispatchOrder
 # 28. Phân tích điểm nóng & dự báo (STT 44)
 from app.models.hotspots import HotspotCluster, HotspotDailyForecast
 
+# 29. Chế độ Offline-First & Đồng bộ ngoại tuyến (STT 19)
+from app.models.offline_sync import (
+    OfflineSubmission,
+    OfflineMediaUpload,
+)
+
 __all__ = [
     "Base",
     "TimestampMixin",
@@ -334,4 +340,7 @@ __all__ = [
     # Hotspots & Forecasting (STT 44)
     "HotspotCluster",
     "HotspotDailyForecast",
+    # Offline-First Sync (STT 19)
+    "OfflineSubmission",
+    "OfflineMediaUpload",
 ]
