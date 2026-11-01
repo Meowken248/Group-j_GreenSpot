@@ -146,9 +146,22 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
 
     setGeneralError(null);
 
-    // Kiểm tra mạng
+    // Kiểm tra mạng ngoại tuyến (R04)
     if (!navigator.onLine) {
-      setGeneralError("Mất kết nối. Tệp sẽ được tải lên khi có mạng");
+      const offlineTempId = `offline_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const offlineItem: AttachedMedia = {
+        id: offlineTempId,
+        file_url: URL.createObjectURL(file),
+        thumbnail_url: URL.createObjectURL(file),
+        media_type: isVideo ? "VIDEO" : "IMAGE",
+        file_size_bytes: file.size,
+        mime_type: file.type,
+        is_uploading: false,
+        watermark_text: "Đã chụp (Lưu ngoại tuyến)",
+        file,
+      };
+      onUpdateFormData({ media: [...currentMediaList, offlineItem] });
+      setGeneralError(null);
       return;
     }
 

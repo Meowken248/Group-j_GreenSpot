@@ -11,6 +11,8 @@ import {
 } from "../services/reportService";
 import { DuplicateWarningModal } from "./DuplicateWarningModal";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
+import { enqueueReport } from "../../offline/services/outboxQueueRepository";
+import { getCurrentUserId } from "../../offline/services/offlineDb";
 
 interface Step5Props {
   formData: ReportFormData;
@@ -20,6 +22,7 @@ interface Step5Props {
   onSessionExpired: () => void;
   onGoHome: () => void;
   onTrackIncident: (trackingCode: string) => void;
+  onOpenOutbox?: () => void;
 }
 
 export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
@@ -30,11 +33,13 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
   onSessionExpired,
   onGoHome,
   onTrackIncident,
+  onOpenOutbox,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submissionResult, setSubmissionResult] = useState<IncidentSubmissionResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [networkWarning, setNetworkWarning] = useState<string | null>(null);
+  const [queueSuccessResult, setQueueSuccessResult] = useState<string | null>(null);
 
   // Modal cảnh báo trùng lặp
   const [duplicateModalOpen, setDuplicateModalOpen] = useState<boolean>(false);
@@ -47,16 +52,76 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
   const missingLocation = !formData.location || !formData.location.is_within_hcmc;
   const hasMissingFields = missingCategory || missingTitle || missingMedia || missingLocation;
 
+  // Đưa phản ánh vào hàng đợi gửi ngoại tuyến (R08, R09, R10, R11)
+  const handleEnqueueOfflineReport = async () => {
+    if (hasMissingFields) {
+      setErrorMessage("Phản ánh còn thiếu thông tin bắt buộc. Vui lòng bổ sung đầy đủ trước khi xếp hàng.");
+      return;
+    }
+
+    if (!formData.location) {
+      setErrorMessage("Thiếu toạ độ GPS. Cần xác nhận vị trí trước khi đưa vào hàng đợi (R07).");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      const now = Date.now();
+      const clientSubId = `sub_${now}_${Math.random().toString(36).substring(2, 9)}`;
+      const idempotencyKey = `idemp_${now}_${Math.random().toString(36).substring(2, 9)}`;
+
+      const storedMediaBlobs = formData.media.map((m, index) => ({
+        client_file_id: m.id || `file_${index}_${now}`,
+        blob: m.file || new Blob([], { type: m.mime_type || "image/jpeg" }),
+        name: m.file?.name || `media_${index}.jpg`,
+        media_type: (m.media_type as "IMAGE" | "VIDEO") || "IMAGE",
+        mime_type: m.mime_type || "image/jpeg",
+        size: m.file_size_bytes || m.file?.size || 0,
+        captured_at: new Date().toISOString(),
+      }));
+
+      await enqueueReport({
+        client_submission_id: clientSubId,
+        idempotency_key: idempotencyKey,
+        user_id: getCurrentUserId(),
+        title: formData.title,
+        category_id: formData.category_id!,
+        category_name: formData.category_name,
+        description: formData.description,
+        severity: formData.severity,
+        latitude: formData.location.latitude,
+        longitude: formData.location.longitude,
+        address_text: formData.location.address_text,
+        is_anonymous: formData.is_anonymous,
+        reporter_phone: formData.reporter_phone,
+        media_blobs: storedMediaBlobs,
+        voice_blob: (formData as any).voice_blob || null,
+      });
+
+      // R11: Xếp hàng thành công -> thông báo, làm trống biểu mẫu
+      onClearDraftAndReset();
+      setQueueSuccessResult(
+        "Phản ánh của bạn đã được ghi nhận an toàn vào Hàng đợi gửi (Offline-First). Hệ thống sẽ tự động đồng bộ ngay khi có kết nối mạng."
+      );
+    } catch (err: any) {
+      console.error("Lỗi khi xếp hàng đợi:", err);
+      setErrorMessage(err.message || "Không thể đưa phản ánh vào hàng đợi.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Thực thi gửi phản ánh lên máy chủ
   const executeSubmission = async () => {
     setIsSubmitting(true);
     setErrorMessage(null);
     setNetworkWarning(null);
 
-    // Kiểm tra mất mạng
+    // Kiểm tra mất mạng: tự động chuyển sang hàng đợi ngoại tuyến (R08, R11)
     if (!navigator.onLine) {
-      setIsSubmitting(false);
-      setNetworkWarning("Mất kết nối. Phản ánh đã được lưu và sẽ gửi khi có mạng");
+      await handleEnqueueOfflineReport();
       return;
     }
 
@@ -141,8 +206,33 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
         </div>
       )}
 
-      {/* GIAO DIỆN SAU KHI GỬI THÀNH CÔNG (KHUNG KẾT QUẢ) */}
-      {submissionResult ? (
+      {/* GIAO DIỆN SAU KHI XẾP HÀNG ĐỢI HOẶC GỬI THÀNH CÔNG */}
+      {queueSuccessResult ? (
+        <div className="section-card success-result-card queued-result-card">
+          <div className="success-badge-icon">📥</div>
+          <h3 className="success-heading">ĐÃ XẾP VÀO HÀNG ĐỢI GỬI</h3>
+          <p className="success-submessage">{queueSuccessResult}</p>
+
+          <div className="result-nav-actions">
+            <button
+              type="button"
+              className="btn-secondary btn-home"
+              onClick={onGoHome}
+            >
+              Về Trang Chủ
+            </button>
+            {onOpenOutbox && (
+              <button
+                type="button"
+                className="btn-primary btn-track"
+                onClick={onOpenOutbox}
+              >
+                Xem Hàng Đợi Gửi →
+              </button>
+            )}
+          </div>
+        </div>
+      ) : submissionResult ? (
         <div className="section-card success-result-card">
           <div className="success-badge-icon">🎉</div>
           <h3 className="success-heading">Tiếp nhận phản ánh thành công!</h3>
@@ -355,7 +445,11 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
               onClick={handleInitiateSubmit}
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Đang gửi phản ánh…" : "🚀 Gửi phản ánh"}
+              {isSubmitting
+                ? "Đang xử lý…"
+                : typeof navigator !== "undefined" && !navigator.onLine
+                ? "📥 Xếp vào hàng đợi gửi (Ngoại tuyến)"
+                : "🚀 Gửi phản ánh"}
             </button>
           </div>
         </>
