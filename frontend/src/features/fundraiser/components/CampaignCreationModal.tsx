@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import type { FundraiserCampaignCreateInput } from "../types/fundraiser.types";
 import {
-  HCMC_DISTRICTS,
   VIETNAM_PROVINCES,
   getDistrictsByProvince,
 } from "../types/fundraiser.types";
