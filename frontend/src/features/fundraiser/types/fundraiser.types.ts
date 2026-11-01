@@ -202,3 +202,203 @@ export const HCMC_DISTRICTS: string[] = [
   "Huyện Nhà Bè",
 ];
 
+export const HANOI_DISTRICTS: string[] = [
+  "Quận Ba Đình",
+  "Quận Hoàn Kiếm",
+  "Quận Tây Hồ",
+  "Quận Long Biên",
+  "Quận Cầu Giấy",
+  "Quận Đống Đa",
+  "Quận Hai Bà Trưng",
+  "Quận Hoàng Mai",
+  "Quận Thanh Xuân",
+  "Quận Nam Từ Liêm",
+  "Quận Bắc Từ Liêm",
+  "Quận Hà Đông",
+  "Thị xã Sơn Tây",
+  "Huyện Ba Vì",
+  "Huyện Chương Mỹ",
+  "Huyện Đan Phượng",
+  "Huyện Đông Anh",
+  "Huyện Gia Lâm",
+  "Huyện Hoài Đức",
+  "Huyện Mê Linh",
+  "Huyện Mỹ Đức",
+  "Huyện Phú Xuyên",
+  "Huyện Phúc Thọ",
+  "Huyện Quốc Oai",
+  "Huyện Sóc Sơn",
+  "Huyện Thạch Thất",
+  "Huyện Thanh Oai",
+  "Huyện Thanh Trì",
+  "Huyện Thường Tín",
+  "Huyện Ứng Hòa",
+];
+
+export const DANANG_DISTRICTS: string[] = [
+  "Quận Hải Châu",
+  "Quận Thanh Khê",
+  "Quận Sơn Trà",
+  "Quận Ngũ Hành Sơn",
+  "Quận Liên Chiểu",
+  "Quận Cẩm Lệ",
+  "Huyện Hòa Vang",
+  "Huyện Hoàng Sa",
+];
+
+export const CANTHO_DISTRICTS: string[] = [
+  "Quận Ninh Kiều",
+  "Quận Bình Thủy",
+  "Quận Cái Răng",
+  "Quận Ô Môn",
+  "Quận Thốt Nốt",
+  "Huyện Phong Điền",
+  "Huyện Cờ Đỏ",
+  "Huyện Thới Lai",
+  "Huyện Vĩnh Thạnh",
+];
+
+export const HAIPHONG_DISTRICTS: string[] = [
+  "Quận Hồng Bàng",
+  "Quận Ngô Quyền",
+  "Quận Lê Chân",
+  "Quận Hải An",
+  "Quận Kiến An",
+  "Quận Đồ Sơn",
+  "Quận Dương Kinh",
+  "Huyện Thủy Nguyên",
+  "Huyện An Dương",
+  "Huyện An Lão",
+  "Huyện Kiến Thụy",
+  "Huyện Tiên Lãng",
+  "Huyện Vĩnh Bảo",
+  "Huyện Cát Hải",
+  "Huyện Bạch Long Vĩ",
+];
+
+export const BINHDUONG_DISTRICTS: string[] = [
+  "Thành phố Thủ Dầu Một",
+  "Thành phố Dĩ An",
+  "Thành phố Thuận An",
+  "Thành phố Tân Uyên",
+  "Thành phố Bến Cát",
+  "Huyện Bàu Bàng",
+  "Huyện Bắc Tân Uyên",
+  "Huyện Dầu Tiếng",
+  "Huyện Phú Giáo",
+];
+
+export const DONGNAI_DISTRICTS: string[] = [
+  "Thành phố Biên Hòa",
+  "Thành phố Long Khánh",
+  "Huyện Long Thành",
+  "Huyện Nhơn Trạch",
+  "Huyện Trảng Bom",
+  "Huyện Thống Nhất",
+  "Huyện Cẩm Mỹ",
+  "Huyện Vĩnh Cửu",
+  "Huyện Xuân Lộc",
+  "Huyện Định Quán",
+  "Huyện Tân Phú",
+];
+
+export const BARIA_VUNGTAU_DISTRICTS: string[] = [
+  "Thành phố Vũng Tàu",
+  "Thành phố Bà Rịa",
+  "Thị xã Phú Mỹ",
+  "Huyện Châu Đức",
+  "Huyện Côn Đảo",
+  "Huyện Đất Đỏ",
+  "Huyện Long Điền",
+  "Huyện Xuyên Mộc",
+];
+
+export const KHANHHOA_DISTRICTS: string[] = [
+  "Thành phố Nha Trang",
+  "Thành phố Cam Ranh",
+  "Thị xã Ninh Hòa",
+  "Huyện Cam Lâm",
+  "Huyện Diên Khánh",
+  "Huyện Khánh Sơn",
+  "Huyện Khánh Vĩnh",
+  "Huyện Trường Sa",
+  "Huyện Vạn Ninh",
+];
+
+export const LAMDONG_DISTRICTS: string[] = [
+  "Thành phố Đà Lạt",
+  "Thành phố Bảo Lộc",
+  "Huyện Lạc Dương",
+  "Huyện Đơn Dương",
+  "Huyện Đức Trọng",
+  "Huyện Lâm Hà",
+  "Huyện Di Linh",
+  "Huyện Bảo Lâm",
+  "Huyện Đam Rông",
+  "Huyện Đạ Huoai",
+  "Huyện Đạ Tẻh",
+  "Huyện Cát Tiên",
+];
+
+export const QUANGNINH_DISTRICTS: string[] = [
+  "Thành phố Hạ Long",
+  "Thành phố Cẩm Phả",
+  "Thành phố Uông Bí",
+  "Thành phố Móng Cái",
+  "Thị xã Đông Triều",
+  "Thị xã Quảng Yên",
+  "Huyện Vân Đồn",
+  "Huyện Tiên Yên",
+  "Huyện Hải Hà",
+  "Huyện Cô Tô",
+  "Huyện Đầm Hà",
+  "Huyện Bình Liêu",
+  "Huyện Ba Chẽ",
+];
+
+export const THUATHIENHUE_DISTRICTS: string[] = [
+  "Thành phố Huế",
+  "Thị xã Hương Thủy",
+  "Thị xã Hương Trà",
+  "Huyện Phong Điền",
+  "Huyện Quảng Điền",
+  "Huyện Phú Vang",
+  "Huyện Phú Lộc",
+  "Huyện A Lưới",
+  "Huyện Nam Đông",
+];
+
+export const VIETNAM_PROVINCE_DISTRICTS_MAP: Record<string, string[]> = {
+  "TP. Hồ Chí Minh": HCMC_DISTRICTS,
+  "Hà Nội": HANOI_DISTRICTS,
+  "Đà Nẵng": DANANG_DISTRICTS,
+  "Cần Thơ": CANTHO_DISTRICTS,
+  "Hải Phòng": HAIPHONG_DISTRICTS,
+  "Bình Dương": BINHDUONG_DISTRICTS,
+  "Đồng Nai": DONGNAI_DISTRICTS,
+  "Bà Rịa - Vũng Tàu": BARIA_VUNGTAU_DISTRICTS,
+  "Khánh Hòa": KHANHHOA_DISTRICTS,
+  "Lâm Đồng": LAMDONG_DISTRICTS,
+  "Quảng Ninh": QUANGNINH_DISTRICTS,
+  "Thừa Thiên Huế": THUATHIENHUE_DISTRICTS,
+};
+
+export function getDistrictsByProvince(provinceName: string): string[] {
+  if (!provinceName || provinceName === "Toàn quốc") {
+    return [];
+  }
+  if (VIETNAM_PROVINCE_DISTRICTS_MAP[provinceName]) {
+    return VIETNAM_PROVINCE_DISTRICTS_MAP[provinceName];
+  }
+  // Mặc định đối với các tỉnh thành còn lại: Các đơn vị hành chính chuẩn
+  return [
+    `Thành phố trung tâm (${provinceName})`,
+    `Thị xã trung tâm (${provinceName})`,
+    `Khu vực Huyện phía Bắc (${provinceName})`,
+    `Khu vực Huyện phía Nam (${provinceName})`,
+    `Khu vực Huyện phía Đông (${provinceName})`,
+    `Khu vực Huyện phía Tây (${provinceName})`,
+    `Địa bàn toàn tỉnh (${provinceName})`,
+  ];
+}
+

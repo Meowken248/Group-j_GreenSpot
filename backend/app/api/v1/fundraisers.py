@@ -99,7 +99,7 @@ async def upload_fundraiser_image(
 )
 async def list_campaigns(
     status: Optional[str] = Query(None, description="Lọc trạng thái: Đang gây quỹ, Đã hoàn thành, Đã kết thúc"),
-    district: Optional[str] = Query(None, description="Lọc theo 22 quận/huyện TP.HCM"),
+    district: Optional[str] = Query(None, description="Lọc theo địa bàn (63 Tỉnh/Thành phố hoặc Quận/Huyện toàn quốc)"),
     search: Optional[str] = Query(None, description="Tìm theo tên chiến dịch"),
     my_campaigns: bool = Query(False, description="Chỉ lấy chiến dịch do tôi tạo"),
     page: int = Query(1, ge=1, description="Số trang"),

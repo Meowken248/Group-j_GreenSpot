@@ -1,6 +1,15 @@
 import React, { useState } from "react";
 import type { FundraiserCampaignItem } from "../types/fundraiser.types";
-import { HCMC_DISTRICTS, VIETNAM_PROVINCES } from "../types/fundraiser.types";
+import {
+  HCMC_DISTRICTS,
+  HANOI_DISTRICTS,
+  DANANG_DISTRICTS,
+  CANTHO_DISTRICTS,
+  HAIPHONG_DISTRICTS,
+  LAMDONG_DISTRICTS,
+  KHANHHOA_DISTRICTS,
+  VIETNAM_PROVINCES,
+} from "../types/fundraiser.types";
 
 interface CampaignListPanelProps {
   campaigns: FundraiserCampaignItem[];
@@ -141,15 +150,57 @@ export const CampaignListPanel: React.FC<CampaignListPanelProps> = ({
             data-testid="select-district-filter"
           >
             <option value="">Toàn quốc (Tất cả địa bàn)</option>
-            <optgroup label="Tỉnh / Thành phố Việt Nam">
+            <optgroup label="63 Tỉnh / Thành phố Việt Nam">
               {VIETNAM_PROVINCES.filter((p) => p !== "Toàn quốc").map((d) => (
                 <option key={d} value={d}>
                   {d}
                 </option>
               ))}
             </optgroup>
-            <optgroup label="Chi tiết Quận/Huyện TP.HCM">
+            <optgroup label="Quận/Huyện Hà Nội">
+              {HANOI_DISTRICTS.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Quận/Huyện TP.HCM">
               {HCMC_DISTRICTS.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Quận/Huyện Đà Nẵng">
+              {DANANG_DISTRICTS.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Quận/Huyện Cần Thơ">
+              {CANTHO_DISTRICTS.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Quận/Huyện Hải Phòng">
+              {HAIPHONG_DISTRICTS.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Quận/Huyện Lâm Đồng">
+              {LAMDONG_DISTRICTS.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Quận/Huyện Khánh Hòa">
+              {KHANHHOA_DISTRICTS.map((d) => (
                 <option key={d} value={d}>
                   {d}
                 </option>

@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import type { FundraiserCampaignCreateInput } from "../types/fundraiser.types";
-import { HCMC_DISTRICTS, VIETNAM_PROVINCES } from "../types/fundraiser.types";
+import {
+  HCMC_DISTRICTS,
+  VIETNAM_PROVINCES,
+  getDistrictsByProvince,
+} from "../types/fundraiser.types";
 import { fundraiserService } from "../services/fundraiserService";
 
 interface CampaignCreationModalProps {
@@ -18,7 +22,8 @@ export const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
 }) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [district, setDistrict] = useState("Quận 1");
+  const [selectedProvince, setSelectedProvince] = useState("TP. Hồ Chí Minh");
+  const [selectedDistrict, setSelectedDistrict] = useState("Quận 1");
   const [targetAmountRaw, setTargetAmountRaw] = useState("");
   const [endDate, setEndDate] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState("");
@@ -151,11 +156,14 @@ export const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
 
     setIsSubmitting(true);
     const numericAmount = parseInt(targetAmountRaw.replace(/\D/g, ""), 10);
+    const finalDistrict = selectedDistrict.includes(selectedProvince)
+      ? selectedDistrict
+      : `${selectedDistrict}, ${selectedProvince}`;
 
     const payload: FundraiserCampaignCreateInput = {
       title: title.trim(),
       description: description.trim(),
-      district,
+      district: finalDistrict,
       target_amount: numericAmount,
       end_date: endDate,
       cover_image_url:
@@ -354,30 +362,50 @@ export const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
             </div>
 
             <div className="form-group" style={{ marginTop: "0.5rem" }}>
-              <label htmlFor="create-district">
-                Địa bàn triển khai (Tỉnh / Thành phố hoặc Quận/Huyện) <span className="req">*</span>
+              <label>
+                Địa bàn triển khai (63 Tỉnh/Thành phố Việt Nam) <span className="req">*</span>
               </label>
-              <select
-                id="create-district"
-                value={district}
-                onChange={(e) => setDistrict(e.target.value)}
-                data-testid="select-campaign-district"
-              >
-                <optgroup label="Các Tỉnh / Thành phố Việt Nam">
-                  {VIETNAM_PROVINCES.filter((p) => p !== "Toàn quốc").map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </optgroup>
-                <optgroup label="Chi tiết Quận/Huyện TP.HCM">
-                  {HCMC_DISTRICTS.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </optgroup>
-              </select>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                <div>
+                  <label htmlFor="create-province" style={{ fontSize: "0.8rem", color: "#64748b", marginBottom: "0.25rem", display: "block" }}>
+                    Tỉnh / Thành phố:
+                  </label>
+                  <select
+                    id="create-province"
+                    value={selectedProvince}
+                    onChange={(e) => {
+                      const newProv = e.target.value;
+                      setSelectedProvince(newProv);
+                      const districts = getDistrictsByProvince(newProv);
+                      setSelectedDistrict(districts[0] || newProv);
+                    }}
+                    data-testid="select-campaign-province"
+                  >
+                    {VIETNAM_PROVINCES.filter((p) => p !== "Toàn quốc").map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="create-district" style={{ fontSize: "0.8rem", color: "#64748b", marginBottom: "0.25rem", display: "block" }}>
+                    Quận / Huyện / Thị xã:
+                  </label>
+                  <select
+                    id="create-district"
+                    value={selectedDistrict}
+                    onChange={(e) => setSelectedDistrict(e.target.value)}
+                    data-testid="select-campaign-district"
+                  >
+                    {getDistrictsByProvince(selectedProvince).map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
 
