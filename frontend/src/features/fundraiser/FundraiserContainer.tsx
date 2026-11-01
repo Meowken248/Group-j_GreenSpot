@@ -32,7 +32,10 @@ export const FundraiserContainer: React.FC<FundraiserContainerProps> = ({
   const [resolvedUser, setResolvedUser] = useState(() => {
     if (currentUser) return currentUser;
     try {
-      const stored = localStorage.getItem("ecoreport_user_info") || localStorage.getItem("user");
+      const stored =
+        localStorage.getItem("greenspot_user") ||
+        localStorage.getItem("ecoreport_user_info") ||
+        localStorage.getItem("user");
       if (stored) {
         return JSON.parse(stored);
       }
@@ -45,20 +48,41 @@ export const FundraiserContainer: React.FC<FundraiserContainerProps> = ({
   useEffect(() => {
     if (currentUser) {
       setResolvedUser(currentUser);
+    } else {
+      try {
+        const stored =
+          localStorage.getItem("greenspot_user") ||
+          localStorage.getItem("ecoreport_user_info") ||
+          localStorage.getItem("user");
+        if (stored) {
+          setResolvedUser(JSON.parse(stored));
+        }
+      } catch {
+        // ignore
+      }
     }
   }, [currentUser]);
 
   const isLoggedIn = Boolean(resolvedUser);
-  const isAdmin =
+  const isAdmin = Boolean(
     resolvedUser?.role === "ADMIN" ||
     resolvedUser?.role === "admin" ||
-    resolvedUser?.role_id === 1;
+    resolvedUser?.role_code === "ADMIN" ||
+    resolvedUser?.role_code === "admin" ||
+    resolvedUser?.role_id === 1 ||
+    (Array.isArray(resolvedUser?.permissions) &&
+      (resolvedUser.permissions.includes("ADMIN") ||
+       resolvedUser.permissions.includes("ROLE") ||
+       resolvedUser.permissions.includes("USER_MANAGEMENT")))
+  );
 
   // View Mode: public (Trang Khám phá) vs admin (Trung tâm Quản trị)
   const isHashAdmin =
     typeof window !== "undefined" &&
     (window.location.hash === "#fundraiser-admin" ||
-      window.location.hash.startsWith("#fundraiser/admin"));
+      window.location.hash.startsWith("#fundraiser/admin") ||
+      window.location.pathname === "/fundraiser-admin" ||
+      window.location.pathname.startsWith("/fundraiser/admin"));
 
   const [viewMode, setViewMode] = useState<"public" | "admin">(() => {
     if (initialAdminMode || isHashAdmin) return "admin";
@@ -67,20 +91,30 @@ export const FundraiserContainer: React.FC<FundraiserContainerProps> = ({
   const [systemPendingCount, setSystemPendingCount] = useState<number>(0);
 
   useEffect(() => {
-    if (initialAdminMode) {
+    if (initialAdminMode || isHashAdmin) {
       setViewMode("admin");
     }
     const handleHashChange = () => {
       const hash = window.location.hash;
-      if (hash === "#fundraiser-admin" || hash.startsWith("#fundraiser/admin")) {
+      const pathname = window.location.pathname;
+      if (
+        hash === "#fundraiser-admin" ||
+        hash.startsWith("#fundraiser/admin") ||
+        pathname === "/fundraiser-admin" ||
+        pathname.startsWith("/fundraiser/admin")
+      ) {
         setViewMode("admin");
-      } else if (hash === "#fundraiser") {
+      } else if (hash === "#fundraiser" || pathname === "/fundraiser") {
         setViewMode("public");
       }
     };
     window.addEventListener("hashchange", handleHashChange);
-    return () => window.removeEventListener("hashchange", handleHashChange);
-  }, [initialAdminMode]);
+    window.addEventListener("popstate", handleHashChange);
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange);
+      window.removeEventListener("popstate", handleHashChange);
+    };
+  }, [initialAdminMode, isHashAdmin]);
 
   // Filters & Pagination State
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -251,11 +285,74 @@ export const FundraiserContainer: React.FC<FundraiserContainerProps> = ({
         </div>
       )}
 
-      {viewMode === "admin" && isAdmin ? (
-        <AdminFundraiserDashboard
-          onSelectCampaign={handleSelectCampaign}
-          onRefreshList={fetchCampaigns}
-        />
+      {viewMode === "admin" ? (
+        isAdmin ? (
+          <AdminFundraiserDashboard
+            onSelectCampaign={handleSelectCampaign}
+            onRefreshList={fetchCampaigns}
+          />
+        ) : (
+          <div
+            className="fundraiser-admin-access-denied"
+            style={{
+              maxWidth: "600px",
+              margin: "3rem auto",
+              padding: "2.5rem 2rem",
+              background: "#ffffff",
+              borderRadius: "16px",
+              boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.08)",
+              textAlign: "center",
+              border: "1px solid #fed7aa",
+            }}
+            data-testid="admin-access-denied-box"
+          >
+            <div style={{ fontSize: "3rem", marginBottom: "0.75rem" }}>🛡️</div>
+            <h3 style={{ color: "#9a3412", marginBottom: "0.5rem", fontSize: "1.25rem", fontWeight: 800 }}>
+              Yêu Cầu Quyền Quản Trị Viên
+            </h3>
+            <p style={{ color: "#475569", fontSize: "0.95rem", lineHeight: 1.6, marginBottom: "1.5rem" }}>
+              Khu vực này dành riêng cho Ban Quản Trị hệ thống thẩm định tính pháp lý hồ sơ gây quỹ,
+              phê duyệt tài khoản ngân hàng thụ hưởng và đối soát chứng từ tài chính.
+            </p>
+            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                style={{
+                  padding: "0.65rem 1.25rem",
+                  background: "#059669",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+                onClick={onNavigateToLogin}
+                data-testid="btn-login-admin"
+              >
+                🔐 Đăng nhập tài khoản Quản trị
+              </button>
+              <button
+                type="button"
+                style={{
+                  padding: "0.65rem 1.25rem",
+                  background: "#f1f5f9",
+                  color: "#334155",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "8px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+                onClick={() => {
+                  setViewMode("public");
+                  window.location.hash = "#fundraiser";
+                }}
+                data-testid="btn-back-public"
+              >
+                🌱 Về Trang Khám Phá Cộng Đồng
+              </button>
+            </div>
+          </div>
+        )
       ) : (
         <CampaignListPanel
           campaigns={campaigns}

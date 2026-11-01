@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import type { FundraiserCampaignItem } from "../types/fundraiser.types";
 import { VIETNAM_PROVINCES } from "../types/fundraiser.types";
 import { fundraiserService } from "../services/fundraiserService";
+import "../styles/Fundraiser.scss";
 
 interface AdminFundraiserDashboardProps {
   onSelectCampaign: (campaign: FundraiserCampaignItem) => void;
@@ -396,9 +397,11 @@ const AdminFundraiserDashboardInternal: React.FC<AdminFundraiserDashboardProps> 
               <tbody>
                 {filteredCampaigns.map((camp) => {
                   const campId = camp.campaign_id || camp.id || "";
+                  const targetAmt = Number(camp.target_amount) || 0;
+                  const donatedAmt = Number(camp.total_donated) || 0;
                   const percent =
-                    camp.target_amount > 0
-                      ? Math.round((camp.total_donated / camp.target_amount) * 100)
+                    targetAmt > 0
+                      ? Math.min(100, Math.round((donatedAmt / targetAmt) * 100))
                       : 0;
 
                   return (

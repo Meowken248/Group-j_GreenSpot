@@ -804,4 +804,53 @@ describe("Feature 20: Gây quỹ cộng đồng (Fundraiser)", () => {
 
     expect(screen.getByTestId("admin-campaigns-table")).toBeInTheDocument();
   });
+
+  it("Test 23: FundraiserContainer ở chế độ initialAdminMode với quyền ADMIN hiển thị Bảng Quản trị", async () => {
+    (fundraiserService.listCampaigns as any).mockResolvedValue({
+      items: mockCampaigns,
+      total: mockCampaigns.length,
+      page: 1,
+      page_size: 50,
+    });
+
+    render(
+      <FundraiserContainer
+        currentUser={{
+          id: "admin-1",
+          username: "admin",
+          role: "ADMIN",
+        }}
+        initialAdminMode={true}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("admin-fundraiser-dashboard")).toBeInTheDocument();
+    });
+  });
+
+  it("Test 24: FundraiserContainer ở chế độ initialAdminMode khi không có quyền ADMIN hiển thị thông báo từ chối truy cập", async () => {
+    (fundraiserService.listCampaigns as any).mockResolvedValue({
+      items: mockCampaigns,
+      total: mockCampaigns.length,
+      page: 1,
+      page_size: 12,
+    });
+
+    render(
+      <FundraiserContainer
+        currentUser={{
+          id: "citizen-1",
+          username: "citizen",
+          role: "CITIZEN",
+        }}
+        initialAdminMode={true}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("admin-access-denied-box")).toBeInTheDocument();
+      expect(screen.getByText("Yêu Cầu Quyền Quản Trị Viên")).toBeInTheDocument();
+    });
+  });
 });
