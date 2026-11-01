@@ -22,6 +22,7 @@ from app.api.v1.incidents import router as incidents_router
 from app.api.v1.deduplication import router as deduplication_router
 from app.api.v1.triage import triage_composite_router
 from app.api.v1.incident_export import router as incident_export_router
+from app.api.v1.offline_sync import router as offline_sync_router
 
 # Voice Assistant & Chatbot
 from app.api.v1.voice_assistant import voice_router
@@ -85,11 +86,12 @@ api_v1_router.include_router(flood_router)
 api_v1_router.include_router(air_quality_router)
 api_v1_router.include_router(navigation_router)
 
-# Incidents & Triage
+# Incidents, Triage & Offline Sync
 api_v1_router.include_router(incidents_router)
 api_v1_router.include_router(deduplication_router)
 api_v1_router.include_router(triage_composite_router)
 api_v1_router.include_router(incident_export_router)
+api_v1_router.include_router(offline_sync_router)
 
 # AI & Voice
 api_v1_router.include_router(voice_router)
