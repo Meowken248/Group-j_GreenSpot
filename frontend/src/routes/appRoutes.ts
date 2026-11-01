@@ -55,7 +55,8 @@ export type ActiveTab =
   | "groups"
   | "ai-assistant"
   | "events"
-  | "fundraiser";
+  | "fundraiser"
+  | "outbox";
 
 export interface RouteDefinition {
   tab: ActiveTab;
@@ -373,6 +374,13 @@ export const APP_ROUTES: Record<ActiveTab, RouteDefinition> = {
     label: "Quỹ môi trường GreenSpot",
     aliases: ["/community/fundraiser", "/fundraiser", "/fundraiser-admin", "#fundraiser", "#fundraiser-admin", "#fundraiser/admin"],
     requiresAuth: false,
+  },
+  "outbox": {
+    tab: "outbox",
+    path: "/reports/outbox",
+    label: "Hàng Đợi Ngoại Tuyến",
+    aliases: ["/reports/outbox", "/outbox", "#outbox", "#offline-outbox"],
+    requiresAuth: true,
   },
 };
 

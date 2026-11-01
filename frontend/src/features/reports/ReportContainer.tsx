@@ -21,6 +21,9 @@ import { Step3VoiceInput } from "./components/Step3VoiceInput";
 import { Step4LocationPicker } from "./components/Step4LocationPicker";
 import { Step5ReviewAndSubmit } from "./components/Step5ReviewAndSubmit";
 import { DraftRestoreModal } from "./components/DraftRestoreModal";
+import { OfflineOutboxPage } from "../offline/pages/OfflineOutboxPage";
+import { saveDraftToDb, getDraftById } from "../offline/services/draftRepository";
+import { getCurrentUserId } from "../offline/services/offlineDb";
 import "./ReportContainer.scss";
 
 interface ReportContainerProps {
@@ -40,6 +43,7 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
   // Modal khôi phục bản nháp
   const [draftModalOpen, setDraftModalOpen] = useState<boolean>(false);
   const [pendingDraft, setPendingDraft] = useState<DraftData | null>(null);
+  const [isOutboxViewOpen, setIsOutboxViewOpen] = useState<boolean>(false);
 
   // 1. Kiểm tra Token đăng nhập hợp lệ (Đặc tả Màn 1)
   useEffect(() => {
@@ -81,8 +85,19 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
   const handleUpdateFormData = (updates: Partial<ReportFormData>) => {
     setFormData((prev) => {
       const next = { ...prev, ...updates };
-      // Tự động lưu nháp ngầm khi cập nhật
+      // Tự động lưu nháp ngầm vào localStorage & IndexedDB (R04)
       saveDraft(next, currentStep);
+      saveDraftToDb({
+        draft_id: `draft_${getCurrentUserId()}`,
+        user_id: getCurrentUserId(),
+        title: next.title || "Bản nháp phản ánh",
+        formData: next,
+        media_blobs: [],
+        voice_blob: (next as any).voice_blob || null,
+        saved_at: new Date().toISOString(),
+        current_step: currentStep,
+        updated_at: Date.now(),
+      }).catch(() => {});
       return next;
     });
   };
@@ -90,7 +105,34 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
   // Nút "Lưu nháp" thủ công (Màn 1)
   const handleManualSaveDraft = () => {
     saveDraft(formData, currentStep);
-    showToast("Đã lưu nháp");
+    saveDraftToDb({
+      draft_id: `draft_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      user_id: getCurrentUserId(),
+      title: formData.title || "Bản nháp phản ánh",
+      formData,
+      media_blobs: [],
+      voice_blob: (formData as any).voice_blob || null,
+      saved_at: new Date().toISOString(),
+      current_step: currentStep,
+      updated_at: Date.now(),
+    })
+      .then(() => showToast("Đã lưu nháp vào IndexedDB"))
+      .catch(() => showToast("Đã lưu nháp"));
+  };
+
+  // Nạp bản nháp từ IndexedDB theo draft_id (R16)
+  const handleResumeIndexedDbDraft = async (draftId: string) => {
+    try {
+      const draft = await getDraftById(draftId);
+      if (draft && draft.formData) {
+        setFormData(draft.formData);
+        setCurrentStep(draft.current_step || 1);
+        setIsOutboxViewOpen(false);
+        showToast("Đã mở lại bản nháp");
+      }
+    } catch (e) {
+      console.warn("Không mở được bản nháp:", e);
+    }
   };
 
   // Chấp nhận khôi phục bản nháp
@@ -136,6 +178,15 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
+
+  if (isOutboxViewOpen) {
+    return (
+      <OfflineOutboxPage
+        onBackToReport={() => setIsOutboxViewOpen(false)}
+        onResumeDraft={handleResumeIndexedDbDraft}
+      />
+    );
+  }
 
   return (
     <div className="report-flow-root">
@@ -221,6 +272,7 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
                   // Chuyển sang bản đồ để xem chi tiết
                   onNavigateTab("map");
                 }}
+                onOpenOutbox={() => setIsOutboxViewOpen(true)}
               />
             )}
           </div>

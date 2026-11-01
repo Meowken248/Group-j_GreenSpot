@@ -56,6 +56,11 @@ import { MultiModeHeatmapContainer } from "./features/heatmap/MultiModeHeatmapCo
 import { QRScanContainer } from "./features/qr_scan/QRScanContainer";
 import { LuckyWheelContainer } from "./features/lucky_wheel/LuckyWheelContainer";
 import { MilestoneContainer } from "./features/milestone/MilestoneContainer";
+import { ConnectionBanner } from "./features/offline/components/ConnectionBanner";
+import { SyncResultModal } from "./features/offline/components/SyncResultModal";
+import { OfflineOutboxPage } from "./features/offline/pages/OfflineOutboxPage";
+import { initSyncEngineListeners, syncOutboxQueue } from "./features/offline/services/syncEngine";
+import type { SyncResultSummary } from "./features/offline/types/offline.types";
 import { navigateToRoute } from "./routes/appRoutes";
 import type { ActiveTab } from "./routes/appRoutes";
 
@@ -344,6 +349,22 @@ function App() {
 
   const [openDropdown, setOpenDropdown] = useState<"geo" | "ops" | "community" | "user" | null>(null);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
+  const [syncResult, setSyncResult] = useState<SyncResultSummary | null>(null);
+
+  // STT 19: Bộ tự động đồng bộ hàng đợi ngoại tuyến khi có mạng
+  useEffect(() => {
+    const cleanupSyncListeners = initSyncEngineListeners();
+    const handleSyncFinished = (e: any) => {
+      if (e.detail) {
+        setSyncResult(e.detail);
+      }
+    };
+    window.addEventListener("greenspot_sync_completed", handleSyncFinished);
+    return () => {
+      cleanupSyncListeners();
+      window.removeEventListener("greenspot_sync_completed", handleSyncFinished);
+    };
+  }, []);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const topHeaderRef = useRef<HTMLElement>(null);
 
@@ -794,6 +815,29 @@ function App() {
       <SessionExpiredModal
         isOpen={sessionExpiredOpen}
         onRelogin={handleRelogin}
+      />
+
+      {/* THANH THÔNG BÁO MẠNG TOÀN CỤC (STT 19 - R01, R02) */}
+      <ConnectionBanner
+        onOpenOutbox={() => {
+          setActiveTab("outbox" as TabType);
+          window.location.hash = "#outbox";
+        }}
+      />
+
+      {/* MODAL KẾT QUẢ ĐỒNG BỘ NGOẠI TUYẾN TOÀN CỤC (STT 19 - R20, R21, R22) */}
+      <SyncResultModal
+        result={syncResult}
+        onClose={() => setSyncResult(null)}
+        onRetryAllFailed={() => syncOutboxQueue()}
+        onOpenOutbox={() => {
+          setActiveTab("outbox" as TabType);
+          window.location.hash = "#outbox";
+        }}
+        onViewIncidentDetail={(_id, _code) => {
+          setActiveTab("map" as TabType);
+          window.location.hash = "#map";
+        }}
       />
 
       {/* POPUP XÁC NHẬN ĐĂNG XUẤT (MÀN 3) */}
@@ -1485,6 +1529,19 @@ function App() {
             onExitAuth={() => {
               setActiveTab("map");
               window.location.hash = "#map";
+            }}
+          />
+        </div>
+      ) : activeTab === "outbox" ? (
+        <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc", paddingTop: "76px" }}>
+          <OfflineOutboxPage
+            onBackToReport={() => {
+              setActiveTab("report" as TabType);
+              window.location.hash = "#report";
+            }}
+            onResumeDraft={(_draftId) => {
+              setActiveTab("report" as TabType);
+              window.location.hash = "#report";
             }}
           />
         </div>
