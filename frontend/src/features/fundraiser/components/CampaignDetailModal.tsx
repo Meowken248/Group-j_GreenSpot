@@ -446,9 +446,10 @@ export const CampaignDetailModal: React.FC<CampaignDetailModalProps> = ({
               className="btn-share-action"
               onClick={() => setShowShareModal(true)}
               data-testid="btn-share-campaign"
+              title="Lan tỏa chiến dịch tới cộng đồng và mạng xã hội"
             >
-              <span className="share-icon">🔗</span>
-              <span>Chia sẻ</span>
+              <span className="share-icon">📢</span>
+              <span>Chia sẻ chiến dịch</span>
             </button>
 
             {/* Thao tác của người tạo */}

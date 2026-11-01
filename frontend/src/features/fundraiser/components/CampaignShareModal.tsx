@@ -3,6 +3,7 @@ import type { FundraiserCampaignItem } from "../types/fundraiser.types";
 import { commentService } from "../../comments/services/commentService";
 import type { ShareFriendOption, ShareGroupOption } from "../../comments/types/commentTypes";
 import "../../comments/styles/ShareModal.scss";
+import "../styles/Fundraiser.scss";
 
 interface CampaignShareModalProps {
   isOpen: boolean;

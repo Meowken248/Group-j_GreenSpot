@@ -1973,3 +1973,68 @@ $fund-blue-border: #bae6fd;
   }
 }
 
+/* ==========================================================================
+   SHARE MODAL ENTERPRISE SOCIAL FOOTER (FEATURE 20 & 14)
+   ========================================================================== */
+.share-modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  background: #fafafa;
+  border-bottom-left-radius: 1.25rem;
+  border-bottom-right-radius: 1.25rem;
+
+  .btn-share-cancel {
+    padding: 0.65rem 1.4rem;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background: #f1f5f9;
+      color: #1e293b;
+      border-color: #94a3b8;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  .btn-share-confirm {
+    padding: 0.65rem 1.6rem;
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, #047857 0%, #059669 100%);
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+      transform: translateY(-1px);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+  }
+}
+
+
