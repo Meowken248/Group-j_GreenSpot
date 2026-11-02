@@ -25,6 +25,18 @@ from app.services.incident_service import (
 
 def compute_payload_hash(data: OfflineSubmissionRequest) -> str:
     """Băm nội dung nghiệp vụ phản ánh để kiểm soát tính toàn vẹn idempotency."""
+    media_fingerprints = []
+    for m in (data.media or []):
+        media_fingerprints.append({
+            "client_file_id": m.client_file_id,
+            "media_type": m.media_type,
+            "file_size_bytes": m.file_size_bytes,
+            "mime_type": m.mime_type,
+            "file_hash": m.file_hash,
+            "captured_at": m.captured_at.isoformat() if m.captured_at else None,
+        })
+    media_fingerprints.sort(key=lambda x: x["client_file_id"])
+
     core_content = {
         "category_id": data.category_id,
         "title": (data.title or "").strip(),
@@ -34,10 +46,54 @@ def compute_payload_hash(data: OfflineSubmissionRequest) -> str:
         "longitude": round(float(data.longitude), 6),
         "address_text": (data.address_text or "").strip(),
         "is_anonymous": bool(data.is_anonymous),
-        "media_count": len(data.media or []),
+        "reporter_phone": (data.reporter_phone or "").strip() or None,
+        "media": media_fingerprints,
     }
     dumped = json.dumps(core_content, sort_keys=True, ensure_ascii=False)
     return hashlib.sha256(dumped.encode("utf-8")).hexdigest()
+
+
+async def _build_idempotent_replay_response(
+    db: AsyncSession,
+    sub: OfflineSubmission,
+    current_user_id: uuid.UUID,
+    current_payload_hash: str,
+    is_concurrent: bool = False,
+) -> OfflineSubmissionResponse:
+    # 1. Kiểm tra quyền sở hữu của user
+    if sub.user_id != current_user_id:
+        raise PermissionError("Bạn không có quyền truy cập biên nhận phản ánh của tài khoản khác.")
+
+    # 2. Kiểm tra tính toàn vẹn nội dung: Nếu cùng khóa nhưng đổi nội dung phản ánh
+    if sub.payload_hash and sub.payload_hash != current_payload_hash:
+        raise ValueError(
+            "Khóa chống trùng (Idempotency Key / Submission ID) đã được sử dụng với nội dung phản ánh khác. "
+            "Không thể thay đổi nội dung của yêu cầu đã ghi nhận."
+        )
+
+    # 3. Lấy thông tin incident đã tạo
+    incident_stmt = select(Incident).where(Incident.incident_id == sub.incident_id)
+    incident_res = await db.execute(incident_stmt)
+    incident = incident_res.scalar_one_or_none()
+    tracking_code = incident.tracking_code if incident else "N/A"
+
+    msg = (
+        "Yêu cầu đã được tiếp nhận đồng thời trước đó (Concurrent Idempotent Replay)."
+        if is_concurrent
+        else "Yêu cầu đã được hệ thống ghi nhận trước đó (Idempotent Replay)."
+    )
+
+    return OfflineSubmissionResponse(
+        submission_id=str(sub.submission_id),
+        client_submission_id=sub.client_submission_id,
+        incident_id=str(sub.incident_id or ""),
+        tracking_code=tracking_code,
+        status=sub.status,
+        is_duplicate_replay=True,
+        points_awarded=0,  # Không cộng lặp điểm
+        created_at=sub.created_at,
+        message=msg,
+    )
 
 
 async def submit_offline_incident(
@@ -68,33 +124,12 @@ async def submit_offline_incident(
     existing_sub = existing_sub_res.scalar_one_or_none()
 
     if existing_sub:
-        # Nếu đã có bản ghi: kiểm tra quyền sở hữu của user
-        if existing_sub.user_id != current_user_id:
-            raise PermissionError("Bạn không có quyền truy cập biên nhận phản ánh của tài khoản khác.")
-
-        # Kiểm tra tính toàn vẹn nội dung: Nếu cùng khóa nhưng đổi nội dung phản ánh
-        if existing_sub.payload_hash and existing_sub.payload_hash != current_payload_hash:
-            raise ValueError(
-                "Khóa chống trùng (Idempotency Key / Submission ID) đã được sử dụng với nội dung phản ánh khác. "
-                "Không thể thay đổi nội dung của yêu cầu đã ghi nhận."
-            )
-
-        # Lấy thông tin incident đã tạo
-        incident_stmt = select(Incident).where(Incident.incident_id == existing_sub.incident_id)
-        incident_res = await db.execute(incident_stmt)
-        incident = incident_res.scalar_one_or_none()
-        tracking_code = incident.tracking_code if incident else "N/A"
-
-        return OfflineSubmissionResponse(
-            submission_id=str(existing_sub.submission_id),
-            client_submission_id=existing_sub.client_submission_id,
-            incident_id=str(existing_sub.incident_id or ""),
-            tracking_code=tracking_code,
-            status=existing_sub.status,
-            is_duplicate_replay=True,
-            points_awarded=0,  # Không cộng lặp điểm
-            created_at=existing_sub.created_at,
-            message="Yêu cầu đã được hệ thống ghi nhận trước đó (Idempotent Replay).",
+        return await _build_idempotent_replay_response(
+            db=db,
+            sub=existing_sub,
+            current_user_id=current_user_id,
+            current_payload_hash=current_payload_hash,
+            is_concurrent=False,
         )
 
     # 2. Kiểm tra toạ độ GPS hợp lệ
@@ -234,20 +269,12 @@ async def submit_offline_incident(
         refetch_res = await db.execute(refetch_stmt)
         refetched = refetch_res.scalar_one_or_none()
         if refetched:
-            incident_stmt = select(Incident).where(Incident.incident_id == refetched.incident_id)
-            incident_res = await db.execute(incident_stmt)
-            incident = incident_res.scalar_one_or_none()
-            tracking_code = incident.tracking_code if incident else "N/A"
-            return OfflineSubmissionResponse(
-                submission_id=str(refetched.submission_id),
-                client_submission_id=refetched.client_submission_id,
-                incident_id=str(refetched.incident_id or ""),
-                tracking_code=tracking_code,
-                status=refetched.status,
-                is_duplicate_replay=True,
-                points_awarded=0,
-                created_at=refetched.created_at,
-                message="Yêu cầu đã được tiếp nhận đồng thời trước đó (Concurrent Idempotent Replay).",
+            return await _build_idempotent_replay_response(
+                db=db,
+                sub=refetched,
+                current_user_id=current_user_id,
+                current_payload_hash=current_payload_hash,
+                is_concurrent=True,
             )
         raise
 

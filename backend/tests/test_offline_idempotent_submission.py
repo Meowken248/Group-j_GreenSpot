@@ -327,6 +327,175 @@ class TestOfflineIdempotentSubmission(unittest.IsolatedAsyncioTestCase):
 
         self.assertIn("đã được sử dụng với nội dung phản ánh khác", str(ctx.exception))
 
+    def test_payload_hash_detects_media_and_phone_changes(self):
+        """Băm nội dung nghiệp vụ phát hiện thay đổi tệp media hoặc số điện thoại người báo cáo."""
+        base_data = create_valid_offline_payload()
+        p1 = OfflineSubmissionRequest(**base_data)
+        hash1 = compute_payload_hash(p1)
+
+        # Thay đổi số điện thoại
+        data_phone = dict(base_data)
+        data_phone["reporter_phone"] = "0988776655"
+        p2 = OfflineSubmissionRequest(**data_phone)
+        hash2 = compute_payload_hash(p2)
+        self.assertNotEqual(hash1, hash2, "Thay đổi số điện thoại phải làm thay đổi payload_hash")
+
+        # Thay đổi nội dung tệp bằng chứng
+        data_media = dict(base_data)
+        data_media["media"] = [
+            {
+                "client_file_id": "file_tampered_999",
+                "file_url": "https://storage.greenspot.vn/other.jpg",
+                "media_type": "IMAGE",
+                "file_size_bytes": 99999,
+                "file_hash": "different_sha256_hash",
+            }
+        ]
+        p3 = OfflineSubmissionRequest(**data_media)
+        hash3 = compute_payload_hash(p3)
+        self.assertNotEqual(hash1, hash3, "Thay đổi tệp bằng chứng phải làm thay đổi payload_hash")
+
+    async def test_concurrent_integrity_error_enforces_user_ownership_and_hash(self):
+        """
+        Xung đột khoá đồng thời (IntegrityError):
+        - Nếu bản ghi commit trước thuộc về tài khoản khác -> ném PermissionError.
+        - Nếu bản ghi commit trước có payload_hash khác -> ném ValueError.
+        - Nếu đúng tài khoản và nội dung -> trả về biên nhận replay an toàn.
+        """
+        from sqlalchemy.exc import IntegrityError
+        from app.models.incident import Incident
+
+        mock_db = AsyncMock()
+        mock_db.add = MagicMock()
+        mock_db.commit.side_effect = IntegrityError("mock conflict", params={}, orig=Exception())
+        mock_db.rollback = AsyncMock()
+
+        cid = "sub_concurrent_test_1"
+        ikey = "idemp_concurrent_1"
+        payload = OfflineSubmissionRequest(
+            **create_valid_offline_payload(
+                client_submission_id=cid,
+                idempotency_key=ikey,
+            )
+        )
+        current_hash = compute_payload_hash(payload)
+
+        # 1. Ban đầu pre-check không tìm thấy (giả lập 2 request đến cùng mili-giây)
+        mock_res_pre = MagicMock()
+        mock_res_pre.scalar_one_or_none.return_value = None
+
+        # Category
+        mock_cat = WasteCategory(category_id=1, name="Rác", sla_hours=24, is_active=True)
+        mock_res_cat = MagicMock()
+        mock_res_cat.scalar_one_or_none.return_value = mock_cat
+
+        # User
+        mock_user = User(user_id=self.user_a_id, total_green_points=100)
+        mock_res_user = MagicMock()
+        mock_res_user.scalar_one_or_none.return_value = mock_user
+
+        # Kịch bản 1: Request đồng thời của tài khoản khác (User B) thắng cuộc
+        mock_refetch_other_user = OfflineSubmission(
+            submission_id=uuid.uuid4(),
+            client_submission_id=cid,
+            user_id=self.user_b_id,  # Khác user
+            incident_id=uuid.uuid4(),
+            idempotency_key=ikey,
+            payload_hash=current_hash,
+            status="PROCESSED",
+            created_at=datetime.now(timezone.utc),
+        )
+        mock_res_refetch_b = MagicMock()
+        mock_res_refetch_b.scalar_one_or_none.return_value = mock_refetch_other_user
+
+        mock_db.execute.side_effect = [
+            mock_res_pre,
+            mock_res_cat,
+            mock_res_user,
+            mock_res_refetch_b,
+        ]
+
+        with patch("app.services.offline_sync_service.is_within_hcmc_bounds", return_value=True), \
+             patch("app.services.offline_sync_service.find_matching_administrative_unit", return_value=(1, "Phường 1")):
+            with self.assertRaises(PermissionError):
+                await submit_offline_incident(
+                    db=mock_db,
+                    data=payload,
+                    current_user_id=self.user_a_id,
+                )
+
+        # Kịch bản 2: Cùng user nhưng payload_hash bị đổi
+        mock_refetch_bad_hash = OfflineSubmission(
+            submission_id=uuid.uuid4(),
+            client_submission_id=cid,
+            user_id=self.user_a_id,
+            incident_id=uuid.uuid4(),
+            idempotency_key=ikey,
+            payload_hash="differing_hash_xyz",
+            status="PROCESSED",
+            created_at=datetime.now(timezone.utc),
+        )
+        mock_res_refetch_bad = MagicMock()
+        mock_res_refetch_bad.scalar_one_or_none.return_value = mock_refetch_bad_hash
+
+        mock_db.execute.side_effect = [
+            mock_res_pre,
+            mock_res_cat,
+            mock_res_user,
+            mock_res_refetch_bad,
+        ]
+
+        with patch("app.services.offline_sync_service.is_within_hcmc_bounds", return_value=True), \
+             patch("app.services.offline_sync_service.find_matching_administrative_unit", return_value=(1, "Phường 1")):
+            with self.assertRaises(ValueError):
+                await submit_offline_incident(
+                    db=mock_db,
+                    data=payload,
+                    current_user_id=self.user_a_id,
+                )
+
+        # Kịch bản 3: Hợp lệ -> Phục hồi Concurrent Idempotent Replay an toàn
+        inc_id = uuid.uuid4()
+        mock_refetch_valid = OfflineSubmission(
+            submission_id=uuid.uuid4(),
+            client_submission_id=cid,
+            user_id=self.user_a_id,
+            incident_id=inc_id,
+            idempotency_key=ikey,
+            payload_hash=current_hash,
+            status="PROCESSED",
+            created_at=datetime.now(timezone.utc),
+        )
+        mock_res_refetch_ok = MagicMock()
+        mock_res_refetch_ok.scalar_one_or_none.return_value = mock_refetch_valid
+
+        mock_incident = Incident(
+            incident_id=inc_id,
+            tracking_code="#INC-CONCURRENT-01",
+        )
+        mock_res_inc = MagicMock()
+        mock_res_inc.scalar_one_or_none.return_value = mock_incident
+
+        mock_db.execute.side_effect = [
+            mock_res_pre,
+            mock_res_cat,
+            mock_res_user,
+            mock_res_refetch_ok,
+            mock_res_inc,
+        ]
+
+        with patch("app.services.offline_sync_service.is_within_hcmc_bounds", return_value=True), \
+             patch("app.services.offline_sync_service.find_matching_administrative_unit", return_value=(1, "Phường 1")):
+            res = await submit_offline_incident(
+                db=mock_db,
+                data=payload,
+                current_user_id=self.user_a_id,
+            )
+
+        self.assertTrue(res.is_duplicate_replay)
+        self.assertEqual(res.tracking_code, "#INC-CONCURRENT-01")
+        self.assertIn("Concurrent Idempotent Replay", res.message)
+
 
 if __name__ == "__main__":
     unittest.main()
