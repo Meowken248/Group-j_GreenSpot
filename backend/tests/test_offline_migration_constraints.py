@@ -93,6 +93,20 @@ class TestOfflineMigrationConstraints(unittest.TestCase):
         self.assertEqual(media.client_file_id, "file_abc_1")
         self.assertEqual(media.media_type, "IMAGE")
 
+    def test_migration_039_script(self):
+        import importlib.util
+        migration_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "alembic", "versions", "039_add_offline_payload_hash_and_constraints.py")
+        )
+        self.assertTrue(os.path.exists(migration_path), "Migration 039 phải tồn tại")
+        spec = importlib.util.spec_from_file_location("migration_039", migration_path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        self.assertEqual(mod.revision, "039_offline_payload_hash_constraints")
+        self.assertEqual(mod.down_revision, "038_offline_sync_tables")
+        self.assertTrue(callable(mod.upgrade))
+        self.assertTrue(callable(mod.downgrade))
+
 
 if __name__ == "__main__":
     unittest.main()

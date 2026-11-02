@@ -27,7 +27,6 @@ def upgrade() -> None:
         sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('incident_id', postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column('idempotency_key', sa.String(64), nullable=False),
-        sa.Column('payload_hash', sa.String(64), nullable=True),
         sa.Column('status', sa.String(30), server_default='PROCESSED', nullable=False),
         sa.Column('client_timestamp', sa.DateTime(timezone=True), nullable=True),
         sa.Column('server_received_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
@@ -39,8 +38,7 @@ def upgrade() -> None:
         sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
         sa.ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['incident_id'], ['incidents.incident_id'], ondelete='SET NULL'),
-        sa.UniqueConstraint('client_submission_id', name='uq_offline_submissions_client_submission_id'),
-        sa.UniqueConstraint('user_id', 'idempotency_key', name='uq_offline_user_idempotency')
+        sa.UniqueConstraint('client_submission_id', name='uq_offline_submissions_client_submission_id')
     )
     op.create_index('ix_offline_submissions_client_submission_id', 'offline_submissions', ['client_submission_id'])
     op.create_index('ix_offline_submissions_user_id', 'offline_submissions', ['user_id'])
