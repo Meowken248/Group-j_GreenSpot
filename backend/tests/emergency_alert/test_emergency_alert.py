@@ -245,6 +245,8 @@ class TestEmergencyAlertSTT45(unittest.IsolatedAsyncioTestCase):
         )
         self.assertTrue(user_alert.has_active_alert)
         self.assertEqual(user_alert.title, "CẢNH BÁO KHẨN CẤP")
+        self.assertIsNotNone(user_alert.situation_message)
+        assert user_alert.situation_message is not None
         self.assertIn("Ngập nặng trong bán kính 2.0 km quanh bạn", user_alert.situation_message)
 
         # c3 cách 15km -> Không nhận được
