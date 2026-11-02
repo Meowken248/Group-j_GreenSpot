@@ -177,3 +177,34 @@ def save_video_media(
 
     return file_url, thumbnail_url, file_size, watermark_summary
 
+
+def save_audio_media(
+    audio_bytes: bytes,
+    extension: str = "webm",
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
+    server_time_str: Optional[str] = None,
+) -> Tuple[str, Optional[str], int, Optional[str]]:
+    """
+    Lưu trữ file âm thanh ghi âm (tối đa 20MB) trong thư mục uploads/incidents.
+    """
+    if not server_time_str:
+        server_time_str = get_current_vn_time_str()
+
+    file_id = uuid.uuid4().hex
+    safe_ext = extension.lower().lstrip(".")
+    if not safe_ext:
+        safe_ext = "webm"
+    filename = f"incident_audio_{file_id}.{safe_ext}"
+    file_path = INCIDENTS_MEDIA_DIR / filename
+
+    with open(file_path, "wb") as f:
+        f.write(audio_bytes)
+    file_size = len(audio_bytes)
+
+    gps_str = f"GPS: {latitude:.6f}, {longitude:.6f}" if (latitude is not None and longitude is not None) else "GPS: Chưa xác định"
+    watermark_summary = f"[AUDIO] THỜI GIAN: {server_time_str} | {gps_str}"
+    file_url = f"/uploads/incidents/{filename}"
+
+    return file_url, None, file_size, watermark_summary
+

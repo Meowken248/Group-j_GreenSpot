@@ -15,7 +15,11 @@ from app.services.offline_sync_service import (
     submit_offline_incident,
     get_submission_status,
 )
-from app.services.watermark_service import apply_image_watermark, save_video_media
+from app.services.watermark_service import (
+    apply_image_watermark,
+    save_video_media,
+    save_audio_media,
+)
 
 router = APIRouter(prefix="/offline-sync", tags=["Offline Sync (STT 19)"])
 
@@ -111,8 +115,17 @@ async def upload_offline_media_endpoint(
     content_type = file.content_type or ""
 
     is_image = content_type.startswith("image/") or filename.lower().endswith((".jpg", ".jpeg", ".png", ".webp"))
-    is_video = content_type.startswith("video/") or filename.lower().endswith((".mp4", ".mov", ".webm"))
-    is_audio = content_type.startswith("audio/") or filename.lower().endswith((".webm", ".mp3", ".wav", ".m4a", ".ogg"))
+    is_audio = (
+        content_type.startswith("audio/")
+        or filename.lower().endswith((".mp3", ".wav", ".m4a", ".ogg", ".aac"))
+    )
+    is_video = (
+        not is_audio
+        and (
+            content_type.startswith("video/")
+            or filename.lower().endswith((".mp4", ".mov", ".webm", ".avi", ".mkv"))
+        )
+    )
 
     if not is_image and not is_video and not is_audio:
         raise HTTPException(
@@ -136,30 +149,42 @@ async def upload_offline_media_endpoint(
             detail="Tệp ghi âm vượt quá dung lượng tối đa 20MB.",
         )
 
-    # Đóng dấu watermark cho ảnh với thời gian chụp thực tế nếu có
+    # Đóng dấu watermark và lưu trữ theo loại phương tiện
     if is_image:
-        watermarked_bytes, watermark_text = apply_image_watermark(
-            image_bytes=content,
+        file_url, thumb_url, actual_size, watermark_text = apply_image_watermark(
+            input_bytes=content,
             latitude=latitude,
             longitude=longitude,
+            server_time_str=captured_at,
         )
-        file_url, thumb_url = save_video_media(watermarked_bytes, filename=filename, is_image=True)
     elif is_video:
-        file_url, thumb_url = save_video_media(content, filename=filename, is_image=False)
-        watermark_text = f"GPS: {latitude}, {longitude}"
+        ext = filename.split(".")[-1] if "." in filename else "mp4"
+        file_url, thumb_url, actual_size, watermark_text = save_video_media(
+            video_bytes=content,
+            extension=ext,
+            latitude=latitude,
+            longitude=longitude,
+            server_time_str=captured_at,
+        )
     else:
         # Audio
-        file_url, thumb_url = save_video_media(content, filename=filename, is_image=False)
-        watermark_text = None
+        ext = filename.split(".")[-1] if "." in filename else "webm"
+        file_url, thumb_url, actual_size, watermark_text = save_audio_media(
+            audio_bytes=content,
+            extension=ext,
+            latitude=latitude,
+            longitude=longitude,
+            server_time_str=captured_at,
+        )
 
     return {
         "client_file_id": client_file_id,
         "file_url": file_url,
         "thumbnail_url": thumb_url,
         "media_type": "IMAGE" if is_image else ("VIDEO" if is_video else "AUDIO"),
-        "file_size_bytes": file_size,
+        "file_size_bytes": actual_size,
         "mime_type": content_type or ("image/jpeg" if is_image else ("video/mp4" if is_video else "audio/webm")),
         "captured_at": captured_at,
-        "watermark_applied": bool(is_image),
+        "watermark_applied": bool(is_image or is_video),
         "watermark_text": watermark_text,
     }
