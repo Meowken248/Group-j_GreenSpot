@@ -3,6 +3,7 @@ import {
   updateQueueItemStatus,
   deleteQueueItem,
 } from "./outboxQueueRepository";
+import { getCurrentUserId } from "./offlineDb";
 import type { OfflineQueueItem, SyncResultSummary } from "../types/offline.types";
 import { AUTH_STORAGE_KEYS } from "../../auth/types/auth.types";
 
@@ -31,45 +32,57 @@ export const resetAllFailedQueueItems = async (): Promise<void> => {
 
 /**
  * Đối soát và phục hồi các mục bị kẹt ở trạng thái SENDING do đóng tab/ứng dụng đột ngột.
+ * Trả về thời gian lease còn lại nhỏ nhất (nếu có mục SENDING chưa hết hạn lease).
  */
-const reconcileStuckSendingItems = async (queue: OfflineQueueItem[]): Promise<void> => {
+const reconcileStuckSendingItems = async (queue: OfflineQueueItem[]): Promise<number | null> => {
   const now = Date.now();
   const token = getValidAccessToken();
-  const stuckItems = queue.filter(
-    (item) => item.status === "SENDING" && now - (item.updated_at || item.created_at) > SENDING_LEASE_TIMEOUT_MS
-  );
+  let minRemainingLease: number | null = null;
 
-  for (const item of stuckItems) {
-    if (token) {
-      try {
-        const res = await fetch(`/api/v1/offline-sync/submissions/${item.client_submission_id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const receipt = await res.json();
-          if (receipt && receipt.status === "PROCESSED") {
-            // Máy chủ đã xử lý thành công: giải phóng khỏi hàng đợi
-            await deleteQueueItem(item.queue_id, true);
-            continue;
+  for (const item of queue) {
+    if (item.status !== "SENDING") continue;
+    const elapsed = now - (item.updated_at || item.created_at);
+
+    if (elapsed > SENDING_LEASE_TIMEOUT_MS) {
+      if (token) {
+        try {
+          const res = await fetch(`/api/v1/offline-sync/submissions/${item.client_submission_id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const receipt = await res.json();
+            if (receipt && receipt.status === "PROCESSED") {
+              // Máy chủ đã xử lý thành công: giải phóng khỏi hàng đợi
+              await deleteQueueItem(item.queue_id, true);
+              continue;
+            }
           }
+        } catch (err) {
+          console.warn("[SyncEngine] Lỗi đối soát biên nhận máy chủ cho mục gián đoạn:", err);
         }
-      } catch (err) {
-        console.warn("[SyncEngine] Lỗi đối soát biên nhận máy chủ cho mục gián đoạn:", err);
+      }
+
+      // Nếu máy chủ chưa nhận: phục hồi về QUEUED để gửi lại
+      await updateQueueItemStatus(item.queue_id, {
+        status: "QUEUED",
+        last_error: "Tiến trình gửi trước bị gián đoạn, đã khôi phục vào hàng đợi",
+      });
+    } else {
+      // Chưa hết hạn lease: tính thời gian còn lại cần lập lịch
+      const remaining = SENDING_LEASE_TIMEOUT_MS - elapsed;
+      if (minRemainingLease === null || remaining < minRemainingLease) {
+        minRemainingLease = remaining;
       }
     }
-
-    // Nếu máy chủ chưa nhận: phục hồi về QUEUED để gửi lại
-    await updateQueueItemStatus(item.queue_id, {
-      status: "QUEUED",
-      last_error: "Tiến trình gửi trước bị gián đoạn, đã khôi phục vào hàng đợi",
-    });
   }
+
+  return minRemainingLease;
 };
 
 /**
- * Đặt lịch tự động thử lại sau 2 và 4 giây khi tới hạn (R14).
+ * Đặt lịch tự động thử lại sau 2 và 4 giây khi tới hạn (R14) hoặc khi lease SENDING hết hạn.
  */
-const scheduleNextRetryIfNeeded = async (): Promise<void> => {
+const scheduleNextRetryIfNeeded = async (pendingLeaseDelay?: number | null): Promise<void> => {
   if (retrySchedulerTimer) {
     clearTimeout(retrySchedulerTimer);
     retrySchedulerTimer = null;
@@ -77,15 +90,35 @@ const scheduleNextRetryIfNeeded = async (): Promise<void> => {
   try {
     const queue = await listUserQueue();
     const now = Date.now();
+    const delays: number[] = [];
+
+    // 1. Độ trễ thử lại của các mục QUEUED
     const pendingWithRetry = queue.filter(
       (item) => item.status === "QUEUED" && item.next_retry_at && item.next_retry_at > now
     );
-    if (pendingWithRetry.length > 0) {
-      const earliest = Math.min(...pendingWithRetry.map((i) => i.next_retry_at!));
-      const delay = Math.max(earliest - now, 200);
+    for (const item of pendingWithRetry) {
+      delays.push(item.next_retry_at! - now);
+    }
+
+    // 2. Độ trễ hết hạn lease của các mục SENDING (mở lại app trước 30 giây)
+    for (const item of queue) {
+      if (item.status === "SENDING") {
+        const elapsed = now - (item.updated_at || item.created_at);
+        if (elapsed < SENDING_LEASE_TIMEOUT_MS) {
+          delays.push(SENDING_LEASE_TIMEOUT_MS - elapsed + 200);
+        }
+      }
+    }
+
+    if (pendingLeaseDelay !== undefined && pendingLeaseDelay !== null && pendingLeaseDelay > 0) {
+      delays.push(pendingLeaseDelay + 200);
+    }
+
+    if (delays.length > 0) {
+      const minDelay = Math.max(Math.min(...delays), 200);
       retrySchedulerTimer = setTimeout(() => {
         syncOutboxQueue();
-      }, delay);
+      }, minDelay);
     }
   } catch (err) {
     console.warn("[SyncEngine] Lỗi lập lịch thử lại:", err);
@@ -299,16 +332,22 @@ export const syncOutboxQueue = async (
     synced_at: new Date().toISOString(),
   };
 
+  let minRemainingLease: number | null = null;
+
   try {
     let queue = await listUserQueue();
 
     // 1. Phục hồi và đối soát các mục bị kẹt ở trạng thái SENDING do đóng tab (Issue 5)
-    await reconcileStuckSendingItems(queue);
+    minRemainingLease = await reconcileStuckSendingItems(queue);
 
     // Nạp lại danh sách hàng đợi sau khi đối soát
     queue = await listUserQueue();
 
     const now = Date.now();
+    const syncUserId = getCurrentUserId();
+    if (!syncUserId) {
+      return summary;
+    }
 
     // 2. Lọc danh sách mục cần gửi (FIFO):
     // Tuân thủ thời điểm retry (R14): next_retry_at <= now hoặc chưa có next_retry_at
@@ -331,6 +370,13 @@ export const syncOutboxQueue = async (
     summary.total = candidateItems.length;
 
     for (const item of candidateItems) {
+      // Kiểm tra tài khoản hiện tại: nếu người dùng chuyển tài khoản hoặc đăng xuất, dừng ngay (Issue 3)
+      const currentActiveUser = getCurrentUserId();
+      if (!currentActiveUser || currentActiveUser !== syncUserId || item.user_id !== currentActiveUser) {
+        console.warn("[SyncEngine] Tài khoản người dùng đã thay đổi hoặc đăng xuất trong lượt đồng bộ. Hủy bỏ tiến trình gửi.");
+        break;
+      }
+
       // Đánh dấu SENDING
       await updateQueueItemStatus(item.queue_id, { status: "SENDING" });
 
@@ -391,8 +437,8 @@ export const syncOutboxQueue = async (
     }
   } finally {
     isSyncInProgress = false;
-    // Tự động kiểm tra và lên lịch cho mục retry tiếp theo (2s, 4s)
-    await scheduleNextRetryIfNeeded();
+    // Tự động kiểm tra và lên lịch cho mục retry tiếp theo (2s, 4s) hoặc lease hết hạn (Issue 5)
+    await scheduleNextRetryIfNeeded(minRemainingLease);
   }
 
   // Phát sự kiện hoàn tất đồng bộ để hiển thị popup kết quả (R20, R21, R22)
@@ -406,7 +452,7 @@ export const syncOutboxQueue = async (
 };
 
 /**
- * Khởi tạo bộ lắng nghe sự kiện mạng (Online/Offline) toàn cục.
+ * Khởi tạo bộ lắng nghe sự kiện mạng (Online/Offline) và đăng nhập lại toàn cục.
  */
 export const initSyncEngineListeners = (): (() => void) => {
   if (typeof window === "undefined") return () => {};
@@ -416,7 +462,14 @@ export const initSyncEngineListeners = (): (() => void) => {
     syncOutboxQueue();
   };
 
+  const handleAuthChange = () => {
+    console.log("[SyncEngine] Phát hiện thay đổi tài khoản hoặc đăng nhập lại. Kích hoạt đồng bộ hàng đợi...");
+    syncOutboxQueue();
+  };
+
   window.addEventListener("online", handleOnline);
+  window.addEventListener("greenspot_auth_changed", handleAuthChange);
+  window.addEventListener("auth_change", handleAuthChange);
 
   // Thử đồng bộ ngay khi khởi động nếu đang có mạng
   if (navigator.onLine) {
@@ -425,5 +478,7 @@ export const initSyncEngineListeners = (): (() => void) => {
 
   return () => {
     window.removeEventListener("online", handleOnline);
+    window.removeEventListener("greenspot_auth_changed", handleAuthChange);
+    window.removeEventListener("auth_change", handleAuthChange);
   };
 };

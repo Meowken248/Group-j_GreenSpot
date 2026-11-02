@@ -78,9 +78,11 @@ const mockDB = {
   },
 };
 
+let mockedActiveUserId = "test_user_recovery_123";
+
 vi.mock("../services/offlineDb", () => ({
   openOfflineDatabase: () => Promise.resolve(mockDB),
-  getCurrentUserId: () => "test_user_recovery_123",
+  getCurrentUserId: () => mockedActiveUserId,
   isQuotaError: () => false,
   STORES: {
     DRAFTS: "drafts",
@@ -91,6 +93,7 @@ vi.mock("../services/offlineDb", () => ({
 
 describe("Sync Engine Retry & Stuck SENDING Recovery (Issue 4, 5, 9)", () => {
   beforeEach(() => {
+    mockedActiveUserId = "test_user_recovery_123";
     mockDraftsStore.data.clear();
     mockQueueStore.data.clear();
     localStorage.clear();
@@ -237,5 +240,132 @@ describe("Sync Engine Retry & Stuck SENDING Recovery (Issue 4, 5, 9)", () => {
     const updated = await getQueueItemById(item.queue_id);
     expect(updated?.status).toBe("QUEUED");
     expect(updated?.retry_count).toBe(0);
+  });
+
+  it("mở lại app trước 30 giây lập lịch đối soát tại thời điểm lease hết hạn (Issue 3 / Issue 5)", async () => {
+    const item = await enqueueReport({
+      client_submission_id: "sub_recent_sending",
+      idempotency_key: "key_recent_sending",
+      user_id: "test_user_recovery_123",
+      title: "Mục vừa bị tắt trình duyệt 10 giây trước",
+      category_id: 1,
+      category_name: "Rác",
+      description: "Mô tả",
+      severity: "LOW",
+      latitude: 10.78,
+      longitude: 106.68,
+      address_text: "Địa chỉ",
+      is_anonymous: false,
+      media_blobs: [],
+      voice_blob: null,
+    });
+
+    // Vừa gửi cách đây 10 giây -> Còn 20 giây lease
+    const tenSecondsAgo = Date.now() - 10000;
+    await updateQueueItemStatus(item.queue_id, {
+      status: "SENDING",
+    });
+    const raw = mockQueueStore.data.get(item.queue_id);
+    raw.updated_at = tenSecondsAgo;
+    mockQueueStore.data.set(item.queue_id, raw);
+
+    let sendCalled = false;
+    global.fetch = vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes("/submissions/sub_recent_sending")) {
+        return { ok: false, status: 404 };
+      }
+      sendCalled = true;
+      return {
+        ok: true,
+        status: 201,
+        json: async () => ({
+          tracking_code: "#INC-20261102-RECENT-RECOVERED",
+          incident_id: "inc_recent",
+          points_awarded: 50,
+        }),
+      };
+    });
+
+    // Lần đồng bộ đầu tiên khi mở lại ứng dụng: chưa đủ 30 giây lease -> Chưa gửi ngay
+    const summaryFirst = await syncOutboxQueue();
+    expect(summaryFirst.total).toBe(0);
+    expect(sendCalled).toBe(false);
+
+    // Thời gian trôi qua 21 giây (vượt qua mốc lease còn lại)
+    await vi.advanceTimersByTimeAsync(21000);
+
+    // Sau khi timer hết hạn lease kích hoạt -> Đối soát và gửi thành công
+    expect(sendCalled).toBe(true);
+    const queueAfter = await listUserQueue("test_user_recovery_123");
+    expect(queueAfter.length).toBe(0);
+  });
+
+  it("ngừng đồng bộ ngay lập tức nếu người dùng đổi tài khoản trong khi đang gửi (Issue 3)", async () => {
+    // Tạo 2 mục trong hàng đợi của user A
+    await enqueueReport({
+      client_submission_id: "sub_user_a_1",
+      idempotency_key: "key_user_a_1",
+      user_id: "test_user_recovery_123",
+      title: "Phản ánh A1",
+      category_id: 1,
+      category_name: "Rác",
+      description: "Mô tả",
+      severity: "LOW",
+      latitude: 10.78,
+      longitude: 106.68,
+      address_text: "Địa chỉ",
+      is_anonymous: false,
+      media_blobs: [],
+      voice_blob: null,
+    });
+
+    await enqueueReport({
+      client_submission_id: "sub_user_a_2",
+      idempotency_key: "key_user_a_2",
+      user_id: "test_user_recovery_123",
+      title: "Phản ánh A2",
+      category_id: 1,
+      category_name: "Rác",
+      description: "Mô tả",
+      severity: "LOW",
+      latitude: 10.78,
+      longitude: 106.68,
+      address_text: "Địa chỉ",
+      is_anonymous: false,
+      media_blobs: [],
+      voice_blob: null,
+    });
+
+    const sentTitles: string[] = [];
+    global.fetch = vi.fn().mockImplementation(async (url: string, opts: any) => {
+      if (url.includes("/api/v1/offline-sync/incidents")) {
+        const body = JSON.parse(opts.body);
+        sentTitles.push(body.title);
+
+        // Giả lập giữa chừng: người dùng đăng xuất hoặc chuyển sang user B
+        mockedActiveUserId = "different_user_b";
+        localStorage.setItem("greenspot_user", JSON.stringify({ user_id: "different_user_b" }));
+
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({
+            tracking_code: `#INC-${body.client_submission_id}`,
+            incident_id: "inc_x",
+            points_awarded: 50,
+          }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    const summary = await syncOutboxQueue();
+    // Chỉ gửi được 1 mục đầu tiên, mục thứ 2 bị dừng lại để bảo vệ tài khoản
+    expect(sentTitles).toEqual(["Phản ánh A1"]);
+    expect(summary.success_count).toBe(1);
+
+    // Mục thứ 2 vẫn an toàn trong hàng đợi của User A
+    const queueA = await listUserQueue("test_user_recovery_123");
+    expect(queueA.some((i) => i.title === "Phản ánh A2")).toBe(true);
   });
 });
