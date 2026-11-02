@@ -750,6 +750,10 @@ function App() {
       localStorage.removeItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
       localStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
       localStorage.removeItem(AUTH_STORAGE_KEYS.USER_INFO);
+      localStorage.removeItem("greenspot_incident_draft_v1");
+      if (currentUser?.user_id) {
+        localStorage.removeItem(`greenspot_incident_draft_${currentUser.user_id}`);
+      }
       delete api.defaults.headers.common.Authorization;
       chatSocket.disconnect();
       setGlobalUnreadChatCount(0);

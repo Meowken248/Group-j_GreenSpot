@@ -24,16 +24,23 @@ import { DraftRestoreModal } from "./components/DraftRestoreModal";
 import { OfflineOutboxPage } from "../offline/pages/OfflineOutboxPage";
 import { saveDraftToDb, getDraftById } from "../offline/services/draftRepository";
 import { getCurrentUserId } from "../offline/services/offlineDb";
+import type { OfflineQueueItem } from "../offline/types/offline.types";
 import "./ReportContainer.scss";
 
 interface ReportContainerProps {
   onNavigateTab: (tab: string) => void;
   onRequireLogin: (redirectUrl: string) => void;
+  initialDraftId?: string | null;
+  editingQueueItem?: OfflineQueueItem | null;
+  onClearEditingItem?: () => void;
 }
 
 export const ReportContainer: React.FC<ReportContainerProps> = ({
   onNavigateTab,
   onRequireLogin,
+  initialDraftId,
+  editingQueueItem,
+  onClearEditingItem,
 }) => {
   const [currentStep, setCurrentStep] = useState<ReportStep>(1);
   const [formData, setFormData] = useState<ReportFormData>(INITIAL_FORM_DATA);
@@ -63,62 +70,118 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
         console.warn("Lỗi tải danh mục sự cố:", err);
       });
 
-    // 2. Kiểm tra bản nháp chưa gửi từ lần trước
-    if (hasValidDraft()) {
-      const saved = loadDraft();
-      if (saved) {
-        setPendingDraft(saved);
-        setDraftModalOpen(true);
+      // 2. Nếu có bản nháp từ tham số hoặc mục sửa từ hàng đợi
+      if (initialDraftId) {
+        handleResumeIndexedDbDraft(initialDraftId);
+        return;
       }
-    }
-  }, [onRequireLogin]);
 
-  // Hiển thị Toast thông báo 2 giây
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 2000);
-  };
+      if (editingQueueItem) {
+        setFormData({
+          category_id: editingQueueItem.category_id,
+          category_code: "",
+          category_name: editingQueueItem.category_name,
+          title: editingQueueItem.title,
+          description: editingQueueItem.description,
+          severity: editingQueueItem.severity,
+          media: (editingQueueItem.media_blobs || []).map((m) => ({
+            id: m.client_file_id,
+            file: new File([m.blob], m.name, { type: m.mime_type }),
+            preview_url: URL.createObjectURL(m.blob),
+            media_type: m.media_type,
+            mime_type: m.mime_type,
+            file_size_bytes: m.size,
+          })),
+          location: {
+            latitude: editingQueueItem.latitude,
+            longitude: editingQueueItem.longitude,
+            address_text: editingQueueItem.address_text,
+            source: "PIN",
+          },
+          is_anonymous: editingQueueItem.is_anonymous,
+          reporter_phone: editingQueueItem.reporter_phone,
+          voice_blob: editingQueueItem.voice_blob || null,
+        } as any);
+        setCurrentStep(1);
+        showToast("Đang sửa phản ánh từ hàng đợi");
+        return;
+      }
 
-  // Cập nhật dữ liệu biểu mẫu
-  const handleUpdateFormData = (updates: Partial<ReportFormData>) => {
-    setFormData((prev) => {
-      const next = { ...prev, ...updates };
-      // Tự động lưu nháp ngầm vào localStorage & IndexedDB (R04)
-      saveDraft(next, currentStep);
+      // 3. Kiểm tra bản nháp chưa gửi của chính tài khoản hiện tại (R18)
+      const currentUid = getCurrentUserId();
+      if (hasValidDraft(currentUid)) {
+        const saved = loadDraft(currentUid);
+        if (saved) {
+          setPendingDraft(saved);
+          setDraftModalOpen(true);
+        }
+      }
+    }, [onRequireLogin, initialDraftId, editingQueueItem]);
+
+    // Hiển thị Toast thông báo 2 giây
+    const showToast = (msg: string) => {
+      setToastMessage(msg);
+      setTimeout(() => {
+        setToastMessage(null);
+      }, 2000);
+    };
+
+    // Cập nhật dữ liệu biểu mẫu
+    const handleUpdateFormData = (updates: Partial<ReportFormData>) => {
+      setFormData((prev) => {
+        const next = { ...prev, ...updates };
+        const currentUid = getCurrentUserId();
+        // Tự động lưu nháp ngầm vào localStorage & IndexedDB theo user_id (R04, R18)
+        saveDraft(next, currentStep, currentUid);
+        saveDraftToDb({
+          draft_id: `draft_${currentUid}`,
+          user_id: currentUid,
+          title: next.title || "Bản nháp phản ánh",
+          formData: next,
+          media_blobs: [],
+          voice_blob: (next as any).voice_blob || null,
+          saved_at: new Date().toISOString(),
+          current_step: currentStep,
+          updated_at: Date.now(),
+        }).catch(() => {});
+        return next;
+      });
+    };
+
+    // Nút "Lưu nháp" thủ công (Màn 1)
+    const handleManualSaveDraft = () => {
+      const currentUid = getCurrentUserId();
+      const draftId = `draft_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const mediaBlobs = (formData.media || []).map((m, idx) => ({
+        client_file_id: m.id || `file_${idx}_${Date.now()}`,
+        blob: m.file || new Blob([], { type: m.mime_type || "image/jpeg" }),
+        name: m.file?.name || `media_${idx}.jpg`,
+        media_type: (m.media_type as any) || "IMAGE",
+        mime_type: m.mime_type || "image/jpeg",
+        size: m.file_size_bytes || m.file?.size || 0,
+        captured_at: new Date().toISOString(),
+      }));
+
       saveDraftToDb({
-        draft_id: `draft_${getCurrentUserId()}`,
-        user_id: getCurrentUserId(),
-        title: next.title || "Bản nháp phản ánh",
-        formData: next,
-        media_blobs: [],
-        voice_blob: (next as any).voice_blob || null,
+        draft_id: draftId,
+        user_id: currentUid,
+        title: formData.title || "Bản nháp phản ánh",
+        formData,
+        media_blobs: mediaBlobs,
+        voice_blob: (formData as any).voice_blob || null,
         saved_at: new Date().toISOString(),
         current_step: currentStep,
         updated_at: Date.now(),
-      }).catch(() => {});
-      return next;
-    });
-  };
-
-  // Nút "Lưu nháp" thủ công (Màn 1)
-  const handleManualSaveDraft = () => {
-    saveDraft(formData, currentStep);
-    saveDraftToDb({
-      draft_id: `draft_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      user_id: getCurrentUserId(),
-      title: formData.title || "Bản nháp phản ánh",
-      formData,
-      media_blobs: [],
-      voice_blob: (formData as any).voice_blob || null,
-      saved_at: new Date().toISOString(),
-      current_step: currentStep,
-      updated_at: Date.now(),
-    })
-      .then(() => showToast("Đã lưu nháp vào IndexedDB"))
-      .catch(() => showToast("Đã lưu nháp"));
-  };
+      })
+        .then(() => {
+          saveDraft(formData, currentStep, currentUid);
+          showToast("Đã lưu nháp vào thiết bị thành công");
+        })
+        .catch((err) => {
+          console.error("Lỗi khi lưu nháp:", err);
+          showToast(err.message || "Không thể lưu nháp do bộ nhớ thiết bị đầy.");
+        });
+    };
 
   // Nạp bản nháp từ IndexedDB theo draft_id (R16)
   const handleResumeIndexedDbDraft = async (draftId: string) => {
@@ -146,7 +209,7 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
 
   // Huỷ bỏ bản nháp và bắt đầu mới
   const handleDiscardDraft = () => {
-    clearDraft();
+    clearDraft(getCurrentUserId());
     setFormData(INITIAL_FORM_DATA);
     setCurrentStep(1);
     setDraftModalOpen(false);
@@ -157,7 +220,7 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
     if (currentStep < 5) {
       const next = (currentStep + 1) as ReportStep;
       setCurrentStep(next);
-      saveDraft(formData, next);
+      saveDraft(formData, next, getCurrentUserId());
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
@@ -260,11 +323,12 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
                 onNavigateStep={handleNavigateStep}
                 onPrevStep={handlePrevStep}
                 onClearDraftAndReset={() => {
-                  clearDraft();
+                  clearDraft(getCurrentUserId());
                   setFormData(INITIAL_FORM_DATA);
+                  onClearEditingItem?.();
                 }}
                 onSessionExpired={() => {
-                  saveDraft(formData, currentStep);
+                  saveDraft(formData, currentStep, getCurrentUserId());
                   onRequireLogin("/report");
                 }}
                 onGoHome={() => onNavigateTab("map")}

@@ -50,5 +50,29 @@ describe("draftStorage - Quản lý bản nháp phản ánh sự cố", () => {
     expect(hasValidDraft()).toBe(false);
     expect(loadDraft()).toBeNull();
   });
+
+  it("phân tách bản nháp giữa các tài khoản khác nhau (R18)", () => {
+    const dataUserA = {
+      ...INITIAL_FORM_DATA,
+      title: "Bản nháp của User A",
+    };
+    const dataUserB = {
+      ...INITIAL_FORM_DATA,
+      title: "Bản nháp của User B",
+    };
+
+    saveDraft(dataUserA, 1, "user_A");
+    saveDraft(dataUserB, 2, "user_B");
+
+    const loadedA = loadDraft("user_A");
+    const loadedB = loadDraft("user_B");
+
+    expect(loadedA?.formData.title).toBe("Bản nháp của User A");
+    expect(loadedB?.formData.title).toBe("Bản nháp của User B");
+
+    clearDraft("user_A");
+    expect(hasValidDraft("user_A")).toBe(false);
+    expect(hasValidDraft("user_B")).toBe(true);
+  });
 });
 
