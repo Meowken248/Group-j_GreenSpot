@@ -8,6 +8,7 @@ import type {
 import {
   submitIncidentReport,
   checkNearbyDuplicates,
+  uploadMediaWithWatermark,
 } from "../services/reportService";
 import { DuplicateWarningModal } from "./DuplicateWarningModal";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
@@ -148,7 +149,39 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
     }
 
     try {
-      const result = await submitIncidentReport(formData);
+      // 1. Tải lên các tệp nhị phân Blob chưa có URL (khôi phục từ bản nháp ngoại tuyến) trước khi gửi trực tuyến (Issue 1)
+      const updatedMedia = [...(formData.media || [])];
+      let hasMissingBlobUploads = false;
+
+      for (let i = 0; i < updatedMedia.length; i++) {
+        const m = updatedMedia[i];
+        if ((!m.file_url || m.file_url.trim() === "") && m.file) {
+          hasMissingBlobUploads = true;
+          if (!navigator.onLine) {
+            await handleEnqueueOfflineReport();
+            return;
+          }
+          const coords = formData.location
+            ? { lat: formData.location.latitude, lng: formData.location.longitude }
+            : undefined;
+          const uploadRes = await uploadMediaWithWatermark(m.file, coords);
+          updatedMedia[i] = {
+            ...m,
+            id: uploadRes.id || m.id,
+            file_url: uploadRes.file_url,
+            thumbnail_url: uploadRes.thumbnail_url,
+            media_type: uploadRes.media_type,
+            file_size_bytes: uploadRes.file_size_bytes,
+            mime_type: uploadRes.mime_type,
+          };
+        }
+      }
+
+      const submissionPayload = hasMissingBlobUploads
+        ? { ...formData, media: updatedMedia }
+        : formData;
+
+      const result = await submitIncidentReport(submissionPayload);
       if (editingQueueItemId) {
         await deleteQueueItem(editingQueueItemId, true).catch(() => {});
       }

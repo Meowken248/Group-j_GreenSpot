@@ -13,7 +13,7 @@ import {
   clearDraft,
   hasValidDraft,
 } from "./services/draftStorage";
-import { fetchIncidentCategories } from "./services/reportService";
+import { fetchIncidentCategories, isCoordinatesInHCMC } from "./services/reportService";
 import { StepProgressBar } from "./components/StepProgressBar";
 import { Step1CategoryAndDesc } from "./components/Step1CategoryAndDesc";
 import { Step2MediaCapture } from "./components/Step2MediaCapture";
@@ -51,6 +51,7 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
   const [draftModalOpen, setDraftModalOpen] = useState<boolean>(false);
   const [pendingDraft, setPendingDraft] = useState<DraftData | null>(null);
   const [pendingIndexedDraft, setPendingIndexedDraft] = useState<OfflineDraft | null>(null);
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(initialDraftId || null);
   const [editingQueueItemId, setEditingQueueItemId] = useState<string | null>(() => {
     return editingQueueItem ? editingQueueItem.queue_id : null;
   });
@@ -82,6 +83,7 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
 
       // 2. Nếu có bản nháp từ tham số hoặc mục sửa từ hàng đợi
       if (initialDraftId) {
+        setActiveDraftId(initialDraftId);
         handleResumeIndexedDbDraft(initialDraftId);
         return;
       }
@@ -98,6 +100,8 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
             id: m.client_file_id,
             file: new File([m.blob], m.name, { type: m.mime_type }),
             preview_url: URL.createObjectURL(m.blob),
+            file_url: "",
+            thumbnail_url: "",
             media_type: m.media_type,
             mime_type: m.mime_type,
             file_size_bytes: m.size,
@@ -107,6 +111,8 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
             longitude: editingQueueItem.longitude,
             address_text: editingQueueItem.address_text,
             source: "PIN",
+            is_within_hcmc: isCoordinatesInHCMC(editingQueueItem.latitude, editingQueueItem.longitude),
+            accuracy_meters: 10,
           },
           is_anonymous: editingQueueItem.is_anonymous,
           reporter_phone: editingQueueItem.reporter_phone,
@@ -205,6 +211,7 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
         updated_at: Date.now(),
       })
         .then(() => {
+          setActiveDraftId(draftId);
           saveDraft(formData, currentStep, currentUid);
           showToast("Đã lưu nháp vào thiết bị thành công");
         })
@@ -219,6 +226,7 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
     try {
       const draft = await getDraftById(draftId);
       if (draft && draft.formData) {
+        setActiveDraftId(draftId);
         const hydratedMedia = (draft.media_blobs && draft.media_blobs.length > 0)
           ? draft.media_blobs.map((m) => ({
               id: m.client_file_id,
@@ -232,8 +240,19 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
             }))
           : (draft.formData.media || []);
 
+        const resolvedLocation = draft.formData.location
+          ? {
+              ...draft.formData.location,
+              is_within_hcmc: isCoordinatesInHCMC(
+                draft.formData.location.latitude,
+                draft.formData.location.longitude
+              ),
+            }
+          : undefined;
+
         setFormData({
           ...draft.formData,
+          location: resolvedLocation || draft.formData.location,
           media: hydratedMedia,
           voice_blob: draft.voice_blob || (draft.formData as any).voice_blob || null,
         } as any);
@@ -249,6 +268,7 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
   // Chấp nhận khôi phục bản nháp (ưu tiên dữ liệu IndexedDB có nhị phân Blob)
   const handleResumeDraft = () => {
     if (pendingIndexedDraft) {
+      setActiveDraftId(pendingIndexedDraft.draft_id);
       const hydratedMedia = (pendingIndexedDraft.media_blobs && pendingIndexedDraft.media_blobs.length > 0)
         ? pendingIndexedDraft.media_blobs.map((m) => ({
             id: m.client_file_id,
@@ -262,14 +282,37 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
           }))
         : (pendingIndexedDraft.formData.media || []);
 
+      const resolvedLocation = pendingIndexedDraft.formData.location
+        ? {
+            ...pendingIndexedDraft.formData.location,
+            is_within_hcmc: isCoordinatesInHCMC(
+              pendingIndexedDraft.formData.location.latitude,
+              pendingIndexedDraft.formData.location.longitude
+            ),
+          }
+        : undefined;
+
       setFormData({
         ...pendingIndexedDraft.formData,
+        location: resolvedLocation || pendingIndexedDraft.formData.location,
         media: hydratedMedia,
         voice_blob: pendingIndexedDraft.voice_blob || (pendingIndexedDraft.formData as any).voice_blob || null,
       } as any);
       setCurrentStep(pendingIndexedDraft.current_step || 1);
     } else if (pendingDraft) {
-      setFormData(pendingDraft.formData);
+      const resolvedLocation = pendingDraft.formData.location
+        ? {
+            ...pendingDraft.formData.location,
+            is_within_hcmc: isCoordinatesInHCMC(
+              pendingDraft.formData.location.latitude,
+              pendingDraft.formData.location.longitude
+            ),
+          }
+        : undefined;
+      setFormData({
+        ...pendingDraft.formData,
+        location: resolvedLocation || pendingDraft.formData.location,
+      });
       setCurrentStep(pendingDraft.current_step);
     }
     setDraftModalOpen(false);
@@ -279,10 +322,18 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
   const handleDiscardDraft = async () => {
     const currentUid = getCurrentUserId();
     clearDraft(currentUid);
-    if (pendingIndexedDraft) {
-      await deleteDraftFromDb(pendingIndexedDraft.draft_id).catch(() => {});
-      setPendingIndexedDraft(null);
+    const draftIdsToDelete = new Set<string>();
+    if (activeDraftId) draftIdsToDelete.add(activeDraftId);
+    if (pendingIndexedDraft?.draft_id) draftIdsToDelete.add(pendingIndexedDraft.draft_id);
+    draftIdsToDelete.add(`draft_${currentUid}`);
+
+    for (const did of draftIdsToDelete) {
+      await deleteDraftFromDb(did).catch(() => {});
     }
+
+    setActiveDraftId(null);
+    setPendingIndexedDraft(null);
+    setPendingDraft(null);
     setFormData(INITIAL_FORM_DATA);
     setCurrentStep(1);
     setDraftModalOpen(false);
@@ -396,8 +447,21 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
                 onNavigateStep={handleNavigateStep}
                 onPrevStep={handlePrevStep}
                 editingQueueItemId={editingQueueItemId}
-                onClearDraftAndReset={() => {
-                  clearDraft(getCurrentUserId());
+                onClearDraftAndReset={async () => {
+                  const currentUid = getCurrentUserId();
+                  clearDraft(currentUid);
+                  const draftIdsToDelete = new Set<string>();
+                  if (activeDraftId) draftIdsToDelete.add(activeDraftId);
+                  if (pendingIndexedDraft?.draft_id) draftIdsToDelete.add(pendingIndexedDraft.draft_id);
+                  draftIdsToDelete.add(`draft_${currentUid}`);
+
+                  for (const did of draftIdsToDelete) {
+                    await deleteDraftFromDb(did).catch(() => {});
+                  }
+
+                  setActiveDraftId(null);
+                  setPendingIndexedDraft(null);
+                  setPendingDraft(null);
                   setFormData(INITIAL_FORM_DATA);
                   setEditingQueueItemId(null);
                   onClearEditingItem?.();
