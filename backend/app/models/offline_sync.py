@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import List, Optional
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -31,6 +31,9 @@ class OfflineSubmission(Base, TimestampMixin):
     idempotency_key: Mapped[str] = mapped_column(
         String(64), nullable=False, index=True
     )
+    payload_hash: Mapped[Optional[str]] = mapped_column(
+        String(64), nullable=True, index=True
+    )
     status: Mapped[str] = mapped_column(
         String(30), default="PROCESSED", nullable=False, index=True
     )
@@ -51,6 +54,10 @@ class OfflineSubmission(Base, TimestampMixin):
     )
     version: Mapped[int] = mapped_column(
         Integer, default=1, nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "idempotency_key", name="uq_offline_user_idempotency"),
     )
 
     user = relationship("User", foreign_keys=[user_id], lazy="selectin")

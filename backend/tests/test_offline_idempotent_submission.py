@@ -18,6 +18,7 @@ from app.models.rbac import User
 from app.services.offline_sync_service import (
     submit_offline_incident,
     get_submission_status,
+    compute_payload_hash,
 )
 from tests.fixtures.offline_fixtures import (
     get_mock_user_a_id,
@@ -79,6 +80,13 @@ class TestOfflineIdempotentSubmission(unittest.IsolatedAsyncioTestCase):
         existing_incident_id = uuid.uuid4()
         existing_submission_id = uuid.uuid4()
 
+        raw_payload = create_valid_offline_payload(
+            client_submission_id=cid,
+            idempotency_key=ikey,
+        )
+        payload = OfflineSubmissionRequest(**raw_payload)
+        expected_hash = compute_payload_hash(payload)
+
         # Giả lập bản ghi đã tồn tại trong offline_submissions của User A
         mock_existing_sub = OfflineSubmission(
             submission_id=existing_submission_id,
@@ -86,6 +94,7 @@ class TestOfflineIdempotentSubmission(unittest.IsolatedAsyncioTestCase):
             user_id=self.user_a_id,
             incident_id=existing_incident_id,
             idempotency_key=ikey,
+            payload_hash=expected_hash,
             status="PROCESSED",
             created_at=datetime.now(timezone.utc),
         )
@@ -108,13 +117,6 @@ class TestOfflineIdempotentSubmission(unittest.IsolatedAsyncioTestCase):
         mock_res_inc.scalar_one_or_none.return_value = mock_existing_incident
 
         mock_db.execute.side_effect = [mock_res_sub, mock_res_inc]
-
-        payload = OfflineSubmissionRequest(
-            **create_valid_offline_payload(
-                client_submission_id=cid,
-                idempotency_key=ikey,
-            )
-        )
 
         # Gọi service
         response = await submit_offline_incident(
@@ -236,6 +238,94 @@ class TestOfflineIdempotentSubmission(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(mock_user.total_green_points, 150)
         # db.commit() phải được gọi đúng 1 lần duy nhất cho toàn bộ giao dịch
         mock_db.commit.assert_awaited_once()
+
+    async def test_same_idempotency_key_different_submission_id_treated_as_duplicate(self):
+        """
+        Cùng idempotency_key nhưng client_submission_id khác nhau (Issue 6):
+        Hệ thống vẫn nhận diện là trùng lặp, không tạo sự cố mới, không cộng điểm 2 lần.
+        """
+        mock_db = AsyncMock()
+        ikey = "idemp_shared_key_111"
+        existing_sub_id = uuid.uuid4()
+        existing_inc_id = uuid.uuid4()
+
+        payload = OfflineSubmissionRequest(
+            **create_valid_offline_payload(
+                client_submission_id="sub_new_cid_222",
+                idempotency_key=ikey,
+            )
+        )
+        h = compute_payload_hash(payload)
+
+        mock_existing_sub = OfflineSubmission(
+            submission_id=existing_sub_id,
+            client_submission_id="sub_old_cid_111",
+            user_id=self.user_a_id,
+            incident_id=existing_inc_id,
+            idempotency_key=ikey,
+            payload_hash=h,
+            status="PROCESSED",
+            created_at=datetime.now(timezone.utc),
+        )
+        mock_inc = Incident(
+            incident_id=existing_inc_id,
+            tracking_code="#INC-20261102-OLD01",
+        )
+
+        mock_res_sub = MagicMock()
+        mock_res_sub.scalar_one_or_none.return_value = mock_existing_sub
+        mock_res_inc = MagicMock()
+        mock_res_inc.scalar_one_or_none.return_value = mock_inc
+        mock_db.execute.side_effect = [mock_res_sub, mock_res_inc]
+
+        resp = await submit_offline_incident(
+            db=mock_db,
+            data=payload,
+            current_user_id=self.user_a_id,
+        )
+
+        self.assertTrue(resp.is_duplicate_replay)
+        self.assertEqual(resp.points_awarded, 0)
+        self.assertEqual(resp.tracking_code, "#INC-20261102-OLD01")
+
+    async def test_reused_idempotency_key_with_different_payload_raises_error(self):
+        """
+        Cùng idempotency_key nhưng đổi nội dung phản ánh (Issue 6):
+        Hệ thống phải phát hiện sai lệch payload_hash và từ chối với lỗi rõ ràng.
+        """
+        mock_db = AsyncMock()
+        ikey = "idemp_tampered_key_333"
+
+        payload = OfflineSubmissionRequest(
+            **create_valid_offline_payload(
+                client_submission_id="sub_tampered_333",
+                idempotency_key=ikey,
+                title="Tiêu đề đã bị thay đổi hoàn toàn",
+            )
+        )
+
+        mock_existing_sub = OfflineSubmission(
+            submission_id=uuid.uuid4(),
+            client_submission_id="sub_tampered_333",
+            user_id=self.user_a_id,
+            incident_id=uuid.uuid4(),
+            idempotency_key=ikey,
+            payload_hash="old_different_hash_abc123",
+            status="PROCESSED",
+            created_at=datetime.now(timezone.utc),
+        )
+        mock_res_sub = MagicMock()
+        mock_res_sub.scalar_one_or_none.return_value = mock_existing_sub
+        mock_db.execute.side_effect = [mock_res_sub]
+
+        with self.assertRaises(ValueError) as ctx:
+            await submit_offline_incident(
+                db=mock_db,
+                data=payload,
+                current_user_id=self.user_a_id,
+            )
+
+        self.assertIn("đã được sử dụng với nội dung phản ánh khác", str(ctx.exception))
 
 
 if __name__ == "__main__":

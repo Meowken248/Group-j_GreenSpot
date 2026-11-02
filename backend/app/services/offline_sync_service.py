@@ -1,7 +1,10 @@
+import hashlib
+import json
 import uuid
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 from sqlalchemy import select, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.incident import Incident, IncidentMedia, WasteCategory
@@ -20,6 +23,23 @@ from app.services.incident_service import (
 )
 
 
+def compute_payload_hash(data: OfflineSubmissionRequest) -> str:
+    """Băm nội dung nghiệp vụ phản ánh để kiểm soát tính toàn vẹn idempotency."""
+    core_content = {
+        "category_id": data.category_id,
+        "title": (data.title or "").strip(),
+        "description": (data.description or "").strip(),
+        "severity": data.severity,
+        "latitude": round(float(data.latitude), 6),
+        "longitude": round(float(data.longitude), 6),
+        "address_text": (data.address_text or "").strip(),
+        "is_anonymous": bool(data.is_anonymous),
+        "media_count": len(data.media or []),
+    }
+    dumped = json.dumps(core_content, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(dumped.encode("utf-8")).hexdigest()
+
+
 async def submit_offline_incident(
     db: AsyncSession,
     data: OfflineSubmissionRequest,
@@ -28,14 +48,21 @@ async def submit_offline_incident(
     """
     Tiếp nhận và xử lý phản ánh ngoại tuyến từ hàng đợi gửi (STT 19 - Chế độ Offline-First).
     Đảm bảo tính nguyên tử (Atomic) và chống gửi lặp (Idempotent):
-    1. Kiểm tra client_submission_id trong bảng offline_submissions.
-    2. Nếu đã tồn tại: trả về kết quả đã xử lý trước đó, không tạo sự cố trùng, không cộng điểm lặp.
-    3. Nếu chưa: tạo sự cố mới, lưu bằng chứng media & watermark thời gian chụp, tích điểm Công dân Xanh,
+    1. Kiểm tra client_submission_id VÀ (user_id, idempotency_key).
+    2. Xác thực content hash: cùng khóa nhưng đổi nội dung phản ánh -> từ chối.
+    3. Nếu đúng là bản ghi cũ gửi lặp: trả về kết quả đã xử lý, không tạo sự cố trùng, không cộng lặp điểm.
+    4. Nếu chưa: tạo sự cố mới, lưu bằng chứng media & watermark thời gian chụp, tích điểm Công dân Xanh,
        ghi nhận biên nhận offline_submissions và commit toàn bộ trong 1 transaction duy nhất.
     """
-    # 1. Kiểm tra Idempotency: Đã xử lý client_submission_id này chưa?
+    current_payload_hash = compute_payload_hash(data)
+
+    # 1. Kiểm tra Idempotency theo cả client_submission_id VÀ (user_id, idempotency_key)
     existing_sub_stmt = select(OfflineSubmission).where(
-        OfflineSubmission.client_submission_id == data.client_submission_id
+        (OfflineSubmission.client_submission_id == data.client_submission_id)
+        | (
+            (OfflineSubmission.user_id == current_user_id)
+            & (OfflineSubmission.idempotency_key == data.idempotency_key)
+        )
     )
     existing_sub_res = await db.execute(existing_sub_stmt)
     existing_sub = existing_sub_res.scalar_one_or_none()
@@ -44,6 +71,13 @@ async def submit_offline_incident(
         # Nếu đã có bản ghi: kiểm tra quyền sở hữu của user
         if existing_sub.user_id != current_user_id:
             raise PermissionError("Bạn không có quyền truy cập biên nhận phản ánh của tài khoản khác.")
+
+        # Kiểm tra tính toàn vẹn nội dung: Nếu cùng khóa nhưng đổi nội dung phản ánh
+        if existing_sub.payload_hash and existing_sub.payload_hash != current_payload_hash:
+            raise ValueError(
+                "Khóa chống trùng (Idempotency Key / Submission ID) đã được sử dụng với nội dung phản ánh khác. "
+                "Không thể thay đổi nội dung của yêu cầu đã ghi nhận."
+            )
 
         # Lấy thông tin incident đã tạo
         incident_stmt = select(Incident).where(Incident.incident_id == existing_sub.incident_id)
@@ -168,6 +202,7 @@ async def submit_offline_incident(
         user_id=current_user_id,
         incident_id=new_incident.incident_id,
         idempotency_key=data.idempotency_key,
+        payload_hash=current_payload_hash,
         status="PROCESSED",
         client_timestamp=data.client_timestamp,
         server_received_at=now_utc,
@@ -182,9 +217,39 @@ async def submit_offline_incident(
     )
     db.add(submission_receipt)
 
-    # 11. Commit toàn bộ giao dịch nguyên tử
-    await db.commit()
-    await db.refresh(new_incident)
+    # 11. Commit toàn bộ giao dịch nguyên tử, chống xung đột ghi đồng thời
+    try:
+        await db.commit()
+        await db.refresh(new_incident)
+    except IntegrityError:
+        await db.rollback()
+        # Xung đột khoá duy nhất do request đồng thời: đọc lại bản ghi đã commit
+        refetch_stmt = select(OfflineSubmission).where(
+            (OfflineSubmission.client_submission_id == data.client_submission_id)
+            | (
+                (OfflineSubmission.user_id == current_user_id)
+                & (OfflineSubmission.idempotency_key == data.idempotency_key)
+            )
+        )
+        refetch_res = await db.execute(refetch_stmt)
+        refetched = refetch_res.scalar_one_or_none()
+        if refetched:
+            incident_stmt = select(Incident).where(Incident.incident_id == refetched.incident_id)
+            incident_res = await db.execute(incident_stmt)
+            incident = incident_res.scalar_one_or_none()
+            tracking_code = incident.tracking_code if incident else "N/A"
+            return OfflineSubmissionResponse(
+                submission_id=str(refetched.submission_id),
+                client_submission_id=refetched.client_submission_id,
+                incident_id=str(refetched.incident_id or ""),
+                tracking_code=tracking_code,
+                status=refetched.status,
+                is_duplicate_replay=True,
+                points_awarded=0,
+                created_at=refetched.created_at,
+                message="Yêu cầu đã được tiếp nhận đồng thời trước đó (Concurrent Idempotent Replay).",
+            )
+        raise
 
     return OfflineSubmissionResponse(
         submission_id=str(submission_receipt.submission_id),
