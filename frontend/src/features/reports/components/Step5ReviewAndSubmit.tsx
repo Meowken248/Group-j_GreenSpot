@@ -11,7 +11,7 @@ import {
 } from "../services/reportService";
 import { DuplicateWarningModal } from "./DuplicateWarningModal";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
-import { enqueueReport, deleteQueueItem } from "../../offline/services/outboxQueueRepository";
+import { enqueueReport, replaceQueueItem, deleteQueueItem } from "../../offline/services/outboxQueueRepository";
 import { getCurrentUserId } from "../../offline/services/offlineDb";
 
 interface Step5Props {
@@ -97,7 +97,7 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
         captured_at: new Date().toISOString(),
       }));
 
-      await enqueueReport({
+      const queuePayload = {
         client_submission_id: clientSubId,
         idempotency_key: idempotencyKey,
         user_id: getCurrentUserId(),
@@ -113,12 +113,16 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
         reporter_phone: formData.reporter_phone,
         media_blobs: storedMediaBlobs,
         voice_blob: (formData as any).voice_blob || null,
-      });
+      };
 
-      // R11: Xếp hàng thành công -> thông báo, loại bỏ mục cũ nếu đang sửa mục lỗi, làm trống biểu mẫu
       if (editingQueueItemId) {
-        await deleteQueueItem(editingQueueItemId, true).catch(() => {});
+        // Thay thế nguyên tử mục cũ trong cùng transaction, không bị chặn bởi giới hạn 20 mục (Issue 6)
+        await replaceQueueItem(editingQueueItemId, queuePayload);
+      } else {
+        await enqueueReport(queuePayload);
       }
+
+      // R11: Xếp hàng thành công -> thông báo, làm trống biểu mẫu
       onClearDraftAndReset();
       setQueueSuccessResult(
         "Phản ánh của bạn đã được ghi nhận an toàn vào Hàng đợi gửi (Offline-First). Hệ thống sẽ tự động đồng bộ ngay khi có kết nối mạng."

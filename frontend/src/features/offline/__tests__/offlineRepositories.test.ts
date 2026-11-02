@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   enqueueReport,
+  replaceQueueItem,
   listUserQueue,
   getQueueItemById,
   updateQueueItemStatus,
@@ -263,6 +264,78 @@ describe("Offline Repositories & Sync Engine Suite (STT 19)", () => {
           voice_blob: null,
         })
       ).rejects.toThrow(/đạt dung lượng tối đa/);
+    });
+
+    it("cho phép thay thế nguyên tử mục lỗi khi hàng đợi đã chạm mốc tối đa 20 mục (Issue 6)", async () => {
+      // Đổ đầy 20 mục
+      for (let i = 1; i <= 20; i++) {
+        await enqueueReport({
+          client_submission_id: `sub_fill_${i}`,
+          idempotency_key: `key_fill_${i}`,
+          user_id: "user_test_uuid_123",
+          title: `Phản ánh số ${i}`,
+          category_id: 1,
+          category_name: "Rác",
+          description: "Mô tả",
+          severity: "LOW",
+          latitude: 10.78,
+          longitude: 106.68,
+          address_text: "TP.HCM",
+          is_anonymous: false,
+          media_blobs: [],
+          voice_blob: null,
+        });
+      }
+
+      const queueBefore = await listUserQueue("user_test_uuid_123");
+      expect(queueBefore.length).toBe(20);
+
+      const failedItem = queueBefore[0];
+      await updateQueueItemStatus(failedItem.queue_id, { status: "FAILED" });
+
+      // Gọi enqueue thường sẽ bị chặn vì đã có 20 mục
+      await expect(
+        enqueueReport({
+          client_submission_id: "sub_try_blocked",
+          idempotency_key: "key_try_blocked",
+          user_id: "user_test_uuid_123",
+          title: "Thử thêm bị chặn",
+          category_id: 1,
+          category_name: "Rác",
+          description: "Mô tả",
+          severity: "LOW",
+          latitude: 10.78,
+          longitude: 106.68,
+          address_text: "TP.HCM",
+          is_anonymous: false,
+          media_blobs: [],
+          voice_blob: null,
+        })
+      ).rejects.toThrow(/đạt dung lượng tối đa/);
+
+      // Nhưng replaceQueueItem phải thành công vì thay thế chính mục lỗi đó
+      const replaced = await replaceQueueItem(failedItem.queue_id, {
+        client_submission_id: "sub_replaced_success",
+        idempotency_key: "key_replaced_success",
+        user_id: "user_test_uuid_123",
+        title: "Phản ánh đã sửa hoàn chỉnh",
+        category_id: 1,
+        category_name: "Rác",
+        description: "Mô tả sửa",
+        severity: "HIGH",
+        latitude: 10.78,
+        longitude: 106.68,
+        address_text: "TP.HCM",
+        is_anonymous: false,
+        media_blobs: [],
+        voice_blob: null,
+      });
+
+      expect(replaced.title).toBe("Phản ánh đã sửa hoàn chỉnh");
+      const queueAfter = await listUserQueue("user_test_uuid_123");
+      expect(queueAfter.length).toBe(20); // Vẫn giữ đúng tối đa 20 mục
+      expect(queueAfter.some((i) => i.queue_id === failedItem.queue_id)).toBe(false); // Mục cũ đã bị xóa
+      expect(queueAfter.some((i) => i.title === "Phản ánh đã sửa hoàn chỉnh")).toBe(true); // Mục mới đã được ghi
     });
 
     it("sắp xếp hàng đợi theo thứ tự FIFO cũ nhất lên trước (R13)", async () => {
