@@ -7,11 +7,89 @@ import type { OfflineQueueItem, SyncResultSummary } from "../types/offline.types
 import { AUTH_STORAGE_KEYS } from "../../auth/types/auth.types";
 
 const RETRY_DELAYS_MS = [2000, 4000]; // Khoảng cách giãn cách tăng dần theo R14
+const SENDING_LEASE_TIMEOUT_MS = 30000; // Thời gian tối đa giữ trạng thái SENDING trước khi đối soát
 
 let isSyncInProgress = false;
+let retrySchedulerTimer: ReturnType<typeof setTimeout> | null = null;
 
 const getValidAccessToken = (): string => {
   return localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN) || "";
+};
+
+export const resetAllFailedQueueItems = async (): Promise<void> => {
+  const queue = await listUserQueue();
+  const failedItems = queue.filter((item) => item.status === "FAILED");
+  for (const item of failedItems) {
+    await updateQueueItemStatus(item.queue_id, {
+      status: "QUEUED",
+      retry_count: 0,
+      next_retry_at: null,
+      last_error: null,
+    });
+  }
+};
+
+/**
+ * Đối soát và phục hồi các mục bị kẹt ở trạng thái SENDING do đóng tab/ứng dụng đột ngột.
+ */
+const reconcileStuckSendingItems = async (queue: OfflineQueueItem[]): Promise<void> => {
+  const now = Date.now();
+  const token = getValidAccessToken();
+  const stuckItems = queue.filter(
+    (item) => item.status === "SENDING" && now - (item.updated_at || item.created_at) > SENDING_LEASE_TIMEOUT_MS
+  );
+
+  for (const item of stuckItems) {
+    if (token) {
+      try {
+        const res = await fetch(`/api/v1/offline-sync/submissions/${item.client_submission_id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const receipt = await res.json();
+          if (receipt && receipt.status === "PROCESSED") {
+            // Máy chủ đã xử lý thành công: giải phóng khỏi hàng đợi
+            await deleteQueueItem(item.queue_id, true);
+            continue;
+          }
+        }
+      } catch (err) {
+        console.warn("[SyncEngine] Lỗi đối soát biên nhận máy chủ cho mục gián đoạn:", err);
+      }
+    }
+
+    // Nếu máy chủ chưa nhận: phục hồi về QUEUED để gửi lại
+    await updateQueueItemStatus(item.queue_id, {
+      status: "QUEUED",
+      last_error: "Tiến trình gửi trước bị gián đoạn, đã khôi phục vào hàng đợi",
+    });
+  }
+};
+
+/**
+ * Đặt lịch tự động thử lại sau 2 và 4 giây khi tới hạn (R14).
+ */
+const scheduleNextRetryIfNeeded = async (): Promise<void> => {
+  if (retrySchedulerTimer) {
+    clearTimeout(retrySchedulerTimer);
+    retrySchedulerTimer = null;
+  }
+  try {
+    const queue = await listUserQueue();
+    const now = Date.now();
+    const pendingWithRetry = queue.filter(
+      (item) => item.status === "QUEUED" && item.next_retry_at && item.next_retry_at > now
+    );
+    if (pendingWithRetry.length > 0) {
+      const earliest = Math.min(...pendingWithRetry.map((i) => i.next_retry_at!));
+      const delay = Math.max(earliest - now, 200);
+      retrySchedulerTimer = setTimeout(() => {
+        syncOutboxQueue();
+      }, delay);
+    }
+  } catch (err) {
+    console.warn("[SyncEngine] Lỗi lập lịch thử lại:", err);
+  }
 };
 
 /**
@@ -167,7 +245,21 @@ const sendSingleQueueItem = async (
  * Bộ điều phối đồng bộ tự động hàng đợi gửi (Auto Background Sync Engine).
  * Có thể gọi tự động khi online hoặc gọi thủ công cho một mục cụ thể.
  */
-export const syncOutboxQueue = async (manualQueueId?: string): Promise<SyncResultSummary> => {
+export interface SyncOptions {
+  manualQueueId?: string;
+  retryFailed?: boolean;
+}
+
+/**
+ * Bộ điều phối đồng bộ tự động hàng đợi gửi (Auto Background Sync Engine).
+ * Có thể gọi tự động khi online hoặc gọi thủ công cho một mục cụ thể.
+ */
+export const syncOutboxQueue = async (
+  options?: string | SyncOptions
+): Promise<SyncResultSummary> => {
+  const manualQueueId = typeof options === "string" ? options : options?.manualQueueId;
+  const retryFailed = typeof options === "object" ? options?.retryFailed : false;
+
   if (typeof navigator !== "undefined" && !navigator.onLine) {
     return {
       total: 0,
@@ -177,6 +269,11 @@ export const syncOutboxQueue = async (manualQueueId?: string): Promise<SyncResul
       errors: [],
       synced_at: new Date().toISOString(),
     };
+  }
+
+  // Nếu người dùng yêu cầu thử lại toàn bộ các mục lỗi (R15, R22)
+  if (retryFailed) {
+    await resetAllFailedQueueItems();
   }
 
   if (isSyncInProgress) {
@@ -203,12 +300,29 @@ export const syncOutboxQueue = async (manualQueueId?: string): Promise<SyncResul
   };
 
   try {
-    const queue = await listUserQueue();
+    let queue = await listUserQueue();
 
-    // Lọc danh sách mục cần gửi (FIFO)
-    let candidateItems = queue.filter(
-      (item) => item.status === "QUEUED" || (manualQueueId && item.queue_id === manualQueueId)
-    );
+    // 1. Phục hồi và đối soát các mục bị kẹt ở trạng thái SENDING do đóng tab (Issue 5)
+    await reconcileStuckSendingItems(queue);
+
+    // Nạp lại danh sách hàng đợi sau khi đối soát
+    queue = await listUserQueue();
+
+    const now = Date.now();
+
+    // 2. Lọc danh sách mục cần gửi (FIFO):
+    // Tuân thủ thời điểm retry (R14): next_retry_at <= now hoặc chưa có next_retry_at
+    // Nếu có manualQueueId: ưu tiên gửi ngay không phụ thuộc next_retry_at
+    let candidateItems = queue.filter((item) => {
+      if (manualQueueId) {
+        return item.queue_id === manualQueueId;
+      }
+      if (item.status !== "QUEUED") return false;
+      if (item.next_retry_at && item.next_retry_at > now) {
+        return false; // Chưa tới hạn thử lại
+      }
+      return true;
+    });
 
     if (manualQueueId) {
       candidateItems = queue.filter((item) => item.queue_id === manualQueueId);
@@ -251,7 +365,7 @@ export const syncOutboxQueue = async (manualQueueId?: string): Promise<SyncResul
         const isClientError = err.status && err.status >= 400 && err.status < 500;
 
         if (!isClientError && nextRetryCount < item.max_retries) {
-          // Lỗi mạng hoặc 5xx tạm thời: thử lại có giãn cách (R14)
+          // Lỗi mạng hoặc 5xx tạm thời: thử lại có giãn cách 2s, 4s (R14)
           const delayMs = RETRY_DELAYS_MS[nextRetryCount - 1] || 4000;
           await updateQueueItemStatus(item.queue_id, {
             status: "QUEUED",
@@ -277,6 +391,8 @@ export const syncOutboxQueue = async (manualQueueId?: string): Promise<SyncResul
     }
   } finally {
     isSyncInProgress = false;
+    // Tự động kiểm tra và lên lịch cho mục retry tiếp theo (2s, 4s)
+    await scheduleNextRetryIfNeeded();
   }
 
   // Phát sự kiện hoàn tất đồng bộ để hiển thị popup kết quả (R20, R21, R22)
