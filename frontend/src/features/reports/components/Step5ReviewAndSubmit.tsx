@@ -72,13 +72,26 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
       const clientSubId = `sub_${now}_${Math.random().toString(36).substring(2, 9)}`;
       const idempotencyKey = `idemp_${now}_${Math.random().toString(36).substring(2, 9)}`;
 
+      // Kiểm tra tính toàn vẹn của bằng chứng: Chặn xếp hàng nếu tệp minh chứng bị rỗng hoặc mất dữ liệu (Issue 8)
+      for (const [idx, m] of formData.media.entries()) {
+        const fileObj = m.file;
+        const fileSize = fileObj?.size || m.file_size_bytes || 0;
+        if (!fileObj || fileSize === 0) {
+          setErrorMessage(
+            `Tệp minh chứng "${fileObj?.name || `Tệp số ${idx + 1}`}" bị thiếu dữ liệu nhị phân hoặc không đọc được. Vui lòng kiểm tra lại tệp đính kèm trước khi đưa vào hàng đợi.`
+          );
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       const storedMediaBlobs = formData.media.map((m, index) => ({
         client_file_id: m.id || `file_${index}_${now}`,
-        blob: m.file || new Blob([], { type: m.mime_type || "image/jpeg" }),
+        blob: m.file!,
         name: m.file?.name || `media_${index}.jpg`,
         media_type: (m.media_type as "IMAGE" | "VIDEO") || "IMAGE",
-        mime_type: m.mime_type || "image/jpeg",
-        size: m.file_size_bytes || m.file?.size || 0,
+        mime_type: m.mime_type || m.file?.type || "image/jpeg",
+        size: m.file?.size || m.file_size_bytes || 0,
         captured_at: new Date().toISOString(),
       }));
 

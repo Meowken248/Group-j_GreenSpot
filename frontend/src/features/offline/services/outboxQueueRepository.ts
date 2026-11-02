@@ -15,17 +15,6 @@ export const enqueueReport = async (
 ): Promise<OfflineQueueItem> => {
   const db = await openOfflineDatabase();
   const currentUserId = itemData.user_id || getCurrentUserId();
-
-  // Kiểm tra số lượng mục hiện tại trong hàng đợi của user (R09)
-  const existingItems = await listUserQueue(currentUserId);
-  const activeCount = existingItems.filter(
-    (item) => item.status === "QUEUED" || item.status === "SENDING" || item.status === "FAILED"
-  ).length;
-
-  if (activeCount >= MAX_QUEUE_CAPACITY) {
-    throw new Error(`Hàng đợi đã đạt dung lượng tối đa (${MAX_QUEUE_CAPACITY} phản ánh). Vui lòng kết nối mạng để đồng bộ trước khi gửi thêm.`);
-  }
-
   const now = Date.now();
   const queueItem: OfflineQueueItem = {
     ...itemData,
@@ -42,17 +31,43 @@ export const enqueueReport = async (
 
   return new Promise((resolve, reject) => {
     try {
+      // Đảm bảo kiểm tra dung lượng và ghi mục diễn ra nguyên tử trong cùng 1 transaction readwrite (Issue 10)
       const tx = db.transaction(STORES.OUTBOX_QUEUE, "readwrite");
       const store = tx.objectStore(STORES.OUTBOX_QUEUE);
-      const req = store.put(queueItem);
+      const userIndex = store.index("user_id");
+      const countReq = userIndex.getAll(currentUserId);
 
-      req.onsuccess = () => resolve(queueItem);
-      req.onerror = (e) => {
-        const err = (e.target as IDBRequest).error;
+      countReq.onsuccess = () => {
+        const userItems: OfflineQueueItem[] = countReq.result || [];
+        const activeCount = userItems.filter(
+          (item) => item.status === "QUEUED" || item.status === "SENDING" || item.status === "FAILED"
+        ).length;
+
+        if (activeCount >= MAX_QUEUE_CAPACITY) {
+          reject(new Error(`Hàng đợi đã đạt dung lượng tối đa (${MAX_QUEUE_CAPACITY} phản ánh). Vui lòng kết nối mạng để đồng bộ trước khi gửi thêm.`));
+          return;
+        }
+
+        const putReq = store.put(queueItem);
+        putReq.onsuccess = () => resolve(queueItem);
+        putReq.onerror = (e) => {
+          const err = (e.target as IDBRequest).error;
+          if (isQuotaError(err)) {
+            reject(new Error("Dung lượng bộ nhớ thiết bị đã đầy. Không thể đưa thêm phản ánh vào hàng đợi."));
+          } else {
+            reject(err || new Error("Lỗi khi ghi phản ánh vào hàng đợi"));
+          }
+        };
+      };
+
+      countReq.onerror = (e) => {
+        reject((e.target as IDBRequest).error || new Error("Lỗi khi kiểm tra dung lượng hàng đợi"));
+      };
+
+      tx.onerror = (e) => {
+        const err = (e.target as IDBTransaction).error;
         if (isQuotaError(err)) {
           reject(new Error("Dung lượng bộ nhớ thiết bị đã đầy. Không thể đưa thêm phản ánh vào hàng đợi."));
-        } else {
-          reject(err || new Error("Lỗi khi ghi phản ánh vào hàng đợi"));
         }
       };
     } catch (err) {

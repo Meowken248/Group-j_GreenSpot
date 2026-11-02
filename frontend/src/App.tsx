@@ -366,6 +366,8 @@ function App() {
     };
   }, []);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
+  const [editingQueueItem, setEditingQueueItem] = useState<any | null>(null);
   const topHeaderRef = useRef<HTMLElement>(null);
 
   // Đóng dropdown và popover khi click ra ngoài hoặc bấm Escape
@@ -833,7 +835,7 @@ function App() {
       <SyncResultModal
         result={syncResult}
         onClose={() => setSyncResult(null)}
-        onRetryAllFailed={() => syncOutboxQueue()}
+        onRetryAllFailed={() => syncOutboxQueue({ retryFailed: true })}
         onOpenOutbox={() => {
           setActiveTab("outbox" as TabType);
           window.location.hash = "#outbox";
@@ -1540,10 +1542,20 @@ function App() {
         <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#f8fafc", paddingTop: "76px" }}>
           <OfflineOutboxPage
             onBackToReport={() => {
+              setSelectedDraftId(null);
+              setEditingQueueItem(null);
               setActiveTab("report" as TabType);
               window.location.hash = "#report";
             }}
-            onResumeDraft={(_draftId) => {
+            onEditQueueItem={(queueItem) => {
+              setSelectedDraftId(null);
+              setEditingQueueItem(queueItem);
+              setActiveTab("report" as TabType);
+              window.location.hash = "#report";
+            }}
+            onResumeDraft={(draftId) => {
+              setSelectedDraftId(draftId);
+              setEditingQueueItem(null);
               setActiveTab("report" as TabType);
               window.location.hash = "#report";
             }}
@@ -1552,6 +1564,12 @@ function App() {
       ) : activeTab === "report" ? (
         <div style={{ position: "absolute", inset: 0, zIndex: 10, overflowY: "auto", background: "#090d16", paddingTop: "76px" }}>
           <ReportContainer
+            initialDraftId={selectedDraftId}
+            editingQueueItem={editingQueueItem}
+            onClearEditingItem={() => {
+              setSelectedDraftId(null);
+              setEditingQueueItem(null);
+            }}
             onNavigateTab={(tab) => {
               setActiveTab(tab as TabType);
               window.location.hash = `#${tab}`;
