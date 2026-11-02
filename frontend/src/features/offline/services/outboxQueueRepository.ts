@@ -34,7 +34,7 @@ export const enqueueReport = async (
       // Đảm bảo kiểm tra dung lượng và ghi mục diễn ra nguyên tử trong cùng 1 transaction readwrite (Issue 10)
       const tx = db.transaction(STORES.OUTBOX_QUEUE, "readwrite");
       const store = tx.objectStore(STORES.OUTBOX_QUEUE);
-      const userIndex = store.index("user_id");
+      const userIndex = store.index("by_user_id");
       const countReq = userIndex.getAll(currentUserId);
 
       countReq.onsuccess = () => {

@@ -41,6 +41,13 @@ class MockIDBStore {
     return req;
   }
   index(indexName: string) {
+    const validIndices = ["by_user_id", "by_status", "by_created_at", "by_updated_at"];
+    if (!validIndices.includes(indexName)) {
+      throw new DOMException(
+        `Failed to execute 'index' on 'IDBObjectStore': The specified index '${indexName}' was not found.`,
+        "NotFoundError"
+      );
+    }
     return {
       getAll: (userId: string) => {
         const req: any = { onsuccess: null, onerror: null };
