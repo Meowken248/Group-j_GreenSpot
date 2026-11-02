@@ -11,7 +11,7 @@ import {
 } from "../services/reportService";
 import { DuplicateWarningModal } from "./DuplicateWarningModal";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
-import { enqueueReport } from "../../offline/services/outboxQueueRepository";
+import { enqueueReport, deleteQueueItem } from "../../offline/services/outboxQueueRepository";
 import { getCurrentUserId } from "../../offline/services/offlineDb";
 
 interface Step5Props {
@@ -23,6 +23,7 @@ interface Step5Props {
   onGoHome: () => void;
   onTrackIncident: (trackingCode: string) => void;
   onOpenOutbox?: () => void;
+  editingQueueItemId?: string | null;
 }
 
 export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
@@ -34,6 +35,7 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
   onGoHome,
   onTrackIncident,
   onOpenOutbox,
+  editingQueueItemId,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submissionResult, setSubmissionResult] = useState<IncidentSubmissionResult | null>(null);
@@ -113,7 +115,10 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
         voice_blob: (formData as any).voice_blob || null,
       });
 
-      // R11: Xếp hàng thành công -> thông báo, làm trống biểu mẫu
+      // R11: Xếp hàng thành công -> thông báo, loại bỏ mục cũ nếu đang sửa mục lỗi, làm trống biểu mẫu
+      if (editingQueueItemId) {
+        await deleteQueueItem(editingQueueItemId, true).catch(() => {});
+      }
       onClearDraftAndReset();
       setQueueSuccessResult(
         "Phản ánh của bạn đã được ghi nhận an toàn vào Hàng đợi gửi (Offline-First). Hệ thống sẽ tự động đồng bộ ngay khi có kết nối mạng."
@@ -140,6 +145,9 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
 
     try {
       const result = await submitIncidentReport(formData);
+      if (editingQueueItemId) {
+        await deleteQueueItem(editingQueueItemId, true).catch(() => {});
+      }
       setSubmissionResult(result);
       onClearDraftAndReset(); // Xoá dữ liệu nháp sau khi gửi thành công
     } catch (err: any) {

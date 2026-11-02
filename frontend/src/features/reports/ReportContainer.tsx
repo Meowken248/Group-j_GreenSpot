@@ -22,9 +22,9 @@ import { Step4LocationPicker } from "./components/Step4LocationPicker";
 import { Step5ReviewAndSubmit } from "./components/Step5ReviewAndSubmit";
 import { DraftRestoreModal } from "./components/DraftRestoreModal";
 import { OfflineOutboxPage } from "../offline/pages/OfflineOutboxPage";
-import { saveDraftToDb, getDraftById } from "../offline/services/draftRepository";
+import { saveDraftToDb, getDraftById, listUserDrafts, deleteDraftFromDb } from "../offline/services/draftRepository";
 import { getCurrentUserId } from "../offline/services/offlineDb";
-import type { OfflineQueueItem } from "../offline/types/offline.types";
+import type { OfflineDraft, OfflineQueueItem } from "../offline/types/offline.types";
 import "./ReportContainer.scss";
 
 interface ReportContainerProps {
@@ -50,7 +50,17 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
   // Modal khôi phục bản nháp
   const [draftModalOpen, setDraftModalOpen] = useState<boolean>(false);
   const [pendingDraft, setPendingDraft] = useState<DraftData | null>(null);
+  const [pendingIndexedDraft, setPendingIndexedDraft] = useState<OfflineDraft | null>(null);
+  const [editingQueueItemId, setEditingQueueItemId] = useState<string | null>(() => {
+    return editingQueueItem ? editingQueueItem.queue_id : null;
+  });
   const [isOutboxViewOpen, setIsOutboxViewOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (editingQueueItem) {
+      setEditingQueueItemId(editingQueueItem.queue_id);
+    }
+  }, [editingQueueItem]);
 
   // 1. Kiểm tra Token đăng nhập hợp lệ (Đặc tả Màn 1)
   useEffect(() => {
@@ -107,15 +117,36 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
         return;
       }
 
-      // 3. Kiểm tra bản nháp chưa gửi của chính tài khoản hiện tại (R18)
+      // 3. Kiểm tra bản nháp chưa gửi của chính tài khoản hiện tại (ưu tiên IndexedDB đầy đủ Blob)
       const currentUid = getCurrentUserId();
-      if (hasValidDraft(currentUid)) {
-        const saved = loadDraft(currentUid);
-        if (saved) {
-          setPendingDraft(saved);
-          setDraftModalOpen(true);
-        }
-      }
+      listUserDrafts(currentUid)
+        .then((dbDrafts) => {
+          if (dbDrafts && dbDrafts.length > 0) {
+            const latest = dbDrafts[0];
+            setPendingIndexedDraft(latest);
+            setPendingDraft({
+              formData: latest.formData,
+              current_step: latest.current_step || 1,
+              saved_at: latest.saved_at,
+            });
+            setDraftModalOpen(true);
+          } else if (hasValidDraft(currentUid)) {
+            const saved = loadDraft(currentUid);
+            if (saved) {
+              setPendingDraft(saved);
+              setDraftModalOpen(true);
+            }
+          }
+        })
+        .catch(() => {
+          if (hasValidDraft(currentUid)) {
+            const saved = loadDraft(currentUid);
+            if (saved) {
+              setPendingDraft(saved);
+              setDraftModalOpen(true);
+            }
+          }
+        });
     }, [onRequireLogin, initialDraftId, editingQueueItem]);
 
     // Hiển thị Toast thông báo 2 giây
@@ -183,12 +214,29 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
         });
     };
 
-  // Nạp bản nháp từ IndexedDB theo draft_id (R16)
+  // Nạp bản nháp từ IndexedDB theo draft_id (R16), tái tạo File objects từ Blob
   const handleResumeIndexedDbDraft = async (draftId: string) => {
     try {
       const draft = await getDraftById(draftId);
       if (draft && draft.formData) {
-        setFormData(draft.formData);
+        const hydratedMedia = (draft.media_blobs && draft.media_blobs.length > 0)
+          ? draft.media_blobs.map((m) => ({
+              id: m.client_file_id,
+              file: new File([m.blob], m.name, { type: m.mime_type }),
+              preview_url: URL.createObjectURL(m.blob),
+              file_url: "",
+              thumbnail_url: "",
+              media_type: (m.media_type === "VIDEO" ? "VIDEO" : "IMAGE") as "IMAGE" | "VIDEO",
+              mime_type: m.mime_type,
+              file_size_bytes: m.size,
+            }))
+          : (draft.formData.media || []);
+
+        setFormData({
+          ...draft.formData,
+          media: hydratedMedia,
+          voice_blob: draft.voice_blob || (draft.formData as any).voice_blob || null,
+        } as any);
         setCurrentStep(draft.current_step || 1);
         setIsOutboxViewOpen(false);
         showToast("Đã mở lại bản nháp");
@@ -198,9 +246,29 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
     }
   };
 
-  // Chấp nhận khôi phục bản nháp
+  // Chấp nhận khôi phục bản nháp (ưu tiên dữ liệu IndexedDB có nhị phân Blob)
   const handleResumeDraft = () => {
-    if (pendingDraft) {
+    if (pendingIndexedDraft) {
+      const hydratedMedia = (pendingIndexedDraft.media_blobs && pendingIndexedDraft.media_blobs.length > 0)
+        ? pendingIndexedDraft.media_blobs.map((m) => ({
+            id: m.client_file_id,
+            file: new File([m.blob], m.name, { type: m.mime_type }),
+            preview_url: URL.createObjectURL(m.blob),
+            file_url: "",
+            thumbnail_url: "",
+            media_type: (m.media_type === "VIDEO" ? "VIDEO" : "IMAGE") as "IMAGE" | "VIDEO",
+            mime_type: m.mime_type,
+            file_size_bytes: m.size,
+          }))
+        : (pendingIndexedDraft.formData.media || []);
+
+      setFormData({
+        ...pendingIndexedDraft.formData,
+        media: hydratedMedia,
+        voice_blob: pendingIndexedDraft.voice_blob || (pendingIndexedDraft.formData as any).voice_blob || null,
+      } as any);
+      setCurrentStep(pendingIndexedDraft.current_step || 1);
+    } else if (pendingDraft) {
       setFormData(pendingDraft.formData);
       setCurrentStep(pendingDraft.current_step);
     }
@@ -208,8 +276,13 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
   };
 
   // Huỷ bỏ bản nháp và bắt đầu mới
-  const handleDiscardDraft = () => {
-    clearDraft(getCurrentUserId());
+  const handleDiscardDraft = async () => {
+    const currentUid = getCurrentUserId();
+    clearDraft(currentUid);
+    if (pendingIndexedDraft) {
+      await deleteDraftFromDb(pendingIndexedDraft.draft_id).catch(() => {});
+      setPendingIndexedDraft(null);
+    }
     setFormData(INITIAL_FORM_DATA);
     setCurrentStep(1);
     setDraftModalOpen(false);
@@ -322,9 +395,11 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
                 formData={formData}
                 onNavigateStep={handleNavigateStep}
                 onPrevStep={handlePrevStep}
+                editingQueueItemId={editingQueueItemId}
                 onClearDraftAndReset={() => {
                   clearDraft(getCurrentUserId());
                   setFormData(INITIAL_FORM_DATA);
+                  setEditingQueueItemId(null);
                   onClearEditingItem?.();
                 }}
                 onSessionExpired={() => {
