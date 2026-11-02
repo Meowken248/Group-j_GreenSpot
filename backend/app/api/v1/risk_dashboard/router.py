@@ -34,7 +34,6 @@ ALLOWED_ROLES = {"ADMIN", "OFFICER", "DISTRICT_MANAGER", "COORDINATOR"}
 
 async def verify_risk_dashboard_access(
     authorization: Optional[str] = Header(None),
-    db: AsyncSession = Depends(get_db),
 ) -> Optional[User]:
     """
     Quy tắc kiểm tra phân quyền truy cập:
