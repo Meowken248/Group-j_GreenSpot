@@ -4,10 +4,15 @@ import {
   deleteQueueItem,
 } from "./outboxQueueRepository";
 import type { OfflineQueueItem, SyncResultSummary } from "../types/offline.types";
+import { AUTH_STORAGE_KEYS } from "../../auth/types/auth.types";
 
 const RETRY_DELAYS_MS = [2000, 4000]; // Khoảng cách giãn cách tăng dần theo R14
 
 let isSyncInProgress = false;
+
+const getValidAccessToken = (): string => {
+  return localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN) || "";
+};
 
 /**
  * Upload tệp nhị phân Blob lên server kèm mộc thời gian chụp thực tế ngoại tuyến.
@@ -19,7 +24,12 @@ const uploadSingleBlob = async (
   mediaType: "IMAGE" | "VIDEO" | "AUDIO",
   capturedAt: string
 ): Promise<{ file_url: string; thumbnail_url?: string }> => {
-  const token = localStorage.getItem("greenspot_auth_token") || "";
+  const token = getValidAccessToken();
+  if (!token) {
+    const err: any = new Error("Phiên đăng nhập đã hết hạn hoặc chưa đăng nhập");
+    err.status = 401;
+    throw err;
+  }
   const formData = new FormData();
   formData.append("file", blob, `${clientFileId}.${mediaType === "IMAGE" ? "jpg" : mediaType === "VIDEO" ? "mp4" : "webm"}`);
   formData.append("client_file_id", clientFileId);
@@ -58,7 +68,12 @@ const uploadSingleBlob = async (
 const sendSingleQueueItem = async (
   item: OfflineQueueItem
 ): Promise<{ tracking_code: string; incident_id: string; points_awarded: number }> => {
-  const token = localStorage.getItem("greenspot_auth_token") || "";
+  const token = getValidAccessToken();
+  if (!token) {
+    const err: any = new Error("Phiên đăng nhập đã hết hạn hoặc chưa đăng nhập");
+    err.status = 401;
+    throw err;
+  }
 
   // 1. Upload các tệp media (nếu có)
   const uploadedMediaItems = [];

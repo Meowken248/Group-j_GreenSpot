@@ -15,6 +15,7 @@ import {
   deleteDraftFromDb,
 } from "../services/draftRepository";
 import { syncOutboxQueue } from "../services/syncEngine";
+import { AUTH_STORAGE_KEYS } from "../../auth/types/auth.types";
 
 // Mock IndexedDB in-memory store for Vitest environment
 class MockIDBStore {
@@ -92,6 +93,7 @@ describe("Offline Repositories & Sync Engine Suite (STT 19)", () => {
     mockDraftsStore.data.clear();
     mockQueueStore.data.clear();
     localStorage.clear();
+    localStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, "mock_valid_token_xyz");
     vi.restoreAllMocks();
     Object.defineProperty(navigator, "onLine", {
       value: true,
