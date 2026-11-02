@@ -10,6 +10,10 @@ import {
   resetAllFailedQueueItems,
 } from "../services/syncEngine";
 import { AUTH_STORAGE_KEYS } from "../../auth/types/auth.types";
+import {
+  subscribeSessionExpired,
+  resetSessionExpired,
+} from "../../auth/services/sessionManager";
 
 // In-memory Mock IDB store for Vitest
 class MockIDBStore {
@@ -96,6 +100,7 @@ describe("Sync Engine Retry & Stuck SENDING Recovery (Issue 4, 5, 9)", () => {
     mockedActiveUserId = "test_user_recovery_123";
     mockDraftsStore.data.clear();
     mockQueueStore.data.clear();
+    mockQueueStore.put = MockIDBStore.prototype.put.bind(mockQueueStore);
     localStorage.clear();
     localStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, "valid_test_token_abc");
     vi.useFakeTimers();
@@ -107,6 +112,7 @@ describe("Sync Engine Retry & Stuck SENDING Recovery (Issue 4, 5, 9)", () => {
   });
 
   afterEach(() => {
+    mockQueueStore.put = MockIDBStore.prototype.put.bind(mockQueueStore);
     vi.useRealTimers();
     vi.restoreAllMocks();
   });
@@ -367,5 +373,97 @@ describe("Sync Engine Retry & Stuck SENDING Recovery (Issue 4, 5, 9)", () => {
     // Mục thứ 2 vẫn an toàn trong hàng đợi của User A
     const queueA = await listUserQueue("test_user_recovery_123");
     expect(queueA.some((i) => i.title === "Phản ánh A2")).toBe(true);
+  });
+
+  it("ngừng và hoàn trả QUEUED ngay lập tức nếu đổi tài khoản sau khi đánh dấu SENDING (Issue 3)", async () => {
+    const item = await enqueueReport({
+      client_submission_id: "sub_user_switch_async",
+      idempotency_key: "key_user_switch_async",
+      user_id: "test_user_recovery_123",
+      title: "Phản ánh user A bị đổi lúc cập nhật",
+      category_id: 1,
+      category_name: "Rác",
+      description: "Mô tả",
+      severity: "LOW",
+      latitude: 10.78,
+      longitude: 106.68,
+      address_text: "Địa chỉ",
+      is_anonymous: false,
+      media_blobs: [],
+      voice_blob: null,
+    });
+
+    const originalPut = mockQueueStore.put.bind(mockQueueStore);
+    try {
+      // Can thiệp put: khi status được đổi thành SENDING, ngay lập tức đổi active user thành user B
+      mockQueueStore.put = (val: any) => {
+        if (val.status === "SENDING") {
+          mockedActiveUserId = "user_b_intruder";
+        }
+        return originalPut(val);
+      };
+
+      const fetchMock = vi.fn();
+      global.fetch = fetchMock;
+
+      const summary = await syncOutboxQueue();
+      // Fetch tuyệt đối không được gọi bằng token/quyền của user B
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(summary.success_count).toBe(0);
+
+      // Chuyển lại tài khoản test_user_recovery_123 để đọc lại item theo đúng quyền sở hữu
+      mockedActiveUserId = "test_user_recovery_123";
+      const updated = await getQueueItemById(item.queue_id);
+      expect(updated?.status).toBe("QUEUED");
+    } finally {
+      mockQueueStore.put = originalPut;
+      mockedActiveUserId = "test_user_recovery_123";
+    }
+  });
+
+  it("kích hoạt triggerSessionExpired và giữ QUEUED khi nhận 401 không thể làm mới (Issue 4)", async () => {
+    resetSessionExpired();
+    let sessionExpiredTriggered = false;
+    const unsubscribe = subscribeSessionExpired(() => {
+      sessionExpiredTriggered = true;
+    });
+
+    const item = await enqueueReport({
+      client_submission_id: "sub_auth_401",
+      idempotency_key: "key_auth_401",
+      user_id: "test_user_recovery_123",
+      title: "Phản ánh bị 401 hết phiên",
+      category_id: 1,
+      category_name: "Rác",
+      description: "Mô tả",
+      severity: "LOW",
+      latitude: 10.78,
+      longitude: 106.68,
+      address_text: "Địa chỉ",
+      is_anonymous: false,
+      media_blobs: [],
+      voice_blob: null,
+    });
+
+    global.fetch = vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes("/api/v1/auth/refresh")) {
+        return { ok: false, status: 401 };
+      }
+      return {
+        ok: false,
+        status: 401,
+        json: async () => ({ detail: "Token expired" }),
+      };
+    });
+
+    const summary = await syncOutboxQueue();
+    expect(summary.success_count).toBe(0);
+    expect(sessionExpiredTriggered).toBe(true);
+
+    const updated = await getQueueItemById(item.queue_id);
+    expect(updated?.status).toBe("QUEUED");
+
+    unsubscribe();
+    resetSessionExpired();
   });
 });

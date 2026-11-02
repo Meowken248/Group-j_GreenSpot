@@ -6,6 +6,7 @@ import {
 import { getCurrentUserId } from "./offlineDb";
 import type { OfflineQueueItem, SyncResultSummary } from "../types/offline.types";
 import { AUTH_STORAGE_KEYS } from "../../auth/types/auth.types";
+import { triggerSessionExpired } from "../../auth/services/sessionManager";
 
 const RETRY_DELAYS_MS = [2000, 4000]; // Khoảng cách giãn cách tăng dần theo R14
 const SENDING_LEASE_TIMEOUT_MS = 30000; // Thời gian tối đa giữ trạng thái SENDING trước khi đối soát
@@ -13,8 +14,93 @@ const SENDING_LEASE_TIMEOUT_MS = 30000; // Thời gian tối đa giữ trạng t
 let isSyncInProgress = false;
 let retrySchedulerTimer: ReturnType<typeof setTimeout> | null = null;
 
+class UserSwitchedError extends Error {
+  userSwitched = true;
+  constructor(message = "Tài khoản người dùng đã thay đổi trong quá trình đồng bộ") {
+    super(message);
+    this.name = "UserSwitchedError";
+  }
+}
+
+/**
+ * Kiểm tra tính nhất quán tài khoản người dùng tại các ranh giới bất đồng bộ.
+ * Ngăn chặn tuyệt đối việc gửi dữ liệu của user này bằng token của user khác (Issue 3).
+ */
+const assertUserConsistency = (syncUserId: string, itemUserId: string): void => {
+  const currentActiveUser = getCurrentUserId();
+  if (!currentActiveUser || currentActiveUser !== syncUserId || itemUserId !== syncUserId) {
+    throw new UserSwitchedError();
+  }
+};
+
 const getValidAccessToken = (): string => {
   return localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN) || "";
+};
+
+/**
+ * Thực hiện gọi API có đính kèm Bearer token và hỗ trợ tự động Silent Refresh khi gặp 401.
+ * Nếu không thể refresh (hết phiên thực sự), kích hoạt triggerSessionExpired() (Issue 4).
+ */
+const authenticatedFetchWithRefresh = async (
+  url: string,
+  options: RequestInit,
+  syncUserId: string,
+  itemUserId: string
+): Promise<Response> => {
+  assertUserConsistency(syncUserId, itemUserId);
+
+  let token = getValidAccessToken();
+  if (!token) {
+    triggerSessionExpired();
+    const err: any = new Error("Phiên đăng nhập đã hết hạn hoặc chưa đăng nhập");
+    err.status = 401;
+    throw err;
+  }
+
+  const headers = new Headers(options.headers || {});
+  headers.set("Authorization", `Bearer ${token}`);
+
+  assertUserConsistency(syncUserId, itemUserId);
+  let res = await fetch(url, { ...options, headers });
+
+  if (res.status === 401) {
+    assertUserConsistency(syncUserId, itemUserId);
+
+    const refreshToken = localStorage.getItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
+    if (refreshToken) {
+      try {
+        const refreshRes = await fetch("/api/v1/auth/refresh", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+
+        if (refreshRes.ok) {
+          const refreshData = await refreshRes.json();
+          const newToken = refreshData.access_token || refreshData.data?.access_token;
+          if (newToken) {
+            localStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, newToken);
+            assertUserConsistency(syncUserId, itemUserId);
+            const retryHeaders = new Headers(options.headers || {});
+            retryHeaders.set("Authorization", `Bearer ${newToken}`);
+            res = await fetch(url, { ...options, headers: retryHeaders });
+            if (res.status !== 401) {
+              return res;
+            }
+          }
+        }
+      } catch (refreshErr) {
+        console.warn("[SyncEngine] Thử refresh token thất bại:", refreshErr);
+      }
+    }
+
+    triggerSessionExpired();
+    const err: any = new Error("Phiên đăng nhập đã hết hạn");
+    err.status = 401;
+    throw err;
+  }
+
+  return res;
 };
 
 export const resetAllFailedQueueItems = async (): Promise<void> => {
@@ -34,32 +120,40 @@ export const resetAllFailedQueueItems = async (): Promise<void> => {
  * Đối soát và phục hồi các mục bị kẹt ở trạng thái SENDING do đóng tab/ứng dụng đột ngột.
  * Trả về thời gian lease còn lại nhỏ nhất (nếu có mục SENDING chưa hết hạn lease).
  */
-const reconcileStuckSendingItems = async (queue: OfflineQueueItem[]): Promise<number | null> => {
+const reconcileStuckSendingItems = async (
+  queue: OfflineQueueItem[],
+  syncUserId: string
+): Promise<number | null> => {
   const now = Date.now();
-  const token = getValidAccessToken();
   let minRemainingLease: number | null = null;
 
   for (const item of queue) {
     if (item.status !== "SENDING") continue;
+    if (item.user_id !== syncUserId) continue;
     const elapsed = now - (item.updated_at || item.created_at);
 
     if (elapsed > SENDING_LEASE_TIMEOUT_MS) {
-      if (token) {
-        try {
-          const res = await fetch(`/api/v1/offline-sync/submissions/${item.client_submission_id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (res.ok) {
-            const receipt = await res.json();
-            if (receipt && receipt.status === "PROCESSED") {
-              // Máy chủ đã xử lý thành công: giải phóng khỏi hàng đợi
-              await deleteQueueItem(item.queue_id, true);
-              continue;
-            }
+      try {
+        const res = await authenticatedFetchWithRefresh(
+          `/api/v1/offline-sync/submissions/${item.client_submission_id}`,
+          { method: "GET" },
+          syncUserId,
+          item.user_id
+        );
+        if (res.ok) {
+          const receipt = await res.json();
+          if (receipt && receipt.status === "PROCESSED") {
+            // Máy chủ đã xử lý thành công: giải phóng khỏi hàng đợi
+            await deleteQueueItem(item.queue_id, true);
+            continue;
           }
-        } catch (err) {
-          console.warn("[SyncEngine] Lỗi đối soát biên nhận máy chủ cho mục gián đoạn:", err);
         }
+      } catch (err: any) {
+        if (err.status === 401) {
+          triggerSessionExpired();
+          return minRemainingLease;
+        }
+        console.warn("[SyncEngine] Lỗi đối soát biên nhận máy chủ cho mục gián đoạn:", err);
       }
 
       // Nếu máy chủ chưa nhận: phục hồi về QUEUED để gửi lại
@@ -133,14 +227,11 @@ const uploadSingleBlob = async (
   blob: Blob,
   clientFileId: string,
   mediaType: "IMAGE" | "VIDEO" | "AUDIO",
-  capturedAt: string
+  capturedAt: string,
+  syncUserId: string
 ): Promise<{ file_url: string; thumbnail_url?: string }> => {
-  const token = getValidAccessToken();
-  if (!token) {
-    const err: any = new Error("Phiên đăng nhập đã hết hạn hoặc chưa đăng nhập");
-    err.status = 401;
-    throw err;
-  }
+  assertUserConsistency(syncUserId, item.user_id);
+
   const formData = new FormData();
   formData.append("file", blob, `${clientFileId}.${mediaType === "IMAGE" ? "jpg" : mediaType === "VIDEO" ? "mp4" : "webm"}`);
   formData.append("client_file_id", clientFileId);
@@ -148,22 +239,21 @@ const uploadSingleBlob = async (
   formData.append("longitude", String(item.longitude));
   formData.append("captured_at", capturedAt);
 
-  const res = await fetch("/api/v1/offline-sync/media/upload", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
+  const res = await authenticatedFetchWithRefresh(
+    "/api/v1/offline-sync/media/upload",
+    {
+      method: "POST",
+      body: formData,
     },
-    body: formData,
-  });
+    syncUserId,
+    item.user_id
+  );
 
   if (!res.ok) {
-    if (res.status === 401) {
-      const err: any = new Error("Phiên đăng nhập đã hết hạn");
-      err.status = 401;
-      throw err;
-    }
     const errText = await res.text();
-    throw new Error(`Upload tệp thất bại (${res.status}): ${errText}`);
+    const err: any = new Error(`Upload tệp thất bại (${res.status}): ${errText}`);
+    err.status = res.status;
+    throw err;
   }
 
   const json = await res.json();
@@ -177,24 +267,22 @@ const uploadSingleBlob = async (
  * Gửi một phản ánh đơn lẻ từ hàng đợi lên máy chủ.
  */
 const sendSingleQueueItem = async (
-  item: OfflineQueueItem
+  item: OfflineQueueItem,
+  syncUserId: string
 ): Promise<{ tracking_code: string; incident_id: string; points_awarded: number }> => {
-  const token = getValidAccessToken();
-  if (!token) {
-    const err: any = new Error("Phiên đăng nhập đã hết hạn hoặc chưa đăng nhập");
-    err.status = 401;
-    throw err;
-  }
+  assertUserConsistency(syncUserId, item.user_id);
 
   // 1. Upload các tệp media (nếu có)
   const uploadedMediaItems = [];
   for (const m of item.media_blobs) {
+    assertUserConsistency(syncUserId, item.user_id);
     const uploadRes = await uploadSingleBlob(
       item,
       m.blob,
       m.client_file_id,
       m.media_type,
-      m.captured_at
+      m.captured_at,
+      syncUserId
     );
     uploadedMediaItems.push({
       client_file_id: m.client_file_id,
@@ -209,12 +297,14 @@ const sendSingleQueueItem = async (
 
   // Nếu có voice_blob riêng biệt
   if (item.voice_blob) {
+    assertUserConsistency(syncUserId, item.user_id);
     const voiceUpload = await uploadSingleBlob(
       item,
       item.voice_blob,
       `voice_${item.queue_id}`,
       "AUDIO",
-      new Date(item.created_at).toISOString()
+      new Date(item.created_at).toISOString(),
+      syncUserId
     );
     uploadedMediaItems.push({
       client_file_id: `voice_${item.queue_id}`,
@@ -226,6 +316,8 @@ const sendSingleQueueItem = async (
       captured_at: new Date(item.created_at).toISOString(),
     });
   }
+
+  assertUserConsistency(syncUserId, item.user_id);
 
   // 2. Gửi yêu cầu tạo sự cố ngoại tuyến qua endpoint Idempotent
   const payload = {
@@ -244,21 +336,20 @@ const sendSingleQueueItem = async (
     client_timestamp: new Date(item.created_at).toISOString(),
   };
 
-  const response = await fetch("/api/v1/offline-sync/incidents", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+  const response = await authenticatedFetchWithRefresh(
+    "/api/v1/offline-sync/incidents",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     },
-    body: JSON.stringify(payload),
-  });
+    syncUserId,
+    item.user_id
+  );
 
   if (!response.ok) {
-    if (response.status === 401) {
-      const err: any = new Error("Phiên đăng nhập đã hết hạn");
-      err.status = 401;
-      throw err;
-    }
     const errJson = await response.json().catch(() => ({}));
     const message = errJson.detail || "Không thể đồng bộ phản ánh lên hệ thống.";
     const err: any = new Error(message);
@@ -335,19 +426,20 @@ export const syncOutboxQueue = async (
   let minRemainingLease: number | null = null;
 
   try {
-    let queue = await listUserQueue();
-
-    // 1. Phục hồi và đối soát các mục bị kẹt ở trạng thái SENDING do đóng tab (Issue 5)
-    minRemainingLease = await reconcileStuckSendingItems(queue);
-
-    // Nạp lại danh sách hàng đợi sau khi đối soát
-    queue = await listUserQueue();
-
-    const now = Date.now();
     const syncUserId = getCurrentUserId();
     if (!syncUserId) {
       return summary;
     }
+
+    let queue = await listUserQueue(syncUserId);
+
+    // 1. Phục hồi và đối soát các mục bị kẹt ở trạng thái SENDING do đóng tab (Issue 5)
+    minRemainingLease = await reconcileStuckSendingItems(queue, syncUserId);
+
+    // Nạp lại danh sách hàng đợi sau khi đối soát
+    queue = await listUserQueue(syncUserId);
+
+    const now = Date.now();
 
     // 2. Lọc danh sách mục cần gửi (FIFO):
     // Tuân thủ thời điểm retry (R14): next_retry_at <= now hoặc chưa có next_retry_at
@@ -370,18 +462,28 @@ export const syncOutboxQueue = async (
     summary.total = candidateItems.length;
 
     for (const item of candidateItems) {
-      // Kiểm tra tài khoản hiện tại: nếu người dùng chuyển tài khoản hoặc đăng xuất, dừng ngay (Issue 3)
-      const currentActiveUser = getCurrentUserId();
-      if (!currentActiveUser || currentActiveUser !== syncUserId || item.user_id !== currentActiveUser) {
-        console.warn("[SyncEngine] Tài khoản người dùng đã thay đổi hoặc đăng xuất trong lượt đồng bộ. Hủy bỏ tiến trình gửi.");
+      // Kiểm tra tài khoản người dùng trước khi đánh dấu SENDING (Issue 3)
+      try {
+        assertUserConsistency(syncUserId, item.user_id);
+      } catch {
+        console.warn("[SyncEngine] Tài khoản người dùng đã thay đổi hoặc đăng xuất trước khi gửi. Hủy bỏ tiến trình gửi.");
         break;
       }
 
       // Đánh dấu SENDING
       await updateQueueItemStatus(item.queue_id, { status: "SENDING" });
 
+      // Kiểm tra tài khoản NGAY SAU KHI updateQueueItemStatus (Issue 3 - đóng khoảng hở async)
       try {
-        const sendResult = await sendSingleQueueItem(item);
+        assertUserConsistency(syncUserId, item.user_id);
+      } catch {
+        console.warn("[SyncEngine] Tài khoản người dùng đã thay đổi trong khi đang cập nhật SENDING. Hoàn trả về QUEUED và dừng.");
+        await updateQueueItemStatus(item.queue_id, { status: "QUEUED" });
+        break;
+      }
+
+      try {
+        const sendResult = await sendSingleQueueItem(item, syncUserId);
 
         // Thành công: Giải phóng khỏi hàng đợi (R24)
         await deleteQueueItem(item.queue_id, true);
@@ -399,10 +501,17 @@ export const syncOutboxQueue = async (
           // Bỏ qua lỗi lưu local
         }
       } catch (err: any) {
-        // Xử lý hết phiên (R19)
-        if (err.status === 401) {
-          console.warn("[SyncEngine] Phiên hết hạn (401). Tạm dừng đồng bộ và giữ nguyên hàng đợi.");
+        if (err.userSwitched) {
+          console.warn("[SyncEngine] Phát hiện chuyển đổi tài khoản trong lúc gửi tệp/sự cố. Hoàn trả mục về QUEUED và dừng.");
           await updateQueueItemStatus(item.queue_id, { status: "QUEUED" });
+          break;
+        }
+
+        // Xử lý hết phiên (R19 / Issue 4)
+        if (err.status === 401) {
+          console.warn("[SyncEngine] Phiên hết hạn (401). Tạm dừng đồng bộ, kích hoạt popup hết hạn và giữ nguyên hàng đợi.");
+          await updateQueueItemStatus(item.queue_id, { status: "QUEUED" });
+          triggerSessionExpired();
           window.dispatchEvent(new CustomEvent("greenspot_session_expired"));
           break; // Dừng ngay vòng lặp đồng bộ
         }
