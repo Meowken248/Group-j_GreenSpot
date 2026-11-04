@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useLanguage } from "../../../i18n";
 import type {
   DispatchOrderItem,
   DispatchListFilter,
@@ -36,6 +37,8 @@ export const Screen1DispatchList: React.FC<Screen1DispatchListProps> = ({
   newlyCreatedOrderCode,
   onAcceptOrder,
 }) => {
+  const { currentLang } = useLanguage();
+  const isEn = currentLang === "EN";
 
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [teamFilter, setTeamFilter] = useState<string>("ALL");
@@ -237,11 +240,11 @@ export const Screen1DispatchList: React.FC<Screen1DispatchListProps> = ({
               >
                 <thead>
                   <tr>
-                    <th style={{ width: 110 }}>Mã</th>
-                    <th>Sự cố</th>
-                    <th style={{ width: 180 }}>Đội</th>
-                    <th style={{ width: 110 }}>Mức độ</th>
-                    <th style={{ width: 120 }}>Trạng thái</th>
+                    <th style={{ width: 110 }}>{isEn ? "Code" : "Mã"}</th>
+                    <th>{isEn ? "Problem" : "Sự cố"}</th>
+                    <th style={{ width: 180 }}>{isEn ? "Team" : "Đội"}</th>
+                    <th style={{ width: 110 }}>{isEn ? "Level" : "Mức độ"}</th>
+                    <th style={{ width: 120 }}>{isEn ? "Status" : "Trạng thái"}</th>
                   </tr>
                 </thead>
                 <tbody>
