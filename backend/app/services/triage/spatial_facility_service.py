@@ -188,7 +188,7 @@ class SpatialFacilityService(ISpatialFacilityService):
         incident_id: Optional[uuid.UUID] = None
     ) -> FacilityDetailResult:
         """
-        Màn 3/3: Hồ sơ chi tiết mức độ phơi nhiễm môi trường và liên hệ khẩn cấp của cơ sở.
+         Hồ sơ chi tiết mức độ phơi nhiễm môi trường và liên hệ khẩn cấp của cơ sở.
         """
         row = await spatial_facility_repository.get_facility_with_coords(db, facility_id)
         if not row:

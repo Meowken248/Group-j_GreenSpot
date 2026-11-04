@@ -36,7 +36,7 @@ class HotspotService:
         filters: HotspotFilterRequest,
     ) -> HotspotMapResponse:
         """
-        Nghiệp vụ Màn 1/3: Phân tích cụm điểm nóng KDE, xếp hạng Top 5 và tạo thông điệp trạng thái
+        Nghiệp vụ  Phân tích cụm điểm nóng KDE, xếp hạng Top 5 và tạo thông điệp trạng thái
         """
         clusters = await self.repo.get_hotspot_clusters(
             db,
@@ -74,7 +74,7 @@ class HotspotService:
         hotspot_id: str,
     ) -> HotspotDetailResponse:
         """
-        Nghiệp vụ Màn 3/3: Xem chi tiết điểm nóng, kiểm tra lệnh điều phối đang thực thi (STT 43)
+        Nghiệp vụ  Xem chi tiết điểm nóng, kiểm tra lệnh điều phối đang thực thi (STT 43)
         và chuẩn bị dữ liệu điền sẵn tự động (prefill) sang Màn 2/6 của STT 43
         """
         if not hotspot_id or not hotspot_id.strip():

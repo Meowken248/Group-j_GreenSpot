@@ -1,8 +1,8 @@
 """
 API Router: Phân tích không gian tìm kiếm các cơ sở thiết yếu (y tế, trường học) gần sự cố (STT 40)
-Màn 1/3: Bản đồ sự cố + Bán kính vùng đệm + Checkbox nhóm cơ sở
-Màn 2/3: Bảng tổng hợp danh sách cơ sở có bộ lọc nhanh
-Màn 3/3: Hồ sơ chi tiết mức độ phơi nhiễm môi trường và liên hệ khẩn cấp (Gọi điện, Chỉ đường, Gửi cảnh báo)
+ Bản đồ sự cố + Bán kính vùng đệm + Checkbox nhóm cơ sở
+ Bảng tổng hợp danh sách cơ sở có bộ lọc nhanh
+ Hồ sơ chi tiết mức độ phơi nhiễm môi trường và liên hệ khẩn cấp (Gọi điện, Chỉ đường, Gửi cảnh báo)
 """
 
 import uuid
@@ -40,7 +40,7 @@ async def analyze_facilities_in_buffer(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Màn 1/3 & Màn 2/3: Quét vùng đệm bán kính (500m, 1km, 2km) và trả về danh sách cơ sở sắp xếp theo khoảng cách
+    Màn 1/3 &  Quét vùng đệm bán kính (500m, 1km, 2km) và trả về danh sách cơ sở sắp xếp theo khoảng cách
     """
     inc = await spatial_facility_repository.get_incident_by_id(db, payload.incident_id)
     if not inc:
@@ -103,7 +103,7 @@ async def get_facility_profile_detail(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Màn 3/3: Xem hồ sơ chi tiết cơ sở, đầu mối khẩn cấp, mức độ dễ tổn thương và link chỉ đường
+     Xem hồ sơ chi tiết cơ sở, đầu mối khẩn cấp, mức độ dễ tổn thương và link chỉ đường
     """
     detail = await SpatialFacilityService.get_facility_detail(db, facility_id, incident_id)
     return FacilityDetailProfileResponse(

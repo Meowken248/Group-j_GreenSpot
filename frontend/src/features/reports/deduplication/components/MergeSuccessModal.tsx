@@ -77,7 +77,7 @@ export const MergeSuccessModal: React.FC<MergeSuccessModalProps> = ({
               fontWeight: 600,
               cursor: 'pointer',
             }}
-            title="Chuyển đến thẩm định mức độ ưu tiên & SLA cho sự cố gốc (STT 39)"
+            title="Chuyển đến thẩm định mức độ ưu tiên & SLA cho sự cố gốc"
           >
             🔍 Thẩm định sự cố gốc
           </button>
@@ -95,7 +95,7 @@ export const MergeSuccessModal: React.FC<MergeSuccessModalProps> = ({
               fontWeight: 600,
               cursor: 'pointer',
             }}
-            title="Chuyển sang Trung tâm Điều phối tác nghiệp (STT 43) để giao việc"
+            title="Chuyển sang Trung tâm Điều phối tác nghiệp để giao việc"
           >
             🚀 Tạo lệnh điều phối
           </button>

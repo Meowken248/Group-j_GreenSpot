@@ -128,7 +128,7 @@ const MOCK_DISTRICT_DETAIL: DistrictDetailResponse = {
 };
 
 describe("Urban Environmental Risk Dashboard (STT 42) UI Tests", () => {
-  it("Màn 1/3: Hiển thị 3 khối ngang CHỈ SỐ, BIỂU ĐỒ, CẢNH BÁO", () => {
+  it(" Hiển thị 3 khối ngang CHỈ SỐ, BIỂU ĐỒ, CẢNH BÁO", () => {
     const handleSelectDistrict = vi.fn();
 
     render(
@@ -157,7 +157,7 @@ describe("Urban Environmental Risk Dashboard (STT 42) UI Tests", () => {
     expect(handleSelectDistrict).toHaveBeenCalledWith("Quận Bình Tân");
   });
 
-  it("Màn 2/3: Hiển thị 3 khối ngang BỘ LỌC, KẾT QUẢ, SO SÁNH", () => {
+  it(" Hiển thị 3 khối ngang BỘ LỌC, KẾT QUẢ, SO SÁNH", () => {
     const handleApply = vi.fn();
     const handleExport = vi.fn();
     const handleRetry = vi.fn();

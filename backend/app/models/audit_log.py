@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional, Any
 from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 from sqlalchemy.sql import func
 
 from app.database import Base
@@ -69,7 +69,11 @@ class IncidentAuditLog(Base, TimestampMixin):
     # Dữ liệu bổ sung: chi tiết các factors, kết quả gửi SMS/Email cảnh báo cơ sở, cự ly cơ sở...
     metadata_json: Mapped[Optional[dict]] = mapped_column("metadata", JSONB, nullable=True)
 
-    # Quan hệ hai chiều với Incident (back_populates audit_logs)
-    incident: Mapped["Incident"] = relationship("Incident", back_populates="audit_logs")
-    performed_by_user: Mapped[Optional["User"]] = relationship("User")
+    # Optimistic locking & Soft delete (Tuân thủ Quy tắc 6 & 7)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # Relationships
+    incident: Mapped["Incident"] = relationship("Incident", foreign_keys=[incident_id], back_populates="audit_logs", lazy="selectin")
+    operator: Mapped[Optional["User"]] = relationship("User", foreign_keys=[performed_by], lazy="selectin")
+    performed_by_user = synonym("operator")

@@ -71,7 +71,7 @@ async def get_hotspot_map(
     current_user: Optional[dict] = Depends(verify_hotspot_access),
 ):
     """
-    Màn 1/3: Bản đồ phân tích cụm điểm nóng KDE và Top 5 điểm nóng đô thị
+     Bản đồ phân tích cụm điểm nóng KDE và Top 5 điểm nóng đô thị
     """
     req = HotspotFilterRequest(
         incident_type=incident_type,
@@ -89,7 +89,7 @@ async def get_available_areas(
     current_user: Optional[dict] = Depends(verify_hotspot_access),
 ):
     """
-    Màn 2/3: Danh sách Quận/Huyện và Điểm nóng cho combobox lựa chọn khu vực dự báo
+     Danh sách Quận/Huyện và Điểm nóng cho combobox lựa chọn khu vực dự báo
     """
     return await service.get_available_areas(db)
 
@@ -103,7 +103,7 @@ async def get_7day_forecast(
     current_user: Optional[dict] = Depends(verify_hotspot_access),
 ):
     """
-    Màn 2/3: Dự báo xu hướng 7 ngày tới kèm khoảng tin cậy 95% và phân tích ngày nguy cơ cao nhất
+     Dự báo xu hướng 7 ngày tới kèm khoảng tin cậy 95% và phân tích ngày nguy cơ cao nhất
     """
     return await service.get_7day_forecast(db, target_id=target_id or "dist-q8", target_type=target_type or "DISTRICT")
 
@@ -116,7 +116,7 @@ async def export_forecast_report(
     current_user: Optional[dict] = Depends(verify_hotspot_access),
 ):
     """
-    Màn 2/3: Kích hoạt xuất báo cáo dự báo 7 ngày (PDF / Excel)
+     Kích hoạt xuất báo cáo dự báo 7 ngày (PDF / Excel)
     """
     return await service.export_forecast_report(db, req)
 
@@ -129,6 +129,6 @@ async def get_hotspot_detail(
     current_user: Optional[dict] = Depends(verify_hotspot_access),
 ):
     """
-    Màn 3/3: Xem chi tiết điểm nóng, kiểm tra lệnh điều phối đang thực thi và dữ liệu điền sẵn STT 43
+     Xem chi tiết điểm nóng, kiểm tra lệnh điều phối đang thực thi và dữ liệu điền sẵn STT 43
     """
     return await service.get_hotspot_detail(db, hotspot_id)
