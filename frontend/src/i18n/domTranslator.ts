@@ -200,6 +200,62 @@ export const DOM_TRANSLATION_MAP: Record<string, string> = {
   "Điểm ngập úng": "Flood Point",
   "Ô nhiễm không khí": "Air Pollution",
   "Ô nhiễm nguồn nước": "Water Pollution",
+
+  // 5. Dispatch Operations & Field Command (STT 43)
+  "Mã": "Code",
+  "MÃ": "CODE",
+  "Lệnh xử lý": "Processing Order",
+  "LỆNH XỬ LÝ": "PROCESSING ORDER",
+  "Tổng số lệnh": "Total Commands",
+  "TỔNG SỐ LỆNH": "TOTAL COMMANDS",
+  "Tổng lệnh:": "Total Orders:",
+  "TỔNG LỆNH": "TOTAL ORDERS",
+  "Tình hình tác nghiệp": "Working Situation",
+  "TÌNH HÌNH TÁC NGHIỆP": "WORKING SITUATION",
+  "Lệnh tổng cộng": "General Command",
+  "LỆNH TỔNG CỘNG": "GENERAL COMMAND",
+  "Khẩn cấp / Hỏa tốc": "Critical / Emergency / Urgent",
+  "Hỏa tốc": "Urgent",
+  "Đã giao": "Delivered",
+  "Đang đến": "Coming",
+  "Chờ tiếp nhận": "Pending Acceptance",
+  "Đội Cơ động số 3": "Mobile Team No. 3",
+  "Đội Thoát Nước Thủ Đức": "Thu Duc Drainage Team",
+  "Đội MTĐT Quận 8": "Urban Environment Team District 8",
+  "Đội MTĐT District 8": "Urban Environment Team District 8",
+  "Đội Cứu hộ ngập lụt Bình Thạnh": "Binh Thanh Flood Rescue Team",
+  "Đội Flood Rescue Bình Thạnh": "Binh Thanh Flood Rescue Team",
+  "Đội Môi trường đô thị Quận 1": "District 1 Urban Environment Team",
+  "Đội phản ứng nhanh 1": "Rapid Response Team 1",
+  "Đội nạo vét cơ động 2": "Mobile Dredging Team 2",
+  "Đội tuần tra môi trường 3 (Đội Cơ động số 3)": "Environmental Patrol Team 3 (Mobile Team No. 3)",
+  "Điểm ngập úng sâu 50cm giao lộ Nguyễn Văn Quá": "Flood Point 50cm deep at Nguyen Van Qua intersection",
+  "Ngập úng đường Tô Ngọc Vân": "Flooding on To Ngoc Van Street",
+  "Flooding đường Tô Ngọc Vân": "Flooding on To Ngoc Van Street",
+  "Bãi rác tự phát Kênh Đôi": "Illegal Dump Site at Kenh Doi",
+  "Illegal Dump Site Kênh Đôi": "Illegal Dump Site at Kenh Doi",
+  "Ùn ứ rác sinh hoạt chợ Bà Chiểu": "Domestic Waste Congestion at Ba Chieu Market",
+  "Ùn ứ Domestic Waste chợ Bà Chiểu": "Domestic Waste Congestion at Ba Chieu Market",
+  "Điểm nghẽn cống đường Nguyễn Hữu Cảnh": "Drainage Sewer Blockage on Nguyen Huu Canh Street",
+  "Ngã tư Nguyễn Văn Quá - Tô Ký, Quận 12": "Nguyen Van Qua - To Ky Intersection, District 12",
+  "Đường Tô Ngọc Vân, Phường Linh Tây, TP. Thủ Đức": "To Ngoc Van Street, Linh Tay Ward, Thu Duc City",
+  "Bờ kè Kênh Đôi, Phường 4, Quận 8": "Kenh Doi Embankment, Ward 4, District 8",
+  "Bờ kè Kênh Đôi, Phường 4, District 8": "Kenh Doi Embankment, Ward 4, District 8",
+  "Chợ Bà Chiểu, Phường 1, Quận Bình Thạnh": "Ba Chieu Market, Ward 1, Binh Thanh District",
+  "22 Nguyễn Hữu Cảnh, Phường Bến Nghé, Quận 1": "22 Nguyen Huu Canh, Ben Nghe Ward, District 1",
+  "Danh sách lệnh": "List of commands",
+  "Tạo lệnh điều phối mới": "Create new command",
+  "Theo dõi hiện trường": "Monitor the scene",
+  "Lệnh điều động": "Dispatch command",
+  "Ban quản trị": "Administration",
+  "Đội xử lý": "Processing team",
+  "Sửa lệnh": "Fix",
+  "Huỷ lệnh": "Cancel order",
+  "Hướng dẫn nhanh": "Quick guide",
+  "Bấm một lần vào hàng để chọn lệnh.": "Click once on a row to select an order.",
+  "Nhấp đúp chuột vào hàng để xem Theo dõi hiện trường.": "Double click on the row to view Monitor the scene.",
+  "Nhấp đúp chuột vào một hàng bất kỳ để mở Giám sát hiện trường": "Double click on any order row to open Field Watch",
+  "Tìm nhanh theo mã lệnh, tên sự cố, địa chỉ, đội phụ trách...": "Quickly search by command code, incident name, address, team in charge...",
 };
 
 // Inverted dictionary (EN -> VI)
@@ -244,7 +300,7 @@ export function translateString(text: string, targetLang: "VI" | "EN"): string {
     let result = text;
     let replaced = false;
 
-    // 3. Regex replacements for common patterns with numbers/variables
+    // 3. Regex replacements for common patterns with numbers/variables and urban terms
     const withPatterns = result
       .replace(/(\d+)\s*người/gi, (_m, num) => (num === "1" ? "1 person" : `${num} people`))
       .replace(/(\d+)\s*điều khoản/gi, "$1 clauses")
@@ -252,7 +308,32 @@ export function translateString(text: string, targetLang: "VI" | "EN"): string {
       .replace(/Cách bạn\s*(\d+)m/gi, "$1m away from you")
       .replace(/Tọa độ:\s*/gi, "Coordinates: ")
       .replace(/Độ chính xác:\s*/gi, "Accuracy: ")
-      .replace(/Đã định vị tọa độ GPS của bạn/gi, "Your GPS coordinates have been determined");
+      .replace(/Đã định vị tọa độ GPS của bạn/gi, "Your GPS coordinates have been determined")
+      .replace(/\bNgã tư\b/gi, "Intersection of")
+      .replace(/\bGiao lộ\b/gi, "Intersection of")
+      .replace(/\bĐường\b/gi, "Street")
+      .replace(/\bPhường\b/gi, "Ward")
+      .replace(/\bQuận\b/gi, "District")
+      .replace(/\bHuyện\b/gi, "District")
+      .replace(/\bTP\.?\s*Thủ Đức\b/gi, "Thu Duc City")
+      .replace(/\bTP\.?\s*HCM\b/gi, "HCMC")
+      .replace(/\bBờ kè\b/gi, "Embankment")
+      .replace(/\bChợ\b/gi, "Market")
+      .replace(/\bKênh\b/gi, "Canal")
+      .replace(/\bSông\b/gi, "River")
+      .replace(/\bCầu\b/gi, "Bridge")
+      .replace(/\bĐoạn\b/gi, "Section")
+      .replace(/\bsâu\s*(\d+)cm\b/gi, "$1cm deep")
+      .replace(/\bĐội\b/gi, "Team")
+      .replace(/\bCơ động\b/gi, "Mobile")
+      .replace(/\bThoát Nước\b/gi, "Drainage")
+      .replace(/\bMôi trường đô thị\b/gi, "Urban Environment")
+      .replace(/\bMTĐT\b/gi, "Urban Environment")
+      .replace(/\bHỏa tốc\b/gi, "Urgent")
+      .replace(/\bKhẩn cấp\b/gi, "Critical")
+      .replace(/\bCao\b/g, "High")
+      .replace(/\bTrung bình\b/g, "Medium")
+      .replace(/\bThấp\b/g, "Low");
 
     if (withPatterns !== result) {
       result = withPatterns;
@@ -267,7 +348,7 @@ export function translateString(text: string, targetLang: "VI" | "EN"): string {
       }
     }
 
-    if (replaced) return result;
+    if (replaced && !/[\u00C0-\u1EF9]/i.test(result)) return result;
 
     // 5. Asynchronous backend translation for Vietnamese sentences (prevent duplicate requests)
     if (/[\u00C0-\u1EF9]/i.test(trimmed) && trimmed.length > 2 && !inFlightRequests.has(trimmed)) {

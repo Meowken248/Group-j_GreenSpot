@@ -43,6 +43,29 @@ class HybridTranslationService(ITranslationService):
             "penalty_range",
             "authority",
             "quick_category",
+            "incident_title",
+            "incident_type",
+            "team_name",
+            "team_status",
+            "location_address",
+            "status_label",
+            "priority_label",
+            "empty_message",
+            "district",
+            "ward",
+            "role_name",
+            "role_description",
+            "badge_name",
+            "badge_desc",
+            "quest_title",
+            "quest_description",
+            "comment_text",
+            "post_content",
+            "report_title",
+            "feedback_message",
+            "response_text",
+            "victim_name",
+            "severity_level",
         }
 
     def get_supported_languages(self) -> List[str]:
@@ -171,6 +194,36 @@ class HybridTranslationService(ITranslationService):
         tasks = [self.translate_text(t, target_lang, source_lang) for t in texts]
         return await asyncio.gather(*tasks)
 
+    def _is_translatable_string(self, key: str, val: Any, explicit_keys: Optional[set]) -> bool:
+        if not isinstance(val, str) or len(val) < 2:
+            return False
+        if explicit_keys is not None:
+            return key in explicit_keys
+
+        key_lower = key.lower()
+        # Skip technical IDs, codes, tokens, URLs, hex colors
+        if any(ign in key_lower for ign in ["id", "code", "token", "url", "hash", "color", "icon", "path", "password"]):
+            return False
+        if val.startswith(("http://", "https://", "#", "data:", "/")):
+            return False
+        if re.match(r"^[0-9a-fA-F-]{36}$", val):  # UUID
+            return False
+        if re.match(r"^\d{4}-\d{2}-\d{2}T", val):  # ISO Date
+            return False
+        if re.match(r"^[A-Z0-9_-]{2,15}$", val):  # Technical ENUM codes
+            return False
+
+        if key_lower in self._default_target_keys or any(
+            key_lower.endswith(sfx)
+            for sfx in ["_title", "_name", "_address", "_label", "_desc", "_description", "_text", "_msg", "_message", "_content", "_status"]
+        ):
+            return True
+
+        if re.search(r"[\u00C0-\u1EF9]", val, re.IGNORECASE):
+            return True
+
+        return False
+
     async def translate_data(
         self,
         data: Union[Dict[str, Any], List[Any], Any],
@@ -180,7 +233,7 @@ class HybridTranslationService(ITranslationService):
     ) -> Any:
         """
         Recursively translates text fields in dict/list payloads.
-        Only translates text values belonging to target_keys.
+        Only translates text values belonging to target_keys or containing Vietnamese accents.
         Does not mutate the original data structure.
         """
         target_lang = target_lang.lower().strip()
@@ -189,12 +242,12 @@ class HybridTranslationService(ITranslationService):
         if target_lang == source_lang or data is None:
             return data
 
-        keys_to_translate = set(target_keys) if target_keys else self._default_target_keys
+        explicit_keys = set(target_keys) if target_keys else None
 
         if isinstance(data, dict):
             new_dict = {}
             for k, v in data.items():
-                if k in keys_to_translate and isinstance(v, str):
+                if self._is_translatable_string(k, v, explicit_keys):
                     new_dict[k] = await self.translate_text(v, target_lang, source_lang)
                 elif isinstance(v, (dict, list)):
                     new_dict[k] = await self.translate_data(v, target_lang, source_lang, target_keys)
@@ -207,7 +260,7 @@ class HybridTranslationService(ITranslationService):
             for item in data:
                 if isinstance(item, (dict, list)):
                     new_list.append(await self.translate_data(item, target_lang, source_lang, target_keys))
-                elif isinstance(item, str) and target_keys is None:
+                elif isinstance(item, str) and (explicit_keys is None or self._is_translatable_string("", item, None)):
                     new_list.append(await self.translate_text(item, target_lang, source_lang))
                 else:
                     new_list.append(item)

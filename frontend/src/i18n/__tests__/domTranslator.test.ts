@@ -36,6 +36,20 @@ describe("domTranslator: Full-Page Auto-Translation & Dynamic Observer", () => {
     expect(translateString("Bán kính 3km", "EN")).toBe("3km Radius");
   });
 
+  it("dịch chính xác các cụm từ điều phối lệnh tác nghiệp Dispatch (STT 43) và thông tin đội cứu hộ", () => {
+    expect(translateString("MÃ", "EN")).toBe("CODE");
+    expect(translateString("LỆNH XỬ LÝ", "EN")).toBe("PROCESSING ORDER");
+    expect(translateString("Đội Cơ động số 3", "EN")).toBe("Mobile Team No. 3");
+    expect(translateString("Đội Thoát Nước Thủ Đức", "EN")).toBe("Thu Duc Drainage Team");
+    expect(translateString("Đội MTĐT District 8", "EN")).toBe("Urban Environment Team District 8");
+    expect(translateString("Khẩn cấp / Hỏa tốc", "EN")).toBe("Critical / Emergency / Urgent");
+    expect(translateString("Đã giao", "EN")).toBe("Delivered");
+    expect(translateString("Đang đến", "EN")).toBe("Coming");
+    expect(
+      translateString("Điểm ngập úng sâu 50cm giao lộ Nguyễn Văn Quá", "EN")
+    ).toBe("Flood Point 50cm deep at Nguyen Van Qua intersection");
+  });
+
   it("quét toàn bộ DOM và chuyển đổi toàn bộ trang web sang tiếng Anh", () => {
     document.body.innerHTML = `
       <div id="test-root">
