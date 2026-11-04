@@ -1,5 +1,6 @@
 import React from "react";
 import type { FriendRequestItem, GreenCitizenSuggestion } from "../types";
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
 
 interface FriendRequestsViewProps {
   requests: FriendRequestItem[];
@@ -10,6 +11,7 @@ interface FriendRequestsViewProps {
   onRejectRequest: (req: FriendRequestItem) => void;
   onSendRequest: (sug: GreenCitizenSuggestion) => void;
   onToggleFollow: (sug: GreenCitizenSuggestion) => void;
+  onOpenProfile?: (userId: string) => void;
 }
 
 export const FriendRequestsView: React.FC<FriendRequestsViewProps> = ({
@@ -21,6 +23,7 @@ export const FriendRequestsView: React.FC<FriendRequestsViewProps> = ({
   onRejectRequest,
   onSendRequest,
   onToggleFollow,
+  onOpenProfile,
 }) => {
   return (
     <div className="two-column-layout">
@@ -49,10 +52,15 @@ export const FriendRequestsView: React.FC<FriendRequestsViewProps> = ({
                 key={req.request_id}
                 className={`request-row-item ${req.isFading ? "fading-row" : ""}`}
               >
-                <div className="user-meta-left">
+                <div
+                  className="user-meta-left"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => onOpenProfile?.(req.sender_id)}
+                  title={`Xem trang cá nhân của ${req.sender_name}`}
+                >
                   {req.sender_avatar ? (
                     <img
-                      src={req.sender_avatar}
+                      src={resolveMediaUrl(req.sender_avatar)}
                       alt={req.sender_name}
                       className="user-avatar-round"
                     />
@@ -122,10 +130,15 @@ export const FriendRequestsView: React.FC<FriendRequestsViewProps> = ({
           ) : (
             suggestions.map((sug) => (
               <div key={sug.user_id} className="suggestion-card-item">
-                <div className="user-meta-left">
+                <div
+                  className="user-meta-left"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => onOpenProfile?.(sug.user_id)}
+                  title={`Xem trang cá nhân của ${sug.full_name}`}
+                >
                   {sug.avatar_url ? (
                     <img
-                      src={sug.avatar_url}
+                      src={resolveMediaUrl(sug.avatar_url)}
                       alt={sug.full_name}
                       className="user-avatar-round"
                     />

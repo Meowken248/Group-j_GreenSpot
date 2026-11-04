@@ -96,6 +96,21 @@ describe('PenaltyLookupContainer Feature Tests (STT 11: Màn 1 -> Màn 3)', () =
       target: 'INDIVIDUAL',
     });
     vi.spyOn(penaltyService, 'getPenaltyDetail').mockResolvedValue(mockDetailItem);
+    vi.spyOn(penaltyService, 'submitPenaltyReport').mockResolvedValue({
+      id: 'rep-test-123',
+      tracking_code: 'INC-20261012-ABCDE',
+      status: 'PENDING',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      violation_title: mockDetailItem.title,
+      legal_basis: mockDetailItem.legal_basis,
+      fine_range: '1.000.000 đ - 2.000.000 đ',
+      address_text: 'Trước số nhà 12 Đường ABC, Phường X',
+      description: 'Hộ gia đình xả rác bừa bãi ra vỉa hè gây nghẽn cống',
+      is_anonymous: true,
+      reporter_id: null,
+      notes: null,
+    });
   });
 
   // =========================================================================

@@ -16,8 +16,7 @@ if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
 from sqlalchemy import select, delete
-from geoalchemy2.shape import from_shape
-from shapely.geometry import Point
+from geoalchemy2.elements import WKTElement
 
 from app.database import AsyncSessionLocal, engine
 import app.models
@@ -125,7 +124,7 @@ async def seed_deduplication():
             title="Bãi rác tự phát bốc mùi trước hẻm 45 Nguyễn Huệ",
             description="Nhiều túi rác sinh hoạt và chai nhựa vứt bừa bãi góc đường Nguyễn Huệ, cản trở lối đi và bốc mùi hôi thối nồng nặc.",
             address_text="45 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.HCM",
-            location=from_shape(Point(106.703200, 10.774500), srid=4326),
+            location=WKTElement("POINT(106.703200 10.774500)", srid=4326),
             latitude=10.774500,
             longitude=106.703200,
             severity="HIGH",
@@ -154,7 +153,7 @@ async def seed_deduplication():
             title="Đống rác ngổn ngang góc đường Nguyễn Huệ",
             description="Người dân vứt rác đè lên nhau từ tối qua, nhiều bao rác đen to góc vỉa hè chưa có đơn vị thu gom.",
             address_text="Góc Nguyễn Huệ - Lê Lợi, Phường Bến Nghé, Quận 1, TP.HCM",
-            location=from_shape(Point(106.703320, 10.774620), srid=4326),
+            location=WKTElement("POINT(106.703320 10.774620)", srid=4326),
             latitude=10.774620,
             longitude=106.703320,
             severity="MEDIUM",
@@ -184,7 +183,7 @@ async def seed_deduplication():
             title="Túi rác đen dồn ứ trước số 47 Nguyễn Huệ",
             description="Túi rác tràn lan trên hè phố người đi bộ.",
             address_text="47 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.HCM",
-            location=from_shape(Point(106.703250, 10.774550), srid=4326),
+            location=WKTElement("POINT(106.703250 10.774550)", srid=4326),
             latitude=10.774550,
             longitude=106.703250,
             severity="MEDIUM",
@@ -229,7 +228,7 @@ async def seed_deduplication():
             title="Rác thải xây dựng và cành cây tràn vỉa hè Điện Biên Phủ",
             description="Xà bần gạch vụn và cành cây khô tập kết trái phép chiếm lối đi bộ của người dân.",
             address_text="120 Điện Biên Phủ, Phường 15, Quận Bình Thạnh, TP.HCM",
-            location=from_shape(Point(106.701100, 10.796200), srid=4326),
+            location=WKTElement("POINT(106.701100 10.796200)", srid=4326),
             latitude=10.796200,
             longitude=106.701100,
             severity="HIGH",
@@ -258,7 +257,7 @@ async def seed_deduplication():
             title="Đống phế thải gạch đá và bao bì đổ trộm ven đường Điện Biên Phủ",
             description="Có xe chở phế thải đổ trộm đống xà bần to ven đường gây bụi bặm ô nhiễm.",
             address_text="128 Điện Biên Phủ, Phường 15, Quận Bình Thạnh, TP.HCM",
-            location=from_shape(Point(106.701350, 10.796350), srid=4326),
+            location=WKTElement("POINT(106.701350 10.796350)", srid=4326),
             latitude=10.796350,
             longitude=106.701350,
             severity="MEDIUM",
@@ -312,7 +311,7 @@ async def seed_deduplication():
             title="Bọc rác đen và vỏ hộp xốp ùn ứ chân cầu Sài Gòn",
             description="Nhiều bọc rác và hộp cơm xốp tập kết ven chân cầu Sài Gòn hướng về Thảo Điền.",
             address_text="Chân cầu Sài Gòn, Phường Thảo Điền, TP. Thủ Đức, TP.HCM",
-            location=from_shape(Point(106.728000, 10.799500), srid=4326),
+            location=WKTElement("POINT(106.728000 10.799500)", srid=4326),
             latitude=10.799500,
             longitude=106.728000,
             severity="MEDIUM",
@@ -341,7 +340,7 @@ async def seed_deduplication():
             title="Rác nhựa phát tán mép bờ sông gần chân cầu Sài Gòn",
             description="Túi bóng và vỏ chai nhựa nổi bập bềnh gần mép nước chân cầu.",
             address_text="Bờ sông chân cầu Sài Gòn, Phường Thảo Điền, TP. Thủ Đức, TP.HCM",
-            location=from_shape(Point(106.728350, 10.799750), srid=4326),
+            location=WKTElement("POINT(106.728350 10.799750)", srid=4326),
             latitude=10.799750,
             longitude=106.728350,
             severity="LOW",

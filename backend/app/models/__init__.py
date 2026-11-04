@@ -24,13 +24,13 @@ from app.models.spatial import (
     RecyclingFacility,
 )
 
-# 3. Sự cố Môi trường Đô thị (Incidents, Media & Audit Logs)
+# 3. Sự cố Môi trường Đô thị (Incidents, Media, Audit Logs & Deduplication)
 from app.models.incident import (
     WasteCategory,
     Incident,
     IncidentMedia,
 )
-from app.models.audit_log import IncidentAuditLog
+from app.models.audit_log import AuditLog as IncidentAuditLogModel, IncidentAuditLog
 from app.models.deduplication import IncidentDuplicateCluster
 from app.models.incident_export import ExportedIncidentFile
 
@@ -113,7 +113,8 @@ from app.models.profile import (
     UserActivity,
     Post,
 )
-from app.models.post import PostTaggedFriend
+from app.models.post import PostTaggedFriend, PostReaction
+from app.models.comment import Comment, PostShare
 
 # 15. Kết bạn và theo dõi (Friends & Follows Domain)
 from app.models.friends import (
@@ -132,7 +133,51 @@ from app.models.penalty import PenaltyRegulation, PenaltyReport
 # 18. Thông báo hệ thống (Notification Domain)
 from app.models.notification import Notification
 
-# 19. Cảnh báo khẩn cấp theo vị trí & Safety Check (STT 45)
+# 19. Nhắn tin 1-1, Chat nhóm & Chat quận (Chat Domain - Feature 15)
+from app.models.chat import (
+    Conversation,
+    ConversationMember,
+    Message,
+    UserBlock,
+    ConversationType,
+    MemberRole,
+)
+
+# 20. Nhóm cộng đồng theo quận, phường hoặc chủ đề (Community Groups - Feature 16)
+from app.models.group import (
+    Group,
+    GroupMember,
+    GroupInvitation,
+    GroupType,
+    GroupPrivacy,
+    GroupMemberRole,
+    GroupStatus,
+)
+
+# 21. Sinh nhật bạn bè & thiệp xanh sinh thái (Birthday Domain - Feature 17)
+from app.models.birthday import BirthdayWish, BirthdayWishType
+
+# 22. Gây quỹ cộng đồng (Feature 20)
+from app.models.fundraiser import (
+    FundraiserCampaign,
+    FundraiserDonation,
+    FundraiserExpense,
+    FundraiserStatus,
+)
+
+# 23. Sự kiện và Chiến dịch Chủ Nhật Xanh (Feature 21)
+from app.models.event import (
+    Event,
+    EventParticipant,
+    EventInterest,
+    EventCheckin,
+    EventStatus,
+)
+
+# 24. Chatbot AI (Feature 24)
+from app.models.chatbot import ChatbotConversation, ChatbotMessage, ChatbotSenderType
+
+# 25. Cảnh báo khẩn cấp theo vị trí & Safety Check (STT 45)
 from app.models.emergency_alert import (
     UserDeviceLocation,
     EmergencyBroadcastAlert,
@@ -142,21 +187,24 @@ from app.models.emergency_alert import (
     SafetyCheckFriendDelivery,
 )
 
-# 20. Cứu hộ ngập cộng đồng (Flood SOS - STT 46)
+# 26. Cứu hộ ngập cộng đồng (Flood SOS - STT 46)
 from app.models.flood_sos import (
     FloodSosRequest,
     VolunteerProfile,
     FloodSosChatMessage,
 )
 
-# 21. Điều phối tác nghiệp & hiện trường (STT 43)
+# 27. Điều phối tác nghiệp & hiện trường (STT 43)
 from app.models.dispatch import DispatchOrder
 
-# 22. Phân tích điểm nóng & dự báo (STT 44)
+# 28. Phân tích điểm nóng & dự báo (STT 44)
 from app.models.hotspots import HotspotCluster, HotspotDailyForecast
 
-# 23. Xuất dữ liệu sự cố (STT 47)
-from app.models.incident_export import ExportedIncidentFile
+# 29. Chế độ Offline-First & Đồng bộ ngoại tuyến (STT 19)
+from app.models.offline_sync import (
+    OfflineSubmission,
+    OfflineMediaUpload,
+)
 
 __all__ = [
     "Base",
@@ -226,6 +274,9 @@ __all__ = [
     "UserActivity",
     "Post",
     "PostTaggedFriend",
+    "PostReaction",
+    "Comment",
+    "PostShare",
     # Friends & Follows Domain
     "FriendRequest",
     "Friendship",
@@ -238,6 +289,39 @@ __all__ = [
     "PenaltyReport",
     # Notification Domain
     "Notification",
+    # Chat Domain (Feature 15)
+    "Conversation",
+    "ConversationMember",
+    "Message",
+    "UserBlock",
+    "ConversationType",
+    "MemberRole",
+    # Community Groups (Feature 16)
+    "Group",
+    "GroupMember",
+    "GroupInvitation",
+    "GroupType",
+    "GroupPrivacy",
+    "GroupMemberRole",
+    "GroupStatus",
+    # Birthday Domain (Feature 17)
+    "BirthdayWish",
+    "BirthdayWishType",
+    # Fundraiser (Feature 20)
+    "FundraiserCampaign",
+    "FundraiserDonation",
+    "FundraiserExpense",
+    "FundraiserStatus",
+    # Green Sunday Events & Campaigns (Feature 21)
+    "Event",
+    "EventParticipant",
+    "EventInterest",
+    "EventCheckin",
+    "EventStatus",
+    # Chatbot (Feature 24)
+    "ChatbotConversation",
+    "ChatbotMessage",
+    "ChatbotSenderType",
     # Emergency Alert & Safety Check (STT 45)
     "UserDeviceLocation",
     "EmergencyBroadcastAlert",
@@ -256,5 +340,7 @@ __all__ = [
     # Hotspots & Forecasting (STT 44)
     "HotspotCluster",
     "HotspotDailyForecast",
+    # Offline-First Sync (STT 19)
+    "OfflineSubmission",
+    "OfflineMediaUpload",
 ]
-

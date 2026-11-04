@@ -1,7 +1,7 @@
 import json
 import uuid
 from enum import Enum
-from typing import Optional, List, Any
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, model_validator, ConfigDict
 from datetime import datetime
 
@@ -75,23 +75,63 @@ class CreatePostRequest(BaseModel):
                 raise ValueError("Chỉ được gắn thẻ tối đa 10 bạn bè")
             self.tagged_friend_ids = unique_friend_ids
 
+        # 6. Kiểm tra quyền riêng tư
+        if self.visibility is not None:
+            norm_vis = self.visibility.upper().strip()
+            if norm_vis == "PRIVATE":
+                self.visibility = "ONLY_ME"
+            elif norm_vis in ("PUBLIC", "FRIENDS", "ONLY_ME"):
+                self.visibility = norm_vis
+            else:
+                raise ValueError("Chế độ hiển thị không hợp lệ (hỗ trợ: PUBLIC, FRIENDS, ONLY_ME)")
+
         return self
 
 
 class UpdatePostRequest(BaseModel):
-    """Schema cập nhật bài viết có Optimistic Locking (Rule 7)"""
-    content: Optional[str] = Field(default=None, description="Nội dung bài viết cần sửa")
+    """Schema cập nhật bài viết có Optimistic Locking (Rule 7, Feature STT 13 Màn 2/5)"""
+    content: Optional[str] = Field(default=None, description="Nội dung bài viết cần sửa (tối đa 2.000 ký tự)")
     media_urls: Optional[List[MediaItemInput]] = Field(default=None, description="Danh sách media mới")
     latitude: Optional[float] = Field(default=None, description="Vĩ độ GPS mới")
     longitude: Optional[float] = Field(default=None, description="Kinh độ GPS mới")
     address: Optional[str] = Field(default=None, max_length=500, description="Địa chỉ mới")
+    clear_location: Optional[bool] = Field(default=False, description="Xoá thông tin vị trí đã gắn")
+    tagged_friend_ids: Optional[List[uuid.UUID]] = Field(default=None, description="Danh sách bạn bè gắn thẻ mới")
+    group_id: Optional[uuid.UUID] = Field(default=None, description="ID nhóm tình nguyện")
+    visibility: Optional[str] = Field(default=None, description="Chế độ hiển thị: PUBLIC, FRIENDS, ONLY_ME, PRIVATE")
     version: int = Field(..., description="Phiên bản OCC hiện tại của bài viết")
 
     @model_validator(mode="after")
     def validate_update(self) -> "UpdatePostRequest":
-        if self.content is not None and len(self.content) > 3000:
-            raise ValueError("Nội dung bài viết tối đa 3000 ký tự")
+        if self.content is not None and len(self.content) > 2000:
+            raise ValueError("Nội dung bài viết tối đa 2000 ký tự")
+        if self.tagged_friend_ids is not None:
+            unique_friend_ids = list(dict.fromkeys(self.tagged_friend_ids))
+            if len(unique_friend_ids) > 10:
+                raise ValueError("Chỉ được gắn thẻ tối đa 10 bạn bè")
+            self.tagged_friend_ids = unique_friend_ids
+        if self.visibility is not None:
+            norm_vis = self.visibility.upper().strip()
+            if norm_vis == "PRIVATE":
+                self.visibility = "ONLY_ME"
+            elif norm_vis in ("PUBLIC", "FRIENDS", "ONLY_ME"):
+                self.visibility = norm_vis
+            else:
+                raise ValueError("Chế độ hiển thị không hợp lệ")
         return self
+
+
+class ToggleHidePostRequest(BaseModel):
+    """Schema yêu cầu ẩn/hiện bài viết (Feature STT 13 Màn 5/5)"""
+    is_hidden: bool = Field(..., description="Trạng thái ẩn bài viết (True: Ẩn, False: Hiện lại)")
+
+
+class ToggleHidePostResponse(BaseModel):
+    """Schema phản hồi khi ẩn/hiện bài viết thành công"""
+    success: bool = True
+    post_id: uuid.UUID
+    is_hidden: bool
+    message: str
 
 
 class AuthorSummary(BaseModel):
@@ -125,8 +165,11 @@ class PostDetailResponse(BaseModel):
     group_id: Optional[uuid.UUID] = None
     visibility: str = "PUBLIC"
     is_hidden: bool = False
+    is_edited: bool = False
     reactions_count: int = 0
     comments_count: int = 0
+    shares_count: int = 0
+    shared_post_id: Optional[uuid.UUID] = None
     version: int = 1
     created_at: datetime
     updated_at: datetime
@@ -141,3 +184,31 @@ class MediaUploadResponse(BaseModel):
     media_type: MediaTypeEnum
     file_name: str
     size_bytes: int
+
+
+class ReactPostRequest(BaseModel):
+    """Yêu cầu thả hoặc hủy cảm xúc sinh thái (Feature STT 10)"""
+    reaction_type: str = Field(..., description="'TREE' | 'EARTH' | 'RECYCLE' | 'CLAP' | 'CONCERN'")
+
+
+class PostReactionUser(BaseModel):
+    """Thông tin người dùng bày tỏ cảm xúc sinh thái (Màn 3 Facebook Style)"""
+    user_id: uuid.UUID
+    full_name: str
+    avatar_url: Optional[str] = None
+    role: Optional[str] = None
+    reaction_type: str
+    created_at: datetime
+    friendship_status: str = "NONE"  # 'SELF' | 'FRIENDS' | 'REQUEST_SENT' | 'REQUEST_RECEIVED' | 'NONE'
+    is_following: bool = False
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PostReactionsSummaryResponse(BaseModel):
+    """Tổng hợp danh sách cảm xúc bài viết kèm số đếm theo tab"""
+    post_id: uuid.UUID
+    total_count: int
+    counts_by_type: Dict[str, int]
+    items: List[PostReactionUser]
+

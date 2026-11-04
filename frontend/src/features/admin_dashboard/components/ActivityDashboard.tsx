@@ -19,7 +19,7 @@ import type {
   LoadingState,
   PeriodFilter,
 } from "../types/dashboard.types";
-import { navigateToRoute } from "../../../routes/appRoutes";
+import { navigateToRoute, resolveTabFromUrl } from "../../../routes/appRoutes";
 import "../styles/dashboard.scss";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -167,7 +167,8 @@ export const ActivityDashboard: React.FC<ActivityDashboardProps> = ({
     if (onNavigateModule) {
       onNavigateModule(target);
     } else {
-      navigateToRoute(target);
+      const tab = resolveTabFromUrl(target);
+      navigateToRoute(tab);
     }
   };
 

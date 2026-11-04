@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import List, Optional, Tuple
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, update, func, and_, or_, desc, asc
+from sqlalchemy import select, update, func, and_, or_, desc, asc, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -44,7 +44,7 @@ async def count_mutual_friends(user_a: uuid.UUID, user_b: uuid.UUID, db: AsyncSe
     """Tính số lượng bạn chung giữa 2 người dùng"""
     # Bạn bè của A (chưa bị xóa)
     q_a = select(
-        func.case(
+        case(
             (Friendship.user_id_1 == user_a, Friendship.user_id_2),
             else_=Friendship.user_id_1
         )
@@ -55,7 +55,7 @@ async def count_mutual_friends(user_a: uuid.UUID, user_b: uuid.UUID, db: AsyncSe
 
     # Bạn bè của B (chưa bị xóa)
     q_b = select(
-        func.case(
+        case(
             (Friendship.user_id_1 == user_b, Friendship.user_id_2),
             else_=Friendship.user_id_1
         )
@@ -302,9 +302,9 @@ async def respond_to_friend_request(
         req.status = FriendRequestStatus.ACCEPTED.value
 
         # Tăng friends_count của cả 2 user
-        current_user.friends_count += 1
+        current_user.friends_count = (current_user.friends_count or 0) + 1
         if sender_user:
-            sender_user.friends_count += 1
+            sender_user.friends_count = (sender_user.friends_count or 0) + 1
 
         await db.commit()
         return GenericFriendsActionResponse(
@@ -338,7 +338,7 @@ async def get_green_citizen_suggestions(
 
     # Lấy danh sách ID đã là bạn bè của tôi
     friends_subq = select(
-        func.case(
+        case(
             (Friendship.user_id_1 == current_user.user_id, Friendship.user_id_2),
             else_=Friendship.user_id_1
         )
@@ -349,7 +349,7 @@ async def get_green_citizen_suggestions(
 
     # Lấy danh sách ID đã gửi hoặc nhận request PENDING
     req_subq = select(
-        func.case(
+        case(
             (FriendRequest.sender_id == current_user.user_id, FriendRequest.receiver_id),
             else_=FriendRequest.sender_id
         )
@@ -577,12 +577,12 @@ async def unfriend_user(
     friendship.deleted_at = datetime.now(timezone.utc)
 
     # 2. Giảm friends_count không âm
-    current_user.friends_count = max(0, current_user.friends_count - 1)
+    current_user.friends_count = max(0, (current_user.friends_count or 0) - 1)
 
     f_res = await db.execute(select(User).where(User.user_id == friend_id))
     friend_user = f_res.scalars().first()
     if friend_user:
-        friend_user.friends_count = max(0, friend_user.friends_count - 1)
+        friend_user.friends_count = max(0, (friend_user.friends_count or 0) - 1)
 
     await db.commit()
 

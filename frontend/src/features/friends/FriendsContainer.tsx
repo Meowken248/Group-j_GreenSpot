@@ -14,7 +14,8 @@ import "./Friends.scss";
 
 interface FriendsContainerProps {
   onBackToHome?: () => void;
-  onNavigateToProfile?: () => void;
+  onNavigateToProfile?: (targetUserId?: string) => void;
+  onNavigateToChat?: (targetUserId: string) => void;
   currentUser?: {
     user_id?: string;
     email?: string;
@@ -26,6 +27,7 @@ interface FriendsContainerProps {
 export const FriendsContainer: React.FC<FriendsContainerProps> = ({
   onBackToHome,
   onNavigateToProfile,
+  onNavigateToChat,
   currentUser,
 }) => {
   // Tab điều hướng: "requests" (Màn 1) hoặc "friends" (Màn 2)
@@ -138,12 +140,34 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
       const res = await friendsService.respondToRequest(req.request_id, "ACCEPT");
       showToast(res.message, "success");
 
+      // Cập nhật ngay vào danh sách bạn bè
+      setFriends((prev) => [
+        {
+          user_id: req.sender_id,
+          full_name: req.sender_name,
+          avatar_url: req.sender_avatar,
+          district: req.district,
+          status: "ACTIVE",
+          is_suspended: false,
+          total_green_points: 0,
+          is_online: true,
+          friends_count: 1,
+          friendship_created_at: new Date().toISOString(),
+        },
+        ...prev.filter((f) => f.user_id !== req.sender_id),
+      ]);
+
       // Đợi hiệu ứng mờ dòng 400ms rồi gỡ bản ghi
       setTimeout(() => {
         setRequests((prev) => prev.filter((r) => r.request_id !== req.request_id));
       }, 400);
-    } catch {
-      showToast("Xảy ra lỗi khi chấp nhận lời mời", "error");
+    } catch (err: any) {
+      const errDetail = err?.response?.data?.detail;
+      const msg =
+        (typeof errDetail === "object" ? errDetail?.message : errDetail) ||
+        err?.response?.data?.message ||
+        "Xảy ra lỗi khi chấp nhận lời mời";
+      showToast(msg, "error");
       setRequests((prev) =>
         prev.map((r) => (r.request_id === req.request_id ? { ...r, isFading: false } : r))
       );
@@ -164,8 +188,13 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
       setTimeout(() => {
         setRequests((prev) => prev.filter((r) => r.request_id !== req.request_id));
       }, 400);
-    } catch {
-      showToast("Xảy ra lỗi khi từ chối lời mời", "error");
+    } catch (err: any) {
+      const errDetail = err?.response?.data?.detail;
+      const msg =
+        (typeof errDetail === "object" ? errDetail?.message : errDetail) ||
+        err?.response?.data?.message ||
+        "Xảy ra lỗi khi từ chối lời mời";
+      showToast(msg, "error");
       setRequests((prev) =>
         prev.map((r) => (r.request_id === req.request_id ? { ...r, isFading: false } : r))
       );
@@ -180,8 +209,18 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
       setSuggestions((prev) =>
         prev.map((s) => (s.user_id === sug.user_id ? { ...s, isRequested: true } : s))
       );
-    } catch {
-      showToast("Không thể gửi lời mời kết bạn", "error");
+    } catch (err: any) {
+      const errDetail = err?.response?.data?.detail;
+      const msg =
+        (typeof errDetail === "object" ? errDetail?.message : errDetail) ||
+        err?.response?.data?.message ||
+        "Không thể gửi lời mời kết bạn";
+      showToast(msg, "error");
+      if (err?.response?.data?.detail?.error_code === "REQUEST_ALREADY_EXISTS") {
+        setSuggestions((prev) =>
+          prev.map((s) => (s.user_id === sug.user_id ? { ...s, isRequested: true } : s))
+        );
+      }
     }
   };
 
@@ -259,9 +298,13 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
     }
   };
 
-  // Nhắn tin
+  // Nhắn tin trực tiếp cùng bạn bè
   const handleOpenChat = (friend: FriendItem) => {
-    showToast(`Mở hộp thoại trò chuyện cùng ${friend.full_name}`, "info");
+    if (onNavigateToChat) {
+      onNavigateToChat(friend.user_id);
+    } else {
+      window.location.hash = `#messages?target=${friend.user_id}`;
+    }
   };
 
   return (
@@ -308,7 +351,7 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
 
             <div
               className="user-avatar-pill"
-              onClick={onNavigateToProfile}
+              onClick={() => onNavigateToProfile?.()}
               role="button"
               tabIndex={0}
               title="Xem trang cá nhân của bạn"
@@ -336,6 +379,7 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
             onRejectRequest={handleRejectRequest}
             onSendRequest={handleSendFriendRequest}
             onToggleFollow={handleToggleFollow}
+            onOpenProfile={(targetId) => onNavigateToProfile?.(targetId)}
           />
         ) : (
           <FriendListView
@@ -348,6 +392,7 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
             onOpenUnfriendModal={handleOpenUnfriendModal}
             onUnfollow={handleUnfollowFromList}
             onOpenChat={handleOpenChat}
+            onOpenProfile={(targetId) => onNavigateToProfile?.(targetId)}
           />
         )}
       </main>

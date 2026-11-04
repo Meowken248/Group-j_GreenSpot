@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { FriendItem, FollowingItem } from "../types";
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
 
 interface FriendListViewProps {
   friends: FriendItem[];
@@ -11,6 +12,7 @@ interface FriendListViewProps {
   onOpenUnfriendModal: (friend: FriendItem) => void;
   onUnfollow: (targetUserId: string, name: string) => void;
   onOpenChat: (friend: FriendItem) => void;
+  onOpenProfile?: (userId: string) => void;
 }
 
 export const FriendListView: React.FC<FriendListViewProps> = ({
@@ -23,6 +25,7 @@ export const FriendListView: React.FC<FriendListViewProps> = ({
   onOpenUnfriendModal,
   onUnfollow,
   onOpenChat,
+  onOpenProfile,
 }) => {
   // Input cục bộ phục vụ cơ chế Debounce 300ms
   const [localInput, setLocalInput] = useState(searchQuery);
@@ -81,11 +84,16 @@ export const FriendListView: React.FC<FriendListViewProps> = ({
           ) : (
             friends.map((friend) => (
               <div key={friend.user_id} className="friend-row-item">
-                <div className="friend-meta-left">
+                <div
+                  className="friend-meta-left"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => onOpenProfile?.(friend.user_id)}
+                  title={`Xem trang cá nhân của ${friend.full_name}`}
+                >
                   <div className="avatar-wrapper">
                     {friend.avatar_url ? (
                       <img
-                        src={friend.avatar_url}
+                        src={resolveMediaUrl(friend.avatar_url)}
                         alt={friend.full_name}
                         className="friend-avatar"
                       />
@@ -169,10 +177,15 @@ export const FriendListView: React.FC<FriendListViewProps> = ({
           ) : (
             followingList.map((target) => (
               <div key={target.user_id} className="following-item-row">
-                <div className="user-meta-left">
+                <div
+                  className="user-meta-left"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => onOpenProfile?.(target.user_id)}
+                  title={`Xem trang cá nhân của ${target.full_name}`}
+                >
                   {target.avatar_url ? (
                     <img
-                      src={target.avatar_url}
+                      src={resolveMediaUrl(target.avatar_url)}
                       alt={target.full_name}
                       className="following-avatar"
                     />

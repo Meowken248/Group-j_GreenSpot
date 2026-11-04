@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import type { IncidentListItem } from "../types/incident_management.types";
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
 
 interface Props {
   incident: IncidentListItem;
@@ -129,10 +130,14 @@ export const IncidentVerificationModal: React.FC<Props> = ({
                 <div className="media-viewer-box">
                   <div className="main-media-frame">
                     {currentMedia?.media_type === "VIDEO" ? (
-                      <video src={currentMedia.file_url} controls className="media-player" />
+                      <video
+                        src={resolveMediaUrl(currentMedia.file_url)}
+                        controls
+                        className="media-player"
+                      />
                     ) : (
                       <img
-                        src={currentMedia?.file_url || incident.thumbnail_url || ""}
+                        src={resolveMediaUrl(currentMedia?.file_url || incident.thumbnail_url || "")}
                         alt="Bằng chứng sự cố"
                         className="media-image"
                       />
@@ -147,7 +152,7 @@ export const IncidentVerificationModal: React.FC<Props> = ({
                           className={`thumb-btn ${idx === activeMediaIndex ? "active" : ""}`}
                           onClick={() => setActiveMediaIndex(idx)}
                         >
-                          <img src={m.thumbnail_url || m.file_url} alt={`Ảnh ${idx + 1}`} />
+                          <img src={resolveMediaUrl(m.thumbnail_url || m.file_url)} alt={`Ảnh ${idx + 1}`} />
                           <span className="thumb-idx">{idx + 1}</span>
                         </button>
                       ))}

@@ -30,6 +30,26 @@
   box-sizing: border-box;
 }
 
+/* Hỗ trợ chế độ switcher dạng floating pill nếu cần */
+.view-mode-switcher {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 4px;
+  border-radius: 9999px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(15, 23, 42, 0.04);
+  max-width: calc(100vw - 190px);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.view-mode-switcher::-webkit-scrollbar {
+  display: none;
+}
 .app-top-header.dark-mode {
   background: rgba(15, 23, 42, 0.92);
   backdrop-filter: saturate(190%) blur(20px);
@@ -207,6 +227,8 @@
   top: calc(100% + 8px);
   left: 0;
   min-width: 290px;
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -560,6 +582,36 @@
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);
 }
 
+.view-tab-btn.btn-social-feed-nav {
+  color: #059669;
+  font-weight: 700;
+}
+
+.view-tab-btn.btn-social-feed-nav:hover {
+  color: #10b981;
+}
+
+.view-tab-btn.btn-social-feed-nav.active {
+  background: #059669;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+
+.view-tab-btn.btn-chat-nav {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.view-tab-btn.btn-chat-nav:hover {
+  color: #34d399;
+}
+
+.view-tab-btn.btn-chat-nav.active {
+  background: #059669;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+
 .view-tab-btn.btn-report-nav {
   color: #10b981;
   font-weight: 700;
@@ -588,6 +640,21 @@
   background: #b45309;
   color: #ffffff;
   box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);
+}
+
+.view-tab-btn.btn-waste-cat-nav {
+  color: #0d9488;
+  font-weight: 700;
+}
+
+.view-tab-btn.btn-waste-cat-nav:hover {
+  color: #0f766e;
+}
+
+.view-tab-btn.btn-waste-cat-nav.active {
+  background: #0f766e;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.3);
 }
 
 .view-tab-btn.permission-locked {
@@ -837,9 +904,44 @@ body.dark-mode .health-badge-btn:hover {
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
+/* Floating Chat Quick Launch Button (Feature 15) */
+.floating-chat-quick-btn {
+  position: fixed;
+  bottom: 84px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 9999px;
+  box-shadow: 0 10px 25px rgba(5, 150, 105, 0.45), 0 0 15px rgba(16, 185, 129, 0.3);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.floating-chat-quick-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 14px 30px rgba(16, 185, 129, 0.6);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.floating-chat-quick-btn .floating-chat-icon {
+  font-size: 18px;
+}
+
+.floating-chat-quick-btn .floating-chat-label {
+  letter-spacing: 0.3px;
+}
+
 /* Floating Voice Assistant Quick Launch Button */
 .floating-voice-quick-btn {
-  position: absolute;
+  position: fixed;
   bottom: 24px;
   right: 24px;
   z-index: 1000;
@@ -1104,5 +1206,51 @@ body.dark-mode .health-badge-btn:hover {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Badge thông báo tin nhắn chưa đọc toàn cục (Chức năng 15 Chuẩn Doanh nghiệp) */
+.global-chat-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 9999px;
+  margin-left: 4px;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+  animation: pulseBadge 2s infinite;
+}
+
+.floating-chat-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  border: 2px solid #ffffff;
+}
+
+@keyframes pulseBadge {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
   }
 }

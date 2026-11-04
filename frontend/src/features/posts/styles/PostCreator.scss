@@ -89,7 +89,7 @@ $shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.15);
   // Khung 3 cột theo chiều ngang
   .post-creator-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-columns: minmax(0, 2fr) minmax(210px, 1fr) minmax(170px, 1fr);
     gap: 20px;
     align-items: start;
 
@@ -127,6 +127,75 @@ $shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.15);
   // CỘT TRÁI: KHỐI "NỘI DUNG"
   // ==========================================
   .col-content {
+    .creator-author-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #f3f4f6;
+
+      .creator-avatar-wrap {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        overflow: hidden;
+        flex-shrink: 0;
+
+        .creator-user-avatar {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .creator-avatar-fallback {
+          width: 100%;
+          height: 100%;
+          background: #e0f2fe;
+          color: #0284c7;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 18px;
+        }
+      }
+
+      .creator-meta-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+
+        .creator-user-name {
+          font-size: 15px;
+          font-weight: 600;
+          color: $text-main;
+
+          .group-posting-label {
+            font-size: 13px;
+            color: $text-secondary;
+            font-weight: normal;
+
+            strong {
+              color: $primary-green-hover;
+            }
+          }
+        }
+
+        .creator-privacy-badge {
+          display: inline-flex;
+          align-items: center;
+          background: #f1f5f9;
+          color: #475569;
+          padding: 2px 8px;
+          border-radius: 12px;
+          font-size: 11px;
+          font-weight: 600;
+          width: fit-content;
+        }
+      }
+    }
+
     .textarea-wrapper {
       position: relative;
       margin-bottom: 16px;
@@ -336,6 +405,7 @@ $shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.15);
         cursor: pointer;
         transition: all 0.2s;
         text-align: left;
+        white-space: nowrap;
 
         &:hover {
           border-color: $primary-green;
@@ -379,6 +449,75 @@ $shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.15);
           }
         }
       }
+
+      .privacy-selector-card {
+        margin-top: 10px;
+        padding-top: 14px;
+        border-top: 1px dashed $border-color;
+
+        .privacy-selector-title {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+          font-weight: 700;
+          color: $text-main;
+          margin-bottom: 10px;
+
+          .p-icon {
+            font-size: 15px;
+          }
+        }
+
+        .visibility-segmented-control {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+
+          .visibility-option-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #374151;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            text-align: left;
+            white-space: nowrap;
+
+            .vis-icon {
+              font-size: 16px;
+            }
+
+            .vis-text {
+              flex: 1;
+            }
+
+            &:hover:not(:disabled) {
+              background: #f3f4f6;
+              border-color: #d1d5db;
+            }
+
+            &.is-selected {
+              background: #ecfdf5;
+              border-color: #10b981;
+              color: #065f46;
+              font-weight: 700;
+              box-shadow: 0 1px 3px rgba(16, 185, 129, 0.15);
+            }
+
+            &:disabled {
+              opacity: 0.6;
+              cursor: not-allowed;
+            }
+          }
+        }
+      }
     }
   }
 
@@ -404,6 +543,7 @@ $shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.15);
         transition: background 0.2s, opacity 0.2s;
         @include flex-center;
         gap: 8px;
+        white-space: nowrap;
 
         &:hover:not(:disabled) {
           background: $primary-green-hover;
@@ -431,6 +571,7 @@ $shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.15);
         border-radius: $border-radius-sm;
         cursor: pointer;
         transition: all 0.2s;
+        white-space: nowrap;
 
         &:hover {
           background: #f3f4f6;
@@ -463,7 +604,7 @@ $shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.15);
   height: 100vh;
   background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(4px);
-  z-index: 1000;
+  z-index: 10050;
   @include flex-center;
   padding: 20px;
   box-sizing: border-box;
@@ -644,7 +785,7 @@ $shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.15);
   height: 100vh;
   background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(4px);
-  z-index: 1000;
+  z-index: 10050;
   @include flex-center;
   padding: 20px;
   box-sizing: border-box;

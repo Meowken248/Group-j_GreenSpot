@@ -6,6 +6,8 @@ from email.mime.text import MIMEText
 from typing import Optional
 import os
 
+from app.core.config import settings
+
 logger = logging.getLogger("greenspot.email")
 
 class EmailService:
@@ -27,10 +29,11 @@ class EmailService:
         print(f" Mục đích:      Kích hoạt tài khoản Công dân số GreenSpot")
         print(f"{'='*75}\n", flush=True)
 
-        smtp_host = os.getenv("SMTP_HOST")
-        smtp_port = int(os.getenv("SMTP_PORT", "587"))
-        smtp_user = os.getenv("SMTP_USER", "").strip()
-        smtp_pass = os.getenv("SMTP_PASSWORD", "").strip()
+        # Đọc cấu hình SMTP từ settings (nạp backend/.env, biến môi trường container được ưu tiên)
+        smtp_host = (settings.SMTP_HOST or os.getenv("SMTP_HOST", "")).strip()
+        smtp_port = int(settings.SMTP_PORT or os.getenv("SMTP_PORT", "587"))
+        smtp_user = (settings.SMTP_USER or os.getenv("SMTP_USER", "")).strip()
+        smtp_pass = (settings.SMTP_PASSWORD or os.getenv("SMTP_PASSWORD", "")).strip()
 
         # 2. Nếu có tài khoản SMTP -> Gửi thư điện tử thật
         if smtp_host and smtp_user and smtp_pass:

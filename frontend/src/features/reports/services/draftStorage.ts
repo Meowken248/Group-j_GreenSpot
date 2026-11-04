@@ -1,9 +1,16 @@
 import type { DraftData, ReportFormData, ReportStep } from "../types/report.types";
+import { getCurrentUserId } from "../../offline/services/offlineDb";
 
-const DRAFT_STORAGE_KEY = "greenspot_incident_draft_v1";
+const BASE_DRAFT_KEY = "greenspot_incident_draft";
 
-export const saveDraft = (formData: ReportFormData, step: ReportStep): void => {
+export const getScopedDraftKey = (userId?: string): string => {
+  const uid = userId || getCurrentUserId();
+  return `${BASE_DRAFT_KEY}_${uid}`;
+};
+
+export const saveDraft = (formData: ReportFormData, step: ReportStep, userId?: string): void => {
   try {
+    const key = getScopedDraftKey(userId);
     const draft: DraftData = {
       formData: {
         ...formData,
@@ -13,15 +20,16 @@ export const saveDraft = (formData: ReportFormData, step: ReportStep): void => {
       saved_at: new Date().toISOString(),
       current_step: step,
     };
-    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+    localStorage.setItem(key, JSON.stringify(draft));
   } catch (error) {
     console.error("Lỗi khi lưu bản nháp vào localStorage:", error);
   }
 };
 
-export const loadDraft = (): DraftData | null => {
+export const loadDraft = (userId?: string): DraftData | null => {
   try {
-    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+    const key = getScopedDraftKey(userId);
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as DraftData;
     // Kiểm tra tính hợp lệ cơ bản
@@ -35,16 +43,19 @@ export const loadDraft = (): DraftData | null => {
   }
 };
 
-export const clearDraft = (): void => {
+export const clearDraft = (userId?: string): void => {
   try {
-    localStorage.removeItem(DRAFT_STORAGE_KEY);
+    const key = getScopedDraftKey(userId);
+    localStorage.removeItem(key);
+    // Đồng thời xóa khóa cũ nếu còn tồn đọng
+    localStorage.removeItem("greenspot_incident_draft_v1");
   } catch (error) {
     console.error("Lỗi khi xoá bản nháp:", error);
   }
 };
 
-export const hasValidDraft = (): boolean => {
-  const draft = loadDraft();
+export const hasValidDraft = (userId?: string): boolean => {
+  const draft = loadDraft(userId);
   if (!draft) return false;
   // Có bản nháp nếu đã nhập tiêu đề, nội dung hoặc đã chọn loại sự cố
   const { title, description, category_id, media } = draft.formData;
@@ -55,4 +66,3 @@ export const hasValidDraft = (): boolean => {
     (media && media.length > 0)
   );
 };
-

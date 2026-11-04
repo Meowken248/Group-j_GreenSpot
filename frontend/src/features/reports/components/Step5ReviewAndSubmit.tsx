@@ -8,8 +8,12 @@ import type {
 import {
   submitIncidentReport,
   checkNearbyDuplicates,
+  uploadMediaWithWatermark,
 } from "../services/reportService";
 import { DuplicateWarningModal } from "./DuplicateWarningModal";
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
+import { enqueueReport, replaceQueueItem, deleteQueueItem } from "../../offline/services/outboxQueueRepository";
+import { getCurrentUserId } from "../../offline/services/offlineDb";
 
 interface Step5Props {
   formData: ReportFormData;
@@ -19,6 +23,8 @@ interface Step5Props {
   onSessionExpired: () => void;
   onGoHome: () => void;
   onTrackIncident: (trackingCode: string) => void;
+  onOpenOutbox?: () => void;
+  editingQueueItemId?: string | null;
 }
 
 export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
@@ -29,11 +35,14 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
   onSessionExpired,
   onGoHome,
   onTrackIncident,
+  onOpenOutbox,
+  editingQueueItemId,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submissionResult, setSubmissionResult] = useState<IncidentSubmissionResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [networkWarning, setNetworkWarning] = useState<string | null>(null);
+  const [queueSuccessResult, setQueueSuccessResult] = useState<string | null>(null);
 
   // Modal cảnh báo trùng lặp
   const [duplicateModalOpen, setDuplicateModalOpen] = useState<boolean>(false);
@@ -46,21 +55,136 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
   const missingLocation = !formData.location || !formData.location.is_within_hcmc;
   const hasMissingFields = missingCategory || missingTitle || missingMedia || missingLocation;
 
+  // Đưa phản ánh vào hàng đợi gửi ngoại tuyến (R08, R09, R10, R11)
+  const handleEnqueueOfflineReport = async () => {
+    if (hasMissingFields) {
+      setErrorMessage("Phản ánh còn thiếu thông tin bắt buộc. Vui lòng bổ sung đầy đủ trước khi xếp hàng.");
+      return;
+    }
+
+    if (!formData.location) {
+      setErrorMessage("Thiếu toạ độ GPS. Cần xác nhận vị trí trước khi đưa vào hàng đợi (R07).");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      const now = Date.now();
+      const clientSubId = `sub_${now}_${Math.random().toString(36).substring(2, 9)}`;
+      const idempotencyKey = `idemp_${now}_${Math.random().toString(36).substring(2, 9)}`;
+
+      // Kiểm tra tính toàn vẹn của bằng chứng: Chặn xếp hàng nếu tệp minh chứng bị rỗng hoặc mất dữ liệu (Issue 8)
+      for (const [idx, m] of formData.media.entries()) {
+        const fileObj = m.file;
+        const fileSize = fileObj?.size || m.file_size_bytes || 0;
+        if (!fileObj || fileSize === 0) {
+          setErrorMessage(
+            `Tệp minh chứng "${fileObj?.name || `Tệp số ${idx + 1}`}" bị thiếu dữ liệu nhị phân hoặc không đọc được. Vui lòng kiểm tra lại tệp đính kèm trước khi đưa vào hàng đợi.`
+          );
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      const storedMediaBlobs = formData.media.map((m, index) => ({
+        client_file_id: m.id || `file_${index}_${now}`,
+        blob: m.file!,
+        name: m.file?.name || `media_${index}.jpg`,
+        media_type: (m.media_type as "IMAGE" | "VIDEO") || "IMAGE",
+        mime_type: m.mime_type || m.file?.type || "image/jpeg",
+        size: m.file?.size || m.file_size_bytes || 0,
+        captured_at: new Date().toISOString(),
+      }));
+
+      const queuePayload = {
+        client_submission_id: clientSubId,
+        idempotency_key: idempotencyKey,
+        user_id: getCurrentUserId(),
+        title: formData.title,
+        category_id: formData.category_id!,
+        category_name: formData.category_name,
+        description: formData.description,
+        severity: formData.severity,
+        latitude: formData.location.latitude,
+        longitude: formData.location.longitude,
+        address_text: formData.location.address_text,
+        is_anonymous: formData.is_anonymous,
+        reporter_phone: formData.reporter_phone,
+        media_blobs: storedMediaBlobs,
+        voice_blob: (formData as any).voice_blob || null,
+      };
+
+      if (editingQueueItemId) {
+        // Thay thế nguyên tử mục cũ trong cùng transaction, không bị chặn bởi giới hạn 20 mục (Issue 6)
+        await replaceQueueItem(editingQueueItemId, queuePayload);
+      } else {
+        await enqueueReport(queuePayload);
+      }
+
+      // R11: Xếp hàng thành công -> thông báo, làm trống biểu mẫu
+      onClearDraftAndReset();
+      setQueueSuccessResult(
+        "Phản ánh của bạn đã được ghi nhận an toàn vào Hàng đợi gửi (Offline-First). Hệ thống sẽ tự động đồng bộ ngay khi có kết nối mạng."
+      );
+    } catch (err: any) {
+      console.error("Lỗi khi xếp hàng đợi:", err);
+      setErrorMessage(err.message || "Không thể đưa phản ánh vào hàng đợi.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Thực thi gửi phản ánh lên máy chủ
   const executeSubmission = async () => {
     setIsSubmitting(true);
     setErrorMessage(null);
     setNetworkWarning(null);
 
-    // Kiểm tra mất mạng
+    // Kiểm tra mất mạng: tự động chuyển sang hàng đợi ngoại tuyến (R08, R11)
     if (!navigator.onLine) {
-      setIsSubmitting(false);
-      setNetworkWarning("Mất kết nối. Phản ánh đã được lưu và sẽ gửi khi có mạng");
+      await handleEnqueueOfflineReport();
       return;
     }
 
     try {
-      const result = await submitIncidentReport(formData);
+      // 1. Tải lên các tệp nhị phân Blob chưa có URL (khôi phục từ bản nháp ngoại tuyến) trước khi gửi trực tuyến (Issue 1)
+      const updatedMedia = [...(formData.media || [])];
+      let hasMissingBlobUploads = false;
+
+      for (let i = 0; i < updatedMedia.length; i++) {
+        const m = updatedMedia[i];
+        if ((!m.file_url || m.file_url.trim() === "") && m.file) {
+          hasMissingBlobUploads = true;
+          if (!navigator.onLine) {
+            await handleEnqueueOfflineReport();
+            return;
+          }
+          const coords = formData.location
+            ? { lat: formData.location.latitude, lng: formData.location.longitude }
+            : undefined;
+          const uploadRes = await uploadMediaWithWatermark(m.file, coords);
+          updatedMedia[i] = {
+            ...m,
+            id: uploadRes.id || m.id,
+            file_url: uploadRes.file_url,
+            thumbnail_url: uploadRes.thumbnail_url,
+            media_type: uploadRes.media_type,
+            file_size_bytes: uploadRes.file_size_bytes,
+            mime_type: uploadRes.mime_type,
+          };
+        }
+      }
+
+      const submissionPayload = hasMissingBlobUploads
+        ? { ...formData, media: updatedMedia }
+        : formData;
+
+      const result = await submitIncidentReport(submissionPayload);
+      if (editingQueueItemId) {
+        await deleteQueueItem(editingQueueItemId, true).catch(() => {});
+      }
       setSubmissionResult(result);
       onClearDraftAndReset(); // Xoá dữ liệu nháp sau khi gửi thành công
     } catch (err: any) {
@@ -140,8 +264,33 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
         </div>
       )}
 
-      {/* GIAO DIỆN SAU KHI GỬI THÀNH CÔNG (KHUNG KẾT QUẢ) */}
-      {submissionResult ? (
+      {/* GIAO DIỆN SAU KHI XẾP HÀNG ĐỢI HOẶC GỬI THÀNH CÔNG */}
+      {queueSuccessResult ? (
+        <div className="section-card success-result-card queued-result-card">
+          <div className="success-badge-icon">📥</div>
+          <h3 className="success-heading">ĐÃ XẾP VÀO HÀNG ĐỢI GỬI</h3>
+          <p className="success-submessage">{queueSuccessResult}</p>
+
+          <div className="result-nav-actions">
+            <button
+              type="button"
+              className="btn-secondary btn-home"
+              onClick={onGoHome}
+            >
+              Về Trang Chủ
+            </button>
+            {onOpenOutbox && (
+              <button
+                type="button"
+                className="btn-primary btn-track"
+                onClick={onOpenOutbox}
+              >
+                Xem Hàng Đợi Gửi →
+              </button>
+            )}
+          </div>
+        </div>
+      ) : submissionResult ? (
         <div className="section-card success-result-card">
           <div className="success-badge-icon">🎉</div>
           <h3 className="success-heading">Tiếp nhận phản ánh thành công!</h3>
@@ -259,8 +408,13 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
                   {formData.media.map((m, idx) => (
                     <div key={m.id} className="review-media-thumb">
                       <img
-                        src={m.thumbnail_url || m.file_url}
+                        src={resolveMediaUrl(m.thumbnail_url || m.file_url)}
                         alt={`Bằng chứng ${idx + 1}`}
+                        onError={(e) => {
+                          if (m.file) {
+                            (e.currentTarget as HTMLImageElement).src = URL.createObjectURL(m.file);
+                          }
+                        }}
                       />
                       <span className="review-wm-badge">
                         {m.media_type === "VIDEO" ? "🎥 Video (Watermarked)" : "🛡️ Watermark GPS"}
@@ -349,7 +503,11 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
               onClick={handleInitiateSubmit}
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Đang gửi phản ánh…" : "🚀 Gửi phản ánh"}
+              {isSubmitting
+                ? "Đang xử lý…"
+                : typeof navigator !== "undefined" && !navigator.onLine
+                ? "📥 Xếp vào hàng đợi gửi (Ngoại tuyến)"
+                : "🚀 Gửi phản ánh"}
             </button>
           </div>
         </>

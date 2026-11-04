@@ -121,7 +121,7 @@ async def check_duplicate_incidents(
         CROSS JOIN current_pt pt
         WHERE ST_DWithin(i.location::geography, pt.geom::geography, :radius_m)
           AND i.status NOT IN ('RESOLVED', 'CLOSED', 'REJECTED')
-          AND (:cat_id IS NULL OR i.category_id = :cat_id)
+          AND (CAST(:cat_id AS INTEGER) IS NULL OR i.category_id = CAST(:cat_id AS INTEGER))
         ORDER BY distance_m ASC
         LIMIT 5;
     """
@@ -175,13 +175,11 @@ async def check_user_anti_spam(
 
 async def generate_next_tracking_code(db: AsyncSession) -> str:
     """
-    Sinh mã sự cố dạng #INC-0001 (hoặc theo ngày: #INC-20261007-0001) duy nhất trong DB.
+    Sinh mã sự cố dạng #INC-YYYYMMDD-XXXX duy nhất, an toàn khi có nhiều yêu cầu đồng thời.
     """
     today_str = datetime.now(VN_TZ).strftime("%Y%m%d")
-    # Đếm số lượng sự cố hiện tại trong hệ thống
-    res = await db.execute(select(func.count(Incident.incident_id)))
-    total_count = (res.scalar() or 0) + 1
-    return f"#INC-{total_count:04d}"
+    unique_suffix = uuid.uuid4().hex[:5].upper()
+    return f"#INC-{today_str}-{unique_suffix}"
 
 
 async def create_new_incident(

@@ -2,11 +2,41 @@
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
+}
+
+/* ==========================================================================
+   GLOBAL CUSTOM SLEEK SCROLLBARS (macOS / iOS / Linear Style)
+   Triệt tiêu thanh cuộn đen ngòm mặc định trên Windows Chrome/Edge/Firefox
+   ========================================================================== */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.45);
+  border-radius: 9999px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.75);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 html,

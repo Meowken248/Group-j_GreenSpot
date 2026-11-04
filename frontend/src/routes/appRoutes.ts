@@ -48,7 +48,15 @@ export type ActiveTab =
   | "lucky-wheel"
   | "milestone"
   | "incident-export"
-  | "admin-dashboard";
+  | "admin-dashboard"
+  | "waste_categories"
+  | "recycling_facilities"
+  | "messages"
+  | "groups"
+  | "ai-assistant"
+  | "events"
+  | "fundraiser"
+  | "outbox";
 
 export interface RouteDefinition {
   tab: ActiveTab;
@@ -317,6 +325,62 @@ export const APP_ROUTES: Record<ActiveTab, RouteDefinition> = {
     label: "Mốc điểm danh hiệu xanh",
     aliases: ["/rewards/milestones", "/milestone", "#milestone", "#tier-progress", "#tier"],
     requiresAuth: false,
+  },
+  "waste_categories": {
+    tab: "waste_categories",
+    path: "/admin/waste-categories",
+    label: "Danh mục rác & SLA",
+    aliases: ["/admin/waste-categories", "/waste-categories", "#waste-categories", "#waste_categories"],
+    requiresAuth: true,
+  },
+  "recycling_facilities": {
+    tab: "recycling_facilities",
+    path: "/map/recycling-facilities",
+    label: "Mạng lưới trạm tái chế",
+    aliases: ["/map/recycling-facilities", "/recycling-facilities", "#recycling-facilities", "#recycling_facilities"],
+    requiresAuth: false,
+  },
+  "messages": {
+    tab: "messages",
+    path: "/community/messages",
+    label: "Tin nhắn & Đoạn chat",
+    aliases: ["/community/messages", "/messages", "/chat", "#messages", "#chat"],
+    requiresAuth: true,
+  },
+  "groups": {
+    tab: "groups",
+    path: "/community/groups",
+    label: "Nhóm cộng đồng",
+    aliases: ["/community/groups", "/groups", "#groups"],
+    requiresAuth: true,
+  },
+  "ai-assistant": {
+    tab: "ai-assistant",
+    path: "/assistant/kira",
+    label: "Trợ lý AI Kira",
+    aliases: ["/assistant/kira", "/ai-assistant", "#ai-assistant", "#kira"],
+    requiresAuth: false,
+  },
+  "events": {
+    tab: "events",
+    path: "/community/events",
+    label: "Sự kiện Chủ Nhật Xanh",
+    aliases: ["/community/events", "/events", "#events"],
+    requiresAuth: false,
+  },
+  "fundraiser": {
+    tab: "fundraiser",
+    path: "/community/fundraiser",
+    label: "Quỹ môi trường GreenSpot",
+    aliases: ["/community/fundraiser", "/fundraiser", "/fundraiser-admin", "#fundraiser", "#fundraiser-admin", "#fundraiser/admin"],
+    requiresAuth: false,
+  },
+  "outbox": {
+    tab: "outbox",
+    path: "/reports/outbox",
+    label: "Hàng Đợi Ngoại Tuyến",
+    aliases: ["/reports/outbox", "/outbox", "#outbox", "#offline-outbox"],
+    requiresAuth: true,
   },
 };
 

@@ -20,9 +20,12 @@ class WasteCategory(Base, TimestampMixin):
     description: Mapped[Optional[str]] = mapped_column(Text)
     default_severity: Mapped[str] = mapped_column(String(20), default="MEDIUM")
     sla_hours: Mapped[int] = mapped_column(Integer, default=48)
+    sla_warning_hours: Mapped[int] = mapped_column(Integer, default=4)
     color_hex: Mapped[str] = mapped_column(String(10), default="#22C55E")
     icon_name: Mapped[str] = mapped_column(String(50), default="trash-2")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     incidents: Mapped[List["Incident"]] = relationship(back_populates="category")
 

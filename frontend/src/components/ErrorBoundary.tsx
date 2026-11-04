@@ -64,6 +64,30 @@ export class ErrorBoundary extends Component<Props, State> {
             >
               Ứng dụng GreenSpot gặp sự cố khi tải giao diện. Vui lòng bấm &quot;Tải lại trang&quot; hoặc &quot;Về trang Đăng nhập&quot; để tiếp tục.
             </p>
+            {this.state.error && (
+              <div
+                style={{
+                  textAlign: "left",
+                  background: "#fef2f2",
+                  border: "1px solid #fecaca",
+                  color: "#991b1b",
+                  padding: "0.75rem",
+                  borderRadius: "8px",
+                  fontSize: "0.8rem",
+                  marginBottom: "1rem",
+                  maxHeight: "180px",
+                  overflowY: "auto",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-all",
+                }}
+              >
+                <strong>Chi tiết lỗi:</strong>
+                <br />
+                {this.state.error.toString()}
+                <br />
+                {this.state.error.stack}
+              </div>
+            )}
             <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
               <button
                 type="button"

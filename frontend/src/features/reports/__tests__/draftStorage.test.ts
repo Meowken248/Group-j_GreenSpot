@@ -6,6 +6,7 @@ import {
   hasValidDraft,
 } from "../services/draftStorage";
 import { INITIAL_FORM_DATA } from "../types/report.types";
+import { isCoordinatesInHCMC } from "../services/reportService";
 
 describe("draftStorage - Quản lý bản nháp phản ánh sự cố", () => {
   beforeEach(() => {
@@ -49,6 +50,40 @@ describe("draftStorage - Quản lý bản nháp phản ánh sự cố", () => {
     clearDraft();
     expect(hasValidDraft()).toBe(false);
     expect(loadDraft()).toBeNull();
+  });
+
+  it("phân tách bản nháp giữa các tài khoản khác nhau (R18)", () => {
+    const dataUserA = {
+      ...INITIAL_FORM_DATA,
+      title: "Bản nháp của User A",
+    };
+    const dataUserB = {
+      ...INITIAL_FORM_DATA,
+      title: "Bản nháp của User B",
+    };
+
+    saveDraft(dataUserA, 1, "user_A");
+    saveDraft(dataUserB, 2, "user_B");
+
+    const loadedA = loadDraft("user_A");
+    const loadedB = loadDraft("user_B");
+
+    expect(loadedA?.formData.title).toBe("Bản nháp của User A");
+    expect(loadedB?.formData.title).toBe("Bản nháp của User B");
+
+    clearDraft("user_A");
+    expect(hasValidDraft("user_A")).toBe(false);
+    expect(hasValidDraft("user_B")).toBe(true);
+  });
+
+  it("xác thực tính hợp lệ của toạ độ TP.HCM cho vị trí sự cố khi sửa phản ánh (Issue 5)", () => {
+    // Toạ độ hợp lệ tại TP.HCM (Quận 1, Thủ Đức, Bình Thạnh)
+    expect(isCoordinatesInHCMC(10.7769, 106.7009)).toBe(true);
+    expect(isCoordinatesInHCMC(10.85, 106.75)).toBe(true);
+
+    // Toạ độ ngoài TP.HCM (Hà Nội, Vũng Tàu ngoài phạm vi)
+    expect(isCoordinatesInHCMC(21.0285, 105.8542)).toBe(false);
+    expect(isCoordinatesInHCMC(10.10, 107.50)).toBe(false);
   });
 });
 

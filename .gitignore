@@ -80,7 +80,10 @@ $RECYCLE.BIN/
 # 🐍 PYTHON RUNTIME, VIRTUAL ENV & TESTING CACHE
 # =========================================================================
 __pycache__/
+**/__pycache__/
 *.py[cod]
+*.pyc
+**/*.pyc
 *$py.class
 *.so
 .Python
@@ -124,10 +127,14 @@ htmlcov/
 # 📦 NODE.JS, FRONTEND & BUNDLERS
 # =========================================================================
 node_modules/
+**/node_modules/
 dist/
 dist-ssr/
+frontend/dist/
 .turbo/
 .parcel-cache/
+*.tsbuildinfo
+.vite/
 
 # Logs
 logs/
@@ -145,8 +152,11 @@ lerna-debug.log*
 *.temp
 BackEnd/uploads/*
 !BackEnd/uploads/.gitkeep
+backend/uploads/*
+!backend/uploads/.gitkeep
 BackEnd/storage/exports/*
 !BackEnd/storage/exports/.gitkeep
+backend/storage/exports/*
+!backend/storage/exports/.gitkeep
 uploads/*
 !uploads/.gitkeep
-

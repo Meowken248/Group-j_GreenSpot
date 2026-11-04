@@ -4,7 +4,7 @@ FastAPI Router for Posts Domain (Chức năng STT 9: Đăng bài kèm toạ đ�
 
 import uuid
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException, status
+from fastapi import APIRouter, Depends, Query, UploadFile, File, Header, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -14,12 +14,30 @@ from app.services.post_service import PostService
 from app.schemas.post import (
     CreatePostRequest,
     UpdatePostRequest,
+    ToggleHidePostRequest,
+    ToggleHidePostResponse,
     PostDetailResponse,
     MediaUploadResponse,
+    ReactPostRequest,
+    PostReactionsSummaryResponse,
 )
+from app.schemas.feed import FeedListResponse
 
 router = APIRouter(prefix="/posts", tags=["Bài đăng cộng đồng (Posts)"])
 post_service = PostService()
+
+
+async def get_optional_current_user(
+    authorization: Optional[str] = Header(None),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[User]:
+    """Dependency xác thực tùy chọn (cho phép cả khách vãng lai và user đã đăng nhập)"""
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    try:
+        return await get_current_active_user(authorization=authorization, db=db)
+    except Exception:
+        return None
 
 
 @router.post(
@@ -68,6 +86,79 @@ async def upload_post_media(
 
 
 @router.get(
+    "/feed",
+    response_model=FeedListResponse,
+    summary="Bảng tin Geo-Feed theo bán kính và phân vùng (Feature STT 8 Màn 1 -> Màn 3)",
+)
+async def get_geo_feed_endpoint(
+    tab: str = Query("nearby", description="Tab: nearby (Gần tôi), district (Quận của tôi), friends (Bạn bè), groups (Nhóm)"),
+    latitude: Optional[float] = Query(None, description="Vĩ độ GPS của người dùng"),
+    longitude: Optional[float] = Query(None, description="Kinh độ GPS của người dùng"),
+    radius_km: float = Query(2.0, ge=0.5, le=10.0, description="Bán kính quét (0.5km - 10km)"),
+    district: Optional[str] = Query(None, description="Tên quận lọc khi tab=district"),
+    category: Optional[str] = Query(None, description="Chủ đề lọc rác thải"),
+    sort_by: str = Query("newest", description="Sắp xếp: newest, popular, nearest"),
+    page: int = Query(1, ge=1, description="Số trang hiện tại"),
+    limit: int = Query(10, ge=1, le=50, description="Số bài viết mỗi trang"),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Truy vấn Bảng tin Geo-Feed theo đặc tả STT 08 (Trang 97 - 102):
+    - Màn 1: Tab 'Gần tôi' theo bán kính GPS (mặc định 2km)
+    - Màn 2: Tab 'Quận của tôi', 'Bạn bè', 'Nhóm' kèm bộ lọc chủ đề
+    - Màn 3: Tích hợp chọn bán kính Slider (0.5km - 10km)
+    """
+    return await post_service.get_geo_feed(
+        db=db,
+        current_user=current_user,
+        tab=tab,
+        user_lat=latitude,
+        user_lon=longitude,
+        radius_km=radius_km,
+        district=district,
+        category=category,
+        sort_by=sort_by,
+        page=page,
+        limit=limit,
+    )
+
+
+@router.get(
+    "",
+    response_model=FeedListResponse,
+    summary="Bảng tin Geo-Feed (alias đường dẫn gốc /posts)",
+)
+async def get_posts_feed_root(
+    tab: str = Query("nearby"),
+    latitude: Optional[float] = Query(None),
+    longitude: Optional[float] = Query(None),
+    radius_km: float = Query(2.0, ge=0.5, le=10.0),
+    district: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),
+    sort_by: str = Query("newest"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=50),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Alias cho /api/v1/posts/feed"""
+    return await get_geo_feed_endpoint(
+        tab=tab,
+        latitude=latitude,
+        longitude=longitude,
+        radius_km=radius_km,
+        district=district,
+        category=category,
+        sort_by=sort_by,
+        page=page,
+        limit=limit,
+        current_user=current_user,
+        db=db,
+    )
+
+
+@router.get(
     "/{post_id}",
     response_model=PostDetailResponse,
     summary="Xem chi tiết bài viết (Màn 4 -> Xem bài viết)",
@@ -102,9 +193,40 @@ async def update_post(
     return post_service.format_post_response(post)
 
 
+@router.patch(
+    "/{post_id}/visibility",
+    response_model=ToggleHidePostResponse,
+    summary="Ẩn hoặc hiện lại bài viết (Feature STT 13 Màn 5/5)",
+)
+async def toggle_post_visibility(
+    post_id: uuid.UUID,
+    payload: ToggleHidePostRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Ẩn hoặc hiện lại bài viết của chính mình:
+    - Bắt buộc đăng nhập
+    - Chỉ chính tác giả mới có quyền ẩn/hiện bài viết
+    """
+    post = await post_service.toggle_hide_post(
+        db=db,
+        post_id=post_id,
+        user_id=current_user.user_id,
+        is_hidden=payload.is_hidden,
+    )
+    msg = "Ẩn bài viết thành công. Chỉ bạn nhìn thấy bài này." if payload.is_hidden else "Đã hiển thị lại bài viết"
+    return ToggleHidePostResponse(
+        success=True,
+        post_id=post.post_id,
+        is_hidden=post.is_hidden,
+        message=msg,
+    )
+
+
 @router.delete(
     "/{post_id}",
-    summary="Xóa mềm bài viết (Soft delete)",
+    summary="Xóa mềm bài viết (Soft delete, Feature STT 13 Màn 3/5 & 4/5)",
 )
 async def delete_post(
     post_id: uuid.UUID,
@@ -117,7 +239,7 @@ async def delete_post(
         post_id=post_id,
         user_id=current_user.user_id,
     )
-    return {"success": success, "message": "Bài viết đã được xóa"}
+    return {"success": success, "message": "Đã xoá bài viết"}
 
 
 @router.get(
@@ -158,3 +280,53 @@ async def get_joined_volunteer_groups(
         },
     ]
     return sample_groups
+
+
+@router.post(
+    "/{post_id}/reactions",
+    summary="Thả hoặc cập nhật cảm xúc sinh thái cho bài viết (Feature STT 10)",
+)
+async def react_to_post_endpoint(
+    post_id: uuid.UUID,
+    payload: ReactPostRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Thả hoặc huỷ cảm xúc sinh thái:
+    - Bắt buộc đăng nhập
+    - Hỗ trợ 5 loại: TREE, EARTH, RECYCLE, CLAP, CONCERN
+    - Tự động huỷ nếu bấm lại cảm xúc cũ, tự động đổi loại nếu bấm cảm xúc mới
+    """
+    return await post_service.react_to_post(
+        db=db,
+        post_id=post_id,
+        user_id=current_user.user_id,
+        reaction_type=payload.reaction_type,
+    )
+
+
+@router.get(
+    "/{post_id}/reactions",
+    response_model=PostReactionsSummaryResponse,
+    summary="Lấy danh sách người đã bày tỏ cảm xúc theo loại (Feature STT 10)",
+)
+async def get_post_reactions_endpoint(
+    post_id: uuid.UUID,
+    reaction_type: Optional[str] = Query(None, description="Lọc theo 'TREE', 'EARTH', 'RECYCLE', 'CLAP', 'CONCERN' hoặc None/ALL"),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Truy vấn danh sách người đã thả cảm xúc:
+    - Cho phép cả khách vãng lai và user đăng nhập
+    - Trả về số lượng từng loại cảm xúc để hiển thị tab Facebook-style
+    - Kèm trạng thái quan hệ bạn bè để hiển thị nút Thêm bạn bè / Theo dõi
+    """
+    return await post_service.get_post_reactions(
+        db=db,
+        post_id=post_id,
+        reaction_type=reaction_type,
+        current_user_id=current_user.user_id if current_user else None,
+    )
+
