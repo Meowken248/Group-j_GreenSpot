@@ -34,6 +34,7 @@ from app.api.v1.qr_scan import router as qr_scan_router
 from app.api.v1.lucky_wheel import router as lucky_wheel_router
 from app.api.v1.milestone import router as milestone_router
 from app.api.v1.admin_dashboard import admin_dashboard_router
+from app.api.v1.translation import translation_router
 
 api_v1_router = APIRouter()
 api_v1_router.include_router(auth_router)
@@ -71,4 +72,5 @@ api_v1_router.include_router(flood_sos_router)
 api_v1_router.include_router(incidents_router)
 api_v1_router.include_router(incident_export_router)
 api_v1_router.include_router(admin_dashboard_router)
+api_v1_router.include_router(translation_router)
 
