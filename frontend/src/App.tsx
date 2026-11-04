@@ -48,6 +48,7 @@ import { QRScanContainer } from "./features/qr_scan/QRScanContainer";
 import { LuckyWheelContainer } from "./features/lucky_wheel/LuckyWheelContainer";
 import { MilestoneContainer } from "./features/milestone/MilestoneContainer";
 import api from "./api/client";
+import { useLanguage } from "./i18n";
 import { APP_ROUTES, resolveTabFromUrl, navigateToRoute } from "./routes/appRoutes";
 import type { ActiveTab } from "./routes/appRoutes";
 import "./App.css";
@@ -92,6 +93,7 @@ function App() {
   const [checkingBackend, setCheckingBackend] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
   const [sessionExpiredOpen, setSessionExpiredOpen] = useState(false);
+  const { currentLang, toggleLanguage, t } = useLanguage();
 
   // Quản lý theme thời gian thực từ LocalStorage và sự kiện thay đổi
   const [currentTheme, setCurrentTheme] = useState<ThemeMode>(() => getLocalPreferences().theme);
@@ -809,7 +811,7 @@ function App() {
             data-testid="btn-topbar-flood-sos"
           >
             <span className="sos-pulse-icon">🆘</span>
-            <span className="quick-sos-label">Cứu hộ ngập lụt</span>
+            <span className="quick-sos-label">{t("nav.floodSos", "Cứu hộ ngập lụt")}</span>
           </button>
 
           {/* Nút gửi phản ánh nhanh nổi bật (Quick CTA) */}
@@ -827,7 +829,20 @@ function App() {
             title="Gửi phản ánh sự cố môi trường"
           >
             <span>📢</span>
-            <span className="quick-report-label">Gửi phản ánh</span>
+            <span className="quick-report-label">{t("action.quickReport", "Gửi phản ánh")}</span>
+          </button>
+
+          {/* Nút chuyển đổi Ngôn ngữ Toàn cục (VI / EN) */}
+          <button
+            type="button"
+            className="header-icon-btn lang-toggle-btn"
+            onClick={toggleLanguage}
+            title={currentLang === "VI" ? "Chuyển sang tiếng Anh (Switch to English)" : "Switch to Vietnamese (Chuyển sang tiếng Việt)"}
+            aria-label="Chuyển đổi ngôn ngữ hệ thống"
+            style={{ fontWeight: 700, fontSize: "0.82rem", minWidth: "46px", cursor: "pointer" }}
+            data-testid="btn-toggle-language"
+          >
+            <span>{currentLang === "VI" ? "🇻🇳 VI" : "🇬🇧 EN"}</span>
           </button>
 
           {/* Nút đổi Theme Sáng / Tối */}

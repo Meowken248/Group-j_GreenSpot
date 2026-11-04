@@ -4,12 +4,14 @@ import './index.css'
 import './features/settings/GlobalTheme.scss'
 import App from './App'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { LanguageProvider } from './i18n'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      <LanguageProvider>
+        <App />
+      </LanguageProvider>
     </ErrorBoundary>
   </StrictMode>,
 )
-

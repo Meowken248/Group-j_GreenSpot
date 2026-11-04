@@ -167,7 +167,7 @@ export const ActivityDashboard: React.FC<ActivityDashboardProps> = ({
     if (onNavigateModule) {
       onNavigateModule(target);
     } else {
-      navigateToRoute(target);
+      navigateToRoute(target as any);
     }
   };
 
