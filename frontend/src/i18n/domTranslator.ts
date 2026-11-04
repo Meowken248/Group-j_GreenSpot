@@ -366,39 +366,29 @@ export function applyDOMTranslation(root: Node = document.body, lang: "VI" | "EN
 }
 
 /**
- * Triggers Google Translate element if available as secondary multi-engine layer.
+ * Clears any external translator artifacts or cookies to ensure
+ * a 100% clean, native interface without third-party bars or banners.
  */
-export function triggerGoogleTranslate(lang: "VI" | "EN") {
-  const targetCode = lang === "EN" ? "en" : "vi";
+export function clearExternalTranslatorArtifacts() {
   try {
-    // Set cookies across root and domain
-    document.cookie = `googtrans=/vi/${targetCode}; path=/;`;
+    document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     if (window.location.hostname) {
-      document.cookie = `googtrans=/vi/${targetCode}; domain=${window.location.hostname}; path=/;`;
+      document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=${window.location.hostname}; path=/;`;
     }
-
-    const triggerSelect = () => {
-      const select = document.querySelector(".goog-te-combo") as HTMLSelectElement | null;
-      if (select && select.value !== targetCode) {
-        select.value = targetCode;
-        select.dispatchEvent(new Event("change"));
-        return true;
-      }
-      return false;
-    };
-
-    if (!triggerSelect()) {
-      // Poll briefly if script is still loading
-      const interval = setInterval(() => {
-        if (triggerSelect()) {
-          clearInterval(interval);
-        }
-      }, 300);
-      setTimeout(() => clearInterval(interval), 3000);
+    const frames = document.querySelectorAll(
+      ".goog-te-banner-frame, #google_translate_element, iframe.skiptranslate, .goog-te-gadget"
+    );
+    frames.forEach((el) => el.remove());
+    if (document.body) {
+      document.body.style.top = "0px";
     }
   } catch {
     // Ignore in SSR / test environments
   }
+}
+
+export function triggerGoogleTranslate(_lang?: "VI" | "EN") {
+  clearExternalTranslatorArtifacts();
 }
 
 /**
@@ -408,10 +398,10 @@ export function triggerGoogleTranslate(lang: "VI" | "EN") {
  */
 export function setGlobalPageLanguage(lang: "VI" | "EN") {
   activeLang = lang;
+  clearExternalTranslatorArtifacts();
 
   if (lang === "EN") {
     applyDOMTranslation(document.body, "EN");
-    triggerGoogleTranslate("EN");
 
     if (!observer) {
       let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -435,6 +425,5 @@ export function setGlobalPageLanguage(lang: "VI" | "EN") {
       observer = null;
     }
     applyDOMTranslation(document.body, "VI");
-    triggerGoogleTranslate("VI");
   }
 }

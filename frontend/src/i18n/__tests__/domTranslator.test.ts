@@ -104,7 +104,7 @@ describe("domTranslator: Full-Page Auto-Translation & Dynamic Observer", () => {
     );
   });
 
-  it("kích hoạt Google Translate multi-engine mà không làm crash app", () => {
+  it("xóa sạch các thành phần Google Translate toolbar thừa đảm bảo giao diện sạch sẽ", () => {
     expect(() => triggerGoogleTranslate("EN")).not.toThrow();
     expect(() => triggerGoogleTranslate("VI")).not.toThrow();
   });
