@@ -16,9 +16,9 @@ class ResponseLocalizationMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Skip docs, static files, openapi schema
+        # Skip docs, static files, openapi schema, and translation endpoints
         path = request.url.path
-        if path.startswith(("/docs", "/redoc", "/openapi.json", "/uploads")):
+        if path.startswith(("/docs", "/redoc", "/openapi.json", "/uploads", "/api/v1/translation")):
             return await call_next(request)
 
         target_lang = get_current_language(request)

@@ -5,6 +5,27 @@ import httpx
 from app.interface.translation.translation_interface import ITranslationService
 from app.services.translation.dictionary import VI_TO_EN_DICTIONARY, EN_TO_VI_DICTIONARY
 
+VIETNAMESE_ACCENT_DICT = {
+    'à':'a','á':'a','ả':'a','ã':'a','ạ':'a','ă':'a','ằ':'a','ắ':'a','ẳ':'a','ẵ':'a','ặ':'a','â':'a','ầ':'a','ấ':'a','ẩ':'a','ẫ':'a','ậ':'a',
+    'đ':'d',
+    'è':'e','é':'e','ẻ':'e','ẽ':'e','ẹ':'e','ê':'e','ề':'e','ế':'e','ể':'e','ễ':'e','ệ':'e',
+    'ì':'i','í':'i','ỉ':'i','ĩ':'i','ị':'i',
+    'ò':'o','ó':'o','ỏ':'o','õ':'o','ọ':'o','ô':'o','ồ':'o','ố':'o','ổ':'o','ỗ':'o','ộ':'o','ơ':'o','ờ':'o','ớ':'o','ở':'o','ỡ':'o','ợ':'o',
+    'ù':'u','ú':'u','ủ':'u','ũ':'u','ụ':'u','ư':'u','ừ':'u','ứ':'u','ử':'u','ữ':'u','ự':'u',
+    'ỳ':'y','ý':'y','ỷ':'y','ỹ':'y','ỵ':'y',
+    'À':'A','Á':'A','Ả':'A','Ã':'A','Ạ':'A','Ă':'A','Ằ':'A','Ắ':'A','Ẳ':'A','Ẵ':'A','Ặ':'A','Â':'A','Ầ':'A','Ấ':'A','Ẩ':'A','Ẫ':'A','Ậ':'A',
+    'Đ':'D',
+    'È':'E','É':'E','Ẻ':'E','Ẽ':'E','Ẹ':'E','Ê':'E','Ề':'E','Ế':'E','Ể':'E','Ễ':'E','Ệ':'E',
+    'Ì':'I','Í':'I','Ỉ':'I','Ĩ':'I','Ị':'I',
+    'Ò':'O','Ó':'O','Ỏ':'O','Õ':'O','Ọ':'O','Ô':'O','Ồ':'O','Ố':'O','Ổ':'O','Ỗ':'O','Ộ':'O','Ơ':'O','Ờ':'O','Ớ':'O','Ở':'O','Ỡ':'O','Ợ':'O',
+    'Ù':'U','Ú':'U','Ủ':'U','Ũ':'U','Ụ':'U','Ư':'U','Ừ':'U','Ứ':'U','Ử':'U','Ữ':'U','Ự':'U',
+    'Ỳ':'Y','Ý':'Y','Ỷ':'Y','Ỹ':'Y','Ỵ':'Y'
+}
+VIETNAMESE_ACCENT_TABLE = str.maketrans(VIETNAMESE_ACCENT_DICT)
+
+def strip_vietnamese_accents(text: str) -> str:
+    return text.translate(VIETNAMESE_ACCENT_TABLE)
+
 class HybridTranslationService(ITranslationService):
     """
     Hybrid Translation Service:
@@ -137,6 +158,17 @@ class HybridTranslationService(ITranslationService):
         for term in sorted_terms:
             pattern = re.compile(re.escape(term), re.IGNORECASE)
             result = pattern.sub(VI_TO_EN_DICTIONARY[term], result)
+
+        # Regex replacements for numbers and patterns
+        result = re.sub(r"(\d+)\s*người", lambda m: "1 person" if m.group(1) == "1" else f"{m.group(1)} people", result, flags=re.IGNORECASE)
+        result = re.sub(r"(\d+)\s*điều khoản", r"\1 clauses", result, flags=re.IGNORECASE)
+        result = re.sub(r"sâu\s*(\d+)cm", r"\1cm deep", result, flags=re.IGNORECASE)
+        result = re.sub(r"bán kính\s*(\d+)km", r"\1km radius", result, flags=re.IGNORECASE)
+
+        # Strip remaining Vietnamese accents from proper names (e.g. streets, landmarks)
+        if re.search(r"[\u00C0-\u1EF9]", result):
+            result = strip_vietnamese_accents(result)
+
         return result
 
     async def translate_text(

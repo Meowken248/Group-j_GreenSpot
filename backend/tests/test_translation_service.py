@@ -180,3 +180,18 @@ def test_response_localization_middleware_translates_database_json():
     assert data_en[0]["clause_count"] == 3  # So lieu nguyen ven
     assert data_en[1]["category_name"] == "Industrial / Hazardous Waste"
     assert "Burying hazardous waste" in data_en[1]["description"]
+
+@pytest.mark.asyncio
+async def test_compound_and_accent_romanization(service):
+    # Test compound phrase with address and proper nouns
+    result = await service.translate_text(
+        "Điểm ngập úng sâu 50cm giao lộ Nguyễn Văn Quá",
+        target_lang="en",
+        source_lang="vi"
+    )
+    assert "Flood Point" in result
+    assert "50cm deep" in result
+    assert "Nguyen Van Qua" in result
+    # Must not contain Vietnamese accents
+    assert not any(c in result for c in "àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ")
+
