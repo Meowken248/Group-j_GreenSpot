@@ -1,6 +1,8 @@
 import uuid
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, status, Header
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, status, Header, Request
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -34,12 +36,21 @@ router = APIRouter(prefix="/incidents", tags=["Incidents & Multimedia Reporting"
 
 
 @router.get("/categories", response_model=List[WasteCategoryResponse])
-async def list_incident_categories(db: AsyncSession = Depends(get_db)):
+async def list_incident_categories(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Màn 1: Lấy danh sách 4 nhóm danh mục sự cố môi trường và thời hạn SLA cam kết.
     Dữ liệu 100% thời gian thực từ bảng waste_categories trong PostgreSQL.
     """
-    return await get_active_waste_categories(db)
+    result = await get_active_waste_categories(db)
+    lang = get_current_language(request)
+    if lang == "en":
+        if isinstance(result, list):
+            result_dict = [item.model_dump() if hasattr(item, 'model_dump') else item for item in result]
+        else:
+            result_dict = result.model_dump() if hasattr(result, 'model_dump') else result
+        translated = await translation_service.translate_data(result_dict, target_lang="en", source_lang="vi")
+        return translated
+    return result
 
 
 @router.post("/upload-media", response_model=MediaUploadResponse)
@@ -186,6 +197,7 @@ async def submit_incident_report(
 
 @router.get("/{incident_id}", response_model=IncidentDetailResponse)
 async def get_incident_detail_endpoint(
+    request: Request,
     incident_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
 ):
@@ -198,11 +210,17 @@ async def get_incident_detail_endpoint(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Không tìm thấy sự cố phản ánh.",
         )
+    lang = get_current_language(request)
+    if lang == "en":
+        result_dict = inc.model_dump() if hasattr(inc, 'model_dump') else inc
+        translated = await translation_service.translate_data(result_dict, target_lang="en", source_lang="vi")
+        return translated
     return inc
 
 
 @router.get("", response_model=IncidentListResponse)
 async def list_incidents_management_endpoint(
+    request: Request,
     severity: Optional[str] = Query(None, description="Lọc mức độ: ALL, CRITICAL, HIGH, MEDIUM, LOW"),
     status: Optional[str] = Query(None, description="Lọc trạng thái: ALL, PENDING, IN_PROGRESS, RESOLVED, REJECTED"),
     unit_id: Optional[int] = Query(None, description="Lọc theo ID quận huyện"),
@@ -214,7 +232,7 @@ async def list_incidents_management_endpoint(
     """
     Màn Quản trị Sự cố: Danh sách phản ánh phân trang, bộ lọc đa năng và thống kê KPI.
     """
-    return await list_incidents_for_management(
+    result = await list_incidents_for_management(
         db=db,
         severity=severity,
         status=status,
@@ -223,6 +241,12 @@ async def list_incidents_management_endpoint(
         page=page,
         limit=limit,
     )
+    lang = get_current_language(request)
+    if lang == "en":
+        result_dict = result.model_dump() if hasattr(result, 'model_dump') else result
+        translated = await translation_service.translate_data(result_dict, target_lang="en", source_lang="vi")
+        return translated
+    return result
 
 
 @router.patch("/{incident_id}/verify", response_model=IncidentDetailResponse)
