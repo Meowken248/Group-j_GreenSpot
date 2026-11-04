@@ -465,7 +465,7 @@ function App() {
               aria-expanded={openDropdown === "geo"}
             >
               <span className="nav-icon">🗺️</span>
-              <span className="nav-label">Bản đồ & Khí hậu</span>
+              <span className="nav-label">{t("nav.mapGroup", "Bản đồ & Khí hậu")}</span>
               <span className="dropdown-caret">{openDropdown === "geo" ? "▴" : "▾"}</span>
             </button>
 
@@ -561,7 +561,7 @@ function App() {
                 aria-expanded={openDropdown === "ops"}
               >
                 <span className="nav-icon">🚨</span>
-                <span className="nav-label">Tác nghiệp & AI</span>
+                <span className="nav-label">{t("nav.operationsGroup", "Tác nghiệp & AI")}</span>
                 <span className="dropdown-caret">{openDropdown === "ops" ? "▴" : "▾"}</span>
               </button>
 
@@ -661,7 +661,7 @@ function App() {
                 aria-expanded={openDropdown === "community"}
               >
                 <span className="nav-icon">🌱</span>
-                <span className="nav-label">Cộng đồng</span>
+                <span className="nav-label">{t("nav.communityGroup", "Cộng đồng")}</span>
                 <span className="dropdown-caret">{openDropdown === "community" ? "▴" : "▾"}</span>
               </button>
 
@@ -796,7 +796,7 @@ function App() {
             title="Tra cứu quy định xử phạt vi phạm hành chính (Nghị định 45/2022/NĐ-CP)"
           >
             <span className="nav-icon">⚖️</span>
-            <span className="nav-label">Tra cứu xử phạt</span>
+            <span className="nav-label">{t("nav.penaltiesGroup", "Tra cứu xử phạt")}</span>
           </button>
         </nav>
 
@@ -1731,7 +1731,7 @@ function App() {
           aria-label="Trợ lý giọng nói"
         >
           <span className="floating-mic-icon">🎙️</span>
-          <span className="floating-mic-label">Trợ lý ảo</span>
+          <span className="floating-mic-label">{t("nav.voiceAssistant", "Trợ lý ảo")}</span>
         </button>
       )}
     </div>

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import type { LanguageCode, I18nContextType } from "./types";
 import { I18N_DICTIONARY } from "./translations";
+import { setGlobalPageLanguage } from "./domTranslator";
 import api from "../api/client";
 
 const LANGUAGE_STORAGE_KEY = "greenspot_user_lang";
@@ -35,6 +36,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
       document.documentElement.setAttribute("lang", lang.toLowerCase());
+      setGlobalPageLanguage(lang);
       window.dispatchEvent(
         new CustomEvent("greenspot_language_changed", { detail: { language: lang } })
       );
@@ -44,11 +46,25 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const toggleLanguage = useCallback(() => {
-    setLanguage(currentLang === "VI" ? "EN" : "VI");
-  }, [currentLang, setLanguage]);
+    setCurrentLangState((prev) => {
+      const next = prev === "VI" ? "EN" : "VI";
+      try {
+        localStorage.setItem(LANGUAGE_STORAGE_KEY, next);
+        document.documentElement.setAttribute("lang", next.toLowerCase());
+        setGlobalPageLanguage(next);
+        window.dispatchEvent(
+          new CustomEvent("greenspot_language_changed", { detail: { language: next } })
+        );
+      } catch {
+        // Ignored in SSR / test
+      }
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute("lang", currentLang.toLowerCase());
+    setGlobalPageLanguage(currentLang);
 
     const handleStorage = (e: StorageEvent) => {
       if (e.key === LANGUAGE_STORAGE_KEY && (e.newValue === "VI" || e.newValue === "EN")) {

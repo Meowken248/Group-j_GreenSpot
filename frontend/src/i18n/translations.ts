@@ -5,6 +5,12 @@ export const I18N_DICTIONARY: Record<LanguageCode, Record<string, string>> = {
     // 1. Brand & Header Navigation
     "app.title": "GreenSpot EcoReport",
     "app.subtitle": "Bản Đồ Môi Trường & Giám Sát Đô Thị Thông Minh",
+    "nav.mapGroup": "Bản đồ & Khí hậu",
+    "nav.operationsGroup": "Tác nghiệp & AI",
+    "nav.communityGroup": "Cộng đồng",
+    "nav.penaltiesGroup": "Tra cứu xử phạt",
+    "nav.voiceAssistant": "Trợ lý ảo",
+
     "nav.map": "Bản đồ",
     "nav.report": "Gửi phản ánh",
     "nav.aqi": "Chất lượng KK",
@@ -76,11 +82,32 @@ export const I18N_DICTIONARY: Record<LanguageCode, Record<string, string>> = {
     "tooltip.notifications": "Thông báo hệ thống",
     "tooltip.account": "Tài khoản cá nhân",
     "msg.langChanged": "Đã chuyển ngôn ngữ sang Tiếng Việt",
+
+    // 6. Chức năng 11: Cẩm nang pháp lý & Xử phạt vi phạm môi trường
+    "penalties.breadcrumbFramework": "Hệ thống pháp luật môi trường",
+    "penalties.breadcrumbLookup": "Tra cứu quy định xử phạt",
+    "penalties.mainTitle": "Cẩm Nang Pháp Lý & Xử Phạt Vi Phạm Môi Trường",
+    "penalties.decreeBasis": "Căn cứ: Nghị định 45/2022/NĐ-CP",
+    "penalties.subDesc": "Cung cấp thông tin chuẩn xác, minh bạch về các khung hình phạt, chế tài xử lý và biện pháp khắc phục hậu quả đối với các hành vi gây ô nhiễm môi trường đô thị.",
+    "penalties.searchPanelTitle": "TÌM KIẾM QUY ĐỊNH",
+    "penalties.searchPlaceholder": "Nhập hành vi (VD: vứt tàn thuốc, đổ rác vỉa hè...)",
+    "penalties.searchSubmit": "Tìm quy định",
+    "penalties.sampleKeywordsLabel": "Gợi ý từ khóa vi phạm phổ biến:",
+    "penalties.domainsPanelTitle": "LĨNH VỰC MÔI TRƯỜNG",
+    "penalties.domainsSubtitle": "Chọn chuyên đề pháp luật cần tra cứu",
+    "penalties.clausesCount": "điều khoản",
+    "penalties.lookupNow": "Tra cứu ngay →",
   },
   EN: {
     // 1. Brand & Header Navigation
     "app.title": "GreenSpot EcoReport",
     "app.subtitle": "Smart Urban Environmental & Climate WebGIS",
+    "nav.mapGroup": "Map & Climate",
+    "nav.operationsGroup": "Operations & AI",
+    "nav.communityGroup": "Community",
+    "nav.penaltiesGroup": "Penalty Regulations",
+    "nav.voiceAssistant": "Voice Assistant",
+
     "nav.map": "Map",
     "nav.report": "Report Incident",
     "nav.aqi": "Air Quality",
@@ -152,6 +179,20 @@ export const I18N_DICTIONARY: Record<LanguageCode, Record<string, string>> = {
     "tooltip.notifications": "System Notifications",
     "tooltip.account": "User Profile",
     "msg.langChanged": "Language switched to English",
+
+    // 6. Chức năng 11: Cẩm nang pháp lý & Xử phạt vi phạm môi trường
+    "penalties.breadcrumbFramework": "Environmental Legal Framework",
+    "penalties.breadcrumbLookup": "Penalty Regulations Lookup",
+    "penalties.mainTitle": "Environmental Legal Handbook & Penalty Regulations",
+    "penalties.decreeBasis": "Basis: Decree 45/2022/ND-CP",
+    "penalties.subDesc": "Provides accurate and transparent information on penalty frameworks, sanctions, and remedial measures for urban environmental violations.",
+    "penalties.searchPanelTitle": "SEARCH REGULATIONS",
+    "penalties.searchPlaceholder": "Enter behavior (e.g. littering, illegal dumping...)",
+    "penalties.searchSubmit": "Find Regulations",
+    "penalties.sampleKeywordsLabel": "Common violation keywords:",
+    "penalties.domainsPanelTitle": "ENVIRONMENTAL SECTORS",
+    "penalties.domainsSubtitle": "Select legal topic to inspect",
+    "penalties.clausesCount": "clauses",
+    "penalties.lookupNow": "Inspect Now →",
   },
 };
-
