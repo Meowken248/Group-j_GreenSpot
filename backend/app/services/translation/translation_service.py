@@ -1,4 +1,5 @@
 import asyncio
+import html
 import re
 from typing import Any, Dict, List, Optional, Tuple, Union
 import httpx
@@ -117,23 +118,42 @@ class HybridTranslationService(ITranslationService):
         self, text: str, target_lang: str, source_lang: str
     ) -> Optional[str]:
         """
-        Translates dynamic user-generated content via Google Translate engine.
-        Timeouts gracefully in 2.5 seconds to guarantee high-speed API responses.
+        Translates dynamic user-generated content via multi-engine fallback:
+        Engine 1: MyMemory Translation API (Fast, reliable, high availability)
+        Engine 2: Google Translate GTX Endpoint (Alternative fallback)
         """
-        url = "https://translate.googleapis.com/translate_a/single"
-        params = {
-            "client": "gtx",
-            "sl": source_lang,
-            "tl": target_lang,
-            "dt": "t",
-            "q": text,
-        }
+        # Engine 1: MyMemory Translation
         try:
-            async with httpx.AsyncClient(timeout=2.5) as client:
-                resp = await client.get(url, params=params)
+            mymemory_url = "https://api.mymemory.translated.net/get"
+            langpair = f"{source_lang}|{target_lang}"
+            async with httpx.AsyncClient(timeout=4.0) as client:
+                resp = await client.get(mymemory_url, params={"q": text, "langpair": langpair})
+                if resp.status_code == 200:
+                    data = resp.json()
+                    trans_text = data.get("responseData", {}).get("translatedText")
+                    if trans_text and isinstance(trans_text, str) and trans_text.strip():
+                        # Unescape HTML entities like &#39;, &quot;, &amp;
+                        unescaped = html.unescape(trans_text.strip())
+                        # If response is not just an error message or same untranslated text
+                        if not unescaped.startswith("MYMEMORY WARNING:") and unescaped.lower() != text.lower():
+                            return unescaped
+        except Exception:
+            pass
+
+        # Engine 2: Google Translate GTX fallback
+        try:
+            gtx_url = "https://translate.googleapis.com/translate_a/single"
+            params = {
+                "client": "gtx",
+                "sl": source_lang,
+                "tl": target_lang,
+                "dt": "t",
+                "q": text,
+            }
+            async with httpx.AsyncClient(timeout=3.0) as client:
+                resp = await client.get(gtx_url, params=params)
                 if resp.status_code == 200:
                     payload = resp.json()
-                    # Google Translate response format: [[["translated text", "original text", ...], ...], ...]
                     if payload and isinstance(payload, list) and len(payload) > 0:
                         parts = payload[0]
                         if isinstance(parts, list):
@@ -141,10 +161,10 @@ class HybridTranslationService(ITranslationService):
                                 part[0] for part in parts if isinstance(part, list) and len(part) > 0 and part[0]
                             )
                             if translated:
-                                return translated.strip()
+                                return html.unescape(translated.strip())
         except Exception:
-            # Fallback to local dictionary or clean string on any network timeout or error
             pass
+
         return None
 
     def _fallback_token_translation(self, text: str, target_lang: str, source_lang: str) -> str:
