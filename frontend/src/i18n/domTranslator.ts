@@ -117,6 +117,7 @@ export const DOM_TRANSLATION_MAP: Record<string, string> = {
     "Discharging hazardous industrial emissions exceeding standards, open burning of domestic waste causing smoke and dust.",
   "Gây tiếng ồn vượt quy chuẩn kỹ thuật tại khu dân cư, sử dụng loa phóng thanh quá giờ quy định.":
     "Exceeding technical noise standards in residential areas, using loudspeakers beyond permitted hours.",
+  "Vui lòng nhập từ khoá tìm kiếm": "Please enter a search keyword",
 
   // 3. Navigation & Header
   "Bản đồ & Khí hậu": "Map & Climate",
@@ -157,6 +158,10 @@ export const DOM_TRANSLATION_MAP: Record<string, string> = {
   "KẾT NỐI & TƯƠNG TÁC": "CONNECT & ENGAGE",
   "Quản trị viên": "System Administrator",
   "Quản trị viên Hệ thống": "System Administrator",
+  "Xuất dữ liệu sự cố (Excel/PDF)": "Export Incident Data (Excel/PDF)",
+  "Trích xuất danh sách sự cố theo bộ lọc": "Extract incident list based on custom filters",
+  "Thống kê hoạt động hệ thống": "System Activity Analytics",
+  "KPIs người dùng mới, bài đăng, nhóm theo ngày": "Daily KPIs for new users, posts, and groups",
 
   // 4. Common UI Controls & System Metadata
   "TỔNG QUAN": "OVERVIEW",
@@ -204,6 +209,13 @@ export const DOM_TRANSLATION_MAP: Record<string, string> = {
   // 5. Dispatch Operations & Field Command (STT 43)
   "Mã": "Code",
   "MÃ": "CODE",
+  "Sự cố": "Problem",
+  "SỰ CỐ": "PROBLEM",
+  "Đội": "Team",
+  "ĐỘI": "TEAM",
+  "Mức độ": "Level",
+  "MỨC ĐỘ": "LEVEL",
+  "Trạng thái": "Status",
   "Lệnh xử lý": "Processing Order",
   "LỆNH XỬ LÝ": "PROCESSING ORDER",
   "Tổng số lệnh": "Total Commands",
@@ -220,6 +232,8 @@ export const DOM_TRANSLATION_MAP: Record<string, string> = {
   "Đang đến": "Coming",
   "Chờ tiếp nhận": "Pending Acceptance",
   "Đội Cơ động số 3": "Mobile Team No. 3",
+  "Đội Cơ động số 2": "Mobile Team No. 2",
+  "Đội Cơ động số 1": "Mobile Team No. 1",
   "Đội Thoát Nước Thủ Đức": "Thu Duc Drainage Team",
   "Đội MTĐT Quận 8": "Urban Environment Team District 8",
   "Đội MTĐT District 8": "Urban Environment Team District 8",
@@ -256,6 +270,65 @@ export const DOM_TRANSLATION_MAP: Record<string, string> = {
   "Nhấp đúp chuột vào hàng để xem Theo dõi hiện trường.": "Double click on the row to view Monitor the scene.",
   "Nhấp đúp chuột vào một hàng bất kỳ để mở Giám sát hiện trường": "Double click on any order row to open Field Watch",
   "Tìm nhanh theo mã lệnh, tên sự cố, địa chỉ, đội phụ trách...": "Quickly search by command code, incident name, address, team in charge...",
+
+  // 6. Risk Dashboard (STT 42)
+  "CHỈ SỐ": "INDICATORS",
+  "Toàn đô thị": "City-wide",
+  "Điểm rủi ro chung": "Overall Risk Score",
+  "Khu vực nguy cơ cao": "High Risk Areas",
+  "Sự cố đang mở": "Open Incidents",
+  "Bãi rác tự phát & Điểm ngập úng chưa xử lý dứt điểm": "Illegal dump sites & unresolved flood points",
+  "Báo động Cam / Đỏ": "Orange / Red Alert",
+  "quận/huyện": "districts",
+  "vụ việc": "cases",
+  "CƠ CẤU RỦI RO THEO LOẠI HÌNH": "RISK COMPOSITION BY TYPE",
+  "XU HƯỚNG RỦI RO THEO THỜI GIAN": "RISK TREND OVER TIME",
+  "PHÂN TÍCH RỦI RO": "RISK ANALYSIS",
+  "Chọn quận/huyện cần phân tích:": "Select district to analyze:",
+  "Tất cả quận huyện": "All districts",
+  "Tháng này": "This Month",
+  "Hôm nay": "Today",
+  "7 ngày qua": "Last 7 Days",
+  "30 ngày qua": "Last 30 Days",
+  "Tuỳ chọn khoảng thời gian": "Custom Date Range",
+
+  // 7. Emergency Broadcast Console (STT 45)
+  "NỘI DUNG": "CONTENT",
+  "PHẠM VI": "COVERAGE",
+  "Loại cảnh báo thiên tai khẩn cấp:": "Emergency Disaster Alert Type:",
+  "Ngập lụt nghiêm trọng": "Severe Flooding",
+  "Triều cường dâng cao": "High Tidal Surge",
+  "Sạt lở bờ sông/kênh": "Riverbank / Canal Landslide",
+  "Bão / Lốc xoáy cực đoan": "Severe Storm / Tornado",
+  "Tiêu đề phát sóng cảnh báo:": "Broadcast Alert Title:",
+  "Nội dung chi tiết cảnh báo:": "Detailed Alert Content:",
+  "Đường dây nóng cứu hộ (Hotline):": "Rescue Hotline:",
+  "Phát lệnh cảnh báo khẩn cấp": "Broadcast Emergency Alert",
+  "Lịch sử phát sóng": "Broadcast History",
+
+  // 8. Administrative Districts
+  "Quận 1": "District 1",
+  "Quận 3": "District 3",
+  "Quận 4": "District 4",
+  "Quận 5": "District 5",
+  "Quận 6": "District 6",
+  "Quận 7": "District 7",
+  "Quận 10": "District 10",
+  "Quận 11": "District 11",
+  "Quận 12": "District 12",
+  "Quận Bình Tân": "Binh Tan District",
+  "Quận Bình Thạnh": "Binh Thanh District",
+  "Quận Gò Vấp": "Go Vap District",
+  "Quận Phú Nhuận": "Phu Nhuan District",
+  "Quận Tân Bình": "Tan Binh District",
+  "Quận Tân Phú": "Tan Phu District",
+  "TP. Thủ Đức": "Thu Duc City",
+  "TP Thủ Đức": "Thu Duc City",
+  "Huyện Bình Chánh": "Binh Chanh District",
+  "Huyện Cần Giờ": "Can Gio District",
+  "Huyện Củ Chi": "Cu Chi District",
+  "Huyện Hóc Môn": "Hoc Mon District",
+  "Huyện Nhà Bè": "Nha Be District",
 };
 
 // Inverted dictionary (EN -> VI)
@@ -279,8 +352,21 @@ let isTranslating = false;
 let activeLang: "VI" | "EN" = "VI";
 
 /**
- * Translates a single string using exact dictionary, sorted substring replacement,
- * common regex patterns, or cached async backend translation.
+ * Standard Vietnamese Accent Remover / Romanization
+ * Converts accented proper nouns into clean Latin text (e.g. "Nguyễn Văn Quá" -> "Nguyen Van Qua")
+ */
+export function stripVietnameseAccents(str: string): string {
+  if (!str) return str;
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D");
+}
+
+/**
+ * Translates a single string using exact dictionary, greedy substring replacement,
+ * common regex patterns, and automatic accent romanization for proper nouns.
  */
 export function translateString(text: string, targetLang: "VI" | "EN"): string {
   if (!text) return text;
@@ -300,7 +386,15 @@ export function translateString(text: string, targetLang: "VI" | "EN"): string {
     let result = text;
     let replaced = false;
 
-    // 3. Regex replacements for common patterns with numbers/variables and urban terms
+    // 3. GREEDY SUBSTRING REPLACEMENT FIRST (Longer phrases first, preventing broken tokens)
+    for (const [vi, en] of SORTED_DOM_MAP) {
+      if (vi.length > 2 && result.includes(vi)) {
+        result = result.split(vi).join(en);
+        replaced = true;
+      }
+    }
+
+    // 4. Regex replacements for common patterns with numbers/variables and urban terms
     const withPatterns = result
       .replace(/(\d+)\s*người/gi, (_m, num) => (num === "1" ? "1 person" : `${num} people`))
       .replace(/(\d+)\s*điều khoản/gi, "$1 clauses")
@@ -322,6 +416,7 @@ export function translateString(text: string, targetLang: "VI" | "EN"): string {
       .replace(/\bKênh\b/gi, "Canal")
       .replace(/\bSông\b/gi, "River")
       .replace(/\bCầu\b/gi, "Bridge")
+      .replace(/\bHẻm\b/gi, "Alley")
       .replace(/\bĐoạn\b/gi, "Section")
       .replace(/\bsâu\s*(\d+)cm\b/gi, "$1cm deep")
       .replace(/\bĐội\b/gi, "Team")
@@ -340,17 +435,18 @@ export function translateString(text: string, targetLang: "VI" | "EN"): string {
       replaced = true;
     }
 
-    // 4. Greedy substring replacement using pre-sorted dictionary
-    for (const [vi, en] of SORTED_DOM_MAP) {
-      if (vi.length > 2 && result.includes(vi)) {
-        result = result.split(vi).join(en);
-        replaced = true;
-      }
+    // 5. If result still contains Vietnamese accented characters (proper nouns of streets/people), romanize cleanly!
+    if (/[\u00C0-\u1EF9]/i.test(result)) {
+      result = stripVietnameseAccents(result);
+      replaced = true;
     }
 
-    if (replaced && !/[\u00C0-\u1EF9]/i.test(result)) return result;
+    if (replaced) {
+      asyncTranslationCache[trimmed] = result.trim();
+      return result;
+    }
 
-    // 5. Asynchronous backend translation for Vietnamese sentences (prevent duplicate requests)
+    // 6. Asynchronous backend translation for Vietnamese sentences (prevent duplicate requests)
     if (/[\u00C0-\u1EF9]/i.test(trimmed) && trimmed.length > 2 && !inFlightRequests.has(trimmed)) {
       inFlightRequests.add(trimmed);
       api
@@ -373,7 +469,7 @@ export function translateString(text: string, targetLang: "VI" | "EN"): string {
         });
     }
 
-    return text;
+    return stripVietnameseAccents(text);
   } else {
     // Reverse to VI
     if (EN_TO_VI_MAP[trimmed]) {
@@ -390,7 +486,7 @@ export function translateString(text: string, targetLang: "VI" | "EN"): string {
 }
 
 /**
- * Traverses DOM and translates text nodes, input placeholders, and input values.
+ * Traverses DOM and translates text nodes, input placeholders, values, titles and aria-labels.
  */
 export function applyDOMTranslation(root: Node = document.body, lang: "VI" | "EN") {
   if (!root || isTranslating) return;
@@ -423,6 +519,7 @@ export function applyDOMTranslation(root: Node = document.body, lang: "VI" | "EN
     }
 
     if (root instanceof Element) {
+      // Inputs & Textareas
       const inputs = root.querySelectorAll("input, textarea");
       inputs.forEach((el) => {
         const input = el as HTMLInputElement | HTMLTextAreaElement;
@@ -438,6 +535,21 @@ export function applyDOMTranslation(root: Node = document.body, lang: "VI" | "EN
           if (input.value !== transVal) {
             input.value = transVal;
           }
+        }
+      });
+
+      // Tooltips & Accessibility labels
+      const titledElements = root.querySelectorAll("[title], [aria-label]");
+      titledElements.forEach((el) => {
+        const title = el.getAttribute("title");
+        if (title) {
+          const trans = translateString(title, lang);
+          if (title !== trans) el.setAttribute("title", trans);
+        }
+        const ariaLabel = el.getAttribute("aria-label");
+        if (ariaLabel) {
+          const trans = translateString(ariaLabel, lang);
+          if (ariaLabel !== trans) el.setAttribute("aria-label", trans);
         }
       });
     }

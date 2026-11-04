@@ -118,6 +118,36 @@ describe("domTranslator: Full-Page Auto-Translation & Dynamic Observer", () => {
     );
   });
 
+  it("dịch triệt để các địa chỉ và sự cố phức hợp không còn bất kỳ ký tự tiếng Việt nào", () => {
+    const testCases = [
+      "Flood Point sâu 50cm giao lộ Nguyễn Văn Quá",
+      "Flooding đường Tô Ngọc Vân",
+      "Illegal Dump Site Kênh Đôi",
+      "Ùn ứ Domestic Waste chợ Bà Chiểu",
+      "Điểm nghẽn cống đường Nguyễn Hữu Cảnh",
+      "Ngã tư Nguyễn Văn Quá - Tô Ký, Quận 12",
+      "Đường Tô Ngọc Vân, Phường Linh Tây, TP. Thủ Đức",
+      "Bờ kè Kênh Đôi, Phường 4, District 8",
+      "Chợ Bà Chiểu, Phường 1, Quận Bình Thạnh",
+      "22 Nguyễn Hữu Cảnh, Phường Bến Nghé, Quận 1",
+      "Đội Cơ động số 3",
+      "Đội Thoát Nước Thủ Đức",
+      "Đội MTĐT District 8",
+      "Đội Flood Rescue Bình Thạnh",
+      "Đội Môi trường đô thị Quận 1",
+      "Hỏa tốc",
+      "Cao",
+    ];
+
+    for (const phrase of testCases) {
+      const translated = translateString(phrase, "EN");
+      // Phải chuyển đổi sạch sẽ, không còn nguyên gốc tiếng Việt
+      expect(translated).not.toBe(phrase);
+      // Không còn sót lại bất kỳ dấu thanh tiếng Việt nào
+      expect(/[\u00C0-\u1EF9]/i.test(translated)).toBe(false);
+    }
+  });
+
   it("xóa sạch các thành phần Google Translate toolbar thừa đảm bảo giao diện sạch sẽ", () => {
     expect(() => triggerGoogleTranslate("EN")).not.toThrow();
     expect(() => triggerGoogleTranslate("VI")).not.toThrow();
