@@ -1,6 +1,7 @@
 import React from "react";
 import type { ActiveSosRoleView } from "../types/flood_sos.types";
 import { navigateToRoute } from "../../../routes/appRoutes";
+import { useLanguage } from "../../../i18n";
 
 interface FloodSosHeaderProps {
   activeView: ActiveSosRoleView;
@@ -13,6 +14,8 @@ export const FloodSosHeader: React.FC<FloodSosHeaderProps> = ({
   onSelectView,
   pendingCount = 0,
 }) => {
+  const { currentLang } = useLanguage();
+  const isEn = currentLang === "EN";
   return (
     <header className="sos-header" data-testid="sos-header">
       <div className="header-content">
@@ -22,14 +25,18 @@ export const FloodSosHeader: React.FC<FloodSosHeaderProps> = ({
           onClick={() => {
             navigateToRoute("map");
           }}
-          title="Quay lại Bản đồ số WebGIS TP.HCM"
+          title={isEn ? "Return to HCMC WebGIS Map" : "Quay lại Bản đồ số WebGIS TP.HCM"}
         >
           <div className="brand-logo" aria-label="Logo Cứu hộ khẩn cấp">
             🚨
           </div>
           <div className="brand-text">
-            <h1>CỨU HỘ NGẬP LỤT (FLOOD SOS)</h1>
-            <span>Mạng lưới Cứu hộ Cộng đồng & Phản ứng nhanh GreenSpot</span>
+            <h1>{isEn ? "FLOOD RESCUE (FLOOD SOS)" : "CỨU HỘ NGẬP LỤT (FLOOD SOS)"}</h1>
+            <span>
+              {isEn
+                ? "GreenSpot Community Rescue & Rapid Response Network"
+                : "Mạng lưới Cứu hộ Cộng đồng & Phản ứng nhanh GreenSpot"}
+            </span>
           </div>
         </div>
 
@@ -40,7 +47,7 @@ export const FloodSosHeader: React.FC<FloodSosHeaderProps> = ({
             onClick={() => onSelectView("CITIZEN_DISPATCH")}
             data-testid="tab-dispatch"
           >
-            🆘 Phát tín hiệu cấp cứu
+            {isEn ? "🆘 Broadcast Emergency Signal" : "🆘 Phát tín hiệu cấp cứu"}
           </button>
           <button
             type="button"
@@ -48,7 +55,7 @@ export const FloodSosHeader: React.FC<FloodSosHeaderProps> = ({
             onClick={() => onSelectView("VOLUNTEER_DASHBOARD")}
             data-testid="tab-volunteer"
           >
-            🚤 Đội phản ứng & Tình nguyện viên
+            {isEn ? "🚤 Response Teams & Volunteers" : "🚤 Đội phản ứng & Tình nguyện viên"}
           </button>
           {activeView === "LIVE_TRACKING" && (
             <button
@@ -57,7 +64,7 @@ export const FloodSosHeader: React.FC<FloodSosHeaderProps> = ({
               onClick={() => onSelectView("LIVE_TRACKING")}
               data-testid="tab-tracking"
             >
-              📍 Theo dõi tiến độ cứu hộ
+              {isEn ? "📍 Track Rescue Progress" : "📍 Theo dõi tiến độ cứu hộ"}
             </button>
           )}
         </nav>
