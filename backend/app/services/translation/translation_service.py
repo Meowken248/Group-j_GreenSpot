@@ -232,26 +232,36 @@ class HybridTranslationService(ITranslationService):
         if explicit_keys is not None:
             return key in explicit_keys
 
-        key_lower = key.lower()
-        # Skip technical IDs, codes, tokens, URLs, hex colors
-        if any(ign in key_lower for ign in ["id", "code", "token", "url", "hash", "color", "icon", "path", "password"]):
-            return False
+        # Skip values that are clearly technical identifiers or not translateable
         if val.startswith(("http://", "https://", "#", "data:", "/")):
             return False
         if re.match(r"^[0-9a-fA-F-]{36}$", val):  # UUID
             return False
         if re.match(r"^\d{4}-\d{2}-\d{2}T", val):  # ISO Date
             return False
-        if re.match(r"^[A-Z0-9_-]{2,15}$", val):  # Technical ENUM codes
+        if re.match(r"^\d{4}-\d{2}-\d{2}$", val):  # Date YYYY-MM-DD
+            return False
+        if re.match(r"^[+\d\s\-()]{7,20}$", val):  # Phone number
+            return False
+        if re.match(r"^[A-Z0-9_]{2,20}$", val):  # ENUM codes like IN_PROGRESS, CANCELLED
             return False
 
-        if key_lower in self._default_target_keys or any(
-            key_lower.endswith(sfx)
-            for sfx in ["_title", "_name", "_address", "_label", "_desc", "_description", "_text", "_msg", "_message", "_content", "_status"]
-        ):
+        key_lower = key.lower()
+        # Skip purely technical keys regardless of value
+        if any(ign in key_lower for ign in ["password", "token", "hash", "secret", "key", "url", "path", "icon", "color", "image", "photo", "avatar", "thumbnail"]):
+            return False
+
+        # ALWAYS translate if the value contains Vietnamese diacritics (highest priority rule)
+        if re.search(r"[\u00C0-\u1EF9]", val):
             return True
 
-        if re.search(r"[\u00C0-\u1EF9]", val, re.IGNORECASE):
+        # Also translate known semantic keys whose values may be pure ASCII Vietnamese romanized
+        if key_lower in self._default_target_keys:
+            return True
+        if any(key_lower.endswith(sfx) for sfx in [
+            "_title", "_name", "_address", "_label", "_desc", "_description",
+            "_text", "_msg", "_message", "_content", "_status", "_type", "_category"
+        ]):
             return True
 
         return False
