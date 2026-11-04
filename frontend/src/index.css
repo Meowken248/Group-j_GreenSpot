@@ -20,3 +20,17 @@ body,
   position: relative;
   background-color: #0f172a;
 }
+
+/* Multi-Engine Google Website Translator Styling (Unobtrusive) */
+.goog-te-banner-frame.skiptranslate,
+.goog-te-gadget-simple,
+#goog-gt-tt,
+.goog-te-balloon-frame {
+  display: none !important;
+}
+body {
+  top: 0px !important;
+}
+.skiptranslate {
+  display: inline;
+}

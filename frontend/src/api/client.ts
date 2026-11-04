@@ -35,6 +35,7 @@ export const isPublicAuthEndpoint = (url?: string): boolean => {
     url.includes("/api/v1/auth/register") ||
     url.includes("/api/v1/auth/verify-otp") ||
     url.includes("/api/v1/auth/resend-otp") ||
+    url.includes("/api/v1/translation") ||
     url.includes("/health")
   );
 };
