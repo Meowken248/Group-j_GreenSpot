@@ -66,3 +66,4 @@ def get_current_language(request: Request) -> str:
     # 3. Accept-Language header
     accept_lang = request.headers.get("accept-language") or request.headers.get("Accept-Language")
     return parse_accept_language(accept_lang)
+

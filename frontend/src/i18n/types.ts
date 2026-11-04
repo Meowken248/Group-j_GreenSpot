@@ -7,3 +7,4 @@ export interface I18nContextType {
   t: (key: string, fallback?: string) => string;
   translateDynamic: (text: string) => Promise<string>;
 }
+

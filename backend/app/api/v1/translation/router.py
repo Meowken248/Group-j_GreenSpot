@@ -94,3 +94,4 @@ async def get_domain_dictionary():
         "vi_to_en": VI_TO_EN_DICTIONARY,
         "total_terms": len(VI_TO_EN_DICTIONARY),
     }
+

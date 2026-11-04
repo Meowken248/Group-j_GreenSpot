@@ -35,6 +35,14 @@ class HybridTranslationService(ITranslationService):
             "action_text",
             "display_name",
             "hazard_level",
+            "domain",
+            "legal_reference",
+            "decree",
+            "behavior_summary",
+            "remedial_measures",
+            "penalty_range",
+            "authority",
+            "quick_category",
         }
 
     def get_supported_languages(self) -> List[str]:

@@ -1,8 +1,11 @@
 import pytest
 from starlette.requests import Request
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 from app.services.translation.translation_service import HybridTranslationService
-from app.services.translation.dictionary import VI_TO_EN_DICTIONARY
 from app.core.localization import parse_accept_language, get_current_language
+from app.core.localization_middleware import ResponseLocalizationMiddleware
+from app.api.v1.translation.router import router as translation_router
 
 @pytest.fixture
 def service():
@@ -91,36 +94,6 @@ def test_get_current_language_priority():
     req = Request(scope)
     assert get_current_language(req) == "en"
 
-def test_translation_api_router():
-    from fastapi import FastAPI
-    from fastapi.testclient import TestClient
-    from app.api.v1.translation.router import router
-
-    test_app = FastAPI()
-    test_app.include_router(router)
-    client = TestClient(test_app)
-
-    # 1. Detect language via Accept-Language
-    resp = client.get("/translation/detect", headers={"Accept-Language": "en-US,en;q=0.9"})
-    assert resp.status_code == 200
-    assert resp.json()["detected_language"] == "en"
-
-    # 2. Translate single text
-    resp = client.post("/translation/translate", json={"text": "bãi rác tự phát", "target_lang": "en"})
-    assert resp.status_code == 200
-    assert resp.json()["translated_text"] == "Illegal Dump Site"
-
-    # 3. Translate batch
-    resp = client.post("/translation/batch", json={"texts": ["đang xử lý", "khẩn cấp"], "target_lang": "en"})
-    assert resp.status_code == 200
-    assert resp.json()["translations"] == ["In Progress", "Critical / Emergency"]
-
-    # 4. Get dictionary
-    resp = client.get("/translation/dictionary")
-    assert resp.status_code == 200
-    assert resp.json()["total_terms"] > 10
-
-
     # 2. X-Language header
     scope = {
         "type": "http",
@@ -129,36 +102,6 @@ def test_translation_api_router():
     }
     req = Request(scope)
     assert get_current_language(req) == "en"
-
-def test_translation_api_router():
-    from fastapi import FastAPI
-    from fastapi.testclient import TestClient
-    from app.api.v1.translation.router import router
-
-    test_app = FastAPI()
-    test_app.include_router(router)
-    client = TestClient(test_app)
-
-    # 1. Detect language via Accept-Language
-    resp = client.get("/translation/detect", headers={"Accept-Language": "en-US,en;q=0.9"})
-    assert resp.status_code == 200
-    assert resp.json()["detected_language"] == "en"
-
-    # 2. Translate single text
-    resp = client.post("/translation/translate", json={"text": "bãi rác tự phát", "target_lang": "en"})
-    assert resp.status_code == 200
-    assert resp.json()["translated_text"] == "Illegal Dump Site"
-
-    # 3. Translate batch
-    resp = client.post("/translation/batch", json={"texts": ["đang xử lý", "khẩn cấp"], "target_lang": "en"})
-    assert resp.status_code == 200
-    assert resp.json()["translations"] == ["In Progress", "Critical / Emergency"]
-
-    # 4. Get dictionary
-    resp = client.get("/translation/dictionary")
-    assert resp.status_code == 200
-    assert resp.json()["total_terms"] > 10
-
 
     # 3. Accept-Language header
     scope = {
@@ -170,12 +113,8 @@ def test_translation_api_router():
     assert get_current_language(req) == "en"
 
 def test_translation_api_router():
-    from fastapi import FastAPI
-    from fastapi.testclient import TestClient
-    from app.api.v1.translation.router import router
-
     test_app = FastAPI()
-    test_app.include_router(router)
+    test_app.include_router(translation_router)
     client = TestClient(test_app)
 
     # 1. Detect language via Accept-Language
@@ -198,3 +137,46 @@ def test_translation_api_router():
     assert resp.status_code == 200
     assert resp.json()["total_terms"] > 10
 
+def test_response_localization_middleware_translates_database_json():
+    """
+    Kiem tra ResponseLocalizationMiddleware tu dong dich response JSON tu Database
+    khi Client gui kem X-Language: EN hoac Accept-Language: en-US
+    """
+    app = FastAPI()
+    app.add_middleware(ResponseLocalizationMiddleware)
+
+    # Gia lap endpoint tra ve du lieu tieng Viet tu CSDL
+    @app.get("/api/v1/mock-db-categories")
+    def get_categories():
+        return [
+            {
+                "category_id": 1,
+                "category_name": "Rác thải sinh hoạt",
+                "description": "Vứt rác vỉa hè, lòng đường, vứt tàn thuốc lá, không phân loại rác tại nguồn.",
+                "clause_count": 3
+            },
+            {
+                "category_id": 2,
+                "category_name": "Rác công nghiệp/nguy hại",
+                "description": "Chôn lấp chất thải nguy hại, đốt chất thải công nghiệp ngoài cơ sở được cấp phép.",
+                "clause_count": 2
+            }
+        ]
+
+    client = TestClient(app)
+
+    # 1. Mac dinh (Khong co header hoac VI) -> Du lieu tieng Viet nguyen ban
+    resp_vi = client.get("/api/v1/mock-db-categories")
+    assert resp_vi.status_code == 200
+    data_vi = resp_vi.json()
+    assert data_vi[0]["category_name"] == "Rác thải sinh hoạt"
+    assert data_vi[0]["clause_count"] == 3
+
+    # 2. Client gui X-Language: EN -> Response JSON phai tu dong duoc dich sang Tieng Anh!
+    resp_en = client.get("/api/v1/mock-db-categories", headers={"X-Language": "EN"})
+    assert resp_en.status_code == 200
+    data_en = resp_en.json()
+    assert data_en[0]["category_name"] == "Domestic Waste"
+    assert data_en[0]["clause_count"] == 3  # So lieu nguyen ven
+    assert data_en[1]["category_name"] == "Industrial / Hazardous Waste"
+    assert "Burying hazardous waste" in data_en[1]["description"]

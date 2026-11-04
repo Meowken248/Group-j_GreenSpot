@@ -154,3 +154,4 @@ export const I18N_DICTIONARY: Record<LanguageCode, Record<string, string>> = {
     "msg.langChanged": "Language switched to English",
   },
 };
+

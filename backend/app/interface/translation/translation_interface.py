@@ -47,3 +47,4 @@ class ITranslationService(ABC):
     def get_supported_languages(self) -> List[str]:
         """Return list of supported ISO language codes (e.g. ['vi', 'en'])."""
         pass
+
