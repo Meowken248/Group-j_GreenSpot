@@ -34,7 +34,36 @@ export const DOM_TRANSLATION_MAP: Record<string, string> = {
   "Địa chỉ ước tính hoặc tự nhập": "Estimated or Manual Address",
   "Tọa độ": "Coordinates",
   "Độ chính xác": "Accuracy",
+  "GỬI CHO BẠN BÈ": "SEND TO FRIENDS",
+  "GỬI CHO": "SEND TO",
   "GỬI": "SUBMIT & DISPATCH",
+  "Gửi cho bạn bè": "Send to Friends",
+  "XÁC NHẬN AN TOÀN": "SAFETY CONFIRMATION",
+  "Xác nhận an toàn": "Safety Confirmation",
+  "Tôi an toàn": "I Am Safe",
+  "ĐÃ BÁO AN TOÀN TRÊN HỒ SƠ": "MARKED SAFE ON PROFILE",
+  "ĐANG CẬP NHẬT...": "UPDATING...",
+  "Danh bạ bạn bè": "Friends Contacts",
+  "Chọn tất cả": "Select All",
+  "Bạn chưa có người bạn nào trong danh bạ": "You do not have any friends in your contact list",
+  'Hãy kết nối bạn bè ở mục "Cộng đồng" để có thể gửi thông báo an toàn khi xảy ra thiên tai.': "Connect with friends in the Community section to send safety alerts during natural disasters.",
+  'Hãy kết nối bạn bè ở mục "Community" để có thể gửi thông báo an toàn khi xảy ra thiên tai.': "Connect with friends in the Community section to send safety alerts during natural disasters.",
+  "Đến trang Bạn bè & Theo dõi": "Go to Friends & Following",
+  "Vị trí GPS thời gian thực (Đã xác thực ✅)": "Real-time GPS Location (Verified ✅)",
+  "Vị trí GPS thời gian thực (Đã xác thực)": "Real-time GPS Location (Verified)",
+  "Vị trí GPS thời gian thực": "Real-time GPS Location",
+  "Vị trí ước tính (Chưa cấp quyền GPS)": "Estimated Location (GPS Permission Denied)",
+  "Không thể xác định vị trí hiện tại. Vui lòng bật định vị GPS trong cài đặt trình duyệt để có độ chính xác cao nhất.": "Cannot determine current location. Please enable GPS in browser settings for highest accuracy.",
+  "Vị trí hiện tại của bạn đã được xác định. Hãy báo an toàn cho bạn bè.": "Your current location has been determined. Please notify your friends that you are safe.",
+  "Bạn đã được đánh dấu là AN TOÀN trong đợt thiên tai này.": "You have been marked SAFE during this disaster.",
+  "Vui lòng chọn ít nhất một người bạn để gửi thông báo an toàn.": "Please select at least one friend to send safety notification.",
+  "Đang gửi thông báo an toàn đến bạn bè...": "Sending safety notification to friends...",
+  "Tôi hiện đang an toàn tại khu vực, gia đình và bạn bè hãy yên tâm!": "I am currently safe in this area, family and friends please be assured!",
+  "BAN CHỈ HUY PCTT & TKCN": "DISASTER PREVENTION & RESCUE STEERING COMMITTEE",
+  "Ban chỉ huy PCTT & TKCN": "Disaster Prevention & Rescue Steering Committee",
+  "Phát lệnh Critical": "Critical Alert Broadcast",
+  "Thử nghiệm cảnh báo": "Test Alert",
+  "GreenSpot PCTT": "GreenSpot Disaster Management",
   "Tổng số người:": "Total People:",
   "Tổng số người": "Total People",
   "Ưu tiên cứu hộ:": "Rescue Priority:",
@@ -435,10 +464,9 @@ export function translateString(text: string, targetLang: "VI" | "EN"): string {
       replaced = true;
     }
 
-    // 5. If result still contains Vietnamese accented characters (proper nouns of streets/people), romanize cleanly!
-    if (/[\u00C0-\u1EF9]/i.test(result)) {
+    // 5. If string was partially replaced by domain/location patterns (proper nouns of streets/teams/incidents remain), romanize them cleanly!
+    if (replaced && /[\u00C0-\u1EF9]/i.test(result)) {
       result = stripVietnameseAccents(result);
-      replaced = true;
     }
 
     if (replaced) {
@@ -446,8 +474,8 @@ export function translateString(text: string, targetLang: "VI" | "EN"): string {
       return result;
     }
 
-    // 6. Asynchronous backend translation for Vietnamese sentences (prevent duplicate requests)
-    if (/[\u00C0-\u1EF9]/i.test(trimmed) && trimmed.length > 2 && !inFlightRequests.has(trimmed)) {
+    // 6. Asynchronous backend translation for Vietnamese phrases and sentences
+    if (/[\u00C0-\u1EF9]/i.test(trimmed) && trimmed.length >= 2 && !inFlightRequests.has(trimmed)) {
       inFlightRequests.add(trimmed);
       api
         .post<{ translated_text: string }>("/api/v1/translation/translate", {
@@ -457,8 +485,8 @@ export function translateString(text: string, targetLang: "VI" | "EN"): string {
         })
         .then((res) => {
           inFlightRequests.delete(trimmed);
-          if (res.data?.translated_text) {
-            asyncTranslationCache[trimmed] = res.data.translated_text;
+          if (res.data?.translated_text && res.data.translated_text.trim()) {
+            asyncTranslationCache[trimmed] = res.data.translated_text.trim();
             if (activeLang === "EN") {
               requestAnimationFrame(() => applyDOMTranslation(document.body, "EN"));
             }
@@ -469,6 +497,7 @@ export function translateString(text: string, targetLang: "VI" | "EN"): string {
         });
     }
 
+    // If still completely untranslated, strip accents as final fallback to guarantee no raw diacritics
     return stripVietnameseAccents(text);
   } else {
     // Reverse to VI
