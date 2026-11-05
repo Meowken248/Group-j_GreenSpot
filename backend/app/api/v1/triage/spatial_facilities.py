@@ -7,10 +7,12 @@ API Router: Phân tích không gian tìm kiếm các cơ sở thiết yếu (y t
 
 import uuid
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from app.database import get_db
 from app.models.incident import Incident
 from app.models.spatial import EssentialFacility
@@ -37,6 +39,7 @@ router = APIRouter(prefix="/spatial/facilities", tags=["Spatial Facility Analysi
 @router.post("/buffer", response_model=FacilityListResponse)
 async def analyze_facilities_in_buffer(
     payload: FacilityBufferQueryRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -83,7 +86,7 @@ async def analyze_facilities_in_buffer(
         for item in facility_items
     ]
 
-    return FacilityListResponse(
+    res = FacilityListResponse(
         incident_id=inc.incident_id,
         incident_title=inc.title,
         incident_lat=float(inc.latitude),
@@ -94,11 +97,16 @@ async def analyze_facilities_in_buffer(
         has_critical_nearby=has_critical,
         facilities=formatted_items,
     )
+    if get_current_language(request) == "en":
+        dumped = res.model_dump()
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return res
 
 
 @router.get("/{facility_id}", response_model=FacilityDetailProfileResponse)
 async def get_facility_profile_detail(
     facility_id: int,
+    request: Request,
     incident_id: Optional[uuid.UUID] = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
@@ -106,7 +114,7 @@ async def get_facility_profile_detail(
      Xem hồ sơ chi tiết cơ sở, đầu mối khẩn cấp, mức độ dễ tổn thương và link chỉ đường
     """
     detail = await SpatialFacilityService.get_facility_detail(db, facility_id, incident_id)
-    return FacilityDetailProfileResponse(
+    res = FacilityDetailProfileResponse(
         facility_id=detail.facility_id,
         facility_name=detail.facility_name,
         facility_type=detail.facility_type,
@@ -122,6 +130,10 @@ async def get_facility_profile_detail(
         can_call=detail.can_call,
         can_alert=detail.can_alert,
     )
+    if get_current_language(request) == "en":
+        dumped = res.model_dump()
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return res
 
 
 @router.post("/alert", response_model=SendEmergencyAlertResponse)
