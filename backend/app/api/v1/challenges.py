@@ -7,8 +7,11 @@ Thử thách xanh trong tuần (nhiệm vụ nhỏ) nhận điểm thưởng:
 """
 
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 
 from app.database import get_db
 from app.models.rbac import User
@@ -25,6 +28,7 @@ router = APIRouter(prefix="/challenges", tags=["Thử thách xanh trong tuần (
 
 @router.get("/weekly", response_model=WeeklyChallengesResponse)
 async def get_weekly_challenges(
+    request: Request,
     current_user: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -35,7 +39,11 @@ async def get_weekly_challenges(
     - Nếu chưa đăng nhập: xem công khai với thông báo nhắc đăng nhập.
     """
     user_id = current_user.user_id if current_user else None
-    return await ChallengeService.get_weekly_challenges(db=db, current_user_id=user_id)
+    result = await ChallengeService.get_weekly_challenges(db=db, current_user_id=user_id)
+    if get_current_language(request) == "en":
+        dumped = result.model_dump() if hasattr(result, 'model_dump') else result
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return result
 
 
 @router.post("/{challenge_id}/submit", response_model=ChallengeCompletionResponse)
