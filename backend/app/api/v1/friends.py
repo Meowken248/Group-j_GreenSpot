@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional, Tuple
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from sqlalchemy import select, update, func, and_, or_, desc, asc
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -77,6 +79,7 @@ async def count_mutual_friends(user_a: uuid.UUID, user_b: uuid.UUID, db: AsyncSe
 
 @router.get("/requests", response_model=List[FriendRequestResponse])
 async def get_received_friend_requests(
+    request: Request,
     auth_data: Tuple[User, UserSession] = Depends(get_current_user_and_session),
     db: AsyncSession = Depends(get_db)
 ):
@@ -127,6 +130,9 @@ async def get_received_friend_requests(
             )
         )
 
+    if get_current_language(request) == "en":
+        dumped = [i.model_dump() if hasattr(i, 'model_dump') else i for i in response_items]
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
     return response_items
 
 
@@ -328,6 +334,7 @@ async def respond_to_friend_request(
 
 @router.get("/suggestions", response_model=List[GreenCitizenSuggestionResponse])
 async def get_green_citizen_suggestions(
+    request: Request,
     auth_data: Tuple[User, UserSession] = Depends(get_current_user_and_session),
     db: AsyncSession = Depends(get_db)
 ):
@@ -410,6 +417,9 @@ async def get_green_citizen_suggestions(
             )
         )
 
+    if get_current_language(request) == "en":
+        dumped = [i.model_dump() if hasattr(i, 'model_dump') else i for i in suggestions]
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
     return suggestions
 
 
@@ -421,6 +431,7 @@ async def get_green_citizen_suggestions(
 @router.get("/", response_model=List[FriendItemResponse], include_in_schema=False)
 @router.get("/list", response_model=List[FriendItemResponse])
 async def get_my_friends_list(
+    request: Request,
     query: Optional[str] = Query(None, description="Tìm kiếm realtime họ tên hoặc quận/huyện"),
     auth_data: Tuple[User, UserSession] = Depends(get_current_user_and_session),
     db: AsyncSession = Depends(get_db)
