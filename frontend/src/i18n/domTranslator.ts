@@ -656,7 +656,6 @@ export const DOM_TRANSLATION_MAP: Record<string, string> = {
   "Lượng Mưa (mm)": "Rainfall (mm)",
   "LỆNH CỦA BẠN": "YOUR ORDERS",
   "LỆNH HIỆN TẠI": "CURRENT ORDER",
-  "Lệnh điều phối": "Dispatch Order",
   "LỌC": "FILTER",
   "Lọc": "Filter",
   "Lỗi GPS:": "GPS Error:",
