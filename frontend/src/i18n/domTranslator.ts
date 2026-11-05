@@ -8,7 +8,6 @@ import api from "../api/client";
 
 // Dictionary of domain phrases and UI patterns
 export const DOM_TRANSLATION_MAP: Record<string, string> = {
-  // 1. Flood SOS & Emergency Rescue (STT 45 & 46)
   "CỨU HỘ NGẬP LỤT (FLOOD SOS)": "FLOOD RESCUE (FLOOD SOS)",
   "Cứu hộ ngập lụt (Flood SOS)": "Flood Rescue (Flood SOS)",
   "Mạng lưới Cứu hộ Cộng đồng & Phản ứng nhanh GreenSpot": "GreenSpot Community Rescue & Rapid Response Network",
@@ -16,8 +15,7 @@ export const DOM_TRANSLATION_MAP: Record<string, string> = {
   "Phát tín hiệu Cấp cứu Khẩn cấp (Emergency SOS Dispatch)": "Broadcast Emergency SOS Dispatch",
   "Phát tín hiệu Cấp cứu Khẩn cấp": "Emergency SOS Dispatch",
   "Phát tín hiệu cấp cứu": "Broadcast Emergency Signal",
-  "Dành cho người dân mắc kẹt tại vùng ngập sâu, lũ dâng cao hoặc sạt lở nguy hiểm. Tín hiệu sẽ được phát sóng tức thì tới tình nguyện viên và đội phản ứng nhanh cơ sở trong bán kính 3km.":
-    "For residents trapped in deep flooding, rising waters, or hazardous landslides. Signals are broadcast instantly to local volunteers and rapid response teams within a 3km radius.",
+  "Dành cho người dân mắc kẹt tại vùng ngập sâu, lũ dâng cao hoặc sạt lở nguy hiểm. Tín hiệu sẽ được phát sóng tức thì tới tình nguyện viên và đội phản ứng nhanh cơ sở trong bán kính 3km.": "For residents trapped in deep flooding, rising waters, or hazardous landslides. Signals are broadcast instantly to local volunteers and rapid response teams within a 3km radius.",
   "TÌNH HUỐNG": "SITUATION",
   "Số người cần cứu": "People in need of rescue",
   "Người già": "Elderly",
@@ -25,7 +23,7 @@ export const DOM_TRANSLATION_MAP: Record<string, string> = {
   "Cần y tế gấp": "Urgent Medical Need",
   "Mô tả chi tiết tình trạng": "Detailed Situation Description",
   "Ảnh chụp hiện trường": "Field Photo",
-  "Họ và tên người cần cứu": "Victim's Full Name",
+  "Họ và tên người cần cứu": "Victim",
   "Số điện thoại liên hệ": "Contact Phone Number",
   "Người dân vùng ngập": "Flooded Area Resident",
   "VỊ TRÍ": "LOCATION",
@@ -46,8 +44,7 @@ export const DOM_TRANSLATION_MAP: Record<string, string> = {
   "Danh bạ bạn bè": "Friends Contacts",
   "Chọn tất cả": "Select All",
   "Bạn chưa có người bạn nào trong danh bạ": "You do not have any friends in your contact list",
-  'Hãy kết nối bạn bè ở mục "Cộng đồng" để có thể gửi thông báo an toàn khi xảy ra thiên tai.': "Connect with friends in the Community section to send safety alerts during natural disasters.",
-  'Hãy kết nối bạn bè ở mục "Community" để có thể gửi thông báo an toàn khi xảy ra thiên tai.': "Connect with friends in the Community section to send safety alerts during natural disasters.",
+  " để có thể gửi thông báo an toàn khi xảy ra thiên tai.": "Connect with friends in the Community section to send safety alerts during natural disasters.",
   "Đến trang Bạn bè & Theo dõi": "Go to Friends & Following",
   "Vị trí GPS thời gian thực (Đã xác thực ✅)": "Real-time GPS Location (Verified ✅)",
   "Vị trí GPS thời gian thực (Đã xác thực)": "Real-time GPS Location (Verified)",
@@ -80,41 +77,33 @@ export const DOM_TRANSLATION_MAP: Record<string, string> = {
   "2 người": "2 people",
   "1 người": "1 person",
   "0 người": "0 people",
-  "Nước dâng ngang ngực, mất điện, trần nhà sắp ngập, cần phao cứu sinh gấp":
-    "Chest-deep water, power outage, ceiling about to submerge, life buoys urgently needed",
-  "Hẻm 42 Bến Phú Định, Phường 16, Quận 8, TP.HCM":
-    "Alley 42 Ben Phu Dinh, Ward 16, District 8, HCMC",
+  "Nước dâng ngang ngực, mất điện, trần nhà sắp ngập, cần phao cứu sinh gấp": "Chest-deep water, power outage, ceiling about to submerge, life buoys urgently needed",
+  "Hẻm 42 Bến Phú Định, Phường 16, Quận 8, TP.HCM": "Alley 42 Ben Phu Dinh, Ward 16, District 8, HCMC",
   "Đội phản ứng & Tình nguyện viên": "Response Teams & Volunteers",
   "Theo dõi tiến độ cứu hộ": "Track Rescue Progress",
   "Trường hợp nguy kịch đe dọa tính mạng, gọi ngay:": "In life-threatening emergencies, call immediately:",
   "Trường hợp nguy kịch đe dọa tính mạng, gọi ngay": "In life-threatening emergencies, call immediately",
   "Đang quét GPS chính xác cao...": "Scanning high-accuracy GPS...",
-  "Bấm để chụp hoặc tải ảnh hiện trường giúp đội cứu nạn định vị cột mốc":
-    "Click to take or upload field photo to help rescuers locate landmarks",
+  "Bấm để chụp hoặc tải ảnh hiện trường giúp đội cứu nạn định vị cột mốc": "Click to take or upload field photo to help rescuers locate landmarks",
   "Gỡ ảnh": "Remove photo",
   "Ảnh hiện trường nước ngập": "Flood field photo",
   "Quay lại Bản đồ số WebGIS TP.HCM": "Return to HCMC WebGIS Map",
   "Số nhà, hẻm, tên đường, phường/xã, quận/huyện...": "House number, alley, street name, ward, district...",
   "Nhập tổng số người...": "Enter total victims...",
-  "VD: Nước dâng ngang ngực, mất điện, trần nhà sắp ngập, cần phao cứu sinh gấp...":
-    "E.g. Chest-deep water, power outage, ceiling about to submerge, life buoys urgently needed...",
+  "VD: Nước dâng ngang ngực, mất điện, trần nhà sắp ngập, cần phao cứu sinh gấp...": "E.g. Chest-deep water, power outage, ceiling about to submerge, life buoys urgently needed...",
   "Số người già": "Number of elderly",
   "Số trẻ nhỏ": "Number of children",
   "Số người cần hỗ trợ y tế": "Number of people needing medical care",
   "Bà Nguyễn Thị Mai": "Ms. Nguyen Thi Mai",
-  "Số 42/5 Hẻm 120 Đường Bến Phú Định, Phường 16, Quận 8, TP.HCM":
-    "No. 42/5 Alley 120 Ben Phu Dinh Street, Ward 16, District 8, HCMC",
+  "Số 42/5 Hẻm 120 Đường Bến Phú Định, Phường 16, Quận 8, TP.HCM": "No. 42/5 Alley 120 Ben Phu Dinh Street, Ward 16, District 8, HCMC",
   "Quận 8": "District 8",
   "Cách bạn 650m": "650m away from you",
   "Cách bạn": "Away from you",
-
-  // 2. Legal & Penalties (STT 11)
   "Cẩm Nang Pháp Lý & Xử Phạt Vi Phạm Môi Trường": "Environmental Legal Handbook & Penalty Regulations",
   "Hệ thống pháp luật môi trường": "Environmental Legal Framework",
   "Tra cứu quy định xử phạt": "Penalty Regulations Lookup",
   "Căn cứ: Nghị định 45/2022/NĐ-CP": "Basis: Decree 45/2022/ND-CP",
-  "Cung cấp thông tin chuẩn xác, minh bạch về các khung hình phạt, chế tài xử lý và biện pháp khắc phục hậu quả đối với các hành vi gây ô nhiễm môi trường đô thị.":
-    "Provides accurate, transparent information on penalty frameworks, sanctions, and remedial measures for urban environmental violations.",
+  "Cung cấp thông tin chuẩn xác, minh bạch về các khung hình phạt, chế tài xử lý và biện pháp khắc phục hậu quả đối với các hành vi gây ô nhiễm môi trường đô thị.": "Provides accurate, transparent information on penalty frameworks, sanctions, and remedial measures for urban environmental violations.",
   "TÌM KIẾM QUY ĐỊNH": "SEARCH REGULATIONS",
   "Tìm kiếm quy định": "Search Regulations",
   "Nhập hành vi (VD: vứt tàn thuốc, đổ rác vỉa hè...)": "Enter behavior (e.g. littering, illegal dumping...)",
@@ -136,63 +125,54 @@ export const DOM_TRANSLATION_MAP: Record<string, string> = {
   "Nước thải": "Wastewater",
   "Khí thải": "Emissions & Exhaust Gas",
   "Tiếng ồn": "Noise Pollution",
-  "Vứt rác vỉa hè, lòng đường, vứt tàn thuốc lá, không phân loại rác tại nguồn.":
-    "Littering on sidewalks and roads, throwing cigarette butts, not sorting waste at source.",
-  "Chôn lấp chất thải nguy hại, đốt chất thải công nghiệp ngoài cơ sở được cấp phép.":
-    "Burying hazardous waste, burning industrial waste outside licensed facilities.",
-  "Xả nước thải sinh hoạt vào cống thoát nước mưa, xả trộm nước thải ra kênh rạch, sông suối.":
-    "Discharging domestic wastewater into stormwater drains, illegally dumping wastewater into canals and rivers.",
-  "Thải khí thải công nghiệp nguy hại vượt chuẩn, đốt rác sinh hoạt lộ thiên gây khói bụi.":
-    "Discharging hazardous industrial emissions exceeding standards, open burning of domestic waste causing smoke and dust.",
-  "Gây tiếng ồn vượt quy chuẩn kỹ thuật tại khu dân cư, sử dụng loa phóng thanh quá giờ quy định.":
-    "Exceeding technical noise standards in residential areas, using loudspeakers beyond permitted hours.",
+  "Vứt rác vỉa hè, lòng đường, vứt tàn thuốc lá, không phân loại rác tại nguồn.": "Littering on sidewalks and roads, throwing cigarette butts, not sorting waste at source.",
+  "Chôn lấp chất thải nguy hại, đốt chất thải công nghiệp ngoài cơ sở được cấp phép.": "Burying hazardous waste, burning industrial waste outside licensed facilities.",
+  "Xả nước thải sinh hoạt vào cống thoát nước mưa, xả trộm nước thải ra kênh rạch, sông suối.": "Discharging domestic wastewater into stormwater drains, illegally dumping wastewater into canals and rivers.",
+  "Thải khí thải công nghiệp nguy hại vượt chuẩn, đốt rác sinh hoạt lộ thiên gây khói bụi.": "Discharging hazardous industrial emissions exceeding standards, open burning of domestic waste causing smoke and dust.",
+  "Gây tiếng ồn vượt quy chuẩn kỹ thuật tại khu dân cư, sử dụng loa phóng thanh quá giờ quy định.": "Exceeding technical noise standards in residential areas, using loudspeakers beyond permitted hours.",
   "Vui lòng nhập từ khoá tìm kiếm": "Please enter a search keyword",
-
-  // 3. Navigation & Header
   "Bản đồ & Khí hậu": "Map & Climate",
   "Tác nghiệp & AI": "Operations & AI",
   "Cộng đồng": "Community",
   "Cứu hộ ngập lụt": "Flood Rescue",
   "Gửi phản ánh": "Report Incident",
-  "Gửi phản ánh sự cố": "Submit Incident Report",
+  "Gửi phản ánh sự cố": "Report Environmental Incident",
   "Gửi phản ánh sự cố môi trường": "Submit Environmental Incident",
   "Trợ lý ảo": "Voice Assistant",
   "Trợ lý Giọng nói": "Voice Assistant",
-  "Trợ lý ảo rảnh tay Hands-free": "Hands-free Virtual Assistant",
-  "Báo an toàn (Safety Check)": "Safety Check",
-  "Báo an toàn thiên tai cho bạn bè & người thân": "Disaster Safety Check for family & friends",
+  "Trợ lý ảo rảnh tay Hands-free": "Hands-free voice assistant",
+  "Báo an toàn (Safety Check)": "Community Safety Check",
+  "Báo an toàn thiên tai cho bạn bè & người thân": "Notify disaster safety to family & friends",
   "SOS Cứu hộ": "SOS Rescue",
   "Cứu hộ ngập lụt khẩn cấp (Flood SOS)": "Emergency Flood SOS Rescue",
   "Bản đồ WebGIS": "WebGIS Map",
-  "Không gian xanh, ngập lụt & trạm IoT": "Green spaces, flooding & IoT stations",
+  "Không gian xanh, ngập lụt & trạm IoT": "Green spaces, flood areas & IoT stations",
   "Phân tích AQI & Khí hậu": "AQI & Climate Analysis",
   "Chất lượng không khí & radar khí tượng": "Air quality & meteorological radar",
   "Dẫn đường tránh ngập": "Safe Flood Routing",
-  "Tìm tuyến đường an toàn thời gian thực": "Real-time flood-safe route navigation",
-  "Điểm nóng & Dự báo": "Hotspots & 7D Forecast",
+  "Tìm tuyến đường an toàn thời gian thực": "Find real-time safe navigation routes",
+  "Điểm nóng & Dự báo": "Hotspots & Forecast",
   "Dự báo ô nhiễm 7 ngày & chuỗi thời gian": "7-day pollution forecast & time series",
-  "Rủi ro đô thị": "Urban Risk Dashboard",
-  "Phân tích đa tiêu chí rủi ro toàn thành phố": "City-wide multi-criteria risk analysis",
+  "Rủi ro đô thị": "Urban Environmental Risk",
+  "Phân tích đa tiêu chí rủi ro toàn thành phố": "Multi-criteria city-wide risk analysis",
   "Quản lý vi phạm": "Violation Management",
-  "Giám sát & xử lý phản ánh từ công dân": "Monitor & resolve citizen violation reports",
+  "Giám sát & xử lý phản ánh từ công dân": "Monitor & process citizen complaints",
   "Thẩm định AI & GIS": "AI & GIS Triage",
-  "AI đánh giá & phân loại tự động": "AI automated assessment & classification",
-  "Báo cáo trùng lặp (AI)": "Deduplication (AI)",
-  "AI gom cụm sự cố trùng lặp trên bản đồ": "AI spatial clustering of duplicate reports",
-  "Đăng bài & Phản ánh": "Create Post & Report",
-  "Bạn bè & Kết nối": "Friends & Connect",
-  "Kết bạn và theo dõi công dân xanh": "Connect & follow green citizens",
+  "AI đánh giá & phân loại tự động": "AI evaluation & auto classification",
+  "Báo cáo trùng lặp (AI)": "Duplicate Reports (AI)",
+  "AI gom cụm sự cố trùng lặp trên bản đồ": "AI clusters duplicate incidents on map",
+  "Đăng bài & Phản ánh": "Create Post & Voice",
+  "Bạn bè & Kết nối": "Friends & Network",
+  "Kết bạn và theo dõi công dân xanh": "Add friends & follow green citizens",
   "DỮ LIỆU KHÔNG GIAN SỐ": "DIGITAL SPATIAL DATA",
-  "ĐIỀU HÀNH & HIỆN TRƯỜNG": "OPERATIONS & DISPATCH",
-  "KẾT NỐI & TƯƠNG TÁC": "CONNECT & ENGAGE",
+  "ĐIỀU HÀNH & HIỆN TRƯỜNG": "OPERATIONS & FIELD DISPATCH",
+  "KẾT NỐI & TƯƠNG TÁC": "COMMUNITY & INTERACTION",
   "Quản trị viên": "System Administrator",
   "Quản trị viên Hệ thống": "System Administrator",
   "Xuất dữ liệu sự cố (Excel/PDF)": "Export Incident Data (Excel/PDF)",
-  "Trích xuất danh sách sự cố theo bộ lọc": "Extract incident list based on custom filters",
+  "Trích xuất danh sách sự cố theo bộ lọc": "Extract filtered incident reports",
   "Thống kê hoạt động hệ thống": "System Activity Analytics",
-  "KPIs người dùng mới, bài đăng, nhóm theo ngày": "Daily KPIs for new users, posts, and groups",
-
-  // 4. Common UI Controls & System Metadata
+  "KPIs người dùng mới, bài đăng, nhóm theo ngày": "Daily KPIs for users, posts, and groups",
   "TỔNG QUAN": "OVERVIEW",
   "BÁO CÁO": "REPORT",
   "THỐNG KÊ": "STATISTICS",
@@ -234,8 +214,6 @@ export const DOM_TRANSLATION_MAP: Record<string, string> = {
   "Điểm ngập úng": "Flood Point",
   "Ô nhiễm không khí": "Air Pollution",
   "Ô nhiễm nguồn nước": "Water Pollution",
-
-  // 5. Dispatch Operations & Field Command (STT 43)
   "Mã": "Code",
   "MÃ": "CODE",
   "Sự cố": "Problem",
@@ -299,8 +277,6 @@ export const DOM_TRANSLATION_MAP: Record<string, string> = {
   "Nhấp đúp chuột vào hàng để xem Theo dõi hiện trường.": "Double click on the row to view Monitor the scene.",
   "Nhấp đúp chuột vào một hàng bất kỳ để mở Giám sát hiện trường": "Double click on any order row to open Field Watch",
   "Tìm nhanh theo mã lệnh, tên sự cố, địa chỉ, đội phụ trách...": "Quickly search by command code, incident name, address, team in charge...",
-
-  // 6. Risk Dashboard (STT 42)
   "CHỈ SỐ": "INDICATORS",
   "Toàn đô thị": "City-wide",
   "Điểm rủi ro chung": "Overall Risk Score",
@@ -320,8 +296,6 @@ export const DOM_TRANSLATION_MAP: Record<string, string> = {
   "7 ngày qua": "Last 7 Days",
   "30 ngày qua": "Last 30 Days",
   "Tuỳ chọn khoảng thời gian": "Custom Date Range",
-
-  // 7. Emergency Broadcast Console (STT 45)
   "NỘI DUNG": "CONTENT",
   "PHẠM VI": "COVERAGE",
   "Loại cảnh báo thiên tai khẩn cấp:": "Emergency Disaster Alert Type:",
@@ -334,8 +308,6 @@ export const DOM_TRANSLATION_MAP: Record<string, string> = {
   "Đường dây nóng cứu hộ (Hotline):": "Rescue Hotline:",
   "Phát lệnh cảnh báo khẩn cấp": "Broadcast Emergency Alert",
   "Lịch sử phát sóng": "Broadcast History",
-
-  // 8. Administrative Districts
   "Quận 1": "District 1",
   "Quận 3": "District 3",
   "Quận 4": "District 4",
@@ -358,6 +330,62 @@ export const DOM_TRANSLATION_MAP: Record<string, string> = {
   "Huyện Củ Chi": "Cu Chi District",
   "Huyện Hóc Môn": "Hoc Mon District",
   "Huyện Nhà Bè": "Nha Be District",
+  "Quản lý sự cố": "Incident Management",
+  "Tiếp nhận & duyệt phản ánh sự cố môi trường": "Receive & review environmental reports",
+  "Điều phối tác nghiệp": "Operations Dispatch",
+  "Trung tâm điều phối & phân công hiện trường": "Dispatch center & field assignment",
+  "Báo cáo ô nhiễm & sự cố môi trường kèm ảnh/video": "Report pollution & issues with photo/video",
+  "Phản ánh sự cố & chia sẻ kinh nghiệm sống xanh": "Share green lifestyle & eco tips",
+  "Phát tín hiệu cứu hộ & mạng lưới cứu nạn cộng đồng": "Broadcast emergency rescue signal & volunteers",
+  "Ví Điểm Thưởng & Danh Hiệu": "Reward Points Wallet & Tier",
+  "Thử Thách Xanh Trong Tuần": "Weekly Green Challenges",
+  "Cẩm Nang Phân Loại Rác": "Waste Sorting Handbook",
+  "Bảng Xếp Hạng Công Dân Xanh": "Green Citizen Leaderboard",
+  "Bản Đồ Nhiệt Môi Trường (GIS)": "Environmental Heatmap (GIS)",
+  "Quét Mã QR Nhận Điểm": "Scan QR Code for Points",
+  "Vòng Quay May Mắn Mỗi Ngày": "Daily Lucky Wheel",
+  "Lộ Trình Danh Hiệu": "Badge & Tier Milestones",
+  "Nhật Ký Kiểm Toán (Audit Log)": "System Audit Log",
+  "Quản lý thiết bị & Phiên": "Device & Session Management",
+  "Cài đặt tài khoản": "Account Settings",
+  "QUẢN TRỊ HỆ THỐNG": "SYSTEM ADMINISTRATION",
+  "Quản lý người dùng": "User Management",
+  "Phân quyền vai trò RBAC": "RBAC Role Permissions",
+  "Phát lệnh cảnh báo khẩn cấp (PCTT)": "Broadcast Emergency Alert (PCTT)",
+  "Đăng xuất": "Logout",
+  "Đăng xuất tài khoản": "Logout Account",
+  "Xác thực tài khoản": "Account Authentication",
+  "Hồ sơ cá nhân": "Personal Profile",
+  "Cài đặt ứng dụng": "Application Settings",
+  "Tra cứu quy định & Chế tài xử phạt": "Penalty Regulations & Sanctions",
+  "Thống kê biên bản vi phạm": "Violation Reports Analytics",
+  "Đăng tải bài viết cộng đồng": "Create Community Post",
+  "Báo cáo sự cố môi trường": "Report Environmental Incident",
+  "Quản lý danh sách sự cố": "Incident Management List",
+  "Ví điểm thưởng & Đổi quà sinh thái": "Green Points Wallet & Eco Gifts",
+  "Thử thách sống xanh tuần": "Weekly Green Challenges",
+  "Cẩm nang phân loại rác thải": "Waste Sorting Handbook",
+  "Bảng vinh danh công dân xanh": "Green Citizen Leaderboard",
+  "Bản đồ nhiệt đa chế độ": "Multi-mode Climate Heatmap",
+  "Quét mã QR địa điểm": "Scan Location QR Code",
+  "Vòng quay may mắn": "Lucky Wheel",
+  "Mốc điểm danh hiệu xanh": "Green Milestone & Tier",
+  "Trích xuất & Báo cáo dữ liệu sự cố (Excel/PDF)": "Extract & Report Incident Data (Excel/PDF)",
+  "Thống kê hoạt động hệ thống toàn diện": "Comprehensive System Activity Analytics",
+  "Chỉ số chất lượng không khí AQI": "Air Quality Index (AQI)",
+  "Khử trùng lặp phản ánh môi trường": "Deduplicate Environmental Reports",
+  "Phân loại sự cố AI & Cơ sở trọng yếu": "AI Incident Triage & Key Facilities",
+  "Lộ trình an toàn tránh ngập lụt": "Safe Navigation Route Avoiding Floods",
+  "Bảng chỉ số rủi ro môi trường đô thị": "Urban Environmental Risk Index Dashboard",
+  "Điều phối tác nghiệp xử lý hiện trường": "Operations Dispatch & Field Assignment",
+  "Phân tích điểm nóng & Dự báo 7 ngày": "Hotspot Analytics & 7-Day Forecast",
+  "Phát lệnh cảnh báo khẩn cấp Geofencing": "Geofencing Emergency Broadcast Alert",
+  "Khảo sát an toàn cộng đồng (Safety Check)": "Community Safety Check Survey",
+  "Cứu nạn ngập lụt khẩn cấp (Flood SOS)": "Emergency Flood Rescue (Flood SOS)",
+  "Trợ lý điều khiển giọng nói AI": "AI Voice Control Assistant",
+  "Bản đồ số WebGIS": "WebGIS Digital Map",
+  "Hãy kết nối bạn bè ở mục \"Cộng đồng\" để có thể gửi thông báo an toàn khi xảy ra thiên tai.": "Connect with friends in the Community section to send safety alerts during natural disasters.",
+  "Hãy kết nối bạn bè ở mục \"Community\" để có thể gửi thông báo an toàn khi xảy ra thiên tai.": "Connect with friends in the Community section to send safety alerts during natural disasters.",
 };
 
 // Inverted dictionary (EN -> VI)
@@ -374,11 +402,76 @@ const SORTED_EN_TO_VI_MAP = Object.entries(EN_TO_VI_MAP).sort(
   (a, b) => b[0].length - a[0].length
 );
 
-const asyncTranslationCache: Record<string, string> = {};
+const CACHE_STORAGE_KEY = "greenspot_i18n_cache_v2";
+
+const loadCachedTranslations = (): Record<string, string> => {
+  try {
+    const raw = localStorage.getItem(CACHE_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveCachedTranslations = (cache: Record<string, string>) => {
+  try {
+    localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(cache));
+  } catch {
+    // Quota handled safely
+  }
+};
+
+const asyncTranslationCache: Record<string, string> = loadCachedTranslations();
 const inFlightRequests = new Set<string>();
+const pendingBatchQueue = new Set<string>();
+let batchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 let observer: MutationObserver | null = null;
 let isTranslating = false;
 let activeLang: "VI" | "EN" = "VI";
+
+function flushBatchQueue() {
+  if (pendingBatchQueue.size === 0) return;
+  const itemsToTranslate = Array.from(pendingBatchQueue).slice(0, 50);
+  itemsToTranslate.forEach((item) => pendingBatchQueue.delete(item));
+
+  api
+    .post<{ translations: string[] }>("/api/v1/translation/batch", {
+      texts: itemsToTranslate,
+      target_lang: "en",
+      source_lang: "vi",
+    })
+    .then((res) => {
+      itemsToTranslate.forEach((item) => inFlightRequests.delete(item));
+      const translations = res.data?.translations;
+      if (Array.isArray(translations) && translations.length === itemsToTranslate.length) {
+        let hasNew = false;
+        itemsToTranslate.forEach((original, idx) => {
+          const trans = translations[idx];
+          if (trans && trans.trim()) {
+            asyncTranslationCache[original] = trans.trim();
+            hasNew = true;
+          }
+        });
+        if (hasNew) {
+          saveCachedTranslations(asyncTranslationCache);
+          if (activeLang === "EN") {
+            requestAnimationFrame(() => applyDOMTranslation(document.body, "EN"));
+          }
+        }
+      }
+    })
+    .catch(() => {
+      itemsToTranslate.forEach((item) => inFlightRequests.delete(item));
+    });
+}
+
+function queueBatchTranslation(text: string) {
+  if (inFlightRequests.has(text) || asyncTranslationCache[text]) return;
+  inFlightRequests.add(text);
+  pendingBatchQueue.add(text);
+  if (batchDebounceTimer) clearTimeout(batchDebounceTimer);
+  batchDebounceTimer = setTimeout(flushBatchQueue, 50);
+}
 
 /**
  * Standard Vietnamese Accent Remover / Romanization
@@ -474,27 +567,9 @@ export function translateString(text: string, targetLang: "VI" | "EN"): string {
       return result;
     }
 
-    // 6. Asynchronous backend translation for Vietnamese phrases and sentences
-    if (/[\u00C0-\u1EF9]/i.test(trimmed) && trimmed.length >= 2 && !inFlightRequests.has(trimmed)) {
-      inFlightRequests.add(trimmed);
-      api
-        .post<{ translated_text: string }>("/api/v1/translation/translate", {
-          text: trimmed,
-          target_lang: "en",
-          source_lang: "vi",
-        })
-        .then((res) => {
-          inFlightRequests.delete(trimmed);
-          if (res.data?.translated_text && res.data.translated_text.trim()) {
-            asyncTranslationCache[trimmed] = res.data.translated_text.trim();
-            if (activeLang === "EN") {
-              requestAnimationFrame(() => applyDOMTranslation(document.body, "EN"));
-            }
-          }
-        })
-        .catch(() => {
-          inFlightRequests.delete(trimmed);
-        });
+    // 6. Asynchronous high-performance batch translation for Vietnamese phrases and sentences
+    if (/[\u00C0-\u1EF9]/i.test(trimmed) && trimmed.length >= 2) {
+      queueBatchTranslation(trimmed);
     }
 
     // If still completely untranslated, strip accents as final fallback to guarantee no raw diacritics
