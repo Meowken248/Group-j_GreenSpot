@@ -88,6 +88,13 @@ class HybridTranslationService(ITranslationService):
             "response_text",
             "victim_name",
             "severity_level",
+            "detail",
+            "error",
+            "hint",
+            "tip",
+            "prize_name",
+            "tier_name",
+            "bio",
         }
 
     def get_supported_languages(self) -> List[str]:

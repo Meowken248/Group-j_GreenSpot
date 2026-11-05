@@ -19,14 +19,13 @@ class ResponseLocalizationMiddleware(BaseHTTPMiddleware):
     3. Returns a single translated English JSON payload (RFC 7231 — no dual vi+en payload).
     """
 
-    # Paths that should bypass translation (technical/auth/static endpoints)
+    # Paths that should bypass translation (technical/static endpoints)
     _SKIP_PREFIXES = (
         "/docs",
         "/redoc",
         "/openapi.json",
         "/uploads",
         "/api/v1/translation",
-        "/api/v1/auth",
         "/health",
     )
 
@@ -43,10 +42,8 @@ class ResponseLocalizationMiddleware(BaseHTTPMiddleware):
         # Forward request to the actual endpoint handler
         response = await call_next(request)
 
-        # Only translate successful JSON responses when English is requested
+        # Only translate JSON responses when English is requested
         if target_lang != "en":
-            return response
-        if response.status_code >= 400:
             return response
 
         content_type = response.headers.get("content-type", "")

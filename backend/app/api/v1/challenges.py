@@ -50,6 +50,7 @@ async def get_weekly_challenges(
 async def submit_challenge_evidence(
     challenge_id: str,
     payload: ChallengeSubmitRequest,
+    request: Request,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -65,9 +66,13 @@ async def submit_challenge_evidence(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Vui lòng tải lên ảnh minh chứng hoàn thành nhiệm vụ"
         )
-    return await ChallengeService.submit_challenge(
+    result = await ChallengeService.submit_challenge(
         db=db,
         challenge_id=challenge_id,
         user_id=current_user.user_id,
         payload=payload
     )
+    if get_current_language(request) == "en":
+        dumped = result.model_dump() if hasattr(result, "model_dump") else result
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return result

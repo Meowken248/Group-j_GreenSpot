@@ -9,9 +9,12 @@ Endpoints:
 
 import uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, Header, Query, HTTPException, status
+from fastapi import APIRouter, Depends, Header, Query, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 
 from app.database import get_db
 from app.models.rbac import User
@@ -54,6 +57,7 @@ async def get_optional_current_user(
 
 @router.get("/progression", response_model=MilestoneProgressionResponse, summary="Xem lộ trình các cấp và tiến độ thăng hạng (Màn 1 & Màn 3)")
 async def get_progression(
+    request: Request,
     user: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -63,23 +67,29 @@ async def get_progression(
     """
     service = MilestoneService(db)
     if user:
-        return await service.get_tier_progression(user.user_id)
+        result = await service.get_tier_progression(user.user_id)
+    else:
+        # Demo fallback user
+        res = await db.execute(select(User).limit(1))
+        demo_user = res.scalar_one_or_none()
+        if demo_user:
+            result = await service.get_tier_progression(demo_user.user_id)
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Không thể tải lộ trình cấp bậc. Vui lòng thử lại",
+            )
 
-    # Demo fallback user
-    result = await db.execute(select(User).limit(1))
-    demo_user = result.scalar_one_or_none()
-    if demo_user:
-        return await service.get_tier_progression(demo_user.user_id)
-
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Không thể tải lộ trình cấp bậc. Vui lòng thử lại",
-    )
+    if get_current_language(request) == "en":
+        dumped = result.model_dump() if hasattr(result, "model_dump") else result
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return result
 
 
 @router.post("/post", response_model=CreateMilestonePostResponse, summary="Tự tạo bài chúc mừng thăng cấp chia sẻ lên bảng tin (Màn 2)")
 async def create_milestone_post(
-    request: CreateMilestonePostRequest,
+    req: CreateMilestonePostRequest,
+    request: Request,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -87,11 +97,16 @@ async def create_milestone_post(
     Đăng bài vinh danh lên Bảng tin cộng đồng (Geo-Feed) kèm nhãn 'Vinh danh lên cấp'.
     """
     service = MilestoneService(db)
-    return await service.create_milestone_post(current_user.user_id, request)
+    result = await service.create_milestone_post(current_user.user_id, req)
+    if get_current_language(request) == "en":
+        dumped = result.model_dump() if hasattr(result, "model_dump") else result
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return result
 
 
 @router.get("/posts", response_model=MilestonePostListResponse, summary="Lấy danh sách các bài vinh danh thăng cấp trên bảng tin")
 async def get_milestone_posts(
+    request: Request,
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
@@ -100,7 +115,11 @@ async def get_milestone_posts(
     Lấy danh sách các bài viết vinh danh thăng cấp công khai gần đây.
     """
     service = MilestoneService(db)
-    return await service.get_milestone_posts(limit=limit, offset=offset)
+    result = await service.get_milestone_posts(limit=limit, offset=offset)
+    if get_current_language(request) == "en":
+        dumped = result.model_dump() if hasattr(result, "model_dump") else result
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return result
 
 
 @router.post("/like/{post_id}", summary="Thả cảm xúc sinh thái cho bài vinh danh")
