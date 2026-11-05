@@ -9,9 +9,11 @@ Cung cấp các endpoints phục vụ:
 from typing import List, Optional
 import uuid
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from app.crud.voice_assistant import voice_repository
 from app.database import get_db
 from app.schemas.voice_assistant import (
@@ -76,6 +78,7 @@ DEFAULT_FALLBACK_COMMANDS = [
     summary="Lấy danh sách các câu lệnh mẫu gợi ý cho Màn 1",
 )
 async def get_voice_suggestions(
+    req: Request,
     category: Optional[str] = Query(None, description="Lọc theo nhóm lệnh: INCIDENT, FLOOD, AIR_QUALITY, REWARD"),
     limit: int = Query(10, ge=1, le=50, description="Số lượng gợi ý tối đa"),
     db: AsyncSession = Depends(get_db),
@@ -84,18 +87,22 @@ async def get_voice_suggestions(
     Trả về danh sách câu lệnh mẫu phục vụ Màn 1 của Trợ lý giọng nói.
     Nếu DB chưa có dữ liệu, tự động trả về danh mục chuẩn hóa để UI không bị gián đoạn.
     """
+    commands = None
     try:
         commands = await voice_repository.get_active_sample_commands(db, limit=limit, category=category)
-        if commands:
-            return commands
     except Exception:
         pass
 
-    # Fallback dữ liệu nếu chưa có bản ghi trong DB
-    filtered = DEFAULT_FALLBACK_COMMANDS
-    if category:
-        filtered = [c for c in filtered if c["category"] == category.upper()]
-    return [VoiceSampleCommandResponse(**c) for c in filtered[:limit]]
+    if not commands:
+        filtered = DEFAULT_FALLBACK_COMMANDS
+        if category:
+            filtered = [c for c in filtered if c["category"] == category.upper()]
+        commands = [VoiceSampleCommandResponse(**c) for c in filtered[:limit]]
+
+    if get_current_language(req) == "en":
+        dumped = [c.model_dump() if hasattr(c, "model_dump") else c for c in commands]
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return commands
 
 
 @router.post(
@@ -105,14 +112,19 @@ async def get_voice_suggestions(
     summary="Xử lý câu lệnh giọng nói thời gian thực và phân loại Intent",
 )
 async def process_voice_command(
-    request: VoiceProcessRequest,
+    voice_req: VoiceProcessRequest,
+    req: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """
     Tiếp nhận văn bản nhận dạng từ Màn 2 hoặc câu lệnh nhấp trực tiếp từ Màn 1.
     Thực hiện chuẩn hóa câu lệnh, phân tích ý định, sinh câu trả lời TTS và điều hướng.
     """
-    return await voice_service.process_voice_command(db, request)
+    result = await voice_service.process_voice_command(db, voice_req)
+    if get_current_language(req) == "en":
+        dumped = result.model_dump() if hasattr(result, "model_dump") else result
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return result
 
 
 @router.get(
@@ -121,6 +133,7 @@ async def process_voice_command(
     summary="Truy xuất lịch sử tương tác giọng nói gần nhất",
 )
 async def get_voice_history(
+    req: Request,
     limit: int = Query(20, ge=1, le=100, description="Số lượng bản ghi tối đa"),
     user_id: Optional[uuid.UUID] = Query(None, description="Lọc theo UUID người dùng"),
     db: AsyncSession = Depends(get_db),
@@ -128,6 +141,9 @@ async def get_voice_history(
     """Truy xuất danh sách nhật ký tương tác để kiểm tra và audit"""
     try:
         logs = await voice_repository.get_recent_logs(db, limit=limit, user_id=user_id)
+        if get_current_language(req) == "en":
+            dumped = [l.model_dump() if hasattr(l, "model_dump") else l for l in logs]
+            return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
         return logs
     except Exception:
         return []

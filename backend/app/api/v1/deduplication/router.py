@@ -1,11 +1,13 @@
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from app.database import get_db
 from app.models.rbac import User, Role
 from app.models.spatial import AdministrativeUnit
@@ -55,6 +57,7 @@ async def verify_deduplication_access(user: User, db: AsyncSession) -> None:
 
 @router.get("/districts", response_model=List[DistrictOption])
 async def get_deduplication_districts(
+    request: Request,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -74,6 +77,9 @@ async def get_deduplication_districts(
                 unit_code=u.unit_code,
             )
         )
+    if get_current_language(request) == "en":
+        dumped = [o.model_dump() for o in options]
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
     return options
 
 
@@ -81,6 +87,7 @@ from typing import Annotated, List, Optional
 
 @router.get("/clusters", response_model=ClusterListResponse)
 async def list_duplicate_clusters(
+    request: Request,
     district_name: Annotated[Optional[str], Query(description="Lọc theo quận/huyện")] = None,
     min_similarity: Annotated[Optional[float], Query(description="Ngưỡng tỷ lệ tương đồng tối thiểu (%)")] = None,
     simulate_error: Annotated[bool, Query(description="Mô phỏng lỗi kết nối dịch vụ AI để kiểm thử")] = False,
@@ -128,12 +135,17 @@ async def list_duplicate_clusters(
             )
         )
 
-    return ClusterListResponse(total=len(items), items=items)
+    res = ClusterListResponse(total=len(items), items=items)
+    if get_current_language(request) == "en":
+        dumped = res.model_dump()
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return res
 
 
 @router.get("/compare/{cluster_id}", response_model=ComparisonResponse)
 async def get_cluster_comparison_detail(
     cluster_id: uuid.UUID,
+    request: Request,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -225,7 +237,7 @@ async def get_cluster_comparison_detail(
         explanation=cluster.ai_conclusion or f"Khoảng cách GPS {cluster.gps_distance_m}m, thời gian chênh {cluster.time_diff_hours} giờ, độ giống hình ảnh {cluster.visual_similarity}%.",
     )
 
-    return ComparisonResponse(
+    res = ComparisonResponse(
         cluster_id=cluster.cluster_id,
         cluster_name=cluster.cluster_name,
         report_a=report_a_detail,
@@ -233,6 +245,10 @@ async def get_cluster_comparison_detail(
         ai_conclusion=ai_conclusion,
         version=cluster.version,
     )
+    if get_current_language(request) == "en":
+        dumped = res.model_dump()
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return res
 
 
 @router.post("/mark-distinct", response_model=MarkDistinctResponse)
