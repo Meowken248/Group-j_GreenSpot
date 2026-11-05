@@ -195,3 +195,21 @@ async def test_compound_and_accent_romanization(service):
     # Must not contain Vietnamese accents
     assert not any(c in result for c in "àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ")
 
+@pytest.mark.asyncio
+async def test_safety_check_and_disaster_phrases(service):
+    """Kiem tra cac thuat ngu moi ve PCTT, Safety Check, Friends duoc dich sang Tieng Anh chuan"""
+    test_cases = {
+        "Xác nhận an toàn": "Safety Confirmation",
+        "Tôi an toàn": "I Am Safe",
+        "Gửi cho bạn bè": "Send to Friends",
+        "Danh bạ bạn bè": "Friends List",
+        "Bạn chưa có người bạn nào trong danh bạ": "You do not have any friends in your contact list",
+        "Thử nghiệm cảnh báo": "Test Alert",
+        "Ban chỉ huy PCTT & TKCN": "Disaster Prevention & Search and Rescue Committee",
+        "Vị trí GPS thời gian thực (Đã xác thực)": "Real-time GPS Location (Verified)",
+    }
+    for vi_text, expected_en in test_cases.items():
+        translated = await service.translate_text(vi_text, "en", "vi")
+        assert translated.lower() == expected_en.lower()
+
+
