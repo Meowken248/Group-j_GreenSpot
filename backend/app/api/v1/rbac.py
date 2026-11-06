@@ -259,7 +259,7 @@ async def create_custom_role(
     dup_res = await db.execute(
         select(Role).where(func.lower(func.trim(Role.role_name)) == func.lower(clean_name))
     )
-    if dup_res.scalar_one_or_none():
+    if dup_res.scalars().first():
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={

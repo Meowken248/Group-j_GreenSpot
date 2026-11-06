@@ -6,7 +6,8 @@ import {
 } from "../features/auth/services/sessionManager";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000",
+  baseURL: import.meta.env.VITE_API_URL || "http://127.0.0.1:8000",
+  timeout: 10000,
 });
 
 // Trạng thái quản lý Silent Refresh Token

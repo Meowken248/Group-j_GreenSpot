@@ -99,6 +99,20 @@ export const MapHeader: FC<MapHeaderProps> = ({ onSelectPlace, centerCoords }) =
           </div>
         )}
       </div>
+
+      <div className="map-header-right">
+        <button
+          type="button"
+          className="map-header-chat-btn"
+          onClick={() => {
+            window.location.hash = "#messages";
+          }}
+          title="Mở Nhắn tin 1-1, Chat nhóm & Chat quận (Chức năng 15)"
+        >
+          <span className="chat-btn-icon">💬</span>
+          <span className="chat-btn-text">Tin nhắn</span>
+        </button>
+      </div>
     </div>
   );
 };

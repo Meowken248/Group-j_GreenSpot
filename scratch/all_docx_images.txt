@@ -1,0 +1,360 @@
+P[194] -> Imgs: ['media/image73.png']
+   Prev: Cơ sở dữ liệu hệ thống EcoReport được thiết kế và chuẩn hóa nghiêm ngặt đạt Dạng chuẩn 3 (3NF), bao gồm tổng cộng 54 bảng thực thể được tổ chức chặt chẽ thành 12 phân hệ nghiệp vụ chuyên sâu: (1) Phân hệ Quản trị Người dùng & Phân quyền RBAC (7 bảng: roles, permissions, role_permissions, users, user_sessions, refresh_tokens, user_privacy_settings); (2) Phân hệ Địa giới Hành chính & Hạ tầng Môi trường (3 bảng: administrative_units, essential_facilities, recycling_facilities); (3) Phân hệ Sự cố Môi trường & Đa phương tiện (6 bảng: waste_categories, incidents, incident_media, incident_status_history, incident_comments, incident_transfers); (4) Phân hệ Điều phối Tác nghiệp Hiện trường & Nghiệm thu (5 bảng: work_teams, team_members, worker_locations, assignments, verifications); (5) Phân hệ Giám sát Cam kết Thời gian SLA, Kiểm toán & Đánh giá KPI (3 bảng: sla_policies, audit_logs, kpi_evaluations); (6) Phân hệ WebGIS Không gian Địa lý Nâng cao (5 bảng: user_watch_areas, incident_clusters_hotspots, user_map_favorites, flood_zones_monitoring, safe_routes_cache); (7) Phân hệ Trí tuệ Nhân tạo AI & Phân tích Dữ liệu Thông minh (3 bảng: ai_analysis_results, ai_duplicate_groups, ai_incident_summaries); (8) Phân hệ Cộng đồng Công dân Xanh, Đổi quà & Trợ lý Ảo Chatbot (6 bảng: environmental_campaigns, campaign_participants, citizen_rewards, reward_transactions, chatbot_conversations, chatbot_messages); (9) Phân hệ Cấu hình Hệ thống, Báo cáo & Sao lưu CSDL (4 bảng: notifications, reports, system_configs, db_backups); (10) Phân hệ Cảm biến Môi trường IoT & Viễn thám (3 bảng: iot_sensor_stations, iot_sensor_telemetry, iot_sensor_alerts); (11) Phân hệ Logistics & Lộ trình Thu gom Rác (3 bảng: waste_collection_routes, route_checkpoints, vehicle_fuel_logs); (12) Phân hệ Pháp điển Quy định Xử phạt & Quản trị Tài sản Số (6 bảng: penalty_regulations, violation_records, system_translations, file_storage_assets, environmental_subscriptions, ai_knowledge_embeddings). Mối quan hệ liên kết toàn diện giữa các thực thể cốt lõi được thể hiện trực quan qua Sơ đồ thực thể quan hệ (ERD) tại Hình 4:
+   Curr: 
+   Next: *Hình 4: Sơ đồ thực thể quan hệ (ERD) Hệ thống Quản lý Môi trường EcoReport*
+
+P[208] -> Imgs: ['media/image64.png']
+   Prev: 1. Tự động thu thập tọa độ GPS và cơ chế ghim vị trí thủ công trên bản đồ
+   Curr: 
+   Next: Mô tả:
+ Màn hình cho phép người dùng (công dân hoặc tình nguyện viên môi trường) tự động xác định tọa độ địa lý (kinh độ, vĩ độ WGS84) của điểm rác thải ô nhiễm thông qua tính năng định vị GPS của thiết bị. Hệ thống trực quan hóa vị trí bắt được lên bản đồ vi sai cùng vòng tròn bán kính sai số thời gian thực, đồng thời tự động dịch ngược tọa độ thành địa chỉ số nhà, tên đường, Phường/Xã tương ứng (Reverse Geocoding). Trong trường hợp tín hiệu GPS bị lệch do nhà cao tầng hoặc ngõ hẻm che khuất, người dùng có thể linh hoạt kéo thả hoặc nhấp trực tiếp ghim (Pin marker) trên bản đồ đến đúng vị trí bãi rác thực tế. Khi đã căn chỉnh vị trí chính xác, người dùng bấm nút "Khóa vị trí" để hệ thống mở Modal xác nhận trước khi chuyển sang bước tiếp theo.
+
+P[212] -> Imgs: ['media/image70.png']
+   Prev: 2. Thu thập và nén hình ảnh / video bằng chứng hiện trường kèm đóng dấu thời gian
+   Curr: 
+   Next: Mô tả:
+ Màn hình cho phép người dùng (công dân hoặc cán bộ hiện trường) thu thập tài liệu đa phương tiện làm bằng chứng thực địa về điểm rác thải hoặc khu vực ô nhiễm thông qua tính năng mở camera chụp ảnh/quay video trực tiếp hoặc tải tệp từ thư viện thiết bị (hỗ trợ tối đa 05 hình ảnh và 01 đoạn video ngắn dưới 30 giây). Ngay khi tệp được chọn, hệ thống tự động kích hoạt thuật toán nén ảnh thông minh tại trình duyệt (Client-side Compression sang định dạng WebP, nén chất lượng 85%) giúp giảm từ 60% đến 80% dung lượng tệp mà vẫn giữ nguyên độ nét của rác thải. Đồng thời, hệ thống tự động khắc chìm (Watermark) trực tiếp lên góc dưới bức ảnh các thông số pháp lý không thể tẩy xóa: Ngày giờ chính xác (Timestamp) và Tọa độ kinh - vĩ độ GPS WGS84. Người dùng có thể xem lại ảnh đã đóng dấu, xóa bỏ hoặc chụp lại trước khi nhấn nút "Tiếp tục phân loại" để mở Modal xác nhận chuyển bước.
+
+P[216] -> Imgs: ['media/image72.png']
+   Prev: 3. Phân loại loại hình ô nhiễm đa danh mục: rác sinh hoạt, công nghiệp, nước thải, khí thải, tiếng ồn, xả trộm
+   Curr: 
+   Next: Mô tả:
+ Màn hình cho phép người dùng (công dân hoặc cán bộ hiện trường) phân loại chính xác tính chất của sự cố môi trường theo 6 nhóm danh mục tiêu chuẩn: Rác sinh hoạt, Rác công nghiệp / Xà bần xây dựng, Nước thải kênh rạch, Khí thải / Mùi hôi thối, Tiếng ồn vượt chuẩn, và Điểm xả rác trộm ban đêm. Giao diện hỗ trợ chọn cùng lúc nhiều danh mục (Multi-select) nếu bãi rác có tính chất ô nhiễm phức hợp. Phía dưới là khu vực đánh giá mức độ khẩn cấp (Thấp, Trung bình, Nghiêm trọng, Khẩn cấp) và ô nhập văn bản mô tả hiện trạng chi tiết (quy mô đống rác, thời gian bốc mùi, đối tượng khả nghi xả thải). Khi người dùng chọn đủ thông tin và bấm "Tiếp tục gửi báo cáo", hệ thống kích hoạt Modal tóm tắt xác nhận danh mục trước khi hoàn tất thủ tục chuyển tiếp cho Đội thu gom.
+
+P[220] -> Imgs: ['media/image66.png']
+   Prev: 4. Đánh giá mức độ nghiêm trọng và mức độ khẩn cấp của điểm ô nhiễm theo thang điểm
+   Curr: 
+   Next: Mô tả:
+ Màn hình cung cấp ma trận đánh giá rủi ro tác động môi trường dựa trên thang điểm lượng hóa 4 tiêu chí cốt lõi (mỗi tiêu chí từ 1 đến 5 điểm, tổng điểm tối đa là 20 điểm):
+
+P[234] -> Imgs: ['media/image68.png']
+   Prev: 5. Nhập mô tả chi tiết và tích hợp chuyển đổi giọng nói thành văn bản
+   Curr: 
+   Next: Mô tả:
+ Màn hình cho phép người dùng (đặc biệt là người lớn tuổi, người lao động hoặc cán bộ đang chạy xe ngoài thực địa) mô tả chi tiết sự cố rác thải ô nhiễm bằng giọng nói thay vì phải gõ bàn phím thủ công. Khi người dùng nhấn nút micro tròn tại khu vực VOICE RECORDER, hệ thống kích hoạt micro thiết bị, hiển thị sóng âm thanh dao động theo biên độ giọng nói thời gian thực và đồng hồ đếm ngược (thời lượng ghi âm tối đa 02 phút). Khi nhấn nút "Dừng & Dịch", mô hình nhận dạng giọng nói tiếng Việt (Web Speech API / OpenAI Whisper) tự động chuyển đổi file âm thanh thành văn bản hoàn chỉnh tại khung SPEECH-TO-TEXT (AI), tự động chuẩn hóa dấu câu và lọc tiếng ồn xe cộ ngoài đường. Người dùng có thể đọc lại, gõ chỉnh sửa thêm văn bản nếu muốn, sau đó bấm nút "Lưu mô tả vào báo cáo" để mở Modal xác nhận áp dụng nội dung vào hồ sơ sự cố.
+
+P[238] -> Imgs: ['media/image69.png']
+   Prev: 6. Ghi nhận thời gian phát hiện thực tế và thời gian báo cáo cho trường hợp báo cáo trễ
+   Curr: 
+   Next: Mô tả: Chức năng cho phép hệ thống phân biệt và ghi nhận độc lập hai mốc thời gian pháp lý: Thời điểm phát hiện vi phạm thực tế (Discovered Timestamp) và Thời điểm gửi hồ sơ phản ánh (Submitted Timestamp).
+
+P[248] -> Imgs: ['media/image71.png']
+   Prev: 7. Tùy chọn chế độ gửi báo cáo ẩn danh
+   Curr: 
+   Next: Mô tả: Chức năng cho phép người dùng chủ động kích hoạt chế độ ẩn danh khi gửi phản ánh hiện trường về các điểm rác thải hoặc hành vi xả thải gây ô nhiễm:
+
+P[258] -> Imgs: ['media/image56.png']
+   Prev: 8. Gợi ý câu trả lời cho Admin
+   Curr: 
+   Next: Mô tả: Chức năng hỗ trợ cán bộ tiếp nhận, chuyên viên môi trường đô thị và tổ trưởng phản ứng nhanh soạn thảo phản hồi gửi tới người dân một cách nhanh chóng, chuẩn mực và đồng bộ:
+
+P[268] -> Imgs: ['media/image42.png']
+   Prev: 9. Bộ lọc từ khóa nhạy cảm & Giới hạn tần suất gửi báo cáo
+   Curr: 
+   Next: Mô tả: Chức năng đóng vai trò là "bức tường lửa" tiền kiểm duyệt tự động trên cả phía ứng dụng (Client-side) và máy chủ (Server-side API Gateway):
+
+P[277] -> Imgs: ['media/image49.png']
+   Prev: 10. Hỗ trợ dịch đa ngôn ngữ
+   Curr: 
+   Next: Mô tả: Chức năng tích hợp công nghệ trí tuệ nhân tạo xử lý ngôn ngữ tự nhiên (NLP) nhằm phá vỡ rào cản ngôn ngữ giữa cộng đồng người nước ngoài/khách du lịch quốc tế và các cơ quan quản lý môi trường tại địa phương:
+
+P[289] -> Imgs: ['media/image40.png']
+   Prev: 11.Tra cứu quy định xử phạt
+   Curr: 
+   Next: Mô tả: Chức năng tích hợp cơ sở dữ liệu pháp điển hóa điện tử về các chế tài xử phạt hành chính trong lĩnh vực bảo vệ môi trường (trọng tâm là Nghị định 45/2022/NĐ-CP và các văn bản quy phạm pháp luật liên quan):
+
+P[304] -> Imgs: ['media/image24.png']
+   Prev: Răn đe các đối tượng cố tình vi phạm: Tăng tính thuyết phục và minh bạch trong các thông báo nhắc nhở gửi đến các hộ gia đình hoặc cơ sở kinh doanh tái phạm.
+   Curr: 12. Giao diện đơn giản hóa dành cho người cao tuổi
+   Next: Mục đích:
+
+P[312] -> Imgs: ['media/image67.png']
+   Prev: 13. Cơ chế tích lũy Điểm thưởng Công dân Xanh
+   Curr: 
+   Next: *Hình 4.13: Giao diện Cơ chế tích lũy Điểm thưởng Công dân Xanh
+
+P[333] -> Imgs: ['media/image6.png']
+   Prev: 14. Xem số dư ví điểm và Lịch sử biến động điểm xanh
+   Curr: 
+   Next: *Hình 4.14: Giao diện xem số dư ví điểm và lịch sử biến động điểm xanh
+
+P[353] -> Imgs: ['media/image33.png']
+   Prev: 15. Danh mục quà tặng xanh và Vật phẩm quy đổi
+   Curr: 
+   Next: *Hình 4.15: Giao diện quà tặng xanh và vật phẩm
+
+P[373] -> Imgs: ['media/image47.png']
+   Prev: 16. Thực hiện đổi điểm lấy quà tặng / Voucher
+   Curr: 
+   Next: *Hình 4.16: Giao diện đổi điểm lấy quà
+
+P[397] -> Imgs: ['media/image23.png']
+   Prev: 17. Quản lý danh sách quà tặng cá nhân đã đổi
+   Curr: 
+   Next: *Hình 4.17: Giao diện danh sách quà tặng cá nhân đã đổi
+
+P[421] -> Imgs: ['media/image48.png']
+   Prev: 18. Bảng xếp hạng vinh danh Top Công dân Xanh
+   Curr: 
+   Next: *Hình 4.18: Giao diện xếp hạng vinh danh Top Công dân Xanh
+
+P[442] -> Imgs: ['media/image15.png']
+   Prev: 19. Xem danh sách các Chiến dịch ra quân dọn rác
+   Curr: 
+   Next: *Hình 4.19: Giao diện  Chiến dịch ra quân dọn rác
+
+P[462] -> Imgs: ['media/image12.png']
+   Prev: 20. Đăng ký tham gia chiến dịch tình nguyện xanh
+   Curr: 
+   Next: *Hình 4.20: Giao diện tham gia chiến dịch tình nguyện xanh
+
+P[483] -> Imgs: ['media/image54.png']
+   Prev: 21. Bình luận và Thảo luận dưới bài phản ánh sự cố
+   Curr: 
+   Next: • Mục tiêu nghiệp vụ: Cho phép cán bộ quản lý xuất bản đồ hiện trạng bãi rác ra tệp hình ảnh độ phân giải cao, tệp dữ liệu chuẩn GIS (GeoJSON / Shapefile) hoặc báo cáo hồ sơ môi trường định dạng PDF để phục vụ họp giao ban và lưu trữ hành chính.
+
+P[504] -> Imgs: ['media/image52.png']
+   Prev: 22. Đánh giá mức độ hài lòng (1–5 sao) sau khi dọn sạch
+   Curr: 
+   Next: • Mục tiêu nghiệp vụ: Cho phép người dân tự khoanh vùng các khu vực quan tâm cá nhân (như quanh nhà ở, trường học của con, cơ quan làm việc) với bán kính tùy chỉnh từ 200m đến 2km để tự động nhận thông báo đẩy ngay khi có bãi rác mới hoặc điểm xả thải trộm phát sinh gần đó.
+
+P[524] -> Imgs: ['media/image62.png']
+   Prev: 23. Gửi ý kiến đóng góp và Sáng kiến bảo vệ môi trường
+   Curr: 
+   Next: • Mục tiêu nghiệp vụ: Thuật toán giám sát không gian tự động quét định kỳ (mỗi giờ); khi phát hiện số lượng báo cáo rác thải tại một khu vực tăng đột biến vượt ngưỡng cho phép (Spike Threshold), hệ thống lập tức phát cảnh báo khẩn cấp (Auto-escalation) đến Lãnh đạo Quận để chỉ đạo thanh tra đột xuất.
+
+P[543] -> Imgs: ['media/image3.png']
+   Prev: 24. Cẩm nang hướng dẫn phân loại rác và sống xanh
+   Curr: 
+   Next: • Mục tiêu nghiệp vụ: Mở rộng tính năng của bản đồ số sang hướng giải pháp tích cực: Hiển thị mạng lưới các điểm thu gom rác tái chế, thùng thu gom pin cũ, đồ điện tử hỏng và dầu ăn thải đúng quy chuẩn; khuyến khích người dân phân loại rác tại nguồn thay vì vứt bừa bãi.
+
+P[579] -> Imgs: ['media/image53.png']
+   Prev: Mô tả thành phần giao diện (UI Specification):
+   Curr: 
+   Next: Hình 4.25: Giao diện Cổng xác thực tập trung đa nền tảng và Quản lý phiên JWT an toàn
+
+P[602] -> Imgs: ['media/image50.png']
+   Prev: Mô tả thành phần giao diện (UI Specification):
+   Curr: 
+   Next: Hình 4.26: Giao diện Quản trị người dùng và Ma trận phân quyền động RBAC đa cấp độ
+
+P[625] -> Imgs: ['media/image57.png']
+   Prev: Mô tả thành phần giao diện (UI Specification):
+   Curr: 
+   Next: Hình 4.27: Giao diện Quản lý năng lực phương tiện đội xe thu gom và điều phối tài xế hiện trường
+
+P[648] -> Imgs: ['media/image60.png']
+   Prev: Mô tả thành phần giao diện (UI Specification):
+   Curr: 
+   Next: Hình 4.28: Giao diện Hệ thống Nhật ký kiểm toán an ninh Audit Log và truy vết biến động dữ liệu
+
+P[671] -> Imgs: ['media/image58.png']
+   Prev: Mô tả thành phần giao diện (UI Specification):
+   Curr: 
+   Next: Hình 4.29: Giao diện Trung tâm điều phối tác nghiệp và phân công lệnh xử lý hiện trường
+
+P[694] -> Imgs: ['media/image61.png']
+   Prev: Mô tả thành phần giao diện (UI Specification):
+   Curr: 
+   Next: Hình 4.30: Giao diện Quy trình thẩm định chất lượng xử lý và ký số nghiệm thu hoàn thành
+
+P[717] -> Imgs: ['media/image59.png']
+   Prev: Mô tả thành phần giao diện (UI Specification):
+   Curr: 
+   Next: Hình 4.31: Giao diện Phân cấp quản lý hành chính liên thông 3 cấp và chuyển tiếp hồ sơ thẩm quyền
+
+P[740] -> Imgs: ['media/image65.png']
+   Prev: Mô tả thành phần giao diện (UI Specification):
+   Curr: 
+   Next: Hình 4.32: Giao diện Giám sát hạn mức thời gian xử lý SLA theo thời gian thực và tự động kích hoạt cảnh báo trễ hạn
+
+P[763] -> Imgs: ['media/image63.png']
+   Prev: Mô tả thành phần giao diện (UI Specification):
+   Curr: 
+   Next: Hình 4.33: Giao diện Trung tâm điều phối thông báo đẩy thời gian thực qua WebSocket và Push Service
+
+P[786] -> Imgs: ['media/image8.png']
+   Prev: Mô tả thành phần giao diện (UI Specification):
+   Curr: 
+   Next: Hình 4.34: Giao diện Tự động hóa tạo và kết xuất báo cáo thống kê môi trường định kỳ PDF/Excel
+
+P[809] -> Imgs: ['media/image19.png']
+   Prev: Mô tả thành phần giao diện (UI Specification):
+   Curr: 
+   Next: Hình 4.35: Giao diện Hệ thống điểm thưởng Công dân Xanh và quản trị đổi quà khuyến khích cộng đồng
+
+P[832] -> Imgs: ['media/image11.png']
+   Prev: Mô tả thành phần giao diện (UI Specification):
+   Curr: 
+   Next: Hình 4.36: Giao diện Quản trị cấu hình tham số hệ thống, danh mục chất thải và sao lưu phục hồi CSDL
+
+P[841] -> Imgs: ['media/image13.png']
+   Prev: 37. Xây dựng cơ chế tính điểm rủi ro Risk Score cho từng sự cố môi trường đô thị
+   Curr: 
+   Next: 
+
+P[842] -> Imgs: ['media/image14.png', 'media/image16.png']
+   Prev: 
+   Curr: 
+   Next: 38. Tự động phân loại mức độ nguy hiểm của sự cố theo các mức Thấp – Trung bình – Cao – Khẩn cấp
+
+P[844] -> Imgs: ['media/image26.png']
+   Prev: 38. Tự động phân loại mức độ nguy hiểm của sự cố theo các mức Thấp – Trung bình – Cao – Khẩn cấp
+   Curr: 
+   Next: 
+
+P[845] -> Imgs: ['media/image21.png']
+   Prev: 
+   Curr: 
+   Next: 
+
+P[846] -> Imgs: ['media/image18.png']
+   Prev: 
+   Curr: 
+   Next: 39. Phát hiện và gom cụm các báo cáo sự cố gần nhau dựa trên tọa độ địa lý
+
+P[848] -> Imgs: ['media/image22.png']
+   Prev: 39. Phát hiện và gom cụm các báo cáo sự cố gần nhau dựa trên tọa độ địa lý
+   Curr: 
+   Next: 
+
+P[849] -> Imgs: ['media/image5.png', 'media/image29.png']
+   Prev: 
+   Curr: 
+   Next: 40. Phân tích và xác định điểm nóng sự cố (Hotspot) theo không gian và thời gian
+
+P[851] -> Imgs: ['media/image1.png']
+   Prev: 40. Phân tích và xác định điểm nóng sự cố (Hotspot) theo không gian và thời gian
+   Curr: 
+   Next: 
+
+P[852] -> Imgs: ['media/image7.png']
+   Prev: 
+   Curr: 
+   Next: 
+
+P[853] -> Imgs: ['media/image4.png']
+   Prev: 
+   Curr: 
+   Next: 41. Tính toán chỉ số nguy cơ ngập dựa trên lượng mưa, lịch sử ngập và báo cáo hiện tại
+
+P[855] -> Imgs: ['media/image2.png']
+   Prev: 41. Tính toán chỉ số nguy cơ ngập dựa trên lượng mưa, lịch sử ngập và báo cáo hiện tại
+   Curr: 
+   Next: 
+
+P[856] -> Imgs: ['media/image10.png']
+   Prev: 
+   Curr: 
+   Next: 
+
+P[857] -> Imgs: ['media/image20.png']
+   Prev: 
+   Curr: 
+   Next: 42. Xây dựng bản đồ nguy cơ ngập động theo từng khu vực
+
+P[859] -> Imgs: ['media/image9.png']
+   Prev: 42. Xây dựng bản đồ nguy cơ ngập động theo từng khu vực
+   Curr: 
+   Next: 
+
+P[860] -> Imgs: ['media/image17.png']
+   Prev: 
+   Curr: 
+   Next: 
+
+P[861] -> Imgs: ['media/image41.png']
+   Prev: 
+   Curr: 
+   Next: 43. Tìm kiếm tuyến đường an toàn tránh các khu vực đang xảy ra ngập nước
+
+P[863] -> Imgs: ['media/image37.png']
+   Prev: 43. Tìm kiếm tuyến đường an toàn tránh các khu vực đang xảy ra ngập nước
+   Curr: 
+   Next: 
+
+P[864] -> Imgs: ['media/image43.png']
+   Prev: 
+   Curr: 
+   Next: 
+
+P[865] -> Imgs: ['media/image39.png']
+   Prev: 
+   Curr: 
+   Next: 44. So sánh tuyến đường nhanh nhất và tuyến đường an toàn nhất dựa trên mức độ rủi ro
+
+P[867] -> Imgs: ['media/image36.png']
+   Prev: 44. So sánh tuyến đường nhanh nhất và tuyến đường an toàn nhất dựa trên mức độ rủi ro
+   Curr: 
+   Next: 
+
+P[868] -> Imgs: ['media/image45.png']
+   Prev: 
+   Curr: 
+   Next: 
+
+P[869] -> Imgs: ['media/image44.png']
+   Prev: 
+   Curr: 
+   Next: 45. Tìm kiếm và phân tích các cơ sở thiết yếu nằm gần khu vực xảy ra sự cố
+
+P[871] -> Imgs: ['media/image38.png']
+   Prev: 45. Tìm kiếm và phân tích các cơ sở thiết yếu nằm gần khu vực xảy ra sự cố
+   Curr: 
+   Next: 
+
+P[872] -> Imgs: ['media/image51.png']
+   Prev: 
+   Curr: 
+   Next: 
+
+P[873] -> Imgs: ['media/image55.png']
+   Prev: 
+   Curr: 
+   Next: 46. Ứng dụng AI phát hiện các báo cáo trùng lặp hoặc có nội dung tương tự
+
+P[875] -> Imgs: ['media/image30.png']
+   Prev: 46. Ứng dụng AI phát hiện các báo cáo trùng lặp hoặc có nội dung tương tự
+   Curr: 
+   Next: 
+
+P[876] -> Imgs: ['media/image46.png']
+   Prev: 
+   Curr: 
+   Next: 
+
+P[877] -> Imgs: ['media/image27.png']
+   Prev: 
+   Curr: 
+   Next: 47. Ứng dụng AI tự động tóm tắt sự cố và gợi ý mức độ ưu tiên xử lý
+
+P[879] -> Imgs: ['media/image25.png']
+   Prev: 47. Ứng dụng AI tự động tóm tắt sự cố và gợi ý mức độ ưu tiên xử lý
+   Curr: 
+   Next: 
+
+P[880] -> Imgs: ['media/image32.png']
+   Prev: 
+   Curr: 
+   Next: 
+
+P[881] -> Imgs: ['media/image31.png']
+   Prev: 
+   Curr: 
+   Next: 48. Xây dựng Dashboard phân tích tổng hợp rủi ro đô thị và tình trạng sự cố
+
+P[883] -> Imgs: ['media/image28.png']
+   Prev: 48. Xây dựng Dashboard phân tích tổng hợp rủi ro đô thị và tình trạng sự cố
+   Curr: 
+   Next: 
+
+P[884] -> Imgs: ['media/image34.png']
+   Prev: 
+   Curr: 
+   Next: 
+
+P[885] -> Imgs: ['media/image35.png']
+   Prev: 
+   Curr: 
+   Next: Chương V. Tổng Kết, Đánh Giá Kết Quả Và Hướng Phát Triển
+

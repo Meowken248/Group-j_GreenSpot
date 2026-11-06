@@ -9581,8 +9581,162 @@ HCMC_FLOOD_HOTSPOTS = [
 
 def _fetch_url_json(url: str, timeout: float = 2.5) -> Any:
     req = urllib.request.Request(url, headers={"User-Agent": "EcoReport-FloodWatch/1.0"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+# ══════════════════════════════════════════════════════════════════════════════
+# ĐẶC ĐIỂM HÌNH THÁI VÀ NGUYÊN NHÂN NGẬP THỰC TẾ THEO TỪNG ĐOẠN ĐƯỜNG TP.HCM
+# Thực tế: Ngập chỉ xảy ra ở 1 đoạn đường ngắn, vùng trũng cục bộ hoặc cống thoát không kịp
+# ══════════════════════════════════════════════════════════════════════════════
+HOTSPOT_REALISTIC_PHYSICAL_CONTEXT: Dict[str, Dict[str, str]] = {
+    "flood-01": {
+        "spot_type": "Vùng trũng chân cầu",
+        "drainage_issue": "Cống thoát nước ra rạch Văn Thánh không kịp tiêu thoát khi mưa lớn kết hợp triều dâng",
+        "segment_scope": "Chỉ ngập cục bộ đoạn trũng 800m gần chân cầu Thủ Thiêm, các đoạn khác của đường Nguyễn Hữu Cảnh khô ráo",
+    },
+    "flood-02": {
+        "spot_type": "Vùng trũng thấp ven sông",
+        "drainage_issue": "Khu vực địa hình trũng thấp Thảo Điền, cống tiêu thoát chậm khi triều dâng từ sông Sài Gòn",
+        "segment_scope": "Chỉ ngập cục bộ đoạn trũng 600m tại Thảo Điền, các trục đường kết nối cao hơn lưu thông bình thường",
+    },
+    "flood-03": {
+        "spot_type": "Khu vực giao lộ trũng",
+        "drainage_issue": "Hệ thống cống hộp ngã năm quá tải không kịp thoát lượng nước dồn về từ các hướng",
+        "segment_scope": "Chỉ ngập một đoạn 500m quanh ngã năm Đài Liệt Sĩ",
+    },
+    "flood-04": {
+        "spot_type": "Đoạn trũng chân cầu",
+        "drainage_issue": "Cống thoát nước ngang đường bị nghẹt bùn rác và quá tải",
+        "segment_scope": "Chỉ ngập cục bộ đoạn 450m quanh Cầu Ngang",
+    },
+    "flood-05": {
+        "spot_type": "Vùng trũng đáy dốc",
+        "drainage_issue": "Nước mưa từ đỉnh dốc đổ dồn về đáy chợ quá nhanh khiến miệng cống không kịp thu nước",
+        "segment_scope": "Chỉ ngập cục bộ đoạn 700m dốc Chợ Thủ Đức, đoạn trên dốc vẫn khô ráo",
+    },
+    "flood-06": {
+        "spot_type": "Vùng trũng thấp hạ lưu sông",
+        "drainage_issue": "Triều cường dâng từ sông Soài Rạp tràn qua mặt đường, cống ngăn triều chưa đồng bộ",
+        "segment_scope": "Chỉ ngập đoạn 1200m gần Cầu Phú Xuân khi đỉnh triều lên cao",
+    },
+    "flood-07": {
+        "spot_type": "Vùng trũng thấp ven bờ kênh",
+        "drainage_issue": "Đoạn bờ kè Kênh Tẻ cốt nền thấp, triều cường dâng tràn trực tiếp vào mép đường",
+        "segment_scope": "Chỉ ngập đoạn trũng 1500m dọc mép Kênh Tẻ, phần đường bên trong cao hơn không bị ảnh hưởng",
+    },
+    "flood-08": {
+        "spot_type": "Đoạn trũng liên cầu ven rạch",
+        "drainage_issue": "Cống tiêu thoát trực tiếp ra rạch Tôm và rạch Dơi bị nước triều dâng làm nghẽn dòng chảy",
+        "segment_scope": "Chỉ ngập cục bộ đoạn 900m giữa hai cầu Rạch Tôm & Rạch Dơi",
+    },
+    "flood-09": {
+        "spot_type": "Vùng trũng cửa ngõ",
+        "drainage_issue": "Khu vực trũng thấp tiếp giáp QL1A, hệ thống rãnh cống cũ thoát nước không kịp",
+        "segment_scope": "Chỉ ngập đoạn trũng 650m ra quốc lộ",
+    },
+    "flood-10": {
+        "spot_type": "Đoạn trũng chân cầu",
+        "drainage_issue": "Cống xả ra kênh Tham Lương bị quá tải cục bộ khi mưa lớn",
+        "segment_scope": "Chỉ ngập đoạn 500m chân cầu Tham Lương",
+    },
+    "flood-11": {
+        "spot_type": "Vùng trũng lòng chảo",
+        "drainage_issue": "Khu vực công viên Làng Hoa trũng thấp, nước từ các hẻm dồn ra cống thoát chậm",
+        "segment_scope": "Chỉ ngập đoạn 600m qua công viên Làng Hoa",
+    },
+    "flood-12": {
+        "spot_type": "Đoạn trũng quanh chợ",
+        "drainage_issue": "Rác thải sinh hoạt làm giảm tiết diện miệng hố ga thu nước quanh chợ",
+        "segment_scope": "Chỉ ngập đoạn 350m quanh khu chợ Thủ Đức",
+    },
+    "flood-13": {
+        "spot_type": "Đoạn trũng giao cắt đường sắt",
+        "drainage_issue": "Địa hình trũng thấp kẹt giữa ray đường sắt, rãnh thoát nước hẹp",
+        "segment_scope": "Chỉ ngập đoạn 400m ngã 3 Cây Keo",
+    },
+    "flood-14": {
+        "spot_type": "Đoạn trũng sát mép sông",
+        "drainage_issue": "Đoạn đê bao ven sông Sài Gòn chưa khép kín, triều dâng tràn cục bộ",
+        "segment_scope": "Chỉ ngập đoạn 800m sát mép sông, các nhánh đường cao bên trong không ngập",
+    },
+    "flood-15": {
+        "spot_type": "Vùng trũng bán đảo trũng",
+        "drainage_issue": "Địa hình trũng thấp ba bề sông nước, triều dâng kết hợp mưa không có chỗ thoát",
+        "segment_scope": "Chỉ ngập đoạn trũng 1200m trên bán đảo Thanh Đa",
+    },
+    "flood-16": {
+        "spot_type": "Đoạn trũng ven kênh Đôi",
+        "drainage_issue": "Mực nước Kênh Đôi dâng cao vượt mặt đường, cống trào ngược",
+        "segment_scope": "Chỉ ngập đoạn 1000m ven bờ kênh",
+    },
+    "flood-17": {
+        "spot_type": "Vùng trũng khu Bàu Cát",
+        "drainage_issue": "Vùng trũng cục bộ dạng lòng chảo, cống thoát nước ngầm tiết diện nhỏ không kịp tải",
+        "segment_scope": "Chỉ ngập đoạn trũng 450m, các đường bàn cờ lân cận cao hơn khô ráo",
+    },
+    "flood-18": {
+        "spot_type": "Đoạn trũng giao lộ",
+        "drainage_issue": "Hệ thống cống ngầm trung tâm cũ kỹ thoát chậm khi mưa rào lớn",
+        "segment_scope": "Chỉ ngập một đoạn ngắn 300m tại giao lộ",
+    },
+    "flood-19": {
+        "spot_type": "Đoạn trũng thi công",
+        "drainage_issue": "Cốt nền đường đang nâng cấp dở dang, cống tạm không kịp thoát",
+        "segment_scope": "Chỉ ngập đoạn 550m quanh Cầu Đen",
+    },
+    "flood-20": {
+        "spot_type": "Đoạn trũng chân cầu",
+        "drainage_issue": "Cống tiêu thoát ra rạch Nam Lý bị thu hẹp dòng chảy trong quá trình thi công",
+        "segment_scope": "Chỉ ngập đoạn 600m gần cầu Nam Lý",
+    },
+    "flood-21": {
+        "spot_type": "Vùng trũng dân cư",
+        "drainage_issue": "Cống thoát ra rạch Giồng Ông Tố bị nghẹt dòng khi triều dâng",
+        "segment_scope": "Chỉ ngập đoạn 500m khu vực Bình Trưng Tây",
+    },
+    "flood-22": {
+        "spot_type": "Vùng trũng ven sông lớn",
+        "drainage_issue": "Nằm sát bờ sông Soài Rạp, triều cường lên nhanh cống xả bị chặn dòng",
+        "segment_scope": "Chỉ ngập đoạn 900m sát sông",
+    },
+    "flood-23": {
+        "spot_type": "Đoạn trũng chân cầu",
+        "drainage_issue": "Cốt đường thấp dưới chân cầu Rạch Cây, nước sông dâng ngập bờ kè",
+        "segment_scope": "Chỉ ngập đoạn 800m chân cầu",
+    },
+    "flood-24": {
+        "spot_type": "Đoạn trũng ranh giới quận",
+        "drainage_issue": "Cống thoát nước liên quận tiết diện không đồng đều gây ứ đọng",
+        "segment_scope": "Chỉ ngập đoạn 600m giáp ranh",
+    },
+    "flood-25": {
+        "spot_type": "Vùng trũng quanh chợ",
+        "drainage_issue": "Miệng cống bị tắc nghẽn cục bộ, nước rút chậm",
+        "segment_scope": "Chỉ ngập đoạn 450m quanh Chợ Phú Lâm",
+    },
+    "flood-26": {
+        "spot_type": "Đoạn trũng trường học",
+        "drainage_issue": "Khu vực trũng thấp so với mặt bằng chung của phường, cống thoát chậm",
+        "segment_scope": "Chỉ ngập đoạn 500m trước trường THCS",
+    },
+    "flood-27": {
+        "spot_type": "Đoạn trũng cầu cụt",
+        "drainage_issue": "Cửa xả ra rạch bị bồi lắng bùn đất, nước ứ đọng cục bộ",
+        "segment_scope": "Chỉ ngập đoạn 550m",
+    },
+    "flood-28": {
+        "spot_type": "Đoạn trũng chân cầu tỉnh lộ",
+        "drainage_issue": "Nước từ hai bên mố cầu dồn xuống điểm trũng không kịp thoát",
+        "segment_scope": "Chỉ ngập đoạn 500m",
+    },
+    "flood-29": {
+        "spot_type": "Đoạn trũng khu dân cư cũ",
+        "drainage_issue": "Cốt nền thấp hơn đường chính, cống thoát nước chung bị quá tải",
+        "segment_scope": "Chỉ ngập đoạn 400m",
+    },
+    "flood-30": {
+        "spot_type": "Vùng trũng lòng chảo Bàu Cát",
+        "drainage_issue": "Vùng trũng tích tụ nước mặt khi mưa dồn, cống thoát nước quá tải",
+        "segment_scope": "Chỉ ngập đoạn 400m",
+    },
+}
 
 
 class FloodService:
@@ -9786,6 +9940,13 @@ class FloodService:
 
             counts[risk_level] += 1
 
+            # Lấy thông tin ngữ cảnh thực tế (vùng trũng, cống nghẹt, chiều dài đoạn ngập)
+            phys_ctx = HOTSPOT_REALISTIC_PHYSICAL_CONTEXT.get(spot["id"], {
+                "spot_type": "Đoạn trũng thấp cục bộ",
+                "drainage_issue": "Hệ thống cống thoát nước tại vùng trũng quá tải khi mưa lớn",
+                "segment_scope": f"Chỉ ngập cục bộ 1 đoạn {spot['length_m']}m, các đoạn khác khô ráo",
+            })
+
             # 1. Feature điểm (Point Marker)
             pt_feat = {
                 "type": "Feature",
@@ -9800,6 +9961,9 @@ class FloodService:
                     "street": spot["street"],
                     "district": spot["district"],
                     "cause": spot["cause"],
+                    "spot_type": phys_ctx["spot_type"],
+                    "drainage_issue": phys_ctx["drainage_issue"],
+                    "segment_scope": phys_ctx["segment_scope"],
                     "historical_depth_cm": spot["historical_depth_cm"],
                     "length_m": spot["length_m"],
                     "pump_station": spot["pump_station"],
@@ -9841,6 +10005,9 @@ class FloodService:
                     "district": spot["district"],
                     "risk_level": risk_level,
                     "risk_label": risk_label,
+                    "spot_type": phys_ctx["spot_type"],
+                    "drainage_issue": phys_ctx["drainage_issue"],
+                    "segment_scope": phys_ctx["segment_scope"],
                     "color": seg_color,
                     "glow_color": seg_glow,
                     "estimated_depth_cm": est_depth,
@@ -9860,10 +10027,15 @@ class FloodService:
             "currentRainfallMm": live_rain_mm,
             "saigonRiverDischargeM3s": current_discharge,
             "maxEstimatedDepthCm": max_estimated_depth,
+            "realistic_nature": "Tại TP.HCM, ngập úng mang tính chất cục bộ tại các đoạn trũng thấp và khu vực cống thoát nước chậm, không ngập toàn bộ tuyến đường.",
             "statusEvaluation": (
                 "Báo động ngập lụt nhiều tuyến đường"
                 if counts["CRITICAL"] > 2
-                else ("Cảnh báo nguy cơ ngập cục bộ" if counts["WARNING"] > 2 else "Giao thông tương đối an toàn")
+                else (
+                    "Cảnh báo nguy cơ ngập cục bộ tại một số đoạn trũng"
+                    if counts["WARNING"] > 0
+                    else "Các tuyến đường đô thị cơ bản thông thoáng"
+                )
             ),
         }
 

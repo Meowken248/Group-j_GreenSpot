@@ -12,6 +12,7 @@ import { ProfileTimeline } from "./components/ProfileTimeline";
 import { GreenPassportView } from "./components/GreenPassportView";
 import { ContributionHistoryView } from "./components/ContributionHistoryView";
 import { EditProfileView } from "./components/EditProfileView";
+import { NotificationBell } from "../../components/NotificationBell";
 import "./styles/Profile.scss";
 
 type ProfileViewMode = "timeline" | "passport" | "history" | "edit";
@@ -23,15 +24,19 @@ interface ToastItem {
 }
 
 interface ProfileContainerProps {
+  targetUserId?: string | null;
   onBackToMap?: () => void;
   onNavigateToAqi?: () => void;
   onNavigateToAuth?: () => void;
+  onNavigateToFeed?: () => void;
 }
 
 export const ProfileContainer: React.FC<ProfileContainerProps> = ({
+  targetUserId,
   onBackToMap,
   onNavigateToAqi,
   onNavigateToAuth,
+  onNavigateToFeed,
 }) => {
   // Trạng thái kiểm tra quyền truy cập (chưa đăng nhập / phiên hết hạn)
   const [isUnauthorized, setIsUnauthorized] = useState<boolean>(() => {
@@ -110,7 +115,9 @@ export const ProfileContainer: React.FC<ProfileContainerProps> = ({
     setProfileLoading(true);
     setProfileError(null);
     try {
-      const data = await profileService.getMyProfile();
+      const data = targetUserId
+        ? await profileService.getUserProfile(targetUserId)
+        : await profileService.getMyProfile();
       setProfile(data);
       setIsUnauthorized(false);
     } catch (err: unknown) {
@@ -129,7 +136,7 @@ export const ProfileContainer: React.FC<ProfileContainerProps> = ({
     } finally {
       setProfileLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, targetUserId]);
 
   // =========================================================================
   // 2. TẢI DỮ LIỆU BÀI ĐĂNG (ĐỘC LẬP VỚI PROFILE)
@@ -175,6 +182,10 @@ export const ProfileContainer: React.FC<ProfileContainerProps> = ({
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
+
+  useEffect(() => {
+    setCurrentView("timeline");
+  }, [targetUserId]);
 
   useEffect(() => {
     const uid = profile?.user_id || profile?.id;
@@ -544,15 +555,13 @@ export const ProfileContainer: React.FC<ProfileContainerProps> = ({
           </div>
 
           <div className="header-right">
-            <button
-              type="button"
-              className="bell-notification-btn"
-              title="Thông báo hoạt động sinh thái"
-              onClick={() => showToast("success", "Không có thông báo mới nào.")}
-            >
-              🔔
-              <span className="bell-dot" />
-            </button>
+            <NotificationBell
+              onNotificationClick={(notif) => {
+                if (notif.notification_type === "PENALTY_REPORT") {
+                  setCurrentView("history");
+                }
+              }}
+            />
 
             <div
               className="header-user-avatar"
@@ -602,7 +611,18 @@ export const ProfileContainer: React.FC<ProfileContainerProps> = ({
             onOpenEditProfile={() => setCurrentView("edit")}
             onOpenPassport={() => setCurrentView("passport")}
             onOpenHistory={() => setCurrentView("history")}
-            onNavigateToFeed={() => showToast("success", "Đang chuyển đến Bảng tin chung...")}
+            onNavigateToFeed={() => {
+              if (onNavigateToFeed) {
+                onNavigateToFeed();
+              } else {
+                window.location.hash = "#posts";
+              }
+            }}
+            onShowToast={showToast}
+            onRefreshPosts={() => {
+              const uid = profile?.user_id || profile?.id;
+              if (uid) fetchPosts(uid, 1, false);
+            }}
           />
         )}
 
