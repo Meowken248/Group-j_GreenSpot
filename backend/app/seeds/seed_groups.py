@@ -138,19 +138,36 @@ async def seed_groups():
 
                 print(f"✅ Đã tạo nhóm mẫu: '{group.name}' ({group.group_type}) kèm thành viên (Admin, Moderator, Member).")
             else:
-                # Đảm bảo nhóm đã tồn tại có ít nhất 1 MODERATOR để kiểm thử
-                members_res = await session.execute(
-                    select(GroupMember).where(
-                        GroupMember.group_id == existing_group.group_id,
-                        GroupMember.deleted_at.is_(None)
-                    ).order_by(GroupMember.joined_at.asc())
-                )
-                existing_members = members_res.scalars().all()
-                if len(existing_members) > 1 and not any(m.role == GroupMemberRole.MODERATOR.value for m in existing_members):
-                    existing_members[1].role = GroupMemberRole.MODERATOR.value
-                    session.add(existing_members[1])
-                    print(f"✅ Đã cập nhật thành viên '{existing_members[1].user_id}' làm MODERATOR cho nhóm '{existing_group.name}'.")
-                print(f"ℹ️ Nhóm '{existing_group.name}' đã tồn tại, kiểm tra vai trò thành viên.")
+                # Đảm bảo nhóm đã tồn tại có đầy đủ vai trò thành viên (Admin, Moderator, Member)
+                for idx, u in enumerate(users[:4]):
+                    target_role = (
+                        GroupMemberRole.ADMIN.value if idx == 0
+                        else GroupMemberRole.MODERATOR.value if idx == 1
+                        else GroupMemberRole.MEMBER.value
+                    )
+                    mem_res = await session.execute(
+                        select(GroupMember).where(
+                            GroupMember.group_id == existing_group.group_id,
+                            GroupMember.user_id == u.user_id,
+                        )
+                    )
+                    existing_mem = mem_res.scalar_one_or_none()
+                    if existing_mem:
+                        existing_mem.role = target_role
+                        existing_mem.status = GroupMemberStatus.ACTIVE.value
+                        existing_mem.deleted_at = None
+                        existing_mem.version = 1
+                        session.add(existing_mem)
+                    else:
+                        new_mem = GroupMember(
+                            group_id=existing_group.group_id,
+                            user_id=u.user_id,
+                            role=target_role,
+                            status=GroupMemberStatus.ACTIVE.value,
+                            version=1,
+                        )
+                        session.add(new_mem)
+                print(f"ℹ️ Nhóm '{existing_group.name}' đã cập nhật đầy đủ thành viên Admin, Moderator, Member.")
 
         # 3. Tạo các bài viết mẫu gắn với nhóm
         sample_group_posts = [
