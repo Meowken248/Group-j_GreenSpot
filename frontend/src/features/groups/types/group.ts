@@ -77,10 +77,35 @@ export interface GroupMemberItem {
   district?: string | null;
   role: GroupMemberRole | string;
   joined_at: string;
+  version: number;
+  is_self?: boolean;
+  can_change_role?: boolean;
+  can_remove?: boolean;
+  disabled_change_role_reason?: string | null;
+  disabled_remove_reason?: string | null;
 }
 
 export interface GroupMemberListResponse {
+  group_id?: string;
+  group_name?: string;
   items: GroupMemberItem[];
   total: number;
+  is_system_admin?: boolean;
+  my_role?: GroupMemberRole | string | null;
+  can_invite?: boolean;
+}
+
+export interface GroupMemberRoleUpdateRequest {
+  new_role: string;
+  version: number;
+}
+
+export interface GroupMemberActionResponse {
+  success: boolean;
+  message: string;
+  user_id: string;
+  group_id: string;
+  role?: string;
+  version?: number;
 }
 

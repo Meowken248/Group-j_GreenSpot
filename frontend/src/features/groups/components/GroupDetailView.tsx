@@ -12,7 +12,7 @@ import { resolveMediaUrl } from "../../../utils/mediaUrl";
 import { DisbandGroupModal } from "./DisbandGroupModal";
 import { InviteFriendsModal } from "./InviteFriendsModal";
 import { GroupComposerBox } from "./GroupComposerBox";
-import { GroupMembersTab } from "./GroupMembersTab";
+import { GroupMembersManagement } from "./GroupMembersManagement";
 import { FeedPostCard } from "../../feed/components/FeedPostCard";
 import type { FeedPostItem } from "../../feed/types/feed.types";
 import { PostCreatorContainer } from "../../posts/PostCreatorContainer";
@@ -680,10 +680,10 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
           )}
 
           {activeTab === "members" && (
-            <GroupMembersTab
+            <GroupMembersManagement
               groupId={group.group_id}
-              isAdmin={isAdmin}
               onInviteClick={group.is_member ? () => setShowInviteModal(true) : undefined}
+              onBack={() => setActiveTab("feed")}
             />
           )}
         </div>
