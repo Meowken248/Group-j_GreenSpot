@@ -105,19 +105,39 @@ class HybridTranslationService(ITranslationService):
         lower = cleaned.lower()
 
         if target_lang == "en" and source_lang == "vi":
+            if cleaned in VI_TO_EN_DICTIONARY:
+                return VI_TO_EN_DICTIONARY[cleaned]
             if lower in VI_TO_EN_DICTIONARY:
                 res = VI_TO_EN_DICTIONARY[lower]
                 if cleaned.isupper():
                     return res.upper()
+                if cleaned[0].isupper() and not res[0].isupper():
+                    return res[0].upper() + res[1:]
                 return res
+            for k, v in VI_TO_EN_DICTIONARY.items():
+                if k.lower() == lower:
+                    if cleaned.isupper():
+                        return v.upper()
+                    if cleaned[0].isupper() and not v[0].isupper():
+                        return v[0].upper() + v[1:]
+                    return v
         elif target_lang == "vi" and source_lang == "en":
+            if cleaned in EN_TO_VI_DICTIONARY:
+                return EN_TO_VI_DICTIONARY[cleaned]
             if lower in EN_TO_VI_DICTIONARY:
                 res = EN_TO_VI_DICTIONARY[lower]
                 if cleaned.isupper():
                     return res.upper()
-                if cleaned[0].isupper():
-                    return res.capitalize()
+                if cleaned[0].isupper() and not res[0].isupper():
+                    return res[0].upper() + res[1:]
                 return res
+            for k, v in EN_TO_VI_DICTIONARY.items():
+                if k.lower() == lower:
+                    if cleaned.isupper():
+                        return v.upper()
+                    if cleaned[0].isupper() and not v[0].isupper():
+                        return v[0].upper() + v[1:]
+                    return v
 
         return None
 
@@ -187,13 +207,35 @@ class HybridTranslationService(ITranslationService):
             result = pattern.sub(VI_TO_EN_DICTIONARY[term], result)
 
         # Regex replacements for numbers and patterns
+        result = re.sub(r"(\d+)\s*người\s*dân", r"\1 residents", result, flags=re.IGNORECASE)
         result = re.sub(r"(\d+)\s*người", lambda m: "1 person" if m.group(1) == "1" else f"{m.group(1)} people", result, flags=re.IGNORECASE)
+        result = re.sub(r"(\d+)\s*trẻ\s*nhỏ", lambda m: "1 child" if m.group(1) == "1" else f"{m.group(1)} children", result, flags=re.IGNORECASE)
+        result = re.sub(r"(\d+)\s*người\s*già", r"\1 elderly", result, flags=re.IGNORECASE)
+        result = re.sub(r"(\d+)\s*điểm", r"\1 points", result, flags=re.IGNORECASE)
         result = re.sub(r"(\d+)\s*điều khoản", r"\1 clauses", result, flags=re.IGNORECASE)
         result = re.sub(r"sâu\s*(\d+)cm", r"\1cm deep", result, flags=re.IGNORECASE)
         result = re.sub(r"bán kính\s*(\d+)km", r"\1km radius", result, flags=re.IGNORECASE)
 
-        # Strip remaining Vietnamese accents from proper names (e.g. streets, landmarks)
-        if re.search(r"[\u00C0-\u1EF9]", result):
+        # Address & location token replacements
+        result = re.sub(r"\bNgã\s*tư\b", "Intersection of", result, flags=re.IGNORECASE)
+        result = re.sub(r"\bGiao\s*lộ\b", "Intersection of", result, flags=re.IGNORECASE)
+        result = re.sub(r"\bĐường\b", "Street", result, flags=re.IGNORECASE)
+        result = re.sub(r"\bPhường\b", "Ward", result, flags=re.IGNORECASE)
+        result = re.sub(r"\bQuận\b", "District", result, flags=re.IGNORECASE)
+        result = re.sub(r"\bHuyện\b", "District", result, flags=re.IGNORECASE)
+        result = re.sub(r"\bTP\.?\s*Thủ\s*Đức\b", "Thu Duc City", result, flags=re.IGNORECASE)
+        result = re.sub(r"\bTP\.?\s*HCM\b", "HCMC", result, flags=re.IGNORECASE)
+        result = re.sub(r"\bTP\.?\s*Hồ\s*Chí\s*Minh\b", "HCMC", result, flags=re.IGNORECASE)
+        result = re.sub(r"\bBờ\s*kè\b", "Embankment", result, flags=re.IGNORECASE)
+        result = re.sub(r"\bChợ\b", "Market", result, flags=re.IGNORECASE)
+        result = re.sub(r"\bKênh\b", "Canal", result, flags=re.IGNORECASE)
+        result = re.sub(r"\bSông\b", "River", result, flags=re.IGNORECASE)
+        result = re.sub(r"\bCầu\b", "Bridge", result, flags=re.IGNORECASE)
+        result = re.sub(r"\bHẻm\b", "Alley", result, flags=re.IGNORECASE)
+
+        # Strip accents ONLY from proper nouns in recognized address or team structures
+        is_address_or_team = any(k in result for k in ["Street", "Ward", "District", "Intersection", "Alley", "Embankment", "Canal", "Market", "Team", "Flood Point"])
+        if is_address_or_team and re.search(r"[\u00C0-\u1EF9]", result):
             result = strip_vietnamese_accents(result)
 
         return result

@@ -21,16 +21,27 @@ body,
   background-color: #0f172a;
 }
 
-/* Multi-Engine Google Website Translator Styling (Unobtrusive) */
+/* Multi-Engine Google Website Translator Suppression (Clean, Zero-Artifact Native UI) */
+.goog-te-banner-frame,
 .goog-te-banner-frame.skiptranslate,
+.goog-te-gadget,
 .goog-te-gadget-simple,
 #goog-gt-tt,
-.goog-te-balloon-frame {
+.goog-te-balloon-frame,
+#google_translate_element,
+iframe.skiptranslate,
+.VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
+.VIpgJd-ZVi9od-aZ2wEe-OiiCO {
   display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  width: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 body {
   top: 0px !important;
 }
 .skiptranslate {
-  display: inline;
+  display: none !important;
 }
