@@ -19,8 +19,16 @@ from app.models.group import (
 )
 from app.models.post import Post, PostReaction, PostTaggedFriend
 from app.models.comment import Comment
-from app.models.rbac import User
-from app.schemas.group import GroupCreate, GroupUpdate, GroupMemberResponse, GroupMemberListResponse
+from app.models.rbac import User, Role
+from app.models.audit_log import AuditLog
+from app.schemas.group import (
+    GroupCreate,
+    GroupUpdate,
+    GroupMemberResponse,
+    GroupMemberListResponse,
+    GroupMemberRoleUpdateRequest,
+    GroupMemberActionResponse,
+)
 from app.schemas.feed import FeedListResponse, FeedPostItem
 from app.schemas.post import AuthorSummary, TaggedFriendInfo, MediaItemInput, MediaTypeEnum
 
@@ -916,19 +924,55 @@ class GroupService:
         )
 
     @staticmethod
+    async def _check_system_admin(db: AsyncSession, user: User) -> bool:
+        if getattr(user, "is_superuser", False):
+            return True
+        if getattr(user, "role_id", None) == 1:
+            return True
+        role = await db.get(Role, user.role_id)
+        return role is not None and role.role_code == "ADMIN"
+
+    @staticmethod
     async def get_group_members(
         db: AsyncSession,
         group_id: uuid.UUID,
         page: int = 1,
         limit: int = 20,
+        current_user: Optional[User] = None,
     ) -> GroupMemberListResponse:
-        """Lấy danh sách thành viên nhóm có phân trang."""
+        """Lấy danh sách thành viên nhóm có phân trang và ma trận quyền hạn (Chức năng 04 - Màn 1/4)."""
         group = await db.get(Group, group_id)
         if not group or group.deleted_at is not None or group.status == GroupStatus.DISBANDED.value:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Nhóm không tồn tại hoặc đã bị giải tán"
+                detail="Nhóm không tồn tại hoặc đã bị xoá"
             )
+
+        if not current_user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Vui lòng đăng nhập để xem danh sách thành viên"
+            )
+
+        is_sys_admin = await GroupService._check_system_admin(db, current_user)
+
+        # Kiểm tra tư cách thành viên của người gọi
+        my_member_stmt = select(GroupMember).where(
+            GroupMember.group_id == group_id,
+            GroupMember.user_id == current_user.user_id,
+            GroupMember.deleted_at.is_(None),
+            GroupMember.status == GroupMemberStatus.ACTIVE.value
+        )
+        my_membership = (await db.execute(my_member_stmt)).scalar_one_or_none()
+
+        if not my_membership and not is_sys_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Bạn không phải thành viên của nhóm này"
+            )
+
+        my_role = my_membership.role if my_membership else "ADMIN"
+        can_invite = (my_role in (GroupMemberRole.ADMIN.value, GroupMemberRole.MODERATOR.value) or is_sys_admin)
 
         page = max(1, page)
         limit = min(50, max(1, limit))
@@ -936,6 +980,7 @@ class GroupService:
 
         count_stmt = select(func.count(GroupMember.id)).where(
             GroupMember.group_id == group_id,
+            GroupMember.deleted_at.is_(None),
             GroupMember.status == GroupMemberStatus.ACTIVE.value
         )
         total_count = (await db.execute(count_stmt)).scalar() or 0
@@ -945,10 +990,15 @@ class GroupService:
             .options(selectinload(GroupMember.user))
             .where(
                 GroupMember.group_id == group_id,
+                GroupMember.deleted_at.is_(None),
                 GroupMember.status == GroupMemberStatus.ACTIVE.value
             )
             .order_by(
-                case((GroupMember.role == GroupMemberRole.ADMIN.value, 1), else_=2),
+                case(
+                    (GroupMember.role == GroupMemberRole.ADMIN.value, 1),
+                    (GroupMember.role == GroupMemberRole.MODERATOR.value, 2),
+                    else_=3
+                ),
                 GroupMember.joined_at.asc()
             )
             .offset(offset)
@@ -959,6 +1009,40 @@ class GroupService:
         items = []
         for m in members:
             u = m.user
+            is_self = (m.user_id == current_user.user_id)
+            can_change_role = False
+            can_remove = False
+            disabled_change_role_reason = None
+            disabled_remove_reason = None
+
+            if my_role == GroupMemberRole.MEMBER.value and not is_sys_admin:
+                can_change_role = False
+                can_remove = False
+            elif my_role == GroupMemberRole.MODERATOR.value and not is_sys_admin:
+                can_change_role = False
+                disabled_change_role_reason = "Chỉ Quản trị nhóm mới có quyền đổi vai trò"
+                if is_self:
+                    can_remove = False
+                    disabled_remove_reason = "Bạn không thể tự xoá mình khỏi nhóm"
+                elif m.role == GroupMemberRole.ADMIN.value:
+                    can_remove = False
+                    disabled_remove_reason = "Không thể xoá Quản trị nhóm. Hãy đổi vai trò trước"
+                elif m.role == GroupMemberRole.MODERATOR.value:
+                    can_remove = False
+                    disabled_remove_reason = "Bạn không có quyền thực hiện thao tác này"
+                else:
+                    can_remove = True
+            else:  # Quản trị nhóm hoặc Admin hệ thống
+                can_change_role = True
+                if is_self:
+                    can_remove = False
+                    disabled_remove_reason = "Bạn không thể tự xoá mình khỏi nhóm"
+                elif m.role == GroupMemberRole.ADMIN.value:
+                    can_remove = False
+                    disabled_remove_reason = "Không thể xoá Quản trị nhóm. Hãy đổi vai trò trước"
+                else:
+                    can_remove = True
+
             items.append(
                 GroupMemberResponse(
                     user_id=m.user_id,
@@ -967,7 +1051,226 @@ class GroupService:
                     district=u.district if u else None,
                     role=m.role,
                     joined_at=m.joined_at,
+                    version=getattr(m, "version", 1),
+                    is_self=is_self,
+                    can_change_role=can_change_role,
+                    can_remove=can_remove,
+                    disabled_change_role_reason=disabled_change_role_reason,
+                    disabled_remove_reason=disabled_remove_reason,
                 )
             )
 
-        return GroupMemberListResponse(items=items, total=total_count)
+        return GroupMemberListResponse(
+            group_id=group.group_id,
+            group_name=group.name,
+            items=items,
+            total=total_count,
+            is_system_admin=is_sys_admin,
+            my_role=my_role,
+            can_invite=can_invite,
+        )
+
+    @staticmethod
+    async def update_member_role(
+        db: AsyncSession,
+        group_id: uuid.UUID,
+        target_user_id: uuid.UUID,
+        payload: GroupMemberRoleUpdateRequest,
+        caller: User,
+    ) -> GroupMemberResponse:
+        """Đổi vai trò thành viên nhóm với Optimistic Locking (Chức năng 04 - Màn 2/4)."""
+        group = await db.get(Group, group_id)
+        if not group or group.deleted_at is not None or group.status == GroupStatus.DISBANDED.value:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Nhóm không tồn tại hoặc đã bị xoá"
+            )
+
+        is_sys_admin = await GroupService._check_system_admin(db, caller)
+        if not is_sys_admin:
+            my_stmt = select(GroupMember).where(
+                GroupMember.group_id == group_id,
+                GroupMember.user_id == caller.user_id,
+                GroupMember.deleted_at.is_(None),
+                GroupMember.status == GroupMemberStatus.ACTIVE.value
+            )
+            my_mem = (await db.execute(my_stmt)).scalar_one_or_none()
+            if not my_mem or my_mem.role != GroupMemberRole.ADMIN.value:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Bạn không có quyền thực hiện thao tác này"
+                )
+
+        # Lấy thành viên cần đổi vai trò
+        target_stmt = select(GroupMember).options(selectinload(GroupMember.user)).where(
+            GroupMember.group_id == group_id,
+            GroupMember.user_id == target_user_id,
+            GroupMember.deleted_at.is_(None),
+            GroupMember.status == GroupMemberStatus.ACTIVE.value
+        )
+        target_mem = (await db.execute(target_stmt)).scalar_one_or_none()
+        if not target_mem:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Thành viên này không còn trong nhóm"
+            )
+
+        # Kiểm tra Optimistic Locking (Rule 7)
+        if target_mem.version != payload.version:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Vai trò của thành viên đã bị thay đổi. Danh sách đã được tải lại",
+                headers={"X-Error-Code": "ROLE_CHANGED"}
+            )
+
+        new_role = payload.new_role.upper()
+        if new_role not in (GroupMemberRole.ADMIN.value, GroupMemberRole.MODERATOR.value, GroupMemberRole.MEMBER.value):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Vai trò không hợp lệ"
+            )
+
+        # Ràng buộc: Chặn hạ Quản trị nhóm cuối cùng
+        if target_mem.role == GroupMemberRole.ADMIN.value and new_role != GroupMemberRole.ADMIN.value:
+            admin_count_stmt = select(func.count(GroupMember.id)).where(
+                GroupMember.group_id == group_id,
+                GroupMember.role == GroupMemberRole.ADMIN.value,
+                GroupMember.deleted_at.is_(None),
+                GroupMember.status == GroupMemberStatus.ACTIVE.value
+            )
+            admin_count = (await db.execute(admin_count_stmt)).scalar() or 0
+            if admin_count <= 1:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Nhóm phải có ít nhất 1 Quản trị nhóm"
+                )
+
+        old_role = target_mem.role
+        target_mem.role = new_role
+        target_mem.version = target_mem.version + 1
+
+        # Ghi Audit Log an ninh (Bảng 11) trong cùng transaction
+        audit = AuditLog(
+            user_id=caller.user_id,
+            user_email=caller.email,
+            action="GROUP_ROLE_UPDATE",
+            table_name="group_members",
+            record_id=str(target_mem.id),
+            old_data={"role": old_role, "version": payload.version, "user_id": str(target_user_id)},
+            new_data={"role": new_role, "version": target_mem.version, "user_id": str(target_user_id)},
+        )
+        db.add(audit)
+        await db.commit()
+        await db.refresh(target_mem)
+
+        u = target_mem.user
+        return GroupMemberResponse(
+            user_id=target_mem.user_id,
+            full_name=u.full_name if u else "Thành viên",
+            avatar_url=u.avatar_url if u else None,
+            district=u.district if u else None,
+            role=target_mem.role,
+            joined_at=target_mem.joined_at,
+            version=target_mem.version,
+            is_self=(target_mem.user_id == caller.user_id),
+            can_change_role=True,
+            can_remove=(target_mem.role != GroupMemberRole.ADMIN.value and target_mem.user_id != caller.user_id),
+        )
+
+    @staticmethod
+    async def remove_group_member(
+        db: AsyncSession,
+        group_id: uuid.UUID,
+        target_user_id: uuid.UUID,
+        caller: User,
+    ) -> GroupMemberActionResponse:
+        """Xoá thành viên khỏi nhóm và ghi Audit Log trong cùng một giao dịch (Chức năng 04 - Màn 3/4 & 4/4)."""
+        if target_user_id == caller.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Bạn không thể tự xoá mình khỏi nhóm"
+            )
+
+        group = await db.get(Group, group_id)
+        if not group or group.deleted_at is not None or group.status == GroupStatus.DISBANDED.value:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Nhóm không tồn tại hoặc đã bị xoá"
+            )
+
+        is_sys_admin = await GroupService._check_system_admin(db, caller)
+        caller_role = "ADMIN"
+        if not is_sys_admin:
+            my_stmt = select(GroupMember).where(
+                GroupMember.group_id == group_id,
+                GroupMember.user_id == caller.user_id,
+                GroupMember.deleted_at.is_(None),
+                GroupMember.status == GroupMemberStatus.ACTIVE.value
+            )
+            my_mem = (await db.execute(my_stmt)).scalar_one_or_none()
+            if not my_mem:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Bạn không còn là thành viên của nhóm này"
+                )
+            if my_mem.role not in (GroupMemberRole.ADMIN.value, GroupMemberRole.MODERATOR.value):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Bạn không có quyền thực hiện thao tác này"
+                )
+            caller_role = my_mem.role
+
+        # Lấy thành viên mục tiêu
+        target_stmt = select(GroupMember).options(selectinload(GroupMember.user)).where(
+            GroupMember.group_id == group_id,
+            GroupMember.user_id == target_user_id,
+            GroupMember.deleted_at.is_(None),
+            GroupMember.status == GroupMemberStatus.ACTIVE.value
+        )
+        target_mem = (await db.execute(target_stmt)).scalar_one_or_none()
+        if not target_mem:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Thành viên này không còn trong nhóm"
+            )
+
+        if target_mem.role == GroupMemberRole.ADMIN.value:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Không thể xoá Quản trị nhóm. Hãy đổi vai trò trước"
+            )
+
+        if caller_role == GroupMemberRole.MODERATOR.value and target_mem.role != GroupMemberRole.MEMBER.value:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Bạn không có quyền thực hiện thao tác này"
+            )
+
+        target_name = target_mem.user.full_name if target_mem.user else "Thành viên"
+
+        # Soft delete thành viên (Rule 6)
+        target_mem.deleted_at = datetime.now(timezone.utc)
+        target_mem.status = GroupMemberStatus.BANNED.value
+        group.members_count = max(0, group.members_count - 1)
+
+        # Ghi Audit Log an ninh (Bảng 11) trong CÙNG GIAO DỊCH
+        audit = AuditLog(
+            user_id=caller.user_id,
+            user_email=caller.email,
+            action="GROUP_MEMBER_REMOVE",
+            table_name="group_members",
+            record_id=str(target_mem.id),
+            old_data={"role": target_mem.role, "status": "ACTIVE", "user_id": str(target_user_id), "group_id": str(group_id)},
+            new_data={"status": "REMOVED", "deleted_at": str(target_mem.deleted_at)},
+        )
+        db.add(audit)
+        await db.commit()
+
+        return GroupMemberActionResponse(
+            success=True,
+            message=f"{target_name} đã bị xoá khỏi nhóm {group.name}",
+            user_id=target_user_id,
+            group_id=group_id,
+            role=target_mem.role,
+            version=target_mem.version,
+        )
