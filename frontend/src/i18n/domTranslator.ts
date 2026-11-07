@@ -4731,12 +4731,45 @@ const SORTED_EN_TO_VI_MAP = Object.entries(EN_TO_VI_MAP).sort(
   (a, b) => b[0].length - a[0].length
 );
 
-const CACHE_STORAGE_KEY = "greenspot_i18n_cache_v2";
+const CACHE_STORAGE_KEY = "greenspot_i18n_cache_v5";
+
+const purgeCorruptLegacyCaches = () => {
+  try {
+    const legacyKeys = [
+      "greenspot_i18n_cache",
+      "greenspot_i18n_cache_v1",
+      "greenspot_i18n_cache_v2",
+      "greenspot_i18n_cache_v3",
+      "greenspot_i18n_cache_v4",
+    ];
+    legacyKeys.forEach((key) => {
+      try {
+        localStorage.removeItem(key);
+      } catch {
+        // Safe ignore
+      }
+    });
+  } catch {
+    // Safe ignore
+  }
+};
 
 const loadCachedTranslations = (): Record<string, string> => {
   try {
+    purgeCorruptLegacyCaches();
     const raw = localStorage.getItem(CACHE_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    const clean: Record<string, string> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      if (typeof v === "string" && v.trim()) {
+        // Discard any pseudo-Vietnamese accent-stripped entries
+        if (!/\b(Dang tai|Goi y|loi moi|cong dan|kiem tra|dang search|xac nhan)\b/i.test(v)) {
+          clean[k] = v;
+        }
+      }
+    }
+    return clean;
   } catch {
     return {};
   }
@@ -5274,6 +5307,7 @@ export function triggerGoogleTranslate(_lang?: "VI" | "EN") {
  */
 export function initDOMTranslation(root: Node = document.body) {
   clearExternalTranslatorArtifacts();
+  purgeCorruptLegacyCaches();
 
   if (observer) {
     observer.disconnect();

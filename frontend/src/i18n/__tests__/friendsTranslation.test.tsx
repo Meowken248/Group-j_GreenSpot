@@ -10,12 +10,19 @@
  * 6. Lossless restoration back to authentic Vietnamese when switched to "VI".
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { render, screen, cleanup } from "@testing-library/react";
+import React from "react";
 import {
   translateString,
   applyDOMTranslation,
   setGlobalPageLanguage,
 } from "../domTranslator";
+import { LanguageProvider } from "../LanguageContext";
+import { FriendRequestsView } from "../../features/friends/components/FriendRequestsView";
+import { FriendListView } from "../../features/friends/components/FriendListView";
+import { UnfriendModal } from "../../features/friends/components/UnfriendModal";
+import type { FriendItem, GreenCitizenSuggestion, FriendRequestItem } from "../../features/friends/types";
 
 describe("Community & Friends 100% UI Translation (Anti-Accent-Stripping)", () => {
   beforeEach(() => {
@@ -212,5 +219,111 @@ describe("Community & Friends 100% UI Translation (Anti-Accent-Stripping)", () =
     expect((document.querySelector("input") as HTMLInputElement)?.placeholder).toBe(
       "Tìm kiếm bạn bè theo họ tên hoặc quận/huyện..."
     );
+  });
+
+  it("render các component Friends ở chế độ EN đảm bảo 100% chuẩn tiếng Anh, không sót hoặc bỏ dấu", () => {
+    localStorage.setItem("greenspot_user_lang", "EN");
+
+    const sampleRequests: FriendRequestItem[] = [
+      {
+        request_id: "req-1",
+        sender_id: "u-1",
+        sender_name: "Nguyen Van A",
+        sender_avatar: null,
+        district: "District 1",
+        mutual_friends_count: 2,
+        created_at: "2026-11-01T00:00:00Z",
+      },
+    ];
+
+    const sampleSuggestions: GreenCitizenSuggestion[] = [
+      {
+        user_id: "u-2",
+        full_name: "Tran Thi B",
+        avatar_url: null,
+        district: "District 3",
+        total_green_points: 150,
+        is_following: false,
+        isRequested: false,
+      },
+    ];
+
+    // 1. Kiểm thử FriendRequestsView ở EN
+    const { unmount: unmount1 } = render(
+      <LanguageProvider>
+        <FriendRequestsView
+          requests={sampleRequests}
+          suggestions={sampleSuggestions}
+          loadingRequests={false}
+          loadingSuggestions={false}
+          onAcceptRequest={vi.fn()}
+          onRejectRequest={vi.fn()}
+          onSendRequest={vi.fn()}
+          onToggleFollow={vi.fn()}
+        />
+      </LanguageProvider>
+    );
+
+    expect(screen.getByText(/Friend Requests/i)).toBeInTheDocument();
+    expect(screen.getByText(/Green Citizen Suggestions/i)).toBeInTheDocument();
+    expect(screen.getByText("Accept")).toBeInTheDocument();
+    expect(screen.getByText("Reject")).toBeInTheDocument();
+    expect(screen.getByText("+ Add Friend")).toBeInTheDocument();
+    expect(screen.getByText("Follow")).toBeInTheDocument();
+    expect(screen.getByText(/2 mutual friends/i)).toBeInTheDocument();
+    expect(screen.getByText(/150 green points/i)).toBeInTheDocument();
+    unmount1();
+
+    // 2. Kiểm thử trạng thái loading FriendRequestsView ở EN
+    const { unmount: unmount2 } = render(
+      <LanguageProvider>
+        <FriendRequestsView
+          requests={[]}
+          suggestions={[]}
+          loadingRequests={true}
+          loadingSuggestions={true}
+          onAcceptRequest={vi.fn()}
+          onRejectRequest={vi.fn()}
+          onSendRequest={vi.fn()}
+          onToggleFollow={vi.fn()}
+        />
+      </LanguageProvider>
+    );
+
+    expect(screen.getByText("Loading friend requests...")).toBeInTheDocument();
+    expect(screen.getByText("Searching for Green Citizen suggestions...")).toBeInTheDocument();
+    unmount2();
+
+    // 3. Kiểm thử UnfriendModal ở EN
+    const mockFriend: FriendItem = {
+      user_id: "u-friend",
+      full_name: "Le Van C",
+      avatar_url: null,
+      district: "Thu Duc City",
+      status: "ACTIVE",
+      is_suspended: false,
+      total_green_points: 300,
+      is_online: true,
+      friends_count: 10,
+      friendship_created_at: "2026-01-01T00:00:00Z",
+    };
+
+    const { unmount: unmount3 } = render(
+      <LanguageProvider>
+        <UnfriendModal
+          friend={mockFriend}
+          isOpen={true}
+          isProcessing={false}
+          onClose={vi.fn()}
+          onConfirm={vi.fn()}
+        />
+      </LanguageProvider>
+    );
+
+    expect(screen.getByText("UNFRIEND?")).toBeInTheDocument();
+    expect(screen.getByText(/Are you sure you want to unfriend/i)).toBeInTheDocument();
+    expect(screen.getByText("Close")).toBeInTheDocument();
+    expect(screen.getByText("Confirm Unfriend")).toBeInTheDocument();
+    unmount3();
   });
 });

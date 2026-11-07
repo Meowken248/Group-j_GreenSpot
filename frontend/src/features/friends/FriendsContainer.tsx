@@ -10,6 +10,7 @@ import { friendsService } from "./services";
 import { FriendRequestsView } from "./components/FriendRequestsView";
 import { FriendListView } from "./components/FriendListView";
 import { UnfriendModal } from "./components/UnfriendModal";
+import { useLanguage } from "../../i18n";
 import "./Friends.scss";
 
 interface FriendsContainerProps {
@@ -28,6 +29,9 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
   onNavigateToProfile,
   currentUser,
 }) => {
+  const { currentLang } = useLanguage();
+  const isEn = currentLang === "EN";
+
   // Tab điều hướng: "requests" (Màn 1) hoặc "friends" (Màn 2)
   const [activeSubTab, setActiveSubTab] = useState<"requests" | "friends">("requests");
 
@@ -82,7 +86,7 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
           })
           .catch(() => {
             if (!isCancelled) {
-              showToast("Không thể tải dữ liệu lời mời kết bạn", "error");
+              showToast(isEn ? "Failed to load friend request data" : "Không thể tải dữ liệu lời mời kết bạn", "error");
             }
           })
           .finally(() => {
@@ -106,7 +110,7 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
           })
           .catch(() => {
             if (!isCancelled) {
-              showToast("Không thể tải danh sách bạn bè", "error");
+              showToast(isEn ? "Failed to load friends list" : "Không thể tải danh sách bạn bè", "error");
             }
           })
           .finally(() => {
@@ -121,7 +125,7 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
     return () => {
       isCancelled = true;
     };
-  }, [activeSubTab, searchQuery, showToast]);
+  }, [activeSubTab, searchQuery, showToast, isEn]);
 
   // =========================================================================
   // XỬ LÝ SỰ KIỆN MÀN 1
@@ -136,14 +140,14 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
 
     try {
       const res = await friendsService.respondToRequest(req.request_id, "ACCEPT");
-      showToast(res.message, "success");
+      showToast(isEn ? `Accepted friend request from ${req.sender_name}` : res.message, "success");
 
       // Đợi hiệu ứng mờ dòng 400ms rồi gỡ bản ghi
       setTimeout(() => {
         setRequests((prev) => prev.filter((r) => r.request_id !== req.request_id));
       }, 400);
     } catch {
-      showToast("Xảy ra lỗi khi chấp nhận lời mời", "error");
+      showToast(isEn ? "Failed to accept friend request" : "Xảy ra lỗi khi chấp nhận lời mời", "error");
       setRequests((prev) =>
         prev.map((r) => (r.request_id === req.request_id ? { ...r, isFading: false } : r))
       );
@@ -159,13 +163,13 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
 
     try {
       const res = await friendsService.respondToRequest(req.request_id, "REJECT");
-      showToast(res.message, "info");
+      showToast(isEn ? `Rejected friend request from ${req.sender_name}` : res.message, "info");
 
       setTimeout(() => {
         setRequests((prev) => prev.filter((r) => r.request_id !== req.request_id));
       }, 400);
     } catch {
-      showToast("Xảy ra lỗi khi từ chối lời mời", "error");
+      showToast(isEn ? "Failed to reject friend request" : "Xảy ra lỗi khi từ chối lời mời", "error");
       setRequests((prev) =>
         prev.map((r) => (r.request_id === req.request_id ? { ...r, isFading: false } : r))
       );
@@ -176,12 +180,12 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
   const handleSendFriendRequest = async (sug: GreenCitizenSuggestion) => {
     try {
       const res = await friendsService.sendFriendRequest(sug.user_id);
-      showToast(res.message, "success");
+      showToast(isEn ? `Sent friend request to ${sug.full_name}` : res.message, "success");
       setSuggestions((prev) =>
         prev.map((s) => (s.user_id === sug.user_id ? { ...s, isRequested: true } : s))
       );
     } catch {
-      showToast("Không thể gửi lời mời kết bạn", "error");
+      showToast(isEn ? "Cannot send friend request" : "Không thể gửi lời mời kết bạn", "error");
     }
   };
 
@@ -190,19 +194,19 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
     try {
       if (sug.is_following) {
         await friendsService.unfollowUser(sug.user_id);
-        showToast(`Đã bỏ theo dõi ${sug.full_name}`, "info");
+        showToast(isEn ? `Unfollowed ${sug.full_name}` : `Đã bỏ theo dõi ${sug.full_name}`, "info");
         setSuggestions((prev) =>
           prev.map((s) => (s.user_id === sug.user_id ? { ...s, is_following: false } : s))
         );
       } else {
         await friendsService.followUser(sug.user_id);
-        showToast(`Đang theo dõi ${sug.full_name}`, "success");
+        showToast(isEn ? `Following ${sug.full_name}` : `Đang theo dõi ${sug.full_name}`, "success");
         setSuggestions((prev) =>
           prev.map((s) => (s.user_id === sug.user_id ? { ...s, is_following: true } : s))
         );
       }
     } catch {
-      showToast("Xử lý theo dõi thất bại", "error");
+      showToast(isEn ? "Follow action failed" : "Xử lý theo dõi thất bại", "error");
     }
   };
 
@@ -237,12 +241,12 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
       setSelectedFriendToUnfriend(null);
 
       // Ràng buộc đặc tả: Toast 3 giây thông báo "Đã huỷ kết bạn với {Họ tên}"
-      showToast(`Đã huỷ kết bạn với ${targetFriend.full_name}`, "success");
+      showToast(isEn ? `Unfriended ${targetFriend.full_name}` : `Đã huỷ kết bạn với ${targetFriend.full_name}`, "success");
 
       // Xóa bản ghi khỏi danh sách bạn bè
       setFriends((prev) => prev.filter((f) => f.user_id !== targetFriend.user_id));
     } catch {
-      showToast("Xảy ra lỗi khi hủy kết bạn", "error");
+      showToast(isEn ? "Error occurred while unfriending" : "Xảy ra lỗi khi hủy kết bạn", "error");
     } finally {
       setIsUnfriendProcessing(false);
     }
@@ -252,16 +256,16 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
   const handleUnfollowFromList = async (targetUserId: string, name: string) => {
     try {
       await friendsService.unfollowUser(targetUserId);
-      showToast(`Đã bỏ theo dõi ${name}`, "info");
+      showToast(isEn ? `Unfollowed ${name}` : `Đã bỏ theo dõi ${name}`, "info");
       setFollowingList((prev) => prev.filter((item) => item.user_id !== targetUserId));
     } catch {
-      showToast("Không thể bỏ theo dõi", "error");
+      showToast(isEn ? "Cannot unfollow user" : "Không thể bỏ theo dõi", "error");
     }
   };
 
   // Nhắn tin
   const handleOpenChat = (friend: FriendItem) => {
-    showToast(`Mở hộp thoại trò chuyện cùng ${friend.full_name}`, "info");
+    showToast(isEn ? `Opened chat with ${friend.full_name}` : `Mở hộp thoại trò chuyện cùng ${friend.full_name}`, "info");
   };
 
   return (
@@ -272,7 +276,7 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
           {/* Logo & Trở về */}
           <div className="brand-section" onClick={onBackToHome} role="button" tabIndex={0}>
             <div className="brand-logo">🌿</div>
-            <div className="brand-text">GreenSpot Mạng Xã Hội Xanh</div>
+            <div className="brand-text">{isEn ? "GreenSpot Green Social Network" : "GreenSpot Mạng Xã Hội Xanh"}</div>
           </div>
 
           {/* Menu chuyển đổi Màn 1 và Màn 2 */}
@@ -283,7 +287,7 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
               onClick={() => setActiveSubTab("requests")}
             >
               <span>📩</span>
-              <span>Lời mời & Gợi ý</span>
+              <span>{isEn ? "Requests & Suggestions" : "Lời mời & Gợi ý"}</span>
             </button>
             <button
               type="button"
@@ -291,7 +295,7 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
               onClick={() => setActiveSubTab("friends")}
             >
               <span>👥</span>
-              <span>Bạn bè & Theo dõi</span>
+              <span>{isEn ? "Friends & Following" : "Bạn bè & Theo dõi"}</span>
             </button>
           </div>
 
@@ -300,8 +304,8 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
             <button
               type="button"
               className="bell-btn"
-              title="Thông báo tương tác"
-              onClick={() => showToast("Bạn không có thông báo mới", "info")}
+              title={isEn ? "Interaction Notifications" : "Thông báo tương tác"}
+              onClick={() => showToast(isEn ? "You have no new notifications" : "Bạn không có thông báo mới", "info")}
             >
               🔔
             </button>
@@ -311,13 +315,13 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
               onClick={onNavigateToProfile}
               role="button"
               tabIndex={0}
-              title="Xem trang cá nhân của bạn"
+              title={isEn ? "View your profile" : "Xem trang cá nhân của bạn"}
             >
               <div className="avatar-circle">
                 {currentUser?.full_name ? currentUser.full_name.trim().slice(0, 2).toUpperCase() : "GS"}
               </div>
               <span className="user-name">
-                {currentUser?.full_name || "Công Dân Xanh"}
+                {currentUser?.full_name || (isEn ? "Green Citizen" : "Công Dân Xanh")}
               </span>
             </div>
           </div>
@@ -356,12 +360,14 @@ export const FriendsContainer: React.FC<FriendsContainerProps> = ({
       <footer className="friends-footer">
         <div className="footer-inner">
           <div className="copyright-text">
-            © 2026 GreenSpot. Hệ sinh thái giám sát môi trường và cộng đồng công dân xanh.
+            {isEn
+              ? "© 2026 GreenSpot. Environmental monitoring and green citizen community ecosystem."
+              : "© 2026 GreenSpot. Hệ sinh thái giám sát môi trường và cộng đồng công dân xanh."}
           </div>
           <div className="footer-links">
-            <a href="#privacy">Chính sách bảo mật</a>
-            <a href="#terms">Điều khoản sử dụng</a>
-            <a href="#contact">Liên hệ hỗ trợ</a>
+            <a href="#privacy">{isEn ? "Privacy Policy" : "Chính sách bảo mật"}</a>
+            <a href="#terms">{isEn ? "Terms of Use" : "Điều khoản sử dụng"}</a>
+            <a href="#contact">{isEn ? "Contact Support" : "Liên hệ hỗ trợ"}</a>
           </div>
         </div>
       </footer>

@@ -12,11 +12,6 @@ const getInitialLanguage = (): LanguageCode => {
     if (saved === "EN" || saved === "VI") {
       return saved;
     }
-    // Detect from browser/system language
-    const browserLang = navigator.language || (navigator as { userLanguage?: string }).userLanguage || "vi";
-    if (browserLang.toLowerCase().startsWith("en")) {
-      return "EN";
-    }
   } catch {
     // Fallback to Vietnamese
   }
