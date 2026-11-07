@@ -9,9 +9,11 @@ Endpoints:
 
 import uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Header, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from app.database import get_db
 from app.models.rbac import User
 from app.utils.security import decode_access_token
@@ -50,22 +52,37 @@ async def get_optional_current_user(
 @router.get("", response_model=IndividualLeaderboardResponse, summary="Xem Bảng xếp hạng cá nhân mặc định")
 @router.get("/individual", response_model=IndividualLeaderboardResponse, summary="Bảng xếp hạng cá nhân Top 10 & Thứ hạng của tôi")
 async def get_individual_leaderboard(
+    request: Request,
     user: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     current_id = user.user_id if user else None
-    return await LeaderboardService.get_individual_leaderboard(db, current_id)
+    result = await LeaderboardService.get_individual_leaderboard(db, current_id)
+    if get_current_language(request) == "en":
+        dumped = result.model_dump() if hasattr(result, "model_dump") else result
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return result
 
 @router.get("/groups", response_model=GroupLeaderboardResponse, summary="Bảng xếp hạng nhóm tình nguyện")
 async def get_group_leaderboard(
+    request: Request,
     cycle: str = Query("WEEK", description="Chu kỳ xếp hạng: WEEK | MONTH | ALL"),
     db: AsyncSession = Depends(get_db),
 ):
-    return await LeaderboardService.get_group_leaderboard(db, cycle)
+    result = await LeaderboardService.get_group_leaderboard(db, cycle)
+    if get_current_language(request) == "en":
+        dumped = result.model_dump() if hasattr(result, "model_dump") else result
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return result
 
 @router.get("/districts", response_model=DistrictLeaderboardResponse, summary="Bảng xếp hạng 22 quận/huyện theo Chỉ số Xanh")
 async def get_district_leaderboard(
+    request: Request,
     cycle: str = Query("WEEK", description="Chu kỳ xếp hạng: WEEK | MONTH | ALL"),
     db: AsyncSession = Depends(get_db),
 ):
-    return await LeaderboardService.get_district_leaderboard(db, cycle)
+    result = await LeaderboardService.get_district_leaderboard(db, cycle)
+    if get_current_language(request) == "en":
+        dumped = result.model_dump() if hasattr(result, "model_dump") else result
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return result

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { FriendItem, FollowingItem } from "../types";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
+import { useLanguage } from "../../../i18n";
 
 interface FriendListViewProps {
   friends: FriendItem[];
@@ -27,6 +28,9 @@ export const FriendListView: React.FC<FriendListViewProps> = ({
   onOpenChat,
   onOpenProfile,
 }) => {
+  const { currentLang } = useLanguage();
+  const isEn = currentLang === "EN";
+
   // Input cục bộ phục vụ cơ chế Debounce 300ms
   const [localInput, setLocalInput] = useState(searchQuery);
   const [prevQuery, setPrevQuery] = useState(searchQuery);
@@ -50,7 +54,7 @@ export const FriendListView: React.FC<FriendListViewProps> = ({
       <div className="section-card">
         <div className="card-header-bar">
           <h2 className="card-title">
-            <span>👥 Danh sách bạn bè</span>
+            <span>👥 {isEn ? "Friends List" : "Danh sách bạn bè"}</span>
             <span className="count-badge">{friends.length}</span>
           </h2>
         </div>
@@ -61,7 +65,7 @@ export const FriendListView: React.FC<FriendListViewProps> = ({
           <input
             type="text"
             className="search-input"
-            placeholder="Tìm kiếm bạn bè theo họ tên hoặc quận/huyện..."
+            placeholder={isEn ? "Search friends by name or district..." : "Tìm kiếm bạn bè theo họ tên hoặc quận/huyện..."}
             value={localInput}
             onChange={(e) => setLocalInput(e.target.value)}
           />
@@ -70,15 +74,15 @@ export const FriendListView: React.FC<FriendListViewProps> = ({
         <div className="friends-list-container">
           {loadingFriends ? (
             <div className="empty-state-notice">
-              <p>Đang tìm kiếm danh sách bạn bè...</p>
+              <p>{isEn ? "Searching friends list..." : "Đang tìm kiếm danh sách bạn bè..."}</p>
             </div>
           ) : friends.length === 0 ? (
             <div className="empty-state-notice">
               <div className="empty-icon">🔍</div>
               <p>
                 {localInput.trim()
-                  ? `Không tìm thấy bạn bè nào khớp với "${localInput}".`
-                  : "Bạn chưa có người bạn nào trong danh sách."}
+                  ? (isEn ? `No friends found matching "${localInput}".` : `Không tìm thấy bạn bè nào khớp với "${localInput}".`)
+                  : (isEn ? "You have no friends in your list yet." : "Bạn chưa có người bạn nào trong danh sách.")}
               </p>
             </div>
           ) : (
@@ -104,7 +108,7 @@ export const FriendListView: React.FC<FriendListViewProps> = ({
                     )}
                     <span
                       className={`online-dot ${friend.is_online ? "online" : "offline"}`}
-                      title={friend.is_online ? "Đang hoạt động" : "Ngoại tuyến"}
+                      title={friend.is_online ? (isEn ? "Active" : "Đang hoạt động") : (isEn ? "Offline" : "Ngoại tuyến")}
                     />
                   </div>
 
@@ -113,13 +117,13 @@ export const FriendListView: React.FC<FriendListViewProps> = ({
                       <h4 className="friend-name">{friend.full_name}</h4>
                       {/* Hiển thị tag cảnh báo nếu tài khoản bị tạm khóa */}
                       {friend.is_suspended && (
-                        <span className="tag-suspended">Tài khoản bị tạm khóa</span>
+                        <span className="tag-suspended">{isEn ? "Account temporarily locked" : "Tài khoản bị tạm khóa"}</span>
                       )}
                     </div>
 
                     <div className="friend-district-sub">
                       {friend.district && <span>📍 {friend.district} • </span>}
-                      <span>⭐ {friend.total_green_points} điểm xanh</span>
+                      <span>⭐ {friend.total_green_points} {isEn ? (friend.total_green_points === 1 ? "green point" : "green points") : "điểm xanh"}</span>
                     </div>
                   </div>
                 </div>
@@ -133,11 +137,11 @@ export const FriendListView: React.FC<FriendListViewProps> = ({
                     onClick={() => onOpenChat(friend)}
                     title={
                       friend.is_suspended
-                        ? "Không thể gửi tin nhắn do tài khoản này đang bị khóa"
-                        : "Nhắn tin trực tiếp"
+                        ? (isEn ? "Cannot send messages as this account is suspended" : "Không thể gửi tin nhắn do tài khoản này đang bị khóa")
+                        : (isEn ? "Direct message" : "Nhắn tin trực tiếp")
                     }
                   >
-                    💬 Nhắn tin
+                    💬 {isEn ? "Message" : "Nhắn tin"}
                   </button>
 
                   {/* Nút Hủy kết bạn: Mở Popup Modal Màn 3 */}
@@ -146,7 +150,7 @@ export const FriendListView: React.FC<FriendListViewProps> = ({
                     className="btn-unfriend-trigger"
                     onClick={() => onOpenUnfriendModal(friend)}
                   >
-                    Hủy kết bạn
+                    {isEn ? "Unfriend" : "Hủy kết bạn"}
                   </button>
                 </div>
               </div>
@@ -159,7 +163,7 @@ export const FriendListView: React.FC<FriendListViewProps> = ({
       <div className="section-card">
         <div className="card-header-bar">
           <h2 className="card-title">
-            <span>👁️ Đang theo dõi</span>
+            <span>👁️ {isEn ? "Following" : "Đang theo dõi"}</span>
             <span className="count-badge">{followingList.length}</span>
           </h2>
         </div>
@@ -167,12 +171,12 @@ export const FriendListView: React.FC<FriendListViewProps> = ({
         <div className="following-list-container">
           {loadingFollowing ? (
             <div className="empty-state-notice">
-              <p>Đang tải danh sách theo dõi...</p>
+              <p>{isEn ? "Loading following list..." : "Đang tải danh sách theo dõi..."}</p>
             </div>
           ) : followingList.length === 0 ? (
             <div className="empty-state-notice">
               <div className="empty-icon">🌿</div>
-              <p>Bạn chưa theo dõi công dân xanh nào.</p>
+              <p>{isEn ? "You are not following any green citizens yet." : "Bạn chưa theo dõi công dân xanh nào."}</p>
             </div>
           ) : (
             followingList.map((target) => (
@@ -199,7 +203,7 @@ export const FriendListView: React.FC<FriendListViewProps> = ({
                     <h4 className="name">{target.full_name}</h4>
                     <div className="meta">
                       {target.district && <span>📍 {target.district} • </span>}
-                      <span>⭐ {target.total_green_points} điểm</span>
+                      <span>⭐ {target.total_green_points} {isEn ? (target.total_green_points === 1 ? "point" : "points") : "điểm"}</span>
                     </div>
                   </div>
                 </div>
@@ -209,7 +213,7 @@ export const FriendListView: React.FC<FriendListViewProps> = ({
                   className="btn-unfollow-direct"
                   onClick={() => onUnfollow(target.user_id, target.full_name)}
                 >
-                  Bỏ theo dõi
+                  {isEn ? "Unfollow" : "Bỏ theo dõi"}
                 </button>
               </div>
             ))

@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import type { FriendItem } from "../types";
+import { useLanguage } from "../../../i18n";
 
 interface UnfriendModalProps {
   friend: FriendItem | null;
@@ -16,6 +17,9 @@ export const UnfriendModal: React.FC<UnfriendModalProps> = ({
   onClose,
   onConfirm,
 }) => {
+  const { currentLang } = useLanguage();
+  const isEn = currentLang === "EN";
+
   // Lắng nghe phím ESC để đóng modal
   useEffect(() => {
     if (!isOpen) return;
@@ -51,7 +55,7 @@ export const UnfriendModal: React.FC<UnfriendModalProps> = ({
           className="modal-close-icon"
           onClick={onClose}
           disabled={isProcessing}
-          aria-label="Đóng popup"
+          aria-label={isEn ? "Close popup" : "Đóng popup"}
         >
           ✕
         </button>
@@ -61,11 +65,19 @@ export const UnfriendModal: React.FC<UnfriendModalProps> = ({
         </div>
 
         <h3 id="unfriend-dialog-title" className="modal-header-title">
-          HUỶ KẾT BẠN?
+          {isEn ? "UNFRIEND?" : "HUỶ KẾT BẠN?"}
         </h3>
 
         <p className="modal-body-desc">
-          Bạn có chắc chắn muốn huỷ kết bạn với <strong>{friend.full_name}</strong>? Hai người sẽ không còn xem được bài viết bạn bè của nhau.
+          {isEn ? (
+            <>
+              Are you sure you want to unfriend <strong>{friend.full_name}</strong>? You will no longer see each other's friend posts.
+            </>
+          ) : (
+            <>
+              Bạn có chắc chắn muốn huỷ kết bạn với <strong>{friend.full_name}</strong>? Hai người sẽ không còn xem được bài viết bạn bè của nhau.
+            </>
+          )}
         </p>
 
         <div className="modal-footer-actions">
@@ -75,7 +87,7 @@ export const UnfriendModal: React.FC<UnfriendModalProps> = ({
             onClick={onClose}
             disabled={isProcessing}
           >
-            Đóng
+            {isEn ? "Close" : "Đóng"}
           </button>
           <button
             type="button"
@@ -83,7 +95,7 @@ export const UnfriendModal: React.FC<UnfriendModalProps> = ({
             onClick={onConfirm}
             disabled={isProcessing}
           >
-            {isProcessing ? "Đang xử lý…" : "Xác nhận hủy"}
+            {isProcessing ? (isEn ? "Processing…" : "Đang xử lý…") : (isEn ? "Confirm Unfriend" : "Xác nhận hủy")}
           </button>
         </div>
       </div>

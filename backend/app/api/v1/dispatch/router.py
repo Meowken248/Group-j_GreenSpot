@@ -6,7 +6,9 @@ Tuân thủ bảo vệ RBAC, Dependency Injection qua FastAPI Depends.
 
 from typing import Optional, List
 import uuid
-from fastapi import APIRouter, Depends, Query, HTTPException, status
+from fastapi import APIRouter, Depends, Query, HTTPException, status, Request
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -69,6 +71,7 @@ def verify_dispatch_access(authorization: Optional[str] = Header(None)):
 
 @router.get("/orders", response_model=DispatchListResponse)
 async def get_dispatch_orders(
+    request: Request,
     status: Optional[str] = Query("ALL", description="Lọc trạng thái: ALL, ASSIGNED, EN_ROUTE, IN_PROGRESS, COMPLETED, CANCELLED"),
     team_id: Optional[str] = Query("ALL", description="Lọc theo đội cơ động"),
     district: Optional[str] = Query("ALL", description="Lọc theo quận/huyện"),
@@ -78,27 +81,53 @@ async def get_dispatch_orders(
 ):
     """Màn 1/6: Bảng dữ liệu tổng hợp các lệnh xử lý hiện trường kèm bộ lọc"""
     filters = DispatchListFilter(status=status, team_id=team_id, district=district)
-    return await service.get_dispatch_orders(db, filters)
+    result = await service.get_dispatch_orders(db, filters)
+    lang = get_current_language(request)
+    if lang == "en":
+        result_dict = result.model_dump() if hasattr(result, 'model_dump') else result
+        translated = await translation_service.translate_data(result_dict, target_lang="en", source_lang="vi")
+        return translated
+    return result
 
 
 @router.get("/incidents", response_model=List[IncidentComboboxItem])
 async def get_available_incidents(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     service: DispatchService = Depends(get_dispatch_service),
     _user: Optional[dict] = Depends(verify_dispatch_access),
 ):
     """Màn 2/6: Danh sách sự cố chưa phân công sẵn sàng để điều phối"""
-    return await service.get_available_incidents(db)
+    result = await service.get_available_incidents(db)
+    lang = get_current_language(request)
+    if lang == "en":
+        if isinstance(result, list):
+            result_dict = [item.model_dump() if hasattr(item, 'model_dump') else item for item in result]
+        else:
+            result_dict = result.model_dump() if hasattr(result, 'model_dump') else result
+        translated = await translation_service.translate_data(result_dict, target_lang="en", source_lang="vi")
+        return translated
+    return result
 
 
 @router.get("/teams", response_model=List[TeamOptionItem])
 async def get_response_teams(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     service: DispatchService = Depends(get_dispatch_service),
     _user: Optional[dict] = Depends(verify_dispatch_access),
 ):
     """Danh sách các đội phản ứng cơ động hiện trường kèm cự ly & trạng thái"""
-    return await service.get_response_teams(db)
+    result = await service.get_response_teams(db)
+    lang = get_current_language(request)
+    if lang == "en":
+        if isinstance(result, list):
+            result_dict = [item.model_dump() if hasattr(item, 'model_dump') else item for item in result]
+        else:
+            result_dict = result.model_dump() if hasattr(result, 'model_dump') else result
+        translated = await translation_service.translate_data(result_dict, target_lang="en", source_lang="vi")
+        return translated
+    return result
 
 
 @router.post("/orders", response_model=DispatchActionResult)

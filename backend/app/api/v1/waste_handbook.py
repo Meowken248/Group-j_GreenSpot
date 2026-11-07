@@ -7,7 +7,9 @@ Thư viện sống xanh: Cẩm nang phân loại rác:
 """
 
 from typing import Optional, List
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -22,6 +24,7 @@ router = APIRouter(prefix="/waste-handbook", tags=["Thư viện sống xanh: C�
 
 @router.get("/overview", response_model=WasteHandbookOverviewResponse)
 async def get_handbook_overview(
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -30,11 +33,16 @@ async def get_handbook_overview(
     - Danh sách các loại rác phổ biến trong đời sống hàng ngày.
     - Công khai, không yêu cầu đăng nhập.
     """
-    return await WasteHandbookService.get_overview(db=db)
+    result = await WasteHandbookService.get_overview(db=db)
+    if get_current_language(request) == "en":
+        dumped = result.model_dump() if hasattr(result, 'model_dump') else result
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return result
 
 
 @router.get("/search", response_model=List[WasteItemSummaryResponse])
 async def search_waste_items(
+    request: Request,
     q: Optional[str] = Query(None, description="Từ khóa tên loại rác hoặc đồ vật"),
     category: Optional[str] = Query(None, description="ORGANIC | RECYCLABLE | HAZARDOUS | OTHER"),
     limit: int = Query(20, ge=1, le=100),
@@ -45,16 +53,21 @@ async def search_waste_items(
     - Tìm kiếm theo tên chính xác hoặc tên gọi thay thế (vd: vỏ hộp sữa, chai coca, bóng tuýp).
     - Tải tối đa 20 kết quả/lần.
     """
-    return await WasteHandbookService.search_items(
+    result = await WasteHandbookService.search_items(
         db=db,
         query=q,
         category=category,
         limit=limit
     )
+    if get_current_language(request) == "en":
+        dumped = [i.model_dump() if hasattr(i, 'model_dump') else i for i in result]
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return result
 
 
 @router.get("/items/{item_id}", response_model=WasteItemDetailResponse)
 async def get_waste_item_detail(
+    request: Request,
     item_id: str,
     db: AsyncSession = Depends(get_db),
 ):

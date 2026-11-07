@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useLanguage } from "../../../i18n";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { CreateFloodSosPayload } from "../types/flood_sos.types";
@@ -10,6 +11,9 @@ interface FloodSosDispatchScreenProps {
 export const FloodSosDispatchScreen: React.FC<FloodSosDispatchScreenProps> = ({
   onTriggerConfirm,
 }) => {
+  const { currentLang } = useLanguage();
+  const isEn = currentLang === "EN";
+
   // Khối TÌNH HUỐNG
   const [victimName, setVictimName] = useState("Người dân vùng ngập");
   const [victimPhone, setVictimPhone] = useState("0908112233");
@@ -35,6 +39,47 @@ export const FloodSosDispatchScreen: React.FC<FloodSosDispatchScreenProps> = ({
   );
   const [isScanningGps, setIsScanningGps] = useState<boolean>(false);
   const [gpsPermissionDenied, setGpsPermissionDenied] = useState<boolean>(false);
+
+  // Dong bo du lieu mau khi chuyen doi ngon ngu VI / EN
+  useEffect(() => {
+    if (isEn) {
+      if (victimName === "Người dân vùng ngập") setVictimName("Flooded Area Resident");
+      if (
+        description ===
+        "Nước dâng ngang ngực, mất điện, trần nhà sắp ngập, cần phao cứu sinh gấp"
+      ) {
+        setDescription(
+          "Chest-deep water, power outage, ceiling about to submerge, life buoys urgently needed"
+        );
+      }
+      if (addressText === "Hẻm 42 Bến Phú Định, Phường 16, Quận 8, TP.HCM") {
+        setAddressText("Alley 42 Ben Phu Dinh, Ward 16, District 8, HCMC");
+      }
+      setGpsStatusMessage((prev) =>
+        prev.includes("Đã định vị tọa độ GPS")
+          ? `Your GPS coordinates have been determined (Accuracy: ±${gpsAccuracyMeters}m).`
+          : prev
+      );
+    } else {
+      if (victimName === "Flooded Area Resident") setVictimName("Người dân vùng ngập");
+      if (
+        description ===
+        "Chest-deep water, power outage, ceiling about to submerge, life buoys urgently needed"
+      ) {
+        setDescription(
+          "Nước dâng ngang ngực, mất điện, trần nhà sắp ngập, cần phao cứu sinh gấp"
+        );
+      }
+      if (addressText === "Alley 42 Ben Phu Dinh, Ward 16, District 8, HCMC") {
+        setAddressText("Hẻm 42 Bến Phú Định, Phường 16, Quận 8, TP.HCM");
+      }
+      setGpsStatusMessage((prev) =>
+        prev.includes("Your GPS coordinates")
+          ? `Đã định vị tọa độ GPS của bạn (Độ chính xác: ±${gpsAccuracyMeters}m).`
+          : prev
+      );
+    }
+  }, [isEn, gpsAccuracyMeters]);
 
   const fetchCurrentLocation = (highAccuracy: boolean = false) => {
     setIsScanningGps(true);

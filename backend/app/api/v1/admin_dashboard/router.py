@@ -21,9 +21,11 @@ from __future__ import annotations
 from datetime import date
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from app.database import get_db
 from app.schemas.admin_dashboard.dashboard_schema import (
     ActivityDashboardResponse,
@@ -58,6 +60,7 @@ _service = AdminDashboardService()
     status_code=status.HTTP_200_OK,
 )
 async def get_overview_dashboard(
+    request: Request,
     period_days: int = Query(
         default=30,
         ge=1,
@@ -93,12 +96,16 @@ async def get_overview_dashboard(
         )
 
     try:
-        return await _service.get_activity_dashboard(
+        result = await _service.get_activity_dashboard(
             db=db,
             period_days=period_days,
             start_date=start_date,
             end_date=end_date,
         )
+        if get_current_language(request) == "en":
+            dumped = result.model_dump() if hasattr(result, "model_dump") else result
+            return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+        return result
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -122,6 +129,7 @@ async def get_overview_dashboard(
     status_code=status.HTTP_200_OK,
 )
 async def get_daily_table(
+    request: Request,
     from_date: date = Query(..., description="Ngày bắt đầu (YYYY-MM-DD)"),
     to_date: date = Query(..., description="Ngày kết thúc (YYYY-MM-DD)"),
     page: int = Query(default=1, ge=1, description="Số trang (bắt đầu từ 1)"),
@@ -141,13 +149,17 @@ async def get_daily_table(
         )
 
     try:
-        return await _service.get_daily_report(
+        result = await _service.get_daily_report(
             db=db,
             from_date=from_date,
             to_date=to_date,
             page=page,
             page_size=page_size,
         )
+        if get_current_language(request) == "en":
+            dumped = result.model_dump() if hasattr(result, "model_dump") else result
+            return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+        return result
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

@@ -4,7 +4,9 @@ FastAPI Router for Posts Domain (Chức năng STT 9: Đăng bài kèm toạ đ�
 
 import uuid
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, Depends, Query, UploadFile, File, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Query, UploadFile, File, Header, HTTPException, Request, status
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -65,7 +67,11 @@ async def create_new_post(
         author_id=current_user.user_id,
         request=payload,
     )
-    return post_service.format_post_response(post)
+    res = post_service.format_post_response(post)
+    if get_current_language(request) == "en":
+        dumped = res.model_dump() if hasattr(res, 'model_dump') else res
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return res
 
 
 @router.post(
@@ -164,6 +170,7 @@ async def get_posts_feed_root(
     summary="Xem chi tiết bài viết (Màn 4 -> Xem bài viết)",
 )
 async def get_post_detail(
+    request: Request,
     post_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
 ):
@@ -247,6 +254,7 @@ async def delete_post(
     summary="Danh sách nhóm tình nguyện đã tham gia (Màn 3)",
 )
 async def get_joined_volunteer_groups(
+    request: Request,
     current_user: User = Depends(get_current_active_user),
 ):
     """
@@ -279,6 +287,8 @@ async def get_joined_volunteer_groups(
             "requires_approval": False,
         },
     ]
+    if get_current_language(request) == "en":
+        return await translation_service.translate_data(sample_groups, target_lang="en", source_lang="vi")
     return sample_groups
 
 

@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import api_v1_router
 from app.services.runtime_sync_service import run_periodic_runtime_worker
 from app.services.event_service import run_event_reminder_worker
-
+from app.core.localization_middleware import ResponseLocalizationMiddleware
 
 
 @asynccontextmanager
@@ -53,6 +53,8 @@ app.add_middleware(
     expose_headers=["Content-Disposition"],
 )
 
+app.add_middleware(ResponseLocalizationMiddleware)
+
 from fastapi.staticfiles import StaticFiles
 from app.core.config import UPLOAD_DIR
 
@@ -65,5 +67,3 @@ app.include_router(api_v1_router, prefix="/api/v1")
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
-
-

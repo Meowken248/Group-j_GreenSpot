@@ -11,7 +11,9 @@ Tuân thủ Clean Architecture, Dependency Injection và OCC (Optimistic Concurr
 
 from typing import Any, Dict, List, Optional
 import uuid
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -81,6 +83,7 @@ async def dispatch_sos_request(
     summary="[Màn 3/5] Danh sách yêu cầu SOS gần vị trí tình nguyện viên (Bán kính 3km)",
 )
 async def get_nearby_sos_requests(
+    request: Request,
     latitude: float = Query(..., ge=-90.0, le=90.0, description="Vĩ độ hiện tại của tình nguyện viên"),
     longitude: float = Query(..., ge=-180.0, le=180.0, description="Kinh độ hiện tại của tình nguyện viên"),
     radius_km: float = Query(3.0, gt=0, le=50.0, description="Bán kính quét (mặc định 3km)"),
@@ -141,6 +144,7 @@ async def skip_sos_request(
     summary="[Màn 4/5] Theo dõi tiến trình cứu nạn trực tiếp (Live Tracking & Stepper)",
 )
 async def get_sos_tracking_detail(
+    request: Request,
     request_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
     service: FloodSosService = Depends(get_flood_sos_service),

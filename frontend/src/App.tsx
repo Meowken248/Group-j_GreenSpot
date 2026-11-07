@@ -63,6 +63,7 @@ import { initSyncEngineListeners, syncOutboxQueue } from "./features/offline/ser
 import type { SyncResultSummary } from "./features/offline/types/offline.types";
 import { navigateToRoute, resolveTabFromUrl, APP_ROUTES } from "./routes/appRoutes";
 import type { ActiveTab } from "./routes/appRoutes";
+import { useLanguage } from "./i18n";
 
 import api from "./api/client";
 import "./App.css";
@@ -124,6 +125,7 @@ function App() {
   const [checkingBackend, setCheckingBackend] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
   const [sessionExpiredOpen, setSessionExpiredOpen] = useState(false);
+  const { currentLang, toggleLanguage, t } = useLanguage();
 
   // Quản lý theme thời gian thực từ LocalStorage và sự kiện thay đổi
   const [currentTheme, setCurrentTheme] = useState<ThemeMode>(() => getLocalPreferences().theme);
@@ -1207,6 +1209,19 @@ function App() {
             <span>📢</span>
             <span className="quick-report-label">Gửi phản ánh</span>
           </button>
+          {/* Nút chuyển đổi ngôn ngữ Tiếng Việt / Tiếng Anh */}
+          <button
+            type="button"
+            className="header-icon-btn lang-toggle-btn"
+            onClick={toggleLanguage}
+            title={currentLang === "VI" ? "Chuyển sang tiếng Anh (Switch to English)" : "Switch to Vietnamese (Chuyển sang tiếng Việt)"}
+            aria-label="Chuyển đổi ngôn ngữ hệ thống"
+            style={{ fontWeight: 700, fontSize: "0.82rem", minWidth: "46px", cursor: "pointer" }}
+            data-testid="btn-toggle-language"
+          >
+            {currentLang === "VI" ? "VI 🇻🇳" : "EN 🇬🇧"}
+          </button>
+
           {/* Nút đổi Theme Sáng / Tối */}
           <button
             type="button"
@@ -2303,7 +2318,7 @@ function App() {
           aria-label="Trợ lý giọng nói"
         >
           <span className="floating-mic-icon">🎙️</span>
-          <span className="floating-mic-label">Trợ lý ảo</span>
+          <span className="floating-mic-label">{t("nav.voiceAssistant", "Trợ lý ảo")}</span>
         </button>
       )}
 
