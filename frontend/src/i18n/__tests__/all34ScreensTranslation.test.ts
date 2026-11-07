@@ -193,4 +193,42 @@ describe("Comprehensive Verification: All 34 GreenSpot Screens & Complex UI Modu
 
     expect(/[\u00C0-\u1EF9]/i.test(document.body.textContent || "")).toBe(false);
   });
+
+  it("dịch hoàn hảo các chuỗi thời tiết, trạm quan trắc, địa danh sinh thái và template động", () => {
+    document.body.innerHTML = `
+      <div id="eco-weather-dashboard">
+        <h2>6 Chất Ô Nhiễm Không Khí Trọng Yếu</h2>
+        <span class="aqi-badge">AQI 115 • Nhạy cảm</span>
+        <span class="aqi-good">AQI 14 • Xuất sắc</span>
+        <div class="card">
+          <p class="landmark">Khu bảo tồn sinh thái Rừng Sác Cần Giờ</p>
+          <p class="desc">Khu dự trữ sinh quyển thế giới với thảm rừng ngập mặn kỳ vĩ</p>
+          <p class="distance">2.5 km - Ước tính 5 phút</p>
+          <p class="water">- Nước ngập 0.85m</p>
+          <p class="status">Đang mở bản đồ quan trắc chất lượng không khí và chỉ số AQI.</p>
+          <p class="stats">Hiển thị 10/50 bản ghi</p>
+        </div>
+      </div>
+    `;
+
+    applyDOMTranslation(document.body, "EN");
+
+    expect(document.querySelector("h2")?.textContent).toBe("6 Critical Air Pollutants");
+    expect(document.querySelector(".aqi-badge")?.textContent).toBe("AQI 115 • Sensitive");
+    expect(document.querySelector(".aqi-good")?.textContent).toBe("AQI 14 • Excellent");
+    expect(document.querySelector(".landmark")?.textContent).toBe("Can Gio Mangrove Ecological Reserve");
+    expect(document.querySelector(".distance")?.textContent).toBe("2.5 km - Estimated 5 mins");
+    expect(document.querySelector(".water")?.textContent).toBe("- Flood depth 0.85m");
+    expect(document.querySelector(".status")?.textContent).toBe("Opening air quality monitoring map and AQI index.");
+    expect(document.querySelector(".stats")?.textContent).toBe("Showing 10/50 records");
+
+    // Tuyệt đối không còn tiếng Việt có dấu
+    expect(/[\u00C0-\u1EF9]/i.test(document.body.textContent || "")).toBe(false);
+
+    // Chuyển ngược lại tiếng Việt phải bảo toàn nguyên vẹn 100%
+    applyDOMTranslation(document.body, "VI");
+    expect(document.querySelector("h2")?.textContent).toBe("6 Chất Ô Nhiễm Không Khí Trọng Yếu");
+    expect(document.querySelector(".aqi-badge")?.textContent).toBe("AQI 115 • Nhạy cảm");
+    expect(document.querySelector(".landmark")?.textContent).toBe("Khu bảo tồn sinh thái Rừng Sác Cần Giờ");
+  });
 });

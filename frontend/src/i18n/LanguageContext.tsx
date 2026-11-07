@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import type { LanguageCode, I18nContextType } from "./types";
 import { I18N_DICTIONARY } from "./translations";
-import { setGlobalPageLanguage } from "./domTranslator";
+import { setGlobalPageLanguage, initDOMTranslation } from "./domTranslator";
 import api from "../api/client";
 
 const LANGUAGE_STORAGE_KEY = "greenspot_user_lang";
@@ -63,6 +63,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   useEffect(() => {
+    initDOMTranslation(document.body);
     document.documentElement.setAttribute("lang", currentLang.toLowerCase());
     setGlobalPageLanguage(currentLang);
 

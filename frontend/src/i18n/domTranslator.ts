@@ -154,6 +154,10 @@ export const DOM_TRANSLATION_MAP: Record<string, string> = {
   "Mã OTP đã được gửi đến email của bạn": "OTP code has been sent to your email",
   "Phân loại sự cố AI & Cơ sở trọng yếu": "AI Incident Triage & Critical Spatial Facilities",
   "Tràn dầu loang cục bộ kênh Nhiêu Lộc": "Localized oil spill on Nhieu Loc Canal",
+  "Ước tính": "Estimated",
+  "ước tính": "estimated",
+  "Ước tính:": "Estimated:",
+  "ước tính:": "estimated:",
   "Vị trí ước tính (Chưa cấp quyền GPS)": "Estimated Location (GPS Permission Denied)",
   "bảng chỉ số rủi ro môi trường đô thị": "Urban Environmental Risk Index Dashboard",
   "bờ kè kênh đôi, phường 4, district 8": "Kenh Doi Embankment, Ward 4, District 8",
@@ -4321,6 +4325,390 @@ export const DOM_TRANSLATION_MAP: Record<string, string> = {
   "📍 Đã chuyển sang phân tích điểm nóng & dự báo:": "📍 Switched to hotspot analytics & forecast:",
   "📍 Đã thiết lập điểm đến né ngập:": "📍 Flood-avoiding destination set:",
   "🛣️ Lộ trình di chuyển bám đường:": "🛣️ Road-following travel route:",
+  ". Vào": ". Go to",
+  ". Đảm bảo": ". Ensure",
+  "0.85m (Dưới báo động 1)": "0.85m (Below Warning Level 1)",
+  "1. Nhấp vào biểu tượng": "1. Click on the icon",
+  "1. Áp dụng tại toàn bộ hệ thống đối tác của GreenSpot.\\n2. Xuất trình mã QR tại quầy thanh toán hoặc sao chép mã khi mua trực tuyến.\\n3. Mỗi mã voucher chỉ áp dụng 01 lần duy nhất.\\n4. Không có giá trị quy đổi thành tiền mặt.": "1. Applicable across all GreenSpot partner systems.\\n2. Present QR code at checkout or copy code for online purchase.\\n3. Each voucher code is valid once only.\\n4. Not redeemable for cash.",
+  "1. Đường Cong Làm Sạch Của Gió (Wind Dispersion Curve)": "1. Wind Dispersion Curve",
+  "1.2 tấn vỏ hộp/tháng": "1.2 tons of cartons/month",
+  "1.6 hecta ven sông": "1.6 hectares riverside",
+  "101 Tôn Dật Tiên, P. Tân Phú, Quận 7": "101 Ton Dat Tien, Tan Phu Ward, District 7",
+  "12 tấn rác hữu cơ": "12 tons of organic waste",
+  "2. Chuyển mục": "2. Switch section",
+  "2. Đường Cong Rửa Trôi Của Mưa (Rain Washout Effect)": "2. Rain Washout Effect",
+  "2.500 cây / 900 loài": "2,500 trees / 900 species",
+  "227 Nguyễn Văn Cừ, P.4, Quận 5 (Khuôn viên ĐH KHTN)": "227 Nguyen Van Cu, Ward 4, District 5 (University of Science Campus)",
+  "3. Nhấn nút": "3. Click button",
+  "3.000 tấn / ngày": "3,000 tons / day",
+  "3.2 hecta mặt hồ": "3.2 hectares lake surface",
+  "450 kg / tuần": "450 kg / week",
+  "5.8 mg/L (Đạt chuẩn)": "5.8 mg/L (Meets Standard)",
+  "6 Chất Ô Nhiễm Không Khí Trọng Yếu": "6 Critical Air Pollutants",
+  "850 kg / tháng": "850 kg / month",
+  "88 dB (Vượt quy chuẩn)": "88 dB (Exceeds Standard)",
+  "<span style=\"background: #fee2e2; color: #b91c1c; font-size: 10px; padding: 1px 4px; border-radius: 4px; font-weight: 700;\">RẤT GẦN &lt;100m</span>": "<span style=\"background: #fee2e2; color: #b91c1c; font-size: 10px; padding: 1px 4px; border-radius: 4px; font-weight: 700;\">VERY CLOSE &lt;100m</span>",
+  "API Key bị giới hạn tên miền (Referrer restriction) hoặc chưa bật Billing/Maps JavaScript API trên Google Cloud Console.": "API Key is restricted by domain (Referrer restriction) or Billing/Maps JavaScript API is not enabled on Google Cloud Console.",
+  "AQI 115 • Nhạy cảm": "AQI 115 • Sensitive",
+  "AQI 14 • Xuất sắc": "AQI 14 • Excellent",
+  "AQI 38 • Tốt": "AQI 38 • Good",
+  "Bán kính chính xác:": "Exact radius:",
+  "Bán đảo Thanh Đa": "Thanh Da Peninsula",
+  "Bán đảo sinh thái xanh, công viên bờ sông và trung tâm tài chính tương lai": "Green ecological peninsula, riverside park, and future financial center",
+  "Báo cáo bãi rác gần đây": "Recent illegal dump site reports",
+  "Báo cáo sự cố gần đây": "Recent incident reports",
+  "Báo động lũ cấp 2": "Flood Warning Level 2",
+  "Bãi phế liệu tự phát ven đường Vành Đai Trong": "Spontaneous scrap yard along Vanh Dai Trong Street",
+  "Bãi rác tự phát chân cầu Rạch Đĩa": "Spontaneous dump site at foot of Rach Dia Bridge",
+  "Bạn (Tình nguyện viên)": "You (Volunteer)",
+  "Bạn chưa cấp quyền truy cập GPS. Đang hiển thị vị trí ước lượng qua mạng.": "You haven't granted GPS permission. Displaying estimated network location.",
+  "Bạn có thể dùng": "You can use",
+  "Bạn có thể thử các câu lệnh mẫu sau:": "You can try the following sample voice commands:",
+  "Bạn cần hỗ trợ điều gì hôm nay?": "How can I assist you today?",
+  "Bản Đồ Phân Bổ 34 Tỉnh Thành": "Distribution Map across 34 Provinces & Cities",
+  "Bản đồ Google Vệ Tinh": "Google Satellite Map",
+  "Bản đồ nền tối Esri Dark Canvas (Không watermark)": "Esri Dark Canvas Basemap (No watermark)",
+  "Bản đồ đường (Google Roadmap)": "Road Map (Google Roadmap)",
+  "Bảng Vinh Danh Công Dân Xanh": "Green Citizen Hall of Fame",
+  "Bảo tồn sinh thái": "Ecological conservation",
+  "Bật \"Maps JavaScript API\"": "Enable \"Maps JavaScript API\"",
+  "Bến Phú Định, P.16, Quận 8": "Phu Dinh Pier, Ward 16, District 8",
+  "Bến Vân Đồn, P.1, Quận 4": "Ben Van Don, Ward 1, District 4",
+  "Bờ kè sông Sài Gòn, chân cầu Bình Lợi cũ, Bình Thạnh": "Saigon River embankment, foot of old Binh Loi Bridge, Binh Thanh",
+  "Bờ kênh Tham Lương, P. Tân Thới Nhất, Quận 12": "Tham Luong canal embankment, Tan Thoi Nhat Ward, District 12",
+  "Chiều dài dải rác": "Length of waste strip",
+  "Chuyển sang giao diện Sáng": "Switch to Light mode",
+  "Chuyển sang giao diện Tối": "Switch to Dark mode",
+  "Chưa nạp địa điểm nào. Nhấn 'Quét quanh đây' để tìm kiếm quán xá gần bạn.": "No locations loaded yet. Click 'Scan nearby' to discover places near you.",
+  "Chỉ số AQI tổng hợp thời gian thực": "Real-time composite AQI index",
+  "Chỉ số SO2 & NOx": "SO2 & NOx Index",
+  "Chỉ số nước ổn định": "Water indices stable",
+  "Chỉ số theo dõi:": "Monitoring indicator:",
+  "Chỉ số xuất sắc": "Excellent indicator",
+  "Chờ xử phạt hành chính": "Awaiting administrative penalty",
+  "Chờ đội phản ứng nhanh": "Awaiting rapid response team",
+  "Cán bộ Điều phối": "Dispatch Officer",
+  "Cánh đồng hoa hướng dương": "Sunflower field",
+  "Câu trả lời / hành động đã thực hiện:": "Response / Action taken:",
+  "Công nghệ ép rác ngầm": "Underground waste compaction technology",
+  "Công suất xử lý": "Processing capacity",
+  "Công viên Bến Bạch Đằng": "Bach Dang Wharf Park",
+  "Công viên Cảnh Đồi & Cầu Ánh Sao": "Canh Doi Park & Starlight Bridge",
+  "Công viên Gia Định": "Gia Dinh Park",
+  "Công viên Tao Đàn": "Tao Dan Park",
+  "Công viên bờ sông Sài Gòn Thủ Thiêm": "Thu Thiem Saigon Riverfront Park",
+  "Công viên cảnh quan ven sông Sài Gòn với thảm cỏ xanh, lối dạo bộ và ga tàu thủy ngắm cảnh.": "Saigon riverside landscape park with green lawns, walking promenades, and scenic waterbus station.",
+  "Công viên sinh thái Đầm Sen": "Dam Sen Ecological Park",
+  "Cảm biến laser đo bụi mịn PM2.5, PM10, khí CO và NO2 theo thời gian thực (chu kỳ 5 phút).": "Real-time laser sensors measuring PM2.5, PM10, CO, and NO2 (5-minute cycle).",
+  "Cảm biến sóng siêu âm đo mực nước kết nối hệ thống điều khiển cửa cống ngăn triều.": "Ultrasonic water level sensors connected to tidal sluice gate control system.",
+  "Cảm ơn bạn đã tin dùng GreenSpot Voice Assistant!": "Thank you for using GreenSpot Voice Assistant!",
+  "Cảnh báo ngập xe máy": "Motorbike flood warning",
+  "Cấu hình HTTP Referrers (Tên miền cho phép)": "Configure HTTP Referrers (Allowed domains)",
+  "Cầu vượt Hàng Xanh, P.25, Bình Thạnh": "Hang Xanh Overpass, Ward 25, Binh Thanh",
+  "Cống thoát nước quá tải khi mưa lớn": "Drainage system overloaded during heavy rain",
+  "Cộng đồng báo cáo ngập lụt": "Community flood reporting",
+  "Cứu hộ khẩn cấp & Hotline TP.HCM": "Emergency Rescue & HCMC Hotline",
+  "Cửa hàng & Tiện ích": "Shops & Conveniences",
+  "Cửa ngõ Đông Bắc & Bán đảo Thanh Đa": "Northeast Gateway & Thanh Da Peninsula",
+  "DANH SÁCH VAI TRÒ": "ROLE LIST",
+  "Diện tích": "Area",
+  "Diện tích hồ cảnh quan": "Landscape lake area",
+  "Diện tích mảng xanh": "Greenery surface area",
+  "Dài hơn 120 mét": "Over 120 meters long",
+  "Dưới ngưỡng cho phép": "Below permissible limit",
+  "Dừng & Xử lý ngay": "Stop & Process immediately",
+  "Dừng &amp; Xử lý ngay": "Stop & Process immediately",
+  "Dữ liệu mô hình dòng chảy thủy văn toàn cầu.": "Global hydrological runoff model data.",
+  "Dự báo 7 ngày": "7-day forecast",
+  "Form Báo cáo sự cố:": "Incident report form:",
+  "Giám sát nồng độ bụi giao thông cửa ngõ Tây Bắc để điều tiết phun sương rửa đường.": "Monitoring traffic dust concentration at Northwest gateway for street misting regulation.",
+  "Google Maps Platform: Lỗi \"Permission Denied\" từ API Key": "Google Maps Platform: \"Permission Denied\" error from API Key",
+  "GreenPoint - Trạm tiếp nhận pin & rác điện tử": "GreenPoint - Battery & E-waste Collection Station",
+  "Gò Vấp / Phú Nhuận": "Go Vap / Phu Nhuan",
+  "Gợi ý câu lệnh bạn có thể thử:": "Suggested commands you can try:",
+  "Gợi ý câu lệnh mẫu (Chạm để xử lý ngay):": "Suggested sample commands (Tap to execute):",
+  "Gửi": "Send",
+  "Hiệu suất rửa trôi": "Washout efficiency",
+  "Hiệu ứng rửa trôi tự nhiên": "Natural washout effect",
+  "Hoàn tất thu gom và khử khuẩn khu vực tập kết rau củ quả sau phiên chợ sớm.": "Completed collection and disinfection of vegetable aggregation area after early market.",
+  "Huỳnh Tấn Phát, P. Phú Thuận, Quận 7": "Huynh Tan Phat, Phu Thuan Ward, District 7",
+  "HÀNH VI VI PHẠM": "VIOLATION BEHAVIOR",
+  "Hôm nay, 07:00": "Today, 07:00",
+  "Hôm nay, 08:30": "Today, 08:30",
+  "Hôm nay, 09:10": "Today, 09:10",
+  "Hôm nay, 11:00": "Today, 11:00",
+  "Hôm qua, 14:15": "Yesterday, 14:15",
+  "Hôm qua, 16:45": "Yesterday, 16:45",
+  "Hơn 1.000 cây xanh": "Over 1,000 trees",
+  "Hướng Dẫn Khắc Phục Lỗi \"Permission Denied\"": "Guide to Fixing \"Permission Denied\" Error",
+  "Hầu như không tương quan tuyến tính": "Virtually no linear correlation",
+  "Hồ Bán Nguyệt 10ha": "Crescent Lake 10ha",
+  "Hồ Bán Nguyệt, Cầu Ánh Sao, mảng xanh quy hoạch chuẩn quốc tế": "Crescent Lake, Starlight Bridge, international standard green planning",
+  "Hồ sen và ốc đảo xanh": "Lotus pond and green oasis",
+  "Hỗ trợ phân tán khói bụi": "Supports smoke and dust dispersion",
+  "Hợp tác xã xanh chuyên thu mua chai nhựa, lon thiếc giá hỗ trợ cho cư dân phân loại tại nguồn.": "Green cooperative specializing in purchasing plastic bottles and aluminum cans with subsidized rates for source-sorting residents.",
+  "KHÔNG CÓ DỮ LIỆU": "NO DATA",
+  "Khoảng 3.5 tấn phế thải": "Approximately 3.5 tons of waste",
+  "Khu bảo tồn sinh thái Rừng Sác Cần Giờ": "Can Gio Mangrove Ecological Reserve",
+  "Khu dự trữ sinh quyển thế giới": "World Biosphere Reserve",
+  "Khu dự trữ sinh quyển thế giới với thảm rừng ngập mặn kỳ vĩ": "World Biosphere Reserve with majestic mangrove forest ecosystem",
+  "Khu phức hợp công viên lớn nhất khu vực phía Bắc sân bay Tân Sơn Nhất.": "Largest park complex in the northern area of Tan Son Nhat airport.",
+  "Khu sinh quyển UNESCO": "UNESCO Biosphere Reserve",
+  "Khu vườn cổ thụ rợp bóng mát giữa trung tâm Sài Gòn, nơi tập trung đa dạng sinh học cây nhiệt đới.": "Shaded ancient tree garden in downtown Saigon, rich in tropical flora biodiversity.",
+  "Khu vực Bến Thành, phố đi bộ Nguyễn Huệ, Nhà hát TP & Tòa tháp Bitexco": "Ben Thanh area, Nguyen Hue walking street, City Opera House & Bitexco Tower",
+  "Khu vực đất trống bị chiếm dụng làm nơi tập kết lốp cao su cũ nguy cơ hỏa hoạn.": "Vacant lot illegally occupied for used rubber tires storage with severe fire risk.",
+  "Khu đô thị Kiểu mẫu Nam Sài Gòn": "South Saigon Model Urban Area",
+  "Khu đô thị Thủ Thiêm, đối diện bến Bạch Đằng, TP. Thủ Đức": "Thu Thiem Urban Area, opposite Bach Dang Wharf, Thu Duc City",
+  "Khung giờ ô nhiễm đỉnh điểm trong ngày:": "Peak pollution hours during the day:",
+  "Khuôn viên ngoài chợ Bình Điền, P.7, Quận 8": "Exterior grounds of Binh Dien Market, Ward 7, District 8",
+  "Khô ráo & An toàn": "Dry & Safe",
+  "Khô ráo &amp; An toàn": "Dry & Safe",
+  "Không có dữ liệu phân tán.": "No dispersion data available.",
+  "Không có dữ liệu đường cong.": "No curve data available.",
+  "Không gian sinh thái cộng đồng mới với vườn hoa hướng dương, thảm cỏ dã ngoại và sân sinh hoạt ngoài trời.": "New community ecological space featuring sunflower garden, picnic lawns, and outdoor recreational grounds.",
+  "Không gian xanh xuất sắc": "Outstanding green space",
+  "Không gian xanh đô thị": "Urban green space",
+  "Không khí trong lành": "Fresh air",
+  "Không lành mạnh cho nhóm nhạy cảm": "Unhealthy for sensitive groups",
+  "Không nghe thấy giọng nói của bạn": "Could not detect your voice",
+  "Không thể báo cáo ngập:": "Unable to report flooding:",
+  "Không thể khóa tín hiệu vệ tinh GPS.": "Cannot lock onto GPS satellite signal.",
+  "Không thể khởi động trợ lý ảo. Vui lòng thử lại": "Could not start virtual assistant. Please try again",
+  "Không thể kết nối API /api/v1/eco-locations:": "Cannot connect to API /api/v1/eco-locations:",
+  "Không thể kết nối API /api/v1/spatial/districts:": "Cannot connect to API /api/v1/spatial/districts:",
+  "Không thể kết nối API /api/v1/spatial/landmarks:": "Cannot connect to API /api/v1/spatial/landmarks:",
+  "Không thể kết nối API /api/v1/spatial/nearest:": "Cannot connect to API /api/v1/spatial/nearest:",
+  "Không thể kết nối API /api/v1/weather/current:": "Cannot connect to API /api/v1/weather/current:",
+  "Không thể kết nối API /api/v1/weather/heatmap:": "Cannot connect to API /api/v1/weather/heatmap:",
+  "Không đủ dữ liệu ma trận tương quan.": "Insufficient correlation matrix data.",
+  "Khử mùi sinh học": "Biological odor removal",
+  "Kiểm tra Tài Khoản Thanh Toán (Billing)": "Check Billing Account",
+  "Kích hoạt nhận dạng giọng nói": "Activate voice recognition",
+  "Lá phổi xanh trung tâm": "Central green lung",
+  "LƯU": "SAVE",
+  "Lưu Huỳnh Điôxít (SO₂)": "Sulfur Dioxide (SO2)",
+  "Lưu lượng dòng chảy bình thường": "Normal water flow rate",
+  "Lưu vực Sông Sài Gòn - Đồng Nai": "Saigon - Dong Nai River Basin",
+  "Lượng Mưa vs AQI": "Rainfall vs AQI",
+  "Lượng mưa càng lớn kéo các hạt bụi lơ lửng xuống mặt đất, thanh lọc bầu không khí.": "Higher rainfall pulls suspended particulates to the ground, purifying ambient air.",
+  "Lượng pin thu gom": "Batteries collected",
+  "Lốp xe & Gỗ cũ": "Old tires & Scrap wood",
+  "Lỗi Reverse Geocode OSM:": "OSM Reverse Geocode error:",
+  "Lỗi gọi API tìm kiếm địa điểm:": "Error calling location search API:",
+  "Lỗi khi tải Google Maps script từ CDN. Vui lòng kiểm tra kết nối mạng hoặc API Key.": "Error loading Google Maps script from CDN. Please check network connection or API Key.",
+  "Lỗi khởi tạo watchPosition:": "Error initializing watchPosition:",
+  "Lỗi tính toán lộ trình OSRM:": "OSRM route calculation error:",
+  "Lỗi tải POI quanh khu vực:": "Error loading nearby POIs:",
+  "Lỗi tải bài đăng. Bạn có thể bấm 'Tải lại' ở cột bài viết.": "Error loading posts. You can click 'Reload' in the feed column.",
+  "Lỗi tải thông tin cá nhân. Vui lòng bấm 'Tải lại'.": "Error loading profile. Please click 'Reload'.",
+  "Lộ trình di chuyển an toàn": "Safe navigation route",
+  "Mai Chí Thọ, P. An Phú, TP. Thủ Đức": "Mai Chi Tho, An Phu Ward, Thu Duc City",
+  "Micro vẫn đang bị chặn. Vui lòng kiểm tra cài đặt trình duyệt": "Microphone is still blocked. Please check browser settings",
+  "Mật độ bụi giờ cao điểm": "Rush-hour dust density",
+  "Mặt nước điều hòa": "Retention lake surface",
+  "Một trong những vườn bách thảo lâu đời nhất thế giới, lưu trữ nhiều nguồn gen quý hiếm.": "One of the oldest botanical gardens in the world, preserving rare genetic flora.",
+  "Mở bản đồ chất lượng không khí": "Open air quality map",
+  "Mở chức năng liên quan": "Open related feature",
+  "Mở cửa: 07:30 - 18:00": "Opening hours: 07:30 - 18:00",
+  "Mức độ ô nhiễm": "Pollution level",
+  "Mực nước an toàn": "Safe water level",
+  "Mực nước dâng nhanh trên 0.8m do triều cường kết hợp mưa lớn đạt đỉnh lúc 17h30. Đề nghị người dân hạn chế di chuyển. Tuyến tránh an toàn: đường Trần Hưng Đạo hoặc Võ Văn Kiệt. Hotline cứu hộ: 114 / 115.": "Water level rising rapidly over 0.8m due to high tide and heavy rain peaking at 17:30. Residents are advised to limit travel. Safe alternative routes: Tran Hung Dao or Vo Van Kiet Street. Rescue hotline: 114 / 115.",
+  "Nguyên nhân thoát nước:": "Drainage cause:",
+  "Ngã tư An Sương, P. Trung Mỹ Tây, Quận 12": "An Suong Intersection, Trung My Tay Ward, District 12",
+  "Nhiệt Độ Trung Bình": "Average Temperature",
+  "Nhiệt Độ vs AQI": "Temperature vs AQI",
+  "Nhà máy tái chế rác compost làm phân hữu cơ và sản xuất điện năng từ khí sinh học rác thải.": "Composting waste recycling plant producing organic fertilizer and generating electricity from landfill biogas.",
+  "Nặng • Bốc mùi nồng": "Severe • Strong pungent odor",
+  "Open-Meteo Global Flood API (Copernicus GloFAS Trực tiếp)": "Open-Meteo Global Flood API (Live Copernicus GloFAS)",
+  "PHẢN HỒI TỪ TRỢ LÝ": "ASSISTANT RESPONSE",
+  "Phát lại bằng giọng nói": "Voice playback",
+  "Phân Bổ Tỷ Lệ Mức Độ Chất Lượng Không Khí": "Air Quality Level Proportion Distribution",
+  "Phân quyền vai trò": "Role permissions",
+  "Phối hợp cùng các nhãn hàng thu gom vỏ hộp giấy nhiều lớp để ép thành tấm lợp sinh thái.": "Cooperating with brands to collect multi-layer paper cartons to press into ecological roofing sheets.",
+  "Quan trắc âm học đô thị và cảnh báo ô nhiễm tiếng ồn cho các khu dân cư lân cận.": "Urban acoustics monitoring and noise pollution warning for adjacent residential areas.",
+  "Quy hoạch mảng xanh và mặt nước hồ điều hòa thân thiện với người đi bộ và xe đạp.": "Pedestrian and bicycle-friendly planning of green spaces and retention lakes.",
+  "Quy mô ước tính": "Estimated scale",
+  "Quyền định vị GPS bị chặn.": "GPS location permission is blocked.",
+  "Quá thời gian phản hồi GPS. Đang thử vị trí qua mạng...": "GPS response timeout. Attempting network location...",
+  "Quán Cafe & Đồ uống": "Cafes & Beverages",
+  "Quán ăn & Nhà hàng": "Eateries & Restaurants",
+  "Quản Trị Hệ Thống": "System Administration",
+  "Quản trị hệ thống": "System Administration",
+  "Quận": "District",
+  "Quận 5 / Quận 8": "District 5 / District 8",
+  "Quận 7 / Nhà Bè": "District 7 / Nha Be",
+  "Rác hữu cơ chợ đầu mối Bình Điền": "Organic waste at Binh Dien wholesale market",
+  "Rác theo thủy triều tấp vào chân cầu Bình Lợi, thuyền thu gom đang xử lý.": "Tidal trash accumulated at foot of Binh Loi Bridge, collection boat is processing.",
+  "Rác thải nhựa trôi nổi chân cầu Bình Lợi": "Floating plastic debris at foot of Binh Loi Bridge",
+  "RẤT GẦN &lt;100m": "VERY CLOSE &lt;100m",
+  "RẤT GẦN <100m": "VERY CLOSE <100m",
+  "Rất không tốt cho sức khỏe": "Very unhealthy",
+  "Rừng Sác Cần Giờ": "Can Gio Mangrove Forest",
+  "So sánh": "Compare",
+  "Sảnh B3, Vincom Center Landmark 81, P.22, Bình Thạnh": "Basement B3, Vincom Center Landmark 81, Ward 22, Binh Thanh",
+  "Số 2 Nguyễn Bỉnh Khiêm, P. Bến Nghé, Quận 1": "No. 2 Nguyen Binh Khiem, Ben Nghe Ward, District 1",
+  "Số 3 Hòa Bình, P.3, Quận 11": "No. 3 Hoa Binh, Ward 3, District 11",
+  "Số cây cổ thụ": "Number of ancient trees",
+  "Số dư ví điểm xanh của bạn hiện có 350 điểm GreenPoints.": "Your green points wallet balance currently has 350 GreenPoints.",
+  "Số nhà & Địa chỉ": "House number & Address",
+  "Sự cố môi trường": "Environmental incident",
+  "THỐNG KÊ HOẠT ĐỘNG HỆ THỐNG": "SYSTEM ACTIVITY STATISTICS",
+  "TRỢ LÝ GIỌNG NÓI": "VOICE ASSISTANT",
+  "TRỢ LÝ GIỌNG NÓI RẢNH TAY": "HANDS-FREE VOICE ASSISTANT",
+  "Thi công ép cọc sau 22h đêm vi phạm quy định âm thanh đô thị.": "Pile driving after 22:00 violates urban acoustic regulations.",
+  "Thiết bị không có GPS vệ tinh. Đang thử vị trí qua mạng...": "Device lacks satellite GPS. Attempting network location...",
+  "Thu vỏ hộp sữa & giấy": "Collect milk cartons & paper",
+  "Thùng rác AI thông minh tự động nhận diện vỏ lon nhôm, chai nhựa PET và tích điểm đổi quà qua app.": "Smart AI trash bin automatically recognizing aluminum cans and PET plastic bottles, awarding points via app.",
+  "Thảo Cầm Viên Sài Gòn": "Saigon Zoo and Botanical Gardens",
+  "Thống kê hoạt động": "Activity statistics",
+  "Thời tiết, Ngập lụt, Không khí, Cây xanh, Ví điểm": "Weather, Floods, Air, Greenery, Points Wallet",
+  "Thực tế ngập úng tại TP.HCM chỉ xảy ra cục bộ tại một đoạn trũng thấp hoặc khu vực cống thoát nước không kịp tiêu thoát, các đoạn khác lưu thông bình thường.": "In reality, flooding in HCMC occurs locally at low-lying sections or drainage bottlenecks; other sections flow normally.",
+  "Tiếng ồn giờ cao điểm": "Peak-hour noise level",
+  "Toạ độ GPS (Lat, Lng):": "GPS Coordinates (Lat, Lng):",
+  "Triều cường dâng cao kết hợp mưa lớn làm ngập cục bộ 600m mặt đường.": "High tide combined with heavy rain locally floods 600m of road surface.",
+  "Trung tâm Hành chính & Tài chính": "Administrative & Financial Center",
+  "Trung tâm Quận 1": "District 1 Center",
+  "Trung tâm Tái chế Chất thải Đa Phước": "Da Phuoc Waste Recycling Center",
+  "Truyền dữ liệu quan trắc ống khói liên tục về Sở Tài nguyên Môi trường TP.HCM.": "Continuously transmitting stack emission monitoring data to HCMC Department of Natural Resources and Environment.",
+  "Trình duyệt không hỗ trợ Geolocation API.": "Browser does not support Geolocation API.",
+  "Trình duyệt không hỗ trợ nhận dạng giọng nói. Hãy dùng bàn phím": "Browser does not support speech recognition. Please use keyboard",
+  "Trình duyệt đang chặn truy cập micro": "Browser is blocking microphone access",
+  "Trạm cảnh báo ngập triều cường Bến Phú Định": "Phu Dinh Pier Tidal Flood Warning Station",
+  "Trạm giám sát vi khí hậu nút giao An Sương": "An Suong Intersection Microclimate Monitoring Station",
+  "Trạm khí tượng sinh thái Rừng ngập mặn Cần Giờ": "Can Gio Mangrove Ecological Weather Station",
+  "Trạm kiểm lâm Cần Thạnh, Cần Giờ": "Can Thanh Ranger Station, Can Gio",
+  "Trạm quan trắc IoT": "IoT Monitoring Station",
+  "Trạm quan trắc khí thải KCN Tân Bình": "Tan Binh IP Stack Emission Monitoring Station",
+  "Trạm quan trắc không khí AQI Bến Thành": "Ben Thanh AQI Air Monitoring Station",
+  "Trạm quan trắc nước mặt Kênh Tàu Hủ": "Tau Hu Canal Surface Water Monitoring Station",
+  "Trạm quan trắc tiếng ồn & bụi ngã tư Hàng Xanh": "Hang Xanh Intersection Noise & Dust Monitoring Station",
+  "Trạm thu gom & Tái chế": "Collection & Recycling Station",
+  "Trạm thu gom rác thông minh Landmark 81": "Landmark 81 Smart Waste Collection Station",
+  "Trạm thu gom rác xanh Crescent Mall": "Crescent Mall Green Waste Collection Station",
+  "Trạm trung chuyển hiện đại kín khí, không để phát tán mùi hôi ra khu dân cư xung quanh.": "Modern airtight transfer station preventing odor emissions into surrounding neighborhoods.",
+  "Trạm trung chuyển rác khép kín Quang Trung": "Quang Trung Closed Waste Transfer Station",
+  "Trạm đối chứng chất lượng không khí sạch tiêu chuẩn của khu dự trữ sinh quyển thế giới.": "Benchmark clean air monitoring station of the World Biosphere Reserve.",
+  "Trẻ em & Người già:": "Children & Elderly:",
+  "Trợ lý giọng nói": "Voice Assistant",
+  "Tái chế rác nhựa": "Plastic waste recycling",
+  "Tên vai trò chỉ gồm chữ cái tiếng Việt, số, khoảng trắng, dấu '-' và '_'": "Role name can only contain letters, numbers, spaces, '-' and '_'",
+  "Tìm kiếm địa điểm, số nhà, quán xá, toà nhà...": "Search places, addresses, cafes, buildings...",
+  "Tòa tháp cao nhất Việt Nam bên sông Sài Gòn & công viên ven sông 14 hecta": "Tallest tower in Vietnam by Saigon River & 14-hectare riverside park",
+  "Tương quan rất mạnh": "Very strong correlation",
+  "Tương quan đáng kể": "Significant correlation",
+  "Tốc Độ Gió (km/h)": "Wind Speed (km/h)",
+  "Tốc Độ Gió vs AQI": "Wind Speed vs AQI",
+  "Tốc độ gió càng cao giúp khuếch tán và làm loãng nồng độ bụi PM2.5 trong tầng đối lưu.": "Higher wind speed helps disperse and dilute PM2.5 particulate concentration in troposphere.",
+  "Tụ điểm xả trộm rác xây dựng và túi nilon ven bờ rạch gây tắc nghẽn dòng chảy.": "Illegal dumping hotspot of construction debris and plastic bags along canal bank clogging water flow.",
+  "Tỷ lệ phân loại đúng": "Correct sorting rate",
+  "Vòng xoay Quách Thị Trang, P. Bến Thành, Quận 1": "Quach Thi Trang Roundabout, Ben Thanh Ward, District 1",
+  "Vùng đất trù phú bao bọc bởi dòng sông Sài Gòn êm đềm": "Fertile land embraced by the gentle Saigon River",
+  "Vùng đệm thanh lọc không khí khổng lồ của cả vùng đô thị Đông Nam Bộ.": "Massive air-purifying buffer zone for the entire Southeast urban region.",
+  "Văn bản nhận dạng theo thời gian thực:": "Real-time recognized text:",
+  "Văn bản nhận dạng:": "Recognized text:",
+  "Vận động ngoài trời:": "Outdoor exercise:",
+  "Vệ tinh (Google Satellite)": "Satellite (Google Satellite)",
+  "Vị trí của bạn": "Your location",
+  "Vị trí hiện tại": "Current location",
+  "Xe ben chở đất cát chưa rửa bánh khi rời công trường, gây bụi mịn phát tán.": "Dump truck carrying earth left construction site unwashed, releasing fine dust.",
+  "Xem số dư ví điểm": "View points wallet balance",
+  "Xuất Báo Cáo CSV": "Export CSV Report",
+  "Xã Đa Phước, Huyện Bình Chánh": "Da Phuoc Commune, Binh Chanh District",
+  "Xả bụi mịn công trường đại lộ Mai Chí Thọ": "Dust emissions from Mai Chi Tho boulevard construction site",
+  "[Google Maps AuthFailure] Google Maps Platform từ chối API Key (Permission Denied, Billing, hoặc Referrer Restriction).": "[Google Maps AuthFailure] Google Maps Platform rejected API Key (Permission Denied, Billing, or Referrer Restriction).",
+  "bánh": "cake / pastries",
+  "bên dưới.": "below.",
+  "bún": "noodles",
+  "cà phê": "coffee",
+  "cơm": "rice / meal",
+  "phở": "pho noodle soup",
+  "quán": "shop / eatery",
+  "sang trạng thái": "to status",
+  "trên thanh địa chỉ URL.": "in the address bar.",
+  "| Mưa:": "| Rain:",
+  "} với vai trò{": "} with role {",
+  "Ô nhiễm tiếng ồn công trường đêm ngã tư Hàng Xanh": "Night construction noise pollution at Hang Xanh intersection",
+  "Ùn ứ rác sinh hoạt Kênh Tham Lương": "Domestic waste accumulation at Tham Luong Canal",
+  "Đang chuyển tiếp tới bản đồ và form tiếp nhận ngập lụt...": "Forwarding to flood map and reception form...",
+  "Đang duy tu chăm sóc tốt": "Under good maintenance and care",
+  "Đang giăng phao chắn rác": "Deploying trash containment booms",
+  "Đang hiển thị bản đồ các tuyến đường an toàn không bị ngập nước.": "Displaying safe road map avoiding flooded areas.",
+  "Đang hiển thị chế độ Bản Đồ Dự Phòng (Google Tile Cluster) tốc độ cao với đầy đủ GPS.": "Displaying high-speed Fallback Map mode (Google Tile Cluster) with full GPS.",
+  "Đang mở biểu mẫu Báo cáo sự cố rác thải cho bạn.": "Opening waste incident report form for you.",
+  "Đang mở bản đồ quan trắc chất lượng không khí và chỉ số AQI.": "Opening air quality monitoring map and AQI index.",
+  "Đang nhận diện giọng nói của bạn...": "Recognizing your voice...",
+  "Đang phân tích tương tác Khí tượng - Ô nhiễm môi trường...": "Analyzing Meteorological - Environmental Pollution interactions...",
+  "Đang tính toán ma trận...": "Calculating matrix...",
+  "Đang tải câu lệnh mẫu...": "Loading sample commands...",
+  "Đang tải phân tích dữ liệu khí tượng học...": "Loading meteorological data analysis...",
+  "Đang vớt rác làm sạch": "Skimming waste and cleaning water surface",
+  "Đang xử lý câu lệnh…": "Processing voice command...",
+  "Điểm ngập & Triều cường": "Flood Points & High Tides",
+  "Điểm ngập triều cường đường Huỳnh Tấn Phát": "Tidal flood point on Huynh Tan Phat street",
+  "Điểm phân loại rác Thảo Điền Eco-Hub": "Thao Dien Eco-Hub Waste Sorting Station",
+  "Điểm tiếp nhận miễn phí pin cũ, bóng đèn compact, thiết bị điện tử hỏng để xử lý tiêu chuẩn an toàn.": "Free collection point for used batteries, compact bulbs, and broken electronic equipment for safe handling.",
+  "Điểm tái chế cộng đồng": "Community recycling point",
+  "Điểm xanh & Công viên": "Green Points & Parks",
+  "Điện Biên Phủ, P.21, Bình Thạnh": "Dien Bien Phu, Ward 21, Binh Thanh",
+  "Đo oxy hòa tan (DO)": "Dissolved oxygen (DO)",
+  "Đo tự động nồng độ pH, độ đục và oxy hòa tan bảo vệ thủy sinh dòng kênh sau cải tạo.": "Automatic measurement of pH, turbidity, and dissolved oxygen to protect aquatic life post-renovation.",
+  "Đã cấp quyền micro thành công": "Microphone permission granted successfully",
+  "Đã lập biên bản nhắc nhở": "Issued reminder citation",
+  "Đã tổng vệ sinh hoàn tất": "General sanitation completed",
+  "Đã yêu cầu phun nước giảm bụi": "Requested water misting for dust suppression",
+  "Đêm qua, 23:30": "Last night, 23:30",
+  "Đóng góp cộng đồng": "Community contribution",
+  "Đóng trợ lý giọng nói": "Close voice assistant",
+  "Đô thị Phú Mỹ Hưng, P. Tân Phú, Quận 7": "Phu My Hung Urban Area, Tan Phu Ward, District 7",
+  "Đô thị Sáng tạo & Công nghệ": "Innovation & Technology City",
+  "Đô thị kiểu mẫu": "Model urban area",
+  "Đô thị mới Thủ Thiêm": "Thu Thiem New Urban Area",
+  "Đô thị sinh thái kiểu mẫu": "Model eco-urban area",
+  "Đưa góc nhìn về toàn cảnh Việt Nam": "Zoom to nationwide Vietnam view",
+  "Đường An Dương Vương, Phường 3, Quận 5, TP.HCM": "An Duong Vuong Street, Ward 3, District 5, HCMC",
+  "Đường CN1, KCN Tân Bình, P. Tây Thạnh, Tân Phú": "CN1 Street, Tan Binh IP, Tay Thanh Ward, Tan Phu",
+  "Đường Hoàng Minh Giám, P.3, Gò Vấp": "Hoang Minh Giam Street, Ward 3, Go Vap",
+  "Đường Lê Văn Lương, Phước Kiển, Nhà Bè": "Le Van Luong Street, Phuoc Kien, Nha Be",
+  "Đường Nguyễn Thị Minh Khai, P. Bến Thành, Quận 1": "Nguyen Thi Minh Khai Street, Ben Thanh Ward, District 1",
+  "Đường Quang Trung, P.14, Gò Vấp": "Quang Trung Street, Ward 14, Go Vap",
+  "Đường Rừng Sác, xã Long Hòa, Huyện Cần Giờ": "Rung Sac Road, Long Hoa Commune, Can Gio District",
+  "Đường Tôn Đức Thắng, P. Bến Nghé, Quận 1": "Ton Duc Thang Street, Ben Nghe Ward, District 1",
+  "Đường Vành Đai Trong, P. An Lạc A, Bình Tân": "Vanh Dai Trong Street, An Lac A Ward, Binh Tan",
+  "Đường Xuân Thủy, P. Thảo Điền, TP. Thủ Đức": "Xuan Thuy Street, Thao Dien Ward, Thu Duc City",
+  "Đường dạo ven sông": "Riverside walking path",
+  "Đường nào an toàn không bị ngập?": "Which routes are safe from flooding?",
+  "Đạt chuẩn khí thải KCN": "Meets industrial zone emission standards",
+  "Đặc điểm hình thái:": "Morphological characteristics:",
+  "Định vị lại vị trí GPS của bạn": "Relocate your GPS position",
+  "Đổi rác lấy điểm tích lũy": "Exchange waste for reward points",
+  "Độ che phủ rừng": "Forest cover percentage",
+  "Độ oxy hòa tan (DO)": "Dissolved oxygen (DO)",
+  "Độ Ẩm Tương Đối": "Relative Humidity",
+  "Độ Ẩm vs AQI": "Humidity vs AQI",
+  "Độ ẩm không khí thực tế": "Actual ambient humidity",
+  "Độ ồn ghi nhận": "Recorded noise level",
+  "Độ ồn trung bình": "Average noise level",
+  "Đội phản ứng nhanh": "Rapid response team",
+  "Đội vệ sinh đô thị đang điều ca nô và xe ép rác trục vớt bèo rác trên kênh.": "Urban sanitation team is dispatching boats and compactor trucks to remove debris from canal.",
+  "Ốc đảo xanh rộng lớn phục vụ vui chơi giải trí và giảm hiệu ứng đảo nhiệt phía Tây thành phố.": "Spacious green oasis for recreation and reducing urban heat island effect in western city.",
+  "⚠️ Các đoạn trũng cục bộ cần lưu ý:": "⚠️ Localized low-lying sections to note:",
+  "⚠️ Có điểm ngập gần": "⚠️ Flood point nearby",
+  "⚠️ Phản ánh điểm ngập nước": "⚠️ Report flood point",
+  "⚠️ Trình duyệt không hỗ trợ nhận dạng giọng nói. Hãy dùng bàn phím": "⚠️ Browser does not support speech recognition. Please use keyboard",
+  "⚠️ Ô nhiễm nhất:": "⚠️ Most polluted:",
+  "✅ Khu vực an toàn": "✅ Safe area",
+  "✅ Trục đường cao ráo không ngập:": "✅ High and dry roads without flooding:",
+  "🌱 Sạch nhất:": "🌱 Cleanest:",
+  "🎤 Bị chặn": "🎤 Blocked",
+  "💡 Mẹo xử lý xe chết máy do ngập nước:": "💡 Tips for waterlogged stalled vehicles:",
+  "📊 Tra cứu dữ liệu": "📊 Data lookup",
+  "📡 Đang fix GPS...": "📡 Fixing GPS...",
+  "🔄 Thử lại Google Maps SDK": "🔄 Retry Google Maps SDK",
+  "🔊 Nghe lại": "🔊 Replay audio",
+  "🔊 Đang đọc...": "🔊 Reading aloud...",
+  "🔍 Tìm theo tên tỉnh, vùng miền...": "🔍 Search by province, region...",
+  "🚀 Chuyển sang Google Tile Cluster (Zero Error)": "🚀 Switch to Google Tile Cluster (Zero Error)",
+  "🚀 Điều hướng": "🚀 Navigate",
 };
 
 // Lowercase lookup map for case-insensitive matching
@@ -4606,18 +4994,89 @@ export function translateString(text: string, targetLang: "VI" | "EN"): string {
       .replace(/Bãi\s*rác\s*tự\s*phát\b/gi, "Illegal Dump Site")
       .replace(/Ùn\s*ứ\s*(?:rác\s*sinh\s*hoạt|Domestic\s*Waste)\b/gi, "Domestic waste accumulation")
       .replace(/Ùn\s*ứ\b/gi, "Accumulation")
-      .replace(/Điểm\s*nghẽn\s*cống\b/gi, "Drainage blockage");
+      .replace(/Điểm\s*nghẽn\s*cống\b/gi, "Drainage blockage")
+      // Additional template patterns
+      .replace(/(\d+)\s*mét/gi, "$1 meters")
+      .replace(/-?\s*(?:Ước\s*tính|Estimated)\s*(\d+)\s*(?:phút|minutes?|mins?)/gi, "- Estimated $1 mins")
+      .replace(/\bƯớc\s*tính\b/gi, "Estimated")
+      .replace(/(\d+)\s*phút\s+(\d+)\s*giây/gi, "$1 mins $2 secs")
+      .replace(/(\d+)\s*giây/gi, "$1 seconds")
+      .replace(/\((\d+)\s*trẻ\s*nhỏ\)/gi, (_m, num) => (num === "1" ? "(1 child)" : `(${num} children)`))
+      .replace(/\((\d+)\s*người\s*già\)/gi, "($1 elderly)")
+      .replace(/-?\s*Nước\s*ngập\s*([\d.]+)\s*m\b/gi, "Flood depth $1m")
+      .replace(/Khoảng\s*cách:\s*/gi, "Distance: ")
+      .replace(/Cự\s*ly:\s*/gi, "Distance: ")
+      .replace(/Đội\s*cứu\s*hộ\b/gi, "Rescue team")
+      .replace(/Bạn\s*\(Tình\s*nguyện\s*viên\)/gi, "You (Volunteer)")
+      .replace(/Vị\s*trí\s*của\s*bạn\b/gi, "Your location")
+      .replace(/Điểm\s*đi\s*\(A\):/gi, "Origin (A):")
+      .replace(/Điểm\s*đến\s*\(B\):/gi, "Destination (B):")
+      .replace(/Báo\s*cáo\s*A\s*-\s*/gi, "Report A - ")
+      .replace(/Báo\s*cáo\s*B\s*-\s*/gi, "Report B - ")
+      .replace(/Bạn\s*đã\s*tiếp\s*nhận\s*ca\s*cứu\s*hộ\s*(\S+)\.\s*Hệ\s*thống\s*đang\s*kết\s*nối\s*bạn\s*với\s*người\s*cần\s*cứu\.\.\./gi, "You accepted rescue case $1. System is connecting you with the person in need...")
+      .replace(/Bấm\s*để\s*xem\s*dữ\s*liệu\s*chi\s*tiết\s+(.+)/gi, "Click to view detailed data for $1")
+      .replace(/Chức\s*năng\s*bị\s*khóa:\s*Bạn\s*chưa\s*được\s*cấp\s*quyền\s*truy\s*cập\s+(.+)/gi, "Locked feature: You do not have permission to access $1")
+      .replace(/Còn\s*([\d,.]+)\s*điểm\s*để\s*lên\s*cấp\s+(.+)/gi, "$1 points remaining to upgrade to tier $2")
+      .replace(/Cảnh\s*báo\s*ô\s*nhiễm\s*môi\s*trường\s*gần\s*cơ\s*sở:\s*(.+?)\s*tại\s*(.+?)\.\s*Đề\s*nghị\s*đóng\s*cửa\s*sổ\s*và\s*hạn\s*chế\s*hoạt\s*động\s*ngoài\s*trời\./gi, "Environmental pollution alert near facility: $1 at $2. Please close windows and limit outdoor activities.")
+      .replace(/Cần\s*thêm\s*\+?([\d,.]+)\s*điểm\s*để\s*lọt\s*vào\s*Top\s*100/gi, "Need +$1 more points to enter Top 100")
+      .replace(/Cập\s*nhật\s*phân\s*bổ\s*lệnh\s*(\S+)\s*thành\s*công!?/gi, "Updated dispatch allocation for order $1 successfully!")
+      .replace(/Cụm\s*điểm\s*nóng\s*KDE\s*mật\s*độ\s*cao\s*(\d+)\s*phản\s*ánh\s*tại\s*(.+?)\.\s*Yêu\s*cầu\s*điều\s*động\s*lực\s*lượng\s*xử\s*lý\s*hiện\s*trường\./gi, "High-density KDE hotspot cluster with $1 reports at $2. Field dispatch requested.")
+      .replace(/Danh\s*mục\s+(.+)/gi, "Category $1")
+      .replace(/Khu\s*vực\s*toạ\s*độ\s*\(([^)]+)\),\s*TP\.\s*Hồ\s*Chí\s*Minh/gi, "Area coordinates ($1), Ho Chi Minh City")
+      .replace(/Không\s*thể\s*lấy\s*toạ\s*độ\s*GPS:\s*(.+?)\.\s*Vui\s*lòng\s*cấp\s*quyền\s*truy\s*cập\s*vị\s*trí\./gi, "Cannot get GPS coordinates: $1. Please grant location permission.")
+      .replace(/Không\s*thể\s*xoá\s*vai\s*trò\s*hệ\s*thống\s+(.+)/gi, "Cannot delete system role $1")
+      .replace(/Không\s*tìm\s*thấy\s*quy\s*định\s*trong\s*lĩnh\s*vực\s*"([^"]+)"/gi, "No regulations found in domain \"$1\"")
+      .replace(/Lớp\s*giao\s*thông\s*thời\s*gian\s*thực\s*\((.+?)\)/gi, "Real-time traffic layer ($1)")
+      .replace(/Đang\s*BẬT/gi, "ON")
+      .replace(/Đang\s*TẮT/gi, "OFF")
+      .replace(/Mã\s*voucher:\s*(\S+)/gi, "Voucher code: $1")
+      .replace(/Mất\s*tín\s*hiệu\s*GPS\s*từ\s*(.+?)\s*\(cập\s*nhật\s*lần\s*cuối:\s*hơn\s*(\d+)\s*phút\s*trước\)\s*-\s*Vui\s*lòng\s*liên\s*hệ\s*qua\s*bộ\s*đàm\s*hoặc\s*SĐT:\s*(\S+)/gi, "Lost GPS signal from $1 (last updated: over $2 minutes ago) - Please contact via radio or phone: $3")
+      .replace(/Ngưỡng\s*WHO:\s*/gi, "WHO Threshold: ")
+      .replace(/Nhấp\s*để\s*mở\s*chi\s*tiết\s+(.+)/gi, "Click to view details of $1")
+      .replace(/Phương\s*án\s*có\s*mực\s*ngập\s*thấp\s*nhất\s*\((\d+)\s*cm\)\./gi, "Option with lowest flood depth ($1cm).")
+      .replace(/Số\s*nhà\s+(\d+\w*)/gi, "House No. $1")
+      .replace(/Số\s+(\d+\w*)\s+(Đường\s+.+|Street\s+.+)/gi, "No. $1 $2")
+      .replace(/Sửa\s*quyền\s*vai\s*trò\s+(.+)/gi, "Edit permissions for role $1")
+      .replace(/Sự\s*cố:\s*(.+?)\s*tại\s*(.+?)\.\s*Giao\s*(.+?)\s*tiếp\s*nhận!?/gi, "Incident: $1 at $2. Assigned to $3!")
+      .replace(/Tình\s*nguyện\s*viên\s*đã\s*tiếp\s*nhận\s*ca\s*cứu\s*hộ\s*(\S+)\./gi, "Volunteer accepted rescue case $1.")
+      .replace(/Tương\s*quan\s*nghịch\s*\(([^)]+)\):\s*Yếu\s*tố\s*tăng\s*giúp\s*giảm\s*AQI/gi, "Negative correlation ($1): Increase helps reduce AQI")
+      .replace(/Tương\s*quan\s*thuận\s*\(([^)]+)\):\s*Yếu\s*tố\s*tăng\s*làm\s*tăng\s*AQI/gi, "Positive correlation ($1): Increase increases AQI")
+      .replace(/Tạo\s*và\s*giao\s*lệnh\s*(\S+)\s*thành\s*công!?\s*Đã\s*gửi\s*thông\s*báo\s*tới\s*(.+?)\./gi, "Created and dispatched order $1 successfully! Sent notification to $2.")
+      .replace(/Tọa\s*độ\s*chuột:\s*/gi, "Mouse coordinates: ")
+      .replace(/Vòng\s*tròn\s*bán\s*kính\s*GPS\s*\((.+?)\)/gi, "GPS radius circle ($1)")
+      .replace(/Vị\s*trí\s*GPS\s*\(([^)]+)\)/gi, "GPS Location ($1)")
+      .replace(/Vị\s*trí\s*tọa\s*độ:\s*([^(]+)\s*\(TP\.\s*Hồ\s*Chí\s*Minh\)/gi, "Location coordinates: $1 (Ho Chi Minh City)")
+      .replace(/Xem\s*chi\s*tiết\s+(.+)/gi, "View details of $1")
+      .replace(/Xem\s*danh\s*mục\s+(.+)/gi, "View category $1")
+      .replace(/Xoá\s*vai\s*trò\s*tuỳ\s*chỉnh\s+(.+)/gi, "Delete custom role $1")
+      .replace(/Xuất\s*báo\s*cáo\s*dự\s*báo\s*7\s*ngày\s*thành\s*công\s*\(Tệp:\s*(.+?)\)\./gi, "Exported 7-day forecast report successfully (File: $1).")
+      .replace(/Xử\s*lý\s*khẩn\s*cấp\s*điểm\s*nóng\s*ô\s*nhiễm\s+(.+)/gi, "Emergency response for pollution hotspot $1")
+      .replace(/Xử\s*lý\s*điểm\s*nóng\s+(.+)/gi, "Handle hotspot $1")
+      .replace(/Đang\s*bắt\s*đầu\s*tải\s*tệp\s*(.+?)\s*về\s*máy\s*tính\s*của\s*bạn\.\.\./gi, "Starting file download $1 to your computer...")
+      .replace(/Đang\s*hiển\s*thị\s*(\d+)\s*địa\s*điểm\s*quanh\s*tầm\s*nhìn\s*trên\s*bản\s*đồ\./gi, "Showing $1 locations within map view.")
+      .replace(/Đang\s*kết\s*xuất\s*dữ\s*liệu\s*và\s*tạo\s*tệp\s*(.+?)\.\.\./gi, "Rendering data and generating file $1...")
+      .replace(/Đang\s*tính\s*toán\s*mô\s*hình\s*dự\s*báo\s*cho\s*khu\s*vực\s*(.+?)\.\.\./gi, "Calculating forecast model for area $1...")
+      .replace(/Đã\s*lập\s*biên\s*bản\s*nhắc\s*nhở/gi, "Issued reminder citation")
+      .replace(/Đã\s*tiếp\s*nhận\s*sự\s*cố:\s*(.+?)\s*để\s*lập\s*lệnh\s*điều\s*phối/gi, "Received incident: $1 for dispatch planning")
+      .replace(/Đã\s*tạo\s*tài\s*khoản\s*cho\s*(.+?)\s*\((.+?)\)\s*thành\s*công!?/gi, "Created account for $1 ($2) successfully!")
+      .replace(/Đã\s*tải\s*xong\s*dữ\s*liệu\s*phân\s*tích\s*cụm\s*điểm\s*nóng\s*\((\d+)\s*điểm\s*nóng\s*phát\s*hiện\)\./gi, "Finished loading hotspot cluster analysis ($1 hotspots detected).")
+      .replace(/Đã\s*xuất\s*và\s*tải\s*xuống\s*báo\s*cáo\s*thống\s*kê\s*\((.+?)\s*đến\s*(.+?)\)\s*thành\s*công!?/gi, "Exported and downloaded statistical report ($1 to $2) successfully!")
+      .replace(/Đã\s*xác\s*định\s*vùng\s*cảnh\s*báo\.\s*Dự\s*kiến\s*phát\s*sóng\s*tới\s*([\d,.]+)\s*người\s*dân\s*trong\s*bán\s*kính\s*([\d.]+)\s*km\./gi, "Identified alert zone. Estimated broadcast to $1 citizens within $2 km.")
+      .replace(/Đã\s*đạt\s*([\d.]+)%\s*—\s*Còn\s*thiếu\s*([\d,.]+)\s*điểm\s*để\s*lên\s*(.+)/gi, "Reached $1% — Need $2 more points to reach $3")
+      .replace(/Đã\s*định\s*vị\s*thành\s*công\s*vị\s*trí\s*thực\s*của\s*bạn:\s*(.+)/gi, "Successfully located your actual position: $1")
+      .replace(/Đổi\s*kiểu\s*bản\s*đồ\s*\(Hiện\s*tại:\s*(.+?)\)/gi, "Switch map style (Current: $1)")
+      .replace(/▼\s*Giảm\s*([\d.]+)%/gi, "▼ Reduced $1%")
+      .replace(/📍\s*Đã\s*chuyển\s*sang\s*phân\s*tích\s*điểm\s*nóng\s*&\s*dự\s*báo:\s*(.+)/gi, "📍 Switched to hotspot analysis & forecast: $1")
+      .replace(/📍\s*Đã\s*thiết\s*lập\s*điểm\s*đến\s*né\s*ngập:\s*(.+)/gi, "📍 Set flood-avoiding destination: $1")
+      .replace(/🛣️\s*Lộ\s*trình\s*di\s*chuyển\s*bám\s*đường:\s*([\d.]+)\s*km\s*\(~([\d.]+)\s*phút\)/gi, "🛣️ Route along roads: $1 km (~$2 mins)");
 
     if (withPatterns !== result) {
       result = withPatterns;
       replaced = true;
     }
 
-    // 6. Romanize proper nouns ONLY in explicit address contexts (never on general UI text or notifications!)
-    const isAddressContext = /(?:Street|Ward|District|Intersection of|Alley|Embankment|Canal|Bridge|Market)\b/i.test(result);
-    if (isAddressContext && /[\u00C0-\u1EF9]/i.test(result)) {
-      result = stripVietnameseAccents(result);
-    }
+    // 6. NEVER strip accents from any UI strings, sentences, or proper nouns!
+    // Every term is fully preserved or translated to authentic English.
 
     if (replaced) {
       asyncTranslationCache[trimmed] = result.trim();
@@ -4890,6 +5349,9 @@ export function setGlobalPageLanguage(lang: "VI" | "EN") {
     if (document.body) {
       document.body.setAttribute("translate", "no");
       document.body.classList.add("notranslate");
+      if (!observer) {
+        initDOMTranslation(document.body);
+      }
       applyDOMTranslation(document.body, lang);
     }
   }

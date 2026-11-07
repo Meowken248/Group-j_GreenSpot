@@ -233,11 +233,6 @@ class HybridTranslationService(ITranslationService):
         result = re.sub(r"\bCầu\b", "Bridge", result, flags=re.IGNORECASE)
         result = re.sub(r"\bHẻm\b", "Alley", result, flags=re.IGNORECASE)
 
-        # Strip accents ONLY from proper nouns in recognized address or team structures
-        is_address_or_team = any(k in result for k in ["Street", "Ward", "District", "Intersection", "Alley", "Embankment", "Canal", "Market", "Team", "Flood Point"])
-        if is_address_or_team and re.search(r"[\u00C0-\u1EF9]", result):
-            result = strip_vietnamese_accents(result)
-
         return result
 
     async def translate_text(
