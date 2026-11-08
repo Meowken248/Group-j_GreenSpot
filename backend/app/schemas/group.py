@@ -60,14 +60,39 @@ class GroupMemberResponse(BaseModel):
     district: Optional[str] = None
     role: str
     joined_at: datetime
+    version: int = 1
+    is_self: bool = False
+    can_change_role: bool = False
+    can_remove: bool = False
+    disabled_change_role_reason: Optional[str] = None
+    disabled_remove_reason: Optional[str] = None
 
     class Config:
         from_attributes = True
 
 
 class GroupMemberListResponse(BaseModel):
+    group_id: Optional[uuid.UUID] = None
+    group_name: Optional[str] = None
     items: List[GroupMemberResponse]
     total: int
+    is_system_admin: bool = False
+    my_role: Optional[str] = None
+    can_invite: bool = False
+
+
+class GroupMemberRoleUpdateRequest(BaseModel):
+    new_role: str = Field(..., description="ADMIN, MODERATOR, hoặc MEMBER")
+    version: int = Field(..., description="Optimistic locking version của bản ghi thành viên")
+
+
+class GroupMemberActionResponse(BaseModel):
+    success: bool = True
+    message: str
+    user_id: uuid.UUID
+    group_id: uuid.UUID
+    role: Optional[str] = None
+    version: Optional[int] = None
 
 
 class GroupResponse(BaseModel):

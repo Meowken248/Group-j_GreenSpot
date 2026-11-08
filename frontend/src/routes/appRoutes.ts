@@ -422,6 +422,11 @@ export function resolveTabFromUrl(
     }
   }
 
+  // 4. Đối sánh đường dẫn động phân hệ nhóm cộng đồng (VD: /groups/{group_id}/members)
+  if (normPath.startsWith("/groups") || normPath.startsWith("/community/groups")) {
+    return "groups";
+  }
+
   return "map";
 }
 

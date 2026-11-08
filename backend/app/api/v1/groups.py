@@ -24,6 +24,9 @@ from app.schemas.group import (
     InviteFriendsRequest,
     AdministrativeMetadataResponse,
     GroupMemberListResponse,
+    GroupMemberResponse,
+    GroupMemberRoleUpdateRequest,
+    GroupMemberActionResponse,
 )
 
 router = APIRouter(prefix="/groups", tags=["Community Groups (Chức năng 16)"])
@@ -232,7 +235,7 @@ async def get_group_members(
     group_id: uuid.UUID,
     page: int = Query(1, ge=1, description="Số trang"),
     limit: int = Query(20, ge=1, le=50, description="Số thành viên mỗi trang"),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Lấy danh sách thành viên phân trang của nhóm."""
@@ -241,6 +244,49 @@ async def get_group_members(
         group_id=group_id,
         page=page,
         limit=limit,
+        current_user=current_user,
+    )
+
+
+@router.put(
+    "/{group_id}/members/{user_id}/role",
+    response_model=GroupMemberResponse,
+    summary="Đổi vai trò thành viên nhóm (Màn 2/4)",
+)
+async def update_member_role(
+    group_id: uuid.UUID,
+    user_id: uuid.UUID,
+    payload: GroupMemberRoleUpdateRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Đổi vai trò thành viên nhóm với Optimistic Locking (Rule 7)."""
+    return await GroupService.update_member_role(
+        db=db,
+        group_id=group_id,
+        target_user_id=user_id,
+        payload=payload,
+        caller=current_user,
+    )
+
+
+@router.delete(
+    "/{group_id}/members/{user_id}",
+    response_model=GroupMemberActionResponse,
+    summary="Xoá thành viên khỏi nhóm (Màn 3/4 & 4/4)",
+)
+async def remove_group_member(
+    group_id: uuid.UUID,
+    user_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Xoá thành viên khỏi nhóm và ghi Audit Log trong cùng một giao dịch (Rule 6)."""
+    return await GroupService.remove_group_member(
+        db=db,
+        group_id=group_id,
+        target_user_id=user_id,
+        caller=current_user,
     )
 
 
