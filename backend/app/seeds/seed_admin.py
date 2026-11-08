@@ -76,6 +76,8 @@ async def seed_admin():
         await session.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS friends_count INTEGER DEFAULT 0;"))
         await session.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS version INTEGER DEFAULT 1;"))
         await session.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;"))
+        await session.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS show_birthday BOOLEAN DEFAULT TRUE;"))
+        await session.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS district VARCHAR(100);"))
         await session.commit()
         print("✅ [1/5] Đồng bộ schema bảng [roles] và [users] thành công.")
 
