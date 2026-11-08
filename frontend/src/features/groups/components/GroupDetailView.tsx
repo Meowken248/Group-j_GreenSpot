@@ -530,7 +530,7 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
         className="group-tab-layout-grid"
         style={{
           display: "grid",
-          gridTemplateColumns: "minmax(0, 1fr) 340px",
+          gridTemplateColumns: activeTab === "members" ? "1fr" : "minmax(0, 1fr) 340px",
           gap: "24px",
           alignItems: "start",
         }}
@@ -713,92 +713,94 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
           )}
         </div>
 
-        {/* Cột phải: Thông tin tóm tắt & Quy tắc nhóm (Sidebar) */}
-        <aside
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-          }}
-        >
-          {/* Box Giới thiệu nhanh */}
-          <div
+        {/* Cột phải: Thông tin tóm tắt & Quy tắc nhóm (Sidebar) - chỉ hiển thị ở tab feed và about */}
+        {activeTab !== "members" && (
+          <aside
             style={{
-              background: "#ffffff",
-              borderRadius: "16px",
-              border: "1px solid #e2e8f0",
-              padding: "20px",
-              boxShadow: "0 2px 8px -2px rgba(0, 0, 0, 0.04)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
             }}
           >
-            <h4 style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: 700, color: "#0f172a" }}>
-              Giới thiệu ngắn
-            </h4>
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px", color: "#475569" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span>{group.privacy === "PUBLIC" ? "🌐" : "🔒"}</span>
-                <span>{group.privacy === "PUBLIC" ? "Nhóm công khai • Ai cũng có thể tìm thấy" : "Nhóm riêng tư • Chỉ thành viên xem bài viết"}</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span>👥</span>
-                <span>{group.members_count} thành viên đã tham gia</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span>📝</span>
-                <span>{group.posts_count} bài viết đã chia sẻ</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span>📅</span>
-                <span>Thành lập: {new Date(group.created_at).toLocaleDateString("vi-VN")}</span>
-              </div>
-              {group.district && (
+            {/* Box Giới thiệu nhanh */}
+            <div
+              style={{
+                background: "#ffffff",
+                borderRadius: "16px",
+                border: "1px solid #e2e8f0",
+                padding: "20px",
+                boxShadow: "0 2px 8px -2px rgba(0, 0, 0, 0.04)",
+              }}
+            >
+              <h4 style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: 700, color: "#0f172a" }}>
+                Giới thiệu ngắn
+              </h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px", color: "#475569" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span>📍</span>
-                  <span>{group.ward ? `${group.ward}, ` : ""}{group.district}{group.province ? `, ${group.province}` : ""}</span>
+                  <span>{group.privacy === "PUBLIC" ? "🌐" : "🔒"}</span>
+                  <span>{group.privacy === "PUBLIC" ? "Nhóm công khai • Ai cũng có thể tìm thấy" : "Nhóm riêng tư • Chỉ thành viên xem bài viết"}</span>
                 </div>
-              )}
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span>👥</span>
+                  <span>{group.members_count} thành viên đã tham gia</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span>📝</span>
+                  <span>{group.posts_count} bài viết đã chia sẻ</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span>📅</span>
+                  <span>Thành lập: {new Date(group.created_at).toLocaleDateString("vi-VN")}</span>
+                </div>
+                {group.district && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span>📍</span>
+                    <span>{group.ward ? `${group.ward}, ` : ""}{group.district}{group.province ? `, ${group.province}` : ""}</span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Box Quản trị viên */}
-          <div
-            style={{
-              background: "#ffffff",
-              borderRadius: "16px",
-              border: "1px solid #e2e8f0",
-              padding: "20px",
-              boxShadow: "0 2px 8px -2px rgba(0, 0, 0, 0.04)",
-            }}
-          >
-            <h4 style={{ margin: "0 0 10px 0", fontSize: "14px", fontWeight: 700, color: "#0f172a" }}>
-              Người sáng lập nhóm
-            </h4>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <div
-                style={{
-                  width: "36px",
-                  height: "36px",
-                  borderRadius: "50%",
-                  background: "#fef3c7",
-                  color: "#b45309",
-                  fontWeight: 700,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "14px",
-                }}
-              >
-                👑
-              </div>
-              <div>
-                <div style={{ fontSize: "13.5px", fontWeight: 700, color: "#0f172a" }}>
-                  {group.creator_name || "Quản trị viên"}
+            {/* Box Quản trị viên */}
+            <div
+              style={{
+                background: "#ffffff",
+                borderRadius: "16px",
+                border: "1px solid #e2e8f0",
+                padding: "20px",
+                boxShadow: "0 2px 8px -2px rgba(0, 0, 0, 0.04)",
+              }}
+            >
+              <h4 style={{ margin: "0 0 10px 0", fontSize: "14px", fontWeight: 700, color: "#0f172a" }}>
+                Người sáng lập nhóm
+              </h4>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div
+                  style={{
+                    width: "36px",
+                    height: "36px",
+                    borderRadius: "50%",
+                    background: "#fef3c7",
+                    color: "#b45309",
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "14px",
+                  }}
+                >
+                  👑
                 </div>
-                <div style={{ fontSize: "11.5px", color: "#64748b" }}>Trưởng nhóm điều phối</div>
+                <div>
+                  <div style={{ fontSize: "13.5px", fontWeight: 700, color: "#0f172a" }}>
+                    {group.creator_name || "Quản trị viên"}
+                  </div>
+                  <div style={{ fontSize: "11.5px", color: "#64748b" }}>Trưởng nhóm điều phối</div>
+                </div>
               </div>
             </div>
-          </div>
-        </aside>
+          </aside>
+        )}
       </div>
 
       {/* 4. Modal Giải tán nhóm (Màn 4) */}
