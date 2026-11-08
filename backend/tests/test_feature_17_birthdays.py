@@ -131,6 +131,31 @@ async def fetch_user_id(email: str) -> str:
         await conn.close()
 
 
+async def ensure_friendship(email1: str, email2: str):
+    """Đảm bảo tồn tại quan hệ bạn bè giữa 2 tài khoản để kiểm thử lời chúc"""
+    db_url = os.environ.get("DATABASE_URL", str(settings.DATABASE_URL))
+    clean_url = db_url.replace("postgresql+asyncpg://", "postgresql://").split("?")[0]
+    conn = await asyncpg.connect(clean_url)
+    try:
+        import uuid as _uuid
+        u1 = await conn.fetchval("SELECT user_id FROM users WHERE email = $1 AND deleted_at IS NULL;", email1)
+        u2 = await conn.fetchval("SELECT user_id FROM users WHERE email = $1 AND deleted_at IS NULL;", email2)
+        if not u1 or not u2:
+            return
+        p1, p2 = (u1, u2) if u1 < u2 else (u2, u1)
+        existing = await conn.fetchval(
+            "SELECT friendship_id FROM friendships WHERE user_id_1 = $1 AND user_id_2 = $2 AND deleted_at IS NULL;",
+            p1, p2,
+        )
+        if not existing:
+            await conn.execute(
+                "INSERT INTO friendships (friendship_id, user_id_1, user_id_2, created_at) VALUES ($1, $2, $3, now()) ON CONFLICT DO NOTHING;",
+                _uuid.uuid4(), p1, p2,
+            )
+    finally:
+        await conn.close()
+
+
 def find_friend(friends: list, keyword: str) -> dict:
     """Tìm một người bạn theo một phần họ tên"""
     for item in friends:
@@ -345,6 +370,8 @@ def main():
 
     # 17. Người đã tắt hiển thị ngày sinh
     print_step("17. Gửi cho người đã tắt hiển thị ngày sinh -> Phải báo BIRTHDAY_HIDDEN")
+    asyncio.run(ensure_friendship(ADMIN_EMAIL, HIDDEN_EMAIL))
+    asyncio.run(ensure_friendship(ADMIN_EMAIL, "req_mai@ecoreport.gov.vn"))
     hidden_id = asyncio.run(fetch_user_id(HIDDEN_EMAIL))
     admin_headers = login(ADMIN_EMAIL, "admin@gmail.com")
     hidden_res = requests.post(
