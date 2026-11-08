@@ -59,13 +59,13 @@ export interface MapControlSidebarProps {
   calculatingRoute: boolean;
   onCalculateRoute: (lng: number, lat: number, destName?: string) => void;
   // Category & POIs
-  selectedCategory: EcoCategory | "all";
-  setSelectedCategory: (cat: EcoCategory | "all") => void;
+  selectedCategory: EcoCategory | "all" | "none";
+  setSelectedCategory: (cat: EcoCategory | "all" | "none") => void;
   categoryCounts: Record<EcoCategory | "all", number>;
   loadingEco: boolean;
-  poiType: "all" | "cafe" | "restaurant" | "shop";
-  setPoiType: (type: "all" | "cafe" | "restaurant" | "shop") => void;
-  onLoadNearbyPOIs: (type: "all" | "cafe" | "restaurant" | "shop") => void;
+  poiType: "all" | "cafe" | "restaurant" | "shop" | null;
+  setPoiType: (type: "all" | "cafe" | "restaurant" | "shop" | null) => void;
+  onLoadNearbyPOIs: (type?: "all" | "cafe" | "restaurant" | "shop" | null) => void;
   autoFetchPOI: boolean;
   onToggleAutoFetch: () => void;
   loadingPOIs: boolean;
@@ -995,7 +995,13 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
                       background:
                         selectedCategory === "all" ? "#0f172a" : undefined,
                     }}
-                    onClick={() => setSelectedCategory("all")}
+                    onClick={() => {
+                      if (selectedCategory === "all") {
+                        setSelectedCategory("none");
+                      } else {
+                        setSelectedCategory("all");
+                      }
+                    }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <span>🌐</span>
@@ -1027,7 +1033,11 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
                               e.preventDefault();
                               return;
                             }
-                            setSelectedCategory(catKey);
+                            if (selectedCategory === catKey) {
+                              setSelectedCategory("none");
+                            } else {
+                              setSelectedCategory(catKey);
+                            }
                           }}
                           disabled={!hasCatAccess}
                           title={
@@ -1081,8 +1091,12 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
                       type="button"
                       className={`poi-btn ${poiType === t.id ? "active" : ""}`}
                       onClick={() => {
-                        setPoiType(t.id);
-                        onLoadNearbyPOIs(t.id);
+                        if (poiType === t.id) {
+                          setPoiType(null);
+                        } else {
+                          setPoiType(t.id);
+                          onLoadNearbyPOIs(t.id);
+                        }
                       }}
                     >
                       <span>{t.icon}</span>
@@ -1125,7 +1139,7 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
                   <button
                     type="button"
                     className="poi-action-btn primary"
-                    onClick={() => onLoadNearbyPOIs(poiType)}
+                    onClick={() => onLoadNearbyPOIs(poiType || "all")}
                     disabled={loadingPOIs}
                     title="Quét nạp quán quanh tâm bản đồ"
                   >

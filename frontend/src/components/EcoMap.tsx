@@ -399,12 +399,12 @@ function EcoMap() {
 
   // States bản đồ & bộ lọc (Mặc định dùng Google Maps Tile Cluster)
   const [activeStyle, setActiveStyle] = useState<StyleKey>("googleRoadmap");
-  const [is3D, setIs3D] = useState<boolean>(true);
+  const [is3D, setIs3D] = useState<boolean>(false);
   const [detectedVectorSource, setDetectedVectorSource] = useState<string>("protomaps");
   // Bảng màu sắc 3D cho các tòa nhà kiến trúc đô thị
   const [building3DTheme, setBuilding3DTheme] = useState<BuildingColorTheme>("rainbow");
   const [showDistricts, setShowDistricts] = useState<boolean>(false);
-  const [selectedCategory, setSelectedCategory] = useState<EcoCategory | "all">("all");
+  const [selectedCategory, setSelectedCategory] = useState<EcoCategory | "all" | "none">("none");
 
   // Heatmap States (Bản đồ nhiệt: Nhiệt độ thời tiết, Chỉ số AQI, Mật độ rủi ro)
   const [activeHeatmap, setActiveHeatmap] = useState<"none" | "temperature" | "aqi" | "risk">("none");
@@ -416,7 +416,7 @@ function EcoMap() {
   const [liveRadarOverlay, setLiveRadarOverlay] = useState<WeatherOverlay>("temp");
 
   // Flood Watch States (Cảnh báo Ngập lụt Đô thị 3 Nguồn: TP.HCM OpenData, Open-Meteo GloFAS & Lượng mưa thông minh)
-  const [showFloodWatch, setShowFloodWatch] = useState<boolean>(true);
+  const [showFloodWatch, setShowFloodWatch] = useState<boolean>(false);
   const [floodData, setFloodData] = useState<FloodGeoJSONResponse | null>(null);
   const [selectedFloodSpot, setSelectedFloodSpot] = useState<FloodHotspotProperties | null>(null);
   const [selectedGloFAS, setSelectedGloFAS] = useState<GloFASForecastResponse | null>(null);
@@ -447,10 +447,10 @@ function EcoMap() {
 
   // Tự động hủy chọn danh mục nếu vai trò không có quyền truy cập
   useEffect(() => {
-    if (selectedCategory !== "all") {
+    if (selectedCategory !== "all" && selectedCategory !== "none") {
       const mod = CATEGORY_TO_MODULE[selectedCategory];
       if (mod && !canAccess(mod)) {
-        setSelectedCategory("all");
+        setSelectedCategory("none");
       }
     }
   }, [selectedCategory, canAccess]);
@@ -479,7 +479,7 @@ function EcoMap() {
   const [livePOIs, setLivePOIs] = useState<LivePOI[]>([]);
   const [loadingPOIs, setLoadingPOIs] = useState<boolean>(false);
   const [autoFetchPOI, setAutoFetchPOI] = useState<boolean>(false);
-  const [poiType, setPoiType] = useState<"all" | "cafe" | "restaurant" | "shop">("all");
+  const [poiType, setPoiType] = useState<"all" | "cafe" | "restaurant" | "shop" | null>(null);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -524,7 +524,7 @@ function EcoMap() {
     let isMounted = true;
     setLoadingEco(true);
     fetchEcoLocationsAPI(
-      selectedCategory === "all" ? undefined : selectedCategory,
+      selectedCategory === "all" || selectedCategory === "none" ? undefined : selectedCategory,
       simulateFlood ? 1.68 : undefined,
       simulateFlood ? 30.0 : undefined
     ).then((res) => {
@@ -662,11 +662,11 @@ function EcoMap() {
     async (
       lat: number,
       lng: number,
-      type: "all" | "cafe" | "restaurant" | "shop" = poiType,
+      type: "all" | "cafe" | "restaurant" | "shop" | null = poiType,
       reset = false
     ) => {
       setLoadingPOIs(true);
-      const pois = await fetchNearbyPOIsAPI(lat, lng, type);
+      const pois = await fetchNearbyPOIsAPI(lat, lng, type || "all");
 
       setLivePOIs((prev) => {
         if (reset || prev.length === 0) return pois.slice(0, 80);
@@ -828,6 +828,7 @@ function EcoMap() {
 
   // Danh sách địa điểm môi trường hiển thị sau khi lọc
   const filteredLocations = useMemo(() => {
+    if (selectedCategory === "none") return [];
     if (selectedCategory === "all") return accessibleLocations;
     const moduleCode = CATEGORY_TO_MODULE[selectedCategory];
     if (moduleCode && !canAccess(moduleCode)) return [];
@@ -1106,7 +1107,7 @@ function EcoMap() {
         setPoiType={setPoiType}
         onLoadNearbyPOIs={(type) => {
           const center = mapRef.current ? mapRef.current.getCenter() : mapCenter;
-          handleLoadNearbyPOIs(center.lat, center.lng, type, true);
+          handleLoadNearbyPOIs(center.lat, center.lng, type || "all", true);
         }}
         autoFetchPOI={autoFetchPOI}
         onToggleAutoFetch={handleToggleAutoFetch}
@@ -1315,8 +1316,8 @@ function EcoMap() {
           longitude: 106.7025,
           latitude: 10.7745,
           zoom: 14,
-          pitch: 50,
-          bearing: -15,
+          pitch: 0,
+          bearing: 0,
         }}
         interactiveLayerIds={hasFloodAccess && showFloodWatch ? ["flood-segments-core", "flood-segments-glow", "flood-corridor-main", "flood-corridor-glow"] : []}
         onClick={(e) => {
@@ -1344,7 +1345,7 @@ function EcoMap() {
           });
           setCurrentZoom(e.viewState.zoom);
           if (autoFetchPOI && e.viewState.zoom >= 10) {
-            handleLoadNearbyPOIs(lat, lng, poiType, false);
+            handleLoadNearbyPOIs(lat, lng, poiType || "all", false);
           }
         }}
         onMouseMove={(e) => {
