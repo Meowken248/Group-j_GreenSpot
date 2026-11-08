@@ -335,18 +335,22 @@ export const GroupMembersManagement: React.FC<GroupMembersManagementProps> = ({
                         </div>
 
                         <div className="name-role-cluster">
-                          <span className="member-name">{mem.full_name}</span>
-                          {isSelf && (
-                            <span className="self-badge" data-testid={`badge-you-${mem.user_id}`}>
-                              (Bạn)
+                          <div className="member-name-heading">
+                            <span className="member-name">{mem.full_name}</span>
+                            {isSelf && (
+                              <span className="self-badge" data-testid={`badge-you-${mem.user_id}`}>
+                                (Bạn)
+                              </span>
+                            )}
+                          </div>
+                          <div className="member-role-badge-wrapper">
+                            <span
+                              className={`role-pill ${roleClass}`}
+                              data-testid={`role-badge-${mem.user_id}`}
+                            >
+                              {roleName}
                             </span>
-                          )}
-                          <span
-                            className={`role-pill ${roleClass}`}
-                            data-testid={`role-badge-${mem.user_id}`}
-                          >
-                            {roleName}
-                          </span>
+                          </div>
                         </div>
                       </div>
 
