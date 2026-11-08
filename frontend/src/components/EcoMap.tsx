@@ -234,13 +234,17 @@ export const MAP_STYLES = {
 
 export type BuildingColorTheme = "rainbow" | "eco" | "sunset" | "cyber" | "crystal";
 
-export const BUILDING_HEIGHT_EXPRESSION = [
-  "coalesce",
-  ["get", "height"],
-  ["get", "render_height"],
-  ["*", ["get", "building:levels"], 3.5],
-  ["*", ["get", "levels"], 3.5],
-  16,
+export const BUILDING_HEIGHT_EXPRESSION: any = [
+  "case",
+  ["has", "height"],
+  ["to-number", ["get", "height"], 0],
+  ["has", "render_height"],
+  ["to-number", ["get", "render_height"], 0],
+  ["has", "building:levels"],
+  ["*", ["to-number", ["get", "building:levels"], 1], 3.5],
+  ["has", "levels"],
+  ["*", ["to-number", ["get", "levels"], 1], 3.5],
+  0,
 ];
 
 export const BUILDING_COLOR_THEMES: Record<
@@ -262,13 +266,13 @@ export const BUILDING_COLOR_THEMES: Record<
       "interpolate",
       ["linear"],
       BUILDING_HEIGHT_EXPRESSION,
-      0, "#34d399",    // 0-10m: Ngọc bích / Mint
-      12, "#38bdf8",   // 12-20m: Xanh Cyan
-      25, "#6366f1",   // 25-35m: Indigo hiện đại
-      45, "#a855f7",   // 45-60m: Tím thạch anh
-      70, "#ec4899",   // 70-90m: Hồng Magenta
-      100, "#f97316",  // 100-130m: Cam san hô
-      150, "#ef4444",  // 150m+: Đỏ cờ rực rỡ
+      0, ["to-color", "#34d399"],
+      12, ["to-color", "#38bdf8"],
+      25, ["to-color", "#6366f1"],
+      45, ["to-color", "#a855f7"],
+      70, ["to-color", "#ec4899"],
+      100, ["to-color", "#f97316"],
+      150, ["to-color", "#ef4444"],
     ],
   },
   eco: {
@@ -280,11 +284,11 @@ export const BUILDING_COLOR_THEMES: Record<
       "interpolate",
       ["linear"],
       BUILDING_HEIGHT_EXPRESSION,
-      0, "#a7f3d0",
-      15, "#34d399",
-      35, "#10b981",
-      65, "#06b6d4",
-      110, "#0284c7",
+      0, ["to-color", "#a7f3d0"],
+      15, ["to-color", "#34d399"],
+      35, ["to-color", "#10b981"],
+      65, ["to-color", "#06b6d4"],
+      110, ["to-color", "#0284c7"],
     ],
   },
   sunset: {
@@ -296,11 +300,11 @@ export const BUILDING_COLOR_THEMES: Record<
       "interpolate",
       ["linear"],
       BUILDING_HEIGHT_EXPRESSION,
-      0, "#fde68a",
-      15, "#fbbf24",
-      35, "#f97316",
-      65, "#e11d48",
-      110, "#9333ea",
+      0, ["to-color", "#fde68a"],
+      15, ["to-color", "#fbbf24"],
+      35, ["to-color", "#f97316"],
+      65, ["to-color", "#e11d48"],
+      110, ["to-color", "#9333ea"],
     ],
   },
   cyber: {
@@ -312,11 +316,11 @@ export const BUILDING_COLOR_THEMES: Record<
       "interpolate",
       ["linear"],
       BUILDING_HEIGHT_EXPRESSION,
-      0, "#00f0ff",
-      20, "#7000ff",
-      50, "#ff007f",
-      90, "#ffe600",
-      140, "#ff003c",
+      0, ["to-color", "#00f0ff"],
+      20, ["to-color", "#7000ff"],
+      50, ["to-color", "#ff007f"],
+      90, ["to-color", "#ffe600"],
+      140, ["to-color", "#ff003c"],
     ],
   },
   crystal: {
@@ -328,11 +332,11 @@ export const BUILDING_COLOR_THEMES: Record<
       "interpolate",
       ["linear"],
       BUILDING_HEIGHT_EXPRESSION,
-      0, "#e0f2fe",
-      15, "#7dd3fc",
-      35, "#38bdf8",
-      65, "#0284c7",
-      110, "#1e3a8a",
+      0, ["to-color", "#e0f2fe"],
+      15, ["to-color", "#7dd3fc"],
+      35, ["to-color", "#38bdf8"],
+      65, ["to-color", "#0284c7"],
+      110, ["to-color", "#1e3a8a"],
     ],
   },
 };
@@ -1388,6 +1392,7 @@ function EcoMap() {
               source-layer="buildings"
               type="fill-extrusion"
               minzoom={12.5}
+              filter={[">", BUILDING_HEIGHT_EXPRESSION, 0] as any}
               paint={{
                 "fill-extrusion-color": BUILDING_COLOR_THEMES[building3DTheme].expression,
                 "fill-extrusion-height": BUILDING_HEIGHT_EXPRESSION as any,
@@ -1416,6 +1421,7 @@ function EcoMap() {
                 source-layer="buildings"
                 type="fill-extrusion"
                 minzoom={12.5}
+                filter={[">", BUILDING_HEIGHT_EXPRESSION, 0] as any}
                 paint={{
                   "fill-extrusion-color": BUILDING_COLOR_THEMES[building3DTheme].expression,
                   "fill-extrusion-height": BUILDING_HEIGHT_EXPRESSION as any,
