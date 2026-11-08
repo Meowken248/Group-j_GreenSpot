@@ -184,11 +184,13 @@ async def seed_admin():
                     INSERT INTO users (
                         user_id, email, password_hash, full_name,
                         role_id, status, reputation_score, total_green_points,
+                        green_points, lifetime_points,
                         friends_count, version, activated_at, created_at, updated_at
                     )
                     VALUES (
                         :u_id, :email, :pwd, :fname,
                         :r_id, 'ACTIVE', 100, 0,
+                        0, 0,
                         0, 1, :now, :now, :now
                     )
                 """),

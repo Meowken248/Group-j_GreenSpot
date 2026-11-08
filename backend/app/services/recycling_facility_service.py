@@ -169,6 +169,7 @@ async def list_facilities(
             RecyclingFacility.contact_phone,
             RecyclingFacility.managing_org,
             RecyclingFacility.is_active,
+            RecyclingFacility.version,
             RecyclingFacility.created_at,
             RecyclingFacility.updated_at,
         )
@@ -201,6 +202,7 @@ async def list_facilities(
                 contact_phone=r.contact_phone,
                 managing_org=r.managing_org,
                 is_active=r.is_active,
+                version=getattr(r, "version", 1) or 1,
                 created_at=r.created_at,
                 updated_at=r.updated_at,
             )
@@ -238,6 +240,7 @@ async def get_facility_by_id(db: AsyncSession, facility_id: int) -> RecyclingFac
             RecyclingFacility.contact_phone,
             RecyclingFacility.managing_org,
             RecyclingFacility.is_active,
+            RecyclingFacility.version,
             RecyclingFacility.created_at,
             RecyclingFacility.updated_at,
         )
@@ -267,6 +270,7 @@ async def get_facility_by_id(db: AsyncSession, facility_id: int) -> RecyclingFac
         contact_phone=r.contact_phone,
         managing_org=r.managing_org,
         is_active=r.is_active,
+        version=getattr(r, "version", 1) or 1,
         created_at=r.created_at,
         updated_at=r.updated_at,
     )
@@ -385,6 +389,7 @@ async def create_facility(
         managing_org=req.managing_org.strip() if req.managing_org else None,
         is_active=True,
         is_deleted=False,
+        version=1,
     )
     db.add(new_facility)
     await db.flush()
@@ -409,6 +414,7 @@ async def create_facility(
             "close_time": new_facility.close_time,
             "qr_code": new_facility.qr_code,
             "is_active": new_facility.is_active,
+            "version": new_facility.version,
         },
         ip_address=client_ip,
         user_agent=user_agent,
@@ -442,6 +448,13 @@ async def update_facility(
     if not fac:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trạm không còn tồn tại")
 
+    # 0. Kiểm tra Khóa lạc quan (Optimistic Locking)
+    if req.version is not None and getattr(fac, "version", None) is not None and req.version < fac.version:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Trạm đã được thay đổi bởi người khác. Vui lòng tải lại",
+        )
+
     # 1. Kiểm tra toạ độ trong TP.HCM
     if not is_within_hcmc_bounds(req.latitude, req.longitude):
         raise HTTPException(
@@ -468,6 +481,7 @@ async def update_facility(
         "open_time": fac.open_time,
         "close_time": fac.close_time,
         "is_active": fac.is_active,
+        "version": fac.version,
     }
 
     # 5. Cập nhật dữ liệu mới (MÃ TRẠM VÀ MÃ QR GIỮ NGUYÊN BẢO TOÀN HIỆU LỰC)
@@ -482,6 +496,7 @@ async def update_facility(
     fac.is_active = req.is_active
     fac.contact_phone = req.contact_phone.strip() if req.contact_phone else None
     fac.managing_org = req.managing_org.strip() if req.managing_org else None
+    fac.version = (fac.version or 1) + 1
 
     new_values = {
         "name": fac.name,
@@ -493,6 +508,7 @@ async def update_facility(
         "open_time": fac.open_time,
         "close_time": fac.close_time,
         "is_active": fac.is_active,
+        "version": fac.version,
     }
 
     # 6. Ghi Audit Log

@@ -15,33 +15,41 @@ export const FacilityDeleteSuccessModal: React.FC<FacilityDeleteSuccessModalProp
   if (!isOpen || !facility) return null;
 
   return (
-    <div className="facility-modal-backdrop" role="dialog" aria-modal="true">
-      <div className="facility-modal-card delete-success-card">
+    <div
+      className="facility-modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      onClick={(e) => {
+        // Chặn đóng khi click ra ngoài theo đúng đặc tả SRS trang 192
+        e.stopPropagation();
+      }}
+    >
+      <div
+        className="facility-modal-card delete-success-card"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* DÒNG NHỎ POPUP TRÊN ĐẦU */}
+        <span className="popup-badge-label">POPUP</span>
+
         <div className="modal-header">
           <div className="header-icon-title">
             <span className="modal-icon success-icon">✅</span>
             <div>
-              <h3 className="modal-title">Xoá trạm thành công</h3>
-              <p className="modal-subtitle">Trạm đã được gỡ bỏ khỏi mạng lưới thu gom đô thị</p>
+              <h3 className="modal-title">ĐÃ XOÁ THÀNH CÔNG</h3>
+              <p className="modal-subtitle">Danh sách đã được cập nhật</p>
             </div>
           </div>
-          <button
-            type="button"
-            className="btn-modal-close"
-            onClick={onClose}
-            aria-label="Đóng"
-          >
-            ✕
-          </button>
         </div>
 
         <div className="modal-body">
           <div className="success-message-box">
             <p className="success-main-msg">
-              Trạm tái chế <strong>{facility.name}</strong> (Mã: <code>{facility.facility_code}</code>) đã được xoá an toàn khỏi hệ thống.
+              Trạm tái chế <strong>{facility.name}</strong> (Mã:{" "}
+              <code>{facility.facility_code}</code>) đã được xoá an toàn.
             </p>
             <p className="success-sub-msg">
-              Bản ghi đã được chuyển sang trạng thái lưu trữ (Soft Delete) và ghi nhận vào Nhật ký kiểm toán (Audit Log) theo tiêu chuẩn bảo toàn dữ liệu.
+              Mã QR đã được vô hiệu hoá, đồng thời toàn bộ lịch sử quét mã và
+              điểm thưởng tích luỹ trước đó vẫn được bảo toàn nguyên vẹn.
             </p>
           </div>
         </div>
@@ -61,4 +69,3 @@ export const FacilityDeleteSuccessModal: React.FC<FacilityDeleteSuccessModalProp
     </div>
   );
 };
-

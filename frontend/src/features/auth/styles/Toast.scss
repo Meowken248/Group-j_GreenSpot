@@ -5,7 +5,9 @@
   position: fixed;
   top: 24px;
   right: 24px;
-  z-index: 9999;
+  // Phải nằm TRÊN mọi modal nghiệp vụ (modal sự kiện, sự cố, báo cáo… dùng z-index 10000)
+  // để người dùng luôn thấy phản hồi khi bấm nút trong modal.
+  z-index: 100000;
   display: flex;
   flex-direction: column;
   gap: 10px;

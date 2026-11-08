@@ -13,12 +13,14 @@ interface AuthContainerProps {
   initialView?: AuthView;
   onExitAuth?: () => void;
   redirectUrl?: string;
+  onLoginSuccess?: (targetUrl?: string) => void;
 }
 
 export const AuthContainer: React.FC<AuthContainerProps> = ({
   initialView = "register",
   onExitAuth,
   redirectUrl,
+  onLoginSuccess,
 }) => {
   // Xác định màn hình khởi đầu dựa trên trạng thái trong sessionStorage / URL
   const [currentView, setCurrentView] = useState<AuthView>(() => {
@@ -159,9 +161,12 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({
           onLoginSuccess={(targetUrl?: string) => {
             setIsFromActivation(false);
             setPendingEmail("");
+            const effective = targetUrl || loginRedirect || redirectUrl;
             setLoginRedirect(undefined);
-            if (targetUrl === "/devices" || targetUrl === "#devices") {
+            if (effective === "/devices" || effective === "#devices") {
               setCurrentView("devices");
+            } else if (onLoginSuccess) {
+              onLoginSuccess(effective);
             } else if (onExitAuth) {
               onExitAuth();
             }

@@ -147,6 +147,31 @@ export const FeedLeftSidebar: React.FC<FeedLeftSidebarProps> = ({
           <span className="nav-item-text">Nhóm tình nguyện</span>
           {activeTab === "groups" && <span className="nav-active-pill">Đang chọn</span>}
         </button>
+
+        {/* 2.5. Sự kiện và chiến dịch Chủ Nhật Xanh (Chức năng 21) */}
+        <button
+          type="button"
+          className="feed-nav-item"
+          data-testid="feed-nav-events"
+          onClick={() => onNavigate("events")}
+          title="Sự kiện và chiến dịch Chủ Nhật Xanh (Chức năng 21)"
+        >
+          <span className="nav-item-icon">📅</span>
+          <span className="nav-item-text">Chủ Nhật Xanh</span>
+          <span
+            style={{
+              marginLeft: "auto",
+              fontSize: "0.68rem",
+              background: "#10b981",
+              color: "#ffffff",
+              padding: "2px 7px",
+              borderRadius: "10px",
+              fontWeight: 800,
+            }}
+          >
+            +50 GP
+          </span>
+        </button>
       </nav>
 
       {/* 3. Phân mục Nhóm của bạn (Chức năng 16) */}
@@ -220,9 +245,42 @@ export const FeedLeftSidebar: React.FC<FeedLeftSidebarProps> = ({
         </div>
       )}
 
-      {/* 4. Lối tắt nhanh đến các phân hệ liên quan */}
+      {/* 4. Widget Lối tắt Chiến dịch Chủ Nhật Xanh (Chức năng 21) */}
+      <div className="feed-events-sidebar-widget" data-testid="feed-events-sidebar-widget">
+        <div className="widget-header-flex">
+          <span className="widget-badge">🌱 CHỦ NHẬT XANH</span>
+          <span className="widget-icon">🎯</span>
+        </div>
+        <div className="widget-event-title">
+          Check-in hiện trường nhận ngay +50 Điểm Xanh (GP)
+        </div>
+        <div className="widget-event-time">
+          Chiến dịch ra quân bảo vệ môi trường toàn thành phố
+        </div>
+        <button
+          type="button"
+          className="widget-btn-explore"
+          data-testid="btn-explore-events-sidebar"
+          onClick={() => onNavigate("events")}
+        >
+          Khám phá sự kiện ngay
+        </button>
+      </div>
+
+
+      {/* 5. Lối tắt nhanh đến các phân hệ liên quan */}
       <div className="feed-shortcuts-section">
         <div className="section-eyebrow-label">LỐI TẮT NHANH</div>
+
+        <button
+          type="button"
+          className="feed-shortcut-item shortcut-nav-item"
+          data-testid="shortcut-nav-events"
+          onClick={() => onNavigate("events")}
+        >
+          <span className="shortcut-icon">📅</span>
+          <span className="shortcut-text">Sự kiện Chủ Nhật Xanh (STT 21)</span>
+        </button>
 
         <button
           type="button"

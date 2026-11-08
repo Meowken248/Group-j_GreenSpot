@@ -34,9 +34,9 @@ export const FacilityListPanel: React.FC<FacilityListPanelProps> = ({
     <div className="facility-col-panel list-panel">
       <div className="panel-header">
         <div className="header-titles">
-          <h3 className="panel-title">MẠNG LƯỚI TRẠM TÁI CHẾ & ĐIỂM TIẾP NHẬN</h3>
+          <h3 className="panel-title">DANH SÁCH TRẠM TÁI CHẾ</h3>
           <span className="panel-subtitle">
-            Danh sách các điểm thu gom, tiếp nhận rác phân loại trên địa bàn TP.HCM
+            Mạng lưới điểm thu gom và tiếp nhận rác thải phân loại trên địa bàn TP.HCM
           </span>
         </div>
       </div>
@@ -46,7 +46,7 @@ export const FacilityListPanel: React.FC<FacilityListPanelProps> = ({
         {loading && (
           <div className="loading-state-wrapper">
             <div className="spinner-emerald" />
-            <p className="loading-text">Đang tải danh sách trạm tái chế…</p>
+            <p className="loading-text">Đang tải dữ liệu…</p>
           </div>
         )}
 
@@ -54,7 +54,7 @@ export const FacilityListPanel: React.FC<FacilityListPanelProps> = ({
         {!loading && error && (
           <div className="error-state-card">
             <span className="error-icon">⚠️</span>
-            <h4 className="error-title">Không thể tải dữ liệu</h4>
+            <h4 className="error-title">Không thể tải danh sách trạm. Vui lòng thử lại</h4>
             <p className="error-desc">{error}</p>
             <button type="button" className="btn-retry-fetch" onClick={onRetry}>
               Thử lại
@@ -66,11 +66,13 @@ export const FacilityListPanel: React.FC<FacilityListPanelProps> = ({
         {!loading && !error && facilities.length === 0 && (
           <div className="empty-state-card">
             <span className="empty-icon">📍</span>
-            <h4 className="empty-title">Không tìm thấy trạm tái chế nào</h4>
+            <h4 className="empty-title">
+              {hasFilters ? "Không tìm thấy trạm phù hợp" : "Chưa có trạm tái chế nào"}
+            </h4>
             <p className="empty-desc">
               {hasFilters
-                ? "Không có trạm nào phù hợp với điều kiện tìm kiếm và bộ lọc hiện tại."
-                : "Chưa có trạm tái chế nào được tạo trên hệ thống."}
+                ? "Bộ lọc hoặc tìm kiếm không có kết quả phù hợp."
+                : "Hệ thống chưa ghi nhận trạm tái chế nào trong cơ sở dữ liệu."}
             </p>
             {!hasFilters && (
               <button
@@ -78,7 +80,7 @@ export const FacilityListPanel: React.FC<FacilityListPanelProps> = ({
                 className="btn-empty-create"
                 onClick={onAddNew}
               >
-                + Thêm trạm tái chế đầu tiên
+                + Thêm mới
               </button>
             )}
           </div>
@@ -94,7 +96,7 @@ export const FacilityListPanel: React.FC<FacilityListPanelProps> = ({
                   <th className="col-name">Tên trạm & Địa chỉ</th>
                   <th className="col-district">Quận/Huyện</th>
                   <th className="col-hours">Giờ mở cửa</th>
-                  <th className="col-waste-types">Loại rác tiếp nhận</th>
+                  <th className="col-waste-types">Loại rác nhận</th>
                   <th className="col-status">Trạng thái</th>
                   <th className="col-actions">Thao tác</th>
                 </tr>
@@ -108,7 +110,10 @@ export const FacilityListPanel: React.FC<FacilityListPanelProps> = ({
                   const remainingCount = wasteTypes.length - 2;
 
                   return (
-                    <tr key={f.facility_id} className="facility-row">
+                    <tr
+                      key={f.facility_id}
+                      className={`facility-row ${!f.is_active ? "row-inactive" : ""}`}
+                    >
                       {/* 1. MÃ TRẠM */}
                       <td className="col-code">
                         <span className="facility-code-badge" title={f.facility_code}>
@@ -197,7 +202,7 @@ export const FacilityListPanel: React.FC<FacilityListPanelProps> = ({
                         >
                           <span className="pill-dot" />
                           <span className="status-label">
-                            {f.is_active ? "Đang hoạt động" : "Ngưng hoạt động"}
+                            {f.is_active ? "Đang hoạt động" : "Tạm ngưng"}
                           </span>
                         </span>
                       </td>

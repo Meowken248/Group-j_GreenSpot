@@ -148,12 +148,16 @@ class GroupMember(Base):
     deleted_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    version: Mapped[int] = mapped_column(
+        Integer, default=1, nullable=False
+    )
 
     group: Mapped["Group"] = relationship("Group", back_populates="members")
     user: Mapped["User"] = relationship("User")
 
     __table_args__ = (
         UniqueConstraint("group_id", "user_id", name="uq_group_user_member"),
+        Index("ix_group_members_group_role_status", "group_id", "role", "status"),
     )
 
 

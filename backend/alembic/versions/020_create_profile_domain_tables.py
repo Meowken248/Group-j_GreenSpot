@@ -32,6 +32,10 @@ def upgrade() -> None:
         op.add_column("users", sa.Column("activated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False))
     if "total_green_points" not in existing_user_cols:
         op.add_column("users", sa.Column("total_green_points", sa.Integer(), server_default="0", nullable=False))
+    if "green_points" not in existing_user_cols:
+        op.add_column("users", sa.Column("green_points", sa.Integer(), server_default="0", nullable=False))
+    if "lifetime_points" not in existing_user_cols:
+        op.add_column("users", sa.Column("lifetime_points", sa.Integer(), server_default="0", nullable=False))
     if "friends_count" not in existing_user_cols:
         op.add_column("users", sa.Column("friends_count", sa.Integer(), server_default="0", nullable=False))
     if "version" not in existing_user_cols:

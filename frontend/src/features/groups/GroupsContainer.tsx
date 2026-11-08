@@ -55,20 +55,43 @@ export const GroupsContainer: React.FC<GroupsContainerProps> = ({
   const [viewingGroupId, setViewingGroupId] = useState<string | null>(initialGroupId || null);
 
   useEffect(() => {
-    const handleHash = () => {
-      const hash = window.location.hash;
-      const idMatch = hash.match(/id=([^&]+)/);
-      if (idMatch) {
-        setViewingGroupId(idMatch[1]);
+    const handleUrlChange = () => {
+      // 1. Nhận diện ID nhóm từ pathname (VD: /groups/{groupId}/members hoặc /groups/{groupId})
+      const pathMatch = window.location.pathname.match(/\/groups\/([^/?#]+)/);
+      if (
+        pathMatch &&
+        pathMatch[1] &&
+        !["members", "explore", "create", "my-groups"].includes(pathMatch[1].toLowerCase())
+      ) {
+        setViewingGroupId(pathMatch[1]);
+      } else {
+        const queryId =
+          new URLSearchParams(window.location.search).get("id") ||
+          new URLSearchParams(window.location.search).get("groupId");
+        if (queryId) {
+          setViewingGroupId(queryId);
+        } else {
+          const hash = window.location.hash;
+          const idMatch = hash.match(/id=([^&]+)/);
+          if (idMatch) {
+            setViewingGroupId(idMatch[1]);
+          }
+        }
       }
+
+      const hash = window.location.hash;
       const tabMatch = hash.match(/tab=([^&]+)/);
       if (tabMatch && (tabMatch[1] === "my_groups" || tabMatch[1] === "explore" || tabMatch[1] === "create")) {
         setActiveTab(tabMatch[1] as any);
       }
     };
-    handleHash();
-    window.addEventListener("hashchange", handleHash);
-    return () => window.removeEventListener("hashchange", handleHash);
+    handleUrlChange();
+    window.addEventListener("hashchange", handleUrlChange);
+    window.addEventListener("popstate", handleUrlChange);
+    return () => {
+      window.removeEventListener("hashchange", handleUrlChange);
+      window.removeEventListener("popstate", handleUrlChange);
+    };
   }, []);
 
   // Modal states

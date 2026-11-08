@@ -30,8 +30,8 @@ INSERT INTO users (
     reputation_score, total_green_points, friends_count, version, activated_at
 )
 VALUES
-  ('11111111-1111-1111-1111-111111111111', 'admin@ecoreport.gov.vn', '0901000001', '1c17534bf8bef4f5904e8252c14edeee$5ac2e327d162f4cd6e98e774a09b74559e0c164e52fad60f642bdbd4ad82c0d5', 'Quản trị viên Hệ thống', 1, 'ACTIVE', 100, 500, 10, 1, NOW()),
-  ('22222222-2222-2222-2222-222222222222', 'officer@ecoreport.gov.vn', '0901000002', '1c17534bf8bef4f5904e8252c14edeee$5ac2e327d162f4cd6e98e774a09b74559e0c164e52fad60f642bdbd4ad82c0d5', 'Cán bộ Phòng TN&MT', 2, 'ACTIVE', 100, 300, 5, 1, NOW()),
+  ('11111111-1111-1111-1111-111111111111', 'admin@ecoreport.gov.vn', '0901000001', '4cb2c49c807dc70afa73af70e69520e9$5792bed86f0ed983eb7ee2b2df4fd065e492a16f3b63fa528b334c614951fde3', 'Quản trị viên Hệ thống', 1, 'ACTIVE', 100, 500, 10, 1, NOW()),
+  ('22222222-2222-2222-2222-222222222222', 'officer@ecoreport.gov.vn', '0901000002', 'd38b05f476027d9334bf4d5d8af20619$cd3d17a4118b954472f58fd23594bb90f9bdb06d05ae7c0b19942c23e38bb621', 'Cán bộ Phòng TN&MT', 2, 'ACTIVE', 100, 300, 5, 1, NOW()),
   ('44444444-4444-4444-4444-444444444444', 'citizen@ecoreport.gov.vn', '0901000004', '8c328560dc6d21b268265d056242dd22$96b8e9682ca31eac8805421330f7434f8dafe868c71cee72d8c47b30a9218f18', 'Nguyễn Thành Đạt (Công dân)', 4, 'ACTIVE', 100, 200, 12, 1, NOW())
 ON CONFLICT (email) DO UPDATE
 SET password_hash = EXCLUDED.password_hash, status = 'ACTIVE';
@@ -210,7 +210,8 @@ VALUES
  ST_SetSRID(ST_MakePoint(106.7450, 10.8030), 4326), ARRAY['DO_DIEN_TU_LON', 'MUC_IN', 'PIN_CU'], '08:00 - 17:00', '028.3744.1100', 'Vietnam Recycles', TRUE, FALSE),
 
 ('Điểm Tiếp nhận Thu gom Rác nhựa ven biển (TP.HCM)', 'REC-CG-01', 'Đường Duyên Hải, Thị trấn Cần Thạnh, Huyện Cần Giờ', 6,
- ST_SetSRID(ST_MakePoint(106.9600, 10.3950), 4326), ARRAY['RAC_NHUA_BIEN', 'NHUA_TAI_CHE'], '07:00 - 17:00', '028.3874.0011', 'Ban Quản lý Rừng Sác', TRUE, FALSE);
+ ST_SetSRID(ST_MakePoint(106.9600, 10.3950), 4326), ARRAY['RAC_NHUA_BIEN', 'NHUA_TAI_CHE'], '07:00 - 17:00', '028.3874.0011', 'Ban Quản lý Rừng Sác', TRUE, FALSE)
+ON CONFLICT (facility_code) DO NOTHING;
 
 -- 8. IOT SENSOR STATIONS (TRẠM QUAN TRẮC CẢM BIẾN IOT)
 DELETE FROM iot_sensor_stations WHERE station_code LIKE 'IOT-HCM-%';

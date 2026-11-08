@@ -10,7 +10,7 @@ const BASE_URL = "/api/v1/risk-dashboard";
 
 export const riskDashboardApi = {
   /**
-   * Màn 1/3: Lấy dữ liệu tổng quan rủi ro đô thị toàn thành phố
+   *  Lấy dữ liệu tổng quan rủi ro đô thị toàn thành phố
    */
   async getOverview(): Promise<OverviewMetricsResponse> {
     const res = await api.get<OverviewMetricsResponse>(`${BASE_URL}/overview`);
@@ -18,7 +18,7 @@ export const riskDashboardApi = {
   },
 
   /**
-   * Màn 2/3: Lọc & phân tích chuyên sâu
+   *  Lọc & phân tích chuyên sâu
    */
   async getFilteredAnalysis(payload: FilterAnalysisRequest): Promise<FilterAnalysisResponse> {
     const res = await api.post<FilterAnalysisResponse>(`${BASE_URL}/analysis`, payload);
@@ -26,7 +26,7 @@ export const riskDashboardApi = {
   },
 
   /**
-   * Màn 3/3: Lấy chi tiết thông tin quận/huyện cho Popup
+   *  Lấy chi tiết thông tin quận/huyện cho Popup
    */
   async getDistrictDetail(idOrName: string | number): Promise<DistrictDetailResponse> {
     const encoded = encodeURIComponent(String(idOrName));

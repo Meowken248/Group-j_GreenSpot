@@ -16,6 +16,7 @@ export interface RecyclingFacilityItem {
   contact_phone?: string | null;
   managing_org?: string | null;
   is_active: boolean;
+  version?: number;
   created_at: string;
   updated_at: string;
 }
@@ -43,6 +44,7 @@ export interface RecyclingFacilityUpdateRequest {
   open_time?: string;
   close_time?: string;
   is_active?: boolean;
+  version?: number;
   contact_phone?: string;
   managing_org?: string;
 }

@@ -10,6 +10,7 @@ import { penaltyService } from './services/penaltyService';
 import { PenaltySearchScreen } from './components/PenaltySearchScreen';
 import { PenaltyListScreen } from './components/PenaltyListScreen';
 import { PenaltyDetailScreen } from './components/PenaltyDetailScreen';
+import { useLanguage } from '../../i18n';
 import './styles/PenaltyLookup.scss';
 
 interface PenaltyLookupContainerProps {
@@ -24,6 +25,7 @@ export const PenaltyLookupContainer: React.FC<PenaltyLookupContainerProps> = ({
   onNavigateToAuth,
 }) => {
   // Trạng thái màn hình hiện tại (Màn 1: SEARCH, Màn 2: LIST, Màn 3: DETAIL)
+  const { currentLang, t } = useLanguage();
   const [screenMode, setScreenMode] = useState<PenaltyScreenMode>('SEARCH');
 
   // Bộ lọc tra cứu
@@ -90,7 +92,7 @@ export const PenaltyLookupContainer: React.FC<PenaltyLookupContainerProps> = ({
   useEffect(() => {
     loadCategories();
     loadDomains();
-  }, [loadCategories, loadDomains]);
+  }, [loadCategories, loadDomains, currentLang]);
 
   // 3. Thực hiện tra cứu danh sách kết quả (Màn 2)
   const executeSearch = useCallback(
@@ -217,11 +219,11 @@ export const PenaltyLookupContainer: React.FC<PenaltyLookupContainerProps> = ({
               role="button"
               tabIndex={0}
             >
-              Hệ thống pháp luật môi trường
+              {t("penalties.breadcrumbFramework", "Hệ thống pháp luật môi trường")}
             </span>
             <span>/</span>
             {screenMode === 'SEARCH' ? (
-              <span className="current">Tra cứu quy định xử phạt</span>
+              <span className="current">{t("penalties.breadcrumbLookup", "Tra cứu quy định xử phạt")}</span>
             ) : screenMode === 'LIST' ? (
               <>
                 <span
@@ -263,15 +265,15 @@ export const PenaltyLookupContainer: React.FC<PenaltyLookupContainerProps> = ({
           <div className="pl-header-title-box">
             <h1 className="pl-main-title">
               <span className="title-icon">⚖️</span>
-              <span>Cẩm Nang Pháp Lý & Xử Phạt Vi Phạm Môi Trường</span>
+              <span>{t("penalties.mainTitle", "Cẩm Nang Pháp Lý & Xử Phạt Vi Phạm Môi Trường")}</span>
             </h1>
             <div className="pl-decree-badge">
-              <span>Căn cứ: Nghị định 45/2022/NĐ-CP</span>
+              <span>{t("penalties.decreeBasis", "Căn cứ: Nghị định 45/2022/NĐ-CP")}</span>
             </div>
           </div>
 
           <p className="pl-sub-desc">
-            Cung cấp thông tin chuẩn xác, minh bạch về các khung hình phạt, chế tài xử lý và biện pháp khắc phục hậu quả đối với các hành vi gây ô nhiễm môi trường đô thị.
+            {t("penalties.subDesc", "Cung cấp thông tin chuẩn xác, minh bạch về các khung hình phạt, chế tài xử lý và biện pháp khắc phục hậu quả đối với các hành vi gây ô nhiễm môi trường đô thị.")}
           </p>
         </header>
 

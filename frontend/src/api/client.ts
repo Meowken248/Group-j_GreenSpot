@@ -36,12 +36,18 @@ export const isPublicAuthEndpoint = (url?: string): boolean => {
     url.includes("/api/v1/auth/register") ||
     url.includes("/api/v1/auth/verify-otp") ||
     url.includes("/api/v1/auth/resend-otp") ||
+    url.includes("/api/v1/translation") ||
     url.includes("/health")
   );
 };
 
 // 1. Request Interceptor
 api.interceptors.request.use((config) => {
+  // Tự động đính kèm thông tin ngôn ngữ đàm phán (Content Negotiation RFC 7231)
+  const currentLang = localStorage.getItem("greenspot_user_lang") || "VI";
+  config.headers["X-Language"] = currentLang;
+  config.headers["Accept-Language"] = currentLang === "EN" ? "en-US,en;q=0.9" : "vi-VN,vi;q=0.9";
+
   const isPublic = isPublicAuthEndpoint(config.url);
 
   // Đặc tả: Khi Popup đang hiện, các yêu cầu cần đăng nhập khác bị dừng gửi

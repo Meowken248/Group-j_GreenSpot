@@ -5,7 +5,9 @@ Cung cấp các API công khai phục vụ tra cứu văn bản pháp luật mô
 
 import uuid
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, Depends, Query, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Query, Header, HTTPException, status, Request
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -73,6 +75,7 @@ async def require_officer_or_admin(
     summary="Tra cứu và lọc quy định xử phạt (Màn 1 & Màn 2)",
 )
 async def search_penalties(
+    request: Request,
     query: Optional[str] = Query(default=None, description="Từ khóa hành vi vi phạm"),
     domain: Optional[str] = Query(default=None, description="Lĩnh vực chuyên đề môi trường"),
     quick_category: Optional[str] = Query(default=None, description="Danh mục truy cập nhanh"),
@@ -97,7 +100,13 @@ async def search_penalties(
         page=page,
         limit=limit,
     )
-    return await penalty_service.search_regulations(db, params)
+    result = await penalty_service.search_regulations(db, params)
+    lang = get_current_language(request)
+    if lang == "en":
+        result_dict = result.model_dump() if hasattr(result, 'model_dump') else result
+        translated = await translation_service.translate_data(result_dict, target_lang="en", source_lang="vi")
+        return translated
+    return result
 
 
 @router.get(
@@ -106,13 +115,23 @@ async def search_penalties(
     summary="Lấy danh mục phổ biến Màn 1 kèm số lượng điều khoản",
 )
 async def get_quick_categories(
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """
     Trả về 4 danh mục phổ biến nhất (Xả rác, Đốt rác, Nước thải, Tiếng ồn)
     kèm biểu tượng icon, mô tả và số lượng quy định thực tế.
     """
-    return await penalty_service.get_quick_category_stats(db)
+    result = await penalty_service.get_quick_category_stats(db)
+    lang = get_current_language(request)
+    if lang == "en":
+        if isinstance(result, list):
+            result_dict = [item.model_dump() if hasattr(item, 'model_dump') else item for item in result]
+        else:
+            result_dict = result.model_dump() if hasattr(result, 'model_dump') else result
+        translated = await translation_service.translate_data(result_dict, target_lang="en", source_lang="vi")
+        return translated
+    return result
 
 
 @router.get(
@@ -121,12 +140,17 @@ async def get_quick_categories(
     summary="Lấy danh sách các lĩnh vực chuyên đề có trong hệ thống",
 )
 async def get_domains(
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """
     Trả về danh sách các lĩnh vực phục vụ dropdown lọc ở Màn 2.
     """
-    return await penalty_service.get_available_domains(db)
+    domains = await penalty_service.get_available_domains(db)
+    lang = get_current_language(request)
+    if lang == "en":
+        return [await translation_service.translate_text(d, "en", "vi") for d in domains]
+    return domains
 
 
 @router.get(

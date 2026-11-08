@@ -239,6 +239,13 @@ class TestRbacFullBackend(unittest.TestCase):
         - Module ROLE chỉ dành riêng cho Admin (bị lọc bỏ đối với vai trò khác)
         - Version tăng thêm 1
         """
+        # Dọn dẹp trước nếu còn tồn tại từ lần chạy trước
+        roles_res = requests.get(f"{BASE_URL}/rbac/roles", headers=self.admin_headers)
+        if roles_res.status_code == 200:
+            for r in roles_res.json().get("roles", []):
+                if r.get("role_name") == "Vai trò Test Interlocking":
+                    requests.delete(f"{BASE_URL}/rbac/roles/{r['role_id']}", headers=self.admin_headers)
+
         # Tạo vai trò test
         c_res = requests.post(
             f"{BASE_URL}/rbac/roles",

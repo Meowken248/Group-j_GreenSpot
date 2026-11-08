@@ -33,7 +33,7 @@ class RiskDashboardService:
         self.repo = repository
 
     async def get_overview_dashboard(self, db: AsyncSession) -> OverviewMetricsResponse:
-        """Tổng hợp toàn bộ dữ liệu cho Màn 1/3: Tổng quan rủi ro"""
+        """Tổng hợp toàn bộ dữ liệu cho  Tổng quan rủi ro"""
         # 1. Lấy chỉ số tổng quan toàn thành phố
         overview_raw = await self.repo.get_citywide_overview_metrics(db)
         overall_score = overview_raw["overall_risk_score"]
@@ -163,7 +163,7 @@ class RiskDashboardService:
         unit_id: Optional[int] = None,
         district_name: Optional[str] = None,
     ) -> DistrictDetailResponse:
-        """Truy vấn thông tin chi tiết một quận cho Màn 3/3: Popup Chi tiết quận"""
+        """Truy vấn thông tin chi tiết một quận cho  Popup Chi tiết quận"""
         raw_detail = await self.repo.get_district_detail_by_id_or_name(db, unit_id=unit_id, district_name=district_name)
         if not raw_detail:
             raw_detail = {

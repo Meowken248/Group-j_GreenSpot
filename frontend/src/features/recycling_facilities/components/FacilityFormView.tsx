@@ -20,6 +20,7 @@ interface FacilityFormViewProps {
   onSaveCreate: (data: RecyclingFacilityCreateRequest) => Promise<void>;
   onSaveUpdate: (id: number, data: RecyclingFacilityUpdateRequest) => Promise<void>;
   onCancelRequest: (hasChanges: boolean) => void;
+  onReload?: () => void;
 }
 
 export const FacilityFormView: React.FC<FacilityFormViewProps> = ({
@@ -29,6 +30,7 @@ export const FacilityFormView: React.FC<FacilityFormViewProps> = ({
   onSaveCreate,
   onSaveUpdate,
   onCancelRequest,
+  onReload,
 }) => {
   const isEdit = mode === "edit";
 
@@ -175,10 +177,10 @@ export const FacilityFormView: React.FC<FacilityFormViewProps> = ({
     // 1. Tên trạm
     const cleanName = name.trim();
     if (!cleanName) {
-      setNameError("Vui lòng nhập tên trạm tái chế");
+      setNameError("Vui lòng nhập tên trạm");
       valid = false;
-    } else if (cleanName.length > 150) {
-      setNameError("Tên trạm không được vượt quá 150 ký tự");
+    } else if (cleanName.length > 100) {
+      setNameError("Tên tối đa 100 ký tự");
       valid = false;
     } else {
       setNameError(null);
@@ -187,10 +189,10 @@ export const FacilityFormView: React.FC<FacilityFormViewProps> = ({
     // 2. Địa chỉ
     const cleanAddress = address.trim();
     if (!cleanAddress) {
-      setAddressError("Vui lòng nhập địa chỉ chi tiết của trạm");
+      setAddressError("Vui lòng nhập địa chỉ");
       valid = false;
-    } else if (cleanAddress.length > 255) {
-      setAddressError("Địa chỉ không được vượt quá 255 ký tự");
+    } else if (cleanAddress.length > 200) {
+      setAddressError("Địa chỉ tối đa 200 ký tự");
       valid = false;
     } else {
       setAddressError(null);
@@ -206,10 +208,10 @@ export const FacilityFormView: React.FC<FacilityFormViewProps> = ({
 
     // 4. Toạ độ
     if (isNaN(latitude) || isNaN(longitude)) {
-      setCoordsError("Toạ độ không hợp lệ");
+      setCoordsError("Vui lòng ghim vị trí đặt trạm");
       valid = false;
     } else if (!isCoordinatesInHCMC(latitude, longitude)) {
-      setCoordsError("Toạ độ nằm ngoài phạm vi 22 quận/huyện TP.HCM");
+      setCoordsError("Vị trí nằm ngoài phạm vi hỗ trợ của hệ thống");
       valid = false;
     } else {
       setCoordsError(null);
@@ -217,7 +219,7 @@ export const FacilityFormView: React.FC<FacilityFormViewProps> = ({
 
     // 5. Loại rác
     if (!acceptedWasteTypes || acceptedWasteTypes.length === 0) {
-      setWasteTypesError("Vui lòng chọn ít nhất một loại rác tiếp nhận");
+      setWasteTypesError("Vui lòng chọn ít nhất 1 loại rác");
       valid = false;
     } else {
       setWasteTypesError(null);
@@ -225,10 +227,10 @@ export const FacilityFormView: React.FC<FacilityFormViewProps> = ({
 
     // 6. Giờ hoạt động
     if (!openTime || !closeTime) {
-      setHoursError("Vui lòng nhập đầy đủ giờ mở cửa và đóng cửa");
+      setHoursError("Vui lòng nhập giờ mở cửa");
       valid = false;
     } else if (openTime >= closeTime) {
-      setHoursError("Giờ mở cửa phải trước giờ đóng cửa");
+      setHoursError("Giờ đóng cửa phải sau giờ mở cửa");
       valid = false;
     } else {
       setHoursError(null);
@@ -292,6 +294,7 @@ export const FacilityFormView: React.FC<FacilityFormViewProps> = ({
           open_time: openTime,
           close_time: closeTime,
           is_active: isActive,
+          version: initialItem.version,
           contact_phone: contactPhone.trim() || undefined,
           managing_org: managingOrg.trim() || undefined,
         };
@@ -340,10 +343,10 @@ export const FacilityFormView: React.FC<FacilityFormViewProps> = ({
               </label>
               <span
                 className={`char-count ${
-                  name.length > 150 ? "count-overflow" : ""
+                  name.length > 100 ? "count-overflow" : ""
                 }`}
               >
-                {name.length}/150
+                {name.length}/100
               </span>
             </div>
             <input
@@ -399,10 +402,10 @@ export const FacilityFormView: React.FC<FacilityFormViewProps> = ({
               </label>
               <span
                 className={`char-count ${
-                  address.length > 255 ? "count-overflow" : ""
+                  address.length > 200 ? "count-overflow" : ""
                 }`}
               >
-                {address.length}/255
+                {address.length}/200
               </span>
             </div>
             <textarea
@@ -569,7 +572,7 @@ export const FacilityFormView: React.FC<FacilityFormViewProps> = ({
                     isActive ? "active-txt" : "inactive-txt"
                   }`}
                 >
-                  {isActive ? "Đang hoạt động" : "Ngưng hoạt động"}
+                  {isActive ? "Đang hoạt động" : "Tạm ngưng"}
                 </span>
               </div>
 
@@ -577,7 +580,7 @@ export const FacilityFormView: React.FC<FacilityFormViewProps> = ({
                 <div className="warning-callout-box">
                   <span className="callout-icon">⚠️</span>
                   <span className="callout-text">
-                    Trạm này sẽ tạm thời ẩn khỏi bản đồ WebGIS và ứng dụng người dân. Người dân sẽ không thể tìm thấy trạm này để quét mã.
+                    Trạm sẽ bị ẩn khỏi bản đồ và kết quả tra cứu của công dân
                   </span>
                 </div>
               )}
@@ -619,7 +622,21 @@ export const FacilityFormView: React.FC<FacilityFormViewProps> = ({
           {/* DÒNG THÔNG BÁO LỖI TỔNG THỂ NẾU SERVER TRẢ VỀ */}
           {serverError && (
             <div className="server-error-banner">
-              <span>{serverError}</span>
+              <span className="error-text-content">{serverError}</span>
+              {(serverError.includes("thay đổi bởi người khác") ||
+                serverError.includes("tải lại")) &&
+                onReload && (
+                  <button
+                    type="button"
+                    className="btn-reload-action"
+                    onClick={() => {
+                      setServerError(null);
+                      onReload();
+                    }}
+                  >
+                    🔄 Tải lại
+                  </button>
+                )}
             </div>
           )}
 

@@ -5,6 +5,7 @@ import { Screen1HotspotMap } from "../components/Screen1HotspotMap";
 import { Screen2ForecastDashboard } from "../components/Screen2ForecastDashboard";
 import { Screen3HotspotDetailModal } from "../components/Screen3HotspotDetailModal";
 import { hotspotApi, FALLBACK_CLUSTERS, FALLBACK_TOP5 } from "../services/hotspotApi";
+import { navigateToRoute } from "../../../routes/appRoutes";
 import type {
   HotspotCluster,
   TopHotspotItem,
@@ -146,12 +147,14 @@ export const HotspotContainer: React.FC<HotspotContainerProps> = ({
     loadAreas();
   }, [loadAreas]);
 
-  // Tự động nhận diện khu vực từ URL hash (?district=...) được liên kết từ Dashboard Rủi ro (STT 42)
+  // Tự động nhận diện khu vực từ URL (?district=...) được liên kết từ Dashboard Rủi ro (STT 42)
   useEffect(() => {
     if (areas.length > 0) {
-      const hash = window.location.hash;
-      if (hash.includes("district=")) {
-        const urlParams = new URLSearchParams(hash.split("?")[1] || "");
+      const searchString = window.location.search
+        ? window.location.search.slice(1)
+        : (window.location.hash.split("?")[1] || "");
+      if (searchString) {
+        const urlParams = new URLSearchParams(searchString);
         const distName = urlParams.get("district");
         if (distName) {
           const matched = areas.find(
@@ -261,7 +264,7 @@ export const HotspotContainer: React.FC<HotspotContainerProps> = ({
       if (onNavigateToDispatch) {
         onNavigateToDispatch(prefill);
       } else {
-        window.location.hash = "#dispatch";
+        navigateToRoute("dispatch");
       }
     }, 400);
   };
@@ -278,7 +281,7 @@ export const HotspotContainer: React.FC<HotspotContainerProps> = ({
     if (onNavigateToDispatch) {
       onNavigateToDispatch(undefined, orderId);
     } else {
-      window.location.hash = `#dispatch?order_id=${encodeURIComponent(orderId)}`;
+      navigateToRoute("dispatch", { order_id: orderId });
     }
   };
 
@@ -304,10 +307,10 @@ export const HotspotContainer: React.FC<HotspotContainerProps> = ({
               {toast.type === "success"
                 ? "✅"
                 : toast.type === "warning"
-                ? "⚠️"
-                : toast.type === "error"
-                ? "❌"
-                : "ℹ️"}
+                  ? "⚠️"
+                  : toast.type === "error"
+                    ? "❌"
+                    : "ℹ️"}
             </span>
             <span>{toast.message}</span>
           </div>
@@ -359,7 +362,7 @@ export const HotspotContainer: React.FC<HotspotContainerProps> = ({
         )}
       </main>
 
-      {/* Màn 3/3: Popup Chi tiết điểm nóng */}
+      {/*  Popup Chi tiết điểm nóng */}
       <Screen3HotspotDetailModal
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}

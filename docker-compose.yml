@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: ecoreport_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -16,6 +16,39 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  adminer:
+    image: adminer:latest
+    container_name: ecoreport_adminer
+    restart: always
+    ports:
+      - "8085:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    depends_on:
+      - db
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    container_name: ecoreport_elasticsearch
+    restart: always
+    environment:
+      - node.name=ecoreport-es01
+      - cluster.name=ecoreport-cluster
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200 >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
   backend:
     build:
@@ -25,6 +58,7 @@ services:
     restart: always
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/ecoreport_db
+      ELASTICSEARCH_URL: http://elasticsearch:9200
       WATCHFILES_FORCE_POLLING: "true"
       # =========================================================================
       # CẤU HÌNH GỬI EMAIL THẬT (GMAIL / OUTLOOK SMTP) - KHAI BÁO TẠI backend/.env
@@ -50,6 +84,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      elasticsearch:
+        condition: service_started
 
   dashboard:
     build:
@@ -86,4 +122,5 @@ services:
 
 volumes:
   postgres_data:
+  es_data:
 

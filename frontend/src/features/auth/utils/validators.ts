@@ -54,6 +54,12 @@ export const validateEmail = (value: string): string | null => {
     return 'Vui lòng nhập email';
   }
 
+  // Hỗ trợ đăng nhập nhanh bằng tài khoản quản trị viên đặc biệt (admin)
+  const trimmedLower = value.trim().toLowerCase();
+  if (trimmedLower === 'admin' || trimmedLower === 'administrator') {
+    return null;
+  }
+
   // Cấm hoàn toàn khoảng trắng ở bất kỳ vị trí nào (đầu, cuối hoặc giữa)
   if (/\s/.test(value)) {
     return 'Email không được chứa khoảng trắng';
@@ -165,6 +171,9 @@ export const sanitizeRedirectUrl = (redirectParam: string | null | undefined, de
   if (!redirectParam) return defaultPath;
   const trimmed = redirectParam.trim();
   if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('#')) {
     return trimmed;
   }
   return defaultPath;

@@ -28,6 +28,7 @@ export const Step3VoiceInput: React.FC<Step3Props> = ({
   const recognitionRef = useRef<any>(null);
   const timerRef = useRef<number | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<any>(null);
 
   const stopTracks = () => {
     if (audioStreamRef.current) {
@@ -61,7 +62,14 @@ export const Step3VoiceInput: React.FC<Step3Props> = ({
         } catch {}
         recognitionRef.current = null;
       }
-      stopTracks();
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch {}
+      mediaRecorderRef.current = null;
+    }
+
+    stopTracks();
     };
   }, []);
 
@@ -74,12 +82,40 @@ export const Step3VoiceInput: React.FC<Step3Props> = ({
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error("Trình duyệt không hỗ trợ ghi âm");
       }
-      stopTracks();
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch {}
+      mediaRecorderRef.current = null;
+    }
+
+    stopTracks();
       const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioStreamRef.current = audioStream;
       setStream(audioStream);
       setIsRecording(true);
       setRecordSeconds(0);
+
+      // Thu âm tệp âm thanh thực tế (Blob) để lưu trữ ngoại tuyến (R04)
+      if (typeof MediaRecorder !== "undefined") {
+        try {
+          const recorder = new MediaRecorder(audioStream);
+          const chunks: Blob[] = [];
+          recorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) chunks.push(e.data);
+          };
+          recorder.onstop = () => {
+            if (chunks.length > 0) {
+              const audioBlob = new Blob(chunks, { type: "audio/webm" });
+              onUpdateFormData({ voice_blob: audioBlob } as any);
+            }
+          };
+          recorder.start();
+          mediaRecorderRef.current = recorder;
+        } catch (e) {
+          console.warn("Không khởi động được MediaRecorder:", e);
+        }
+      }
 
       // Bắt đầu nhận dạng qua Web Speech API
       const SpeechRecognition =
@@ -153,6 +189,13 @@ export const Step3VoiceInput: React.FC<Step3Props> = ({
         recognitionRef.current.stop();
       } catch {}
       recognitionRef.current = null;
+    }
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch {}
+      mediaRecorderRef.current = null;
     }
 
     stopTracks();

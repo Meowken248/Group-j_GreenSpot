@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { TriageEvaluationData, TriageScreenStep } from "../types";
 import { triageService } from "../services/triageService";
+import { navigateToRoute } from "../../../routes/appRoutes";
 
 interface IncidentTriageViewProps {
   data: TriageEvaluationData;
@@ -100,7 +101,7 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
         "LOW": "LOW",
       };
       const suggestedPriority = priorityMap[data.ai_suggested_priority?.toUpperCase()] || "HIGH";
-      
+
       // Trích xuất quận từ địa chỉ nếu có
       let detectedDistrict = "Quận 12";
       if (data.address_text) {
@@ -122,9 +123,9 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
         target_deadline_hours: data.sla_resolve_hours || 4,
       };
       localStorage.setItem("greenspot_prefill_dispatch", JSON.stringify(prefill));
-      window.location.hash = "#dispatch";
+      navigateToRoute("dispatch");
     } catch {
-      window.location.hash = "#dispatch";
+      navigateToRoute("dispatch");
     }
   };
 
@@ -188,7 +189,7 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
       )}
 
       {/* =========================================================================
-          MÀN 1/3: CHI TIẾT SỰ CỐ + TÓM TẮT AI (HÌNH 4.39)
+           CHI TIẾT SỰ CỐ + TÓM TẮT AI (HÌNH 4.39)
           3 KHỐI THEO CHIỀU NGANG TỪ TRÁI SANG PHẢI:
           THÔNG TIN SỰ CỐ (Trái) | TÓM TẮT AI (Giữa) | ƯU TIÊN (Phải)
          ========================================================================= */}
@@ -342,7 +343,7 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
                     alignItems: "center",
                     gap: "6px",
                   }}
-                  title="Chuyển sang Trung tâm Điều phối (STT 43) để giao việc cho đội cơ động"
+                  title="Chuyển sang Trung tâm Điều phối để giao việc cho đội cơ động"
                 >
                   🚀 Tạo lệnh điều phối
                 </button>
@@ -353,7 +354,7 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
       )}
 
       {/* =========================================================================
-          MÀN 2/3: BẢNG GIẢI TRÌNH CĂN CỨ RA QUYẾT ĐỊNH CỦA THUẬT TOÁN AI (XAI)
+           BẢNG GIẢI TRÌNH CĂN CỨ RA QUYẾT ĐỊNH CỦA THUẬT TOÁN AI (XAI)
           2 KHỐI THEO CHIỀU NGANG: PHÂN TÍCH (Trái) | QUYẾT ĐỊNH (Phải)
          ========================================================================= */}
       {currentStep === "SCREEN_2_EXPLAIN" && (
@@ -479,7 +480,7 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
       )}
 
       {/* =========================================================================
-          MÀN 3/3: POPUP TÙY CHỈNH & ĐIỀU CHỈNH MỨC ĐỘ ƯU TIÊN (HUMAN-IN-THE-LOOP)
+           POPUP TÙY CHỈNH & ĐIỀU CHỈNH MỨC ĐỘ ƯU TIÊN (HUMAN-IN-THE-LOOP)
           Hiển thị đè ở giữa màn hình, làm mờ nền phía sau (Backdrop Overlay)
          ========================================================================= */}
       {currentStep === "SCREEN_3_OVERRIDE_POPUP" && (

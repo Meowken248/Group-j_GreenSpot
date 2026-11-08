@@ -1,15 +1,17 @@
 """
 API Router cho Dashboard phân tích rủi ro đô thị (STT 42).
 Bao gồm:
-- Màn 1/3: Tổng quan rủi ro đô thị (Executive Overview)
-- Màn 2/3: Lọc & phân tích chuyên sâu (Deep-dive Risk Analysis & Comparison)
-- Màn 3/3: Popup Chi tiết quận (District Detail)
+-  Tổng quan rủi ro đô thị (Executive Overview)
+-  Lọc & phân tích chuyên sâu (Deep-dive Risk Analysis & Comparison)
+-  Popup Chi tiết quận (District Detail)
 - Xuất báo cáo định dạng Excel / PDF
 """
 
 from datetime import date
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response, status
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,7 +36,6 @@ ALLOWED_ROLES = {"ADMIN", "OFFICER", "DISTRICT_MANAGER", "COORDINATOR"}
 
 async def verify_risk_dashboard_access(
     authorization: Optional[str] = Header(None),
-    db: AsyncSession = Depends(get_db),
 ) -> Optional[User]:
     """
     Quy tắc kiểm tra phân quyền truy cập:
@@ -75,9 +76,10 @@ async def verify_risk_dashboard_access(
 @router.get(
     "/overview",
     response_model=OverviewMetricsResponse,
-    summary="Màn 1/3: Tổng quan rủi ro đô thị toàn thành phố",
+    summary=" Tổng quan rủi ro đô thị toàn thành phố",
 )
 async def get_overview_dashboard(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     user_guard: Optional[User] = Depends(verify_risk_dashboard_access),
     service: RiskDashboardService = Depends(lambda: risk_dashboard_service),
@@ -98,7 +100,7 @@ async def get_overview_dashboard(
 @router.post(
     "/analysis",
     response_model=FilterAnalysisResponse,
-    summary="Màn 2/3: Lọc & phân tích chuyên sâu theo địa bàn và loại rủi ro (POST)",
+    summary=" Lọc & phân tích chuyên sâu theo địa bàn và loại rủi ro (POST)",
 )
 async def analyze_filtered_risks_post(
     payload: FilterAnalysisRequest,
@@ -118,7 +120,7 @@ async def analyze_filtered_risks_post(
 @router.get(
     "/analysis",
     response_model=FilterAnalysisResponse,
-    summary="Màn 2/3: Lọc & phân tích chuyên sâu (GET Query)",
+    summary=" Lọc & phân tích chuyên sâu (GET Query)",
 )
 async def analyze_filtered_risks_get(
     period: str = Query("THIS_MONTH", description="THIS_MONTH, THIS_QUARTER, LAST_6_MONTHS, CUSTOM"),
@@ -147,9 +149,10 @@ async def analyze_filtered_risks_get(
 @router.get(
     "/district/{district_id_or_name}",
     response_model=DistrictDetailResponse,
-    summary="Màn 3/3: Popup Chi tiết quận khi nhấp vào danh sách cảnh báo hoặc biểu đồ",
+    summary=" Popup Chi tiết quận khi nhấp vào danh sách cảnh báo hoặc biểu đồ",
 )
 async def get_district_popup_detail(
+    request: Request,
     district_id_or_name: str,
     db: AsyncSession = Depends(get_db),
     user_guard: Optional[User] = Depends(verify_risk_dashboard_access),

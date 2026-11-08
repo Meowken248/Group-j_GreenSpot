@@ -1,18 +1,20 @@
 """
 API Router: AI Tự động tóm tắt nội dung sự cố & Đề xuất mức ưu tiên xử lý (STT 39)
-Màn 1/3: Chi tiết sự cố + Tóm tắt AI
-Màn 2/3: Bảng giải trình căn cứ ra quyết định của thuật toán AI (Explainable AI - XAI)
-Màn 3/3: Popup Tùy chỉnh và điều chỉnh mức độ ưu tiên xử lý sự cố (Human-in-the-loop)
+ Chi tiết sự cố + Tóm tắt AI
+ Bảng giải trình căn cứ ra quyết định của thuật toán AI (Explainable AI - XAI)
+ Popup Tùy chỉnh và điều chỉnh mức độ ưu tiên xử lý sự cố (Human-in-the-loop)
 """
 
 import uuid
 from datetime import datetime
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from app.database import get_db
 from app.models.incident import Incident, WasteCategory, IncidentMedia
 from app.models.spatial import AdministrativeUnit
@@ -47,6 +49,7 @@ async def get_optional_current_user(
 
 @router.get("/list")
 async def get_triage_incidents_list(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     limit: int = Query(20, ge=1, le=100),
 ):
@@ -72,16 +75,19 @@ async def get_triage_incidents_list(
             "created_at": inc.created_at,
             "version": inc.version,
         })
+    if get_current_language(request) == "en":
+        return await translation_service.translate_data(output, target_lang="en", source_lang="vi")
     return output
 
 
 @router.get("/{incident_id}", response_model=TriageEvaluationResponse)
 async def get_incident_triage_detail(
     incident_id: uuid.UUID,
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Màn 1/3 & Màn 2/3: Lấy thông tin chi tiết sự cố, tóm tắt AI và bảng giải trình XAI
+    Màn 1/3 &  Lấy thông tin chi tiết sự cố, tóm tắt AI và bảng giải trình XAI
     """
     inc = await triage_repository.get_incident_detail_with_relations(db, incident_id)
     if not inc:
@@ -93,7 +99,7 @@ async def get_incident_triage_detail(
     media_urls = [m.file_url for m in inc.media if m.file_url]
     reporter_name = inc.reporter.full_name if inc.reporter else "Công dân ẩn danh"
 
-    return TriageEvaluationResponse(
+    res = TriageEvaluationResponse(
         incident_id=inc.incident_id,
         tracking_code=inc.tracking_code,
         title=inc.title,
@@ -122,6 +128,10 @@ async def get_incident_triage_detail(
         status=inc.status,
         version=inc.version,
     )
+    if get_current_language(request) == "en":
+        dumped = res.model_dump()
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return res
 
 
 @router.post("/{incident_id}/regenerate", response_model=RegenerateSummaryResponse)

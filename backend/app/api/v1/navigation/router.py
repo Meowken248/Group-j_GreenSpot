@@ -7,7 +7,9 @@ real-time hazard early warning (<500m), rerouting, and location autocomplete.
 from __future__ import annotations
 
 from typing import Any, Dict, List
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -48,6 +50,7 @@ HCM_PRESET_LOCATIONS: List[Dict[str, Any]] = [
     summary="Tính toán phương án định tuyến né ngập (Tuyến nhanh nhất vs Tuyến an toàn nhất)",
 )
 async def calculate_navigation_routes(
+    request: Request,
     payload: CalculateRouteRequest,
     db: AsyncSession = Depends(get_db),
 ):
@@ -67,6 +70,9 @@ async def calculate_navigation_routes(
         )
 
     result = await safe_navigation_service.calculate_dual_routes(db, payload)
+    if get_current_language(request) == "en":
+        dumped = result.model_dump() if hasattr(result, 'model_dump') else result
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
     return result
 
 
@@ -108,6 +114,7 @@ async def reroute_avoiding_flood(
     summary="Gợi ý địa danh tự động khi gõ (Autocomplete)",
 )
 async def autocomplete_locations(
+    request: Request,
     q: str = Query(..., min_length=1, description="Từ khóa tìm kiếm địa chỉ"),
 ):
     """
@@ -134,4 +141,8 @@ async def autocomplete_locations(
             )
         ]
 
-    return matches[:6]
+    res = matches[:6]
+    if get_current_language(request) == "en":
+        dumped = [i.model_dump() if hasattr(i, 'model_dump') else i for i in res]
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return res

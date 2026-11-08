@@ -15,18 +15,16 @@ import sys
 import uuid
 import unittest
 from datetime import datetime, timezone
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
+from typing import List, Optional
+from unittest.mock import AsyncMock, patch
+
 from fastapi import HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
 
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8")
-if hasattr(sys.stderr, "reconfigure"):
-    sys.stderr.reconfigure(encoding="utf-8")
-
-from app.database import AsyncSessionLocal, engine
+from app.interface.deduplication.deduplication_interface import IDeduplicationRepository
 from app.models.rbac import User, Role
-from app.models.incident import Incident
+from app.models.incident import Incident, IncidentMedia
+from app.models.spatial import AdministrativeUnit
 from app.models.deduplication import IncidentDuplicateCluster
 from app.schemas.deduplication import (
     MergeIncidentRequest,
@@ -42,51 +40,176 @@ from app.api.v1.deduplication.router import (
 )
 
 
+class MockDeduplicationRepository(IDeduplicationRepository):
+    """
+    Mock Repository độc lập theo nguyên tắc DIP và Clean Architecture.
+    Chạy thuần in-memory không phụ thuộc vào kết nối hạ tầng PostgreSQL vật lý.
+    """
+
+    def __init__(self):
+        self.districts: List[AdministrativeUnit] = [
+            AdministrativeUnit(unit_id=1, name="Quận 1", unit_code="Q1"),
+            AdministrativeUnit(unit_id=2, name="Quận Bình Tân", unit_code="QBT"),
+            AdministrativeUnit(unit_id=3, name="TP. Thủ Đức", unit_code="TD"),
+        ]
+
+        # Khởi tạo incidents mẫu
+        self.reporter_a = User(user_id=uuid.uuid4(), full_name="Công dân A", phone_number="0901234567")
+        self.reporter_b = User(user_id=uuid.uuid4(), full_name="Công dân B", phone_number="0987654321")
+
+        self.inc_a_id = uuid.uuid4()
+        self.inc_b_id = uuid.uuid4()
+
+        self.inc_a = Incident(
+            incident_id=self.inc_a_id,
+            tracking_code="INC-2026-0001",
+            title="Bãi rác tự phát ngõ 128 Lê Lợi",
+            description="Đống rác to bốc mùi nồng nặc tràn ra ngã tư",
+            address_text="128 Lê Lợi, Phường Bến Nghé, Quận 1",
+            latitude=10.774500,
+            longitude=106.703200,
+            created_at=datetime(2026, 9, 15, 8, 15, 0, tzinfo=timezone.utc),
+            version=1,
+            reporter=self.reporter_a,
+            media=[IncidentMedia(file_url="https://images.unsplash.com/photo-1530587191325-3db32d826c18")],
+        )
+
+        self.inc_b = Incident(
+            incident_id=self.inc_b_id,
+            tracking_code="INC-2026-0002",
+            title="Đống xà bần rác thải góc đường Lê Lợi",
+            description="Có bãi rác sinh hoạt lớn tràn ra vỉa hè",
+            address_text="Góc Lê Lợi - Pasteur, Quận 1",
+            latitude=10.774620,
+            longitude=106.703320,
+            created_at=datetime(2026, 9, 15, 9, 30, 0, tzinfo=timezone.utc),
+            version=1,
+            reporter=self.reporter_b,
+            media=[IncidentMedia(file_url="https://images.unsplash.com/photo-1530587191325-3db32d826c18")],
+        )
+
+        self.sample_cluster_id = uuid.uuid4()
+        self.sample_cluster = IncidentDuplicateCluster(
+            cluster_id=self.sample_cluster_id,
+            cluster_code="CL-2026-01",
+            cluster_name="Nhóm rác Lê Lợi",
+            incident_a_id=self.inc_a_id,
+            incident_b_id=self.inc_b_id,
+            report_count=2,
+            similarity_rate=92.5,
+            district_name="Quận 1",
+            gps_distance_m=18.5,
+            time_diff_hours=1.25,
+            visual_similarity=95.0,
+            status="PENDING_REVIEW",
+            version=1,
+            ai_conclusion="Khoảng cách 18.5m, chênh 1.25 giờ, độ tương đồng ảnh 95%.",
+        )
+
+        self.clusters = {
+            self.sample_cluster_id: self.sample_cluster
+        }
+        self.incidents = {
+            self.inc_a_id: self.inc_a,
+            self.inc_b_id: self.inc_b,
+        }
+
+    async def get_districts(self, db: AsyncSession) -> List[AdministrativeUnit]:
+        return list(self.districts)
+
+    async def list_clusters(
+        self,
+        db: AsyncSession,
+        district_name: Optional[str] = None,
+        min_similarity: Optional[float] = None,
+    ) -> List[IncidentDuplicateCluster]:
+        res = []
+        for c in self.clusters.values():
+            if c.deleted_at is not None or c.status != "PENDING_REVIEW":
+                continue
+            if district_name and district_name != "Tất cả quận/huyện" and c.district_name != district_name:
+                continue
+            if min_similarity is not None and c.similarity_rate < min_similarity:
+                continue
+            res.append(c)
+        return res
+
+    async def get_cluster_by_id(
+        self, db: AsyncSession, cluster_id: uuid.UUID
+    ) -> Optional[IncidentDuplicateCluster]:
+        c = self.clusters.get(cluster_id)
+        if c and c.deleted_at is None:
+            return c
+        return None
+
+    async def get_incident_with_media_and_reporter(
+        self, db: AsyncSession, incident_id: uuid.UUID
+    ) -> Optional[Incident]:
+        return self.incidents.get(incident_id)
+
+    async def get_incident_by_id(
+        self, db: AsyncSession, incident_id: uuid.UUID
+    ) -> Optional[Incident]:
+        return self.incidents.get(incident_id)
+
+    async def mark_cluster_distinct(
+        self, db: AsyncSession, cluster: IncidentDuplicateCluster
+    ) -> IncidentDuplicateCluster:
+        cluster.status = "RESOLVED_DISTINCT"
+        cluster.version += 1
+        cluster.updated_at = datetime.now(timezone.utc)
+        return cluster
+
+    async def merge_cluster_incidents(
+        self,
+        db: AsyncSession,
+        cluster: IncidentDuplicateCluster,
+        primary_inc: Incident,
+        secondary_inc: Incident,
+    ) -> None:
+        secondary_inc.master_incident_id = primary_inc.incident_id
+        secondary_inc.is_duplicate_merged = True
+        secondary_inc.version += 1
+        secondary_inc.updated_at = datetime.now(timezone.utc)
+
+        cluster.status = "RESOLVED_MERGED"
+        cluster.version += 1
+        cluster.deleted_at = datetime.now(timezone.utc)
+        cluster.updated_at = datetime.now(timezone.utc)
+
+
 class TestAIDeduplicationUnitCoverage(unittest.IsolatedAsyncioTestCase):
     """Bộ kiểm thử đơn vị và tích hợp cho tính năng AI Deduplication"""
 
     async def asyncSetUp(self):
-        await engine.dispose()
-        self.session = AsyncSessionLocal()
+        self.mock_repo = MockDeduplicationRepository()
+        self.session = AsyncMock(spec=AsyncSession)
 
-        # Tạo / lấy Admin user với eagerly loaded role
-        admin_res = await self.session.execute(
-            select(User).options(selectinload(User.role)).join(Role).where(Role.role_code == "ADMIN")
-        )
-        self.admin_user = admin_res.scalars().first()
+        admin_role = Role(role_id=1, role_name="Quản trị viên", role_code="ADMIN")
+        citizen_role = Role(role_id=2, role_name="Người dân", role_code="CITIZEN")
 
-        # Tạo / lấy Citizen user với eagerly loaded role
-        cit_res = await self.session.execute(
-            select(User).options(selectinload(User.role)).join(Role).where(Role.role_code == "CITIZEN")
+        self.admin_user = User(
+            user_id=uuid.uuid4(),
+            email="admin@greenspot.vn",
+            full_name="Quản trị viên Hệ thống",
+            role_id=1,
+            role=admin_role,
         )
-        self.citizen_user = cit_res.scalars().first()
+        self.citizen_user = User(
+            user_id=uuid.uuid4(),
+            email="citizen@greenspot.vn",
+            full_name="Công dân GreenSpot",
+            role_id=2,
+            role=citizen_role,
+        )
+        self.sample_cluster = self.mock_repo.sample_cluster
 
-        # Lấy 1 cluster mẫu trong CSDL
-        cl_res = await self.session.execute(
-            select(IncidentDuplicateCluster).where(
-                IncidentDuplicateCluster.deleted_at.is_(None),
-                IncidentDuplicateCluster.status == "PENDING_REVIEW",
-            )
-        )
-        self.sample_cluster = cl_res.scalars().first()
-        if not self.sample_cluster:
-            from app.seeds.deduplication.seed_data import seed_deduplication_data
-            await seed_deduplication_data()
-            cl_res = await self.session.execute(
-                select(IncidentDuplicateCluster).where(
-                    IncidentDuplicateCluster.deleted_at.is_(None),
-                    IncidentDuplicateCluster.status == "PENDING_REVIEW",
-                )
-            )
-            self.sample_cluster = cl_res.scalars().first()
+        # Patch deduplication_repository singleton trong router
+        self.patcher = patch("app.api.v1.deduplication.router.deduplication_repository", self.mock_repo)
+        self.patcher.start()
 
     async def asyncTearDown(self):
-        try:
-            await self.session.rollback()
-            await self.session.close()
-        except Exception:
-            pass
-        await engine.dispose()
+        self.patcher.stop()
 
     # =========================================================================
     # I. KIỂM THỬ THUẬT TOÁN AI (3 YẾU TỐ ĐỐI SOÁT)
@@ -248,7 +371,6 @@ class TestAIDeduplicationUnitCoverage(unittest.IsolatedAsyncioTestCase):
 
     async def test_11_api_get_comparison_detail(self):
         """Màn 2: Lấy chi tiết đối chứng song song Báo cáo A & Báo cáo B"""
-        self.assertIsNotNone(self.sample_cluster, "Cần có cluster mẫu trong CSDL")
         comp = await get_cluster_comparison_detail(
             cluster_id=self.sample_cluster.cluster_id,
             current_user=self.admin_user,
@@ -264,7 +386,6 @@ class TestAIDeduplicationUnitCoverage(unittest.IsolatedAsyncioTestCase):
 
     async def test_12_api_mark_distinct(self):
         """Màn 2: Đánh dấu không trùng lặp (False Positive)"""
-        self.assertIsNotNone(self.sample_cluster, "Cần có cluster mẫu trong CSDL")
         req = MarkDistinctRequest(
             cluster_id=self.sample_cluster.cluster_id,
             version=self.sample_cluster.version,
@@ -279,34 +400,26 @@ class TestAIDeduplicationUnitCoverage(unittest.IsolatedAsyncioTestCase):
 
     async def test_13_api_merge_incidents_success_and_optimistic_locking(self):
         """Màn 3 & 4: Gộp báo cáo thành công, gửi thông báo, và chặn conflict version 409"""
-        # Lấy 1 cluster khác đang PENDING_REVIEW
-        cl_res = await self.session.execute(
-            select(IncidentDuplicateCluster)
-            .where(IncidentDuplicateCluster.status == "PENDING_REVIEW")
-            .where(IncidentDuplicateCluster.deleted_at.is_(None))
+        new_cluster_id = uuid.uuid4()
+        new_cluster = IncidentDuplicateCluster(
+            cluster_id=new_cluster_id,
+            cluster_code="CL-TEST-02",
+            cluster_name="Nhóm Test OCC",
+            incident_a_id=self.mock_repo.inc_a_id,
+            incident_b_id=self.mock_repo.inc_b_id,
+            report_count=2,
+            similarity_rate=88.0,
+            status="PENDING_REVIEW",
+            version=1,
         )
-        target_cluster = cl_res.scalars().first()
-        if not target_cluster:
-            target_cluster = IncidentDuplicateCluster(
-                cluster_id=uuid.uuid4(),
-                cluster_code=f"TEST-CLUSTER-{uuid.uuid4().hex[:6]}",
-                cluster_name="Nhóm Test",
-                incident_a_id=self.sample_cluster.incident_a_id,
-                incident_b_id=self.sample_cluster.incident_b_id,
-                report_count=2,
-                similarity_rate=88.0,
-                status="PENDING_REVIEW",
-                version=1,
-            )
-            self.session.add(target_cluster)
-            await self.session.commit()
+        self.mock_repo.clusters[new_cluster_id] = new_cluster
 
         # 1. Thử gửi version sai -> Phải bắn HTTP 409 Conflict (Quy tắc 7)
         conflict_req = MergeIncidentRequest(
-            cluster_id=target_cluster.cluster_id,
-            primary_incident_id=target_cluster.incident_a_id,
-            secondary_incident_id=target_cluster.incident_b_id,
-            version=target_cluster.version + 999,  # Sai version
+            cluster_id=new_cluster.cluster_id,
+            primary_incident_id=new_cluster.incident_a_id,
+            secondary_incident_id=new_cluster.incident_b_id,
+            version=new_cluster.version + 999,  # Sai version
         )
         with self.assertRaises(HTTPException) as ctx:
             await merge_cluster_incidents(
@@ -318,10 +431,10 @@ class TestAIDeduplicationUnitCoverage(unittest.IsolatedAsyncioTestCase):
 
         # 2. Gửi version đúng -> Gộp thành công, soft delete cluster
         valid_req = MergeIncidentRequest(
-            cluster_id=target_cluster.cluster_id,
-            primary_incident_id=target_cluster.incident_a_id,
-            secondary_incident_id=target_cluster.incident_b_id,
-            version=target_cluster.version,
+            cluster_id=new_cluster.cluster_id,
+            primary_incident_id=new_cluster.incident_a_id,
+            secondary_incident_id=new_cluster.incident_b_id,
+            version=new_cluster.version,
         )
         merge_res = await merge_cluster_incidents(
             req=valid_req,
@@ -332,15 +445,12 @@ class TestAIDeduplicationUnitCoverage(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(merge_res.message, "Người báo cáo nhận thông báo")
 
         # Kiểm tra bản ghi Báo cáo phụ đã được đánh dấu gộp
-        sec_inc = await self.session.get(Incident, target_cluster.incident_b_id)
-        self.assertEqual(sec_inc.master_incident_id, target_cluster.incident_a_id)
+        sec_inc = await self.mock_repo.get_incident_by_id(self.session, new_cluster.incident_b_id)
+        self.assertEqual(sec_inc.master_incident_id, new_cluster.incident_a_id)
         self.assertTrue(sec_inc.is_duplicate_merged)
 
     async def test_14_rbac_permission_check(self):
         """Chỉ Quản trị viên hoặc Điều phối viên mới có quyền, Citizen bị từ chối 403"""
-        if not self.citizen_user:
-            self.skipTest("Không có user citizen trong CSDL")
-
         # Citizen gọi API list clusters -> Phải bị HTTP 403 Forbidden
         with self.assertRaises(HTTPException) as ctx:
             await list_duplicate_clusters(

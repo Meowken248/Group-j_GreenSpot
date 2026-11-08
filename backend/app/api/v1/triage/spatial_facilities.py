@@ -1,16 +1,18 @@
 """
 API Router: Phân tích không gian tìm kiếm các cơ sở thiết yếu (y tế, trường học) gần sự cố (STT 40)
-Màn 1/3: Bản đồ sự cố + Bán kính vùng đệm + Checkbox nhóm cơ sở
-Màn 2/3: Bảng tổng hợp danh sách cơ sở có bộ lọc nhanh
-Màn 3/3: Hồ sơ chi tiết mức độ phơi nhiễm môi trường và liên hệ khẩn cấp (Gọi điện, Chỉ đường, Gửi cảnh báo)
+ Bản đồ sự cố + Bán kính vùng đệm + Checkbox nhóm cơ sở
+ Bảng tổng hợp danh sách cơ sở có bộ lọc nhanh
+ Hồ sơ chi tiết mức độ phơi nhiễm môi trường và liên hệ khẩn cấp (Gọi điện, Chỉ đường, Gửi cảnh báo)
 """
 
 import uuid
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from app.database import get_db
 from app.models.incident import Incident
 from app.models.spatial import EssentialFacility
@@ -37,10 +39,11 @@ router = APIRouter(prefix="/spatial/facilities", tags=["Spatial Facility Analysi
 @router.post("/buffer", response_model=FacilityListResponse)
 async def analyze_facilities_in_buffer(
     payload: FacilityBufferQueryRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Màn 1/3 & Màn 2/3: Quét vùng đệm bán kính (500m, 1km, 2km) và trả về danh sách cơ sở sắp xếp theo khoảng cách
+    Màn 1/3 &  Quét vùng đệm bán kính (500m, 1km, 2km) và trả về danh sách cơ sở sắp xếp theo khoảng cách
     """
     inc = await spatial_facility_repository.get_incident_by_id(db, payload.incident_id)
     if not inc:
@@ -83,7 +86,7 @@ async def analyze_facilities_in_buffer(
         for item in facility_items
     ]
 
-    return FacilityListResponse(
+    res = FacilityListResponse(
         incident_id=inc.incident_id,
         incident_title=inc.title,
         incident_lat=float(inc.latitude),
@@ -94,19 +97,24 @@ async def analyze_facilities_in_buffer(
         has_critical_nearby=has_critical,
         facilities=formatted_items,
     )
+    if get_current_language(request) == "en":
+        dumped = res.model_dump()
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return res
 
 
 @router.get("/{facility_id}", response_model=FacilityDetailProfileResponse)
 async def get_facility_profile_detail(
     facility_id: int,
+    request: Request,
     incident_id: Optional[uuid.UUID] = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Màn 3/3: Xem hồ sơ chi tiết cơ sở, đầu mối khẩn cấp, mức độ dễ tổn thương và link chỉ đường
+     Xem hồ sơ chi tiết cơ sở, đầu mối khẩn cấp, mức độ dễ tổn thương và link chỉ đường
     """
     detail = await SpatialFacilityService.get_facility_detail(db, facility_id, incident_id)
-    return FacilityDetailProfileResponse(
+    res = FacilityDetailProfileResponse(
         facility_id=detail.facility_id,
         facility_name=detail.facility_name,
         facility_type=detail.facility_type,
@@ -122,6 +130,10 @@ async def get_facility_profile_detail(
         can_call=detail.can_call,
         can_alert=detail.can_alert,
     )
+    if get_current_language(request) == "en":
+        dumped = res.model_dump()
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return res
 
 
 @router.post("/alert", response_model=SendEmergencyAlertResponse)

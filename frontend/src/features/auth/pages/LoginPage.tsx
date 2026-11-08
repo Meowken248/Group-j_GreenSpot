@@ -69,7 +69,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     const existingToken = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
     if (existingToken) {
       const rawRedirect = redirectParam || new URLSearchParams(window.location.search).get("redirect");
-      const targetUrl = sanitizeRedirectUrl(rawRedirect, "/geo-feed");
+      const targetUrl = sanitizeRedirectUrl(rawRedirect, "");
       if (onLoginSuccess) {
         onLoginSuccess(targetUrl);
       } else if (onLogoClick) {
@@ -208,7 +208,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
         // Kiểm tra an toàn tham số redirect
         const rawRedirect = redirectParam || new URLSearchParams(window.location.search).get("redirect");
-        const targetUrl = sanitizeRedirectUrl(rawRedirect, "/geo-feed");
+        const targetUrl = sanitizeRedirectUrl(rawRedirect, "");
 
         setTimeout(() => {
           if (onLoginSuccess) {
@@ -216,7 +216,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           } else if (onLogoClick) {
             onLogoClick();
           }
-        }, 1000);
+        }, 500);
         return;
       }
 
@@ -335,7 +335,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 id="login-email"
                 name="email"
                 className={`form-input ${errors.emailHasError ? "has-error" : ""}`}
-                placeholder="Email"
+                placeholder="Email hoặc tên tài khoản (admin)"
                 maxLength={254}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

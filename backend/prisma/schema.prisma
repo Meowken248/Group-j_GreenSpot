@@ -1,7 +1,7 @@
 generator client {
   provider                    = "prisma-client-py"
-  recursive_type_depth        = "5"
   enable_experimental_decimal = "true"
+  recursive_type_depth        = "5"
 }
 
 datasource db {
@@ -279,6 +279,7 @@ model incidents {
   users_incidents_priority_modified_byTousers                                           users?                        @relation("incidents_priority_modified_byTousers", fields: [priority_modified_by], references: [user_id], onUpdate: NoAction)
   users                                                                                 users?                        @relation(fields: [reporter_id], references: [user_id], onUpdate: NoAction)
   administrative_units                                                                  administrative_units?         @relation(fields: [unit_id], references: [unit_id], onUpdate: NoAction)
+  reward_transactions                                                                   reward_transactions[]
 
   @@index([location], map: "idx_incidents_location", type: Gist)
 }
@@ -336,10 +337,15 @@ model posts {
   deleted_at          DateTime?             @db.Timestamptz(6)
   created_at          DateTime              @default(now()) @db.Timestamptz(6)
   updated_at          DateTime              @default(now()) @db.Timestamptz(6)
+  latitude            Float?
+  longitude           Float?
+  address             String?               @db.VarChar(500)
+  version             Int                   @default(1)
   post_tagged_friends post_tagged_friends[]
   users               users                 @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([user_id], map: "ix_posts_user_id")
+  @@index([latitude, longitude], map: "idx_posts_lat_lng")
 }
 
 model recycling_facilities {
@@ -533,48 +539,67 @@ model user_sessions {
 }
 
 model users {
-  user_id                                            String                    @id @db.Uuid
-  email                                              String                    @unique @db.VarChar(255)
-  phone_number                                       String?                   @unique @db.VarChar(20)
-  password_hash                                      String                    @db.VarChar(255)
-  full_name                                          String                    @db.VarChar(150)
-  avatar_url                                         String?                   @db.VarChar(500)
-  role_id                                            Int
-  status                                             String                    @default("ACTIVE") @db.VarChar(20)
-  citizen_id_card                                    String?                   @db.VarChar(20)
-  reputation_score                                   Int                       @default(100)
-  created_at                                         DateTime                  @default(now()) @db.Timestamptz(6)
-  updated_at                                         DateTime                  @default(now()) @db.Timestamptz(6)
-  cover_image_url                                    String?                   @db.VarChar(500)
-  bio                                                String?                   @db.VarChar(200)
-  date_of_birth                                      DateTime?                 @db.Date
-  activated_at                                       DateTime?                 @default(now()) @db.Timestamptz(6)
-  total_green_points                                 Int?                      @default(0)
-  friends_count                                      Int?                      @default(0)
-  version                                            Int?                      @default(1)
-  deleted_at                                         DateTime?                 @db.Timestamptz(6)
-  flood_community_reports                            flood_community_reports[]
-  friend_requests_friend_requests_receiver_idTousers friend_requests[]         @relation("friend_requests_receiver_idTousers")
-  friend_requests_friend_requests_sender_idTousers   friend_requests[]         @relation("friend_requests_sender_idTousers")
-  friendships_friendships_user_id_1Tousers           friendships[]             @relation("friendships_user_id_1Tousers")
-  friendships_friendships_user_id_2Tousers           friendships[]             @relation("friendships_user_id_2Tousers")
-  incident_audit_logs                                incident_audit_logs[]
-  incident_media                                     incident_media[]
-  incidents_incidents_priority_modified_byTousers    incidents[]               @relation("incidents_priority_modified_byTousers")
-  incidents                                          incidents[]
-  notifications                                      notifications[]
-  penalty_reports                                    penalty_reports[]
-  post_tagged_friends                                post_tagged_friends[]
-  posts                                              posts[]
-  safe_navigation_routes                             safe_navigation_routes[]
-  user_activities                                    user_activities[]
-  user_badges                                        user_badges[]
-  user_follows_user_follows_follower_idTousers       user_follows[]            @relation("user_follows_follower_idTousers")
-  user_follows_user_follows_following_idTousers      user_follows[]            @relation("user_follows_following_idTousers")
-  user_sessions                                      user_sessions[]
-  user_settings                                      user_settings?
-  roles                                              roles                     @relation(fields: [role_id], references: [role_id], onDelete: NoAction, onUpdate: NoAction)
-  voice_interaction_logs                             voice_interaction_logs[]
+  user_id                                                            String                       @id @db.Uuid
+  email                                                              String                       @unique @db.VarChar(255)
+  phone_number                                                       String?                      @unique @db.VarChar(20)
+  password_hash                                                      String                       @db.VarChar(255)
+  full_name                                                          String                       @db.VarChar(150)
+  avatar_url                                                         String?                      @db.VarChar(500)
+  role_id                                                            Int
+  status                                                             String                       @default("ACTIVE") @db.VarChar(20)
+  citizen_id_card                                                    String?                      @db.VarChar(20)
+  reputation_score                                                   Int                          @default(100)
+  created_at                                                         DateTime                     @default(now()) @db.Timestamptz(6)
+  updated_at                                                         DateTime                     @default(now()) @db.Timestamptz(6)
+  cover_image_url                                                    String?                      @db.VarChar(500)
+  bio                                                                String?                      @db.VarChar(200)
+  date_of_birth                                                      DateTime?                    @db.Date
+  activated_at                                                       DateTime?                    @default(now()) @db.Timestamptz(6)
+  total_green_points                                                 Int?                         @default(0)
+  friends_count                                                      Int?                         @default(0)
+  version                                                            Int?                         @default(1)
+  deleted_at                                                         DateTime?                    @db.Timestamptz(6)
+  green_points                                                       Int                          @default(0)
+  lifetime_points                                                    Int                          @default(0)
+  audit_logs                                                         audit_logs[]
+  emergency_alert_recipients                                         emergency_alert_recipients[]
+  emergency_broadcast_alerts                                         emergency_broadcast_alerts[]
+  emergency_sos_signals                                              emergency_sos_signals[]
+  flood_community_reports                                            flood_community_reports[]
+  flood_sos_chat_messages                                            flood_sos_chat_messages[]
+  flood_sos_requests_flood_sos_requests_assigned_volunteer_idTousers flood_sos_requests[]         @relation("flood_sos_requests_assigned_volunteer_idTousers")
+  flood_sos_requests_flood_sos_requests_victim_idTousers             flood_sos_requests[]         @relation("flood_sos_requests_victim_idTousers")
+  friend_requests_friend_requests_receiver_idTousers                 friend_requests[]            @relation("friend_requests_receiver_idTousers")
+  friend_requests_friend_requests_sender_idTousers                   friend_requests[]            @relation("friend_requests_sender_idTousers")
+  friendships_friendships_user_id_1Tousers                           friendships[]                @relation("friendships_user_id_1Tousers")
+  friendships_friendships_user_id_2Tousers                           friendships[]                @relation("friendships_user_id_2Tousers")
+  incident_audit_logs                                                incident_audit_logs[]
+  incident_media                                                     incident_media[]
+  incidents_incidents_priority_modified_byTousers                    incidents[]                  @relation("incidents_priority_modified_byTousers")
+  incidents                                                          incidents[]
+  lucky_wheel_spins                                                  lucky_wheel_spins[]
+  milestone_posts                                                    milestone_posts[]
+  notifications                                                      notifications[]
+  penalty_reports                                                    penalty_reports[]
+  post_tagged_friends                                                post_tagged_friends[]
+  posts                                                              posts[]
+  reward_transactions                                                reward_transactions[]
+  safe_navigation_routes                                             safe_navigation_routes[]
+  safety_check_deliveries                                            safety_check_deliveries[]
+  user_activities                                                    user_activities[]
+  user_badges                                                        user_badges[]
+  user_challenges                                                    user_challenges[]
+  user_device_locations                                              user_device_locations[]
+  user_follows_user_follows_follower_idTousers                       user_follows[]               @relation("user_follows_follower_idTousers")
+  user_follows_user_follows_following_idTousers                      user_follows[]               @relation("user_follows_following_idTousers")
+  user_qr_scans                                                      user_qr_scans[]
+  user_safety_checks                                                 user_safety_checks[]
+  user_sessions                                                      user_sessions[]
+  user_settings                                                      user_settings?
+  user_vouchers                                                      user_vouchers[]
+  roles                                                              roles                        @relation(fields: [role_id], references: [role_id], onDelete: NoAction, onUpdate: NoAction)
+  voice_interaction_logs                                             voice_interaction_logs[]
+  volunteer_profiles                                                 volunteer_profiles?
 }
 
 model voice_interaction_logs {
@@ -804,4 +829,492 @@ model user_settings {
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @default(now()) @db.Timestamptz(6)
   users      users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model audit_logs {
+  log_id        BigInt   @id @default(autoincrement())
+  user_id       String?  @db.Uuid
+  action        String   @db.VarChar(50)
+  table_name    String   @db.VarChar(100)
+  record_id     String?  @db.VarChar(100)
+  old_data      Json?
+  new_data      Json?
+  ip_address    String?  @db.VarChar(45)
+  user_agent    String?
+  request_uri   String?  @db.VarChar(500)
+  is_suspicious Boolean
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  users         users?   @relation(fields: [user_id], references: [user_id], onUpdate: NoAction)
+
+  @@index([action], map: "ix_audit_logs_action")
+  @@index([created_at], map: "ix_audit_logs_created_at")
+  @@index([table_name], map: "ix_audit_logs_table_name")
+  @@index([user_id], map: "ix_audit_logs_user_id")
+}
+
+model citizen_rewards {
+  reward_id           Int                   @id @default(autoincrement())
+  reward_code         String                @unique(map: "ix_citizen_rewards_reward_code") @db.VarChar(50)
+  title               String                @db.VarChar(200)
+  description         String?
+  brand               String?               @db.VarChar(100)
+  points_required     Int
+  reward_type         String                @db.VarChar(50)
+  stock_quantity      Int
+  total_redeemed      Int
+  image_url           String?               @db.VarChar(500)
+  expiry_date         DateTime?             @db.Timestamptz(6)
+  is_active           Boolean
+  created_at          DateTime              @default(now()) @db.Timestamptz(6)
+  reward_transactions reward_transactions[]
+  user_vouchers       user_vouchers[]
+}
+
+model community_groups {
+  group_id       String   @id @db.VarChar(50)
+  name           String   @db.VarChar(200)
+  avatar_url     String?
+  description    String?
+  member_count   Int
+  total_points   Int
+  weekly_points  Int
+  monthly_points Int
+  is_active      Boolean
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model dispatch_orders {
+  order_code       String    @unique(map: "ix_dispatch_orders_order_code") @db.VarChar(50)
+  incident_id      String    @db.Uuid
+  incident_title   String    @db.VarChar(255)
+  incident_type    String    @db.VarChar(100)
+  location_address String    @db.VarChar(500)
+  district         String    @db.VarChar(100)
+  ward             String?   @db.VarChar(100)
+  latitude         Float
+  longitude        Float
+  team_id          String    @db.VarChar(100)
+  team_name        String    @db.VarChar(200)
+  team_phone       String    @db.VarChar(50)
+  team_distance_km Float
+  team_latitude    Float
+  team_longitude   Float
+  status           String    @db.VarChar(50)
+  priority         String    @db.VarChar(50)
+  deadline         DateTime  @db.Timestamptz(6)
+  assigned_at      DateTime  @db.Timestamptz(6)
+  completed_at     DateTime? @db.Timestamptz(6)
+  cancelled_at     DateTime? @db.Timestamptz(6)
+  cancel_reason    String?
+  adjustment_notes String?
+  before_image_url String?   @db.VarChar(1000)
+  after_image_url  String?   @db.VarChar(1000)
+  is_gps_active    Boolean
+  last_gps_update  DateTime? @db.Timestamptz(6)
+  version          Int
+  deleted_at       DateTime? @db.Timestamptz(6)
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime  @default(now()) @db.Timestamptz(6)
+  id               String    @id @db.Uuid
+
+  @@index([district], map: "ix_dispatch_orders_district")
+  @@index([incident_id], map: "ix_dispatch_orders_incident_id")
+  @@index([status], map: "ix_dispatch_orders_status")
+  @@index([team_id], map: "ix_dispatch_orders_team_id")
+}
+
+model district_environmental_stats {
+  district_code      String   @id @db.VarChar(50)
+  district_name      String   @db.VarChar(100)
+  lat                Float
+  lng                Float
+  aqi_value          Int
+  temperature_c      Float
+  risk_score         Int
+  cleanup_rate       Float
+  resolved_incidents Int
+  green_index        Float
+  updated_at         DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model eco_qr_codes {
+  qr_id               String          @id @db.Uuid
+  code                String          @unique(map: "ix_eco_qr_codes_code") @db.VarChar(100)
+  title               String          @db.VarChar(255)
+  location_name       String          @db.VarChar(255)
+  point_reward        Int
+  qr_type             String          @db.VarChar(50)
+  lat                 Float
+  lng                 Float
+  max_distance_meters Float
+  is_active           Boolean
+  description         String?
+  created_at          DateTime?       @db.Timestamptz(6)
+  user_qr_scans       user_qr_scans[]
+}
+
+model emergency_alert_recipients {
+  recipient_id               String                     @id @db.Uuid
+  alert_id                   String                     @db.Uuid
+  user_id                    String                     @db.Uuid
+  user_latitude              Float
+  user_longitude             Float
+  distance_meters            Float
+  status                     String                     @db.VarChar(50)
+  action_taken               String                     @db.VarChar(50)
+  received_at                DateTime                   @db.Timestamptz(6)
+  action_at                  DateTime?                  @db.Timestamptz(6)
+  created_at                 DateTime                   @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime                   @default(now()) @db.Timestamptz(6)
+  emergency_broadcast_alerts emergency_broadcast_alerts @relation(fields: [alert_id], references: [alert_id], onDelete: Cascade, onUpdate: NoAction)
+  users                      users                      @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([alert_id], map: "ix_emergency_alert_recipients_alert_id")
+  @@index([user_id], map: "ix_emergency_alert_recipients_user_id")
+}
+
+model emergency_broadcast_alerts {
+  alert_id                   String                       @id @db.Uuid
+  alert_code                 String                       @unique(map: "ix_emergency_broadcast_alerts_alert_code") @db.VarChar(50)
+  alert_type                 String                       @db.VarChar(50)
+  title                      String                       @db.VarChar(255)
+  content                    String
+  center_location            Unsupported("geometry")
+  center_latitude            Float
+  center_longitude           Float
+  radius_meters              Float
+  severity_level             String                       @db.VarChar(50)
+  estimated_recipients       Int
+  actual_sent_count          Int
+  status                     String                       @db.VarChar(50)
+  created_by                 String?                      @db.Uuid
+  broadcasted_at             DateTime                     @db.Timestamptz(6)
+  version                    Int
+  deleted_at                 DateTime?                    @db.Timestamptz(6)
+  created_at                 DateTime                     @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime                     @default(now()) @db.Timestamptz(6)
+  emergency_alert_recipients emergency_alert_recipients[]
+  users                      users?                       @relation(fields: [created_by], references: [user_id], onUpdate: NoAction)
+  emergency_sos_signals      emergency_sos_signals[]
+  user_safety_checks         user_safety_checks[]
+
+  @@index([center_location], map: "idx_emergency_broadcast_alerts_center_location", type: Gist)
+  @@index([alert_type], map: "ix_emergency_broadcast_alerts_alert_type")
+  @@index([status], map: "ix_emergency_broadcast_alerts_status")
+}
+
+model emergency_sos_signals {
+  sos_id                     String                      @id @db.Uuid
+  alert_id                   String?                     @db.Uuid
+  user_id                    String                      @db.Uuid
+  latitude                   Float
+  longitude                  Float
+  location_address           String                      @db.VarChar(500)
+  phone_number               String?                     @db.VarChar(50)
+  notes                      String?
+  status                     String                      @db.VarChar(50)
+  version                    Int
+  deleted_at                 DateTime?                   @db.Timestamptz(6)
+  created_at                 DateTime                    @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime                    @default(now()) @db.Timestamptz(6)
+  emergency_broadcast_alerts emergency_broadcast_alerts? @relation(fields: [alert_id], references: [alert_id], onUpdate: NoAction)
+  users                      users                       @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([alert_id], map: "ix_emergency_sos_signals_alert_id")
+  @@index([status], map: "ix_emergency_sos_signals_status")
+  @@index([user_id], map: "ix_emergency_sos_signals_user_id")
+}
+
+model flood_sos_chat_messages {
+  message_id         String             @id @db.Uuid
+  request_id         String             @db.Uuid
+  sender_id          String?            @db.Uuid
+  sender_type        String             @db.VarChar(20)
+  sender_name        String             @db.VarChar(200)
+  content            String
+  created_at         DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime           @default(now()) @db.Timestamptz(6)
+  flood_sos_requests flood_sos_requests @relation(fields: [request_id], references: [request_id], onDelete: Cascade, onUpdate: NoAction)
+  users              users?             @relation(fields: [sender_id], references: [user_id], onUpdate: NoAction)
+
+  @@index([request_id], map: "ix_flood_sos_chat_messages_request_id")
+}
+
+model flood_sos_requests {
+  request_id                                            String                    @id @db.Uuid
+  sos_code                                              String                    @unique(map: "ix_flood_sos_requests_sos_code") @db.VarChar(50)
+  victim_id                                             String?                   @db.Uuid
+  victim_name                                           String                    @db.VarChar(200)
+  victim_phone                                          String                    @db.VarChar(50)
+  total_victims                                         Int
+  elderly_count                                         Int
+  children_count                                        Int
+  medical_urgent_count                                  Int
+  description                                           String
+  image_url                                             String?
+  location                                              Unsupported("geometry")
+  latitude                                              Float
+  longitude                                             Float
+  address_text                                          String                    @db.VarChar(500)
+  district                                              String?                   @db.VarChar(100)
+  ward                                                  String?                   @db.VarChar(100)
+  severity_level                                        String                    @db.VarChar(50)
+  flood_depth_meters                                    Float?
+  status                                                String                    @db.VarChar(50)
+  assigned_volunteer_id                                 String?                   @db.Uuid
+  assigned_team_name                                    String?                   @db.VarChar(200)
+  assigned_vehicle_type                                 String?                   @db.VarChar(100)
+  assigned_rescuer_name                                 String?                   @db.VarChar(200)
+  assigned_rescuer_phone                                String?                   @db.VarChar(50)
+  assigned_at                                           DateTime?                 @db.Timestamptz(6)
+  rescuer_latitude                                      Float?
+  rescuer_longitude                                     Float?
+  rescuer_distance_meters                               Float?
+  rescuer_eta_minutes                                   Int?
+  completed_at                                          DateTime?                 @db.Timestamptz(6)
+  rating                                                Int?
+  feedback_notes                                        String?
+  cancel_reason                                         String?                   @db.VarChar(255)
+  cancelled_at                                          DateTime?                 @db.Timestamptz(6)
+  version                                               Int
+  deleted_at                                            DateTime?                 @db.Timestamptz(6)
+  created_at                                            DateTime                  @default(now()) @db.Timestamptz(6)
+  updated_at                                            DateTime                  @default(now()) @db.Timestamptz(6)
+  flood_sos_chat_messages                               flood_sos_chat_messages[]
+  users_flood_sos_requests_assigned_volunteer_idTousers users?                    @relation("flood_sos_requests_assigned_volunteer_idTousers", fields: [assigned_volunteer_id], references: [user_id], onUpdate: NoAction)
+  users_flood_sos_requests_victim_idTousers             users?                    @relation("flood_sos_requests_victim_idTousers", fields: [victim_id], references: [user_id], onUpdate: NoAction)
+
+  @@index([location], map: "idx_flood_sos_requests_location", type: Gist)
+  @@index([assigned_volunteer_id], map: "ix_flood_sos_requests_assigned_volunteer_id")
+  @@index([district], map: "ix_flood_sos_requests_district")
+  @@index([status], map: "ix_flood_sos_requests_status")
+  @@index([victim_id], map: "ix_flood_sos_requests_victim_id")
+}
+
+model green_challenges {
+  challenge_id    String            @id @db.VarChar(50)
+  title           String            @db.VarChar(255)
+  description     String
+  points_reward   Int
+  category        String            @db.VarChar(50)
+  icon            String            @db.VarChar(50)
+  requirements    String
+  is_auto_verify  Boolean
+  is_active       Boolean
+  order_index     Int
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  user_challenges user_challenges[]
+}
+
+model lucky_wheel_spins {
+  spin_id      String    @id @db.Uuid
+  user_id      String    @db.Uuid
+  spin_date    DateTime  @db.Date
+  slot_index   Int
+  reward_type  String    @db.VarChar(50)
+  reward_name  String    @db.VarChar(255)
+  points_won   Int
+  badge_won    String?   @db.VarChar(100)
+  voucher_code String?   @db.VarChar(100)
+  created_at   DateTime? @db.Timestamptz(6)
+  users        users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "ix_lucky_wheel_spins_user_id")
+}
+
+model milestone_posts {
+  post_id     String   @id @db.Uuid
+  user_id     String   @db.Uuid
+  tier_code   String   @db.VarChar(20)
+  tier_name   String   @db.VarChar(100)
+  content     String
+  privacy     String   @db.VarChar(20)
+  category    String   @db.VarChar(50)
+  likes_count Int
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  users       users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([created_at], map: "ix_milestone_posts_created_at")
+  @@index([user_id], map: "ix_milestone_posts_user_id")
+}
+
+model reward_transactions {
+  transaction_id   String           @id @db.Uuid
+  user_id          String           @db.Uuid
+  reward_id        Int?
+  incident_id      String?          @db.Uuid
+  transaction_type String           @db.VarChar(50)
+  points_amount    Int
+  balance_after    Int
+  description      String?          @db.VarChar(255)
+  created_at       DateTime         @default(now()) @db.Timestamptz(6)
+  incidents        incidents?       @relation(fields: [incident_id], references: [incident_id], onUpdate: NoAction)
+  citizen_rewards  citizen_rewards? @relation(fields: [reward_id], references: [reward_id], onUpdate: NoAction)
+  users            users            @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([created_at], map: "ix_reward_transactions_created_at")
+  @@index([transaction_type], map: "ix_reward_transactions_transaction_type")
+  @@index([user_id], map: "ix_reward_transactions_user_id")
+}
+
+model safety_check_deliveries {
+  delivery_id        String             @id @db.Uuid
+  check_id           String             @db.Uuid
+  friend_user_id     String             @db.Uuid
+  delivery_channel   String             @db.VarChar(50)
+  is_delivered       Boolean
+  delivered_at       DateTime           @db.Timestamptz(6)
+  created_at         DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime           @default(now()) @db.Timestamptz(6)
+  user_safety_checks user_safety_checks @relation(fields: [check_id], references: [check_id], onDelete: Cascade, onUpdate: NoAction)
+  users              users              @relation(fields: [friend_user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([check_id], map: "ix_safety_check_deliveries_check_id")
+  @@index([friend_user_id], map: "ix_safety_check_deliveries_friend_user_id")
+}
+
+model user_challenges {
+  id                 String           @id @db.Uuid
+  user_id            String           @db.Uuid
+  challenge_id       String           @db.VarChar(50)
+  week_year          String           @db.VarChar(20)
+  status             String           @db.VarChar(30)
+  evidence_image_url String?
+  evidence_note      String?          @db.VarChar(200)
+  completed_at       DateTime?        @db.Timestamptz(6)
+  claimed_at         DateTime?        @db.Timestamptz(6)
+  created_at         DateTime         @default(now()) @db.Timestamptz(6)
+  green_challenges   green_challenges @relation(fields: [challenge_id], references: [challenge_id], onDelete: Cascade, onUpdate: NoAction)
+  users              users            @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, challenge_id, week_year], map: "uq_user_challenge_week")
+  @@index([challenge_id], map: "ix_user_challenges_challenge_id")
+  @@index([user_id], map: "ix_user_challenges_user_id")
+  @@index([week_year], map: "ix_user_challenges_week_year")
+}
+
+model user_device_locations {
+  location_id  String                  @id @db.Uuid
+  user_id      String                  @db.Uuid
+  location     Unsupported("geometry")
+  latitude     Float
+  longitude    Float
+  address_text String?                 @db.VarChar(500)
+  district     String?                 @db.VarChar(100)
+  ward         String?                 @db.VarChar(100)
+  is_active    Boolean
+  last_ping_at DateTime                @db.Timestamptz(6)
+  deleted_at   DateTime?               @db.Timestamptz(6)
+  created_at   DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime                @default(now()) @db.Timestamptz(6)
+  users        users                   @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([location], map: "idx_user_device_locations_location", type: Gist)
+  @@index([district], map: "ix_user_device_locations_district")
+  @@index([is_active], map: "ix_user_device_locations_is_active")
+  @@index([user_id], map: "ix_user_device_locations_user_id")
+}
+
+model user_qr_scans {
+  scan_id         String       @id @db.Uuid
+  user_id         String       @db.Uuid
+  qr_id           String       @db.Uuid
+  scanned_at      DateTime?    @db.Timestamptz(6)
+  scan_date       DateTime     @db.Date
+  points_earned   Int
+  user_lat        Float?
+  user_lng        Float?
+  distance_meters Float?
+  eco_qr_codes    eco_qr_codes @relation(fields: [qr_id], references: [qr_id], onDelete: Cascade, onUpdate: NoAction)
+  users           users        @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, qr_id, scan_date], map: "uq_user_qr_per_day")
+  @@index([qr_id], map: "ix_user_qr_scans_qr_id")
+  @@index([user_id], map: "ix_user_qr_scans_user_id")
+}
+
+model user_safety_checks {
+  check_id                   String                      @id @db.Uuid
+  user_id                    String                      @db.Uuid
+  alert_id                   String?                     @db.Uuid
+  is_safe                    Boolean
+  status_message             String                      @db.VarChar(255)
+  latitude                   Float
+  longitude                  Float
+  location_address           String                      @db.VarChar(500)
+  shared_with_count          Int
+  sms_fallback_count         Int
+  version                    Int
+  deleted_at                 DateTime?                   @db.Timestamptz(6)
+  created_at                 DateTime                    @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime                    @default(now()) @db.Timestamptz(6)
+  safety_check_deliveries    safety_check_deliveries[]
+  emergency_broadcast_alerts emergency_broadcast_alerts? @relation(fields: [alert_id], references: [alert_id], onUpdate: NoAction)
+  users                      users                       @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([alert_id], map: "ix_user_safety_checks_alert_id")
+  @@index([user_id], map: "ix_user_safety_checks_user_id")
+}
+
+model user_vouchers {
+  voucher_id           String          @id @db.Uuid
+  user_id              String          @db.Uuid
+  reward_id            Int
+  voucher_code         String          @unique(map: "ix_user_vouchers_voucher_code") @db.VarChar(50)
+  points_spent         Int
+  status               String          @db.VarChar(20)
+  terms_and_conditions String?
+  qr_data              String?         @db.VarChar(255)
+  redeemed_at          DateTime        @default(now()) @db.Timestamptz(6)
+  expires_at           DateTime        @db.Timestamptz(6)
+  used_at              DateTime?       @db.Timestamptz(6)
+  citizen_rewards      citizen_rewards @relation(fields: [reward_id], references: [reward_id], onDelete: Cascade, onUpdate: NoAction)
+  users                users           @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([expires_at], map: "ix_user_vouchers_expires_at")
+  @@index([reward_id], map: "ix_user_vouchers_reward_id")
+  @@index([status], map: "ix_user_vouchers_status")
+  @@index([user_id], map: "ix_user_vouchers_user_id")
+}
+
+model volunteer_profiles {
+  volunteer_id             String                  @id @db.Uuid
+  user_id                  String                  @unique(map: "ix_volunteer_profiles_user_id") @db.Uuid
+  full_name                String                  @db.VarChar(200)
+  team_name                String                  @db.VarChar(200)
+  vehicle_type             String                  @db.VarChar(100)
+  phone_number             String                  @db.VarChar(50)
+  is_available             Boolean
+  location                 Unsupported("geometry")
+  current_latitude         Float
+  current_longitude        Float
+  last_ping_at             DateTime                @db.Timestamptz(6)
+  completed_missions_count Int
+  rating_average           Float
+  version                  Int
+  deleted_at               DateTime?               @db.Timestamptz(6)
+  created_at               DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime                @default(now()) @db.Timestamptz(6)
+  users                    users                   @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([location], map: "idx_volunteer_profiles_location", type: Gist)
+  @@index([is_available], map: "ix_volunteer_profiles_is_available")
+}
+
+model waste_handbook_items {
+  item_id               String   @id @db.VarChar(50)
+  name                  String   @db.VarChar(200)
+  category_code         String   @db.VarChar(50)
+  alternative_names     String?
+  image_url             String?
+  sorting_guide         String
+  bin_color             String   @db.VarChar(30)
+  bin_name              String   @db.VarChar(100)
+  safety_notes          String?
+  has_dedicated_station Boolean
+  is_active             Boolean
+  created_at            DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([category_code], map: "ix_waste_handbook_items_category_code")
+  @@index([name], map: "ix_waste_handbook_items_name")
 }

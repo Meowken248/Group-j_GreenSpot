@@ -5,7 +5,9 @@ Tuân thủ Clean Architecture, RBAC Guard, Dependency Injection.
 """
 
 from typing import Optional, List
-from fastapi import APIRouter, Depends, Query, HTTPException, status, Header
+from fastapi import APIRouter, Depends, Query, HTTPException, status, Header, Request
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -62,6 +64,7 @@ def verify_hotspot_access(authorization: Optional[str] = Header(None)):
 
 @router.get("/map", response_model=HotspotMapResponse)
 async def get_hotspot_map(
+    request: Request,
     incident_type: Optional[str] = Query("ALL", description="Phân loại sự cố: ALL, SPONTANEOUS_DUMP, FLOODING, WATER_POLLUTION, AIR_POLLUTION"),
     time_range: Optional[str] = Query("30_DAYS", description="Khung thời gian: 7_DAYS, 30_DAYS, THIS_QUARTER, CUSTOM"),
     start_date: Optional[str] = Query(None, description="Ngày bắt đầu (nếu chọn CUSTOM)"),
@@ -71,7 +74,7 @@ async def get_hotspot_map(
     current_user: Optional[dict] = Depends(verify_hotspot_access),
 ):
     """
-    Màn 1/3: Bản đồ phân tích cụm điểm nóng KDE và Top 5 điểm nóng đô thị
+     Bản đồ phân tích cụm điểm nóng KDE và Top 5 điểm nóng đô thị
     """
     req = HotspotFilterRequest(
         incident_type=incident_type,
@@ -79,23 +82,40 @@ async def get_hotspot_map(
         start_date=start_date,
         end_date=end_date,
     )
-    return await service.get_hotspot_map(db, req)
+    result = await service.get_hotspot_map(db, req)
+    lang = get_current_language(request)
+    if lang == "en":
+        result_dict = result.model_dump() if hasattr(result, 'model_dump') else result
+        translated = await translation_service.translate_data(result_dict, target_lang="en", source_lang="vi")
+        return translated
+    return result
 
 
 @router.get("/areas", response_model=List[AreaOptionItem])
 async def get_available_areas(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     service: HotspotService = Depends(get_hotspot_service),
     current_user: Optional[dict] = Depends(verify_hotspot_access),
 ):
     """
-    Màn 2/3: Danh sách Quận/Huyện và Điểm nóng cho combobox lựa chọn khu vực dự báo
+     Danh sách Quận/Huyện và Điểm nóng cho combobox lựa chọn khu vực dự báo
     """
-    return await service.get_available_areas(db)
+    result = await service.get_available_areas(db)
+    lang = get_current_language(request)
+    if lang == "en":
+        if isinstance(result, list):
+            result_dict = [item.model_dump() if hasattr(item, 'model_dump') else item for item in result]
+        else:
+            result_dict = result.model_dump() if hasattr(result, 'model_dump') else result
+        translated = await translation_service.translate_data(result_dict, target_lang="en", source_lang="vi")
+        return translated
+    return result
 
 
 @router.get("/forecast", response_model=ForecastResponse)
 async def get_7day_forecast(
+    request: Request,
     target_id: Optional[str] = Query("dist-q8", description="Mã Quận/Huyện hoặc Điểm nóng"),
     target_type: Optional[str] = Query("DISTRICT", description="DISTRICT hoặc HOTSPOT"),
     db: AsyncSession = Depends(get_db),
@@ -103,9 +123,15 @@ async def get_7day_forecast(
     current_user: Optional[dict] = Depends(verify_hotspot_access),
 ):
     """
-    Màn 2/3: Dự báo xu hướng 7 ngày tới kèm khoảng tin cậy 95% và phân tích ngày nguy cơ cao nhất
+     Dự báo xu hướng 7 ngày tới kèm khoảng tin cậy 95% và phân tích ngày nguy cơ cao nhất
     """
-    return await service.get_7day_forecast(db, target_id=target_id or "dist-q8", target_type=target_type or "DISTRICT")
+    result = await service.get_7day_forecast(db, target_id=target_id or "dist-q8", target_type=target_type or "DISTRICT")
+    lang = get_current_language(request)
+    if lang == "en":
+        result_dict = result.model_dump() if hasattr(result, 'model_dump') else result
+        translated = await translation_service.translate_data(result_dict, target_lang="en", source_lang="vi")
+        return translated
+    return result
 
 
 @router.post("/forecast/export", response_model=ExportReportResponse)
@@ -116,19 +142,26 @@ async def export_forecast_report(
     current_user: Optional[dict] = Depends(verify_hotspot_access),
 ):
     """
-    Màn 2/3: Kích hoạt xuất báo cáo dự báo 7 ngày (PDF / Excel)
+     Kích hoạt xuất báo cáo dự báo 7 ngày (PDF / Excel)
     """
     return await service.export_forecast_report(db, req)
 
 
 @router.get("/{hotspot_id}", response_model=HotspotDetailResponse)
 async def get_hotspot_detail(
+    request: Request,
     hotspot_id: str,
     db: AsyncSession = Depends(get_db),
     service: HotspotService = Depends(get_hotspot_service),
     current_user: Optional[dict] = Depends(verify_hotspot_access),
 ):
     """
-    Màn 3/3: Xem chi tiết điểm nóng, kiểm tra lệnh điều phối đang thực thi và dữ liệu điền sẵn STT 43
+     Xem chi tiết điểm nóng, kiểm tra lệnh điều phối đang thực thi và dữ liệu điền sẵn STT 43
     """
-    return await service.get_hotspot_detail(db, hotspot_id)
+    result = await service.get_hotspot_detail(db, hotspot_id)
+    lang = get_current_language(request)
+    if lang == "en":
+        result_dict = result.model_dump() if hasattr(result, 'model_dump') else result
+        translated = await translation_service.translate_data(result_dict, target_lang="en", source_lang="vi")
+        return translated
+    return result

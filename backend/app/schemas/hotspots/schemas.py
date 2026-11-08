@@ -6,7 +6,7 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
 
-# ==================== MÀN 1/3: BẢN ĐỒ ĐIỂM NÓNG ====================
+# ====================  BẢN ĐỒ ĐIỂM NÓNG ====================
 
 class HotspotClusterItem(BaseModel):
     """Chi tiết cụm điểm nóng phục vụ hiển thị bản đồ GIS và Top 5"""
@@ -50,7 +50,7 @@ class HotspotMapResponse(BaseModel):
     tile_server_status: str = "ONLINE"  # ONLINE, ERROR
 
 
-# ==================== MÀN 2/3: DỰ BÁO 7 NGÀY ====================
+# ====================  DỰ BÁO 7 NGÀY ====================
 
 class AreaOptionItem(BaseModel):
     """Lựa chọn Quận hoặc Điểm nóng cụ thể"""
@@ -104,7 +104,7 @@ class ExportReportResponse(BaseModel):
     message: str
 
 
-# ==================== MÀN 3/3: MODAL CHI TIẾT ĐIỂM NÓNG ====================
+# ====================  MODAL CHI TIẾT ĐIỂM NÓNG ====================
 
 class HotspotDetailResponse(BaseModel):
     """Dữ liệu trả về cho Màn 3/3 Popup Chi tiết điểm nóng"""

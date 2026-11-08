@@ -3016,3 +3016,90 @@ body.dark-mode {
 }
 
 
+
+
+// =============================================================================
+// DARK THEME CHO THÔNG BÁO CHUÔNG (NOTIFICATION DROPDOWN)
+// =============================================================================
+.dark-theme,
+[data-theme="dark"],
+body.dark-mode {
+  .bell-notification-wrapper {
+    .bell-notification-btn {
+      border-color: #334155 !important;
+      color: #f8fafc !important;
+
+      &:hover {
+        background-color: #1e293b !important;
+      }
+
+      .bell-dot {
+        border-color: #0f172a !important;
+      }
+    }
+
+    .notification-dropdown-panel {
+      background: #1e293b !important;
+      border-color: #334155 !important;
+      box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+
+      .notif-dropdown-header {
+        background: #0f172a !important;
+        border-bottom-color: #334155 !important;
+
+        .notif-header-title {
+          color: #f8fafc !important;
+        }
+
+        .btn-mark-all-read {
+          color: #34d399 !important;
+
+          &:hover {
+            color: #6ee7b7 !important;
+          }
+        }
+      }
+
+      .notif-items-list {
+        .notif-loading,
+        .notif-empty {
+          color: #94a3b8 !important;
+        }
+
+        .notif-item {
+          border-bottom-color: #334155 !important;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.03) !important;
+          }
+
+          &.unread {
+            background: rgba(16, 185, 129, 0.12) !important;
+
+            &:hover {
+              background: rgba(16, 185, 129, 0.18) !important;
+            }
+          }
+
+          .notif-item-content {
+            .notif-item-title {
+              color: #f8fafc !important;
+            }
+
+            .notif-item-msg {
+              color: #cbd5e1 !important;
+            }
+
+            .notif-item-time {
+              color: #64748b !important;
+            }
+          }
+
+          .notif-unread-dot {
+            background: #34d399 !important;
+          }
+        }
+      }
+    }
+  }
+}
