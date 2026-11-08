@@ -75,6 +75,7 @@ export interface MapControlSidebarProps {
   setActiveStyle: (style: StyleKey) => void;
   is3D: boolean;
   onToggle3D: () => void;
+  onActivate3D?: () => void;
   building3DTheme: BuildingColorTheme;
   setBuilding3DTheme: (theme: BuildingColorTheme) => void;
   showDistricts: boolean;
@@ -147,6 +148,7 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
     setActiveStyle,
     is3D,
     onToggle3D,
+    onActivate3D,
     building3DTheme,
     setBuilding3DTheme,
     showDistricts,
@@ -488,7 +490,14 @@ export default function MapControlSidebar(props: MapControlSidebarProps) {
           <button
             type="button"
             className={`sidebar-tab-btn ${activeTab === "basemap" ? "active" : ""}`}
-            onClick={() => setActiveTab("basemap")}
+            onClick={() => {
+              setActiveTab("basemap");
+              if (onActivate3D) {
+                onActivate3D();
+              } else if (!is3D && onToggle3D) {
+                onToggle3D();
+              }
+            }}
             title="Lớp bản đồ nền & Chế độ 3D"
           >
             <div className="sidebar-tab-icon">
