@@ -1251,7 +1251,8 @@ class GroupService:
         # Soft delete thành viên (Rule 6)
         target_mem.deleted_at = datetime.now(timezone.utc)
         target_mem.status = GroupMemberStatus.BANNED.value
-        group.members_count = max(0, group.members_count - 1)
+        group.members_count = max(0, (group.members_count or 1) - 1)
+        group.version = (group.version or 1) + 1
 
         # Ghi Audit Log an ninh (Bảng 11) trong CÙNG GIAO DỊCH
         audit = AuditLog(

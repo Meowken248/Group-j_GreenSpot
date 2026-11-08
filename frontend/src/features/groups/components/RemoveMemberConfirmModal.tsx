@@ -45,9 +45,10 @@ export const RemoveMemberConfirmModal: React.FC<RemoveMemberConfirmModalProps> =
   // Con trỏ mặc định đặt ở nút "Huỷ" để tránh bấm nhầm
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         cancelBtnRef.current?.focus();
       }, 50);
+      return () => clearTimeout(timer);
     }
   }, [isOpen]);
 

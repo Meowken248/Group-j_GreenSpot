@@ -9,7 +9,7 @@
  * - Tích hợp đầy đủ Màn 2/4 (Đổi vai trò), Màn 3/4 (Xác nhận xoá), Màn 4/4 (Đã xoá)
  */
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { groupService } from "../services/groupService";
 import type { GroupMemberItem, GroupMemberListResponse } from "../types/group";
 import { ChangeMemberRoleModal } from "./ChangeMemberRoleModal";
@@ -23,12 +23,14 @@ interface GroupMembersManagementProps {
   groupId?: string;
   onInviteClick?: () => void;
   onBack?: () => void;
+  onMemberUpdated?: () => void;
 }
 
 export const GroupMembersManagement: React.FC<GroupMembersManagementProps> = ({
   groupId: propGroupId,
   onInviteClick: propOnInviteClick,
   onBack,
+  onMemberUpdated,
 }) => {
   const resolveGroupId = (): string => {
     if (propGroupId) return propGroupId;
@@ -70,9 +72,19 @@ export const GroupMembersManagement: React.FC<GroupMembersManagementProps> = ({
 
   // Toast notification state
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Dòng thành viên vừa đổi vai trò thành công (để tạo hiệu ứng nền xanh nhạt 2s)
   const [highlightedUserId, setHighlightedUserId] = useState<string | null>(null);
+
+  // Dọn dẹp timers khi unmount
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    };
+  }, []);
 
   // Modal states
   const [selectedMemberForRole, setSelectedMemberForRole] = useState<GroupMemberItem | null>(null);
@@ -81,8 +93,9 @@ export const GroupMembersManagement: React.FC<GroupMembersManagementProps> = ({
   const [isInviteModalOpen, setIsInviteModalOpen] = useState<boolean>(false);
 
   const showToast = (message: string, type: "success" | "error" = "success") => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast({ message, type });
-    setTimeout(() => {
+    toastTimerRef.current = setTimeout(() => {
       setToast(null);
     }, 3000);
   };
@@ -112,7 +125,11 @@ export const GroupMembersManagement: React.FC<GroupMembersManagementProps> = ({
         setCanInvite(!!data.can_invite);
 
         if (append) {
-          setMembers((prev) => [...prev, ...data.items]);
+          setMembers((prev) => {
+            const existingIds = new Set(prev.map((m) => m.user_id));
+            const freshItems = data.items.filter((m) => !existingIds.has(m.user_id));
+            return [...prev, ...freshItems];
+          });
         } else {
           setMembers(data.items);
         }
@@ -168,13 +185,15 @@ export const GroupMembersManagement: React.FC<GroupMembersManagementProps> = ({
     showToast(message, "success");
 
     // Đánh dấu để nhấp nháy nền xanh trong 2 giây
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
     setHighlightedUserId(updatedMember.user_id);
-    setTimeout(() => {
+    highlightTimerRef.current = setTimeout(() => {
       setHighlightedUserId(null);
     }, 2000);
 
     // Tải lại danh sách để sắp xếp lại đúng thứ tự vai trò
     loadMembers(1, false);
+    onMemberUpdated?.();
   };
 
   // Màn 3: Xóa thành viên thành công -> Mở Màn 4
@@ -190,6 +209,7 @@ export const GroupMembersManagement: React.FC<GroupMembersManagementProps> = ({
   const handleCloseRemovedModal = () => {
     setRecentlyRemovedMember(null);
     loadMembers(1, false);
+    onMemberUpdated?.();
   };
 
   const handleOpenInvite = () => {
@@ -208,22 +228,7 @@ export const GroupMembersManagement: React.FC<GroupMembersManagementProps> = ({
       {toast && (
         <div
           data-testid="members-global-toast"
-          style={{
-            position: "fixed",
-            top: "24px",
-            right: "24px",
-            zIndex: 9999,
-            padding: "12px 20px",
-            borderRadius: "10px",
-            background: toast.type === "success" ? "#059669" : "#dc2626",
-            color: "#ffffff",
-            fontWeight: 700,
-            fontSize: "14px",
-            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.2)",
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-          }}
+          className={`members-global-toast toast-${toast.type}`}
         >
           <span>{toast.type === "success" ? "✅" : "⚠️"}</span>
           <span>{toast.message}</span>
@@ -281,19 +286,18 @@ export const GroupMembersManagement: React.FC<GroupMembersManagementProps> = ({
               <div className="skeleton-row" />
             </div>
           ) : errorNotice ? (
-            <div style={{ textAlign: "center", padding: "40px 0" }} data-testid="error-state">
-              <p style={{ color: "#dc2626", fontWeight: 600 }}>{errorNotice}</p>
+            <div className="members-error-state" data-testid="error-state">
+              <p className="error-message-text">{errorNotice}</p>
               <button
                 type="button"
-                className="btn-action btn-change-role"
+                className="btn-action btn-change-role btn-retry-load"
                 onClick={() => loadMembers(1, false)}
-                style={{ marginTop: "12px" }}
               >
                 Tải lại
               </button>
             </div>
           ) : members.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "40px 0", color: "#64748b" }}>
+            <div className="members-empty-state">
               Chưa có thành viên nào trong danh sách.
             </div>
           ) : (

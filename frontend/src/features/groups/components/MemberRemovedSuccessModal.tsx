@@ -30,9 +30,10 @@ export const MemberRemovedSuccessModal: React.FC<MemberRemovedSuccessModalProps>
   // Con trỏ mặc định đặt ở nút "Đóng"
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         closeBtnRef.current?.focus();
       }, 50);
+      return () => clearTimeout(timer);
     }
   }, [isOpen]);
 
@@ -91,3 +92,4 @@ export const MemberRemovedSuccessModal: React.FC<MemberRemovedSuccessModalProps>
     </div>
   );
 };
+

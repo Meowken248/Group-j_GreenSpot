@@ -42,7 +42,31 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
   const [actionLoading, setActionLoading] = useState(false);
 
   // Tab điều hướng Facebook Groups style
-  const [activeTab, setActiveTab] = useState<"feed" | "about" | "members">("feed");
+  const [activeTab, setActiveTab] = useState<"feed" | "about" | "members">(() => {
+    if (window.location.pathname.includes("/members") || window.location.hash.includes("tab=members")) {
+      return "members";
+    }
+    if (window.location.pathname.includes("/about") || window.location.hash.includes("tab=about")) {
+      return "about";
+    }
+    return "feed";
+  });
+
+  useEffect(() => {
+    const handleUrlTab = () => {
+      if (window.location.pathname.includes("/members") || window.location.hash.includes("tab=members")) {
+        setActiveTab("members");
+      } else if (window.location.pathname.includes("/about") || window.location.hash.includes("tab=about")) {
+        setActiveTab("about");
+      }
+    };
+    window.addEventListener("hashchange", handleUrlTab);
+    window.addEventListener("popstate", handleUrlTab);
+    return () => {
+      window.removeEventListener("hashchange", handleUrlTab);
+      window.removeEventListener("popstate", handleUrlTab);
+    };
+  }, []);
 
   // Dữ liệu bài viết trong nhóm
   const [posts, setPosts] = useState<FeedPostItem[]>([]);
@@ -684,6 +708,7 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
               groupId={group.group_id}
               onInviteClick={group.is_member ? () => setShowInviteModal(true) : undefined}
               onBack={() => setActiveTab("feed")}
+              onMemberUpdated={() => fetchDetail()}
             />
           )}
         </div>
