@@ -1,0 +1,381 @@
+@use "./variables" as *;
+@use "./mixins" as *;
+
+.matrix-page-acl {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 28px 60px;
+  box-sizing: border-box;
+  font-family: $font-family;
+  background: #f8fafc;
+  min-height: calc(100vh - 64px);
+
+  // THANH ĐIỀU HƯỚNG BREADCRUMB
+  .acl-top-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    font-size: 13px;
+
+    .btn-back-nav {
+      background: transparent;
+      border: none;
+      color: $neutral-600;
+      font-family: $font-family;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0;
+      transition: $transition-fast;
+
+      &:hover {
+        color: $primary-700;
+        text-decoration: underline;
+      }
+    }
+
+    .nav-separator {
+      color: $neutral-400;
+    }
+
+    .nav-title {
+      color: $neutral-800;
+      font-weight: 600;
+    }
+  }
+
+  // THANH HEADER THEO ĐÚNG ẢNH MẪU
+  .acl-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding: 6px 0;
+
+    .acl-header-left {
+      .acl-subtitle-text {
+        margin: 0;
+        font-size: 14px;
+        color: $neutral-600;
+        letter-spacing: -0.01em;
+      }
+    }
+
+    .acl-header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      // CAPSULE CHỌN VAI TRÒ
+      .role-capsule-selector {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 9999px;
+        padding: 5px 14px 5px 8px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        position: relative;
+        transition: $transition-fast;
+
+        &:hover {
+          border-color: #94a3b8;
+        }
+
+        .capsule-avatar-dot {
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          background: #3b82f6;
+          display: inline-block;
+          flex-shrink: 0;
+        }
+
+        .role-capsule-select {
+          border: none;
+          background: transparent;
+          font-family: $font-family;
+          font-size: 13.5px;
+          font-weight: 700;
+          color: $neutral-800;
+          outline: none;
+          cursor: pointer;
+          appearance: none;
+          padding-right: 14px;
+        }
+
+        .capsule-arrow {
+          position: absolute;
+          right: 12px;
+          font-size: 10px;
+          color: $neutral-500;
+          pointer-events: none;
+        }
+      }
+
+      // NÚT LƯU TRÒN BẦU DỤC THEO ĐÚNG ẢNH MẪU
+      .btn-save-acl {
+        @include button-base;
+        padding: 9px 32px;
+        border-radius: 9999px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #ffffff;
+        background: #6f88ca;
+        box-shadow: 0 2px 6px rgba(111, 136, 202, 0.35);
+        border: none;
+
+        &:hover:not(:disabled) {
+          background: #5b74b8;
+          box-shadow: 0 4px 10px rgba(91, 116, 184, 0.45);
+          transform: translateY(-1px);
+        }
+
+        &:active:not(:disabled) {
+          transform: translateY(0);
+        }
+
+        &:disabled {
+          background: #cbd5e1;
+          color: #94a3b8;
+          box-shadow: none;
+          cursor: not-allowed;
+          opacity: 0.7;
+        }
+      }
+    }
+  }
+
+  // THÔNG BÁO XUNG ĐỘT OCC
+  .acl-occ-alert {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    background: #fef2f2;
+    border: 1px solid #f87171;
+    border-radius: $radius-lg;
+    color: #b91c1c;
+    font-size: 13.5px;
+    font-weight: 600;
+    margin-bottom: 20px;
+
+    .btn-reload-occ {
+      @include button-base;
+      padding: 6px 14px;
+      font-size: 12.5px;
+      background: #dc2626;
+      color: #ffffff;
+      border-radius: $radius-md;
+
+      &:hover {
+        background: #b91c1c;
+      }
+    }
+  }
+
+  // BẢNG MA TRẬN PHÂN QUYỀN
+  .acl-table-container {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: $radius-xl;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+
+    .acl-matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+
+      thead {
+        background: #ffffff;
+        border-bottom: 1.5px solid #e2e8f0;
+
+        tr th {
+          padding: 16px 12px;
+          font-size: 13px;
+          font-weight: 700;
+          color: #334155;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          vertical-align: middle;
+        }
+
+        .th-feature-col {
+          width: 32%;
+          text-align: left;
+          padding-left: 24px;
+        }
+
+        .th-action-col {
+          text-align: center;
+          width: calc(68% / 7);
+        }
+      }
+
+      tbody {
+        tr {
+          border-bottom: 1px solid #f1f5f9;
+          transition: background 0.15s ease;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          &:hover {
+            background: #f8fafc;
+          }
+
+          td {
+            padding: 16px 12px;
+            vertical-align: middle;
+          }
+
+          .td-feature-title {
+            padding-left: 24px;
+            cursor: pointer;
+
+            .feature-title-wrapper {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+
+              .feature-name {
+                font-size: 14px;
+                font-weight: 500;
+                color: #1e293b;
+              }
+
+              .feature-code {
+                font-size: 11px;
+                font-family: monospace;
+                color: #94a3b8;
+              }
+            }
+          }
+
+          .td-checkbox-cell {
+            text-align: center;
+
+            .acl-cell-lock {
+              font-size: 13px;
+              color: #94a3b8;
+              cursor: not-allowed;
+            }
+
+            .acl-checkbox-label {
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              cursor: pointer;
+              user-select: none;
+              position: relative;
+
+              input[type="checkbox"] {
+                appearance: none;
+                -webkit-appearance: none;
+                width: 18px;
+                height: 18px;
+                border: 1.5px solid #cbd5e1;
+                border-radius: 4px;
+                background: #ffffff;
+                cursor: pointer;
+                outline: none;
+                transition: all 0.15s ease-in-out;
+                position: relative;
+
+                &:hover:not(:disabled) {
+                  border-color: #94a3b8;
+                  box-shadow: 0 0 0 2px rgba(111, 136, 202, 0.15);
+                }
+
+                &:checked {
+                  background: #2563eb;
+                  border-color: #2563eb;
+
+                  &::after {
+                    content: "";
+                    position: absolute;
+                    top: 2px;
+                    left: 5px;
+                    width: 4px;
+                    height: 8px;
+                    border: solid #ffffff;
+                    border-width: 0 2px 2px 0;
+                    transform: rotate(45deg);
+                  }
+                }
+
+                &:disabled {
+                  cursor: not-allowed;
+                  opacity: 0.65;
+                  background: #f1f5f9;
+                }
+              }
+
+              &.acl-checkbox-disabled-child {
+                cursor: not-allowed;
+                opacity: 0.35;
+
+                input[type="checkbox"] {
+                  background: #f8fafc;
+                  border-color: #e2e8f0;
+                  cursor: not-allowed;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // THÔNG TIN TRỢ GIÚP DƯỚI BẢNG
+  .acl-footer-note {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 20px;
+    padding: 12px 18px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: $radius-lg;
+    font-size: 13px;
+    color: $neutral-600;
+
+    .note-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .note-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #10b981;
+      }
+    }
+
+    .btn-revert-acl {
+      @include button-base;
+      padding: 6px 14px;
+      font-size: 12.5px;
+      background: $neutral-100;
+      color: $neutral-700;
+      border: 1px solid $neutral-300;
+      border-radius: $radius-md;
+
+      &:hover {
+        background: $neutral-200;
+        color: $neutral-900;
+      }
+    }
+  }
+}
