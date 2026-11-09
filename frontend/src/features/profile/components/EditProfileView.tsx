@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import type { UserProfile, UpdateProfilePayload } from "../types/profile.types";
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
 
 interface EditProfileViewProps {
   userProfile: UserProfile;
@@ -282,7 +283,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
         <div className="media-upload-block">
           <div className="block-label">Ảnh bìa</div>
           <div className="preview-cover-3to1">
-            {coverPreview && <img src={coverPreview} alt="Cover Preview" />}
+            {coverPreview && <img src={resolveMediaUrl(coverPreview)} alt="Cover Preview" />}
           </div>
 
           <button
@@ -315,7 +316,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
           <div className="block-label">Avatar</div>
           <div className="preview-avatar-120">
             {avatarPreview ? (
-              <img src={avatarPreview} alt="Avatar Preview" />
+              <img src={resolveMediaUrl(avatarPreview)} alt="Avatar Preview" />
             ) : (
               <div className="avatar-char">{getAvatarLetter(fullName)}</div>
             )}

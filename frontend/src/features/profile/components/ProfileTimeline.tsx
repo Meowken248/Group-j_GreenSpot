@@ -275,7 +275,7 @@ export const ProfileTimeline: React.FC<ProfileTimelineProps> = ({
             {/* Khung ảnh bìa tỉ lệ 3:1 */}
             <div className="cover-container">
               {profile.cover_image_url ? (
-                <img src={profile.cover_image_url} alt="Cover" className="cover-img" />
+                <img src={resolveMediaUrl(profile.cover_image_url)} alt="Cover" className="cover-img" />
               ) : (
                 <div className="cover-fallback" />
               )}
@@ -284,7 +284,7 @@ export const ProfileTimeline: React.FC<ProfileTimelineProps> = ({
             {/* Avatar 120px đè mép ảnh bìa, lệch trái */}
             <div className="avatar-wrapper">
               {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt={profile.full_name} className="avatar-circle" />
+                <img src={resolveMediaUrl(profile.avatar_url)} alt={profile.full_name} className="avatar-circle" />
               ) : (
                 <div className="avatar-placeholder">{getAvatarLetter(profile.full_name)}</div>
               )}
