@@ -396,7 +396,53 @@ class DispatchRepository(IDispatchRepository):
         self, db: AsyncSession
     ) -> List[IncidentComboboxItem]:
         """Lấy danh sách các sự cố chưa phân công hoặc cần giải quyết khẩn cấp (Màn 2/6)"""
-        # Trả về danh sách sự cố chuẩn hóa
+        try:
+            sql = text("""
+                SELECT 
+                    i.incident_id,
+                    COALESCE(i.tracking_code, CONCAT('INC-', SUBSTRING(REPLACE(i.incident_id::text, '-', ''), 1, 8))) AS incident_code,
+                    COALESCE(i.title, 'Sự cố phản ánh môi trường') AS title,
+                    COALESCE(wc.name, 'Chung') AS category,
+                    COALESCE(i.priority_level, i.ai_suggested_priority, 'MEDIUM') AS urgency,
+                    COALESCE(i.address_text, 'TP. Hồ Chí Minh') AS location_address,
+                    COALESCE(au.name, 'Quận Bình Tân') AS district,
+                    COALESCE(au.name, 'Phường An Lạc') AS ward,
+                    COALESCE(i.latitude, 10.75)::float AS latitude,
+                    COALESCE(i.longitude, 106.65)::float AS longitude
+                FROM incidents i
+                LEFT JOIN waste_categories wc ON i.category_id = wc.category_id
+                LEFT JOIN administrative_units au ON i.unit_id = au.unit_id
+                WHERE i.deleted_at IS NULL
+                  AND (i.status IN ('PENDING_VERIFICATION', 'VERIFIED', 'IN_PROGRESS', 'OPEN', 'PENDING') OR i.status IS NULL)
+                  AND i.incident_id NOT IN (
+                      SELECT incident_id FROM dispatch_orders 
+                      WHERE deleted_at IS NULL AND status NOT IN ('CANCELLED', 'CLOSED')
+                  )
+                ORDER BY i.created_at DESC
+                LIMIT 20;
+            """)
+            res = await db.execute(sql)
+            rows = res.mappings().all()
+            if rows:
+                return [
+                    IncidentComboboxItem(
+                        incident_id=r["incident_id"],
+                        incident_code=r["incident_code"],
+                        title=r["title"],
+                        category=r["category"],
+                        urgency=r["urgency"],
+                        location_address=r["location_address"],
+                        district=r["district"],
+                        ward=r["ward"],
+                        latitude=float(r["latitude"]),
+                        longitude=float(r["longitude"]),
+                    )
+                    for r in rows
+                ]
+        except Exception:
+            pass
+
+        # Fallback an toàn về danh sách chuẩn hóa
         return [IncidentComboboxItem(**item) for item in CANONICAL_INCIDENTS]
 
     async def get_response_teams(

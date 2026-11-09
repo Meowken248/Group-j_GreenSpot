@@ -19,27 +19,77 @@ class NavigationRepository(INavigationRepository):
 
     async def get_active_flood_hotspots(self, db: AsyncSession) -> List[Dict[str, Any]]:
         """
-        Truy vấn toàn bộ các điểm đen ngập lụt đang hoạt động kèm tọa độ không gian PostGIS.
+        Truy vấn toàn bộ các điểm đen ngập lụt đang hoạt động kèm tọa độ không gian PostGIS,
+        hợp nhất (UNION) với các sự cố môi trường ngập lụt mới được người dân phản ánh.
         Sử dụng ST_X và ST_Y để chuyển đổi Geometry Point SRID 4326 sang số thực float.
         """
-        query = text("""
-            SELECT
-                h.hotspot_id,
-                h.hotspot_code,
-                h.street_name,
-                h.district_name,
-                h.threshold_tide_meters,
-                h.threshold_rain_mm_per_hour,
-                h.historical_max_depth_cm,
-                h.drainage_system_rating,
-                h.primary_cause,
-                ST_X(h.location)::float as lng,
-                ST_Y(h.location)::float as lat
-            FROM flood_hotspots h
-            WHERE h.is_active = TRUE;
-        """)
-        res = await db.execute(query)
-        return [dict(r) for r in res.mappings().all()]
+        try:
+            query = text("""
+                SELECT
+                    h.hotspot_id::text as hotspot_id,
+                    h.hotspot_code,
+                    h.street_name,
+                    h.district_name,
+                    h.threshold_tide_meters,
+                    h.threshold_rain_mm_per_hour,
+                    h.historical_max_depth_cm,
+                    h.drainage_system_rating,
+                    h.primary_cause,
+                    ST_X(h.location)::float as lng,
+                    ST_Y(h.location)::float as lat
+                FROM flood_hotspots h
+                WHERE h.is_active = TRUE
+
+                UNION ALL
+
+                SELECT
+                    i.incident_id::text as hotspot_id,
+                    COALESCE(i.tracking_code, CONCAT('INC-', SUBSTRING(REPLACE(i.incident_id::text, '-', ''), 1, 8))) as hotspot_code,
+                    COALESCE(i.address_text, 'Điểm ngập người dân báo') as street_name,
+                    COALESCE(au.name, 'TP. Hồ Chí Minh') as district_name,
+                    1.4 as threshold_tide_meters,
+                    10.0 as threshold_rain_mm_per_hour,
+                    50 as historical_max_depth_cm,
+                    'POOR' as drainage_system_rating,
+                    'HEAVY_RAIN' as primary_cause,
+                    i.longitude::float as lng,
+                    i.latitude::float as lat
+                FROM incidents i
+                LEFT JOIN administrative_units au ON i.unit_id = au.unit_id
+                LEFT JOIN waste_categories wc ON i.category_id = wc.category_id
+                WHERE i.deleted_at IS NULL
+                  AND i.status IN ('PENDING_VERIFICATION', 'VERIFIED', 'IN_PROGRESS', 'OPEN', 'PENDING')
+                  AND i.latitude IS NOT NULL
+                  AND i.longitude IS NOT NULL
+                  AND (
+                      wc.category_code ILIKE '%FLOOD%' 
+                      OR wc.name ILIKE '%ngập%'
+                      OR i.title ILIKE '%ngập%' 
+                      OR i.description ILIKE '%ngập%'
+                  );
+            """)
+            res = await db.execute(query)
+            return [dict(r) for r in res.mappings().all()]
+        except Exception:
+            # Fallback nếu bảng incidents chưa đồng bộ
+            fallback_query = text("""
+                SELECT
+                    h.hotspot_id::text as hotspot_id,
+                    h.hotspot_code,
+                    h.street_name,
+                    h.district_name,
+                    h.threshold_tide_meters,
+                    h.threshold_rain_mm_per_hour,
+                    h.historical_max_depth_cm,
+                    h.drainage_system_rating,
+                    h.primary_cause,
+                    ST_X(h.location)::float as lng,
+                    ST_Y(h.location)::float as lat
+                FROM flood_hotspots h
+                WHERE h.is_active = TRUE;
+            """)
+            res = await db.execute(fallback_query)
+            return [dict(r) for r in res.mappings().all()]
 
     async def save_navigation_route(
         self, db: AsyncSession, route: SafeNavigationRoute

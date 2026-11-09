@@ -42,6 +42,7 @@ from app.seeds.seed_chatbot import seed_chatbot_data
 from app.seeds.seed_events import seed_events_data
 from app.seeds.seed_recycling_facilities import seed_recycling_facilities_data
 from app.seeds.seed_fundraisers import seed_fundraisers
+from app.seeds.seed_hotspots import seed_hotspots_data
 
 
 async def run_seed_all():
@@ -104,8 +105,11 @@ async def run_seed_all():
     print("\n👉 [BƯỚC 17/17] Nạp mạng lưới Trạm Tái chế & Điểm Tiếp nhận kèm mã QR (STT 23)...")
     await seed_recycling_facilities_data()
 
-    print("\n👉 [BƯỚC 18/18] Nạp dữ liệu Chiến dịch Gây quỹ cộng đồng (STT 20)...")
+    print("\n👉 [BƯỚC 18/19] Nạp dữ liệu Chiến dịch Gây quỹ cộng đồng (STT 20)...")
     await seed_fundraisers()
+
+    print("\n👉 [BƯỚC 19/19] Nạp dữ liệu Phân tích Điểm nóng & Dự báo xu hướng 7 ngày (STT 44)...")
+    await seed_hotspots_data()
 
     print("\n" + "=" * 70)
     print("🎉 HOÀN TẤT NẠP TOÀN BỘ CƠ SỞ DỮ LIỆU TOÀN HỆ THỐNG THÀNH CÔNG 100%!")
