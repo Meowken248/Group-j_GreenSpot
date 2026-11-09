@@ -69,18 +69,18 @@
 
 | STT | Chức năng nghiệp vụ | Trạng thái | Gợi ý phụ thuộc (cần kiểm chứng) |
 |----|---------------------|:---:|----------------------------------|
-| 37 | Trợ lý giọng nói rảnh tay | ⬜ | 2; mềm: 24, 18 |
-| 38 | AI phát hiện báo cáo trùng lặp hoặc tương tự | ⬜ | **18** |
-| 39 | AI tóm tắt sự cố và gợi ý mức độ ưu tiên xử lý | ⬜ | 18, 22 |
-| 40 | Tìm cơ sở thiết yếu gần sự cố | ⬜ | 18; mềm: 23 |
-| 41 | Tìm tuyến đường an toàn tránh ngập | ⬜ | 18; mềm: 33 |
-| 42 | Dashboard phân tích rủi ro đô thị | ⬜ | 3, 18, 22 |
-| 43 | Trung tâm điều phối tác nghiệp và phân công lệnh xử lý hiện trường | ⬜ | 3, 18, 22 |
-| 44 | Phân tích điểm nóng + dự báo 7 ngày | ⬜ | 18, 42 |
-| 45 | Hệ thống cảnh báo khẩn cấp theo vị trí, Safety Check "Tôi an toàn" gửi cho bạn bè | ⬜ | 2, 3, 6 |
-| 46 | Cứu hộ ngập cộng đồng (Flood SOS): yêu cầu cứu hộ kèm vị trí, tình nguyện viên nhận yêu cầu, theo dõi tiến độ | ⬜ | 2, 3; mềm: 45 |
-| 47 | Xuất danh sách sự cố ra Excel hoặc PDF theo bộ lọc | ⬜ | 18, 43 |
-| 48 | Bảng thống kê hoạt động hệ thống cho Admin: người dùng mới, bài đăng, nhóm mới theo ngày | ⬜ | 3, 9, 16 |
+| 37 | Trợ lý giọng nói rảnh tay | ✅ | 2; mềm: 24, 18, 29 |
+| 38 | AI phát hiện báo cáo trùng lặp hoặc tương tự | ✅ | **18** |
+| 39 | AI tóm tắt sự cố và gợi ý mức độ ưu tiên xử lý | ✅ | 18, 22 |
+| 40 | Tìm cơ sở thiết yếu gần sự cố | ✅ | 18; mềm: 23 |
+| 41 | Tìm tuyến đường an toàn tránh ngập | ✅ | 18; mềm: 33 |
+| 42 | Dashboard phân tích rủi ro đô thị | ✅ | 3, 18, 22 |
+| 43 | Trung tâm điều phối tác nghiệp và phân công lệnh xử lý hiện trường | ✅ | 3, 18, 22, 39 |
+| 44 | Phân tích điểm nóng + dự báo 7 ngày | ✅ | 18, 42, 43 |
+| 45 | Hệ thống cảnh báo khẩn cấp theo vị trí, Safety Check "Tôi an toàn" gửi cho bạn bè | ✅ | 2, 3, 6 |
+| 46 | Cứu hộ ngập cộng đồng (Flood SOS): yêu cầu cứu hộ kèm vị trí, tình nguyện viên nhận yêu cầu, theo dõi tiến độ | ✅ | 2, 3; mềm: 45 |
+| 47 | Xuất danh sách sự cố ra Excel hoặc PDF theo bộ lọc | ✅ | 18, 43 |
+| 48 | Bảng thống kê hoạt động hệ thống cho Admin: người dùng mới, bài đăng, nhóm mới theo ngày | ✅ | 3, 9, 16 |
 
 ---
 
