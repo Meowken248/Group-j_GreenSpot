@@ -195,17 +195,26 @@ export const ProfileTimeline: React.FC<ProfileTimelineProps> = ({
     }
   };
 
+  // Helper lấy URL ảnh đại diện cho thumbnail bài viết
+  const getThumbnailString = (rawThumb: any): string | null => {
+    if (!rawThumb) return null;
+    if (typeof rawThumb === "string") return rawThumb;
+    if (typeof rawThumb === "object" && typeof rawThumb.url === "string") return rawThumb.url;
+    return null;
+  };
+
   // Cập nhật sau khi chỉnh sửa thành công (Màn 2/5)
   const handleEditSuccess = (updatedPost: PostItem) => {
     if (editingPost) {
       setLocalPosts((prev) =>
         prev.map((item) => {
           if (item.post_id === editingPost.post_id) {
+            const rawThumb = updatedPost.thumbnail_url || (updatedPost.media_urls && updatedPost.media_urls[0]);
             return {
               ...item,
               content: updatedPost.content,
               media_urls: updatedPost.media_urls,
-              thumbnail_url: updatedPost.thumbnail_url || (updatedPost.media_urls && updatedPost.media_urls[0]) || null,
+              thumbnail_url: getThumbnailString(rawThumb),
               address: updatedPost.address,
               latitude: updatedPost.latitude,
               longitude: updatedPost.longitude,
@@ -352,7 +361,7 @@ export const ProfileTimeline: React.FC<ProfileTimelineProps> = ({
             ) : (
               localPosts.map((post) => {
                 const isOwnPost = Boolean(profile?.is_own_profile || (profile?.user_id && post.user_id === profile.user_id));
-                const thumbUrl = post.thumbnail_url || (post.media_urls && post.media_urls[0]);
+                const thumbUrl = getThumbnailString(post.thumbnail_url || (post.media_urls && post.media_urls[0]));
 
                 return (
                   <article
