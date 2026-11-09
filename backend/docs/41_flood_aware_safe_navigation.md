@@ -195,24 +195,45 @@ Hệ thống tuân thủ nghiêm ngặt mô hình **Clean Architecture & Depende
      * `calculate_dual_routes(db, request) -> NavigationPlanResponse`
      * `check_early_warning_ahead(db, request) -> EarlyWarningResponse`
      * `reroute_avoiding_hazard(db, request) -> RouteOption`
-3. **Tầng Truy vấn CSDL (Database Queries):**
-   - **Vị trí viết câu truy vấn:** Toàn bộ truy vấn trích xuất điểm đen ngập lụt được viết tập trung tại hàm `_fetch_flood_hotspots` bên trong [`BackEnd/app/services/navigation/service.py#L130-L147`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/navigation/service.py#L130-L147).
-   - Sử dụng cú pháp SQLAlchemy 2.0 Async với Raw SQL chuẩn PostGIS tối ưu:
-     ```python
-     query = text("""
-         SELECT
-             h.hotspot_id, h.hotspot_code, h.street_name, h.district_name,
-             h.threshold_tide_meters, h.threshold_rain_mm_per_hour,
-             h.historical_max_depth_cm, h.drainage_system_rating, h.primary_cause,
-             ST_X(h.location)::float as lng,
-             ST_Y(h.location)::float as lat
-         FROM flood_hotspots h
-         WHERE h.is_active = TRUE;
-     """)
-     res = await db.execute(query)
-     rows = res.mappings().all()
+3. **Tầng Truy vấn CSDL (Database Queries & Live Incident UNION):**
+   - **Vị trí viết câu truy vấn:** Toàn bộ truy vấn trích xuất điểm đen ngập lụt được chuẩn hóa tại [`BackEnd/app/crud/navigation/navigation_repository.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/crud/navigation/navigation_repository.py) và kết nối qua `SafeNavigationService`.
+   - **Cơ chế liên kết động với STT 18 (Sự cố ngập phát sinh):** Hàm `get_active_flood_hotspots()` thực thi phép toán **`UNION`** giữa bảng điểm đen ngập lụt lịch sử `flood_hotspots` và các phản ánh ngập lụt mới nhất từ người dân trong bảng `incidents` (`category_code ILIKE '%FLOOD%'` hoặc tiêu đề chứa từ khóa ngập):
+     ```sql
+     -- 1. Điểm đen ngập lụt lịch sử
+     SELECT
+         h.hotspot_id, h.hotspot_code, h.street_name, h.district_name,
+         h.threshold_tide_meters, h.threshold_rain_mm_per_hour,
+         h.historical_max_depth_cm, h.drainage_system_rating, h.primary_cause,
+         ST_X(h.location)::float as lng,
+         ST_Y(h.location)::float as lat
+     FROM flood_hotspots h
+     WHERE h.is_active = TRUE
+     UNION ALL
+     -- 2. Sự cố ngập lụt thời gian thực do công dân báo cáo (STT 18)
+     SELECT
+         i.incident_id as hotspot_id,
+         COALESCE(i.tracking_code, 'INC-FLOOD') as hotspot_code,
+         COALESCE(i.address_text, i.title) as street_name,
+         COALESCE(au.name, 'TP.HCM') as district_name,
+         1.45 as threshold_tide_meters,
+         35.0 as threshold_rain_mm_per_hour,
+         40 as historical_max_depth_cm,
+         3 as drainage_system_rating,
+         'Phản ánh ngập thời gian thực từ cộng đồng' as primary_cause,
+         i.longitude::float as lng,
+         i.latitude::float as lat
+     FROM incidents i
+     LEFT JOIN waste_categories wc ON i.category_id = wc.category_id
+     LEFT JOIN administrative_units au ON i.unit_id = au.unit_id
+     WHERE i.deleted_at IS NULL
+       AND i.status IN ('PENDING_VERIFICATION', 'VERIFIED', 'IN_PROGRESS', 'OPEN')
+       AND (
+           UPPER(wc.code) LIKE '%FLOOD%' 
+           OR UPPER(i.title) LIKE '%NGẬP%'
+           OR UPPER(COALESCE(i.description, '')) LIKE '%NGẬP%'
+       );
      ```
-   - *Ghi chú kiến trúc:* Việc viết truy vấn tập trung tại Service giúp kết nối trực tiếp mảng tọa độ điểm đen với thuật toán phân tích hành lang đệm Polyline Buffer mà không qua trung gian CRUD dư thừa.
+   - *Ghi chú kiến trúc:* Nhờ phép `UNION` này, khi người dân báo cáo ngập ở bất kỳ con hẻm hay nút giao nào tại STT 18, thuật toán định tuyến Dijkstra/OSRM lập tức xem đó là chướng ngại vật (Obstacle Hazard) và tự động bẻ cua lộ trình an toàn né tránh. Có cơ chế fallback về danh mục 30 điểm đen mẫu nếu CSDL rỗng.
 4. **Tầng Dịch vụ Lõi (Service Implementation):**
    - [`BackEnd/app/services/navigation/service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/navigation/service.py) (`SafeNavigationService`):
      * Tích hợp OSRM client với timeout 3.5s và giải thuật Polyline nội suy dự phòng.

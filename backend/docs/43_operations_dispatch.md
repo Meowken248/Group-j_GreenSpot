@@ -295,7 +295,35 @@ BackEnd/app/
          updated_at = NOW()
      WHERE order_id = :order_id AND version = :version AND deleted_at IS NULL;
      ```
-  6. **Cập nhật tọa độ GPS đội cơ động (Dòng 715–722):**
+  6. **Truy vấn nạp sự cố thật vào dropdown điều phối (Liên kết STT 18 & 39) (Dòng 395–442):**
+     ```sql
+     SELECT 
+         i.incident_id,
+         COALESCE(i.tracking_code, 'INC-' || SUBSTRING(CAST(i.incident_id AS TEXT), 1, 8)) AS incident_code,
+         i.title,
+         COALESCE(wc.code, 'ENVIRONMENT') AS category_code,
+         COALESCE(wc.name, 'Môi trường') AS category_name,
+         COALESCE(au.name, '') AS district,
+         COALESCE(i.address_text, '') AS full_address,
+         i.latitude,
+         i.longitude,
+         COALESCE(i.tps_score, 50.0) AS tps_score,
+         COALESCE(i.priority_level, 'MEDIUM') AS urgency_level,
+         i.created_at
+     FROM incidents i
+     LEFT JOIN waste_categories wc ON i.category_id = wc.category_id
+     LEFT JOIN administrative_units au ON i.unit_id = au.unit_id
+     WHERE i.deleted_at IS NULL
+       AND i.status IN ('PENDING_VERIFICATION', 'VERIFIED', 'IN_PROGRESS', 'OPEN', 'PENDING')
+       AND i.incident_id NOT IN (
+           SELECT incident_id FROM dispatch_orders 
+           WHERE deleted_at IS NULL AND status NOT IN ('CANCELLED', 'CLOSED')
+       )
+     ORDER BY i.created_at DESC
+     LIMIT 20;
+     ```
+     *Ghi chú liên kết:* Câu truy vấn thay thế hoàn toàn dữ liệu fix cứng, nối trực tiếp hồ sơ người dân báo cáo (STT 18) sau khi được thẩm định ưu tiên TPS (STT 39) vào quy trình phân công đội hiện trường. Có cơ chế fallback an toàn về danh sách mẫu khi CSDL chưa có dữ liệu.
+  7. **Cập nhật tọa độ GPS đội cơ động (Dòng 715–722):**
      ```sql
      UPDATE dispatch_orders
      SET team_latitude = :lat,
@@ -439,6 +467,7 @@ BackEnd/app/
   5. `test_05_close_dispatch_order`: Kiểm tra chặn đóng lệnh khi chưa có ảnh sau xử lý (400) và nghiệm thu thành công (Dòng 186–209).
   6. `test_06_field_tracking_data`: Kiểm tra dữ liệu GPS thời gian thực và 4 bước Stepper chuẩn hóa (Dòng 211–230).
   7. `test_07_http_endpoints_and_rbac_guard`: Kiểm thử toàn bộ RESTful API và chặn quyền truy cập của tài khoản `CITIZEN` bằng `403 Forbidden` (Dòng 231–285).
+- **Kiểm thử tích hợp đa vai trò toàn trình:** Xác thực thành công trong [test_multi_role_workflow_37_to_48.py](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/test_multi_role_workflow_37_to_48.py) (`test_02_admin_dispatch_order_creation_and_field_progress` $\to$ **PASSED**), khép kín vòng đời từ tiếp nhận sự cố STT 18 $\to$ thẩm định AI TPS STT 39 $\to$ phân công đội hiện trường STT 43 $\to$ giám sát hoàn thành.
 
 ---
 

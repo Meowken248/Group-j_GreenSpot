@@ -385,6 +385,7 @@ BackEnd/app/
   10. `test_10_override_priority_human_in_the_loop_with_reason` (Dòng 175–213): Tích hợp can thiệp đổi mức có ghi chú giải trình, chặn lý do rỗng.
   11. `test_11_optimistic_locking_conflict` (Dòng 214–231): Kiểm tra cơ chế Khóa lạc quan chặn xung đột phiên bản với mã lỗi `HTTP 409 Conflict`.
   12. `test_12_http_api_endpoints_coverage` (Dòng 236–281): Kiểm thử tích hợp toàn diện các HTTP endpoints bằng TestClient.
+- **Tích hợp liên hoàn đa vai trò:** Đã xác thực thông suốt trong [test_multi_role_workflow_37_to_48.py](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/test_multi_role_workflow_37_to_48.py), kết nối trực tiếp sự cố STT 18 $\to$ thẩm định AI Triage STT 39 $\to$ nạp tự động vào Trung tâm điều phối tác nghiệp STT 43.
 
 ---
 

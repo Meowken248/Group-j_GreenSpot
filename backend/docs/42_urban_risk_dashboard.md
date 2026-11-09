@@ -365,6 +365,7 @@ BackEnd/app/
   5. `test_05_district_detail_popup`: Kiểm tra Màn 3/3 Popup: Điểm rủi ro, sự cố tồn đọng, cơ sở thiết yếu bị đe dọa và đường dẫn liên kết bản đồ GIS (Dòng 279–293).
   6. `test_06_http_endpoints_integration`: Kiểm thử tích hợp toàn bộ RESTful API endpoints (`/overview`, `/analysis`, `/district/{id}`, `/export`) (Dòng 295–334).
   7. `test_07_rbac_access_guard`: Kiểm thử bảo vệ phân quyền: Chặn tài khoản `CITIZEN` với mã lỗi `403 Forbidden`, cho phép tài khoản `ADMIN` truy cập (Dòng 335–362).
+- **Kiểm thử tích hợp đa vai trò toàn trình:** Đã xác thực thành công trong [test_multi_role_workflow_37_to_48.py](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/test_multi_role_workflow_37_to_48.py) (`test_05_citizen_safe_navigation_and_admin_urban_risk_analysis` $\to$ **PASSED**).
 
 ---
 

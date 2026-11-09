@@ -126,3 +126,147 @@ BackEnd/app/
 | Bấm xuất khi danh sách rỗng (0 bản ghi) | "KHÔNG CÓ DỮ LIỆU. Hãy đổi bộ lọc." | Modal Popup hiển thị giữa màn hình với icon cảnh báo màu cam và nút "Đóng". |
 | Người dùng bấm nút "Đóng" hoặc click ra ngoài | Popup đóng lại. | Đóng popup, tự động focus con trỏ vào ô chọn khoảng ngày hoặc quận/huyện ở cột "BỘ LỌC" Màn 1/4. |
 | Thiết lập ngày không hợp lệ (Bắt đầu > Kết thúc) | "Khoảng ngày không hợp lệ dẫn đến không có dữ liệu. Vui lòng kiểm tra lại." | Cảnh báo chi tiết màu đỏ hiển thị kèm trong popup. |
+
+
+---
+
+# PHẦN 3: CHI TIẾT MÃ NGUỒN CỐT LÕI PHÍA BACKEND
+
+### 3.1. Domain Entities & Database Models (Tầng 1)
+- **Tập tin:** [`BackEnd/app/models/incident_export/exported_file.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/incident_export/exported_file.py)
+- **Class `ExportedIncidentFile`:**
+  - Bảng cơ sở dữ liệu: `exported_incident_files`.
+  - Khóa chính: `export_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)`.
+  - Liên kết người dùng: `user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.user_id", ondelete="SET NULL"))`.
+  - Thuộc tính tệp: `file_name: str`, `file_type: str` ('EXCEL' hoặc 'PDF'), `mime_type: str`, `file_size_bytes: int`, `file_size_formatted: str`, `file_path: str`.
+  - Bộ lọc: `filters_applied: JSONB`, `total_records: int`.
+  - Chính sách Safeguard 15 phút: `expires_at: datetime`, `is_downloaded: bool`, `download_count: int`.
+  - Soft-delete: `deleted_at: Optional[datetime]`.
+  - Property `is_expired: bool`: Tự động so khớp thời gian thực với `expires_at` để vô hiệu hóa liên kết tải.
+
+---
+
+### 3.2. Data Transfer Objects - Pydantic v2 Schemas (Tầng 2)
+- **Tập tin:** [`BackEnd/app/schemas/incident_export/schemas.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/schemas/incident_export/schemas.py)
+- **Các DTO cốt lõi:**
+  - `IncidentExportFilterParams`: Tiếp nhận bộ lọc (district, category, status, start_date, end_date, quick_range, page, page_size).
+  - `IncidentPreviewItem`: Đại diện cho 1 hàng xem trước (incident_id, tracking_code, category_name, district_name, status, status_code, severity, title, address_text, created_at).
+  - `IncidentPreviewResponse`: Bảng xem trước dữ liệu (items, total_count, page, page_size, total_pages, message).
+  - `TriggerExportRequest`: Lệnh yêu cầu xuất (export_format: 'EXCEL'|'PDF', district, category, status, start_date, end_date).
+  - `ExportResultResponse`: Kết quả xuất tệp (success, export_id, file_name, file_type, file_size_bytes, file_size_formatted, total_records, expires_at, message).
+  - `ExportStatusResponse`: Trạng thái tải tệp và kiểm tra hết hạn 15 phút (export_id, file_name, file_size_formatted, is_expired, expires_at, download_url, message).
+  - `MetadataOptionsResponse`: Cung cấp danh mục lựa chọn (districts, categories, statuses, quick_ranges).
+
+---
+
+### 3.3. Abstractions & DIP Interfaces (Tầng 3)
+- **Tập tin:** [`BackEnd/app/interface/incident_export/incident_export_interface.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/interface/incident_export/incident_export_interface.py)
+- **Class trừu tượng `IIncidentExportRepository`:**
+  - `get_preview_incidents(params) -> Tuple[List[Dict[str, Any]], int]`
+  - `get_incidents_for_export(params) -> List[Dict[str, Any]]`
+  - `save_exported_file_record(record) -> ExportedIncidentFile`
+  - `get_exported_file_by_id(export_id) -> Optional[ExportedIncidentFile]`
+  - `mark_file_downloaded(export_id) -> bool`
+  - `get_metadata_options() -> Dict[str, Any]`
+
+---
+
+### 3.4. Persistence Layer - 100% Explicit SQL (Tầng 4)
+- **Tập tin:** [`BackEnd/app/crud/incident_export/incident_export_repository.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/crud/incident_export/incident_export_repository.py)
+- **Cấu trúc câu truy vấn Explicit SQL:**
+  ```sql
+  SELECT 
+      i.incident_id,
+      i.tracking_code,
+      i.title,
+      i.severity,
+      i.status,
+      i.address_text,
+      i.latitude,
+      i.longitude,
+      i.created_at,
+      COALESCE(wc.name, 'Môi trường chung') AS category_name,
+      COALESCE(au.name, 'Chưa xác định') AS district_name
+  FROM incidents i
+  LEFT JOIN waste_categories wc ON i.category_id = wc.category_id
+  LEFT JOIN administrative_units au ON i.unit_id = au.unit_id
+  WHERE i.deleted_at IS NULL
+    AND (:district IS NULL OR au.name ILIKE :district_pattern)
+    AND (:category IS NULL OR wc.name ILIKE :category_pattern)
+    AND (:status IS NULL OR i.status = :status)
+    AND (:start_date IS NULL OR i.created_at >= :start_date)
+    AND (:end_date IS NULL OR i.created_at <= :end_date)
+  ORDER BY i.created_at DESC;
+  ```
+- Tuân thủ Soft-delete (`i.deleted_at IS NULL`), Parameter Binding chống SQL Injection và Fallback an toàn về dữ liệu mẫu nếu CSDL chưa nạp.
+
+---
+
+### 3.5. Business Logic Service Layer (Tầng 5)
+- **Tập tin:** [`BackEnd/app/services/incident_export/incident_export_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/incident_export/incident_export_service.py)
+- **Class `IncidentExportService`:**
+  - `get_preview_data(params)`: Trích xuất danh sách xem trước phân trang.
+  - `generate_export(req, user_id)`: Điều phối xuất file Excel/PDF:
+    - *Xuất Excel (.xlsx)* qua `openpyxl`: Header tiêu đề Quốc ngữ, định dạng cột căn chỉnh tự động, viền bảng và định dạng màu sắc theo phân loại sự cố.
+    - *Xuất PDF (.pdf)* qua `reportlab.pdfgen`: Tiêu ngữ hành chính, bảng thống kê sự cố, tổng hợp số lượng, đánh số trang và watermark thời gian xuất.
+    - Chặn xuất khi danh sách rỗng (Empty state) với ngoại lệ `ValueError("Không có dữ liệu sự cố nào phù hợp để xuất báo cáo.")`.
+  - `get_download_file(export_id)`: Xác thực Safeguard thời hạn 15 phút, tăng lượt tải và trả về đường dẫn tệp thực tế.
+
+---
+
+### 3.6. Presentation Layer - FastAPI Router (Tầng 6)
+- **Tập tin:** [`BackEnd/app/api/v1/incident_export/endpoints.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/incident_export/endpoints.py)
+- **Các Endpoints RESTful:**
+  - `GET /api/v1/incident-export/preview`: Bảng dữ liệu xem trước phân trang kèm bộ lọc.
+  - `POST /api/v1/incident-export/export`: Khởi tạo lệnh xuất file Excel/PDF (trả về `export_id`, hạn 15m).
+  - `GET /api/v1/incident-export/status/{export_id}`: Kiểm tra trạng thái sẵn sàng và thời hạn tải.
+  - `GET /api/v1/incident-export/download/{export_id}`: Tải tệp nhị phân trực tiếp (`FileResponse`).
+  - `GET /api/v1/incident-export/metadata`: Danh mục lựa chọn quận, loại sự cố và mốc thời gian nhanh.
+  - Rào chắn bảo mật RBAC: Yêu cầu quyền Quản trị viên (`ADMIN`) hoặc Cán bộ môi trường (`OFFICER`).
+
+---
+
+# PHẦN 4: CHI TIẾT MÃ NGUỒN CỐT LÕI PHÍA FRONTEND
+
+- **Trang quản trị trung tâm:** [`FrontEnd/src/features/incident_export/pages/IncidentExportDashboard.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/incident_export/pages/IncidentExportDashboard.tsx).
+- **Các thành phần giao diện:**
+  - Cột 1: `ExportFilterPanel.tsx` (Bộ lọc Quận, Loại, Trạng thái, Khoảng ngày).
+  - Cột 2: `IncidentPreviewTable.tsx` (Bảng xem trước, phân trang, trạng thái màu sắc).
+  - Cột 3: `ExportActionPanel.tsx` (Nút kích hoạt xuất dữ liệu nổi bật).
+  - Màn 2/4 Modal: `FormatSelectModal.tsx` (Chọn Excel / PDF).
+  - Màn 3/4 Modal: `DownloadReadyModal.tsx` (Nút tải xuống, đếm ngược hạn 15m).
+  - Màn 4/4 Modal: `EmptyWarningModal.tsx` (Cảnh báo không có dữ liệu, auto-focus).
+- **Styles:** [`FrontEnd/src/features/incident_export/styles/incident_export.scss`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/incident_export/styles/incident_export.scss) (Chuẩn hóa 100% SCSS BEM).
+
+---
+
+# PHẦN 5: BỘ KIỂM THỬ TỰ ĐỘNG (AUTOMATED TEST SUITES)
+
+### 5.1. Backend Unit & Integration Tests (Pytest)
+- **Tập tin:** [`BackEnd/tests/incident_export/test_incident_export.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/incident_export/test_incident_export.py) (293 dòng).
+- **Kết quả thực thi:** **9/9 PASSED (100%)**:
+  1. `test_preview_incidents_success`: Bảng xem trước dữ liệu có phân trang và thông điệp chuẩn hóa.
+  2. `test_preview_incidents_filter_by_district`: Lọc theo quận Bình Tân.
+  3. `test_preview_incidents_filter_by_status`: Lọc theo trạng thái Đang xử lý.
+  4. `test_generate_export_excel_success`: Xuất tệp Excel (.xlsx) với định dạng openpyxl và tiêu đề chuẩn.
+  5. `test_generate_export_pdf_success`: Xuất tệp PDF (.pdf) chuẩn thể thức hành chính với ReportLab.
+  6. `test_generate_export_empty_data_raises_error`: Bắt lỗi ngăn chặn tạo tệp trắng khi không có dữ liệu.
+  7. `test_download_file_valid_and_expired_safeguard`: Tải tệp thành công khi còn hạn và chặn HTTP 410 khi quá hạn 15 phút.
+  8. `test_get_metadata_options`: Cung cấp danh mục 22 quận/huyện, loại sự cố và quick range.
+  9. `test_format_file_size_utility`: Kiểm tra hàm format kích thước tệp (B, KB, MB).
+- **Kiểm thử liên hoàn đa vai trò:** Xác thực thành công trong [test_multi_role_workflow_37_to_48.py](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/test_multi_role_workflow_37_to_48.py) (`test_04_admin_executive_dashboard_and_export_flow` $\to$ **PASSED**).
+
+---
+
+# PHẦN 6: BẢNG TRA CỨU NHANH DÒNG MÃ NGUỒN FULL-STACK (CHEAT SHEET)
+
+| STT | Thành phần kiến trúc | Đường dẫn tệp mã nguồn | Vị trí dòng | Trách nhiệm cốt lõi |
+|:---:|---|---|:---:|---|
+| **1** | Domain Model `ExportedIncidentFile` | [`BackEnd/app/models/incident_export/exported_file.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/models/incident_export/exported_file.py) | L12 - L45 | Lưu trữ tệp xuất, thời hạn 15 phút và lượt tải |
+| **2** | Schemas DTOs Pydantic v2 | [`BackEnd/app/schemas/incident_export/schemas.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/schemas/incident_export/schemas.py) | L1 - L120 | DTO FilterParams, PreviewResponse, TriggerExportRequest... |
+| **3** | DIP Interface `IIncidentExportRepository` | [`BackEnd/app/interface/incident_export/incident_export_interface.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/interface/incident_export/incident_export_interface.py) | L10 - L55 | Hợp đồng trừu tượng 6 phương thức dữ liệu |
+| **4** | Explicit SQL Repository | [`BackEnd/app/crud/incident_export/incident_export_repository.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/crud/incident_export/incident_export_repository.py) | L46 - L261 | Truy vấn lọc sự cố, lưu bản ghi tệp và tải dữ liệu |
+| **5** | Service Engine OpenPyXL & ReportLab | [`BackEnd/app/services/incident_export/incident_export_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/incident_export/incident_export_service.py) | L25 - L380 | Tạo tệp Excel .xlsx, PDF .pdf, quản lý Safeguard 15m |
+| **6** | Router Endpoints RESTful | [`BackEnd/app/api/v1/incident_export/endpoints.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/incident_export/endpoints.py) | L30 - L180 | 5 endpoints: `/preview`, `/export`, `/status/{id}`, `/download/{id}`, `/metadata` |
+| **7** | Router Root Mount | [`BackEnd/app/api/v1/__init__.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/__init__.py) | L65 - L68 | Mount router vào prefix `/incident-export` |
+| **8** | Backend Pytest (9 tests) | [`BackEnd/tests/incident_export/test_incident_export.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/incident_export/test_incident_export.py) | L1 - L293 | 9 bài test tự động bao phủ 100% logic |

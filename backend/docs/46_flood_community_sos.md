@@ -326,6 +326,7 @@ FrontEnd/src/features/flood_sos/
   6. `test_06_live_tracking_stepper_and_chat`: Cập nhật tiến độ Stepper, vị trí di chuyển và lịch sử chat.
   7. `test_07_cancel_sos_safeguard_under_100m`: Cơ chế cảnh báo vàng bảo vệ khi người cứu hộ $< 100\text{m}$.
   8. `test_08_rest_api_http_endpoints`: Kiểm thử toàn bộ REST API Endpoints qua TestClient.
+- **Kiểm thử tích hợp đa vai trò toàn trình:** Đã xác thực thành công trong [test_multi_role_workflow_37_to_48.py](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/test_multi_role_workflow_37_to_48.py) (`test_03_citizen_flood_sos_and_volunteer_network_flow` $\to$ **PASSED**), khép kín từ lúc người dân phát tín hiệu SOS $\to$ tình nguyện viên lân cận nhận ca $\to$ mở kênh chat cứu hộ thời gian thực.
 
 ### 5.2. Frontend UI/UX Component Tests (Vitest)
 - **Tệp nguồn:** [FrontEnd/src/features/flood_sos/__tests__/flood_sos.test.tsx](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/features/flood_sos/__tests__/flood_sos.test.tsx)

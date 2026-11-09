@@ -167,6 +167,10 @@ BackEnd/app/
   - Giá trị dự báo & Biên độ tin cậy 95%: `predicted_incidents: float`, `ci_lower_95: float`, `ci_upper_95: float` (Dòng 80 - 82).
   - Yếu tố thủy văn & Phân cấp nguy cơ: `rainfall_mm: float`, `tidal_peak_m: float`, `risk_level: str` (`NORMAL`, `HIGH`, `PEAK_CRITICAL`), `risk_reason: Text` (Dòng 85 - 88).
   - Thông số kiểm toán mô hình: `model_accuracy_pct: float = 87.5`, `is_weather_synced: bool = True`, `version: int = 1`, `deleted_at` (Dòng 90 - 94).
+- **Hạ tầng CSDL & Seeder Tự Động:**
+  - Alembic Migrations: `026_create_hotspot_clusters_table.py` và `027_create_hotspot_daily_forecasts_table.py`.
+  - Seeder CSDL: [`BackEnd/app/seeds/seed_hotspots.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/seeds/seed_hotspots.py) nạp 6 cụm điểm nóng KDE và toàn bộ dữ liệu dự báo 7 ngày vào bảng `hotspot_clusters` và `hotspot_daily_forecasts` bằng câu lệnh Explicit SQL (`ON CONFLICT (hotspot_code) DO UPDATE`).
+  - Tích hợp Master Seeder: Đã đăng ký thành công vào [`BackEnd/app/seeds/seed_all.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/seeds/seed_all.py) tại **Bước 19/19**.
 
 ---
 
@@ -407,6 +411,7 @@ BackEnd/app/
   5. `test_05_export_forecast_report`: Kiểm tra chức năng kích hoạt xuất báo cáo dự báo định dạng PDF/Excel thành công (Dòng 131 - 140).
   6. `test_06_hotspot_detail_and_dispatch_prefill`: Kiểm tra chi tiết điểm nóng, cờ trạng thái lệnh điều động đang hoạt động và cấu trúc bộ dữ liệu prefill chuyển giao sang STT 43 (Dòng 144 - 158).
   7. `test_07_http_endpoints_and_rbac_guard`: Kiểm thử toàn bộ 5 endpoints RESTful qua HTTP client, xác thực quyền truy cập hợp lệ của tài khoản `ADMIN` và ngăn chặn tài khoản `CITIZEN` bằng mã lỗi `403 Forbidden` (Dòng 162 - 195).
+- **Kiểm thử tích hợp đa vai trò toàn trình:** Đã kiểm thử liên hoàn thành công qua [test_multi_role_workflow_37_to_48.py](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/test_multi_role_workflow_37_to_48.py) (`test_06_hotspot_analytics_and_emergency_broadcast_alert` $\to$ **PASSED**), khép kín từ cụm điểm nóng KDE STT 44 $\to$ kích hoạt lệnh cảnh báo khẩn cấp STT 45 và lập lệnh điều phối STT 43.
 
 ---
 

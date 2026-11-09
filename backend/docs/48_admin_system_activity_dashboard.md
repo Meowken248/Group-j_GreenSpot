@@ -155,7 +155,7 @@ Theo danh mục tính năng tổng thể `Rules/FEATURE_LIST.md`, Tính năng **
   - Gom nhóm dữ liệu theo ngày sử dụng `DATE_TRUNC('day', created_at)`:
     - Bảng `users`: đếm tài khoản mới `WHERE deleted_at IS NULL`.
     - Bảng `posts`: đếm bài viết mới `WHERE deleted_at IS NULL AND is_hidden = false`.
-    - Bảng `user_groups`: đếm nhóm cộng đồng mới `WHERE deleted_at IS NULL`.
+    - Bảng `groups`: đếm nhóm cộng đồng mới được tạo từ STT 16 `WHERE deleted_at IS NULL` (đồng bộ chính xác thay vì bảng xếp hạng điểm `community_groups`).
   - Ghép nối dữ liệu qua `FULL OUTER JOIN` trên cột ngày và `COALESCE` để điền 0 cho những ngày không có hoạt động.
 
 ### 4.4. Business Logic Service Layer (Tầng 5)
