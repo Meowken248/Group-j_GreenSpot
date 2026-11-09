@@ -217,18 +217,19 @@ model incident_duplicate_clusters {
 }
 
 model incident_media {
-  media_id        String    @id @db.Uuid
-  incident_id     String    @db.Uuid
-  media_type      String    @db.VarChar(20)
-  phase           String    @default("BEFORE") @db.VarChar(20)
-  file_url        String    @db.VarChar(500)
-  thumbnail_url   String?   @db.VarChar(500)
-  file_size_bytes BigInt?
-  mime_type       String?   @db.VarChar(100)
-  uploader_id     String?   @db.Uuid
-  created_at      DateTime  @default(now()) @db.Timestamptz(6)
-  incidents       incidents @relation(fields: [incident_id], references: [incident_id], onDelete: Cascade, onUpdate: NoAction)
-  users           users?    @relation(fields: [uploader_id], references: [user_id], onUpdate: NoAction)
+  media_id              String                  @id @db.Uuid
+  incident_id           String                  @db.Uuid
+  media_type            String                  @db.VarChar(20)
+  phase                 String                  @default("BEFORE") @db.VarChar(20)
+  file_url              String                  @db.VarChar(500)
+  thumbnail_url         String?                 @db.VarChar(500)
+  file_size_bytes       BigInt?
+  mime_type             String?                 @db.VarChar(100)
+  uploader_id           String?                 @db.Uuid
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  incidents             incidents               @relation(fields: [incident_id], references: [incident_id], onDelete: Cascade, onUpdate: NoAction)
+  users                 users?                  @relation(fields: [uploader_id], references: [user_id], onUpdate: NoAction)
+  offline_media_uploads offline_media_uploads[]
 }
 
 model incidents {
@@ -279,6 +280,7 @@ model incidents {
   users_incidents_priority_modified_byTousers                                           users?                        @relation("incidents_priority_modified_byTousers", fields: [priority_modified_by], references: [user_id], onUpdate: NoAction)
   users                                                                                 users?                        @relation(fields: [reporter_id], references: [user_id], onUpdate: NoAction)
   administrative_units                                                                  administrative_units?         @relation(fields: [unit_id], references: [unit_id], onUpdate: NoAction)
+  offline_submissions                                                                   offline_submissions[]
   reward_transactions                                                                   reward_transactions[]
 
   @@index([location], map: "idx_incidents_location", type: Gist)
@@ -325,24 +327,28 @@ model permissions {
 }
 
 model posts {
-  post_id             String                @id @db.Uuid
-  user_id             String                @db.Uuid
-  content             String
-  media_urls          String?
-  group_id            String?               @db.Uuid
-  visibility          String                @db.VarChar(20)
-  is_hidden           Boolean
-  reactions_count     Int
-  comments_count      Int
-  deleted_at          DateTime?             @db.Timestamptz(6)
-  created_at          DateTime              @default(now()) @db.Timestamptz(6)
-  updated_at          DateTime              @default(now()) @db.Timestamptz(6)
-  latitude            Float?
-  longitude           Float?
-  address             String?               @db.VarChar(500)
-  version             Int                   @default(1)
-  post_tagged_friends post_tagged_friends[]
-  users               users                 @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  post_id                                    String                @id @db.Uuid
+  user_id                                    String                @db.Uuid
+  content                                    String
+  media_urls                                 String?
+  group_id                                   String?               @db.Uuid
+  visibility                                 String                @db.VarChar(20)
+  is_hidden                                  Boolean
+  reactions_count                            Int
+  comments_count                             Int
+  deleted_at                                 DateTime?             @db.Timestamptz(6)
+  created_at                                 DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at                                 DateTime              @default(now()) @db.Timestamptz(6)
+  latitude                                   Float?
+  longitude                                  Float?
+  address                                    String?               @db.VarChar(500)
+  version                                    Int                   @default(1)
+  comments                                   comments[]
+  post_reactions                             post_reactions[]
+  post_shares_post_shares_new_post_idToposts post_shares[]         @relation("post_shares_new_post_idToposts")
+  post_shares_post_shares_post_idToposts     post_shares[]         @relation("post_shares_post_idToposts")
+  post_tagged_friends                        post_tagged_friends[]
+  users                                      users                 @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([user_id], map: "ix_posts_user_id")
   @@index([latitude, longitude], map: "idx_posts_lat_lng")
@@ -562,9 +568,21 @@ model users {
   green_points                                                       Int                          @default(0)
   lifetime_points                                                    Int                          @default(0)
   audit_logs                                                         audit_logs[]
+  birthday_wishes_birthday_wishes_recipient_idTousers                birthday_wishes[]            @relation("birthday_wishes_recipient_idTousers")
+  birthday_wishes_birthday_wishes_sender_idTousers                   birthday_wishes[]            @relation("birthday_wishes_sender_idTousers")
+  chatbot_conversations                                              chatbot_conversations[]
+  comments_comments_reply_to_user_idTousers                          comments[]                   @relation("comments_reply_to_user_idTousers")
+  comments_comments_user_idTousers                                   comments[]                   @relation("comments_user_idTousers")
+  conversation_members                                               conversation_members[]
+  conversations                                                      conversations[]
   emergency_alert_recipients                                         emergency_alert_recipients[]
   emergency_broadcast_alerts                                         emergency_broadcast_alerts[]
   emergency_sos_signals                                              emergency_sos_signals[]
+  event_checkins                                                     event_checkins[]
+  event_interests                                                    event_interests[]
+  event_participants                                                 event_participants[]
+  events                                                             events[]
+  exported_incident_files                                            exported_incident_files[]
   flood_community_reports                                            flood_community_reports[]
   flood_sos_chat_messages                                            flood_sos_chat_messages[]
   flood_sos_requests_flood_sos_requests_assigned_volunteer_idTousers flood_sos_requests[]         @relation("flood_sos_requests_assigned_volunteer_idTousers")
@@ -573,14 +591,25 @@ model users {
   friend_requests_friend_requests_sender_idTousers                   friend_requests[]            @relation("friend_requests_sender_idTousers")
   friendships_friendships_user_id_1Tousers                           friendships[]                @relation("friendships_user_id_1Tousers")
   friendships_friendships_user_id_2Tousers                           friendships[]                @relation("friendships_user_id_2Tousers")
+  fundraiser_campaigns                                               fundraiser_campaigns[]
+  fundraiser_donations                                               fundraiser_donations[]
+  fundraiser_expenses                                                fundraiser_expenses[]
+  group_invitations_group_invitations_invitee_idTousers              group_invitations[]          @relation("group_invitations_invitee_idTousers")
+  group_invitations_group_invitations_inviter_idTousers              group_invitations[]          @relation("group_invitations_inviter_idTousers")
+  group_members                                                      group_members[]
+  groups                                                             groups[]
   incident_audit_logs                                                incident_audit_logs[]
   incident_media                                                     incident_media[]
   incidents_incidents_priority_modified_byTousers                    incidents[]                  @relation("incidents_priority_modified_byTousers")
   incidents                                                          incidents[]
   lucky_wheel_spins                                                  lucky_wheel_spins[]
+  messages                                                           messages[]
   milestone_posts                                                    milestone_posts[]
   notifications                                                      notifications[]
+  offline_submissions                                                offline_submissions[]
   penalty_reports                                                    penalty_reports[]
+  post_reactions                                                     post_reactions[]
+  post_shares                                                        post_shares[]
   post_tagged_friends                                                post_tagged_friends[]
   posts                                                              posts[]
   reward_transactions                                                reward_transactions[]
@@ -588,6 +617,8 @@ model users {
   safety_check_deliveries                                            safety_check_deliveries[]
   user_activities                                                    user_activities[]
   user_badges                                                        user_badges[]
+  user_blocks_user_blocks_blocked_idTousers                          user_blocks[]                @relation("user_blocks_blocked_idTousers")
+  user_blocks_user_blocks_blocker_idTousers                          user_blocks[]                @relation("user_blocks_blocker_idTousers")
   user_challenges                                                    user_challenges[]
   user_device_locations                                              user_device_locations[]
   user_follows_user_follows_follower_idTousers                       user_follows[]               @relation("user_follows_follower_idTousers")
@@ -884,6 +915,7 @@ model community_groups {
 }
 
 model dispatch_orders {
+  order_id         String    @id @db.Uuid
   order_code       String    @unique(map: "ix_dispatch_orders_order_code") @db.VarChar(50)
   incident_id      String    @db.Uuid
   incident_title   String    @db.VarChar(255)
@@ -915,7 +947,6 @@ model dispatch_orders {
   deleted_at       DateTime? @db.Timestamptz(6)
   created_at       DateTime  @default(now()) @db.Timestamptz(6)
   updated_at       DateTime  @default(now()) @db.Timestamptz(6)
-  id               String    @id @db.Uuid
 
   @@index([district], map: "ix_dispatch_orders_district")
   @@index([incident_id], map: "ix_dispatch_orders_incident_id")
@@ -1317,4 +1348,524 @@ model waste_handbook_items {
 
   @@index([category_code], map: "ix_waste_handbook_items_category_code")
   @@index([name], map: "ix_waste_handbook_items_name")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model birthday_wishes {
+  wish_id                                   String    @id @db.Uuid
+  sender_id                                 String    @db.Uuid
+  recipient_id                              String    @db.Uuid
+  wish_type                                 String    @db.VarChar(20)
+  card_template_id                          String?   @db.VarChar(50)
+  message                                   String
+  birthday_date                             DateTime  @db.Date
+  points_awarded                            Int
+  is_read                                   Boolean
+  read_at                                   DateTime? @db.Timestamptz(6)
+  deleted_at                                DateTime? @db.Timestamptz(6)
+  created_at                                DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                                DateTime  @default(now()) @db.Timestamptz(6)
+  users_birthday_wishes_recipient_idTousers users     @relation("birthday_wishes_recipient_idTousers", fields: [recipient_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  users_birthday_wishes_sender_idTousers    users     @relation("birthday_wishes_sender_idTousers", fields: [sender_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([recipient_id, birthday_date], map: "idx_birthday_wishes_recipient_date")
+  @@index([sender_id, birthday_date], map: "idx_birthday_wishes_sender_date")
+  @@index([birthday_date], map: "ix_birthday_wishes_birthday_date")
+  @@index([recipient_id], map: "ix_birthday_wishes_recipient_id")
+  @@index([sender_id], map: "ix_birthday_wishes_sender_id")
+}
+
+model chatbot_conversations {
+  conversation_id  String             @id @db.Uuid
+  user_id          String             @db.Uuid
+  title            String             @db.VarChar(100)
+  message_count    Int
+  last_message_at  DateTime?          @db.Timestamptz(6)
+  version          Int
+  is_pinned        Boolean
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime           @default(now()) @db.Timestamptz(6)
+  users            users              @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  chatbot_messages chatbot_messages[]
+
+  @@index([user_id, updated_at], map: "idx_chatbot_conv_user_updated")
+  @@index([last_message_at], map: "ix_chatbot_conversations_last_message_at")
+  @@index([user_id], map: "ix_chatbot_conversations_user_id")
+}
+
+model chatbot_messages {
+  message_id            String                @id @db.Uuid
+  conversation_id       String                @db.Uuid
+  sender_type           String                @db.VarChar(20)
+  content               String
+  is_out_of_scope       Boolean
+  is_stopped            Boolean
+  created_at            DateTime              @default(now()) @db.Timestamptz(6)
+  chatbot_conversations chatbot_conversations @relation(fields: [conversation_id], references: [conversation_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([conversation_id, created_at], map: "idx_chatbot_msg_conv_created")
+  @@index([conversation_id], map: "ix_chatbot_messages_conversation_id")
+  @@index([created_at], map: "ix_chatbot_messages_created_at")
+}
+
+model comments {
+  comment_id                             String     @id @db.Uuid
+  post_id                                String     @db.Uuid
+  user_id                                String     @db.Uuid
+  parent_id                              String?    @db.Uuid
+  reply_to_user_id                       String?    @db.Uuid
+  content                                String?    @db.VarChar(500)
+  media_url                              String?    @db.VarChar(1000)
+  replies_count                          Int
+  likes_count                            Int
+  version                                Int
+  deleted_at                             DateTime?  @db.Timestamptz(6)
+  created_at                             DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at                             DateTime   @default(now()) @db.Timestamptz(6)
+  comments                               comments?  @relation("commentsTocomments", fields: [parent_id], references: [comment_id], onDelete: Cascade, onUpdate: NoAction)
+  other_comments                         comments[] @relation("commentsTocomments")
+  posts                                  posts      @relation(fields: [post_id], references: [post_id], onDelete: Cascade, onUpdate: NoAction)
+  users_comments_reply_to_user_idTousers users?     @relation("comments_reply_to_user_idTousers", fields: [reply_to_user_id], references: [user_id], onUpdate: NoAction)
+  users_comments_user_idTousers          users      @relation("comments_user_idTousers", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([parent_id], map: "ix_comments_parent_id")
+  @@index([post_id], map: "ix_comments_post_id")
+  @@index([user_id], map: "ix_comments_user_id")
+}
+
+model conversation_members {
+  member_id            String        @id @db.Uuid
+  conversation_id      String        @db.Uuid
+  user_id              String        @db.Uuid
+  role                 String        @db.VarChar(20)
+  unread_count         Int
+  last_read_message_id String?       @db.Uuid
+  cleared_at           DateTime?     @db.Timestamptz(6)
+  joined_at            DateTime      @default(now()) @db.Timestamptz(6)
+  left_at              DateTime?     @db.Timestamptz(6)
+  conversations        conversations @relation(fields: [conversation_id], references: [conversation_id], onDelete: Cascade, onUpdate: NoAction)
+  users                users         @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([conversation_id, user_id], map: "uq_conversation_user")
+  @@index([user_id, left_at], map: "idx_conversation_members_user_left")
+  @@index([conversation_id], map: "ix_conversation_members_conversation_id")
+  @@index([user_id], map: "ix_conversation_members_user_id")
+}
+
+model conversations {
+  conversation_id      String                 @id @db.Uuid
+  type                 String                 @db.VarChar(20)
+  title                String?                @db.VarChar(100)
+  avatar_url           String?                @db.VarChar(500)
+  district_name        String?                @db.VarChar(100)
+  created_by           String?                @db.Uuid
+  last_message_id      String?                @db.Uuid
+  last_message_at      DateTime?              @db.Timestamptz(6)
+  last_message_preview String?                @db.VarChar(255)
+  deleted_at           DateTime?              @db.Timestamptz(6)
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime               @default(now()) @db.Timestamptz(6)
+  conversation_members conversation_members[]
+  users                users?                 @relation(fields: [created_by], references: [user_id], onUpdate: NoAction)
+  messages             messages[]
+
+  @@index([district_name], map: "ix_conversations_district_name")
+  @@index([last_message_at], map: "ix_conversations_last_message_at")
+  @@index([type], map: "ix_conversations_type")
+}
+
+model event_checkins {
+  id              String   @id @db.Uuid
+  event_id        String   @db.Uuid
+  user_id         String   @db.Uuid
+  latitude        Float
+  longitude       Float
+  distance_meters Float
+  accuracy_meters Float
+  points_awarded  Int
+  checkin_time    DateTime @default(now()) @db.Timestamptz(6)
+  device_info     String?  @db.VarChar(255)
+  events          events   @relation(fields: [event_id], references: [event_id], onDelete: Cascade, onUpdate: NoAction)
+  users           users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([event_id, user_id], map: "uq_event_checkin")
+  @@index([event_id, user_id], map: "idx_event_checkins_event_user")
+}
+
+model event_interests {
+  id         String   @id @db.Uuid
+  event_id   String   @db.Uuid
+  user_id    String   @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  events     events   @relation(fields: [event_id], references: [event_id], onDelete: Cascade, onUpdate: NoAction)
+  users      users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([event_id, user_id], map: "uq_event_interest")
+  @@index([event_id], map: "idx_event_interests_event_id")
+  @@index([user_id], map: "idx_event_interests_user_id")
+}
+
+model event_participants {
+  id         String   @id @db.Uuid
+  event_id   String   @db.Uuid
+  user_id    String   @db.Uuid
+  is_creator Boolean
+  joined_at  DateTime @default(now()) @db.Timestamptz(6)
+  events     events   @relation(fields: [event_id], references: [event_id], onDelete: Cascade, onUpdate: NoAction)
+  users      users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([event_id, user_id], map: "uq_event_participant")
+  @@index([event_id], map: "idx_event_participants_event_id")
+  @@index([user_id], map: "idx_event_participants_user_id")
+}
+
+model events {
+  event_id              String               @id @db.Uuid
+  title                 String               @db.VarChar(100)
+  description           String
+  cover_image_url       String               @db.VarChar(500)
+  start_time            DateTime             @db.Timestamptz(6)
+  end_time              DateTime?            @db.Timestamptz(6)
+  latitude              Float
+  longitude             Float
+  address               String               @db.VarChar(255)
+  district              String               @db.VarChar(100)
+  max_participants      Int
+  current_participants  Int
+  interested_count      Int
+  creator_id            String               @db.Uuid
+  status                String               @db.VarChar(20)
+  reject_reason         String?              @db.VarChar(500)
+  checkin_radius_meters Int
+  version               Int
+  is_deleted            Boolean
+  created_at            DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime             @default(now()) @db.Timestamptz(6)
+  event_checkins        event_checkins[]
+  event_interests       event_interests[]
+  event_participants    event_participants[]
+  users                 users                @relation(fields: [creator_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([creator_id], map: "idx_events_creator_id")
+  @@index([district], map: "idx_events_district")
+  @@index([is_deleted], map: "idx_events_is_deleted")
+  @@index([status, start_time], map: "idx_events_status_start_time")
+}
+
+model exported_incident_files {
+  export_id           String    @id @db.Uuid
+  user_id             String?   @db.Uuid
+  file_name           String    @db.VarChar(255)
+  file_type           String    @db.VarChar(10)
+  mime_type           String    @db.VarChar(100)
+  file_size_bytes     BigInt
+  file_size_formatted String    @db.VarChar(50)
+  file_path           String    @db.VarChar(500)
+  filters_applied     Json?
+  total_records       Int
+  expires_at          DateTime  @db.Timestamptz(6)
+  is_downloaded       Boolean
+  download_count      Int
+  deleted_at          DateTime? @db.Timestamptz(6)
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime  @default(now()) @db.Timestamptz(6)
+  users               users?    @relation(fields: [user_id], references: [user_id], onUpdate: NoAction)
+}
+
+model fundraiser_campaigns {
+  campaign_id          String                 @id @db.Uuid
+  creator_id           String                 @db.Uuid
+  title                String                 @db.VarChar(100)
+  description          String
+  cover_image_url      String?                @db.VarChar(500)
+  target_amount        BigInt
+  total_donated        BigInt
+  donation_count       Int
+  total_spent          BigInt
+  district             String                 @db.VarChar(50)
+  end_date             DateTime               @db.Date
+  bank_account_name    String                 @db.VarChar(100)
+  bank_account_number  String                 @db.VarChar(50)
+  bank_name            String                 @db.VarChar(100)
+  status               String                 @db.VarChar(20)
+  rejection_reason     String?
+  is_deleted           Boolean
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime               @default(now()) @db.Timestamptz(6)
+  users                users                  @relation(fields: [creator_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  fundraiser_donations fundraiser_donations[]
+  fundraiser_expenses  fundraiser_expenses[]
+
+  @@index([district, status], map: "idx_fundraiser_district_status")
+  @@index([status, end_date], map: "idx_fundraiser_status_end_date")
+  @@index([creator_id], map: "ix_fundraiser_campaigns_creator_id")
+  @@index([district], map: "ix_fundraiser_campaigns_district")
+  @@index([end_date], map: "ix_fundraiser_campaigns_end_date")
+  @@index([is_deleted], map: "ix_fundraiser_campaigns_is_deleted")
+  @@index([status], map: "ix_fundraiser_campaigns_status")
+}
+
+model fundraiser_donations {
+  donation_id          String               @id @db.Uuid
+  campaign_id          String               @db.Uuid
+  donor_id             String?              @db.Uuid
+  donor_name           String               @db.VarChar(100)
+  amount               BigInt
+  message              String?              @db.VarChar(200)
+  is_anonymous         Boolean
+  payment_status       String               @db.VarChar(20)
+  transaction_code     String               @unique(map: "ix_fundraiser_donations_transaction_code") @db.VarChar(50)
+  created_at           DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime             @default(now()) @db.Timestamptz(6)
+  fundraiser_campaigns fundraiser_campaigns @relation(fields: [campaign_id], references: [campaign_id], onDelete: Cascade, onUpdate: NoAction)
+  users                users?               @relation(fields: [donor_id], references: [user_id], onUpdate: NoAction)
+
+  @@index([campaign_id], map: "ix_fundraiser_donations_campaign_id")
+  @@index([donor_id], map: "ix_fundraiser_donations_donor_id")
+}
+
+model fundraiser_expenses {
+  expense_id           String               @id @db.Uuid
+  campaign_id          String               @db.Uuid
+  content              String               @db.VarChar(255)
+  amount               BigInt
+  expense_date         DateTime             @db.Date
+  proof_image_url      String               @db.VarChar(500)
+  created_by           String               @db.Uuid
+  created_at           DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime             @default(now()) @db.Timestamptz(6)
+  fundraiser_campaigns fundraiser_campaigns @relation(fields: [campaign_id], references: [campaign_id], onDelete: Cascade, onUpdate: NoAction)
+  users                users                @relation(fields: [created_by], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([campaign_id], map: "ix_fundraiser_expenses_campaign_id")
+}
+
+model group_invitations {
+  invitation_id                             String   @id @db.Uuid
+  group_id                                  String   @db.Uuid
+  inviter_id                                String   @db.Uuid
+  invitee_id                                String   @db.Uuid
+  status                                    String   @db.VarChar(20)
+  created_at                                DateTime @default(now()) @db.Timestamptz(6)
+  groups                                    groups   @relation(fields: [group_id], references: [group_id], onDelete: Cascade, onUpdate: NoAction)
+  users_group_invitations_invitee_idTousers users    @relation("group_invitations_invitee_idTousers", fields: [invitee_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  users_group_invitations_inviter_idTousers users    @relation("group_invitations_inviter_idTousers", fields: [inviter_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([group_id], map: "ix_group_invitations_group_id")
+  @@index([invitee_id], map: "ix_group_invitations_invitee_id")
+  @@index([inviter_id], map: "ix_group_invitations_inviter_id")
+}
+
+model group_members {
+  id         String    @id @db.Uuid
+  group_id   String    @db.Uuid
+  user_id    String    @db.Uuid
+  role       String    @db.VarChar(20)
+  status     String    @db.VarChar(20)
+  joined_at  DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at DateTime? @db.Timestamptz(6)
+  groups     groups    @relation(fields: [group_id], references: [group_id], onDelete: Cascade, onUpdate: NoAction)
+  users      users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([group_id, user_id], map: "uq_group_user_member")
+  @@index([group_id], map: "ix_group_members_group_id")
+  @@index([user_id], map: "ix_group_members_user_id")
+}
+
+model groups {
+  group_id          String              @id @db.Uuid
+  name              String              @db.VarChar(50)
+  description       String?             @db.VarChar(300)
+  cover_image_url   String?             @db.VarChar(500)
+  avatar_url        String?             @db.VarChar(500)
+  group_type        String              @db.VarChar(20)
+  province          String?             @db.VarChar(100)
+  district          String?             @db.VarChar(100)
+  ward              String?             @db.VarChar(100)
+  theme_topic       String?             @db.VarChar(100)
+  privacy           String              @db.VarChar(20)
+  creator_id        String              @db.Uuid
+  members_count     Int
+  posts_count       Int
+  status            String              @db.VarChar(20)
+  version           Int
+  deleted_at        DateTime?           @db.Timestamptz(6)
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime            @default(now()) @db.Timestamptz(6)
+  group_invitations group_invitations[]
+  group_members     group_members[]
+  users             users               @relation(fields: [creator_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([status, group_type, deleted_at], map: "idx_groups_active_type")
+  @@index([province, district, ward], map: "idx_groups_geo_scope")
+  @@index([creator_id], map: "ix_groups_creator_id")
+  @@index([deleted_at], map: "ix_groups_deleted_at")
+  @@index([district], map: "ix_groups_district")
+  @@index([group_type], map: "ix_groups_group_type")
+  @@index([name], map: "ix_groups_name")
+  @@index([province], map: "ix_groups_province")
+  @@index([status], map: "ix_groups_status")
+  @@index([theme_topic], map: "ix_groups_theme_topic")
+  @@index([ward], map: "ix_groups_ward")
+}
+
+model hotspot_clusters {
+  hotspot_id                 String    @id @db.Uuid
+  hotspot_code               String    @unique(map: "ix_hotspot_clusters_hotspot_code") @db.VarChar(50)
+  name                       String    @db.VarChar(255)
+  incident_type              String    @db.VarChar(50)
+  district                   String    @db.VarChar(100)
+  ward                       String?   @db.VarChar(100)
+  latitude                   Float
+  longitude                  Float
+  radius_meters              Float
+  kde_density_score          Float
+  incident_count             Int
+  severity_level             String    @db.VarChar(20)
+  trend_description          String    @db.VarChar(255)
+  forecast_48h               String
+  active_dispatch_order_id   String?   @db.VarChar(100)
+  active_dispatch_order_code String?   @db.VarChar(50)
+  version                    Int
+  deleted_at                 DateTime? @db.Timestamptz(6)
+  created_at                 DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([district], map: "ix_hotspot_clusters_district")
+  @@index([incident_type], map: "ix_hotspot_clusters_incident_type")
+}
+
+model hotspot_daily_forecasts {
+  forecast_id         String    @id @db.Uuid
+  target_type         String    @db.VarChar(20)
+  target_id           String    @db.VarChar(100)
+  target_name         String    @db.VarChar(255)
+  forecast_date       DateTime  @db.Timestamp(6)
+  day_offset          Int
+  predicted_incidents Float
+  ci_lower_95         Float
+  ci_upper_95         Float
+  rainfall_mm         Float
+  tidal_peak_m        Float
+  risk_level          String    @db.VarChar(20)
+  risk_reason         String?
+  model_accuracy_pct  Float
+  is_weather_synced   Boolean
+  version             Int
+  deleted_at          DateTime? @db.Timestamptz(6)
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([forecast_date], map: "ix_hotspot_daily_forecasts_forecast_date")
+  @@index([target_id], map: "ix_hotspot_daily_forecasts_target_id")
+}
+
+model messages {
+  message_id        String        @id @db.Uuid
+  conversation_id   String        @db.Uuid
+  sender_id         String        @db.Uuid
+  content           String?       @db.VarChar(1000)
+  media_url         String?       @db.VarChar(500)
+  is_system_message Boolean
+  created_at        DateTime      @default(now()) @db.Timestamptz(6)
+  deleted_at        DateTime?     @db.Timestamptz(6)
+  conversations     conversations @relation(fields: [conversation_id], references: [conversation_id], onDelete: Cascade, onUpdate: NoAction)
+  users             users         @relation(fields: [sender_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([conversation_id, created_at], map: "idx_messages_conversation_created")
+  @@index([conversation_id], map: "ix_messages_conversation_id")
+  @@index([created_at], map: "ix_messages_created_at")
+  @@index([sender_id], map: "ix_messages_sender_id")
+}
+
+model offline_media_uploads {
+  upload_id           String              @id @db.Uuid
+  submission_id       String              @db.Uuid
+  client_file_id      String              @db.VarChar(64)
+  media_type          String              @db.VarChar(20)
+  media_id            String?             @db.Uuid
+  captured_at         DateTime?           @db.Timestamptz(6)
+  file_url            String?             @db.VarChar(500)
+  file_hash           String?             @db.VarChar(64)
+  file_size_bytes     BigInt?
+  status              String              @db.VarChar(30)
+  created_at          DateTime            @db.Timestamptz(6)
+  incident_media      incident_media?     @relation(fields: [media_id], references: [media_id], onUpdate: NoAction)
+  offline_submissions offline_submissions @relation(fields: [submission_id], references: [submission_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([client_file_id], map: "ix_offline_media_uploads_client_file_id")
+  @@index([submission_id], map: "ix_offline_media_uploads_submission_id")
+}
+
+model offline_submissions {
+  submission_id         String                  @id @db.Uuid
+  client_submission_id  String                  @unique(map: "ix_offline_submissions_client_submission_id") @db.VarChar(64)
+  user_id               String                  @db.Uuid
+  incident_id           String?                 @db.Uuid
+  idempotency_key       String                  @db.VarChar(64)
+  payload_hash          String?                 @db.VarChar(64)
+  status                String                  @db.VarChar(30)
+  client_timestamp      DateTime?               @db.Timestamptz(6)
+  server_received_at    DateTime                @db.Timestamptz(6)
+  synced_at             DateTime?               @db.Timestamptz(6)
+  response_payload      Json?
+  error_message         String?
+  version               Int
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                @default(now()) @db.Timestamptz(6)
+  offline_media_uploads offline_media_uploads[]
+  incidents             incidents?              @relation(fields: [incident_id], references: [incident_id], onUpdate: NoAction)
+  users                 users                   @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, idempotency_key], map: "uq_offline_user_idempotency")
+  @@index([idempotency_key], map: "ix_offline_submissions_idempotency_key")
+  @@index([incident_id], map: "ix_offline_submissions_incident_id")
+  @@index([payload_hash], map: "ix_offline_submissions_payload_hash")
+  @@index([status], map: "ix_offline_submissions_status")
+  @@index([user_id], map: "ix_offline_submissions_user_id")
+}
+
+model post_reactions {
+  reaction_id   String   @id @db.Uuid
+  post_id       String   @db.Uuid
+  user_id       String   @db.Uuid
+  reaction_type String   @db.VarChar(20)
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  posts         posts    @relation(fields: [post_id], references: [post_id], onDelete: Cascade, onUpdate: NoAction)
+  users         users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([post_id, user_id], map: "uq_post_user_reaction")
+  @@index([post_id], map: "ix_post_reactions_post_id")
+  @@index([user_id], map: "ix_post_reactions_user_id")
+}
+
+model post_shares {
+  share_id                             String   @id @db.Uuid
+  post_id                              String   @db.Uuid
+  user_id                              String   @db.Uuid
+  share_type                           String   @db.VarChar(20)
+  caption                              String?  @db.VarChar(500)
+  target_ids                           String?
+  new_post_id                          String?  @db.Uuid
+  created_at                           DateTime @default(now()) @db.Timestamptz(6)
+  posts_post_shares_new_post_idToposts posts?   @relation("post_shares_new_post_idToposts", fields: [new_post_id], references: [post_id], onUpdate: NoAction)
+  posts_post_shares_post_idToposts     posts    @relation("post_shares_post_idToposts", fields: [post_id], references: [post_id], onDelete: Cascade, onUpdate: NoAction)
+  users                                users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([post_id], map: "ix_post_shares_post_id")
+  @@index([user_id], map: "ix_post_shares_user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model user_blocks {
+  block_id                            String   @id @db.Uuid
+  blocker_id                          String   @db.Uuid
+  blocked_id                          String   @db.Uuid
+  created_at                          DateTime @default(now()) @db.Timestamptz(6)
+  users_user_blocks_blocked_idTousers users    @relation("user_blocks_blocked_idTousers", fields: [blocked_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  users_user_blocks_blocker_idTousers users    @relation("user_blocks_blocker_idTousers", fields: [blocker_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([blocker_id, blocked_id], map: "uq_user_blocks_pair")
+  @@index([blocked_id], map: "ix_user_blocks_blocked_id")
+  @@index([blocker_id], map: "ix_user_blocks_blocker_id")
 }

@@ -23,275 +23,340 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    existing_tables = set(inspector.get_table_names())
 
-    op.create_table('air_quality_records',
-    sa.Column('record_id', sa.UUID(), nullable=False),
-    sa.Column('province', sa.String(length=100), nullable=False),
-    sa.Column('location_name', sa.String(length=150), nullable=True),
-    sa.Column('timestamp', sa.DateTime(), nullable=False),
-    sa.Column('lat', sa.Float(), nullable=False),
-    sa.Column('lon', sa.Float(), nullable=False),
-    sa.Column('aqi', sa.Float(), nullable=True),
-    sa.Column('temp', sa.Float(), nullable=True),
-    sa.Column('humidity', sa.Float(), nullable=True),
-    sa.Column('rain', sa.Float(), nullable=True),
-    sa.Column('wind_speed', sa.Float(), nullable=True),
-    sa.Column('wind_dir', sa.Float(), nullable=True),
-    sa.Column('pressure', sa.Float(), nullable=True),
-    sa.Column('cloud', sa.Float(), nullable=True),
-    sa.Column('pm2_5', sa.Float(), nullable=True),
-    sa.Column('pm10', sa.Float(), nullable=True),
-    sa.Column('co', sa.Float(), nullable=True),
-    sa.Column('no2', sa.Float(), nullable=True),
-    sa.Column('o3', sa.Float(), nullable=True),
-    sa.Column('so2', sa.Float(), nullable=True),
-    sa.Column('pollution_level', sa.String(length=50), nullable=True),
-    sa.Column('pollution_class', sa.Float(), nullable=True),
-    sa.PrimaryKeyConstraint('record_id')
-    )
-    op.create_index(op.f('ix_air_quality_records_location_name'), 'air_quality_records', ['location_name'], unique=False)
-    op.create_index(op.f('ix_air_quality_records_province'), 'air_quality_records', ['province'], unique=False)
-    op.create_index(op.f('ix_air_quality_records_timestamp'), 'air_quality_records', ['timestamp'], unique=False)
-    op.create_table('login_attempts',
-    sa.Column('email', sa.String(length=255), nullable=False),
-    sa.Column('failed_count', sa.Integer(), nullable=False),
-    sa.Column('locked_until', sa.DateTime(timezone=True), nullable=True),
-    sa.Column('last_attempt_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.PrimaryKeyConstraint('email')
-    )
-    op.create_index(op.f('ix_login_attempts_email'), 'login_attempts', ['email'], unique=False)
-    op.create_table('penalty_regulations',
-    sa.Column('title', sa.String(length=255), nullable=False),
-    sa.Column('domain', sa.String(length=100), nullable=False),
-    sa.Column('quick_category', sa.String(length=50), nullable=True),
-    sa.Column('min_fine_individual', sa.BigInteger(), nullable=False),
-    sa.Column('max_fine_individual', sa.BigInteger(), nullable=False),
-    sa.Column('avg_fine_individual', sa.BigInteger(), nullable=False),
-    sa.Column('min_fine_organization', sa.BigInteger(), nullable=False),
-    sa.Column('max_fine_organization', sa.BigInteger(), nullable=False),
-    sa.Column('avg_fine_organization', sa.BigInteger(), nullable=False),
-    sa.Column('description', sa.Text(), nullable=False),
-    sa.Column('aggravating_circumstances', sa.Text(), nullable=True),
-    sa.Column('supplementary_measures', sa.Text(), nullable=True),
-    sa.Column('legal_basis', sa.String(length=255), nullable=False),
-    sa.Column('effective_date', sa.Date(), nullable=True),
-    sa.Column('amendment_warning', sa.String(length=255), nullable=True),
-    sa.Column('keywords', sa.Text(), nullable=True),
-    sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
-    sa.Column('version', sa.Integer(), nullable=False),
-    sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_penalty_regulations_deleted_at'), 'penalty_regulations', ['deleted_at'], unique=False)
-    op.create_index(op.f('ix_penalty_regulations_domain'), 'penalty_regulations', ['domain'], unique=False)
-    op.create_index(op.f('ix_penalty_regulations_legal_basis'), 'penalty_regulations', ['legal_basis'], unique=False)
-    op.create_index(op.f('ix_penalty_regulations_quick_category'), 'penalty_regulations', ['quick_category'], unique=False)
-    op.create_index(op.f('ix_penalty_regulations_title'), 'penalty_regulations', ['title'], unique=False)
-    op.create_index('ix_penalty_search_composite', 'penalty_regulations', ['deleted_at', 'domain', 'quick_category'], unique=False)
-    op.create_table('user_otps',
-    sa.Column('otp_id', sa.UUID(), nullable=False),
-    sa.Column('email', sa.String(length=255), nullable=False),
-    sa.Column('otp_code_hash', sa.String(length=255), nullable=False),
-    sa.Column('otp_plain', sa.String(length=10), nullable=True),
-    sa.Column('expires_at', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('failed_attempts', sa.Integer(), nullable=False),
-    sa.Column('is_used', sa.Boolean(), nullable=False),
-    sa.Column('purpose', sa.String(length=50), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.PrimaryKeyConstraint('otp_id')
-    )
-    op.create_index(op.f('ix_user_otps_email'), 'user_otps', ['email'], unique=False)
-    op.create_table('conversations',
-    sa.Column('conversation_id', sa.UUID(), nullable=False),
-    sa.Column('type', sa.String(length=20), nullable=False),
-    sa.Column('title', sa.String(length=100), nullable=True),
-    sa.Column('avatar_url', sa.String(length=500), nullable=True),
-    sa.Column('district_name', sa.String(length=100), nullable=True),
-    sa.Column('created_by', sa.UUID(), nullable=True),
-    sa.Column('last_message_id', sa.UUID(), nullable=True),
-    sa.Column('last_message_at', sa.DateTime(timezone=True), nullable=True),
-    sa.Column('last_message_preview', sa.String(length=255), nullable=True),
-    sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['created_by'], ['users.user_id'], ondelete='SET NULL'),
-    sa.PrimaryKeyConstraint('conversation_id')
-    )
-    op.create_index(op.f('ix_conversations_district_name'), 'conversations', ['district_name'], unique=False)
-    op.create_index(op.f('ix_conversations_last_message_at'), 'conversations', ['last_message_at'], unique=False)
-    op.create_index(op.f('ix_conversations_type'), 'conversations', ['type'], unique=False)
-    op.create_table('notifications',
-    sa.Column('notification_id', sa.UUID(), nullable=False),
-    sa.Column('user_id', sa.UUID(), nullable=False),
-    sa.Column('title', sa.String(length=255), nullable=False),
-    sa.Column('message', sa.Text(), nullable=False),
-    sa.Column('notification_type', sa.String(length=50), nullable=False),
-    sa.Column('reference_id', sa.String(length=100), nullable=True),
-    sa.Column('is_read', sa.Boolean(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('notification_id')
-    )
-    op.create_index(op.f('ix_notifications_created_at'), 'notifications', ['created_at'], unique=False)
-    op.create_index(op.f('ix_notifications_is_read'), 'notifications', ['is_read'], unique=False)
-    op.create_index(op.f('ix_notifications_notification_type'), 'notifications', ['notification_type'], unique=False)
-    op.create_index(op.f('ix_notifications_user_id'), 'notifications', ['user_id'], unique=False)
-    op.create_table('penalty_reports',
-    sa.Column('tracking_code', sa.String(length=30), nullable=False),
-    sa.Column('penalty_id', sa.UUID(), nullable=True),
-    sa.Column('violation_title', sa.String(length=255), nullable=False),
-    sa.Column('legal_basis', sa.String(length=255), nullable=False),
-    sa.Column('fine_range', sa.String(length=100), nullable=False),
-    sa.Column('address_text', sa.String(length=500), nullable=False),
-    sa.Column('description', sa.Text(), nullable=False),
-    sa.Column('is_anonymous', sa.Boolean(), nullable=False),
-    sa.Column('reporter_id', sa.UUID(), nullable=True),
-    sa.Column('reporter_name', sa.String(length=150), nullable=True),
-    sa.Column('status', sa.String(length=30), nullable=False),
-    sa.Column('officer_note', sa.Text(), nullable=True),
-    sa.Column('resolved_at', sa.DateTime(timezone=True), nullable=True),
-    sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
-    sa.Column('version', sa.Integer(), nullable=False),
-    sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['penalty_id'], ['penalty_regulations.id'], ondelete='SET NULL'),
-    sa.ForeignKeyConstraint(['reporter_id'], ['users.user_id'], ondelete='SET NULL'),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_penalty_reports_deleted_at'), 'penalty_reports', ['deleted_at'], unique=False)
-    op.create_index(op.f('ix_penalty_reports_penalty_id'), 'penalty_reports', ['penalty_id'], unique=False)
-    op.create_index(op.f('ix_penalty_reports_reporter_id'), 'penalty_reports', ['reporter_id'], unique=False)
-    op.create_index(op.f('ix_penalty_reports_status'), 'penalty_reports', ['status'], unique=False)
-    op.create_index(op.f('ix_penalty_reports_tracking_code'), 'penalty_reports', ['tracking_code'], unique=True)
-    op.create_table('user_blocks',
-    sa.Column('block_id', sa.UUID(), nullable=False),
-    sa.Column('blocker_id', sa.UUID(), nullable=False),
-    sa.Column('blocked_id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.CheckConstraint('blocker_id != blocked_id', name='ck_user_blocks_not_self'),
-    sa.ForeignKeyConstraint(['blocked_id'], ['users.user_id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['blocker_id'], ['users.user_id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('block_id'),
-    sa.UniqueConstraint('blocker_id', 'blocked_id', name='uq_user_blocks_pair')
-    )
-    op.create_index(op.f('ix_user_blocks_blocked_id'), 'user_blocks', ['blocked_id'], unique=False)
-    op.create_index(op.f('ix_user_blocks_blocker_id'), 'user_blocks', ['blocker_id'], unique=False)
-    op.create_table('user_sessions',
-    sa.Column('session_id', sa.UUID(), nullable=False),
-    sa.Column('user_id', sa.UUID(), nullable=False),
-    sa.Column('refresh_token_hash', sa.String(length=64), nullable=False),
-    sa.Column('device_name', sa.String(length=150), nullable=False),
-    sa.Column('ip_address', sa.String(length=45), nullable=True),
-    sa.Column('user_agent', sa.Text(), nullable=True),
-    sa.Column('expires_at', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('revoked_at', sa.DateTime(timezone=True), nullable=True),
-    sa.Column('last_active_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('session_id')
-    )
-    op.create_index(op.f('ix_user_sessions_refresh_token_hash'), 'user_sessions', ['refresh_token_hash'], unique=False)
-    op.create_index(op.f('ix_user_sessions_user_id'), 'user_sessions', ['user_id'], unique=False)
-    op.create_table('conversation_members',
-    sa.Column('member_id', sa.UUID(), nullable=False),
-    sa.Column('conversation_id', sa.UUID(), nullable=False),
-    sa.Column('user_id', sa.UUID(), nullable=False),
-    sa.Column('role', sa.String(length=20), nullable=False),
-    sa.Column('unread_count', sa.Integer(), nullable=False),
-    sa.Column('last_read_message_id', sa.UUID(), nullable=True),
-    sa.Column('cleared_at', sa.DateTime(timezone=True), nullable=True),
-    sa.Column('joined_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('left_at', sa.DateTime(timezone=True), nullable=True),
-    sa.ForeignKeyConstraint(['conversation_id'], ['conversations.conversation_id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('member_id'),
-    sa.UniqueConstraint('conversation_id', 'user_id', name='uq_conversation_user')
-    )
-    op.create_index('idx_conversation_members_user_left', 'conversation_members', ['user_id', 'left_at'], unique=False)
-    op.create_index(op.f('ix_conversation_members_conversation_id'), 'conversation_members', ['conversation_id'], unique=False)
-    op.create_index(op.f('ix_conversation_members_user_id'), 'conversation_members', ['user_id'], unique=False)
-    op.create_table('incident_duplicate_clusters',
-    sa.Column('cluster_id', sa.UUID(), nullable=False),
-    sa.Column('cluster_code', sa.String(length=50), nullable=False),
-    sa.Column('cluster_name', sa.String(length=150), nullable=False),
-    sa.Column('unit_id', sa.Integer(), nullable=True),
-    sa.Column('district_name', sa.String(length=100), nullable=True),
-    sa.Column('incident_a_id', sa.UUID(), nullable=False),
-    sa.Column('incident_b_id', sa.UUID(), nullable=False),
-    sa.Column('report_count', sa.Integer(), nullable=False),
-    sa.Column('similarity_rate', sa.Numeric(precision=5, scale=2), nullable=False),
-    sa.Column('gps_distance_m', sa.Numeric(precision=8, scale=2), nullable=False),
-    sa.Column('time_diff_hours', sa.Numeric(precision=8, scale=2), nullable=False),
-    sa.Column('visual_similarity', sa.Numeric(precision=5, scale=2), nullable=False),
-    sa.Column('ai_conclusion', sa.Text(), nullable=True),
-    sa.Column('status', sa.String(length=30), nullable=False),
-    sa.Column('master_incident_id', sa.UUID(), nullable=True),
-    sa.Column('version', sa.Integer(), nullable=False),
-    sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['incident_a_id'], ['incidents.incident_id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['incident_b_id'], ['incidents.incident_id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['master_incident_id'], ['incidents.incident_id'], ondelete='SET NULL'),
-    sa.ForeignKeyConstraint(['unit_id'], ['administrative_units.unit_id'], ondelete='SET NULL'),
-    sa.PrimaryKeyConstraint('cluster_id'),
-    sa.UniqueConstraint('cluster_code')
-    )
-    op.create_table('messages',
-    sa.Column('message_id', sa.UUID(), nullable=False),
-    sa.Column('conversation_id', sa.UUID(), nullable=False),
-    sa.Column('sender_id', sa.UUID(), nullable=False),
-    sa.Column('content', sa.String(length=1000), nullable=True),
-    sa.Column('media_url', sa.String(length=500), nullable=True),
-    sa.Column('is_system_message', sa.Boolean(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
-    sa.ForeignKeyConstraint(['conversation_id'], ['conversations.conversation_id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['sender_id'], ['users.user_id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('message_id')
-    )
-    op.create_index('idx_messages_conversation_created', 'messages', ['conversation_id', 'created_at'], unique=False)
-    op.create_index(op.f('ix_messages_conversation_id'), 'messages', ['conversation_id'], unique=False)
-    op.create_index(op.f('ix_messages_created_at'), 'messages', ['created_at'], unique=False)
-    op.create_index(op.f('ix_messages_sender_id'), 'messages', ['sender_id'], unique=False)
-    op.add_column('comments', sa.Column('media_url', sa.String(length=1000), nullable=True))
-    op.create_index(op.f('ix_friend_requests_receiver_id'), 'friend_requests', ['receiver_id'], unique=False)
-    op.create_index(op.f('ix_friend_requests_sender_id'), 'friend_requests', ['sender_id'], unique=False)
-    op.create_index(op.f('ix_friendships_user_id_1'), 'friendships', ['user_id_1'], unique=False)
-    op.create_index(op.f('ix_friendships_user_id_2'), 'friendships', ['user_id_2'], unique=False)
-    op.create_index(op.f('ix_incident_audit_logs_incident_id'), 'incident_audit_logs', ['incident_id'], unique=False)
-    op.add_column('incidents', sa.Column('version', sa.Integer(), nullable=False, server_default=sa.text('1')))
-    op.add_column('incidents', sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True))
-    op.add_column('incidents', sa.Column('master_incident_id', sa.UUID(), nullable=True))
-    op.add_column('incidents', sa.Column('is_duplicate_merged', sa.Boolean(), nullable=False, server_default=sa.text('false')))
-    op.create_foreign_key('fk_incidents_master_incident_id', 'incidents', 'incidents', ['master_incident_id'], ['incident_id'], ondelete='SET NULL')
-    op.create_index(op.f('ix_post_tagged_friends_friend_user_id'), 'post_tagged_friends', ['friend_user_id'], unique=False)
-    op.create_index(op.f('ix_post_tagged_friends_post_id'), 'post_tagged_friends', ['post_id'], unique=False)
-    op.add_column('posts', sa.Column('shares_count', sa.Integer(), nullable=False, server_default=sa.text('0')))
-    op.add_column('posts', sa.Column('shared_post_id', sa.UUID(), nullable=True))
-    op.create_index(op.f('ix_posts_group_id'), 'posts', ['group_id'], unique=False)
-    op.create_index(op.f('ix_posts_shared_post_id'), 'posts', ['shared_post_id'], unique=False)
-    op.create_index(op.f('ix_posts_user_id'), 'posts', ['user_id'], unique=False)
-    op.create_foreign_key('fk_posts_shared_post_id', 'posts', 'posts', ['shared_post_id'], ['post_id'], ondelete='SET NULL')
-    op.add_column('recycling_facilities', sa.Column('open_time', sa.String(length=10), nullable=True))
-    op.add_column('recycling_facilities', sa.Column('close_time', sa.String(length=10), nullable=True))
-    op.add_column('recycling_facilities', sa.Column('qr_code', sa.String(length=100), nullable=True))
-    op.add_column('recycling_facilities', sa.Column('is_deleted', sa.Boolean(), nullable=False, server_default=sa.text('false')))
-    op.add_column('recycling_facilities', sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True))
-    op.create_unique_constraint('uq_recycling_facilities_qr_code', 'recycling_facilities', ['qr_code'])
-    op.create_index(op.f('ix_user_activities_activity_type'), 'user_activities', ['activity_type'], unique=False)
-    op.create_index(op.f('ix_user_activities_created_at'), 'user_activities', ['created_at'], unique=False)
-    op.create_index(op.f('ix_user_activities_user_id'), 'user_activities', ['user_id'], unique=False)
-    op.create_index(op.f('ix_user_badges_badge_id'), 'user_badges', ['badge_id'], unique=False)
-    op.create_index(op.f('ix_user_badges_user_id'), 'user_badges', ['user_id'], unique=False)
-    op.create_index(op.f('ix_user_follows_follower_id'), 'user_follows', ['follower_id'], unique=False)
-    op.create_index(op.f('ix_user_follows_following_id'), 'user_follows', ['following_id'], unique=False)
-    op.add_column('users', sa.Column('district', sa.String(length=100), nullable=True))
+    def has_col(table, col):
+        if table not in existing_tables:
+            return False
+        return col in {c['name'] for c in inspector.get_columns(table)}
+
+    def has_idx(table, idx):
+        if table not in existing_tables:
+            return False
+        return idx in {i['name'] for i in inspector.get_indexes(table)}
+
+
+    if 'air_quality_records' not in existing_tables:
+        op.create_table('air_quality_records',
+        sa.Column('record_id', sa.UUID(), nullable=False),
+        sa.Column('province', sa.String(length=100), nullable=False),
+        sa.Column('location_name', sa.String(length=150), nullable=True),
+        sa.Column('timestamp', sa.DateTime(), nullable=False),
+        sa.Column('lat', sa.Float(), nullable=False),
+        sa.Column('lon', sa.Float(), nullable=False),
+        sa.Column('aqi', sa.Float(), nullable=True),
+        sa.Column('temp', sa.Float(), nullable=True),
+        sa.Column('humidity', sa.Float(), nullable=True),
+        sa.Column('rain', sa.Float(), nullable=True),
+        sa.Column('wind_speed', sa.Float(), nullable=True),
+        sa.Column('wind_dir', sa.Float(), nullable=True),
+        sa.Column('pressure', sa.Float(), nullable=True),
+        sa.Column('cloud', sa.Float(), nullable=True),
+        sa.Column('pm2_5', sa.Float(), nullable=True),
+        sa.Column('pm10', sa.Float(), nullable=True),
+        sa.Column('co', sa.Float(), nullable=True),
+        sa.Column('no2', sa.Float(), nullable=True),
+        sa.Column('o3', sa.Float(), nullable=True),
+        sa.Column('so2', sa.Float(), nullable=True),
+        sa.Column('pollution_level', sa.String(length=50), nullable=True),
+        sa.Column('pollution_class', sa.Float(), nullable=True),
+        sa.PrimaryKeyConstraint('record_id')
+        )
+        op.create_index(op.f('ix_air_quality_records_location_name'), 'air_quality_records', ['location_name'], unique=False)
+        op.create_index(op.f('ix_air_quality_records_province'), 'air_quality_records', ['province'], unique=False)
+        op.create_index(op.f('ix_air_quality_records_timestamp'), 'air_quality_records', ['timestamp'], unique=False)
+    if 'login_attempts' not in existing_tables:
+        op.create_table('login_attempts',
+        sa.Column('email', sa.String(length=255), nullable=False),
+        sa.Column('failed_count', sa.Integer(), nullable=False),
+        sa.Column('locked_until', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('last_attempt_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.PrimaryKeyConstraint('email')
+        )
+        op.create_index(op.f('ix_login_attempts_email'), 'login_attempts', ['email'], unique=False)
+    if 'penalty_regulations' not in existing_tables:
+        op.create_table('penalty_regulations',
+        sa.Column('title', sa.String(length=255), nullable=False),
+        sa.Column('domain', sa.String(length=100), nullable=False),
+        sa.Column('quick_category', sa.String(length=50), nullable=True),
+        sa.Column('min_fine_individual', sa.BigInteger(), nullable=False),
+        sa.Column('max_fine_individual', sa.BigInteger(), nullable=False),
+        sa.Column('avg_fine_individual', sa.BigInteger(), nullable=False),
+        sa.Column('min_fine_organization', sa.BigInteger(), nullable=False),
+        sa.Column('max_fine_organization', sa.BigInteger(), nullable=False),
+        sa.Column('avg_fine_organization', sa.BigInteger(), nullable=False),
+        sa.Column('description', sa.Text(), nullable=False),
+        sa.Column('aggravating_circumstances', sa.Text(), nullable=True),
+        sa.Column('supplementary_measures', sa.Text(), nullable=True),
+        sa.Column('legal_basis', sa.String(length=255), nullable=False),
+        sa.Column('effective_date', sa.Date(), nullable=True),
+        sa.Column('amendment_warning', sa.String(length=255), nullable=True),
+        sa.Column('keywords', sa.Text(), nullable=True),
+        sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('version', sa.Integer(), nullable=False),
+        sa.Column('id', sa.UUID(), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.PrimaryKeyConstraint('id')
+        )
+        op.create_index(op.f('ix_penalty_regulations_deleted_at'), 'penalty_regulations', ['deleted_at'], unique=False)
+        op.create_index(op.f('ix_penalty_regulations_domain'), 'penalty_regulations', ['domain'], unique=False)
+        op.create_index(op.f('ix_penalty_regulations_legal_basis'), 'penalty_regulations', ['legal_basis'], unique=False)
+        op.create_index(op.f('ix_penalty_regulations_quick_category'), 'penalty_regulations', ['quick_category'], unique=False)
+        op.create_index(op.f('ix_penalty_regulations_title'), 'penalty_regulations', ['title'], unique=False)
+        op.create_index('ix_penalty_search_composite', 'penalty_regulations', ['deleted_at', 'domain', 'quick_category'], unique=False)
+    if 'user_otps' not in existing_tables:
+        op.create_table('user_otps',
+        sa.Column('otp_id', sa.UUID(), nullable=False),
+        sa.Column('email', sa.String(length=255), nullable=False),
+        sa.Column('otp_code_hash', sa.String(length=255), nullable=False),
+        sa.Column('otp_plain', sa.String(length=10), nullable=True),
+        sa.Column('expires_at', sa.DateTime(timezone=True), nullable=False),
+        sa.Column('failed_attempts', sa.Integer(), nullable=False),
+        sa.Column('is_used', sa.Boolean(), nullable=False),
+        sa.Column('purpose', sa.String(length=50), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.PrimaryKeyConstraint('otp_id')
+        )
+        op.create_index(op.f('ix_user_otps_email'), 'user_otps', ['email'], unique=False)
+    if 'conversations' not in existing_tables:
+        op.create_table('conversations',
+        sa.Column('conversation_id', sa.UUID(), nullable=False),
+        sa.Column('type', sa.String(length=20), nullable=False),
+        sa.Column('title', sa.String(length=100), nullable=True),
+        sa.Column('avatar_url', sa.String(length=500), nullable=True),
+        sa.Column('district_name', sa.String(length=100), nullable=True),
+        sa.Column('created_by', sa.UUID(), nullable=True),
+        sa.Column('last_message_id', sa.UUID(), nullable=True),
+        sa.Column('last_message_at', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('last_message_preview', sa.String(length=255), nullable=True),
+        sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.ForeignKeyConstraint(['created_by'], ['users.user_id'], ondelete='SET NULL'),
+        sa.PrimaryKeyConstraint('conversation_id')
+        )
+        op.create_index(op.f('ix_conversations_district_name'), 'conversations', ['district_name'], unique=False)
+        op.create_index(op.f('ix_conversations_last_message_at'), 'conversations', ['last_message_at'], unique=False)
+        op.create_index(op.f('ix_conversations_type'), 'conversations', ['type'], unique=False)
+    if 'notifications' not in existing_tables:
+        op.create_table('notifications',
+        sa.Column('notification_id', sa.UUID(), nullable=False),
+        sa.Column('user_id', sa.UUID(), nullable=False),
+        sa.Column('title', sa.String(length=255), nullable=False),
+        sa.Column('message', sa.Text(), nullable=False),
+        sa.Column('notification_type', sa.String(length=50), nullable=False),
+        sa.Column('reference_id', sa.String(length=100), nullable=True),
+        sa.Column('is_read', sa.Boolean(), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE'),
+        sa.PrimaryKeyConstraint('notification_id')
+        )
+        op.create_index(op.f('ix_notifications_created_at'), 'notifications', ['created_at'], unique=False)
+        op.create_index(op.f('ix_notifications_is_read'), 'notifications', ['is_read'], unique=False)
+        op.create_index(op.f('ix_notifications_notification_type'), 'notifications', ['notification_type'], unique=False)
+        op.create_index(op.f('ix_notifications_user_id'), 'notifications', ['user_id'], unique=False)
+    if 'penalty_reports' not in existing_tables:
+        op.create_table('penalty_reports',
+        sa.Column('tracking_code', sa.String(length=30), nullable=False),
+        sa.Column('penalty_id', sa.UUID(), nullable=True),
+        sa.Column('violation_title', sa.String(length=255), nullable=False),
+        sa.Column('legal_basis', sa.String(length=255), nullable=False),
+        sa.Column('fine_range', sa.String(length=100), nullable=False),
+        sa.Column('address_text', sa.String(length=500), nullable=False),
+        sa.Column('description', sa.Text(), nullable=False),
+        sa.Column('is_anonymous', sa.Boolean(), nullable=False),
+        sa.Column('reporter_id', sa.UUID(), nullable=True),
+        sa.Column('reporter_name', sa.String(length=150), nullable=True),
+        sa.Column('status', sa.String(length=30), nullable=False),
+        sa.Column('officer_note', sa.Text(), nullable=True),
+        sa.Column('resolved_at', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('version', sa.Integer(), nullable=False),
+        sa.Column('id', sa.UUID(), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.ForeignKeyConstraint(['penalty_id'], ['penalty_regulations.id'], ondelete='SET NULL'),
+        sa.ForeignKeyConstraint(['reporter_id'], ['users.user_id'], ondelete='SET NULL'),
+        sa.PrimaryKeyConstraint('id')
+        )
+        op.create_index(op.f('ix_penalty_reports_deleted_at'), 'penalty_reports', ['deleted_at'], unique=False)
+        op.create_index(op.f('ix_penalty_reports_penalty_id'), 'penalty_reports', ['penalty_id'], unique=False)
+        op.create_index(op.f('ix_penalty_reports_reporter_id'), 'penalty_reports', ['reporter_id'], unique=False)
+        op.create_index(op.f('ix_penalty_reports_status'), 'penalty_reports', ['status'], unique=False)
+        op.create_index(op.f('ix_penalty_reports_tracking_code'), 'penalty_reports', ['tracking_code'], unique=True)
+    if 'user_blocks' not in existing_tables:
+        op.create_table('user_blocks',
+        sa.Column('block_id', sa.UUID(), nullable=False),
+        sa.Column('blocker_id', sa.UUID(), nullable=False),
+        sa.Column('blocked_id', sa.UUID(), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.CheckConstraint('blocker_id != blocked_id', name='ck_user_blocks_not_self'),
+        sa.ForeignKeyConstraint(['blocked_id'], ['users.user_id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['blocker_id'], ['users.user_id'], ondelete='CASCADE'),
+        sa.PrimaryKeyConstraint('block_id'),
+        sa.UniqueConstraint('blocker_id', 'blocked_id', name='uq_user_blocks_pair')
+        )
+        op.create_index(op.f('ix_user_blocks_blocked_id'), 'user_blocks', ['blocked_id'], unique=False)
+        op.create_index(op.f('ix_user_blocks_blocker_id'), 'user_blocks', ['blocker_id'], unique=False)
+    if 'user_sessions' not in existing_tables:
+        op.create_table('user_sessions',
+        sa.Column('session_id', sa.UUID(), nullable=False),
+        sa.Column('user_id', sa.UUID(), nullable=False),
+        sa.Column('refresh_token_hash', sa.String(length=64), nullable=False),
+        sa.Column('device_name', sa.String(length=150), nullable=False),
+        sa.Column('ip_address', sa.String(length=45), nullable=True),
+        sa.Column('user_agent', sa.Text(), nullable=True),
+        sa.Column('expires_at', sa.DateTime(timezone=True), nullable=False),
+        sa.Column('revoked_at', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('last_active_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE'),
+        sa.PrimaryKeyConstraint('session_id')
+        )
+        op.create_index(op.f('ix_user_sessions_refresh_token_hash'), 'user_sessions', ['refresh_token_hash'], unique=False)
+        op.create_index(op.f('ix_user_sessions_user_id'), 'user_sessions', ['user_id'], unique=False)
+    if 'conversation_members' not in existing_tables:
+        op.create_table('conversation_members',
+        sa.Column('member_id', sa.UUID(), nullable=False),
+        sa.Column('conversation_id', sa.UUID(), nullable=False),
+        sa.Column('user_id', sa.UUID(), nullable=False),
+        sa.Column('role', sa.String(length=20), nullable=False),
+        sa.Column('unread_count', sa.Integer(), nullable=False),
+        sa.Column('last_read_message_id', sa.UUID(), nullable=True),
+        sa.Column('cleared_at', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('joined_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('left_at', sa.DateTime(timezone=True), nullable=True),
+        sa.ForeignKeyConstraint(['conversation_id'], ['conversations.conversation_id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['user_id'], ['users.user_id'], ondelete='CASCADE'),
+        sa.PrimaryKeyConstraint('member_id'),
+        sa.UniqueConstraint('conversation_id', 'user_id', name='uq_conversation_user')
+        )
+        op.create_index('idx_conversation_members_user_left', 'conversation_members', ['user_id', 'left_at'], unique=False)
+        op.create_index(op.f('ix_conversation_members_conversation_id'), 'conversation_members', ['conversation_id'], unique=False)
+        op.create_index(op.f('ix_conversation_members_user_id'), 'conversation_members', ['user_id'], unique=False)
+    if 'incident_duplicate_clusters' not in existing_tables:
+        op.create_table('incident_duplicate_clusters',
+        sa.Column('cluster_id', sa.UUID(), nullable=False),
+        sa.Column('cluster_code', sa.String(length=50), nullable=False),
+        sa.Column('cluster_name', sa.String(length=150), nullable=False),
+        sa.Column('unit_id', sa.Integer(), nullable=True),
+        sa.Column('district_name', sa.String(length=100), nullable=True),
+        sa.Column('incident_a_id', sa.UUID(), nullable=False),
+        sa.Column('incident_b_id', sa.UUID(), nullable=False),
+        sa.Column('report_count', sa.Integer(), nullable=False),
+        sa.Column('similarity_rate', sa.Numeric(precision=5, scale=2), nullable=False),
+        sa.Column('gps_distance_m', sa.Numeric(precision=8, scale=2), nullable=False),
+        sa.Column('time_diff_hours', sa.Numeric(precision=8, scale=2), nullable=False),
+        sa.Column('visual_similarity', sa.Numeric(precision=5, scale=2), nullable=False),
+        sa.Column('ai_conclusion', sa.Text(), nullable=True),
+        sa.Column('status', sa.String(length=30), nullable=False),
+        sa.Column('master_incident_id', sa.UUID(), nullable=True),
+        sa.Column('version', sa.Integer(), nullable=False),
+        sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.ForeignKeyConstraint(['incident_a_id'], ['incidents.incident_id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['incident_b_id'], ['incidents.incident_id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['master_incident_id'], ['incidents.incident_id'], ondelete='SET NULL'),
+        sa.ForeignKeyConstraint(['unit_id'], ['administrative_units.unit_id'], ondelete='SET NULL'),
+        sa.PrimaryKeyConstraint('cluster_id'),
+        sa.UniqueConstraint('cluster_code')
+        )
+    if 'messages' not in existing_tables:
+        op.create_table('messages',
+        sa.Column('message_id', sa.UUID(), nullable=False),
+        sa.Column('conversation_id', sa.UUID(), nullable=False),
+        sa.Column('sender_id', sa.UUID(), nullable=False),
+        sa.Column('content', sa.String(length=1000), nullable=True),
+        sa.Column('media_url', sa.String(length=500), nullable=True),
+        sa.Column('is_system_message', sa.Boolean(), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
+        sa.ForeignKeyConstraint(['conversation_id'], ['conversations.conversation_id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['sender_id'], ['users.user_id'], ondelete='CASCADE'),
+        sa.PrimaryKeyConstraint('message_id')
+        )
+        op.create_index('idx_messages_conversation_created', 'messages', ['conversation_id', 'created_at'], unique=False)
+        op.create_index(op.f('ix_messages_conversation_id'), 'messages', ['conversation_id'], unique=False)
+        op.create_index(op.f('ix_messages_created_at'), 'messages', ['created_at'], unique=False)
+        op.create_index(op.f('ix_messages_sender_id'), 'messages', ['sender_id'], unique=False)
+    if not has_col('comments', 'media_url'):
+        op.add_column('comments', sa.Column('media_url', sa.String(length=1000), nullable=True))
+    if not has_idx('friend_requests', 'ix_friend_requests_receiver_id'):
+        op.create_index(op.f('ix_friend_requests_receiver_id'), 'friend_requests', ['receiver_id'], unique=False)
+    if not has_idx('friend_requests', 'ix_friend_requests_sender_id'):
+        op.create_index(op.f('ix_friend_requests_sender_id'), 'friend_requests', ['sender_id'], unique=False)
+    if not has_idx('friendships', 'ix_friendships_user_id_1'):
+        op.create_index(op.f('ix_friendships_user_id_1'), 'friendships', ['user_id_1'], unique=False)
+    if not has_idx('friendships', 'ix_friendships_user_id_2'):
+        op.create_index(op.f('ix_friendships_user_id_2'), 'friendships', ['user_id_2'], unique=False)
+    if not has_idx('incident_audit_logs', 'ix_incident_audit_logs_incident_id'):
+        op.create_index(op.f('ix_incident_audit_logs_incident_id'), 'incident_audit_logs', ['incident_id'], unique=False)
+    if not has_col('incidents', 'version'):
+        op.add_column('incidents', sa.Column('version', sa.Integer(), nullable=False, server_default=sa.text('1')))
+    if not has_col('incidents', 'deleted_at'):
+        op.add_column('incidents', sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True))
+    if not has_col('incidents', 'master_incident_id'):
+        op.add_column('incidents', sa.Column('master_incident_id', sa.UUID(), nullable=True))
+    if not has_col('incidents', 'is_duplicate_merged'):
+        op.add_column('incidents', sa.Column('is_duplicate_merged', sa.Boolean(), nullable=False, server_default=sa.text('false')))
+    try:
+        op.create_foreign_key('fk_incidents_master_incident_id', 'incidents', 'incidents', ['master_incident_id'], ['incident_id'], ondelete='SET NULL')
+    except Exception:
+        pass
+    if not has_idx('post_tagged_friends', 'ix_post_tagged_friends_friend_user_id'):
+        op.create_index(op.f('ix_post_tagged_friends_friend_user_id'), 'post_tagged_friends', ['friend_user_id'], unique=False)
+    if not has_idx('post_tagged_friends', 'ix_post_tagged_friends_post_id'):
+        op.create_index(op.f('ix_post_tagged_friends_post_id'), 'post_tagged_friends', ['post_id'], unique=False)
+    if not has_col('posts', 'shares_count'):
+        op.add_column('posts', sa.Column('shares_count', sa.Integer(), nullable=False, server_default=sa.text('0')))
+    if not has_col('posts', 'shared_post_id'):
+        op.add_column('posts', sa.Column('shared_post_id', sa.UUID(), nullable=True))
+    if not has_idx('posts', 'ix_posts_group_id'):
+        op.create_index(op.f('ix_posts_group_id'), 'posts', ['group_id'], unique=False)
+    if not has_idx('posts', 'ix_posts_shared_post_id'):
+        op.create_index(op.f('ix_posts_shared_post_id'), 'posts', ['shared_post_id'], unique=False)
+    if not has_idx('posts', 'ix_posts_user_id'):
+        op.create_index(op.f('ix_posts_user_id'), 'posts', ['user_id'], unique=False)
+    try:
+        op.create_foreign_key('fk_posts_shared_post_id', 'posts', 'posts', ['shared_post_id'], ['post_id'], ondelete='SET NULL')
+    except Exception:
+        pass
+    if not has_col('recycling_facilities', 'open_time'):
+        op.add_column('recycling_facilities', sa.Column('open_time', sa.String(length=10), nullable=True))
+    if not has_col('recycling_facilities', 'close_time'):
+        op.add_column('recycling_facilities', sa.Column('close_time', sa.String(length=10), nullable=True))
+    if not has_col('recycling_facilities', 'qr_code'):
+        op.add_column('recycling_facilities', sa.Column('qr_code', sa.String(length=100), nullable=True))
+    if not has_col('recycling_facilities', 'is_deleted'):
+        op.add_column('recycling_facilities', sa.Column('is_deleted', sa.Boolean(), nullable=False, server_default=sa.text('false')))
+    if not has_col('recycling_facilities', 'deleted_at'):
+        op.add_column('recycling_facilities', sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True))
+    try:
+        op.create_unique_constraint('uq_recycling_facilities_qr_code', 'recycling_facilities', ['qr_code'])
+    except Exception:
+        pass
+    if not has_idx('user_activities', 'ix_user_activities_activity_type'):
+        op.create_index(op.f('ix_user_activities_activity_type'), 'user_activities', ['activity_type'], unique=False)
+    if not has_idx('user_activities', 'ix_user_activities_created_at'):
+        op.create_index(op.f('ix_user_activities_created_at'), 'user_activities', ['created_at'], unique=False)
+    if not has_idx('user_activities', 'ix_user_activities_user_id'):
+        op.create_index(op.f('ix_user_activities_user_id'), 'user_activities', ['user_id'], unique=False)
+    if not has_idx('user_badges', 'ix_user_badges_badge_id'):
+        op.create_index(op.f('ix_user_badges_badge_id'), 'user_badges', ['badge_id'], unique=False)
+    if not has_idx('user_badges', 'ix_user_badges_user_id'):
+        op.create_index(op.f('ix_user_badges_user_id'), 'user_badges', ['user_id'], unique=False)
+    if not has_idx('user_follows', 'ix_user_follows_follower_id'):
+        op.create_index(op.f('ix_user_follows_follower_id'), 'user_follows', ['follower_id'], unique=False)
+    if not has_idx('user_follows', 'ix_user_follows_following_id'):
+        op.create_index(op.f('ix_user_follows_following_id'), 'user_follows', ['following_id'], unique=False)
+    if not has_col('users', 'district'):
+        op.add_column('users', sa.Column('district', sa.String(length=100), nullable=True))
 
 
 def downgrade() -> None:
