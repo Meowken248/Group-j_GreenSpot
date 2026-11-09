@@ -1,0 +1,76 @@
+=== STANDARDIZED TABLES ===
+L[81]: *Bảng 4.1: Bảng ma trận đối chiếu chéo tính độc lập và chống trùng lặp dữ liệu (0% trùng lặp giữa 4 thành viên)*
+L[122]: *Bảng 4.13.1: Đặc tả thành phần giao diện chức năng 13 (Cơ chế tích lũy Điểm thưởng Công dân Xanh)*
+L[134]: *Bảng 4.13.2: Quy tắc kiểm tra và thông báo lỗi chức năng 13 (Cơ chế tích lũy Điểm thưởng Công dân Xanh)*
+L[165]: *Bảng 4.14.1: Đặc tả thành phần giao diện chức năng 14 (Xem số dư ví điểm và Lịch sử biến động)*
+L[177]: *Bảng 4.14.2: Quy tắc kiểm tra và thông báo lỗi chức năng 14 (Xem số dư ví điểm và Lịch sử biến động)*
+L[211]: *Bảng 4.15.1: Đặc tả thành phần giao diện chức năng 15 (Danh mục quà tặng xanh và Vật phẩm quy đổi)*
+L[223]: *Bảng 4.15.2: Quy tắc kiểm tra và thông báo lỗi chức năng 15 (Danh mục quà tặng xanh và Vật phẩm quy đổi)*
+L[258]: *Bảng 4.16.1: Đặc tả thành phần giao diện chức năng 16 (Thực hiện đổi điểm lấy quà tặng / Voucher)*
+L[270]: *Bảng 4.16.2: Quy tắc kiểm tra và thông báo lỗi chức năng 16 (Thực hiện đổi điểm lấy quà tặng / Voucher)*
+L[303]: *Bảng 4.17.1: Đặc tả thành phần giao diện chức năng 17 (Quản lý danh sách quà tặng cá nhân đã đổi)*
+L[315]: *Bảng 4.17.2: Quy tắc kiểm tra và thông báo lỗi chức năng 17 (Quản lý danh sách quà tặng cá nhân đã đổi)*
+L[350]: *Bảng 4.18.1: Đặc tả thành phần giao diện chức năng 18 (Bảng xếp hạng vinh danh Top Công dân Xanh)*
+L[362]: *Bảng 4.18.2: Quy tắc kiểm tra và thông báo lỗi chức năng 18 (Bảng xếp hạng vinh danh Top Công dân Xanh)*
+L[395]: *Bảng 4.19.1: Đặc tả thành phần giao diện chức năng 19 (Xem danh sách các Chiến dịch ra quân dọn rác)*
+L[407]: *Bảng 4.19.2: Quy tắc kiểm tra và thông báo lỗi chức năng 19 (Xem danh sách các Chiến dịch ra quân dọn rác)*
+L[440]: *Bảng 4.20.1: Đặc tả thành phần giao diện chức năng 20 (Đăng ký tham gia chiến dịch tình nguyện xanh)*
+L[453]: *Bảng 4.20.2: Quy tắc kiểm tra và thông báo lỗi chức năng 20 (Đăng ký tham gia chiến dịch tình nguyện xanh)*
+L[488]: *Bảng 4.21.1: Đặc tả thành phần giao diện chức năng 21 (Bình luận và Thảo luận dưới bài phản ánh sự cố)*
+L[500]: *Bảng 4.21.2: Quy tắc kiểm tra và thông báo lỗi chức năng 21 (Bình luận và Thảo luận dưới bài phản ánh sự cố)*
+L[532]: *Bảng 4.22.1: Đặc tả thành phần giao diện chức năng 22 (Đánh giá mức độ hài lòng sau khi dọn sạch)*
+L[544]: *Bảng 4.22.2: Quy tắc kiểm tra và thông báo lỗi chức năng 22 (Đánh giá mức độ hài lòng sau khi dọn sạch)*
+L[578]: *Bảng 4.23.1: Đặc tả thành phần giao diện chức năng 23 (Gửi ý kiến đóng góp và Sáng kiến bảo vệ môi trường)*
+L[590]: *Bảng 4.23.2: Quy tắc kiểm tra và thông báo lỗi chức năng 23 (Gửi ý kiến đóng góp và Sáng kiến bảo vệ môi trường)*
+L[623]: *Bảng 4.24.1: Đặc tả thành phần giao diện chức năng 24 (Cẩm nang hướng dẫn phân loại rác và Sống xanh)*
+L[635]: *Bảng 4.24.2: Quy tắc kiểm tra và thông báo lỗi chức năng 24 (Cẩm nang hướng dẫn phân loại rác và Sống xanh)*
+L[672]: *Bảng 4.25.1: Đặc tả thành phần giao diện chức năng 25 (Cổng xác thực tập trung và Quản lý phiên JWT)*
+L[683]: *Bảng 4.25.2: Quy tắc kiểm tra và thông báo lỗi chức năng 25 (Cổng xác thực tập trung và Quản lý phiên JWT)*
+L[716]: *Bảng 4.26.1: Đặc tả thành phần giao diện chức năng 26 (Quản trị người dùng và Phân quyền RBAC)*
+L[727]: *Bảng 4.26.2: Quy tắc kiểm tra và thông báo lỗi chức năng 26 (Quản trị người dùng và Phân quyền RBAC)*
+L[759]: *Bảng 4.27.1: Đặc tả thành phần giao diện chức năng 27 (Nhật ký kiểm toán an ninh Audit Log)*
+L[770]: *Bảng 4.27.2: Quy tắc kiểm tra và thông báo lỗi chức năng 27 (Nhật ký kiểm toán an ninh Audit Log)*
+L[801]: *Bảng 4.28.1: Đặc tả thành phần giao diện chức năng 28 (Biên tập và Phát hành bản tin cảnh báo)*
+L[813]: *Bảng 4.28.2: Quy tắc kiểm tra và thông báo lỗi chức năng 28 (Biên tập và Phát hành bản tin cảnh báo)*
+L[845]: *Bảng 4.29.1: Đặc tả thành phần giao diện chức năng 29 (Điều phối thông báo đẩy thời gian thực)*
+L[856]: *Bảng 4.29.2: Quy tắc kiểm tra và thông báo lỗi chức năng 29 (Điều phối thông báo đẩy thời gian thực)*
+L[887]: *Bảng 4.30.1: Đặc tả thành phần giao diện chức năng 30 (Cổng tra cứu công khai tiến độ sự cố)*
+L[898]: *Bảng 4.30.2: Quy tắc kiểm tra và thông báo lỗi chức năng 30 (Cổng tra cứu công khai tiến độ sự cố)*
+L[930]: *Bảng 4.31.1: Đặc tả thành phần giao diện chức năng 31 (Bản đồ giám sát điểm cảnh báo ô nhiễm)*
+L[941]: *Bảng 4.31.2: Quy tắc kiểm tra và thông báo lỗi chức năng 31 (Bản đồ giám sát điểm cảnh báo ô nhiễm)*
+L[972]: *Bảng 4.32.1: Đặc tả thành phần giao diện chức năng 32 (Đăng ký nhận tin cảnh báo cá nhân hóa)*
+L[983]: *Bảng 4.32.2: Quy tắc kiểm tra và thông báo lỗi chức năng 32 (Đăng ký nhận tin cảnh báo cá nhân hóa)*
+L[1018]: *Bảng 4.33.1: Đặc tả thành phần giao diện chức năng 33 (Bảng tổng quan chỉ số môi trường công cộng)*
+L[1030]: *Bảng 4.33.2: Quy tắc kiểm tra và thông báo lỗi chức năng 33 (Bảng tổng quan chỉ số môi trường công cộng)*
+L[1061]: *Bảng 4.34.1: Đặc tả thành phần giao diện chức năng 34 (Quản trị ngưỡng kích hoạt cảnh báo)*
+L[1072]: *Bảng 4.34.2: Quy tắc kiểm tra và thông báo lỗi chức năng 34 (Quản trị ngưỡng kích hoạt cảnh báo)*
+L[1103]: *Bảng 4.35.1: Đặc tả thành phần giao diện chức năng 35 (Kênh cứu nạn môi trường khẩn cấp SOS)*
+L[1114]: *Bảng 4.35.2: Quy tắc kiểm tra và thông báo lỗi chức năng 35 (Kênh cứu nạn môi trường khẩn cấp SOS)*
+L[1147]: *Bảng 4.36.1: Đặc tả thành phần giao diện chức năng 36 (Trung tâm kết xuất bản tin môi trường công khai)*
+L[1158]: *Bảng 4.36.2: Quy tắc kiểm tra và thông báo lỗi chức năng 36 (Trung tâm kết xuất bản tin môi trường công khai)*
+
+=== STANDARDIZED FIGURES ===
+L[120]: *Hình 4.13: Giao diện phác thảo Cơ chế tích lũy Điểm thưởng Công dân Xanh*
+L[163]: *Hình 4.14: Giao diện phác thảo Xem số dư ví điểm và Lịch sử biến động điểm xanh*
+L[209]: *Hình 4.15: Giao diện phác thảo Danh mục quà tặng xanh và Vật phẩm quy đổi*
+L[256]: *Hình 4.16: Giao diện phác thảo Thực hiện đổi điểm lấy quà tặng / Voucher*
+L[301]: *Hình 4.17: Giao diện phác thảo Quản lý danh sách quà tặng cá nhân đã đổi*
+L[348]: *Hình 4.18: Giao diện phác thảo Bảng xếp hạng vinh danh Top Công dân Xanh*
+L[393]: *Hình 4.19: Giao diện phác thảo Xem danh sách các Chiến dịch ra quân dọn rác*
+L[438]: *Hình 4.20: Giao diện phác thảo Đăng ký tham gia chiến dịch tình nguyện xanh*
+L[486]: *Hình 4.21: Giao diện phác thảo Bình luận và Thảo luận dưới bài phản ánh sự cố*
+L[530]: *Hình 4.22: Giao diện phác thảo Đánh giá mức độ hài lòng (1–5 sao) sau khi dọn sạch*
+L[576]: *Hình 4.23: Giao diện phác thảo Gửi ý kiến đóng góp và Sáng kiến bảo vệ môi trường*
+L[621]: *Hình 4.24: Giao diện phác thảo Cẩm nang hướng dẫn phân loại rác và Sống xanh*
+L[670]: *Hình 4.25: Giao diện phác thảo Cổng xác thực tập trung đa nền tảng và Quản lý phiên JWT an toàn*
+L[714]: *Hình 4.26: Giao diện phác thảo Quản trị người dùng và Ma trận phân quyền động RBAC đa cấp độ*
+L[757]: *Hình 4.27: Giao diện phác thảo Nhật ký kiểm toán an ninh Audit Log và Giám sát truy vết biến động dữ liệu*
+L[799]: *Hình 4.28: Giao diện phác thảo Trung tâm Biên tập và Phát hành Bản tin Cảnh báo Ô nhiễm Môi trường Khẩn cấp*
+L[843]: *Hình 4.29: Giao diện phác thảo Điều phối Thông báo Đẩy (Push Notification) Cảnh báo Ô nhiễm theo Thời gian thực*
+L[885]: *Hình 4.30: Giao diện phác thảo Cổng Tra cứu Công khai Tiến độ và Lịch sử Xử lý Sự cố Dành cho Người Dân*
+L[928]: *Hình 4.31: Giao diện phác thảo Bản đồ Giám sát Hiện trạng Điểm Cảnh báo Ô nhiễm Trực quan cho Cộng đồng*
+L[970]: *Hình 4.32: Giao diện phác thảo Cơ chế Đăng ký Nhận Tin Cảnh báo Cá nhân hóa theo Khu Vực Cư Trú*
+L[1016]: *Hình 4.33: Giao diện phác thảo Bảng Tổng quan Chỉ số Hiện trạng Môi trường Đô thị Công cộng (Public Environmental Dashboard)*
+L[1059]: *Hình 4.34: Giao diện phác thảo Quản trị Ngưỡng Kích hoạt Cảnh báo và Phân loại Mức độ Nghiêm trọng Sự cố*
+L[1101]: *Hình 4.35: Giao diện phác thảo Kênh Tiếp nhận Tín hiệu Cứu nạn Môi trường Khẩn cấp (SOS Environmental Alert Channel)*
+L[1145]: *Hình 4.36: Giao diện phác thảo Trung tâm Kết xuất Bản tin Báo cáo Hiện trạng Môi trường Công khai (PDF/Excel)*

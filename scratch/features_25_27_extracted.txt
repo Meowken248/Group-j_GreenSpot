@@ -1,0 +1,306 @@
+P[71]: Hình 4.28: Giao diện Hệ thống Nhật ký kiểm toán an ninh Audit Log và truy vết biến động dữ liệu	74
+P[103]: Bảng 11: Từ điển dữ liệu thực thể AUDIT_LOGS (Nhật ký kiểm toán an ninh)	27
+P[159]: • Quản trị viên Hệ thống (System Administrator / Department of Natural Resources & Environment): Quản trị người dùng, phân quyền RBAC, cấu hình bản đồ không gian, giám sát nhật ký an ninh (Audit Log) và xuất dữ liệu báo cáo thống kê định kỳ.
+P[197]: Nhằm đảm bảo tính tường minh và chuẩn xác tuyệt đối trong khâu lập trình Backend, xây dựng ORM Model và tích hợp API, dưới đây là đặc tả kỹ thuật chi tiết cấu trúc 5 bảng thực thể cốt lõi nhất của hệ thống EcoReport, đại diện cho 5 trục nghiệp vụ: Định danh người dùng (USERS), Hồ sơ sự cố không gian (INCIDENTS), Điều phối tác nghiệp hiện trường (ASSIGNMENTS), Thẩm định nghiệm thu đối soát ảnh Trước - Sau (VERIFICATIONS), và Nhật ký kiểm toán an ninh bất biến (AUDIT_LOGS):
+P[202]: *Bảng 11: Từ điển dữ liệu thực thể AUDIT_LOGS (Nhật ký kiểm toán an ninh)*
+P[331]: Khi xoá, máy chủ thực hiện trong một giao dịch: chuyển toàn bộ người dùng thuộc vai trò sang Citizen, xoá toàn bộ quyền của vai trò, xoá vai trò, ghi Nhật ký kiểm toán. Một bước lỗi thì toàn bộ bị hoàn lại, không để dở dang. Người dùng được chuyển giữ nguyên các thông tin khác và đang đăng nhập thì không bị đăng xuất, quyền mới (của Citizen) có hiệu lực ngay ở yêu cầu kế tiếp.
+P[379]: Khi xoá, máy chủ xoá bản ghi thành viên khỏi nhóm và ghi Nhật ký kiểm toán trong cùng một giao dịch. Một bước lỗi thì cả hai bị hoàn lại.
+P[1216]: Chỉ người dùng có vai trò Admin mới truy cập được màn hình này. Các vai trò khác truy cập sẽ bị từ chối theo ma trận phân quyền. Mọi thao tác thêm, sửa, xoá đều được ghi vào Nhật ký kiểm toán (Audit Log).
+P[1262]: Popup không đóng khi bấm ra ngoài, người dùng bấm "Đóng" để tiếp tục. Sau khi bấm "Đóng", hệ thống quay về Màn 1 và danh mục vừa xoá không còn trong danh sách. Nếu trang hiện tại không còn dữ liệu, hệ thống tự lùi về trang trước. Thao tác xoá được ghi vào Nhật ký kiểm toán (Audit Log) kèm người thực hiện và thời điểm.
+P[1282]: Chỉ người dùng có vai trò Admin mới truy cập được màn hình này. Các vai trò khác truy cập sẽ bị từ chối theo ma trận phân quyền. Chỉ các trạm ở trạng thái "Đang hoạt động" mới hiển thị cho công dân trên bản đồ và trong kết quả tra cứu. Mọi thao tác thêm, sửa, xoá đều được ghi vào Nhật ký kiểm toán (Audit Log).
+P[1328]: Popup không đóng khi bấm ra ngoài, người dùng bấm "Đóng" để tiếp tục. Sau khi bấm "Đóng", hệ thống quay về Màn 1 và trạm vừa xoá không còn trong danh sách. Nếu trang hiện tại không còn dữ liệu, hệ thống tự lùi về trang trước. Thao tác xoá được ghi vào Nhật ký kiểm toán (Audit Log) kèm người thực hiện và thời điểm.
+P[1380]: Bùi Nguyễn Minh Quân (25 – 36): Game hóa hành vi (Thử thách, Vòng quay, Huy hiệu), kinh tế điểm thưởng & kho voucher, giám sát an ninh Audit Log và quan trắc bản đồ nhiệt khí hậu (AQI/Nhiệt độ).
+P[1382]: 25. Thử thách xanh trong tuần (nhiệm vụ nhỏ) nhận điểm thưởng
+P[1426]: 26. Nhật ký kiểm toán Audit Log: ghi lại thao tác quan trọng
+P[1428]: Mô tả:
+ Giao diện đóng vai trò trang tra cứu Nhật ký kiểm toán (Audit Log), nơi Admin xem lại các thao tác quan trọng trong hệ thống như đăng nhập, đổi quyền, sửa dữ liệu, cộng/trừ điểm. Màn hình dùng khung chung gồm Header (logo, menu quản trị, chuông, avatar) và Footer (bản quyền, liên hệ, chính sách). Phần giữa chia làm 2 khối theo chiều ngang, gồm các thành phần chính:
+P[1439]: Chỉ người dùng có vai trò Admin mới truy cập được màn hình này. Các vai trò khác truy cập sẽ bị từ chối theo ma trận phân quyền. Nhật ký chỉ cho xem, không cho sửa hoặc xoá dưới mọi hình thức. Khi chưa chọn khoảng thời gian, hệ thống mặc định hiển thị nhật ký 7 ngày gần nhất. Bản thân việc xem chi tiết và xuất nhật ký cũng được ghi lại vào Nhật ký kiểm toán.
+P[1473]: Popup hiển thị tóm tắt bộ lọc đang áp dụng (loại hành động, người thực hiện, khoảng thời gian) và tổng số dòng sẽ xuất để Admin kiểm tra lại. Định dạng mặc định là Excel. Mỗi lần xuất tối đa 10.000 dòng. Popup không đóng khi bấm ra ngoài, người dùng bấm "Xuất" hoặc "Huỷ" để tiếp tục. Thao tác xuất được ghi vào Nhật ký kiểm toán kèm người thực hiện, định dạng và bộ lọc đã dùng.
+P[1479]: 27. Thư viện sống xanh: cẩm nang phân loại rác
+P[1554]: Hình 4.28: Giao diện Hệ thống Nhật ký kiểm toán an ninh Audit Log và truy vết biến động dữ liệu
+P[2115]: Nút "Xác nhận": Lưu mức ưu tiên mới cùng lý do giải trình vào nhật ký kiểm toán (Audit Log), đóng popup và cập nhật trạng thái phiếu việc.
+P[2162]: Quy tắc hoạt động:
+ Các thao tác gọi điện và gửi cảnh báo đều được ghi nhận vào nhật ký kiểm toán (Audit Log) của hồ sơ xử lý sự cố.
+
+=== DETAILED PARAGRAPH RANGE DUMP ===
+P[1350]: Khối "HỘI THOẠI" (bên trái):
+P[1351]: Tin của bạn: Hiển thị câu hỏi vừa gửi.
+P[1352]: Trạng thái trả lời: Dòng "AI đang soạn câu trả lời…" kèm hiệu ứng 3 chấm. Khi AI bắt đầu trả lời, nội dung hiện dần từng đoạn chữ ngay tại vị trí này.
+P[1353]: Khối "THAO TÁC" (bên phải):
+P[1354]: Nút "Dừng trả lời": Bấm để ngừng sinh nội dung khi AI đang trả lời.
+P[1355]: Trong lúc AI đang trả lời, ô nhập câu hỏi và nút "Gửi" bị khoá để tránh gửi chồng nhiều câu. AI nhớ ngữ cảnh của 10 tin nhắn gần nhất trong cùng cuộc trò chuyện. Khi AI trả lời xong, hệ thống quay về Màn 1 với đầy đủ câu hỏi và câu trả lời, ô nhập mở lại. Câu trả lời của AI mang tính tham khảo, không thay thế văn bản pháp luật chính thức.
+P[1356]: Mục đích:
+ Cho người dùng biết hệ thống đang xử lý câu hỏi, đồng thời cho phép chủ động dừng khi câu trả lời không còn cần thiết, tránh phải chờ vô ích.
+P[1357]: Bảng hiển thị:
+P[1360]: Mô tả:
+ Giao diện đóng vai trò trang quản lý các cuộc trò chuyện đã lưu của người dùng, nơi người dùng mở lại hoặc xoá các cuộc trò chuyện cũ. Màn hình dùng khung chung gồm Header và Footer. Phần giữa chia làm 2 khối theo chiều ngang, gồm các thành phần chính:
+P[1361]: Khối "LỊCH SỬ" (bên trái):
+P[1362]: Dòng lịch sử: Mỗi dòng gồm tiêu đề cuộc trò chuyện và ngày cập nhật gần nhất. Tiêu đề tự lấy từ câu hỏi đầu tiên (tối đa 40 ký tự).
+P[1363]: Nút "Mở lại": Mở lại cuộc trò chuyện ở Màn 1 để xem và tiếp tục hỏi.
+P[1364]: Nút "Xoá": Mở Màn 4 để xác nhận xoá.
+P[1365]: Quy tắc: Sắp xếp theo ngày cập nhật mới nhất lên trước. Mỗi trang hiển thị 10 cuộc trò chuyện.
+P[1366]: Khối "THAO TÁC" (bên phải):
+P[1367]: Nút "Cuộc trò chuyện mới": Mở cuộc trò chuyện trống ở Màn 1.
+P[1368]: Mỗi người dùng chỉ xem được cuộc trò chuyện của chính mình. Cuộc trò chuyện không có hoạt động trong 90 ngày sẽ được hệ thống tự động xoá.
+P[1369]: Mục đích:
+ Giúp người dùng tìm lại thông tin đã được AI giải đáp trước đó và quản lý các cuộc trò chuyện của mình.
+P[1370]: Bảng hiển thị:
+P[1373]: Mô tả:
+ Popup hiện ở giữa màn hình, đè lên Màn 3. Phần nền phía sau được phủ lớp mờ và người dùng không thao tác được với phần nền. Popup có dòng nhỏ "POPUP", tiêu đề "XOÁ LỊCH SỬ?", dòng nội dung "Cuộc trò chuyện sẽ bị xoá" và 2 nút "Xoá", "Huỷ".
+P[1374]: Popup hiển thị tiêu đề và số tin nhắn của cuộc trò chuyện sắp xoá để người dùng kiểm tra lại. Hệ thống xoá cứng nội dung cuộc trò chuyện khỏi tài khoản người dùng và không thể khôi phục. Popup không đóng khi bấm ra ngoài, người dùng bấm "Xoá" hoặc "Huỷ" để tiếp tục.
+P[1375]: Mục đích:
+ Tránh xoá nhầm cuộc trò chuyện do thao tác vô ý, đồng thời báo rõ việc xoá không thể hoàn tác.
+P[1376]: Bảng hiển thị:
+P[1379]: IV.3. Phân hệ các chức năng do sinh viên Bùi Nguyễn Minh Quân thực hiện
+P[1380]: Bùi Nguyễn Minh Quân (25 – 36): Game hóa hành vi (Thử thách, Vòng quay, Huy hiệu), kinh tế điểm thưởng & kho voucher, giám sát an ninh Audit Log và quan trắc bản đồ nhiệt khí hậu (AQI/Nhiệt độ).
+P[1382]: 25. Thử thách xanh trong tuần (nhiệm vụ nhỏ) nhận điểm thưởng
+P[1383]: • Mục tiêu nghiệp vụ: Cung cấp giải pháp xác thực người dùng tập trung đa nền tảng (Web Portal, Mobile App) hỗ trợ nhiều phương thức đăng nhập an toàn; áp dụng cơ chế xác thực kép Access Token và Refresh Token chuẩn mã hóa khóa bất đối xứng RS256/HS256; triển khai mô hình JWT Rotation và JTI Blacklist lưu trữ trong bộ đệm Redis để ngăn chặn tuyệt đối các nguy cơ đánh cắp phiên và tấn công Replay Attack.
+P[1384]: • Tác nhân (Actor): Công dân, Cán bộ quản lý (Phường/Quận/Sở), Tài xế đội thu gom, Quản trị viên hệ thống (Super Admin)
+P[1385]: • Tiền điều kiện: Người dùng đã truy cập vào hệ thống qua trình duyệt web hoặc ứng dụng di động; hạ tầng mạng và máy chủ xác thực Auth Gateway hoạt động ổn định.
+P[1386]: • Hậu điều kiện: Hệ thống phát hành cặp mã định danh phiên JWT hợp lệ; phân giải quyền hạn người dùng vào ngữ cảnh yêu cầu; ghi nhận nhật ký phiên làm việc trong CSDL.
+P[1388]: Mô tả:
+ Giao diện đóng vai trò trung tâm theo dõi và tham gia các thử thách môi trường định kỳ (Gamification Challenge Hub), nơi công dân theo dõi tiến độ hoàn thành chuỗi nhiệm vụ sống xanh hàng tuần để tích lũy điểm thưởng và nâng hạng danh hiệu Công dân Xanh. Màn hình dùng khung chung gồm Header (logo, menu, chuông, avatar) và Footer (bản quyền, liên hệ, chính sách). Phần giữa được chia thành 2 khối theo chiều ngang từ trái sang phải:
+P[1389]: Khối "TUẦN NÀY" (Cột trái):
+P[1390]: Thanh tiến độ: Hiển thị thanh tiến trình trực quan ghi nhận tỷ lệ hoàn thành nhiệm vụ trong tuần (VD: "Thanh tiến độ: 2/5 nhiệm vụ").
+P[1391]: Thời gian còn lại: Đồng hồ đếm ngược thời gian của tuần thử thách hiện tại (VD: "Còn 3 ngày 14 giờ", tự động làm mới vào 00:00 thứ Hai hàng tuần).
+P[1392]: Phần thưởng tuần: Thông tin phần thưởng combo điểm xanh khi người dùng hoàn thành xuất sắc toàn bộ 5/5 nhiệm vụ tuần.
+P[1393]: Khối "NHIỆM VỤ" (Cột phải):
+P[1394]: Danh sách thẻ nhiệm vụ: Mỗi thẻ bao gồm: Tên nhiệm vụ (VD: "Phân loại rác tại nguồn", "Đổi 5 viên pin cũ tại Trạm Xanh", "Báo cáo 01 bãi rác có định vị GPS") | Điểm thưởng tương ứng (VD: "+30 điểm xanh") | Trạng thái (Chưa làm / Chờ duyệt / Đã xong).
+P[1395]: Nút "Xem nhiệm vụ": Cho phép bấm vào thẻ hoặc nút chức năng để mở Màn 2 (Chi tiết nhiệm vụ).
+P[1396]: Khung thao tác & Quy tắc hoạt động:
+P[1397]: Chỉ người dùng đã đăng nhập tài khoản mới được hệ thống ghi nhận tiến độ và tích lũy điểm thưởng. Người dùng chưa đăng nhập khi truy cập vẫn xem được danh sách nhưng nhận nhắc nhở đăng nhập khi tương tác.
+P[1398]: Các nhiệm vụ tự động (như gửi báo cáo bãi rác, check-in sự kiện Chủ Nhật Xanh) sẽ được hệ thống tự động kiểm tra và chuyển trạng thái "Đã xong" ngay khi sự kiện phát sinh.
+P[1399]: Mục đích:
+ Khuyến khích công dân duy trì các thói quen bảo vệ môi trường đều đặn hàng ngày thông qua cơ chế thử thách theo tuần có thời hạn và thang điểm thưởng minh bạch.
+P[1400]: Bảng hiển thị:
+P[1403]: Mô tả:
+ Giao diện đóng vai trò trang cung cấp thông tin hướng dẫn và biểu mẫu nộp bằng chứng thực hiện nhiệm vụ môi trường. Màn hình dùng khung chung gồm Header và Footer. Phần giữa chia làm 2 khối:
+P[1404]: Khối "MÔ TẢ" (Cột trái):
+P[1405]: Tên nhiệm vụ: Tên gọi chính thức của thử thách được chọn.
+P[1406]: Yêu cầu hoàn thành: Hướng dẫn chi tiết từng bước thực hiện và tiêu chuẩn ảnh minh chứng được chấp thuận (VD: "Chụp ảnh rõ nét lúc bỏ rác tái chế vào thùng phân loại hoặc mang pin cũ đến điểm thu gom").
+P[1407]: Điểm thưởng: Số lượng Điểm Xanh mà công dân sẽ nhận được khi hoàn tất nhiệm vụ (VD: "+30 Điểm Xanh").
+P[1408]: Khối "MINH CHỨNG" (Cột phải):
+P[1409]: Ảnh/ghi chú: Khung xem trước ảnh chụp hiện trường và ô nhập ghi chú ngắn (tối đa 200 ký tự).
+P[1410]: Nút "Tải ảnh lên": Kích hoạt camera chụp ảnh trực tiếp hoặc chọn ảnh từ thư viện thiết bị (định dạng JPG, PNG, dung lượng tối đa 5MB).
+P[1411]: Nút "Nộp nhiệm vụ": Gửi hình ảnh minh chứng lên máy chủ để xác thực. Khi nhiệm vụ được hệ thống xác thực thành công, kích hoạt mở Màn 3 (Popup hoàn thành nhiệm vụ).
+P[1412]: Quy tắc hoạt động:
+ Người dùng bắt buộc phải tải lên ít nhất 01 ảnh minh chứng mới có thể bấm nút "Nộp nhiệm vụ".
+P[1413]: Mục đích:
+ Cung cấp hướng dẫn rõ ràng giúp người dân thực hiện đúng tiêu chuẩn thử thách, đồng thời thu thập minh chứng xác thực để đảm bảo tính công bằng và minh bạch khi cộng điểm thưởng.
+P[1414]: Bảng hiển thị:
+P[1417]: Hình 4.25: Giao diện Cổng xác thực tập trung đa nền tảng và Quản lý phiên JWT an toàn
+P[1418]: Mô tả:
+ Popup hiện ở chính giữa màn hình, đè lên Màn 2 ngay khi nhiệm vụ được xác nhận hoàn thành. Phần nền phía sau được phủ lớp mờ và người dùng không thao tác được với phần nền.
+P[1419]: Popup gồm dòng nhỏ "POPUP", tiêu đề in đậm "HOÀN THÀNH THỬ THÁCH", dòng hiển thị điểm thưởng nổi bật "+30 điểm xanh" (điểm được cộng ngay vào ví cá nhân), cùng hai nút chức năng:
+P[1420]: Nút "Xem ví điểm": Điều hướng người dùng tới trang Quản lý ví điểm thưởng (Màn hình 38) để kiểm tra số dư điểm khả dụng và lịch sử biến động điểm.
+P[1421]: Nút "Đóng": Đóng popup và quay trở về Màn 1 (Danh sách thử thách). Lúc này, thanh tiến độ tuần được cộng thêm 1 nhiệm vụ và thẻ nhiệm vụ tương ứng chuyển sang trạng thái "Đã xong".
+P[1422]: Mục đích:
+ Kịp thời ghi nhận thành tích và trao thưởng ngay tại chỗ (Instant Gratification), tạo cảm giác phấn khởi và khích lệ người dùng tiếp tục hoàn thành các thử thách môi trường tiếp theo trong tuần.
+P[1423]: Bảng hiển thị:
+P[1426]: 26. Nhật ký kiểm toán Audit Log: ghi lại thao tác quan trọng
+P[1428]: Mô tả:
+ Giao diện đóng vai trò trang tra cứu Nhật ký kiểm toán (Audit Log), nơi Admin xem lại các thao tác quan trọng trong hệ thống như đăng nhập, đổi quyền, sửa dữ liệu, cộng/trừ điểm. Màn hình dùng khung chung gồm Header (logo, menu quản trị, chuông, avatar) và Footer (bản quyền, liên hệ, chính sách). Phần giữa chia làm 2 khối theo chiều ngang, gồm các thành phần chính:
+P[1429]: Khối "BỘ LỌC" (bên trái):
+P[1430]: Bộ lọc loại hành động: Gồm "Tất cả", "Đăng nhập", "Đổi quyền", "Sửa dữ liệu", "Cộng/trừ điểm".
+P[1431]: Ô "Người thực hiện": Tìm theo tên hoặc email của người thực hiện thao tác.
+P[1432]: Ô "Khoảng thời gian": Chọn từ ngày đến ngày.
+P[1433]: Nút "Lọc": Thực hiện lọc theo các điều kiện đã chọn.
+P[1434]: Khối "NHẬT KÝ" (bên phải):
+P[1435]: Dòng nhật ký: Mỗi dòng gồm thời gian, người dùng, hành động, đối tượng bị tác động.
+P[1436]: Nút "Xem chi tiết": Mở Màn 2 với thông tin đầy đủ của dòng nhật ký được chọn.
+P[1437]: Nút "Xuất nhật ký": Mở Màn 4 để xuất danh sách theo bộ lọc hiện tại.
+P[1438]: Quy tắc: Sắp xếp theo thời gian mới nhất lên trước. Tải 20 dòng mỗi lần, cuộn xuống cuối thì tự tải thêm.
+P[1439]: Chỉ người dùng có vai trò Admin mới truy cập được màn hình này. Các vai trò khác truy cập sẽ bị từ chối theo ma trận phân quyền. Nhật ký chỉ cho xem, không cho sửa hoặc xoá dưới mọi hình thức. Khi chưa chọn khoảng thời gian, hệ thống mặc định hiển thị nhật ký 7 ngày gần nhất. Bản thân việc xem chi tiết và xuất nhật ký cũng được ghi lại vào Nhật ký kiểm toán.
+P[1440]: Mục đích:
+ Giúp Admin kiểm soát và truy vết các thao tác quan trọng trong hệ thống, phát hiện kịp thời hành vi bất thường và làm bằng chứng khi cần đối soát.
+P[1441]: Bảng hiển thị:
+P[1444]: Mô tả:
+ Giao diện đóng vai trò trang xem đầy đủ một dòng nhật ký, cho biết ai đã làm gì, từ đâu, vào lúc nào và dữ liệu thay đổi ra sao. Màn hình dùng khung chung gồm Header và Footer. Phần giữa chia làm 3 khối theo chiều ngang, gồm các thành phần chính:
+P[1445]: Khối "THÔNG TIN":
+P[1446]: Người thực hiện: Tên, email và vai trò của người thực hiện thao tác.
+P[1447]: Địa chỉ IP: Địa chỉ IP tại thời điểm thao tác.
+P[1448]: Thiết bị: Loại thiết bị, hệ điều hành và trình duyệt.
+P[1449]: Thời gian: Ngày giờ thực hiện, chính xác đến giây.
+P[1450]: Khối "THAY ĐỔI":
+P[1451]: Giá trị cũ: Dữ liệu trước khi thao tác.
+P[1452]: Giá trị mới: Dữ liệu sau khi thao tác.
+P[1453]: Quy tắc: Những trường có thay đổi được tô nổi để dễ so sánh. Các thông tin nhạy cảm như mật khẩu, mã OTP, token luôn được che, chỉ hiển thị "******".
+P[1454]: Khối "TRUY VẾT":
+P[1455]: Nút "Xem hoạt động của người này": Quay về Màn 1 với bộ lọc "Người thực hiện" đã điền sẵn người này, hiển thị toàn bộ thao tác của họ.
+P[1456]: Màn hình chỉ cho xem, không có thao tác sửa hay xoá. Với các hành động không làm thay đổi dữ liệu như đăng nhập, khối "THAY ĐỔI" hiển thị "Không có thay đổi dữ liệu". Với hành động cộng/trừ điểm, giá trị cũ và mới là số điểm trước và sau thao tác.
+P[1457]: Mục đích:
+ Cho phép Admin truy ra chính xác người thực hiện và nội dung thay đổi của một thao tác, đồng thời lần theo toàn bộ hoạt động của người đó khi nghi ngờ có hành vi bất thường.
+P[1458]: Bảng hiển thị:
+P[1461]: Mô tả:
+ Giao diện đóng vai trò trạng thái trống của trang nhật ký, hiển thị khi bộ lọc không tìm thấy dòng nhật ký nào. Màn hình dùng khung chung gồm Header và Footer. Phần giữa chỉ có một khối duy nhất, gồm các thành phần chính:
+P[1462]: Khối "KHÔNG TÌM THẤY NHẬT KÝ":
+P[1463]: Tiêu đề: "KHÔNG TÌM THẤY NHẬT KÝ".
+P[1464]: Dòng gợi ý: "Thử đổi bộ lọc".
+P[1465]: Nút "Xoá bộ lọc": Đưa toàn bộ điều kiện lọc về mặc định và quay về Màn 1.
+P[1466]: Màn hình này chỉ xuất hiện khi lọc ra kết quả rỗng. Nút "Xuất nhật ký" không có ở màn hình này vì không có dữ liệu để xuất.
+P[1467]: Mục đích:
+ Báo rõ cho Admin biết không có dữ liệu khớp điều kiện và hướng dẫn cách quay lại danh sách nhanh nhất.
+P[1468]: Bảng hiển thị:
+P[1471]: Hình 4.26: Giao diện Quản trị người dùng và Ma trận phân quyền động RBAC đa cấp độ
+P[1472]: Mô tả:
+ Popup hiện ở giữa màn hình, đè lên Màn 1. Phần nền phía sau được phủ lớp mờ và người dùng không thao tác được với phần nền. Popup có dòng nhỏ "POPUP", tiêu đề "XUẤT NHẬT KÝ", dòng chọn "Định dạng: Excel / PDF", dòng nội dung "Theo bộ lọc hiện tại" và 2 nút "Xuất", "Huỷ".
+P[1473]: Popup hiển thị tóm tắt bộ lọc đang áp dụng (loại hành động, người thực hiện, khoảng thời gian) và tổng số dòng sẽ xuất để Admin kiểm tra lại. Định dạng mặc định là Excel. Mỗi lần xuất tối đa 10.000 dòng. Popup không đóng khi bấm ra ngoài, người dùng bấm "Xuất" hoặc "Huỷ" để tiếp tục. Thao tác xuất được ghi vào Nhật ký kiểm toán kèm người thực hiện, định dạng và bộ lọc đã dùng.
+P[1474]: Mục đích:
+ Cho phép Admin xuất nhật ký ra tệp để lưu trữ, báo cáo hoặc đối soát, đồng thời bảo đảm dữ liệu xuất đúng với bộ lọc đang xem.
+P[1475]: Bảng hiển thị:
+P[1479]: 27. Thư viện sống xanh: cẩm nang phân loại rác
+P[1481]: Mô tả:
+ Giao diện đóng vai trò trang cẩm nang hướng dẫn phân loại chất thải tại nguồn (Waste Sorting Knowledge Base), cung cấp kiến thức chuẩn hóa theo quy định môi trường giúp công dân nhận biết và phân loại chính xác từng loại rác thải phát sinh trong sinh hoạt hàng ngày. Màn hình dùng khung chung gồm Header (logo, menu, chuông, avatar) và Footer (bản quyền, liên hệ, chính sách). Phần giữa được chia thành 2 khối theo chiều ngang từ trái sang phải:
+P[1482]: Khối "TÌM KIẾM" (Cột trái):
+P[1483]: Ô nhập loại rác: Khung tìm kiếm nhanh cho phép người dùng gõ tên đồ vật hoặc rác thải cụ thể cần tra cứu (VD: "vỏ hộp sữa", "pin cũ", "lá cây", "xốp bọc hàng", "chai thủy tinh"). Nhập từ khóa và bấm Enter sẽ chuyển sang Màn 3 (Kết quả tìm kiếm).
+P[1484]: Khối "NHÓM RÁC" (Cột phải):
+P[1485]: Danh sách nút nhóm rác: Cung cấp 4 nút truy cập nhanh vào 4 nhóm chất thải chuẩn quốc gia:
+P[1486]: Hữu cơ: Thức ăn thừa, rau củ quả hư hỏng, lá cây, bã trà, bã cà phê.
+P[1487]: Tái chế: Giấy báo, bìa carton, chai nhựa PET, lon nhôm, vỏ hộp kim loại.
+P[1488]: Nguy hại: Pin đã qua sử dụng, bóng đèn huỳnh quang, ắc quy, chai lọ hóa chất tẩy rửa.
+P[1489]: Rác khác: Túi nilon dùng một lần, tã bỉm, gốm sứ vỡ, đầu mẩu thuốc lá.
+P[1490]: Quy tắc: Bấm vào bất kỳ nút nhóm rác nào, hệ thống sẽ tự động điều hướng sang Màn 3 với bộ lọc của nhóm rác đó được áp dụng sẵn.
+P[1491]: Quy tắc hoạt động:
+ Trang cẩm nang được mở công khai, bất kỳ ai (dù đã đăng nhập hay chưa) đều có thể tra cứu kiến thức phân loại rác nhanh chóng và hoàn toàn miễn phí.
+P[1492]: Mục đích:
+ Trang bị kiến thức khoa học và chuẩn hóa về phân loại rác cho mọi tầng lớp nhân dân, giúp giảm thiểu khối lượng rác chôn lấp, hạn chế ô nhiễm và thúc đẩy kinh tế tuần hoàn tại địa phương.
+P[1493]: Bảng hiển thị:
+P[1496]: Mô tả:
+ Giao diện đóng vai trò trang thông tin chi tiết và cẩm nang xử lý đối với một loại rác cụ thể, hướng dẫn quy chuẩn bỏ rác đúng thùng và cung cấp lối tắt tìm kiếm trạm thu gom ngoài thực địa. Màn hình dùng khung chung gồm Header và Footer. Phần giữa chia làm 3 khối theo chiều ngang từ trái sang phải:
+P[1497]: Khối "HÌNH ẢNH" (Cột trái):
+P[1498]: Ảnh minh hoạ: Hình ảnh trực quan rõ nét của loại rác thải sinh hoạt.
+P[1499]: Tên loại rác: Tên gọi thông dụng và phân loại chất liệu (VD: "Pin đã qua sử dụng - Rác nguy hại sinh hoạt").
+P[1500]: Khối "HƯỚNG DẪN" (Cột giữa):
+P[1501]: Cách phân loại: Hướng dẫn các bước sơ chế rác trước khi vứt (VD: tráng sạch hộp sữa bằng nước, ép bẹp lon nhôm, bọc kín nhiệt kế vỡ).
+P[1502]: Thùng rác phù hợp: Quy định màu sắc thùng rác tương ứng (Thùng xanh lá cho rác hữu cơ, thùng xanh dương/trắng cho rác tái chế, thùng đỏ/cam cho rác nguy hại, thùng vàng/xám cho rác khác).
+P[1503]: Lưu ý: Các cảnh báo an toàn đặc biệt (như không đập vỡ bóng đèn huỳnh quang, không đốt pin vì nguy cơ phát nổ).
+P[1504]: Khối "HÀNH ĐỘNG" (Cột phải):
+P[1505]: Nút "Tìm điểm thu gom": Điều hướng người dùng sang Bản đồ mạng lưới thu gom & tái chế để tìm trạm tiếp nhận loại rác này gần vị trí của mình nhất.
+P[1506]: Nút "Chia sẻ": Cho phép sao chép liên kết hoặc chia sẻ mẹo phân loại rác này lên mạng xã hội/bảng tin cộng đồng (STT 08 / STT 09).
+P[1507]: Quy tắc hoạt động:
+ Với các loại rác tái chế và rác nguy hại, nút "Tìm điểm thu gom" sẽ tự động lọc sẵn các điểm thu hồi pin, trạm tái chế chuyên biệt trên bản đồ.
+P[1508]: Mục đích:
+ Cung cấp chỉ dẫn hành động rõ ràng và chính xác cho người dân, giải quyết triệt để sự bối rối khi vứt rác, đồng thời kết nối việc phân loại tại nhà với mạng lưới các điểm thu gom ngoài thực địa.
+P[1509]: Bảng hiển thị:
+P[1512]: Hình 4.27: Giao diện Quản lý năng lực phương tiện đội xe thu gom và điều phối tài xế hiện trường
+P[1513]: Mô tả:
+ Giao diện đóng vai trò trang danh sách các loại rác khớp với từ khóa tra cứu hoặc nhóm rác đã chọn từ Màn 1. Màn hình dùng khung chung gồm Header và Footer.
+P[1514]: Phần giữa là khối lớn "KẾT QUẢ":
+P[1515]: Danh sách kết quả: Mỗi dòng hiển thị: Ảnh minh họa thu nhỏ | Tên loại rác | Tên nhóm phân loại (kèm nhãn màu nhận diện nhóm: Xanh lá cho Hữu cơ, Xanh dương cho Tái chế, Đỏ cho Nguy hại, Xám cho Rác khác).
+P[1516]: Nút "Xem chi tiết": Nằm trên từng dòng kết quả, cho phép người dùng nhấp vào để mở Màn 2 (Chi tiết loại rác).
+P[1517]: Quy tắc hoạt động:
+ Tải tối đa 10 kết quả mỗi lần và tự động tải thêm khi người dùng cuộn xuống dưới. Nếu từ khóa hoàn toàn không có kết quả, màn hình hiển thị thông báo rỗng kèm gợi ý gửi ảnh để nhận diện.
+P[1518]: Mục đích:
+ Giúp người dùng nhanh chóng đối chiếu đồ vật mình đang cần vứt thuộc nhóm rác nào và dễ dàng truy cập cẩm nang hướng dẫn xử lý cụ thể.
+P[1519]: Bảng hiển thị:
+P[1523]: 28. Cơ chế tích lũy điểm thưởng Công dân Xanh
+P[1525]: Mô tả:
+ Giao diện đóng vai trò trang tổng quan chính sách khen thưởng và bảng quy chuẩn tích lũy Điểm Xanh (Green Point Accumulation Policy), nơi công dân tra cứu chi tiết các mức điểm thưởng được quy định cho từng hành vi bảo vệ môi trường, đồng thời theo dõi số dư điểm và thứ hạng hội viên hiện tại của mình. Màn hình dùng khung chung gồm Header (logo, menu, chuông, avatar) và Footer (bản quyền, liên hệ, chính sách). Phần giữa được chia thành 2 khối theo chiều ngang từ trái sang phải:
+P[1526]: Khối "HÀNH ĐỘNG TÍCH ĐIỂM" (Cột trái):
+P[1527]: Bảng tỷ lệ cộng điểm chi tiết:
+P[1528]: Báo cáo sự cố: +50 điểm khi báo cáo bãi rác có ảnh và định vị GPS được tiếp nhận; +100 điểm thưởng bổ sung khi bãi rác được nghiệm thu dọn sạch.
+P[1529]: Check-in sự kiện: +50 điểm khi có mặt và quét GPS check-in tại các chiến dịch "Chủ Nhật Xanh" hoặc buổi ra quân làm sạch khu dân cư.
+P[1530]: Thả cảm xúc: +2 điểm khi bày tỏ cảm xúc sinh thái (Eco-Reactions) cho các bài viết, hoạt động cộng đồng.
+P[1531]: Hoàn thành thử thách: +30 điểm khi hoàn tất một nhiệm vụ tuần; nhận thêm +100 điểm combo khi hoàn thành đủ 5/5 nhiệm vụ.
+P[1532]: Khối "TỔNG ĐIỂM" (Cột phải):
+P[1533]: Điểm của tôi: Hiển thị tổng số dư Điểm Xanh khả dụng hiện có (VD: "1.450 Điểm Xanh") cùng tổng số điểm đã tích lũy trọn đời.
+P[1534]: Cấp hiện tại: Hiển thị thứ hạng danh hiệu Công dân Xanh (Hạng Đồng, Bạc, Vàng, Kim Cương) kèm thanh tiến trình thăng hạng (VD: "Còn 550 điểm để thăng Hạng Kim Cương").
+P[1535]: Khung thao tác & Quy tắc hoạt động:
+P[1536]: Người dùng chưa đăng nhập vẫn xem được bảng quy chuẩn cộng điểm ở cột trái, nhưng cột phải sẽ hiển thị nút nhắc "Đăng nhập để xem điểm".
+P[1537]: Số dư điểm được hệ thống đồng bộ hóa thời gian thực với ví điểm cá nhân.
+P[1538]: Mục đích:
+ Minh bạch hóa cơ chế thưởng điểm, tạo mục tiêu phấn đấu rõ ràng và khích lệ người dân tích cực tham gia các hoạt động bảo vệ môi trường để thăng hạng và đổi quà tặng sinh thái.
+P[1539]: Bảng hiển thị:
+P[1542]: Mô tả:
+ Giao diện đóng vai trò trang điều khoản chống gian lận và quy định định ngạch tích điểm, công khai các giới hạn nhận điểm tối đa trong ngày cùng các chế tài xử lý vi phạm nhằm bảo vệ tính công bằng của hệ sinh thái Công dân Xanh. Màn hình dùng khung chung gồm Header và Footer. Phần giữa chia làm 2 khối:
+P[1543]: Khối "GIỚI HẠN" (Cột trái):
+P[1544]: Điểm tối đa mỗi ngày: Quy định mức trần điểm thưởng tối đa trong vòng 24 giờ (VD: Tối đa 200 điểm/ngày từ báo cáo sự cố; tối đa 20 điểm/ngày từ việc thả cảm xúc bài viết; tối đa 1 sự kiện check-in/ngày).
+P[1545]: Điều kiện nhận điểm: Yêu cầu tài khoản đã được xác thực, định vị GPS chính xác tại hiện trường, ảnh chụp thật không sao chép từ Internet và báo cáo phải được phê duyệt hợp lệ.
+P[1546]: Khối "CẢNH BÁO" (Cột phải):
+P[1547]: Hành vi gian lận bị trừ điểm: Nêu rõ các hành vi bị nghiêm cấm như: giả lập vị trí GPS (Fake GPS), gửi ảnh rác tải từ mạng, spam bài viết ảo, check-in khống khi không có mặt.
+P[1548]: Chế tài áp dụng: Thu hồi toàn bộ điểm thưởng nhận sai, phạt trừ -100 điểm đến -500 điểm vào ví, và khóa tài khoản từ 7 ngày đến vĩnh viễn đối với các trường hợp cố tình vi phạm nhiều lần.
+P[1549]: Quy tắc hoạt động:
+ Khi tài khoản đạt trần điểm thưởng trong ngày, hệ thống vẫn ghi nhận hành động đóng góp của người dùng nhưng tạm ngưng cộng điểm thưởng cho đến ngày hôm sau.
+
+=== TABLES ===
+T[1][4]: 04 | Lê Anh Tuấn | 24211TT1250 | Thành Viên (12 chức năng)
+T[2][25]: 25 | SLA | Cam kết chất lượng mức độ dịch vụ xử lý | Service Level Agreement
+T[2][26]: 26 | SPA | Ứng dụng web trang đơn | Single Page Application
+T[2][27]: 27 | UI / UX | Giao diện và trải nghiệm người dùng | User Interface / User Experience
+T[3][1]: Nguyễn Thành Đạt | 1 | Đăng ký tài khoản và kích hoạt bằng mã OTP Email | 15/09/2026 |  | 
+T[3][2]:  | 2 | Đăng nhập đa nền tảng và quản lý phiên làm việc chuẩn OAuth2 JWT Bearer | 22/09/2026 |  | 
+T[3][3]:  | 3 | Phân quyền vai trò RBAC (Admin, District Manager, Responder, Citizen) kèm ma trận phân quyền động | 29/09/2026 |  | 
+T[3][4]:  | 4 | Vai trò trong nhóm (Quản trị nhóm, Kiểm duyệt viên, Thành viên) | 06/10/2026 |  | 
+T[3][5]:  | 5 | Trang cá nhân (Timeline): ảnh bìa, avatar, bài đăng, Green Passport, huy hiệu, lịch sử đóng góp | 13/10/2026 |  | 
+T[3][6]:  | 6 | Kết bạn và theo dõi: gửi lời mời, chấp nhận, danh sách bạn bè | 20/10/2026 |  | 
+T[3][7]:  | 7 | Cài đặt tài khoản: đổi chế độ giao diện sáng hoặc tối, đổi ngôn ngữ Việt hoặc Anh | 27/10/2026 |  | 
+T[3][8]:  | 8 | Bảng tin Geo-Feed theo bán kính với các tab Gần tôi, Quận của tôi, Bạn bè, Nhóm | 03/11/2026 |  | 
+T[3][9]:  | 9 | Đăng bài kèm toạ độ, ảnh, video, gắn thẻ bạn bè hoặc đăng vào nhóm | 10/11/2026 |  | 
+T[3][10]:  | 10 | Eco-Reactions: chọn cảm xúc sinh thái cho bài viết và nhận điểm thưởng | 17/11/2026 |  | 
+T[3][11]:  | 11 | Tra cứu quy định xử phạt | 24/11/2026 |  | 
+T[3][12]:  | 12 | Tìm kiếm người dùng, nhóm, bài viết, sự kiện, địa điểm | 26/11/2026 |  | 
+T[3][13]: Huỳnh Anh Tú | 13 | Sửa, xoá và ẩn bài viết của chính mình | 15/09/2026 |  | 
+T[3][14]:  | 14 | Bình luận, trả lời bình luận và chia sẻ bài viết | 22/09/2026 |  | 
+T[3][15]:  | 15 | Nhắn tin riêng 1-1 và chat nhóm, chat quận thời gian thực | 29/09/2026 |  | 
+T[3][16]:  | 16 | Tạo nhóm theo quận, theo phường hoặc theo chủ đề | 06/10/2026 |  | 
+T[3][17]:  | 17 | Sinh nhật bạn bè: nhắc sinh nhật hôm nay trên bảng tin, gửi lời chúc, tặng thiệp xanh kèm điểm thưởng nhỏ | 13/10/2026 |  | 
+T[3][18]:  | 18 | Tiếp nhận phản ánh đa phương tiện: GPS tự động bắt điểm, ảnh/video + watermark thời gian (jimp.js hoặc sharp.js), giọng nói (Web Speech API hoặc Hugging Face), chọn loại sự cố | 20/10/2026 |  | 
+T[3][19]:  | 19 | Chế độ Offline-First: lưu nháp, hàng đợi gửi, đồng bộ tự động khi online | 27/10/2026 |  | 
+T[3][20]:  | 20 | Gây quỹ cộng đồng (Fundraiser): tạo chiến dịch gây quỹ, quyên góp, thanh tiến độ, công khai danh sách và báo cáo sử dụng | 03/11/2026 |  | 
+T[3][21]:  | 21 | Sự kiện và chiến dịch Chủ Nhật Xanh: tạo sự kiện, Quan tâm, Tham gia, check-in GPS | 10/11/2026 |  | 
+T[3][22]:  | 22 | Quản trị CRUD Danh mục Rác thải Đô thị & Cấu hình Quy chuẩn SLA Xử lý | 17/11/2026 |  | 
+T[3][23]:  | 23 | Quản trị CRUD Mạng lưới Trạm Tái chế & Điểm Tiếp nhận | 24/11/2026 |  | 
+T[3][24]:  | 24 | AI  chat box | 26/11/2026 |  | 
+T[3][25]: Bùi Nguyễn Minh Quân | 25 | Thử thách xanh trong tuần (nhiệm vụ nhỏ) nhận điểm thưởng | 15/09/2026 |  | 
+T[3][26]:  | 26 | Nhật ký kiểm toán Audit Log: ghi lại thao tác quan trọng (đăng nhập, đổi quyền, sửa dữ liệu, cộng trừ điểm), lọc, tra cứu và truy vết người thực hiện | 22/09/2026 |  | 
+T[3][27]:  | 27 | Thư viện sống xanh: cẩm nang phân loại rác | 29/09/2026 |  | 
+T[3][28]:  | 28 | Cơ chế tích lũy điểm thưởng Công dân Xanh | 06/10/2026 |  | 
+T[3][29]:  | 29 | Ví điểm và lịch sử biến động điểm xanh | 13/10/2026 |  | 
+T[3][30]:  | 30 | Quản trị CRUD danh mục quà tặng xanh và kho voucher: thêm, sửa, xoá quà, số lượng tồn, hạn dùng, thống kê lượt đổi | 20/10/2026 |  | 
+T[3][31]:  | 31 | Quản lý danh sách quà tặng cá nhân đã đổi | 27/10/2026 |  | 
+T[3][32]:  | 32 | Bảng xếp hạng vinh danh Top Công dân Xanh (cá nhân, nhóm, quận) | 03/11/2026 |  | 
+T[3][33]:  | 33 | Bản đồ nhiệt môi trường và khí hậu đa chế độ: AQI, nhiệt độ, điểm số rủi ro | 10/11/2026 |  | 
+T[3][34]:  | 34 | Quét mã QR nhận điểm: quét mã dán tại điểm thu gom, sự kiện hoặc trạm tái chế để cộng điểm, mỗi mã chỉ dùng một lần mỗi ngày | 17/11/2026 |  | 
+T[3][35]:  | 35 | Vòng quay may mắn hằng ngày: mỗi ngày một lượt quay, trúng điểm xanh hoặc huy hiệu, hiển thị lịch sử lượt quay | 24/11/2026 |  | 
+T[3][36]:  | 36 | Hiệu ứng thăng cấp danh hiệu: cửa sổ chúc mừng khi lên cấp, tự tạo bài chúc mừng lên bảng tin, xem lộ trình các cấp tiếp theo | 26/11/2026 |  | 
+T[3][37]: Lê Anh Tuấn | 37 | Trợ lý giọng nói rảnh tay | 15/09/2026 |  | 
+T[3][38]:  | 38 | AI phát hiện báo cáo trùng lặp hoặc tương tự | 22/09/2026 |  | 
+T[3][39]:  | 39 | AI tóm tắt sự cố và gợi ý mức độ ưu tiên xử lý | 29/09/2026 |  | 
+T[3][40]:  | 40 | Tìm cơ sở thiết yếu gần sự cố | 06/10/2026 |  | 
+T[3][41]:  | 41 | Tìm tuyến đường an toàn tránh ngập | 13/10/2026 |  | 
+T[3][42]:  | 42 | Dashboard phân tích rủi ro đô thị | 20/10/2026 |  | 
+T[3][43]:  | 43 | Trung tâm điều phối tác nghiệp và phân công lệnh xử lý hiện trường | 27/10/2026 |  | 
+T[3][44]:  | 44 | Phân tích điểm nóng + dự báo 7 ngày | 03/11/2026 |  | 
+T[3][45]:  | 45 | Hệ thống cảnh báo khẩn cấp theo vị trí: đẩy cảnh báo ngập, bão đến người dùng trong bán kính, Safety Check "Tôi an toàn" gửi cho bạn bè | 10/11/2026 |  | 
+T[3][46]:  | 46 | Cứu hộ ngập cộng đồng (Flood SOS): gửi yêu cầu cứu hộ kèm vị trí, tình nguyện viên và đội phản ứng gần nhất nhận yêu cầu, theo dõi tiến độ | 17/11/2026 |  | 
+T[3][47]:  | 47 | Xuất danh sách sự cố ra Excel hoặc PDF theo bộ lọc | 24/11/2026 |  | 
+T[3][48]:  | 48 | Bảng thống kê hoạt động hệ thống cho Admin: người dùng mới, bài đăng, nhóm mới theo ngày | 26/11/2026 |  | 
+T[4][1]: 1 | 19/09/2026 | 13:30 | Google Meet | Cả nhóm (4 thành viên) | Khảo sát bài toán quản lý ô nhiễm rác thải đô thị; xác định các bên liên quan (Công dân, Cán bộ Phường, Đơn vị thu gom); thống nhất phạm vi 48 chức năng nghiệp vụ và phân chia 12 việc cho từng thành viên. | Nhóm trưởng phân công chi tiết WBS.
+T[4][2]: 2 | 03/10/2026 | 14:00 | Phòng máy B2.04 | Cả nhóm (4 thành viên) | Thiết kế kiến trúc 3-Tier kết hợp WebGIS; lựa chọn công nghệ Next.js 14, React 18, TypeScript 5, PostgreSQL 16 tích hợp PostGIS; thống nhất 58 RESTful API Endpoints. | Hoàn thiện đặc tả kiến trúc tầng BE & FE.
+T[4][3]: 3 | 24/10/2026 | 13:30 | Google Meet | Cả nhóm (4 thành viên) | Thiết kế lược đồ quan hệ thực thể ERD với 24 bảng dữ liệu không gian và nghiệp vụ; xây dựng Data Dictionary chi tiết cho hệ thống cơ sở dữ liệu. | Hoàn thành script migration PostgreSQL PostGIS.
+T[4][4]: 4 | 07/11/2026 | 14:00 | Phòng máy B2.04 | Cả nhóm (4 thành viên) | Kiểm thử tích hợp giao diện (Front-end) và xử lý API (Back-end) cho các phân hệ bản đồ nhiệt (Heatmap), báo cáo GPS ngoại tuyến, quy trình điều phối hiện trường và thẩm định ảnh trước-sau. | Các thành viên khớp API đúng tiến độ.
+T[4][5]: 5 | 21/11/2026 | 15:00 | Thư viện TDC | Cả nhóm (4 thành viên) | Tổng hợp toàn bộ tài liệu đặc tả đồ án, rà soát 48 ca nghiệp vụ, kiểm tra toàn bộ luồng xử lý ngoại lệ; đóng gói sản phẩm và chuẩn bị slide nghiệm thu. | Sản phẩm hoàn thiện, sẵn sàng báo cáo hội đồng.
+T[5][57]: Báo cáo | Truy vấn Nhật ký kiểm toán an ninh (Audit Log) | GET | /api/v1/system/audit-logs | Quản trị viên tra cứu chi tiết lịch sử truy cập, thay đổi dữ liệu và thao tác nhạy cảm.
+T[6][2]: 2 | email | VARCHAR(255) | UNIQUE, NOT NULL | Địa chỉ thư điện tử chính thức dùng đăng nhập, nhận thông báo hệ thống và phục hồi tài khoản.
+T[6][4]: 4 | password_hash | VARCHAR(255) | NOT NULL | Chuỗi mật khẩu băm một chiều bảo mật cao (sử dụng thuật toán Argon2id / bcrypt).
+T[6][12]: 12 | two_factor_secret | VARCHAR(255) | NULL | Khóa bí mật mã hóa đối xứng dùng để sinh mã xác thực hai yếu tố (TOTP) thời gian thực.
+T[7][2]: 2 | tracking_code | VARCHAR(30) | UNIQUE, NOT NULL | Mã hồ sơ tra cứu công khai (VD: ECO-20260916-0089) giúp công dân theo dõi tiến độ giải quyết.
+T[7][6]: 6 | title | VARCHAR(255) | NOT NULL | Tiêu đề tóm tắt ngắn gọn sự cố ô nhiễm do người phản ánh nhập hoặc do AI tự động gợi ý.
+T[7][9]: 9 | location | GEOMETRY(Point,4326) | NOT NULL | Tọa độ không gian WGS84 chính xác của điểm sự cố phục vụ tính toán không gian PostGIS.
+T[7][10]: 10 | masked_location | GEOMETRY(Point,4326) | NULL | Tọa độ đã làm mờ ngẫu nhiên (bán kính 100-300m) hiển thị bản đồ cộng đồng để bảo vệ công dân.
+T[8][2]: 2 | assignment_code | VARCHAR(30) | UNIQUE, NOT NULL | Mã lệnh điều phối tác nghiệp chuyên dụng (VD: ASG-20260916-0042) cấp phát cho đội thu gom.
+T[11][2]: Email | Bắt buộc. Tối đa 254 ký tự. Đúng định dạng ten@tenmien.đuôi, theo biểu thức ^[^\s@]+@[^\s@]+\.[^\s@]{2,}$.
+T[16][1]: Email | Bắt buộc. Tối đa 254 ký tự. Đúng định dạng theo biểu thức ^[^\s@]+@[^\s@]+\.[^\s@]{2,}$.
+T[32][10]: Chưa nhận huy hiệu nào (trang của mình) | Bạn chưa có huy hiệu nào. Hãy tham gia thử thách xanh để nhận huy hiệu đầu tiên | Dòng chữ xám ở phần "Đã nhận (0)". Phần "Chưa mở khoá" vẫn hiển thị.
+T[110][1]: Chưa đăng nhập mà bấm "Xem nhiệm vụ" | "Vui lòng đăng nhập để tham gia thử thách" | Popup nhắc đăng nhập kèm nút chuyển về STT 02
+T[110][2]: Đã hoàn thành toàn bộ 5/5 nhiệm vụ tuần | "Chúc mừng! Bạn đã hoàn thành toàn bộ thử thách tuần này" | Thanh tiến độ đạt 100% màu xanh lá kèm hiệu ứng chúc mừng
+T[110][5]: Hết thời gian tuần thử thách | "Thử thách tuần mới đã bắt đầu" | Bảng nhiệm vụ làm mới lại về trạng thái 0/5 nhiệm vụ
+T[110][6]: Lỗi mạng khi tải danh sách thử thách | "Không thể tải danh sách thử thách. Vui lòng thử lại" | Khối lỗi thay thế danh sách kèm nút "Thử lại"
+T[112][1]: Xác thực minh chứng nhiệm vụ thành công | "+30 điểm xanh đã được cộng vào tài khoản của bạn" | Hiện popup ở giữa màn hình với tiêu đề "HOÀN THÀNH THỬ THÁCH", nền mờ
+T[112][2]: Hoàn thành đủ 5/5 nhiệm vụ của tuần | "Chúc mừng bạn đã hoàn thành tất cả thử thách tuần! Nhận thêm +100 điểm thưởng" | Popup hiển thị cả điểm nhiệm vụ và phần thưởng combo tuần
+T[117][5]: Lỗi mạng khi tải cẩm nang | "Không thể tải danh mục cẩm nang. Vui lòng thử lại" | Khối lỗi thay thế danh mục kèm nút "Thử lại"
+T[118][3]: Bấm nút "Chia sẻ" | "Đã sao chép liên kết cẩm nang" | Toast thông báo 2 giây, liên kết được lưu vào bộ nhớ tạm
+T[120][4]: Nhấp vào một hành động tích điểm ở cột trái | Không có message | Chuyển hướng đến màn hình tương ứng (Báo cáo sự cố, Sự kiện, Bảng tin, Thử thách)
+T[198][5]: 5 | Alex Banks, Eve Porcello | Learning React: Modern Patterns for Developing React Apps (2nd Edition) | O'Reilly Media, ISBN 978-1492051725, 2020.
+T[198][6]: 6 | Vercel Engineering Team | Next.js 14 Documentation & App Router Architecture Patterns | https://nextjs.org/docs, Truy cập tháng 09/2026.
+T[198][10]: 10 | TopDev & VietnamWorks | Báo cáo Thị trường Nhân lực Công nghệ Thông tin Việt Nam năm 2024 - 2026 | TopDev Tech Hiring Insights, TP. Hồ Chí Minh, 2025.
