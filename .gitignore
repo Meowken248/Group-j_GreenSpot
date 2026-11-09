@@ -21,3 +21,22 @@ rad.json
 *.flf
 #Test results file
 TestResults.xml
+# Python virtual environment
+.venv/
+backend/.venv/
+venv/
+env/
+# Node.js dependencies & build
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+# Python cache & compiled files
+__pycache__/
+*.py[cod]
+*.pyd
+# Environment variables & secrets
+.env
+backend/.env
+frontend/.env
+*.env.local
