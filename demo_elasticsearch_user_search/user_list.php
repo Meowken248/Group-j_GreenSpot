@@ -1,5 +1,5 @@
 <?php
-// user_list.php - Trang tìm kiếm User với thanh năng lượng tùy chỉnh độ sai số (Fuzziness)
+// user_list.php - Trang tìm kiếm User Google-Grade với Elasticsearch
 $dbFile = __DIR__ . '/users.db';
 $pdo = new PDO("sqlite:" . $dbFile);
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -11,9 +11,9 @@ $keyword = isset($_GET['q']) ? trim($_GET['q']) : '';
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'compare'; // 'sql', 'es', 'compare'
 
 // Thanh năng lượng độ sai số: 0, 1, 2, AUTO
-$fuzziness = isset($_GET['fuzziness']) ? $_GET['fuzziness'] : '1';
+$fuzziness = isset($_GET['fuzziness']) ? $_GET['fuzziness'] : 'AUTO';
 if (!in_array($fuzziness, ['0', '1', '2', 'AUTO'])) {
-    $fuzziness = '1';
+    $fuzziness = 'AUTO';
 }
 
 $sqlUsers = [];
@@ -40,62 +40,43 @@ if ($mode === 'sql' || $mode === 'compare') {
 }
 
 // ==========================================
-// 2. XỬ LÝ PHẦN 2: ELASTICSEARCH VỚI FUZZINESS TÙY CHỈNH
+// 2. XỬ LÝ PHẦN 2: ELASTICSEARCH GOOGLE-GRADE ARCHITECTURE
 // ==========================================
 if ($mode === 'es' || $mode === 'compare') {
     $t0 = microtime(true);
     if ($keyword !== '') {
-        // Cấu hình query dựa trên thanh năng lượng sai số
-        if ($fuzziness === '0') {
-            // Mức 0: Bắt buộc chính xác 100% (không có sai số)
-            $esQuery = [
-                "query" => [
-                    "bool" => [
-                        "should" => [
-                            ["match" => ["name" => ["query" => $keyword, "fuzziness" => 0, "boost" => 2.0]]],
-                            ["term" => ["name.keyword" => ["value" => $keyword, "boost" => 3.0]]],
-                            ["wildcard" => ["name" => ["value" => "*" . strtolower($keyword) . "*", "boost" => 1.0]]]
-                        ]
-                    ]
-                ]
-            ];
-        } else {
-            // Mức 1, 2, hoặc AUTO: Áp dụng Levenshtein Distance tương ứng
+        $shouldClauses = [
+            // 1. Khớp chính xác cụm từ hoặc keyword -> Điểm số cao nhất
+            ["match_phrase" => ["name.standard" => ["query" => $keyword, "boost" => 6.0]]],
+            ["match" => ["name.keyword" => ["query" => $keyword, "boost" => 8.0]]],
+            // 2. Edge N-Gram: Bắt tiền tố, từ gõ dở, viết tắt nhiều từ (cris n, c r, cr, bel,...)
+            ["match" => ["name" => ["query" => $keyword, "operator" => "and", "boost" => 4.0]]],
+            ["match" => ["name" => ["query" => $keyword, "operator" => "or", "boost" => 2.0]]],
+            // 3. Sub-string N-Gram: Bắt chuỗi con ở giữa từ (bruyne, aldo, bappe,...)
+            ["match" => ["name.ngram" => ["query" => $keyword, "boost" => 1.5]]]
+        ];
+
+        // 4. Nếu thanh năng lượng Fuzziness > 0 -> Bật tính năng sửa lỗi chính tả (Levenshtein Distance)
+        if ($fuzziness !== '0') {
             $fuzzVal = ($fuzziness === 'AUTO') ? 'AUTO' : (int)$fuzziness;
-            $esQuery = [
-                "query" => [
-                    "bool" => [
-                        "should" => [
-                            [
-                                "match" => [
-                                    "name" => [
-                                        "query" => $keyword,
-                                        "fuzziness" => $fuzzVal,
-                                        "boost" => 2.5
-                                    ]
-                                ]
-                            ],
-                            [
-                                "multi_match" => [
-                                    "query" => $keyword,
-                                    "type" => "bool_prefix",
-                                    "fields" => ["name"],
-                                    "boost" => 1.5
-                                ]
-                            ],
-                            [
-                                "wildcard" => [
-                                    "name" => [
-                                        "value" => "*" . strtolower($keyword) . "*",
-                                        "boost" => 1.0
-                                    ]
-                                ]
-                            ]
-                        ]
+            $shouldClauses[] = [
+                "match" => [
+                    "name.standard" => [
+                        "query" => $keyword,
+                        "fuzziness" => $fuzzVal,
+                        "boost" => 3.5
                     ]
                 ]
             ];
         }
+
+        $esQuery = [
+            "query" => [
+                "bool" => [
+                    "should" => $shouldClauses
+                ]
+            ]
+        ];
 
         $esQueryJson = json_encode($esQuery, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
@@ -120,7 +101,7 @@ if ($mode === 'es' || $mode === 'compare') {
                         'id' => $hit['_id'],
                         'name' => $hit['_source']['name'],
                         'email' => $hit['_source']['email'],
-                        'score' => round($hit['_score'], 3)
+                        'score' => round($hit['_score'], 2)
                     ];
                 }
             }
@@ -205,7 +186,7 @@ if ($mode === 'es' || $mode === 'compare') {
         .fill-0 { width: 5%; background: #ef4444; }
         .fill-1 { width: 50%; background: #f59e0b; }
         .fill-2 { width: 100%; background: #10b981; }
-        .fill-auto { width: 80%; background: linear-gradient(90deg, #3b82f6, #8b5cf6); }
+        .fill-auto { width: 85%; background: linear-gradient(90deg, #3b82f6, #8b5cf6); }
 
         .energy-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
         .energy-btn { display: block; text-align: center; padding: 10px 12px; border: 2px solid #cbd5e1; border-radius: 8px; text-decoration: none; color: #334155; font-size: 13px; font-weight: 600; background: white; transition: all 0.2s; }
@@ -239,7 +220,7 @@ if ($mode === 'es' || $mode === 'compare') {
     <div class="wrapper">
         <div class="header">
             <h1>TÌM KIẾM USER VỚI ELASTICSEARCH</h1>
-            <p>Từ câu SQL LIKE đến Elasticsearch — Hướng dẫn thực hành có điều khiển sai số</p>
+            <p>Kiến trúc tìm kiếm Google-Grade (Edge N-Gram + N-Gram + Fuzzy Search)</p>
         </div>
 
         <!-- 1. BẢNG HIỂN THỊ TOÀN BỘ 18 USERS ĐANG CÓ TRONG HỆ THỐNG -->
@@ -270,7 +251,7 @@ if ($mode === 'es' || $mode === 'compare') {
             <form method="GET" class="search-form">
                 <input type="hidden" name="mode" value="<?= htmlspecialchars($mode) ?>">
                 <input type="hidden" name="fuzziness" value="<?= htmlspecialchars($fuzziness) ?>">
-                <input type="text" name="q" placeholder="Nhập tên user cần tìm kiếm (ví dụ: Messi, Mesi, cr, Ranoldo, Bellingham...)" value="<?= htmlspecialchars($keyword) ?>" autofocus>
+                <input type="text" name="q" placeholder="Thử: cris n, cr, c r, Mesi, bruyne, bappe, Ranoldo, Bellingham..." value="<?= htmlspecialchars($keyword) ?>" autofocus>
                 <button type="submit">🔍 Tìm kiếm</button>
                 <a href="user_list.php?mode=<?= $mode ?>&fuzziness=<?= $fuzziness ?>" class="btn-reset">Đặt lại</a>
             </form>
@@ -284,10 +265,10 @@ if ($mode === 'es' || $mode === 'compare') {
                     <span class="energy-badge <?= 'fuzz-' . strtolower($fuzziness) ?>">
                         Đang chọn: 
                         <?php
-                            if ($fuzziness === '0') echo "Mức 0 (Sai số = 0: Khắt khe 100%)";
-                            elseif ($fuzziness === '1') echo "Mức 1 (Cho phép sai tối đa 1 ký tự)";
-                            elseif ($fuzziness === '2') echo "Mức 2 (Cho phép sai tối đa 2 ký tự - Cực đại)";
-                            else echo "Mức AUTO (Tự động tính theo độ dài từ)";
+                            if ($fuzziness === '0') echo "Mức 0 (Sai số = 0: Khắt khe)";
+                            elseif ($fuzziness === '1') echo "Mức 1 (Sai số 1 ký tự: Cho phép gõ thiếu/thừa 1 chữ)";
+                            elseif ($fuzziness === '2') echo "Mức 2 (Sai số 2 ký tự: Cực đại, bắt lỗi gõ nặng)";
+                            else echo "Mức AUTO (Tự động tính theo độ dài từ khóa)";
                         ?>
                     </span>
                 </div>
@@ -301,19 +282,19 @@ if ($mode === 'es' || $mode === 'compare') {
                 <div class="energy-buttons">
                     <a href="user_list.php?mode=<?= $mode ?>&fuzziness=0&q=<?= urlencode($keyword) ?>" class="energy-btn <?= $fuzziness === '0' ? 'active' : '' ?>">
                         🔴 Mức 0 (0% Sai số)
-                        <span class="energy-desc">Chính xác 100%. Gõ "Mesi" sẽ ra 0 kết quả!</span>
+                        <span class="energy-desc">Khắt khe. Bắt buộc đúng từng từ.</span>
                     </a>
                     <a href="user_list.php?mode=<?= $mode ?>&fuzziness=1&q=<?= urlencode($keyword) ?>" class="energy-btn <?= $fuzziness === '1' ? 'active' : '' ?>">
                         🟡 Mức 1 (50% Sai số)
-                        <span class="energy-desc">Sai số 1 chữ. Gõ "Mesi" $\rightarrow$ ra "Messi"!</span>
+                        <span class="energy-desc">Sai số 1 chữ. Gõ "Mesi" $\rightarrow$ "Messi"</span>
                     </a>
                     <a href="user_list.php?mode=<?= $mode ?>&fuzziness=2&q=<?= urlencode($keyword) ?>" class="energy-btn <?= $fuzziness === '2' ? 'active' : '' ?>">
                         🟢 Mức 2 (100% Năng lượng)
-                        <span class="energy-desc">Sai số 2 chữ. Gõ "Ranoldo" $\rightarrow$ ra "Ronaldo"!</span>
+                        <span class="energy-desc">Sai số 2 chữ. Gõ "Ranoldo" $\rightarrow$ "Ronaldo"</span>
                     </a>
                     <a href="user_list.php?mode=<?= $mode ?>&fuzziness=AUTO&q=<?= urlencode($keyword) ?>" class="energy-btn <?= $fuzziness === 'AUTO' ? 'active' : '' ?>">
                         ⚡ Mức AUTO
-                        <span class="energy-desc">Tự động điều chỉnh theo chuẩn Elasticsearch</span>
+                        <span class="energy-desc">Thuật toán mặc định thông minh</span>
                     </a>
                 </div>
             </div>
@@ -321,9 +302,9 @@ if ($mode === 'es' || $mode === 'compare') {
 
         <?php if ($keyword !== ''): ?>
             <div class="banner-highlight">
-                💡 <strong>Kết quả từ khóa: "<?= htmlspecialchars($keyword) ?>"</strong> với mức sai số Fuzziness = <strong><?= htmlspecialchars($fuzziness) ?></strong><br>
-                - <strong>SQL LIKE:</strong> <?= count($sqlUsers) > 0 ? "Tìm thấy " . count($sqlUsers) . " người." : "❌ 0 kết quả (SQL không thể tìm khi gõ sai)." ?><br>
-                - <strong>Elasticsearch:</strong> <?= count($esUsers) > 0 ? "✅ Tìm thấy " . count($esUsers) . " người tương ứng." : "❌ 0 kết quả (Mức sai số hiện tại không đủ bao phủ từ khóa này)." ?>
+                💡 <strong>Kết quả cho từ khóa: "<?= htmlspecialchars($keyword) ?>"</strong> (Fuzziness = <strong><?= htmlspecialchars($fuzziness) ?></strong>)<br>
+                - <strong>SQL LIKE:</strong> <?= count($sqlUsers) > 0 ? "Tìm thấy " . count($sqlUsers) . " người." : "❌ 0 kết quả (SQL không hiểu viết tắt hoặc gõ sai)." ?><br>
+                - <strong>Elasticsearch:</strong> <?= count($esUsers) > 0 ? "✅ Tìm thấy " . count($esUsers) . " người (Người khớp nhất đứng đầu bảng theo _score)." : "❌ 0 kết quả." ?>
             </div>
         <?php endif; ?>
 
@@ -362,7 +343,7 @@ if ($mode === 'es' || $mode === 'compare') {
                     <div class="empty-box empty-red">
                         <strong style="font-size: 16px;">❌ 0 kết quả tìm thấy</strong>
                         <p style="margin: 8px 0 0 0; font-size: 13px;">
-                            SQL <code>LIKE '%<?= htmlspecialchars($keyword) ?>%'</code> không có cơ chế bù trừ sai số.
+                            SQL <code>LIKE '%<?= htmlspecialchars($keyword) ?>%'</code> không có cơ chế bù trừ sai số hay nhận diện từ viết tắt.
                         </p>
                     </div>
                 <?php endif; ?>
@@ -373,8 +354,8 @@ if ($mode === 'es' || $mode === 'compare') {
             <!-- CỘT 2: ELASTICSEARCH -->
             <div class="column-card">
                 <div class="col-header">
-                    <span class="col-title">Phần 2 — Elasticsearch</span>
-                    <span class="badge-green">fuzziness: <?= htmlspecialchars($fuzziness) ?></span>
+                    <span class="col-title">Phần 2 — Elasticsearch </span>
+                    <span class="badge-green">Edge N-Gram + Fuzziness</span>
                 </div>
 
                 <?php if ($esError): ?>
@@ -383,7 +364,7 @@ if ($mode === 'es' || $mode === 'compare') {
                     </div>
                 <?php else: ?>
                     <div class="query-info" style="color: #4ade80;">
-                        match(fuzziness: <?= htmlspecialchars($fuzziness) ?>)
+                        bool.should: [phrase, keyword, edge_ngram, ngram, fuzzy]
                         <div class="time-tag">Thời gian: <?= $esTime ?> ms | Tìm thấy: <?= count($esUsers) ?> / <?= count($allUsers) ?> users</div>
                     </div>
                 <?php endif; ?>
@@ -412,9 +393,6 @@ if ($mode === 'es' || $mode === 'compare') {
                 <?php else: ?>
                     <div class="empty-box empty-gray">
                         <strong style="font-size: 16px;">Không tìm thấy</strong>
-                        <p style="margin: 8px 0 0 0; font-size: 13px;">
-                            Thử tăng "Thanh năng lượng sai số" lên Mức 1 hoặc Mức 2 để Elasticsearch mở rộng độ bù trừ sai số!
-                        </p>
                     </div>
                 <?php endif; ?>
             </div>

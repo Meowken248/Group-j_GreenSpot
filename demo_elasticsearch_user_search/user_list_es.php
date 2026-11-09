@@ -1,5 +1,5 @@
 <?php
-// user_list_es.php - Phần 2: Tích hợp Elasticsearch với thanh năng lượng tùy chỉnh Fuzziness
+// user_list_es.php - Phần 2: Tích hợp Elasticsearch Google-Grade
 $dbFile = __DIR__ . '/users.db';
 $pdo = new PDO("sqlite:" . $dbFile);
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -8,9 +8,9 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $allUsers = $pdo->query("SELECT * FROM users ORDER BY id ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 $keyword = isset($_GET['q']) ? trim($_GET['q']) : '';
-$fuzziness = isset($_GET['fuzziness']) ? $_GET['fuzziness'] : '1';
+$fuzziness = isset($_GET['fuzziness']) ? $_GET['fuzziness'] : 'AUTO';
 if (!in_array($fuzziness, ['0', '1', '2', 'AUTO'])) {
-    $fuzziness = '1';
+    $fuzziness = 'AUTO';
 }
 
 $users = [];
@@ -20,53 +20,34 @@ $esError = '';
 
 $startTime = microtime(true);
 if ($keyword !== '') {
-    if ($fuzziness === '0') {
-        $esQuery = [
-            "query" => [
-                "bool" => [
-                    "should" => [
-                        ["match" => ["name" => ["query" => $keyword, "fuzziness" => 0, "boost" => 2.0]]],
-                        ["wildcard" => ["name" => ["value" => "*" . strtolower($keyword) . "*", "boost" => 1.0]]]
-                    ]
-                ]
-            ]
-        ];
-    } else {
+    $shouldClauses = [
+        ["match_phrase" => ["name.standard" => ["query" => $keyword, "boost" => 6.0]]],
+        ["match" => ["name.keyword" => ["query" => $keyword, "boost" => 8.0]]],
+        ["match" => ["name" => ["query" => $keyword, "operator" => "and", "boost" => 4.0]]],
+        ["match" => ["name" => ["query" => $keyword, "operator" => "or", "boost" => 2.0]]],
+        ["match" => ["name.ngram" => ["query" => $keyword, "boost" => 1.5]]]
+    ];
+
+    if ($fuzziness !== '0') {
         $fuzzVal = ($fuzziness === 'AUTO') ? 'AUTO' : (int)$fuzziness;
-        $esQuery = [
-            "query" => [
-                "bool" => [
-                    "should" => [
-                        [
-                            "match" => [
-                                "name" => [
-                                    "query" => $keyword,
-                                    "fuzziness" => $fuzzVal,
-                                    "boost" => 2.5
-                                ]
-                            ]
-                        ],
-                        [
-                            "multi_match" => [
-                                "query" => $keyword,
-                                "type" => "bool_prefix",
-                                "fields" => ["name"],
-                                "boost" => 1.5
-                            ]
-                        ],
-                        [
-                            "wildcard" => [
-                                "name" => [
-                                    "value" => "*" . strtolower($keyword) . "*",
-                                    "boost" => 1.0
-                                ]
-                            ]
-                        ]
-                    ]
+        $shouldClauses[] = [
+            "match" => [
+                "name.standard" => [
+                    "query" => $keyword,
+                    "fuzziness" => $fuzzVal,
+                    "boost" => 3.5
                 ]
             ]
         ];
     }
+
+    $esQuery = [
+        "query" => [
+            "bool" => [
+                "should" => $shouldClauses
+            ]
+        ]
+    ];
     $esQueryJson = json_encode($esQuery, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
     $ch = curl_init("http://localhost:9200/users/_search");
@@ -92,16 +73,17 @@ if ($keyword !== '') {
                     'id'    => $hit['_id'],
                     'name'  => $hit['_source']['name'] ?? '',
                     'email' => $hit['_source']['email'] ?? '',
-                    'score' => round($hit['_score'], 3)
+                    'score' => round($hit['_score'], 2)
                 ];
             }
         }
     }
 } else {
     // Nếu chưa nhập từ khóa, lấy toàn bộ user từ Elasticsearch
+    $esQueryJson = '{"query": {"match_all": {}}, "size": 100}';
     $ch = curl_init("http://localhost:9200/users/_search");
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-    curl_setopt($ch, CURLOPT_POSTFIELDS, '{"query": {"match_all": {}}, "size": 100}');
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $esQueryJson);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
     $response = curl_exec($ch);
@@ -125,7 +107,7 @@ $executionTimeMs = round((microtime(true) - $startTime) * 1000, 2);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phần 2 - Tích hợp Elasticsearch (Điều chỉnh Sai số)</title>
+    <title>Phần 2 - Tích hợp Elasticsearch Google-Grade</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: #f8fafc; color: #1e293b; margin: 0; padding: 30px; }
         .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
@@ -155,7 +137,7 @@ $executionTimeMs = round((microtime(true) - $startTime) * 1000, 2);
         .fill-0 { width: 5%; background: #ef4444; }
         .fill-1 { width: 50%; background: #f59e0b; }
         .fill-2 { width: 100%; background: #10b981; }
-        .fill-auto { width: 80%; background: #6366f1; }
+        .fill-auto { width: 85%; background: #6366f1; }
 
         .energy-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
         .energy-btn { text-align: center; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; color: #334155; font-size: 12px; font-weight: 600; background: white; }
@@ -178,7 +160,7 @@ $executionTimeMs = round((microtime(true) - $startTime) * 1000, 2);
         </div>
 
         <h1>TÌM KIẾM USER VỚI ELASTICSEARCH</h1>
-        <p><span class="badge-es">PHẦN 2: TÍCH HỢP ELASTICSEARCH (ĐIỀU CHỈNH SAI SỐ FUZZINESS)</span></p>
+        <p><span class="badge-es">PHẦN 2: GOOGLE-GRADE ARCHITECTURE (EDGE N-GRAM + N-GRAM + FUZZINESS)</span></p>
 
         <!-- 1. DANH SÁCH 18 USERS ĐANG CÓ -->
         <div class="all-users-box">
@@ -196,7 +178,7 @@ $executionTimeMs = round((microtime(true) - $startTime) * 1000, 2);
         <!-- FORM TÌM KIẾM -->
         <form method="GET" class="search-box">
             <input type="hidden" name="fuzziness" value="<?= htmlspecialchars($fuzziness) ?>">
-            <input type="text" name="q" placeholder="Nhập tên user cần tìm..." value="<?= htmlspecialchars($keyword) ?>" autofocus>
+            <input type="text" name="q" placeholder="Thử: cris n, cr, c r, Mesi, bruyne, bappe, Ranoldo..." value="<?= htmlspecialchars($keyword) ?>" autofocus>
             <button type="submit">Tìm kiếm ES</button>
             <a href="user_list_es.php?fuzziness=<?= $fuzziness ?>" class="reset-btn">Đặt lại</a>
         </form>
@@ -227,7 +209,7 @@ $executionTimeMs = round((microtime(true) - $startTime) * 1000, 2);
         </div>
 
         <?php if ($keyword !== ''): ?>
-            <div class="es-preview">// JSON Query gửi sang Elasticsearch (fuzziness: <?= htmlspecialchars($fuzziness) ?>):
+            <div class="es-preview">// JSON Query Google-Grade gửi sang Elasticsearch:
 <?= htmlspecialchars($esQueryJson) ?>
 <span style="color: #94a3b8; display: block; margin-top: 4px; font-size: 12px;">Thời gian xử lý: <?= $executionTimeMs ?> ms | Tìm thấy: <?= count($users) ?> kết quả</span></div>
         <?php endif; ?>
@@ -239,7 +221,7 @@ $executionTimeMs = round((microtime(true) - $startTime) * 1000, 2);
                         <th style="width: 60px;">ID</th>
                         <th>Tên User</th>
                         <th>Email</th>
-                        <th style="width: 100px;">Điểm (_score)</th>
+                        <th style="width: 100px;">Điểm độ khớp (_score)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -256,9 +238,6 @@ $executionTimeMs = round((microtime(true) - $startTime) * 1000, 2);
         <?php else: ?>
             <div class="empty-state">
                 <div style="font-size: 18px; font-weight: bold; margin-bottom: 6px;">Không tìm thấy user nào khớp với "<?= htmlspecialchars($keyword) ?>"</div>
-                <div style="font-size: 13px; color: #991b1b;">
-                    Ở mức sai số <strong><?= htmlspecialchars($fuzziness) ?></strong>, Elasticsearch không tìm thấy kết quả. Bạn hãy thử tăng thanh năng lượng lên Mức 1 hoặc Mức 2!
-                </div>
             </div>
         <?php endif; ?>
     </div>
