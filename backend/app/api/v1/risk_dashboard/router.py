@@ -9,7 +9,9 @@ Bao gồm:
 
 from datetime import date
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response, status
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -77,6 +79,7 @@ async def verify_risk_dashboard_access(
     summary=" Tổng quan rủi ro đô thị toàn thành phố",
 )
 async def get_overview_dashboard(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     user_guard: Optional[User] = Depends(verify_risk_dashboard_access),
     service: RiskDashboardService = Depends(lambda: risk_dashboard_service),
@@ -149,6 +152,7 @@ async def analyze_filtered_risks_get(
     summary=" Popup Chi tiết quận khi nhấp vào danh sách cảnh báo hoặc biểu đồ",
 )
 async def get_district_popup_detail(
+    request: Request,
     district_id_or_name: str,
     db: AsyncSession = Depends(get_db),
     user_guard: Optional[User] = Depends(verify_risk_dashboard_access),

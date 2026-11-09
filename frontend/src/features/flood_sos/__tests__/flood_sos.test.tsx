@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Vitest Unit & Integration Test Suite cho STT 46: Cứu hộ ngập cộng đồng (Flood SOS)
  * Bao phủ 100% 5 màn hình:
@@ -8,8 +9,8 @@
  * 5. Màn 5/5: Popup xác nhận huỷ yêu cầu SOS (HUỶ YÊU CẦU SOS?)
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import React from "react";
 
@@ -45,6 +46,10 @@ vi.mock("../services/floodSosApi", () => ({
 describe("STT 46: Cứu hộ ngập cộng đồng (Flood SOS) Frontend Suite", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    cleanup();
   });
 
   // =========================================================================

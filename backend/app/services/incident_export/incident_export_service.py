@@ -5,25 +5,34 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import openpyxl  # type: ignore[import-untyped]
-from openpyxl.styles import Alignment, Border, Font, PatternFill, Side  # type: ignore[import-untyped]
-from openpyxl.utils import get_column_letter  # type: ignore[import-untyped]
-from openpyxl.worksheet.worksheet import Worksheet  # type: ignore[import-untyped]
+try:
+    import openpyxl  # type: ignore[import-untyped]
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side  # type: ignore[import-untyped]
+    from openpyxl.utils import get_column_letter  # type: ignore[import-untyped]
+    from openpyxl.worksheet.worksheet import Worksheet  # type: ignore[import-untyped]
+    HAS_OPENPYXL = True
+except ImportError:
+    openpyxl = None
+    HAS_OPENPYXL = False
 
-from reportlab.lib import colors  # type: ignore[import-untyped]
-from reportlab.lib.pagesizes import A4  # type: ignore[import-untyped]
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet  # type: ignore[import-untyped]
-from reportlab.lib.units import inch, cm  # type: ignore[import-untyped]
-from reportlab.pdfbase import pdfmetrics  # type: ignore[import-untyped]
-from reportlab.pdfbase.ttfonts import TTFont  # type: ignore[import-untyped]
-from reportlab.platypus import (  # type: ignore[import-untyped]
-    HRFlowable,
-    Paragraph,
-    SimpleDocTemplate,
-    Spacer,
-    Table,
-    TableStyle,
-)
+try:
+    from reportlab.lib import colors  # type: ignore[import-untyped]
+    from reportlab.lib.pagesizes import A4  # type: ignore[import-untyped]
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet  # type: ignore[import-untyped]
+    from reportlab.lib.units import inch, cm  # type: ignore[import-untyped]
+    from reportlab.pdfbase import pdfmetrics  # type: ignore[import-untyped]
+    from reportlab.pdfbase.ttfonts import TTFont  # type: ignore[import-untyped]
+    from reportlab.platypus import (  # type: ignore[import-untyped]
+        HRFlowable,
+        Paragraph,
+        SimpleDocTemplate,
+        Spacer,
+        Table,
+        TableStyle,
+    )
+    HAS_REPORTLAB = True
+except ImportError:
+    HAS_REPORTLAB = False
 
 from app.interface.incident_export.incident_export_interface import IIncidentExportRepository
 from app.models.incident_export.exported_file import ExportedIncidentFile
@@ -40,17 +49,18 @@ from app.schemas.incident_export.schemas import (
 # Đăng ký font tiếng Việt chuẩn cho ReportLab
 FONT_NAME = "Helvetica"
 FONT_BOLD = "Helvetica-Bold"
-try:
-    if os.path.exists("C:/Windows/Fonts/arial.ttf"):
-        pdfmetrics.registerFont(TTFont("ArialVN", "C:/Windows/Fonts/arial.ttf"))
-        FONT_NAME = "ArialVN"
-    if os.path.exists("C:/Windows/Fonts/arialbd.ttf"):
-        pdfmetrics.registerFont(TTFont("ArialVN-Bold", "C:/Windows/Fonts/arialbd.ttf"))
-        FONT_BOLD = "ArialVN-Bold"
-    elif FONT_NAME == "ArialVN":
-        FONT_BOLD = "ArialVN"
-except Exception:
-    pass
+if HAS_REPORTLAB:
+    try:
+        if os.path.exists("C:/Windows/Fonts/arial.ttf"):
+            pdfmetrics.registerFont(TTFont("ArialVN", "C:/Windows/Fonts/arial.ttf"))
+            FONT_NAME = "ArialVN"
+        if os.path.exists("C:/Windows/Fonts/arialbd.ttf"):
+            pdfmetrics.registerFont(TTFont("ArialVN-Bold", "C:/Windows/Fonts/arialbd.ttf"))
+            FONT_BOLD = "ArialVN-Bold"
+        elif FONT_NAME == "ArialVN":
+            FONT_BOLD = "ArialVN"
+    except Exception:
+        pass
 
 # Thư mục lưu trữ tệp xuất an toàn
 EXPORT_STORAGE_DIR = Path(__file__).resolve().parent.parent.parent.parent / "storage" / "exports"

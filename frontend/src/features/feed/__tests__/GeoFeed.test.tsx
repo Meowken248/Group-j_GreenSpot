@@ -347,11 +347,9 @@ describe('Feature STT 08: Bảng tin Geo-Feed theo bán kính (SRS pp. 97-102)',
 
       await waitFor(() => {
         expect(feedService.getGeoFeed).toHaveBeenCalled();
+        const sentinel = container.querySelector('.feed-infinite-scroll-sentinel');
+        expect(sentinel).toBeInTheDocument();
       });
-
-      // Có phần tử sentinel để IntersectionObserver theo dõi
-      const sentinel = container.querySelector('.feed-infinite-scroll-sentinel');
-      expect(sentinel).toBeInTheDocument();
     });
 
     it('hiển thị thông báo khi đã nạp hết bài viết (has_more: false)', async () => {

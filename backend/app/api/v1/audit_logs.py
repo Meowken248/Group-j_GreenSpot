@@ -9,9 +9,11 @@ Nhật ký kiểm toán an ninh:
 
 from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from app.database import get_db
 from app.models.rbac import User
 from app.api.v1.rbac import require_admin_user
@@ -27,6 +29,7 @@ router = APIRouter(prefix="/system/audit-logs", tags=["Nhật ký kiểm toán A
 
 @router.get("", response_model=AuditLogListResponse)
 async def query_audit_logs(
+    request: Request,
     action: Optional[str] = Query(None, description="Tất cả | Đăng nhập | Đổi quyền | Sửa dữ liệu | Cộng/trừ điểm"),
     actor_query: Optional[str] = Query(None, description="Tên hoặc email người thực hiện"),
     start_date: Optional[datetime] = Query(None, description="Từ ngày (mặc định 7 ngày trước)"),
@@ -42,7 +45,7 @@ async def query_audit_logs(
     - Sắp xếp theo thời gian mới nhất lên trước.
     - Khi chưa chọn khoảng thời gian, hệ thống mặc định hiển thị 7 ngày gần nhất.
     """
-    return await AuditService.get_audit_logs(
+    result = await AuditService.get_audit_logs(
         db=db,
         action=action,
         actor_query=actor_query,
@@ -51,11 +54,16 @@ async def query_audit_logs(
         page=page,
         limit=limit
     )
+    if get_current_language(request) == "en":
+        dumped = result.model_dump() if hasattr(result, "model_dump") else result
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return result
 
 
 @router.get("/{log_id}", response_model=AuditLogDetailResponse)
 async def get_audit_log_detail(
     log_id: int,
+    request: Request,
     current_admin: User = Depends(require_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -64,7 +72,11 @@ async def get_audit_log_detail(
     - 3 khối: Thông tin thực hiện, Thay đổi Before/After diff, Truy vết thiết bị & IP.
     - Che giấu tự động thông tin nhạy cảm (mật khẩu, mã pin, token hiển thị '******').
     """
-    return await AuditService.get_audit_log_detail(db=db, log_id=log_id)
+    result = await AuditService.get_audit_log_detail(db=db, log_id=log_id)
+    if get_current_language(request) == "en":
+        dumped = result.model_dump() if hasattr(result, "model_dump") else result
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return result
 
 
 @router.post("/export", response_model=AuditExportResponse)

@@ -10,6 +10,8 @@ import type {
   AdministrativeMetadata,
   GroupType,
   GroupMemberListResponse,
+  GroupMemberItem,
+  GroupMemberActionResponse,
 } from "../types/group";
 import type { FeedListResponse } from "../../feed/types/feed.types";
 
@@ -137,6 +139,34 @@ export const groupService = {
     const res = await api.get<GroupMemberListResponse>(`/api/v1/groups/${groupId}/members`, {
       params: { page, limit },
     });
+    return res.data;
+  },
+
+  /**
+   * Đổi vai trò thành viên nhóm (Chức năng 04 - Màn 2/4)
+   */
+  async updateMemberRole(
+    groupId: string,
+    userId: string,
+    payload: { new_role: string; version: number }
+  ): Promise<GroupMemberItem> {
+    const res = await api.put<GroupMemberItem>(
+      `/api/v1/groups/${groupId}/members/${userId}/role`,
+      payload
+    );
+    return res.data;
+  },
+
+  /**
+   * Xoá thành viên khỏi nhóm (Chức năng 04 - Màn 3/4 & 4/4)
+   */
+  async removeMember(
+    groupId: string,
+    userId: string
+  ): Promise<GroupMemberActionResponse> {
+    const res = await api.delete<GroupMemberActionResponse>(
+      `/api/v1/groups/${groupId}/members/${userId}`
+    );
     return res.data;
   },
 };

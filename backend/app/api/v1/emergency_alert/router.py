@@ -6,7 +6,9 @@ Tuân thủ Clean Architecture, Dependency Injection qua FastAPI Depends và ph�
 
 from typing import List, Optional
 import uuid
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -133,6 +135,7 @@ async def broadcast_alert(
     summary="Lấy lịch sử các lệnh phát sóng cảnh báo khẩn cấp (Màn 1/4)",
 )
 async def get_broadcast_history(
+    request: Request,
     limit: int = Query(20, ge=1, le=100),
     alert_type: Optional[str] = Query(None, description="Lọc theo loại: FLOOD, STORM, TIDE, POLLUTION"),
     db: AsyncSession = Depends(get_db),
@@ -140,7 +143,11 @@ async def get_broadcast_history(
     _user_id: Optional[uuid.UUID] = Depends(verify_broadcast_authority),
 ):
     """Xem danh sách các lệnh cảnh báo đã phát trong quá khứ"""
-    return await service.get_broadcast_history(db, limit=limit, alert_type=alert_type)
+    result = await service.get_broadcast_history(db, limit=limit, alert_type=alert_type)
+    if get_current_language(request) == "en":
+        dumped = [i.model_dump() if hasattr(i, 'model_dump') else i for i in result]
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return result
 
 
 @router.post(
@@ -168,6 +175,7 @@ async def cancel_alert(
     summary="Kiểm tra cảnh báo khẩn cấp bao phủ vị trí người dùng (Màn 2/4)",
 )
 async def get_active_alert_for_user(
+    request: Request,
     lat: float = Query(..., ge=-90.0, le=90.0, description="Vĩ độ hiện tại"),
     lng: float = Query(..., ge=-180.0, le=180.0, description="Kinh độ hiện tại"),
     db: AsyncSession = Depends(get_db),
@@ -175,7 +183,11 @@ async def get_active_alert_for_user(
     user_id: Optional[uuid.UUID] = Depends(get_optional_user_id),
 ):
     """Trả về dữ liệu Popup khẩn cấp khi người dùng đi vào vùng thiên tai"""
-    return await service.get_active_alert_for_user(db, user_id=user_id, lat=lat, lng=lng)
+    result = await service.get_active_alert_for_user(db, user_id=user_id, lat=lat, lng=lng)
+    if get_current_language(request) == "en":
+        dumped = result.model_dump() if hasattr(result, 'model_dump') else result
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return result
 
 
 @router.post(
@@ -221,6 +233,7 @@ async def acknowledge_alert_action(
     summary="Tải dữ liệu màn hình Safety Check: vị trí GPS và danh sách bạn bè (Màn 3/4)",
 )
 async def init_safety_check(
+    request: Request,
     lat: Optional[float] = Query(None, description="Vĩ độ hiện tại"),
     lng: Optional[float] = Query(None, description="Kinh độ hiện tại"),
     db: AsyncSession = Depends(get_db),
@@ -228,7 +241,11 @@ async def init_safety_check(
     current_user: User = Depends(get_current_active_user),
 ):
     """Lấy tọa độ GPS xác thực và danh sách bạn bè kết nối để chuẩn bị báo an toàn"""
-    return await service.init_safety_check(db, user_id=current_user.user_id, lat=lat, lng=lng)
+    result = await service.init_safety_check(db, user_id=current_user.user_id, lat=lat, lng=lng)
+    if get_current_language(request) == "en":
+        dumped = result.model_dump() if hasattr(result, 'model_dump') else result
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return result
 
 
 @router.post(

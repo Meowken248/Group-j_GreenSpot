@@ -66,6 +66,7 @@ from app.api.v1.milestone import router as milestone_router
 # Admin Dashboard & Audit Logs
 from app.api.v1.admin_dashboard import admin_dashboard_router
 from app.api.v1.audit_logs import router as audit_logs_router
+from app.api.v1.translation import translation_router
 
 api_v1_router = APIRouter()
 
@@ -122,6 +123,8 @@ api_v1_router.include_router(hotspots_router)
 # Emergency & Rescue (STT 45, 46)
 api_v1_router.include_router(emergency_alerts_router)
 api_v1_router.include_router(flood_sos_router)
+# Dynamic Translation
+api_v1_router.include_router(translation_router)
 
 # Gamification & Rewards
 api_v1_router.include_router(rewards_router)

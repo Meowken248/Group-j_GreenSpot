@@ -9,7 +9,9 @@ import uuid
 import csv
 import io
 from typing import Optional
-from fastapi import APIRouter, Depends, Header, Query, Response, status
+from fastapi import APIRouter, Depends, Header, Query, Request, Response, status
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -72,6 +74,7 @@ async def get_optional_current_user(
 
 @router.get("/policy", response_model=PointPolicyResponse)
 async def get_points_policy(
+    request: Request,
     current_user: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -82,7 +85,11 @@ async def get_points_policy(
     """
     service = RewardService(db)
     user_id = current_user.user_id if current_user else None
-    return await service.get_points_policy(user_id=user_id)
+    result = await service.get_points_policy(user_id=user_id)
+    if get_current_language(request) == "en":
+        dumped = result.model_dump() if hasattr(result, 'model_dump') else result
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return result
 
 
 @router.get("/limits-policy", response_model=DailyLimitsPolicyResponse)
@@ -123,6 +130,7 @@ async def claim_green_points(
 
 @router.get("/wallet", response_model=WalletSummaryResponse)
 async def get_wallet_summary(
+    request: Request,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -135,7 +143,11 @@ async def get_wallet_summary(
     service = RewardService(db)
     # Tự động nạp dữ liệu mẫu sinh động nếu tài khoản mới chưa có giao dịch nào
     await service.seed_initial_demo_transactions(current_user.user_id)
-    return await service.get_wallet_summary(user_id=current_user.user_id)
+    result = await service.get_wallet_summary(user_id=current_user.user_id)
+    if get_current_language(request) == "en":
+        dumped = result.model_dump() if hasattr(result, 'model_dump') else result
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return result
 
 
 @router.get("/history", response_model=TransactionHistoryResponse)
@@ -245,6 +257,7 @@ async def export_statement(
     summary="Danh mục quà tặng xanh & kho voucher sinh thái (Chức năng 30 Màn 1)",
 )
 async def get_reward_catalog(
+    request: Request,
     search: Optional[str] = Query(None, description="Tìm theo tên quà tặng hoặc thương hiệu ESG"),
     stock_status: Optional[str] = Query("ALL", description="Tất cả (ALL), Còn hàng (IN_STOCK), Hết hàng (OUT_OF_STOCK)"),
     db: AsyncSession = Depends(get_db),
@@ -254,7 +267,11 @@ async def get_reward_catalog(
     Hỗ trợ công dân tra cứu đổi quà và Quản trị viên theo dõi tồn kho.
     """
     service = RewardService(db)
-    return await service.get_reward_catalog(search=search, stock_status=stock_status)
+    result = await service.get_reward_catalog(search=search, stock_status=stock_status)
+    if get_current_language(request) == "en":
+        dumped = result.model_dump() if hasattr(result, 'model_dump') else result
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return result
 
 
 @router.get(

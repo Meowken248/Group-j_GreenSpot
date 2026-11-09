@@ -11,10 +11,12 @@ Tuân thủ Clean Architecture, Dependency Injection và Explicit SQL.
 import os
 import uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
 from app.database import get_db
 from app.crud.incident_export.incident_export_repository import IncidentExportRepository
 from app.services.incident_export.incident_export_service import IncidentExportService
@@ -59,10 +61,15 @@ def get_optional_user_id(authorization: Optional[str] = Header(None)) -> Optiona
     summary="Lấy danh mục tùy chọn cho bộ lọc Màn 1/4 (22 quận/huyện, loại sự cố, trạng thái, chọn nhanh ngày)",
 )
 async def get_filter_metadata(
+    request: Request,
     service: IncidentExportService = Depends(get_incident_export_service),
 ):
     """Cung cấp danh mục quận huyện, loại sự cố cho dropdown bộ lọc cột trái."""
-    return await service.get_metadata_options()
+    result = await service.get_metadata_options()
+    if get_current_language(request) == "en":
+        dumped = result.model_dump() if hasattr(result, "model_dump") else result
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+    return result
 
 
 @router.post(
@@ -72,6 +79,7 @@ async def get_filter_metadata(
 )
 async def preview_incidents(
     params: IncidentExportFilterParams,
+    request: Request,
     service: IncidentExportService = Depends(get_incident_export_service),
 ):
     """
@@ -79,7 +87,11 @@ async def preview_incidents(
     Mã | Loại | Quận | Trạng thái (phân trang).
     """
     try:
-        return await service.preview_incidents(params)
+        result = await service.preview_incidents(params)
+        if get_current_language(request) == "en":
+            dumped = result.model_dump() if hasattr(result, "model_dump") else result
+            return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+        return result
     except Exception as e:
         # Khi xảy ra lỗi truy vấn CSDL: Banner cảnh báo đỏ xuất hiện tại đầu trang
         raise HTTPException(
