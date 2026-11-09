@@ -4,6 +4,7 @@ import { OtpVerificationPage } from "./pages/OtpVerificationPage";
 import { AccountActivatedPage } from "./pages/AccountActivatedPage";
 import { LoginPage } from "./pages/LoginPage";
 import { DeviceManagementPage } from "./pages/DeviceManagementPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { SessionExpiredModal } from "./components/SessionExpiredModal";
 import { subscribeSessionExpired } from "./services/sessionManager";
 import type { AuthView } from "./types/auth.types";
@@ -27,6 +28,14 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({
     // Nếu URL là /devices hoặc #devices -> mở Quản lý thiết bị
     if (window.location.pathname === "/devices" || window.location.hash === "#devices") {
       return "devices";
+    }
+
+    // Nếu URL là /forgot-password hoặc #forgot-password -> mở Quên mật khẩu
+    if (
+      window.location.pathname === "/forgot-password" ||
+      window.location.hash === "#forgot-password"
+    ) {
+      return "forgot_password";
     }
 
     // Nếu URL là /login hoặc #login -> mở Đăng nhập
@@ -149,12 +158,26 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({
       );
     }
 
+    // MÀN QUÊN MẬT KHẨU
+    if (currentView === "forgot_password") {
+      return (
+        <ForgotPasswordPage
+          onNavigateToLogin={(email) => {
+            handleNavigateToLogin(loginRedirect, email);
+          }}
+          onLogoClick={onExitAuth}
+          initialEmail={pendingEmail}
+        />
+      );
+    }
+
     // MÀN ĐĂNG NHẬP
     if (currentView === "login") {
       return (
         <LoginPage
           onNavigateToRegister={handleNavigateToRegister}
           onNavigateToOtp={handleNavigateToOtp}
+          onNavigateToForgotPassword={() => setCurrentView("forgot_password")}
           initialEmail={pendingEmail}
           activatedNotice={isFromActivation}
           redirectParam={loginRedirect}
