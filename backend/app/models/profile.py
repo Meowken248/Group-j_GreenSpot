@@ -91,23 +91,6 @@ class UserActivity(Base):
     user: Mapped["User"] = relationship(back_populates="activities")
 
 
-class Post(Base, TimestampMixin):
-    """Bài viết trên dòng thời gian (Timeline) của người dùng"""
-    __tablename__ = "posts"
+# Tái sử dụng model Post chuẩn hoá từ app.models.post (hỗ trợ toạ độ GPS, địa chỉ, tag bạn bè)
+from app.models.post import Post
 
-    post_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.user_id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
-    )
-    content: Mapped[str] = mapped_column(Text, nullable=False)
-    media_urls: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    group_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True)
-    visibility: Mapped[str] = mapped_column(String(20), default="PUBLIC", nullable=False)
-    is_hidden: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    reactions_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    comments_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-
-    user: Mapped["User"] = relationship(back_populates="posts")

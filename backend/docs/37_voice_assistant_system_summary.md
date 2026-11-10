@@ -3,7 +3,7 @@
 > **Mã tham chiếu thiết kế:** Hình 4.37  
 > **Dự án:** GreenSpot / EcoReport - Bản đồ Môi trường Đô thị & Báo cáo Thông minh  
 > **Kiến trúc:** Clean Architecture, Repository Pattern, Multi-tier AI NLU Engine  
-> **Vị trí lưu trữ:** [`BackEnd/docs/voice_assistant_system_summary.md`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/docs/voice_assistant_system_summary.md)  
+> **Vị trí lưu trữ:** [`BackEnd/docs/37_voice_assistant_system_summary.md`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/docs/37_voice_assistant_system_summary.md)  
 > **Trạng thái:** Hoàn thiện 100%, đồng bộ tuyệt đối với mã nguồn hiện tại, sẵn sàng đưa vào vận hành.
 
 ---
@@ -652,7 +652,7 @@ Tất cả đường dẫn và số dòng mã được đối soát chính xác 
 | **5** | [`BackEnd/app/services/voice_assistant/voice_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/voice_assistant/voice_service.py) | Service / AI NLU | 10 Intent nghiệp vụ, tích hợp Open-Meteo, trạm Phú An, và phân tích ngập cục bộ 30 điểm đen | 1 - 694 |
 | **6** | [`BackEnd/app/services/flood_service.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/services/flood_service.py) | Domain & Hydrology Engine | 30 điểm đen ngập lụt OSM/OpenData, từ điển `HOTSPOT_REALISTIC_PHYSICAL_CONTEXT` (hình thái, cống quá tải, phạm vi đoạn) | 1 - 10054 |
 | **7** | [`BackEnd/app/schemas/voice_assistant/voice.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/schemas/voice_assistant/voice.py) | DTO / Schemas | Pydantic V2 Schemas: `VoiceProcessRequest`, `VoiceProcessResponse`, `VoiceSampleCommandResponse` | 1 - 72 |
-| **8** | [`BackEnd/app/api/v1/voice_assistant/router.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/voice_assistant/router.py) | API Router | Endpoints: `GET /suggestions`, `POST /process`, `GET /history` | 1 - 134 |
+| **8** | [`BackEnd/app/api/v1/voice_assistant/router.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/voice_assistant/router.py) | API Router | Endpoints: `GET /suggestions`, `POST /process`, `GET /history`. Mount tại [`api/v1/__init__.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/__init__.py) (prefix `/voice`) | 1 - 134 |
 | **9** | [`BackEnd/tests/voice_assistant/test_voice_assistant.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/voice_assistant/test_voice_assistant.py) | Unit Testing | 17 bài kiểm thử tự động bao phủ 100% tất cả các nhánh, kiểm thử thời tiết, triều cường, ngập cục bộ, fallback | 1 - 729 |
 | **10**| [`BackEnd/tests/test_flood_and_tide.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/test_flood_and_tide.py) | Hydrology Testing | 6 bài kiểm thử tự động xác thực mô hình điều hòa triều cường và dự báo ngập 30 điểm đen | 1 - 90 |
 | **11**| [`FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx`](file:///c:/Users/Admin/source/Group-j_GreenSpot/FrontEnd/src/components/VoiceAssistant/VoiceAssistant.tsx) | UI Presentation | Bộ điều khiển trung tâm 4 Màn hình, thẻ kết quả ngập cục bộ, thời tiết, triều cường, Web Speech STT & TTS | 1 - 790 |
@@ -805,4 +805,4 @@ dist/assets/index-CrBYEKoY.js   1,545.87 kB │ gzip: 428.12 kB
 ```
 
 ---
-*Tài liệu được cập nhật chuẩn xác và lưu trữ trực tiếp tại: [`C:\Users\Admin\source\Group-j_GreenSpot\BackEnd\docs\voice_assistant_system_summary.md`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/docs/voice_assistant_system_summary.md).*
+*Tài liệu được cập nhật chuẩn xác và lưu trữ trực tiếp tại: [`C:\Users\Admin\source\Group-j_GreenSpot\BackEnd\docs\37_voice_assistant_system_summary.md`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/docs/37_voice_assistant_system_summary.md).*

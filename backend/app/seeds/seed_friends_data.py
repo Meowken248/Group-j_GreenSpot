@@ -13,6 +13,11 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import asyncpg
 from app.core.config import settings
+from app.utils.security import hash_password
+
+# Mật khẩu chung của các tài khoản mẫu (dùng cho demo & kiểm thử tự động)
+DEFAULT_PASSWORD = "Password123@"
+DEFAULT_PASSWORD_HASH = hash_password(DEFAULT_PASSWORD)
 
 
 # Định nghĩa danh sách người dùng mẫu chuyên biệt cho module Kết bạn
@@ -158,12 +163,12 @@ SAMPLE_FRIEND_USERS = [
 async def seed_friends_data():
     """Hàm nạp dữ liệu mẫu miền Kết bạn và Theo dõi (Feature STT 6)"""
     print("🤝 Bắt đầu nạp dữ liệu mẫu miền Kết bạn và Theo dõi (Feature STT 6)...")
-    url = settings.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+    url = settings.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://").split("?")[0]
     conn = await asyncpg.connect(url)
 
     try:
         # Đảm bảo các tài khoản kiểm thử chính tồn tại
-        default_pwd_hash = "$2b$12$J8u6e1W2p.6e1.8u6e1W2p6e1.8u6e1W2p6e1.8u6e1W2p6e1.8u6"
+        default_pwd_hash = DEFAULT_PASSWORD_HASH
         citizen_uuid = uuid.UUID("44444444-4444-4444-4444-444444444444")
         test_uuid = uuid.UUID("55555555-5555-5555-5555-555555555555")
 
@@ -183,8 +188,10 @@ async def seed_friends_data():
 
         # 1. Tìm hoặc xác định danh sách các tài khoản người dùng chính (để tạo quan hệ bạn bè)
         target_emails = [
+            "admin@gmail.com",
             "citizen@ecoreport.gov.vn",
-            "ddatmguyen2023+test@gmail.com"
+            "ddatmguyen2023+test@gmail.com",
+            "admin@gmail.com",
         ]
         
         main_user_uuids = []
@@ -195,7 +202,7 @@ async def seed_friends_data():
 
         # 2. Đảm bảo các SAMPLE_FRIEND_USERS tồn tại trong bảng users
         print(" 👤 [1/4] Đảm bảo 10 tài khoản mẫu tồn tại...")
-        default_pwd_hash = "$2b$12$J8u6e1W2p.6e1.8u6e1W2p6e1.8u6e1W2p6e1.8u6e1W2p6e1.8u6"
+        default_pwd_hash = DEFAULT_PASSWORD_HASH
 
         for u in SAMPLE_FRIEND_USERS:
             await conn.execute("""
@@ -208,6 +215,7 @@ async def seed_friends_data():
                     avatar_url = EXCLUDED.avatar_url,
                     bio = EXCLUDED.bio,
                     status = EXCLUDED.status,
+                    password_hash = EXCLUDED.password_hash,
                     total_green_points = EXCLUDED.total_green_points,
                     friends_count = EXCLUDED.friends_count;
             """, u["user_id"], u["email"], u["phone_number"], default_pwd_hash,

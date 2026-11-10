@@ -54,6 +54,12 @@ export const validateEmail = (value: string): string | null => {
     return 'Vui lòng nhập email';
   }
 
+  // Hỗ trợ đăng nhập nhanh bằng tài khoản quản trị viên đặc biệt (admin)
+  const trimmedLower = value.trim().toLowerCase();
+  if (trimmedLower === 'admin' || trimmedLower === 'administrator') {
+    return null;
+  }
+
   // Cấm hoàn toàn khoảng trắng ở bất kỳ vị trí nào (đầu, cuối hoặc giữa)
   if (/\s/.test(value)) {
     return 'Email không được chứa khoảng trắng';
@@ -161,10 +167,15 @@ export const validateLoginPassword = (value: string): string | null => {
  * - Chỉ chấp nhận đường dẫn nội bộ bắt đầu bằng đúng 1 dấu / và không bắt đầu bằng //
  * - Nếu sai hoặc không có, trả về defaultPath ('/geo-feed')
  */
-export const sanitizeRedirectUrl = (redirectParam: string | null | undefined, defaultPath = '/geo-feed'): string => {
-  if (!redirectParam) return defaultPath;
+export const sanitizeRedirectUrl = (redirectParam: unknown, defaultPath = '/geo-feed'): string => {
+  if (typeof redirectParam !== 'string' || !redirectParam.trim()) {
+    return defaultPath;
+  }
   const trimmed = redirectParam.trim();
   if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('#')) {
     return trimmed;
   }
   return defaultPath;

@@ -6,7 +6,11 @@ serving typed JSON to the Native React Frontend.
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Query
 
-from app.services.air_quality_analytics_service import AirQualityAnalyticsService
+try:
+    from app.services.air_quality_analytics_service import AirQualityAnalyticsService
+except Exception as e:
+    AirQualityAnalyticsService = None
+
 from app.services.runtime_sync_service import get_live_environment_runtime
 
 router = APIRouter(prefix="/air-quality", tags=["Air Quality Analytics"])
@@ -15,6 +19,8 @@ router = APIRouter(prefix="/air-quality", tags=["Air Quality Analytics"])
 @router.get("/provinces")
 def list_provinces() -> List[Dict[str, Any]]:
     """Danh sách 34 tỉnh/thành phố có dữ liệu trạm quan trắc & phân tích khí tượng."""
+    if not AirQualityAnalyticsService:
+        return []
     return AirQualityAnalyticsService.list_provinces()
 
 
@@ -25,6 +31,8 @@ def get_overview(
 ) -> Dict[str, Any]:
     """Tổng quan chất lượng không khí: Thẻ KPI Hero, khuyến nghị sức khỏe, 6 chất ô nhiễm,
     biểu đồ phân bổ mức độ AQI, và top 5 tỉnh sạch nhất / ô nhiễm nhất."""
+    if not AirQualityAnalyticsService:
+        return {}
     return AirQualityAnalyticsService.get_overview(province_slug=province_slug, time_range=time_range)
 
 

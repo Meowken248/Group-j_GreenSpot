@@ -66,9 +66,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   // 1. Kiểm tra phiên đã tồn tại: nếu đã có token hợp lệ -> chuyển luôn đến Bảng tin
   useEffect(() => {
     resetSessionExpired();
-    const existingToken = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+    const existingToken =
+      localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN) ||
+      localStorage.getItem("greenspot_token");
     if (existingToken) {
-      const rawRedirect = redirectParam || new URLSearchParams(window.location.search).get("redirect");
+      const rawRedirect = typeof redirectParam === "string" ? redirectParam : new URLSearchParams(window.location.search).get("redirect");
       const targetUrl = sanitizeRedirectUrl(rawRedirect, "/geo-feed");
       if (onLoginSuccess) {
         onLoginSuccess(targetUrl);
@@ -207,7 +209,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         window.dispatchEvent(new Event("auth_change"));
 
         // Kiểm tra an toàn tham số redirect
-        const rawRedirect = redirectParam || new URLSearchParams(window.location.search).get("redirect");
+        const rawRedirect = typeof redirectParam === "string" ? redirectParam : new URLSearchParams(window.location.search).get("redirect");
         const targetUrl = sanitizeRedirectUrl(rawRedirect, "/geo-feed");
 
         setTimeout(() => {
@@ -216,7 +218,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           } else if (onLogoClick) {
             onLogoClick();
           }
-        }, 1000);
+        }, 500);
         return;
       }
 
@@ -335,7 +337,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 id="login-email"
                 name="email"
                 className={`form-input ${errors.emailHasError ? "has-error" : ""}`}
-                placeholder="Email"
+                placeholder="Email hoặc tên tài khoản (admin)"
                 maxLength={254}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

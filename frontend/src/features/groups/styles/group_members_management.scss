@@ -1,0 +1,772 @@
+// GreenSpot - STT 04: Vai trò trong nhóm (Quản trị nhóm, Kiểm duyệt viên, Thành viên)
+// Tuân thủ triệt để Rule 4 của PROJECT_RULES.md (SASS variables, mixins, nesting, BEM)
+
+$primary-color: #059669;
+$primary-hover: #047857;
+$admin-color: #b91c1c;
+$admin-bg: #fee2e2;
+$mod-color: #1d4ed8;
+$mod-bg: #dbeafe;
+$member-color: #475569;
+$member-bg: #f1f5f9;
+$danger-color: #dc2626;
+$danger-hover: #b91c1c;
+$gray-muted: #64748b;
+$gray-light: #f8fafc;
+$border-color: #e2e8f0;
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes highlightFade {
+  0% {
+    background-color: #d1fae5;
+  }
+  100% {
+    background-color: #ffffff;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.group-members-container {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 0 24px 0;
+  box-sizing: border-box;
+
+  .members-header-banner {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    border: 1px solid $border-color;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    @include flex-between;
+
+    .banner-info {
+      .group-title {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 800;
+        color: #0f172a;
+      }
+      .group-breadcrumb {
+        margin: 6px 0 0;
+        font-size: 14px;
+        color: $gray-muted;
+        strong {
+          color: #0f172a;
+        }
+      }
+      .admin-system-badge {
+        display: inline-block;
+        margin-top: 6px;
+        font-size: 12px;
+        color: #64748b;
+        background: #f1f5f9;
+        padding: 2px 8px;
+        border-radius: 6px;
+      }
+    }
+
+    .banner-actions {
+      display: flex;
+      gap: 12px;
+    }
+  }
+
+  // Bố cục thân trang chia 2 khung
+  .members-layout-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 24px;
+    align-items: start;
+
+    &.full-width {
+      grid-template-columns: 1fr;
+    }
+
+    @media (max-width: 1024px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // KHUNG TRÁI: DANH SÁCH THÀNH VIÊN
+  .members-card-left {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid $border-color;
+    padding: 24px;
+    box-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.04);
+
+    .card-title-row {
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #f1f5f9;
+
+      h2 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 800;
+        color: #0f172a;
+        letter-spacing: -0.01em;
+      }
+
+      .group-name-indicator {
+        margin: 4px 0 0;
+        font-size: 13px;
+        color: $gray-muted;
+        strong {
+          color: #0f172a;
+        }
+      }
+
+      .sys-admin-notice {
+        margin: 4px 0 0;
+        font-size: 12px;
+        color: #64748b;
+        font-style: italic;
+      }
+    }
+
+    .members-list-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .member-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid #f1f5f9;
+      background: #ffffff;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+      }
+
+      &.highlight-success {
+        animation: highlightFade 2s ease-out;
+      }
+
+      .member-profile-info {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 0;
+        flex: 1 1 240px;
+
+        .avatar-circle {
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          overflow: hidden;
+          background: #e2e8f0;
+          @include flex-center;
+          font-weight: 700;
+          color: #475569;
+          flex-shrink: 0;
+
+          img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+        }
+
+        .name-role-cluster {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+          min-width: 0;
+
+          .member-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.3;
+          }
+
+          .self-badge {
+            font-size: 12px;
+            font-weight: 600;
+            color: #059669;
+            background: #d1fae5;
+            padding: 1px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+          }
+
+          // Nhãn vai trò dạng viên thuốc (Pill badge)
+          .role-pill {
+            font-size: 12px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            white-space: nowrap;
+
+            &.role-admin {
+              background: $admin-bg;
+              color: $admin-color;
+              border: 1px solid #fca5a5;
+            }
+
+            &.role-moderator {
+              background: $mod-bg;
+              color: $mod-color;
+              border: 1px solid #93c5fd;
+            }
+
+            &.role-member {
+              background: $member-bg;
+              color: $member-color;
+              border: 1px solid #cbd5e1;
+            }
+          }
+        }
+      }
+
+      // Cụm 2 nút hành động
+      .member-actions-cluster {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+        margin-left: auto;
+
+        .action-button-tooltip-wrapper {
+          position: relative;
+          display: inline-block;
+
+          &:hover .button-tooltip-content {
+            visibility: visible;
+            opacity: 1;
+          }
+        }
+
+        .button-tooltip-content {
+          visibility: hidden;
+          opacity: 0;
+          position: absolute;
+          bottom: 125%;
+          right: 0;
+          width: 220px;
+          background: #0f172a;
+          color: #ffffff;
+          font-size: 11px;
+          font-weight: 500;
+          padding: 6px 10px;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          z-index: 50;
+          transition: opacity 0.2s;
+          pointer-events: none;
+          line-height: 1.4;
+          text-align: center;
+
+          &::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            right: 18px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #0f172a transparent transparent transparent;
+          }
+        }
+
+        .btn-action {
+          flex: initial;
+          white-space: nowrap;
+          padding: 6px 12px;
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 600;
+          border: 1px solid transparent;
+          cursor: pointer;
+          transition: all 0.2s;
+
+          &.btn-change-role {
+            background: #ffffff;
+            color: #0f172a;
+            border-color: #cbd5e1;
+
+            &:hover:not(:disabled) {
+              background: #f1f5f9;
+              border-color: #94a3b8;
+            }
+          }
+
+          &.btn-remove-member {
+            background: #ffffff;
+            color: $danger-color;
+            border-color: #fecaca;
+
+            &:hover:not(:disabled) {
+              background: #fee2e2;
+              border-color: #f87171;
+            }
+          }
+
+          &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #f1f5f9 !important;
+            color: #94a3b8 !important;
+            border-color: #e2e8f0 !important;
+          }
+        }
+      }
+
+      @media (max-width: 580px) {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+
+        .member-profile-info {
+          width: 100%;
+        }
+
+        .member-actions-cluster {
+          width: 100%;
+          justify-content: flex-end;
+        }
+      }
+    }
+
+    // Nút Xem thêm
+    .load-more-section {
+      margin-top: 20px;
+      text-align: center;
+
+      .btn-load-more {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 24px;
+        background: #ffffff;
+        color: #0f172a;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover:not(:disabled) {
+          background: #f8fafc;
+          border-color: #94a3b8;
+        }
+
+        &:disabled {
+          cursor: not-allowed;
+          opacity: 0.7;
+        }
+
+        .spinner-icon {
+          width: 16px;
+          height: 16px;
+          border: 2px solid #cbd5e1;
+          border-top-color: $primary-color;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+      }
+    }
+
+    // Skeleton loader
+    .skeleton-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+
+      .skeleton-row {
+        height: 60px;
+        background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 12px;
+      }
+    }
+  }
+
+  // KHUNG PHẢI: MỜI
+  .members-card-right {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid $border-color;
+    padding: 24px;
+    box-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.04);
+
+    .right-title {
+      margin: 0 0 12px;
+      font-size: 16px;
+      font-weight: 800;
+      color: #0f172a;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .invite-instruction {
+      margin: 0 0 20px;
+      font-size: 13px;
+      color: $gray-muted;
+      line-height: 1.5;
+    }
+
+    .btn-invite-wide {
+      width: 100%;
+      padding: 12px 20px;
+      background: $primary-color;
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.2s;
+
+      &:hover {
+        background: $primary-hover;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+// ==========================================
+// MODAL & POPUP STYLES (Màn 2, Màn 3, Màn 4)
+// ==========================================
+.modal-backdrop-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  @include flex-center;
+  padding: 16px;
+
+  .modal-dialog-box {
+    background: #ffffff;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.25);
+    padding: 28px;
+    position: relative;
+    box-sizing: border-box;
+
+    .modal-super-label {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      color: #94a3b8;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .modal-main-title {
+      margin: 0 0 8px;
+      font-size: 20px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .modal-member-subtext {
+      margin: 0 0 20px;
+      font-size: 13px;
+      color: $gray-muted;
+      strong {
+        color: #0f172a;
+      }
+    }
+
+    // Màn 2: Cụm 3 lựa chọn radio
+    .radio-role-options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+
+      .radio-role-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px;
+        border-radius: 12px;
+        border: 2px solid #e2e8f0;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover {
+          border-color: #cbd5e1;
+          background: #f8fafc;
+        }
+
+        &.selected {
+          border-color: $primary-color;
+          background: #f0fdf4;
+        }
+
+        input[type="radio"] {
+          margin-top: 3px;
+          cursor: pointer;
+          accent-color: $primary-color;
+          width: 16px;
+          height: 16px;
+        }
+
+        .role-text-block {
+          flex: 1;
+
+          .role-header-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            .role-name-text {
+              font-size: 14px;
+              font-weight: 700;
+              color: #0f172a;
+            }
+
+            .current-role-badge {
+              font-size: 11px;
+              font-weight: 600;
+              color: #475569;
+              background: #e2e8f0;
+              padding: 1px 6px;
+              border-radius: 4px;
+            }
+          }
+
+          .role-desc-text {
+            margin: 4px 0 0;
+            font-size: 12px;
+            color: $gray-muted;
+            line-height: 1.4;
+          }
+        }
+      }
+    }
+
+    // Cảnh báo tự hạ vai trò màu đỏ
+    .self-demote-warning-alert {
+      margin: 0 0 20px;
+      padding: 10px 14px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      color: $danger-color;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    // Màn 3: Nội dung xác nhận xoá
+    .remove-warning-box {
+      margin-bottom: 24px;
+
+      .warning-lead-text {
+        font-size: 15px;
+        font-weight: 600;
+        color: #0f172a;
+        margin: 0 0 12px;
+      }
+
+      .gray-detail-line {
+        margin: 4px 0;
+        font-size: 13px;
+        color: $gray-muted;
+        strong {
+          color: #334155;
+        }
+      }
+    }
+
+    // Màn 4: Thông báo thành công
+    .success-announcement-box {
+      margin-bottom: 24px;
+
+      .success-lead-text {
+        font-size: 16px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0 0 8px;
+      }
+
+      .success-detail-text {
+        margin: 0;
+        font-size: 13px;
+        color: $gray-muted;
+      }
+    }
+
+    // Khung nút chân Modal
+    .modal-actions-footer {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+
+      .btn-modal {
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+
+        &.btn-cancel {
+          background: #f1f5f9;
+          color: #475569;
+
+          &:hover {
+            background: #e2e8f0;
+          }
+        }
+
+        &.btn-confirm-save {
+          background: $primary-color;
+          color: #ffffff;
+
+          &:hover:not(:disabled) {
+            background: $primary-hover;
+          }
+
+          &:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+          }
+        }
+
+        &.btn-confirm-delete {
+          background: $danger-color;
+          color: #ffffff;
+
+          &:hover:not(:disabled) {
+            background: $danger-hover;
+          }
+
+          &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+        }
+
+        &.btn-confirm-close {
+          width: 100%;
+          justify-content: center;
+          background: $primary-color;
+          color: #ffffff;
+
+          &:hover {
+            background: $primary-hover;
+          }
+        }
+
+        .spinner-icon {
+          width: 14px;
+          height: 14px;
+          border: 2px solid rgba(255, 255, 255, 0.4);
+          border-top-color: #ffffff;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+      }
+    }
+  }
+
+  // Toast thông báo chuẩn quy tắc không dùng inline style
+  .members-global-toast {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 9999;
+    padding: 12px 20px;
+    border-radius: 10px;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 14px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    &.toast-success {
+      background: $primary-color;
+    }
+
+    &.toast-error {
+      background: $danger-color;
+    }
+  }
+
+  // Khối lỗi và khối trống khi nạp danh sách
+  .members-error-state {
+    text-align: center;
+    padding: 40px 0;
+
+    .error-message-text {
+      color: $danger-color;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .btn-retry-load {
+      margin-top: 12px;
+    }
+  }
+
+  .members-empty-state {
+    text-align: center;
+    padding: 40px 0;
+    color: $gray-muted;
+    font-size: 14px;
+  }
+}
+

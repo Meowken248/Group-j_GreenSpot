@@ -7,6 +7,7 @@ Cách sử dụng (từ thư mục BackEnd):
     python scripts/db.py down      -> Tắt Database
     python scripts/db.py studio    -> Mở giao diện Web xem dữ liệu (Prisma Studio)
     python scripts/db.py seed      -> Nạp dữ liệu Admin và báo cáo trùng AI mẫu
+    python scripts/db.py birthdays -> Nạp lại dữ liệu Sinh nhật bạn bè & Thiệp xanh
     python scripts/db.py migrate   -> Cập nhật cấu trúc bảng mới (Alembic)
     python scripts/db.py pull      -> Kéo cấu trúc bảng từ PostgreSQL về Prisma schema
 """
@@ -49,9 +50,14 @@ def db_studio():
 
 
 def db_seed():
-    print("🌱 Nạp toàn bộ dữ liệu mẫu (Admin + 3 cụm AI Deduplication)...")
-    run_cmd("python app/seeds/seed_admin.py", cwd=backend_dir)
-    run_cmd("python app/seeds/deduplication/seed_data.py", cwd=backend_dir)
+    print("🌱 Nạp toàn bộ dữ liệu mẫu hệ thống (RBAC, GIS, Công dân, Bạn bè, Bảng tin, Xử phạt, Cài đặt, Báo cáo trùng AI, Sinh nhật & Thiệp xanh, STT 39 & 40 Triage & Spatial)...")
+    run_cmd("python -m app.seeds.seed_all", cwd=backend_dir)
+    run_cmd("python -m app.seeds.triage_spatial_seed", cwd=backend_dir)
+
+
+def db_seed_birthdays():
+    print("🎂 Nạp lại dữ liệu Sinh nhật bạn bè & Thiệp xanh (ngày sinh rơi vào hôm nay)...")
+    run_cmd("python -m app.seeds.seed_birthdays", cwd=backend_dir)
 
 
 def db_migrate():
@@ -72,6 +78,7 @@ def print_help():
     print("  python scripts/db.py down     : Tắt Database")
     print("  python scripts/db.py studio   : Mở giao diện Web xem dữ liệu (Prisma Studio)")
     print("  python scripts/db.py seed     : Nạp dữ liệu mẫu (Admin + Báo cáo trùng AI)")
+    print("  python scripts/db.py birthdays: Nạp lại dữ liệu Sinh nhật & Thiệp xanh (chạy mỗi ngày)")
     print("  python scripts/db.py migrate  : Cập nhật cấu trúc bảng mới")
     print("  python scripts/db.py pull     : Tự động kéo cấu trúc bảng về Prisma schema")
     print("=" * 60 + "\n")
@@ -91,6 +98,8 @@ if __name__ == "__main__":
         db_studio()
     elif action == "seed":
         db_seed()
+    elif action == "birthdays":
+        db_seed_birthdays()
     elif action == "migrate":
         db_migrate()
     elif action == "pull":

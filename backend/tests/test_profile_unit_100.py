@@ -284,6 +284,8 @@ class TestProfileDomainUnitCoverage(unittest.IsolatedAsyncioTestCase):
 
     async def test_get_green_passport_formula(self):
         """Kiểm tra tính toán Hộ chiếu Xanh: công thức % tiến độ và điểm lên cấp"""
+        self.citizen.total_green_points = 450
+        await self.session.commit()
         res = await get_green_passport(
             user_id=self.citizen.user_id,
             auth_data=(self.citizen, self.dummy_session),

@@ -6,7 +6,7 @@
  * 3. Mô hình Cảnh báo ngập kết hợp Lượng mưa thời gian thực (Rainfall Trigger & Flood Risk Assessment).
  */
 
-const BACKEND_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const BACKEND_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 export interface FloodHotspotProperties {
   id: string;

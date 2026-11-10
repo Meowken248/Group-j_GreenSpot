@@ -20,6 +20,18 @@ class CitizenResendOtpRequest(BaseModel):
     email: EmailStr = Field(..., description="Địa chỉ email cần gửi lại mã")
 
 
+class CitizenForgotPasswordRequest(BaseModel):
+    """Payload gửi yêu cầu nhận OTP để đặt lại mật khẩu"""
+    email: EmailStr = Field(..., max_length=254, description="Địa chỉ email đã đăng ký")
+
+
+class CitizenResetPasswordRequest(BaseModel):
+    """Payload xác thực OTP và đổi mật khẩu mới"""
+    email: EmailStr = Field(..., max_length=254, description="Địa chỉ email đã đăng ký")
+    otp_code: str = Field(..., min_length=6, max_length=6, description="Mã OTP 6 chữ số")
+    new_password: str = Field(..., min_length=8, max_length=32, description="Mật khẩu mới (8-32 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt không chưa bất kì khoảng trắng nào)")
+
+
 class UserSummary(BaseModel):
     user_id: str
     email: str
@@ -30,8 +42,8 @@ class UserSummary(BaseModel):
 
 
 class CitizenLoginRequest(BaseModel):
-    """Payload gửi lên từ Màn hình Đăng nhập"""
-    email: EmailStr = Field(..., description="Địa chỉ email đăng nhập")
+    """Payload gửi lên từ Màn hình Đăng nhập (hỗ trợ Email hoặc Tên tài khoản admin)"""
+    email: str = Field(..., min_length=1, max_length=254, description="Địa chỉ email hoặc tài khoản đăng nhập")
     password: str = Field(..., min_length=1, max_length=128, description="Mật khẩu tài khoản")
 
 

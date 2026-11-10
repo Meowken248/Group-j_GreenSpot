@@ -1,5 +1,7 @@
 import React from "react";
 import type { FriendRequestItem, GreenCitizenSuggestion } from "../types";
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
+import { useLanguage } from "../../../i18n";
 
 interface FriendRequestsViewProps {
   requests: FriendRequestItem[];
@@ -10,6 +12,7 @@ interface FriendRequestsViewProps {
   onRejectRequest: (req: FriendRequestItem) => void;
   onSendRequest: (sug: GreenCitizenSuggestion) => void;
   onToggleFollow: (sug: GreenCitizenSuggestion) => void;
+  onOpenProfile?: (userId: string) => void;
 }
 
 export const FriendRequestsView: React.FC<FriendRequestsViewProps> = ({
@@ -21,14 +24,18 @@ export const FriendRequestsView: React.FC<FriendRequestsViewProps> = ({
   onRejectRequest,
   onSendRequest,
   onToggleFollow,
+  onOpenProfile,
 }) => {
+  const { currentLang } = useLanguage();
+  const isEn = currentLang === "EN";
+
   return (
     <div className="two-column-layout">
       {/* KHỐI 1 (CỘT TRÁI): LỜI MỜI KẾT BẠN */}
       <div className="section-card">
         <div className="card-header-bar">
           <h2 className="card-title">
-            <span>📩 Lời mời kết bạn</span>
+            <span>📩 {isEn ? "Friend Requests" : "Lời mời kết bạn"}</span>
             <span className="count-badge">{requests.length}</span>
           </h2>
         </div>
@@ -36,12 +43,12 @@ export const FriendRequestsView: React.FC<FriendRequestsViewProps> = ({
         <div className="requests-list-container">
           {loadingRequests ? (
             <div className="empty-state-notice">
-              <p>Đang tải danh sách lời mời...</p>
+              <p>{isEn ? "Loading friend requests..." : "Đang tải danh sách lời mời..."}</p>
             </div>
           ) : requests.length === 0 ? (
             <div className="empty-state-notice">
               <div className="empty-icon">📭</div>
-              <p>Hiện không có lời mời kết bạn nào đang chờ phản hồi.</p>
+              <p>{isEn ? "No pending friend requests at this time." : "Hiện không có lời mời kết bạn nào đang chờ phản hồi."}</p>
             </div>
           ) : (
             requests.map((req) => (
@@ -49,10 +56,15 @@ export const FriendRequestsView: React.FC<FriendRequestsViewProps> = ({
                 key={req.request_id}
                 className={`request-row-item ${req.isFading ? "fading-row" : ""}`}
               >
-                <div className="user-meta-left">
+                <div
+                  className="user-meta-left"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => onOpenProfile?.(req.sender_id)}
+                  title={`Xem trang cá nhân của ${req.sender_name}`}
+                >
                   {req.sender_avatar ? (
                     <img
-                      src={req.sender_avatar}
+                      src={resolveMediaUrl(req.sender_avatar)}
                       alt={req.sender_name}
                       className="user-avatar-round"
                     />
@@ -69,8 +81,10 @@ export const FriendRequestsView: React.FC<FriendRequestsViewProps> = ({
                       {req.district && <span className="dot-divider">•</span>}
                       <span>
                         {req.mutual_friends_count > 0
-                          ? `${req.mutual_friends_count} bạn chung`
-                          : "Thành viên cộng đồng xanh"}
+                          ? (isEn
+                              ? `${req.mutual_friends_count} ${req.mutual_friends_count === 1 ? "mutual friend" : "mutual friends"}`
+                              : `${req.mutual_friends_count} bạn chung`)
+                          : (isEn ? "Green Community Member" : "Thành viên cộng đồng xanh")}
                       </span>
                     </div>
                   </div>
@@ -83,7 +97,7 @@ export const FriendRequestsView: React.FC<FriendRequestsViewProps> = ({
                     disabled={req.isFading}
                     onClick={() => onAcceptRequest(req)}
                   >
-                    Chấp nhận
+                    {isEn ? "Accept" : "Chấp nhận"}
                   </button>
                   <button
                     type="button"
@@ -91,7 +105,7 @@ export const FriendRequestsView: React.FC<FriendRequestsViewProps> = ({
                     disabled={req.isFading}
                     onClick={() => onRejectRequest(req)}
                   >
-                    Từ chối
+                    {isEn ? "Reject" : "Từ chối"}
                   </button>
                 </div>
               </div>
@@ -104,7 +118,7 @@ export const FriendRequestsView: React.FC<FriendRequestsViewProps> = ({
       <div className="section-card">
         <div className="card-header-bar">
           <h2 className="card-title">
-            <span>🌱 Gợi ý công dân xanh</span>
+            <span>🌱 {isEn ? "Green Citizen Suggestions" : "Gợi ý công dân xanh"}</span>
             <span className="count-badge">{suggestions.length}</span>
           </h2>
         </div>
@@ -112,20 +126,25 @@ export const FriendRequestsView: React.FC<FriendRequestsViewProps> = ({
         <div className="suggestions-list-container">
           {loadingSuggestions ? (
             <div className="empty-state-notice">
-              <p>Đang tìm kiếm gợi ý công dân xanh...</p>
+              <p>{isEn ? "Searching for Green Citizen suggestions..." : "Đang tìm kiếm gợi ý công dân xanh..."}</p>
             </div>
           ) : suggestions.length === 0 ? (
             <div className="empty-state-notice">
               <div className="empty-icon">🤝</div>
-              <p>Chưa có thêm gợi ý mới tại khu vực của bạn.</p>
+              <p>{isEn ? "No new suggestions in your area yet." : "Chưa có thêm gợi ý mới tại khu vực của bạn."}</p>
             </div>
           ) : (
             suggestions.map((sug) => (
               <div key={sug.user_id} className="suggestion-card-item">
-                <div className="user-meta-left">
+                <div
+                  className="user-meta-left"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => onOpenProfile?.(sug.user_id)}
+                  title={`Xem trang cá nhân của ${sug.full_name}`}
+                >
                   {sug.avatar_url ? (
                     <img
-                      src={sug.avatar_url}
+                      src={resolveMediaUrl(sug.avatar_url)}
                       alt={sug.full_name}
                       className="user-avatar-round"
                     />
@@ -140,7 +159,7 @@ export const FriendRequestsView: React.FC<FriendRequestsViewProps> = ({
                     <div className="user-subtext">
                       {sug.district && <span>📍 {sug.district} • </span>}
                       <span className="points-highlight">
-                        ⭐ {sug.total_green_points} điểm xanh
+                        ⭐ {sug.total_green_points} {isEn ? (sug.total_green_points === 1 ? "green point" : "green points") : "điểm xanh"}
                       </span>
                     </div>
                   </div>
@@ -153,7 +172,7 @@ export const FriendRequestsView: React.FC<FriendRequestsViewProps> = ({
                     disabled={sug.isRequested}
                     onClick={() => onSendRequest(sug)}
                   >
-                    {sug.isRequested ? "Đã gửi lời mời" : "+ Kết bạn"}
+                    {sug.isRequested ? (isEn ? "Request Sent" : "Đã gửi lời mời") : (isEn ? "+ Add Friend" : "+ Kết bạn")}
                   </button>
 
                   <button
@@ -161,7 +180,7 @@ export const FriendRequestsView: React.FC<FriendRequestsViewProps> = ({
                     className={`btn-follow-toggle ${sug.is_following ? "btn-unfollow" : ""}`}
                     onClick={() => onToggleFollow(sug)}
                   >
-                    {sug.is_following ? "Bỏ theo dõi" : "Theo dõi"}
+                    {sug.is_following ? (isEn ? "Unfollow" : "Bỏ theo dõi") : (isEn ? "Follow" : "Theo dõi")}
                   </button>
                 </div>
               </div>

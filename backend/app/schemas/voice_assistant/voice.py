@@ -8,11 +8,13 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class VoiceSampleCommandResponse(BaseModel):
     """Schema trả về thông tin câu lệnh gợi ý cho Màn 1"""
+    model_config = ConfigDict(from_attributes=True)
+
     command_id: uuid.UUID
     category: str
     command_text: str
@@ -21,9 +23,6 @@ class VoiceSampleCommandResponse(BaseModel):
     action_target: Optional[str] = None
     default_response: str
     display_order: int
-
-    class Config:
-        from_attributes = True
 
 
 class VoiceProcessRequest(BaseModel):
@@ -56,6 +55,8 @@ class VoiceProcessResponse(BaseModel):
 
 class VoiceHistoryItemResponse(BaseModel):
     """Schema trả về lịch sử tương tác giọng nói"""
+    model_config = ConfigDict(from_attributes=True)
+
     log_id: uuid.UUID
     raw_transcript: str
     normalized_text: str
@@ -66,6 +67,3 @@ class VoiceHistoryItemResponse(BaseModel):
     session_source: str
     processing_time_ms: int
     created_at: datetime
-
-    class Config:
-        from_attributes = True

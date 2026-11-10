@@ -1,8 +1,10 @@
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional, Tuple
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, update, func, and_, or_, desc, asc
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from app.core.localization import get_current_language
+from app.services.translation.translation_service import translation_service
+from sqlalchemy import select, update, func, and_, or_, desc, asc, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -44,7 +46,7 @@ async def count_mutual_friends(user_a: uuid.UUID, user_b: uuid.UUID, db: AsyncSe
     """Tính số lượng bạn chung giữa 2 người dùng"""
     # Bạn bè của A (chưa bị xóa)
     q_a = select(
-        func.case(
+        case(
             (Friendship.user_id_1 == user_a, Friendship.user_id_2),
             else_=Friendship.user_id_1
         )
@@ -55,7 +57,7 @@ async def count_mutual_friends(user_a: uuid.UUID, user_b: uuid.UUID, db: AsyncSe
 
     # Bạn bè của B (chưa bị xóa)
     q_b = select(
-        func.case(
+        case(
             (Friendship.user_id_1 == user_b, Friendship.user_id_2),
             else_=Friendship.user_id_1
         )
@@ -77,6 +79,7 @@ async def count_mutual_friends(user_a: uuid.UUID, user_b: uuid.UUID, db: AsyncSe
 
 @router.get("/requests", response_model=List[FriendRequestResponse])
 async def get_received_friend_requests(
+    request: Request,
     auth_data: Tuple[User, UserSession] = Depends(get_current_user_and_session),
     db: AsyncSession = Depends(get_db)
 ):
@@ -127,6 +130,9 @@ async def get_received_friend_requests(
             )
         )
 
+    if get_current_language(request) == "en":
+        dumped = [i.model_dump() if hasattr(i, 'model_dump') else i for i in response_items]
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
     return response_items
 
 
@@ -302,9 +308,9 @@ async def respond_to_friend_request(
         req.status = FriendRequestStatus.ACCEPTED.value
 
         # Tăng friends_count của cả 2 user
-        current_user.friends_count += 1
+        current_user.friends_count = (current_user.friends_count or 0) + 1
         if sender_user:
-            sender_user.friends_count += 1
+            sender_user.friends_count = (sender_user.friends_count or 0) + 1
 
         await db.commit()
         return GenericFriendsActionResponse(
@@ -328,6 +334,7 @@ async def respond_to_friend_request(
 
 @router.get("/suggestions", response_model=List[GreenCitizenSuggestionResponse])
 async def get_green_citizen_suggestions(
+    request: Request,
     auth_data: Tuple[User, UserSession] = Depends(get_current_user_and_session),
     db: AsyncSession = Depends(get_db)
 ):
@@ -338,7 +345,7 @@ async def get_green_citizen_suggestions(
 
     # Lấy danh sách ID đã là bạn bè của tôi
     friends_subq = select(
-        func.case(
+        case(
             (Friendship.user_id_1 == current_user.user_id, Friendship.user_id_2),
             else_=Friendship.user_id_1
         )
@@ -349,7 +356,7 @@ async def get_green_citizen_suggestions(
 
     # Lấy danh sách ID đã gửi hoặc nhận request PENDING
     req_subq = select(
-        func.case(
+        case(
             (FriendRequest.sender_id == current_user.user_id, FriendRequest.receiver_id),
             else_=FriendRequest.sender_id
         )
@@ -410,6 +417,9 @@ async def get_green_citizen_suggestions(
             )
         )
 
+    if get_current_language(request) == "en":
+        dumped = [i.model_dump() if hasattr(i, 'model_dump') else i for i in suggestions]
+        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
     return suggestions
 
 
@@ -417,8 +427,11 @@ async def get_green_citizen_suggestions(
 # ENDPOINTS MÀN 2: QUẢN LÝ BẠN BÈ & ĐANG THEO DÕI
 # =========================================================================
 
+@router.get("", response_model=List[FriendItemResponse])
+@router.get("/", response_model=List[FriendItemResponse], include_in_schema=False)
 @router.get("/list", response_model=List[FriendItemResponse])
 async def get_my_friends_list(
+    request: Request,
     query: Optional[str] = Query(None, description="Tìm kiếm realtime họ tên hoặc quận/huyện"),
     auth_data: Tuple[User, UserSession] = Depends(get_current_user_and_session),
     db: AsyncSession = Depends(get_db)
@@ -575,12 +588,12 @@ async def unfriend_user(
     friendship.deleted_at = datetime.now(timezone.utc)
 
     # 2. Giảm friends_count không âm
-    current_user.friends_count = max(0, current_user.friends_count - 1)
+    current_user.friends_count = max(0, (current_user.friends_count or 0) - 1)
 
     f_res = await db.execute(select(User).where(User.user_id == friend_id))
     friend_user = f_res.scalars().first()
     if friend_user:
-        friend_user.friends_count = max(0, friend_user.friends_count - 1)
+        friend_user.friends_count = max(0, (friend_user.friends_count or 0) - 1)
 
     await db.commit()
 
