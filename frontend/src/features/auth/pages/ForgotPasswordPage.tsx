@@ -5,6 +5,7 @@ import { Toast } from "../components/Toast";
 import { validateEmail, validatePassword, validateConfirmPassword } from "../utils/validators";
 import { forgotPassword, resetPassword } from "../services/authService";
 import type { ToastState } from "../types/auth.types";
+import { AUTH_STORAGE_KEYS } from "../types/auth.types";
 import "../styles/ForgotPasswordPage.scss";
 
 interface ForgotPasswordPageProps {
@@ -41,6 +42,24 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({
   const otpRef = useRef<HTMLInputElement>(null);
   const newPasswordRef = useRef<HTMLInputElement>(null);
   const confirmPasswordRef = useRef<HTMLInputElement>(null);
+
+  // Đặc tả: Khi mở màn hình, nếu đang có phiên còn hiệu lực -> tự động chuyển hướng ra Bảng tin / Bản đồ
+  useEffect(() => {
+    try {
+      const existingToken =
+        localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN) ||
+        localStorage.getItem("greenspot_token");
+      if (existingToken) {
+        if (onLogoClick) {
+          onLogoClick();
+        } else {
+          window.location.href = "/";
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [onLogoClick]);
 
   // Bộ đếm lùi thời hạn OTP
   useEffect(() => {

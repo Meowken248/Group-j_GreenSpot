@@ -66,7 +66,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   // 1. Kiểm tra phiên đã tồn tại: nếu đã có token hợp lệ -> chuyển luôn đến Bảng tin
   useEffect(() => {
     resetSessionExpired();
-    const existingToken = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+    const existingToken =
+      localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN) ||
+      localStorage.getItem("greenspot_token");
     if (existingToken) {
       const rawRedirect = typeof redirectParam === "string" ? redirectParam : new URLSearchParams(window.location.search).get("redirect");
       const targetUrl = sanitizeRedirectUrl(rawRedirect, "/geo-feed");

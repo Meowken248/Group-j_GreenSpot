@@ -38,10 +38,13 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({
       return "forgot_password";
     }
 
-    // Nếu URL là /login hoặc #login -> mở Đăng nhập
+    // Nếu URL là /login, /auth/login, /auth hoặc #login -> mở Đăng nhập
     if (
       window.location.pathname === "/login" ||
+      window.location.pathname === "/auth/login" ||
+      window.location.pathname === "/auth" ||
       window.location.pathname.startsWith("/login") ||
+      window.location.pathname.startsWith("/auth/login") ||
       window.location.hash === "#login"
     ) {
       return "login";
@@ -87,6 +90,25 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({
     }
   }, [initialView]);
 
+  // Guest Guard nội tại: Nếu người dùng đã đăng nhập (có token trong localStorage)
+  // và không phải đang xem màn hình Quản lý thiết bị ("devices"), lập tức chuyển hướng ra ngoài
+  React.useEffect(() => {
+    try {
+      const token =
+        localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN) ||
+        localStorage.getItem("greenspot_token");
+      if (token && currentView !== "devices") {
+        if (onExitAuth) {
+          onExitAuth();
+        } else {
+          window.location.href = "/";
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [currentView, onExitAuth]);
+
   const [isFromActivation, setIsFromActivation] = useState(false);
 
   const handleNavigateToLogin = (redirect?: unknown, email?: string) => {
@@ -120,6 +142,18 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({
   };
 
   const renderCurrentView = () => {
+    // Guest Guard: Nếu người dùng đã đăng nhập và không phải màn quản lý thiết bị, chặn render để tránh giật lag UI
+    try {
+      const token =
+        localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN) ||
+        localStorage.getItem("greenspot_token");
+      if (token && currentView !== "devices") {
+        return null;
+      }
+    } catch {
+      // ignore
+    }
+
     // MÀN QUẢN LÝ THIẾT BỊ (MÀN 2 CHỨC NĂNG 2)
     if (currentView === "devices") {
       return (
