@@ -268,26 +268,24 @@ export const UserManagementContainer: React.FC<UserManagementContainerProps> = (
   // 2. Kiểm tra tài khoản không phải Admin
   if (!isAdmin) {
     return (
-      <div className="user-management-wrapper">
-        <div className="um-container" style={{ textAlign: 'center', padding: '80px 20px' }}>
-          <div style={{ fontSize: '56px', marginBottom: '16px' }}>⛔</div>
-          <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#dc2626', marginBottom: '8px' }}>
-            Từ chối quyền truy cập (403 Forbidden)
-          </h2>
-          <p style={{ color: '#64748b', maxWidth: '520px', margin: '0 auto 24px auto', fontSize: '15px' }}>
-            Tài khoản hiện tại của bạn (<strong>{currentUser.email}</strong> - Vai trò:{' '}
-            <strong>{currentUser.role}</strong>) không có đặc quyền Quản trị viên tối cao để quản lý người dùng.
+      <div className="user-management-wrapper admin-gate-page">
+        <div className="admin-gate-card">
+          <div className="gate-icon-badge">🛡️</div>
+          <h2>Khu vực Quản trị Hệ thống</h2>
+          <p className="gate-desc">
+            Đây là khu vực quản trị hệ thống, bạn không có quyền truy cập vào trang này.Phân hệ dành riêng Quản trị viên.
+            <br />Vui lòng quay trở lại trang bản đồ.
           </p>
-          {onBackToHome && (
+
+          <div className="gate-actions-row">
             <button
               type="button"
-              className="btn btn-secondary"
+              className="btn-gate-back"
               onClick={handleBackToHome}
-              style={{ padding: '10px 20px', borderRadius: '8px' }}
             >
-              ← Quay lại bản đồ WebGIS
+              Quay về trang bản đồ
             </button>
-          )}
+          </div>
         </div>
       </div>
     );
