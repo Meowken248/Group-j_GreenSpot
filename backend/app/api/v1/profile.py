@@ -2,7 +2,7 @@ import re
 import math
 import uuid
 from datetime import datetime, date, timezone, time
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Union
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form, status
 from sqlalchemy import select, update, func, and_, or_, desc, asc
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -525,24 +525,30 @@ def process_and_save_profile_image(
     image_data: Optional[str],
     user_id: uuid.UUID,
     category: str,
-    old_url: Optional[str] = None
-) -> Optional[str]:
+    old_url: Optional[str] = None,
+    stage_only: bool = False
+) -> Union[str, dict, None]:
     """
     Xử lý kiểm tra và lưu file ảnh người dùng (Avatar hoặc Cover) an toàn theo đặc tả:
     - Nếu là base64 Data URL:
       + Kiểm tra dung lượng <= 5MB
       + Dùng Pillow verify ảnh hợp lệ (chống file hỏng, giả mạo extension)
       + Kiểm tra kích thước pixel tối thiểu: Avatar >= 200x200, Cover >= 900x300
-      + Lưu vào thư mục static uploads
-      + Xóa file cũ nếu có trên ổ đĩa
-      + Trả về URL tương đối /uploads/profiles/{category}/{filename}
-    - Nếu là link thường: giữ nguyên
+      + Tối ưu hóa lưu trữ ảnh ngầm (Upload Optimize) bằng Pillow (optimize=True, quality=85)
+      + Nếu stage_only=True: Lưu file mới nhưng KHÔNG xóa file cũ, trả về thông tin staged
+      + Nếu stage_only=False: Lưu file mới và xóa file cũ ngay
+      + Trả về URL http://localhost:8000/uploads/profiles/{category}/{filename}
+    - Nếu là link thường hoặc không đổi: giữ nguyên
     """
     if not image_data:
+        if stage_only:
+            return {"file_url": old_url, "temp_file_path": None, "new_file_path": None, "old_file_path": None}
         return old_url
 
     # Nếu không phải Data URL Base64 thì giữ nguyên
     if not image_data.startswith("data:image/"):
+        if stage_only:
+            return {"file_url": image_data, "temp_file_path": None, "new_file_path": None, "old_file_path": None}
         return image_data
 
     try:
@@ -550,7 +556,7 @@ def process_and_save_profile_image(
         header, encoded = image_data.split(",", 1)
         image_bytes = base64.b64decode(encoded)
 
-        # 1. Kiểm tra dung lượng tối đa 5MB
+        # 1. Kiểm tra dung lượng tối đa 5MB (Giữ nguyên 100% Ảnh 1)
         if len(image_bytes) > 5 * 1024 * 1024:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -567,7 +573,7 @@ def process_and_save_profile_image(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail={"error_code": "INVALID_IMAGE_FORMAT", "message": "Ảnh phải là định dạng JPG, PNG hoặc WebP"}
                     )
-                # 3. Kiểm tra kích thước pixel tối thiểu
+                # 3. Kiểm tra kích thước pixel tối thiểu (Giữ nguyên 100% Ảnh 1)
                 w, h = img.size
                 if category == "avatar" and (w < 200 or h < 200):
                     raise HTTPException(
@@ -579,6 +585,26 @@ def process_and_save_profile_image(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail={"error_code": "COVER_TOO_SMALL", "message": "Ảnh bìa phải có kích thước tối thiểu 900×300 px"}
                     )
+
+                # 4. Tối ưu hóa lưu trữ ảnh bằng Pillow (Upload Optimize)
+                base_dir = os.path.join(UPLOAD_DIR, "profiles", category)
+                os.makedirs(base_dir, exist_ok=True)
+
+                ext = "jpg" if img_format in ["jpeg", "jpg"] else img_format
+                filename = f"{user_id}_{int(datetime.now().timestamp())}_{uuid.uuid4().hex[:6]}.{ext}"
+                filepath = os.path.join(base_dir, filename)
+
+                save_format = "JPEG" if ext == "jpg" else img_format.upper()
+                save_img = img
+                if img.mode in ("RGBA", "P") and save_format == "JPEG":
+                    save_img = img.convert("RGB")
+
+                save_kwargs = {"optimize": True}
+                if save_format in ["JPEG", "WEBP"]:
+                    save_kwargs["quality"] = 85
+
+                save_img.save(filepath, format=save_format, **save_kwargs)
+
         except HTTPException:
             raise
         except Exception:
@@ -587,28 +613,32 @@ def process_and_save_profile_image(
                 detail={"error_code": "CORRUPTED_IMAGE", "message": "Không xử lý được ảnh. Vui lòng chọn ảnh khác"}
             )
 
-        # 4. Lưu ra file trên ổ đĩa
-        base_dir = os.path.join(UPLOAD_DIR, "profiles", category)
-        os.makedirs(base_dir, exist_ok=True)
-
-        ext = "jpg" if img_format in ["jpeg", "jpg"] else img_format
-        filename = f"{user_id}_{int(datetime.now().timestamp())}_{uuid.uuid4().hex[:6]}.{ext}"
-        filepath = os.path.join(base_dir, filename)
-
-        with open(filepath, "wb") as f:
-            f.write(image_bytes)
-
-        # 5. Xóa ảnh cũ nếu có trong thư mục uploads
+        # 5. Xác định đường dẫn file cũ trên ổ đĩa (nếu có)
+        old_full_path = None
         if old_url and "/uploads/" in old_url:
             rel_path = old_url.split("/uploads/", 1)[1]
-            old_full_path = os.path.join(UPLOAD_DIR, rel_path)
-            if os.path.exists(old_full_path) and os.path.isfile(old_full_path):
-                try:
-                    os.remove(old_full_path)
-                except Exception:
-                    pass
+            candidate = os.path.join(UPLOAD_DIR, rel_path)
+            if os.path.exists(candidate) and os.path.isfile(candidate):
+                old_full_path = candidate
 
-        return f"http://localhost:8000/uploads/profiles/{category}/{filename}"
+        file_url = f"http://localhost:8000/uploads/profiles/{category}/{filename}"
+
+        if stage_only:
+            return {
+                "file_url": file_url,
+                "temp_file_path": filepath,
+                "new_file_path": filepath,
+                "old_file_path": old_full_path,
+            }
+
+        # Nếu không ở chế độ stage_only: Xóa ảnh cũ ngay (hành vi độc lập)
+        if old_full_path and os.path.exists(old_full_path):
+            try:
+                os.remove(old_full_path)
+            except Exception:
+                pass
+
+        return file_url
 
     except HTTPException:
         raise
@@ -633,50 +663,95 @@ async def update_my_profile(
     Cập nhật thông tin cá nhân với Optimistic Concurrency Control (Quy tắc 7):
     - Kiểm tra version hiện tại. Nếu lệch -> trả về HTTP 409 Conflict.
     - Transaction nguyên tử (Atomic).
-    - Lưu file ảnh mới và xóa ảnh cũ nếu có.
+    - Lưu file ảnh mới và xóa ảnh cũ CHỈ SAU KHI commit thành công.
+    - Dọn dẹp file mới nếu xảy ra lỗi hoặc xung đột version, bảo toàn file cũ.
     """
     current_user, _ = auth_data
 
-    # Xử lý cập nhật avatar và ảnh bìa an toàn
-    new_avatar_url = process_and_save_profile_image(
-        body.avatar_url, current_user.user_id, "avatar", current_user.avatar_url
+    # 1. Xử lý ảnh ở chế độ stage_only (chưa xóa file cũ trên ổ cứng)
+    avatar_staged = process_and_save_profile_image(
+        body.avatar_url, current_user.user_id, "avatar", current_user.avatar_url, stage_only=True
     )
-    new_cover_url = process_and_save_profile_image(
-        body.cover_image_url, current_user.user_id, "cover", current_user.cover_image_url
+    cover_staged = process_and_save_profile_image(
+        body.cover_image_url, current_user.user_id, "cover", current_user.cover_image_url, stage_only=True
     )
 
-    # Áp dụng Optimistic Locking
-    update_stmt = (
-        update(User)
-        .where(
-            User.user_id == current_user.user_id,
-            User.version == body.version,
-            User.deleted_at.is_(None)
-        )
-        .values(
-            full_name=body.full_name,
-            bio=body.bio,
-            date_of_birth=body.date_of_birth,
-            show_birthday=(
-                body.show_birthday
-                if body.show_birthday is not None
-                else current_user.show_birthday
-            ),
-            avatar_url=new_avatar_url,
-            cover_image_url=new_cover_url,
-            version=User.version + 1,
-            updated_at=func.now()
-        )
-    )
-    result = await db.execute(update_stmt)
+    new_avatar_url = avatar_staged["file_url"] if isinstance(avatar_staged, dict) else avatar_staged
+    new_cover_url = cover_staged["file_url"] if isinstance(cover_staged, dict) else cover_staged
 
-    if result.rowcount == 0:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={"error_code": "CONCURRENCY_CONFLICT", "message": "Dữ liệu đã bị thay đổi bởi phiên khác, vui lòng tải lại"}
-        )
+    new_files = [
+        f for f in [
+            avatar_staged.get("new_file_path") if isinstance(avatar_staged, dict) else None,
+            cover_staged.get("new_file_path") if isinstance(cover_staged, dict) else None,
+        ] if f
+    ]
+    old_files = [
+        f for f in [
+            avatar_staged.get("old_file_path") if isinstance(avatar_staged, dict) else None,
+            cover_staged.get("old_file_path") if isinstance(cover_staged, dict) else None,
+        ] if f
+    ]
 
-    await db.commit()
+    try:
+        # 2. Áp dụng Optimistic Locking
+        update_stmt = (
+            update(User)
+            .where(
+                User.user_id == current_user.user_id,
+                User.version == body.version,
+                User.deleted_at.is_(None)
+            )
+            .values(
+                full_name=body.full_name,
+                bio=body.bio,
+                date_of_birth=body.date_of_birth,
+                show_birthday=(
+                    body.show_birthday
+                    if body.show_birthday is not None
+                    else current_user.show_birthday
+                ),
+                avatar_url=new_avatar_url,
+                cover_image_url=new_cover_url,
+                version=User.version + 1,
+                updated_at=func.now()
+            )
+        )
+        result = await db.execute(update_stmt)
+
+        if result.rowcount == 0:
+            # Xung đột phiên bản OCC: Dọn dẹp file mới vừa tạo, BẢO TOÀN file cũ 100%
+            for nf in new_files:
+                if nf and os.path.exists(nf):
+                    try:
+                        os.remove(nf)
+                    except Exception:
+                        pass
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={"error_code": "CONCURRENCY_CONFLICT", "message": "Dữ liệu đã bị thay đổi bởi phiên khác, vui lòng tải lại"}
+            )
+
+        await db.commit()
+
+        # 3. CHỈ XÓA FILE CŨ SAU KHI TRANSACTION COMMIT THÀNH CÔNG!
+        for of in old_files:
+            if of and os.path.exists(of) and os.path.isfile(of):
+                try:
+                    os.remove(of)
+                except Exception:
+                    pass
+
+    except HTTPException:
+        raise
+    except Exception:
+        # Nếu có lỗi bất ngờ, dọn dẹp file mới tạo để tránh file mồ côi
+        for nf in new_files:
+            if nf and os.path.exists(nf):
+                try:
+                    os.remove(nf)
+                except Exception:
+                    pass
+        raise
 
     # Lấy lại bản ghi sau khi cập nhật
     updated_user = await get_active_user_or_404(current_user.user_id, db)

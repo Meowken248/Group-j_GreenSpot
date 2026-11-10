@@ -451,6 +451,132 @@ export const revokeAllSessions = async (): Promise<RevokeSessionResult> => {
   }
 };
 
+export interface ForgotPasswordResult {
+  success: boolean;
+  status: "SUCCESS" | "EMAIL_NOT_FOUND" | "NOT_ACTIVATED" | "LOCKED" | "RATE_LIMITED" | "EMAIL_SEND_FAILED" | "NETWORK_ERROR" | "UNKNOWN_ERROR";
+  message: string;
+}
+
+export const forgotPassword = async (email: string): Promise<ForgotPasswordResult> => {
+  try {
+    const response = await api.post("/api/v1/auth/forgot-password", { email });
+    return {
+      success: true,
+      status: "SUCCESS",
+      message: response.data?.message || "Mã OTP đã được gửi đến email của bạn",
+    };
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      if (!error.response) {
+        return {
+          success: false,
+          status: "NETWORK_ERROR",
+          message: "Không thể kết nối đến máy chủ. Vui lòng thử lại",
+        };
+      }
+      const statusCode = error.response.status;
+      const data = error.response.data;
+
+      if (statusCode === 404 || data?.error_code === "EMAIL_NOT_FOUND") {
+        return {
+          success: false,
+          status: "EMAIL_NOT_FOUND",
+          message: data?.message || "Email này chưa được đăng ký trong hệ thống",
+        };
+      }
+      if (statusCode === 403) {
+        if (data?.error_code === "ACCOUNT_NOT_ACTIVATED") {
+          return {
+            success: false,
+            status: "NOT_ACTIVATED",
+            message: data?.message || "Tài khoản chưa được kích hoạt",
+          };
+        }
+        return {
+          success: false,
+          status: "LOCKED",
+          message: data?.message || "Tài khoản của bạn đã bị khóa",
+        };
+      }
+      if (statusCode === 429) {
+        return {
+          success: false,
+          status: "RATE_LIMITED",
+          message: data?.message || "Bạn đã yêu cầu mã quá nhiều lần. Vui lòng thử lại sau 1 giờ",
+        };
+      }
+      return {
+        success: false,
+        status: "UNKNOWN_ERROR",
+        message: data?.message || "Không thể gửi mã OTP. Vui lòng thử lại sau",
+      };
+    }
+    return {
+      success: false,
+      status: "NETWORK_ERROR",
+      message: "Không thể kết nối đến máy chủ. Vui lòng thử lại",
+    };
+  }
+};
+
+export interface ResetPasswordResult {
+  success: boolean;
+  status: "SUCCESS" | "INVALID_OTP" | "MAX_ATTEMPTS_EXCEEDED" | "NETWORK_ERROR" | "UNKNOWN_ERROR";
+  message: string;
+}
+
+export const resetPassword = async (payload: {
+  email: string;
+  otp_code: string;
+  new_password: string;
+}): Promise<ResetPasswordResult> => {
+  try {
+    const response = await api.post("/api/v1/auth/reset-password", payload);
+    return {
+      success: true,
+      status: "SUCCESS",
+      message: response.data?.message || "Đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới",
+    };
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      if (!error.response) {
+        return {
+          success: false,
+          status: "NETWORK_ERROR",
+          message: "Không thể kết nối đến máy chủ. Vui lòng thử lại",
+        };
+      }
+      const statusCode = error.response.status;
+      const data = error.response.data;
+
+      if (statusCode === 403 || data?.error_code === "MAX_ATTEMPTS_EXCEEDED") {
+        return {
+          success: false,
+          status: "MAX_ATTEMPTS_EXCEEDED",
+          message: data?.message || "Bạn đã nhập sai quá 5 lần. Vui lòng yêu cầu mã mới",
+        };
+      }
+      if (statusCode === 400 || data?.error_code === "INVALID_OTP") {
+        return {
+          success: false,
+          status: "INVALID_OTP",
+          message: data?.message || "Mã OTP sai hoặc đã hết hạn",
+        };
+      }
+      return {
+        success: false,
+        status: "UNKNOWN_ERROR",
+        message: data?.message || "Đặt lại mật khẩu thất bại. Vui lòng thử lại",
+      };
+    }
+    return {
+      success: false,
+      status: "NETWORK_ERROR",
+      message: "Không thể kết nối đến máy chủ. Vui lòng thử lại",
+    };
+  }
+};
+
 
 
 
