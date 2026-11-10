@@ -74,9 +74,8 @@ export type TabType = ActiveTab;
 // Hàm kiểm tra trạng thái đăng nhập thực tế của phiên hiện tại
 const checkIsLoggedIn = (): boolean => {
   try {
-    const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
-    const userInfo = localStorage.getItem(AUTH_STORAGE_KEYS.USER_INFO);
-    return Boolean(token && userInfo);
+    const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN) || localStorage.getItem("greenspot_token");
+    return Boolean(token);
   } catch {
     return false;
   }
@@ -101,6 +100,13 @@ function App() {
     const route = APP_ROUTES[resolved];
     if (route && route.requiresAuth && !isLogged) {
       return "auth";
+    }
+    // Guest Guard: Nếu đã đăng nhập mà vào route "auth" (trừ trường hợp xem thiết bị đăng nhập) -> chuyển về Bảng tin / Bản đồ
+    if (resolved === "auth" && isLogged) {
+      const isDevices = window.location.pathname === "/devices" || window.location.hash === "#devices";
+      if (!isDevices) {
+        return "map";
+      }
     }
     return resolved;
   });
@@ -385,6 +391,16 @@ function App() {
         return;
       }
 
+      // Guest Guard: Nếu đã đăng nhập mà vào route "auth" (trừ /devices hoặc #devices) -> tự động chuyển về trang chính
+      if (resolved === "auth" && isLogged) {
+        const isDevices = window.location.pathname === "/devices" || window.location.hash === "#devices";
+        if (!isDevices) {
+          setActiveTab("map");
+          navigateToRoute("map", undefined, true);
+          return;
+        }
+      }
+
       setActiveTab(resolved);
       if (resolved === "messages") {
         setGlobalUnreadChatCount(0);
@@ -396,9 +412,16 @@ function App() {
       }
     };
 
-    // Chuẩn hóa URL ngay khi mount nếu có hash
-    if (window.location.hash && window.location.hash.startsWith("#")) {
-      const initialTab = resolveTabFromUrl();
+    // Chuẩn hóa URL ngay khi mount nếu có hash hoặc nếu đã đăng nhập mà đang ở trang auth
+    const initialTab = resolveTabFromUrl(window.location.pathname, window.location.hash);
+    const isLoggedInit = checkIsLoggedIn();
+    if (initialTab === "auth" && isLoggedInit) {
+      const isDevices = window.location.pathname === "/devices" || window.location.hash === "#devices";
+      if (!isDevices) {
+        setActiveTab("map");
+        navigateToRoute("map", undefined, true);
+      }
+    } else if (window.location.hash && window.location.hash.startsWith("#")) {
       navigateToRoute(initialTab, undefined, true);
     }
 
@@ -1588,6 +1611,17 @@ function App() {
                   : undefined
             }
             redirectUrl={authRedirectUrl}
+            onLoginSuccess={(targetUrl?: string) => {
+              if (targetUrl && targetUrl !== "/login" && targetUrl !== "/auth/login") {
+                const cleanPath = targetUrl.startsWith("#") ? targetUrl.slice(1) : targetUrl;
+                const tab = resolveTabFromUrl(cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`);
+                setActiveTab(tab);
+                navigateToRoute(tab);
+              } else {
+                setActiveTab("map");
+                navigateToRoute("map");
+              }
+            }}
             onExitAuth={() => {
               setActiveTab("map");
               window.location.hash = "#map";
@@ -1687,12 +1721,12 @@ function App() {
           <RbacContainer
             onExit={() => {
               setActiveTab("map");
-              window.location.hash = "#map";
+              navigateToRoute("map");
             }}
             onNavigateToAuth={() => {
               setAuthRedirectUrl("/rbac");
               setActiveTab("auth");
-              window.location.hash = "#login";
+              navigateToRoute("auth");
             }}
           />
         </div>
@@ -1734,12 +1768,12 @@ function App() {
           <UserManagementContainer
             onBackToHome={() => {
               setActiveTab("map");
-              window.location.hash = "#map";
+              navigateToRoute("map");
             }}
             onNavigateToAuth={() => {
               setAuthRedirectUrl("/users");
               setActiveTab("auth");
-              window.location.hash = "#login";
+              navigateToRoute("auth");
             }}
           />
         </div>

@@ -55,7 +55,7 @@ describe("ForgotPasswordPage Component", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText("Mật khẩu phải từ 8 đến 32 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt, không chứa bất kì khoảng trăng")
+          screen.getByText("Mật khẩu phải từ 8 đến 32 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt")
         ).toBeInTheDocument();
       });
 

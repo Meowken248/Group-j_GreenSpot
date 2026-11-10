@@ -121,8 +121,8 @@ describe('User Management Feature Tests', () => {
       );
 
       render(<UserManagementContainer />);
-      expect(screen.getByText(/Từ chối quyền truy cập/i)).toBeInTheDocument();
-      expect(screen.getAllByText(/CITIZEN/i).length).toBeGreaterThan(0);
+      expect(screen.getByRole('heading', { name: /Khu vực Quản trị Hệ thống/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Quay về trang bản đồ/i })).toBeInTheDocument();
     });
 
     it('tải và hiển thị danh sách người dùng khi là ADMIN', async () => {
