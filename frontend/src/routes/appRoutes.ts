@@ -394,21 +394,21 @@ export function resolveTabFromUrl(
   const normPath = pathname.toLowerCase().replace(/\/+$/, "") || "/";
   const normHash = (hash.toLowerCase().split("?")[0] || "").replace(/\/+$/, "");
 
-  // 1. Kiểm tra đối sánh chính xác pathname trước
-  for (const tabKey of Object.keys(APP_ROUTES) as ActiveTab[]) {
-    const route = APP_ROUTES[tabKey];
-    if (route.path.toLowerCase() === normPath) {
-      return route.tab;
-    }
-  }
-
-  // 2. Kiểm tra đối sánh hash (nếu có)
+  // 1. Kiểm tra đối sánh hash trước (nếu có hash chỉ định rõ tab, ưu tiên hash để hỗ trợ điều hướng legacy hoặc thoát màn hình)
   if (normHash && normHash !== "#" && normHash !== "#/") {
     for (const tabKey of Object.keys(APP_ROUTES) as ActiveTab[]) {
       const route = APP_ROUTES[tabKey];
       if (route.aliases.some((alias) => alias.toLowerCase() === normHash)) {
         return route.tab;
       }
+    }
+  }
+
+  // 2. Kiểm tra đối sánh chính xác pathname
+  for (const tabKey of Object.keys(APP_ROUTES) as ActiveTab[]) {
+    const route = APP_ROUTES[tabKey];
+    if (route.path.toLowerCase() === normPath) {
+      return route.tab;
     }
   }
 

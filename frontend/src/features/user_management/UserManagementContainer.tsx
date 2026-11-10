@@ -11,6 +11,7 @@ import { ChangeRoleModal } from './components/ChangeRoleModal';
 import { ResetPasswordModal } from './components/ResetPasswordModal';
 import { ConfirmModal, type ConfirmActionType } from './components/ConfirmModal';
 import { AUTH_STORAGE_KEYS } from '../auth';
+import { navigateToRoute } from '../../routes/appRoutes';
 import './styles/UserManagement.scss';
 
 interface UserManagementContainerProps {
@@ -22,6 +23,17 @@ export const UserManagementContainer: React.FC<UserManagementContainerProps> = (
   onBackToHome,
   onNavigateToAuth,
 }) => {
+  const handleBackToHome = () => {
+    try {
+      navigateToRoute('map');
+    } catch {
+      // ignore
+    }
+    if (onBackToHome) {
+      onBackToHome();
+    }
+  };
+
   // Lấy thông tin tài khoản hiện tại từ localStorage
   const currentUser = useMemo(() => {
     try {
@@ -231,7 +243,7 @@ export const UserManagementContainer: React.FC<UserManagementContainerProps> = (
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={onBackToHome}
+                onClick={handleBackToHome}
                 style={{ padding: '10px 20px', borderRadius: '8px' }}
               >
                 ← Quay lại bản đồ
@@ -270,7 +282,7 @@ export const UserManagementContainer: React.FC<UserManagementContainerProps> = (
             <button
               type="button"
               className="btn btn-secondary"
-              onClick={onBackToHome}
+              onClick={handleBackToHome}
               style={{ padding: '10px 20px', borderRadius: '8px' }}
             >
               ← Quay lại bản đồ WebGIS
@@ -304,7 +316,7 @@ export const UserManagementContainer: React.FC<UserManagementContainerProps> = (
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={onBackToHome}
+                onClick={handleBackToHome}
                 style={{
                   padding: '9px 16px',
                   borderRadius: '8px',

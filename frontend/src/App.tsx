@@ -1721,12 +1721,12 @@ function App() {
           <RbacContainer
             onExit={() => {
               setActiveTab("map");
-              window.location.hash = "#map";
+              navigateToRoute("map");
             }}
             onNavigateToAuth={() => {
               setAuthRedirectUrl("/rbac");
               setActiveTab("auth");
-              window.location.hash = "#login";
+              navigateToRoute("auth");
             }}
           />
         </div>
@@ -1768,12 +1768,12 @@ function App() {
           <UserManagementContainer
             onBackToHome={() => {
               setActiveTab("map");
-              window.location.hash = "#map";
+              navigateToRoute("map");
             }}
             onNavigateToAuth={() => {
               setAuthRedirectUrl("/users");
               setActiveTab("auth");
-              window.location.hash = "#login";
+              navigateToRoute("auth");
             }}
           />
         </div>
