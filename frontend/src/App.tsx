@@ -1588,6 +1588,17 @@ function App() {
                   : undefined
             }
             redirectUrl={authRedirectUrl}
+            onLoginSuccess={(targetUrl?: string) => {
+              if (targetUrl && targetUrl !== "/login" && targetUrl !== "/auth/login") {
+                const cleanPath = targetUrl.startsWith("#") ? targetUrl.slice(1) : targetUrl;
+                const tab = resolveTabFromUrl(cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`);
+                setActiveTab(tab);
+                navigateToRoute(tab);
+              } else {
+                setActiveTab("map");
+                navigateToRoute("map");
+              }
+            }}
             onExitAuth={() => {
               setActiveTab("map");
               window.location.hash = "#map";

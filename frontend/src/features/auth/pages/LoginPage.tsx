@@ -68,8 +68,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     resetSessionExpired();
     const existingToken = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
     if (existingToken) {
-      const rawRedirect = redirectParam || new URLSearchParams(window.location.search).get("redirect");
-      const targetUrl = sanitizeRedirectUrl(rawRedirect, "");
+      const rawRedirect = typeof redirectParam === "string" ? redirectParam : new URLSearchParams(window.location.search).get("redirect");
+      const targetUrl = sanitizeRedirectUrl(rawRedirect, "/geo-feed");
       if (onLoginSuccess) {
         onLoginSuccess(targetUrl);
       } else if (onLogoClick) {
@@ -207,8 +207,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         window.dispatchEvent(new Event("auth_change"));
 
         // Kiểm tra an toàn tham số redirect
-        const rawRedirect = redirectParam || new URLSearchParams(window.location.search).get("redirect");
-        const targetUrl = sanitizeRedirectUrl(rawRedirect, "");
+        const rawRedirect = typeof redirectParam === "string" ? redirectParam : new URLSearchParams(window.location.search).get("redirect");
+        const targetUrl = sanitizeRedirectUrl(rawRedirect, "/geo-feed");
 
         setTimeout(() => {
           if (onLoginSuccess) {

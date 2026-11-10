@@ -89,12 +89,13 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({
 
   const [isFromActivation, setIsFromActivation] = useState(false);
 
-  const handleNavigateToLogin = (redirect?: string, email?: string) => {
-    if (email) {
+  const handleNavigateToLogin = (redirect?: unknown, email?: string) => {
+    if (typeof email === "string") {
       setPendingEmail(email);
       setIsFromActivation(true);
     }
-    setLoginRedirect(redirect);
+    const safeRedirect = typeof redirect === "string" ? redirect : undefined;
+    setLoginRedirect(safeRedirect);
     setCurrentView("login");
   };
 

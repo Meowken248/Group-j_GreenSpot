@@ -317,7 +317,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                     <button
                       type="button"
                       className="login-inline-link"
-                      onClick={onNavigateToLogin}
+                      onClick={() => onNavigateToLogin()}
                     >
                       đăng nhập
                     </button>
@@ -380,7 +380,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
               <button
                 type="button"
                 className="btn-switch-login"
-                onClick={onNavigateToLogin}
+                onClick={() => onNavigateToLogin()}
                 disabled={isSubmitting}
               >
                 Đã có tài khoản?
