@@ -124,7 +124,39 @@ class TestForgotPasswordTDD(unittest.IsolatedAsyncioTestCase):
         data = res.json()
         self.assertEqual(data.get("error_code"), "INVALID_OTP")
 
-    async def test_04_reset_password_success_flow(self):
+    async def test_04_reset_password_weak_password_rejected(self):
+        """TC-FP-11: Chặn đặt lại mật khẩu nếu mật khẩu không đạt chuẩn đăng ký (yếu, thiếu chữ hoa/số/ký tự đặc biệt)"""
+        # Gửi yêu cầu để sinh OTP
+        requests.post(f"{BASE_URL}/auth/forgot-password", json={"email": TEST_EMAIL})
+
+        q = (
+            select(UserOTP)
+            .where(
+                and_(
+                    UserOTP.email == TEST_EMAIL,
+                    UserOTP.purpose == "RESET_PASSWORD",
+                    UserOTP.is_used == False,
+                )
+            )
+            .order_by(UserOTP.created_at.desc())
+        )
+        r = await self.session.execute(q)
+        otp_rec = r.scalars().first()
+        self.assertIsNotNone(otp_rec)
+
+        res = requests.post(
+            f"{BASE_URL}/auth/reset-password",
+            json={
+                "email": TEST_EMAIL,
+                "otp_code": otp_rec.otp_plain,
+                "new_password": "weakpassword",
+            },
+        )
+        self.assertEqual(res.status_code, 400)
+        data = res.json()
+        self.assertEqual(data.get("error_code"), "INVALID_PASSWORD")
+
+    async def test_05_reset_password_success_flow(self):
         """TC-FP-05 & TC-FP-06 & TC-FP-07: Đặt lại mật khẩu thành công và kiểm tra đăng nhập"""
         # 1. Gửi yêu cầu để có OTP
         res_req = requests.post(

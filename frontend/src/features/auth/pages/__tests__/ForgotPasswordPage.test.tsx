@@ -25,24 +25,67 @@ describe("ForgotPasswordPage Component", () => {
     });
   });
 
-  it("transitions to Step 2 when email request succeeds", async () => {
-    vi.spyOn(authService, "forgotPassword").mockResolvedValueOnce({
-      success: true,
-      status: "SUCCESS",
-      message: "Mã OTP đã được gửi đến email của bạn",
-    });
+    it("transitions to Step 2 and validates strict password requirements", async () => {
+      vi.spyOn(authService, "forgotPassword").mockResolvedValueOnce({
+        success: true,
+        status: "SUCCESS",
+        message: "Mã OTP đã được gửi đến email của bạn",
+      });
 
-    const handleLogin = vi.fn();
-    render(<ForgotPasswordPage onNavigateToLogin={handleLogin} />);
+      const handleLogin = vi.fn();
+      render(<ForgotPasswordPage onNavigateToLogin={handleLogin} />);
 
-    const emailInput = screen.getByPlaceholderText("name@example.com");
-    fireEvent.change(emailInput, { target: { value: "test@example.com" } });
-    fireEvent.click(screen.getByText("Gửi mã xác thực"));
+      const emailInput = screen.getByPlaceholderText("name@example.com");
+      fireEvent.change(emailInput, { target: { value: "test@example.com" } });
+      fireEvent.click(screen.getByText("Gửi mã xác thực"));
 
-    await waitFor(() => {
-      expect(screen.getByText("ĐẶT LẠI MẬT KHẨU")).toBeInTheDocument();
-      expect(screen.getByPlaceholderText("••••••")).toBeInTheDocument();
-      expect(screen.getByText("Xác nhận & Đổi mật khẩu")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText("ĐẶT LẠI MẬT KHẨU")).toBeInTheDocument();
+        expect(screen.getByPlaceholderText("••••••")).toBeInTheDocument();
+      });
+
+      // 1. Nhập OTP hợp lệ nhưng mật khẩu yếu (chỉ gồm chữ thường)
+      const otpInput = screen.getByPlaceholderText("••••••");
+      fireEvent.change(otpInput, { target: { value: "123456" } });
+
+      const newPwdInput = screen.getByPlaceholderText(/Mật khẩu mới/);
+      fireEvent.change(newPwdInput, { target: { value: "weakpassword" } });
+
+      fireEvent.click(screen.getByText("Xác nhận & Đổi mật khẩu"));
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("Mật khẩu phải từ 8 đến 32 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt, không chứa bất kì khoảng trăng")
+        ).toBeInTheDocument();
+      });
+
+      // 2. Nhập mật khẩu mạnh nhưng xác nhận không khớp
+      fireEvent.change(newPwdInput, { target: { value: "StrongPass123@" } });
+      const confirmPwdInput = screen.getByPlaceholderText("Nhập lại mật khẩu mới");
+      fireEvent.change(confirmPwdInput, { target: { value: "DifferentPass123@" } });
+
+      fireEvent.click(screen.getByText("Xác nhận & Đổi mật khẩu"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Mật khẩu nhập lại không khớp")).toBeInTheDocument();
+      });
+
+      // 3. Nhập mật khẩu khớp chuẩn và gửi thành công
+      const resetSpy = vi.spyOn(authService, "resetPassword").mockResolvedValueOnce({
+        success: true,
+        status: "SUCCESS",
+        message: "Đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới",
+      });
+
+      fireEvent.change(confirmPwdInput, { target: { value: "StrongPass123@" } });
+      fireEvent.click(screen.getByText("Xác nhận & Đổi mật khẩu"));
+
+      await waitFor(() => {
+        expect(resetSpy).toHaveBeenCalledWith({
+          email: "test@example.com",
+          otp_code: "123456",
+          new_password: "StrongPass123@",
+        });
+      });
     });
   });
-});

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { AuthHeader } from "../components/AuthHeader";
 import { PasswordInput } from "../components/PasswordInput";
 import { Toast } from "../components/Toast";
-import { validateEmail } from "../utils/validators";
+import { validateEmail, validatePassword, validateConfirmPassword } from "../utils/validators";
 import { forgotPassword, resetPassword } from "../services/authService";
 import type { ToastState } from "../types/auth.types";
 import "../styles/ForgotPasswordPage.scss";
@@ -40,6 +40,7 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({
   const emailRef = useRef<HTMLInputElement>(null);
   const otpRef = useRef<HTMLInputElement>(null);
   const newPasswordRef = useRef<HTMLInputElement>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement>(null);
 
   // Bộ đếm lùi thời hạn OTP
   useEffect(() => {
@@ -62,6 +63,21 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // Kiểm tra khi rời ô (onBlur) ở bước 2
+  const handlePasswordBlur = () => {
+    const err = validatePassword(newPassword);
+    setPasswordError(err || "");
+    if (confirmPassword) {
+      const confirmErr = validateConfirmPassword(confirmPassword, newPassword);
+      setConfirmPasswordError(confirmErr || "");
+    }
+  };
+
+  const handleConfirmPasswordBlur = () => {
+    const err = validateConfirmPassword(confirmPassword, newPassword);
+    setConfirmPasswordError(err || "");
   };
 
   // BƯỚC 1: Gửi yêu cầu nhận mã OTP
@@ -138,33 +154,35 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({
   // BƯỚC 2: Xác nhận OTP và đặt lại mật khẩu mới
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    let hasErr = false;
 
-    // Validate OTP 6 số
+    // 1. Validate OTP 6 số
+    let otpErr = "";
     if (!otpCode.trim() || otpCode.trim().length !== 6) {
-      setOtpError("Vui lòng nhập đúng 6 chữ số mã OTP");
-      hasErr = true;
-    } else {
-      setOtpError("");
+      otpErr = "Vui lòng nhập đúng 6 chữ số mã OTP";
     }
+    setOtpError(otpErr);
 
-    // Validate mật khẩu mới >= 8 ký tự
-    if (!newPassword || newPassword.length < 8) {
-      setPasswordError("Mật khẩu mới phải có tối thiểu 8 ký tự");
-      hasErr = true;
-    } else {
-      setPasswordError("");
+    // 2. Validate Mật khẩu mới giống hệt lúc Đăng ký tài khoản
+    const passErr = validatePassword(newPassword);
+    setPasswordError(passErr || "");
+
+    // 3. Validate Xác nhận mật khẩu mới giống hệt lúc Đăng ký tài khoản
+    const confirmErr = validateConfirmPassword(confirmPassword, newPassword);
+    setConfirmPasswordError(confirmErr || "");
+
+    // 4. Nếu có lỗi: tự động focus vào ô bị lỗi đầu tiên
+    if (otpErr) {
+      otpRef.current?.focus();
+      return;
     }
-
-    // Validate khớp mật khẩu
-    if (newPassword !== confirmPassword) {
-      setConfirmPasswordError("Mật khẩu xác nhận không khớp");
-      hasErr = true;
-    } else {
-      setConfirmPasswordError("");
+    if (passErr) {
+      newPasswordRef.current?.focus();
+      return;
     }
-
-    if (hasErr) return;
+    if (confirmErr) {
+      confirmPasswordRef.current?.focus();
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -356,12 +374,13 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({
                   inputRef={newPasswordRef}
                   id="new-password"
                   name="newPassword"
-                  placeholder="Mật khẩu mới (tối thiểu 8 ký tự)"
+                  placeholder="Mật khẩu mới (8-32 ký tự, đủ chữ hoa, thường, số, ký tự đặc biệt)"
                   value={newPassword}
                   onChange={(e) => {
                     setNewPassword(e.target.value);
                     if (passwordError) setPasswordError("");
                   }}
+                  onBlur={handlePasswordBlur}
                   disabled={isSubmitting}
                   hasError={Boolean(passwordError)}
                   errorMessage={passwordError}
@@ -374,6 +393,7 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({
                   Xác nhận mật khẩu mới
                 </label>
                 <PasswordInput
+                  inputRef={confirmPasswordRef}
                   id="confirm-new-password"
                   name="confirmPassword"
                   placeholder="Nhập lại mật khẩu mới"
@@ -382,6 +402,7 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({
                     setConfirmPassword(e.target.value);
                     if (confirmPasswordError) setConfirmPasswordError("");
                   }}
+                  onBlur={handleConfirmPasswordBlur}
                   disabled={isSubmitting}
                   hasError={Boolean(confirmPasswordError)}
                   errorMessage={confirmPasswordError}

@@ -1,4 +1,5 @@
 import uuid
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, Header, status
@@ -616,14 +617,38 @@ async def reset_password(
             }
         )
 
-    # 6. Mã OTP hợp lệ -> Đánh dấu đã dùng
+    # 6. Kiểm tra độ mạnh mật khẩu mới theo chuẩn Đăng ký GreenSpot (8-32 ký tự, đủ chữ hoa, thường, số, ký tự đặc biệt, không khoảng trắng)
+    new_pwd = payload.new_password
+    if not new_pwd or len(new_pwd) < 8 or len(new_pwd) > 32 or " " in new_pwd:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "error_code": "INVALID_PASSWORD",
+                "message": "Mật khẩu phải từ 8 đến 32 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt"
+            }
+        )
+    has_lower = bool(re.search(r"[a-z]", new_pwd))
+    has_upper = bool(re.search(r"[A-Z]", new_pwd))
+    has_digit = bool(re.search(r"\d", new_pwd))
+    has_special = bool(re.search(r"[`!@#$%^&*()_+\-=[\]{}.:;,?/~]", new_pwd))
+
+    if not (has_lower and has_upper and has_digit and has_special):
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "error_code": "INVALID_PASSWORD",
+                "message": "Mật khẩu phải từ 8 đến 32 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt"
+            }
+        )
+
+    # 7. Mã OTP hợp lệ -> Đánh dấu đã dùng
     latest_otp.is_used = True
 
-    # 7. Cập nhật mật khẩu băm mới & tăng version (Optimistic Locking)
+    # 8. Cập nhật mật khẩu băm mới & tăng version (Optimistic Locking)
     user.password_hash = hash_password(payload.new_password)
     user.version = (user.version or 1) + 1
 
-    # 8. Thu hồi toàn bộ phiên đăng nhập cũ trên mọi thiết bị
+    # 9. Thu hồi toàn bộ phiên đăng nhập cũ trên mọi thiết bị
     revoke_stmt = (
         update(UserSession)
         .where(
