@@ -370,7 +370,7 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
     showToast("info", "Đã ẩn bài viết. Chỉ bạn nhìn thấy bài này.");
   };
 
-  // Điều hướng xem bình luận bài viết qua URL Hash (#post-comments?id=...)
+  // Điều hướng xem bình luận bài viết qua URL Hash (#post-comments?id=...) khi mở từ liên kết chia sẻ
   useEffect(() => {
     const handleHash = () => {
       const hash = window.location.hash;
@@ -393,19 +393,13 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
               });
           }
         }
-      } else if (
-        !hash.includes("post-comments") &&
-        !hash.includes("comments") &&
-        selectedPostForComments
-      ) {
-        setSelectedPostForComments(null);
       }
     };
 
     handleHash();
     window.addEventListener("hashchange", handleHash);
     return () => window.removeEventListener("hashchange", handleHash);
-  }, [posts, selectedPostForComments, showToast]);
+  }, [posts, showToast]);
 
 
   return (
@@ -606,10 +600,7 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
                   onHidePost={(p) => setHidingPost(p)}
                   onDeletePost={(p) => setDeletingPost(p)}
                   onReactPost={handleReactPost}
-                  onOpenComments={(p) => {
-                    setSelectedPostForComments(p);
-                    window.location.hash = `#post-comments?id=${p.post_id}`;
-                  }}
+                  onOpenComments={(p) => setSelectedPostForComments(p)}
                   onOpenShare={(p) => setSharingPost(p)}
                   onShowToast={showToast}
                   onSelectGroup={(grpId) => setSelectedGroupId(grpId)}
@@ -843,7 +834,7 @@ export const FeedContainer: React.FC<FeedContainerProps> = ({
               window.location.hash.includes("post-comments") ||
               window.location.hash.includes("comments")
             ) {
-              window.location.hash = "#posts";
+              window.history.replaceState(null, "", window.location.pathname);
             }
           }}
           onNavigateLogin={onNavigateLogin}

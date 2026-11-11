@@ -407,7 +407,11 @@ function App() {
       }
 
       // Nếu người dùng vào bằng hash cũ (VD: #admin-dashboard), tự động chuẩn hóa URL đẹp
-      if (window.location.hash && window.location.hash.startsWith("#")) {
+      if (
+        window.location.hash &&
+        window.location.hash.startsWith("#") &&
+        !window.location.hash.startsWith("#post-comments")
+      ) {
         navigateToRoute(resolved, undefined, true);
       }
     };
@@ -421,7 +425,11 @@ function App() {
         setActiveTab("map");
         navigateToRoute("map", undefined, true);
       }
-    } else if (window.location.hash && window.location.hash.startsWith("#")) {
+    } else if (
+      window.location.hash &&
+      window.location.hash.startsWith("#") &&
+      !window.location.hash.startsWith("#post-comments")
+    ) {
       navigateToRoute(initialTab, undefined, true);
     }
 
