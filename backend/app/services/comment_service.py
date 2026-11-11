@@ -477,6 +477,31 @@ class CommentService:
             post.shares_count += count_friends
             message = f"Đã gửi bài viết cho {count_friends} người"
 
+            # Tự động gửi tin nhắn kèm liên kết bài viết vào chat 1-1 với bạn bè
+            try:
+                from app.services.chat_service import chat_service
+                from app.schemas.chat import SendMessageRequest
+                cur_user = await db.get(User, user_id)
+                if cur_user and payload.target_friend_ids:
+                    share_content = (
+                        f"Đã chia sẻ bài viết: {post.content[:100]}...\nXem tại: #posts"
+                        if not payload.caption
+                        else f"{payload.caption}\n\n[Bài viết chia sẻ: {post.content[:80]}...]"
+                    )
+                    for f_id in payload.target_friend_ids:
+                        try:
+                            direct_conv = await chat_service.get_or_create_direct_conversation(db, cur_user, f_id)
+                            if direct_conv and direct_conv.conversation_id:
+                                await chat_service.send_message(
+                                    db, cur_user, direct_conv.conversation_id,
+                                    SendMessageRequest(content=share_content, message_type="TEXT")
+                                )
+                        except Exception:
+                            # Bỏ qua nếu có bạn bè bị chặn hoặc chưa kết bạn để không gián đoạn luồng chia sẻ
+                            pass
+            except Exception:
+                pass
+
         elif share_type == "GROUP":
             # Đăng vào nhóm
             count_groups = len(payload.target_group_ids or [])
