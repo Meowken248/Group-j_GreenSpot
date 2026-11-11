@@ -15,7 +15,7 @@ export const saveDraft = (formData: ReportFormData, step: ReportStep, userId?: s
       formData: {
         ...formData,
         // Loại bỏ instance File không serialize được qua JSON
-        media: formData.media.map(({ file, ...rest }) => rest),
+        media: formData.media.map(({ file: _file, ...rest }) => rest),
       },
       saved_at: new Date().toISOString(),
       current_step: step,

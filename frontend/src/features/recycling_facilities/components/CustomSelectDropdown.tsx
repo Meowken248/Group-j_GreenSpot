@@ -31,6 +31,20 @@ export const CustomSelectDropdown: React.FC<CustomSelectDropdownProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  const closeDropdown = () => {
+    setIsOpen(false);
+    setSearchTerm("");
+  };
+
+  const toggleDropdown = () => {
+    if (disabled) return;
+    if (isOpen) {
+      closeDropdown();
+    } else {
+      setIsOpen(true);
+    }
+  };
+
   // Tìm option đang được chọn
   const selectedOption = options.find(
     (opt) => String(opt.value) === String(value)
@@ -43,7 +57,7 @@ export const CustomSelectDropdown: React.FC<CustomSelectDropdownProps> = ({
         containerRef.current &&
         !containerRef.current.contains(event.target as Node)
       ) {
-        setIsOpen(false);
+        closeDropdown();
       }
     };
 
@@ -62,16 +76,13 @@ export const CustomSelectDropdown: React.FC<CustomSelectDropdownProps> = ({
         searchInputRef.current?.focus();
       }, 50);
     }
-    if (!isOpen) {
-      setSearchTerm("");
-    }
   }, [isOpen, hasSearch]);
 
   // Đóng khi nhấn phím Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
-        setIsOpen(false);
+        closeDropdown();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -85,7 +96,7 @@ export const CustomSelectDropdown: React.FC<CustomSelectDropdownProps> = ({
 
   const handleSelect = (val: string | number | undefined) => {
     onChange(val);
-    setIsOpen(false);
+    closeDropdown();
   };
 
   return (
@@ -100,7 +111,7 @@ export const CustomSelectDropdown: React.FC<CustomSelectDropdownProps> = ({
         type="button"
         id={id ? `${id}-button` : undefined}
         className={`dropdown-trigger-btn ${!selectedOption ? "is-placeholder" : ""}`}
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onClick={toggleDropdown}
         disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={isOpen}

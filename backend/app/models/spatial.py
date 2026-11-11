@@ -39,7 +39,7 @@ class EssentialFacility(Base, TimestampMixin):
     contact_person: Mapped[Optional[str]] = mapped_column(String(100))
     contact_email: Mapped[Optional[str]] = mapped_column(String(100))
     capacity_people: Mapped[Optional[int]] = mapped_column(Integer)
-    vulnerability_level: Mapped[str] = mapped_column(String(50), default="HIGH")
+    vulnerability_level: Mapped[str] = mapped_column(String(255), default="HIGH")
     metadata_json: Mapped[Optional[dict]] = mapped_column("metadata", JSONB)
 
     # Optimistic locking & Soft delete (Tuân thủ Quy tắc 6 & 7)
