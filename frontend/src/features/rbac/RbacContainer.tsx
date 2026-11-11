@@ -200,6 +200,15 @@ export const RbacContainer: React.FC<RbacContainerProps> = ({
                 >
                   Quay về trang bản đồ
                 </button>
+                {!token && onNavigateToAuth && (
+                  <button
+                    type="button"
+                    className="btn-gate-login"
+                    onClick={onNavigateToAuth}
+                  >
+                    Đăng nhập Quản trị viên
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -212,7 +221,7 @@ export const RbacContainer: React.FC<RbacContainerProps> = ({
                   setMatrixTargetRoleId(roleId);
                   setCurrentView("matrix");
                 }}
-                onUnauthorized={onExit}
+                onUnauthorized={onNavigateToAuth || onExit}
                 showToast={showToast}
               />
             )}
