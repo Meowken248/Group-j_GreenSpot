@@ -655,7 +655,7 @@ export const EditPostModal: React.FC<EditPostModalProps> = ({
               </div>
 
               {/* Hàng nút hành động cuối form */}
-              <div className="modal-actions-row">
+              <div className="profile-modal-actions-row">
                 <button
                   type="button"
                   className="btn-modal-ghost"
