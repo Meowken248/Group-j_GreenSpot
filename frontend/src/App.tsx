@@ -2095,7 +2095,19 @@ function App() {
             />
           </div>
         ) : (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`} style={{ paddingTop: "64px", height: "100vh", overflow: "hidden" }}>
+          <div
+            className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}
+            style={{
+              position: "absolute",
+              top: "56px",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: "calc(100vh - 56px)",
+              overflow: "hidden",
+              boxSizing: "border-box",
+            }}
+          >
             <ChatContainer
               currentUser={currentUser}
               initialTargetUserId={chatTargetUserId}
@@ -2347,8 +2359,8 @@ function App() {
         </button>
       )}
 
-      {/* NÚT TRỢ LÝ GIỌNG NÓI NHANH NỔI (CHỈ HIỂN THỊ KHI ĐÃ ĐĂNG NHẬP VÀ KHÔNG Ở TAB VOICE) */}
-      {currentUser && activeTab !== "voice" && (
+      {/* NÚT TRỢ LÝ GIỌNG NÓI NHANH NỔI (CHỈ HIỂN THỊ KHI ĐÃ ĐĂNG NHẬP VÀ KHÔNG Ở TAB VOICE HOẶC MESSAGES) */}
+      {currentUser && activeTab !== "voice" && activeTab !== "messages" && (
         <button
           type="button"
           className="floating-voice-quick-btn"
