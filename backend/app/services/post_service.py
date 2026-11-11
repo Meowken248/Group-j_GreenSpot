@@ -67,7 +67,8 @@ class PostService:
                 select(GroupMember).where(
                     GroupMember.group_id == request.group_id,
                     GroupMember.user_id == author_id,
-                    GroupMember.status == GroupMemberStatus.ACTIVE.value
+                    GroupMember.status == GroupMemberStatus.ACTIVE.value,
+                    GroupMember.deleted_at.is_(None)
                 )
             )).scalars().first()
             if not member_check:
@@ -522,9 +523,15 @@ class PostService:
             Group.deleted_at.is_(None)
         )
         if current_user:
-            my_groups_subquery = select(GroupMember.group_id).where(
-                GroupMember.user_id == current_user.user_id,
-                GroupMember.status == GroupMemberStatus.ACTIVE.value
+            my_groups_subquery = (
+                select(GroupMember.group_id)
+                .join(Group, Group.group_id == GroupMember.group_id)
+                .where(
+                    GroupMember.user_id == current_user.user_id,
+                    GroupMember.status == GroupMemberStatus.ACTIVE.value,
+                    GroupMember.deleted_at.is_(None),
+                    Group.deleted_at.is_(None),
+                )
             )
             conditions.append(
                 or_(
