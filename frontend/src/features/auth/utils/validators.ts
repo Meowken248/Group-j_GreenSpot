@@ -167,8 +167,10 @@ export const validateLoginPassword = (value: string): string | null => {
  * - Chỉ chấp nhận đường dẫn nội bộ bắt đầu bằng đúng 1 dấu / và không bắt đầu bằng //
  * - Nếu sai hoặc không có, trả về defaultPath ('/geo-feed')
  */
-export const sanitizeRedirectUrl = (redirectParam: string | null | undefined, defaultPath = '/geo-feed'): string => {
-  if (!redirectParam) return defaultPath;
+export const sanitizeRedirectUrl = (redirectParam: unknown, defaultPath = '/geo-feed'): string => {
+  if (typeof redirectParam !== 'string' || !redirectParam.trim()) {
+    return defaultPath;
+  }
   const trimmed = redirectParam.trim();
   if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
     return trimmed;

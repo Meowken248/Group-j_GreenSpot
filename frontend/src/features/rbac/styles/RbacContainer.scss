@@ -389,10 +389,10 @@
         }
 
         .btn-gate-back {
-          padding: 11px 18px;
-          background: #ffffff;
-          color: $neutral-700;
-          border: 1px solid $neutral-300;
+          padding: 12px 28px;
+          background: $primary-600;
+          color: #ffffff;
+          border: none;
           border-radius: $radius-md;
           font-size: 14px;
           font-weight: 600;
@@ -400,8 +400,8 @@
           transition: $transition-fast;
 
           &:hover {
-            background: $neutral-50;
-            color: $neutral-900;
+            background: $primary-700;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
           }
         }
       }
