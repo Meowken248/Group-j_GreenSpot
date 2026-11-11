@@ -8,6 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from "react";
+import "../styles/BirthdayModal.scss";
 import { birthdayService } from "../services/birthdayService";
 import type { BirthdayCardTemplate, BirthdayWishItem } from "../types/birthday.types";
 

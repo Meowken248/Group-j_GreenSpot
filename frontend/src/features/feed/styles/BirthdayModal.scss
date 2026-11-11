@@ -1,0 +1,343 @@
+// Biến màu chuẩn GreenSpot
+$primary-50: #ecfdf5;
+$primary-100: #d1fae5;
+$primary-200: #a7f3d0;
+$primary-300: #6ee7b7;
+$primary-400: #34d399;
+$primary-500: #10b981;
+$primary-600: #059669;
+$primary-700: #047857;
+$primary-800: #065f46;
+
+$neutral-50: #f8fafc;
+$neutral-100: #f1f5f9;
+$neutral-200: #e2e8f0;
+$neutral-300: #cbd5e1;
+$neutral-400: #94a3b8;
+$neutral-500: #64748b;
+$neutral-600: #475569;
+$neutral-700: #334155;
+$neutral-800: #1e293b;
+$neutral-900: #0f172a;
+
+// Backdrop dùng chung
+.feed-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+// =========================================================================
+// 7b. BIRTHDAY WISH MODAL (STT 17) - Gửi lời chúc & thiệp xanh
+// =========================================================================
+.feed-modal-backdrop .feed-modal-content.birthday-wish-card {
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+
+  .birthday-wish-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .birthday-wish-avatar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      overflow: hidden;
+      background: $primary-100;
+      color: $primary-700;
+      font-size: 16px;
+      font-weight: 700;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    .birthday-wish-heading {
+      flex: 1;
+      min-width: 0;
+
+      h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: $neutral-900;
+        line-height: 1.3;
+      }
+
+      p {
+        margin: 2px 0 0;
+        font-size: 12px;
+        color: $neutral-500;
+      }
+    }
+
+    .birthday-wish-close-btn {
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      line-height: 1;
+      color: $neutral-400;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 8px;
+
+      &:hover {
+        background: $neutral-100;
+        color: $neutral-700;
+      }
+    }
+  }
+
+  .birthday-wish-mode-tabs {
+    display: flex;
+    border-radius: 10px;
+    background: $neutral-100;
+    padding: 3px;
+    gap: 4px;
+
+    .birthday-wish-tab-btn {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: $neutral-600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &.active {
+        background: #ffffff;
+        color: $primary-700;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+      }
+    }
+  }
+
+  .birthday-wish-quick-templates {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    .btn-quick-template {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px dashed $primary-300;
+      background: $primary-50;
+      color: $primary-800;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &:hover {
+        background: $primary-100;
+        border-color: $primary-500;
+      }
+    }
+  }
+
+  .birthday-wish-textarea {
+    width: 100%;
+    min-height: 90px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid $neutral-200;
+    font-size: 13px;
+    color: $neutral-900;
+    box-sizing: border-box;
+    font-family: inherit;
+    resize: vertical;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-500;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+    }
+  }
+
+  .birthday-wish-char-count {
+    align-self: flex-end;
+    font-size: 11px;
+    color: $neutral-400;
+  }
+
+  .birthday-wish-templates-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    .templates-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+
+      .template-card-item {
+        border: 2px solid $neutral-200;
+        border-radius: 12px;
+        padding: 10px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        transition: all 0.15s ease;
+
+        &.active {
+          border-color: $primary-500;
+          background: $primary-50;
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+        }
+
+        .template-preview-img {
+          width: 100%;
+          height: 90px;
+          object-fit: cover;
+          border-radius: 8px;
+        }
+
+        .template-name {
+          font-size: 12px;
+          font-weight: 700;
+          color: $neutral-800;
+        }
+
+        .template-eco-desc {
+          font-size: 11px;
+          color: $neutral-500;
+          line-height: 1.3;
+        }
+      }
+    }
+  }
+
+  .birthday-wish-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 6px;
+
+    button {
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-cancel-birthday-wish {
+      background: $neutral-100;
+      border: 1px solid $neutral-200;
+      color: $neutral-700;
+
+      &:hover:not(:disabled) {
+        background: $neutral-200;
+      }
+    }
+
+    .btn-submit-birthday-wish {
+      background: linear-gradient(135deg, $primary-500 0%, $primary-600 100%);
+      border: 1px solid $primary-600;
+      color: #ffffff;
+
+      &:hover:not(:disabled) {
+        background: linear-gradient(135deg, $primary-600 0%, $primary-700 100%);
+        transform: translateY(-1px);
+      }
+    }
+
+    button:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+    }
+  }
+}
+
+// 7c. BIRTHDAY INBOX MODAL
+.feed-modal-backdrop .feed-modal-content.birthday-inbox-modal {
+  max-width: 600px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 22px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+
+  .inbox-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid $neutral-200;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+
+    h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: $neutral-900;
+      margin: 0;
+    }
+  }
+
+  .inbox-wishes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    .inbox-wish-card {
+      border: 1px solid $neutral-200;
+      border-radius: 12px;
+      padding: 14px;
+      background: $neutral-50;
+
+      .wish-card-sender {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+
+        .sender-name {
+          font-size: 14px;
+          font-weight: 700;
+          color: $neutral-900;
+        }
+
+        .wish-time {
+          font-size: 11px;
+          color: $neutral-500;
+        }
+      }
+
+      .wish-card-content {
+        font-size: 13px;
+        color: $neutral-700;
+        line-height: 1.4;
+      }
+    }
+  }
+}
