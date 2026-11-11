@@ -412,9 +412,9 @@ class PostService:
                 avatar_url=post.user.avatar_url,
             )
 
-        # Tính toán cờ is_edited nếu bài viết đã được cập nhật
-        is_edited = False
-        if post.updated_at and post.created_at:
+        # Tính toán cờ is_edited chuẩn xác dựa trên version OCC (version > 1)
+        is_edited = (post.version > 1) if getattr(post, "version", 1) is not None else False
+        if not is_edited and post.updated_at and post.created_at:
             try:
                 diff_sec = abs((post.updated_at - post.created_at).total_seconds())
                 is_edited = diff_sec > 2
@@ -770,8 +770,9 @@ class PostService:
                     dist_meters = None
                     dist_text = None
 
-            is_edited = False
-            if post_obj.updated_at and post_obj.created_at:
+            # Tính toán cờ is_edited chuẩn xác dựa trên version OCC (version > 1)
+            is_edited = (post_obj.version > 1) if getattr(post_obj, "version", 1) is not None else False
+            if not is_edited and post_obj.updated_at and post_obj.created_at:
                 try:
                     is_edited = abs((post_obj.updated_at - post_obj.created_at).total_seconds()) > 2
                 except Exception:
