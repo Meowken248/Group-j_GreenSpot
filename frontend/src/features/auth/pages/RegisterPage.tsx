@@ -55,10 +55,25 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
   const passwordRef = useRef<HTMLInputElement>(null);
   const confirmPasswordRef = useRef<HTMLInputElement>(null);
 
-  // Đặc tả: Khi mở màn hình, con trỏ tự động đặt vào ô Họ tên
+  // Đặc tả: Khi mở màn hình, nếu đang có phiên còn hiệu lực -> tự động chuyển hướng ra Bảng tin / Bản đồ. Nếu chưa thì con trỏ tự động đặt vào ô Họ tên
   useEffect(() => {
+    try {
+      const existingToken =
+        localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN) ||
+        localStorage.getItem("greenspot_token");
+      if (existingToken) {
+        if (onLogoClick) {
+          onLogoClick();
+        } else {
+          window.location.href = "/";
+        }
+        return;
+      }
+    } catch {
+      // ignore
+    }
     fullNameRef.current?.focus();
-  }, []);
+  }, [onLogoClick]);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({
@@ -317,7 +332,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                     <button
                       type="button"
                       className="login-inline-link"
-                      onClick={onNavigateToLogin}
+                      onClick={() => onNavigateToLogin()}
                     >
                       đăng nhập
                     </button>
@@ -380,7 +395,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
               <button
                 type="button"
                 className="btn-switch-login"
-                onClick={onNavigateToLogin}
+                onClick={() => onNavigateToLogin()}
                 disabled={isSubmitting}
               >
                 Đã có tài khoản?

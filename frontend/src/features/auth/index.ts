@@ -3,6 +3,7 @@ export { RegisterPage } from "./pages/RegisterPage";
 export { OtpVerificationPage } from "./pages/OtpVerificationPage";
 export { AccountActivatedPage } from "./pages/AccountActivatedPage";
 export { LoginPage } from "./pages/LoginPage";
+export { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 export { DeviceManagementPage } from "./pages/DeviceManagementPage";
 export { OtpErrorModal } from "./components/OtpErrorModal";
 export { LogoutConfirmModal } from "./components/LogoutConfirmModal";
