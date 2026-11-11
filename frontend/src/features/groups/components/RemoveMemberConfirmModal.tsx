@@ -99,7 +99,7 @@ export const RemoveMemberConfirmModal: React.FC<RemoveMemberConfirmModalProps> =
 
   return (
     <div
-      className="modal-backdrop-overlay"
+      className="group-member-modal-backdrop"
       onClick={handleBackdropClick}
       data-testid="remove-member-modal-backdrop"
     >

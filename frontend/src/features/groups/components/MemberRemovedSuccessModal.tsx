@@ -62,7 +62,7 @@ export const MemberRemovedSuccessModal: React.FC<MemberRemovedSuccessModalProps>
 
   return (
     <div
-      className="modal-backdrop-overlay"
+      className="group-member-modal-backdrop"
       onClick={handleBackdropClick}
       data-testid="member-removed-success-backdrop"
     >
