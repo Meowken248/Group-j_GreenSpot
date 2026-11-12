@@ -52,9 +52,15 @@ export const FeedPostCard: React.FC<FeedPostCardProps> = ({
   const [commentText, setCommentText] = useState("");
   const [commentsList, setCommentsList] = useState<Array<{ id: string; author: string; text: string; time: string }>>([]);
 
+  // Đánh dấu đã từng nhận điểm cho bài viết này để chống spam điểm khi đổi/huỷ/thả lại icon
+  const hasAwardedPointsRef = useRef<boolean>(Boolean(post.user_reaction));
+
   useEffect(() => {
     setReactionsCount(post.reactions_count || 0);
     setSelectedReaction(post.user_reaction || null);
+    if (post.user_reaction) {
+      hasAwardedPointsRef.current = true;
+    }
   }, [post.reactions_count, post.user_reaction]);
 
   const reactionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -123,23 +129,41 @@ export const FeedPostCard: React.FC<FeedPostCardProps> = ({
 
   // Thả cảm xúc
   const handleSelectReaction = (type: string) => {
-    if (selectedReaction === type) {
+    const isToggleOff = selectedReaction === type;
+    const isFirstTime = !selectedReaction && !hasAwardedPointsRef.current;
+
+    if (isToggleOff) {
       // Bỏ reaction
       setSelectedReaction(null);
       setReactionsCount((prev) => Math.max(0, prev - 1));
+      if (onShowToast) {
+        onShowToast("info", "Đã bỏ cảm xúc sinh thái");
+      }
     } else {
       // Đổi hoặc thêm reaction mới
       if (!selectedReaction) {
         setReactionsCount((prev) => prev + 1);
       }
       setSelectedReaction(type);
+
+      if (onShowToast) {
+        if (isFirstTime) {
+          // Lần đầu thả icon trên bài viết này: được cộng điểm
+          hasAwardedPointsRef.current = true;
+          onShowToast("success", "Đã ghi nhận cảm xúc sinh thái (+5 Green Points)!");
+        } else if (selectedReaction && selectedReaction !== type) {
+          // Đã thả trước đó và đổi sang icon khác: không cộng thêm điểm tránh spam
+          const reactionLabel = ECO_REACTIONS.find((r) => r.type === type)?.label || type;
+          onShowToast("info", `Đã đổi cảm xúc thành "${reactionLabel}"`);
+        } else {
+          // Thả lại icon sau khi đã từng nhận điểm trên bài viết này
+          onShowToast("success", "Đã ghi nhận cảm xúc sinh thái");
+        }
+      }
     }
     setShowReactionPicker(false);
     if (onReactPost) {
       onReactPost(post.post_id, type);
-    }
-    if (onShowToast) {
-      onShowToast("success", "Đã ghi nhận cảm xúc sinh thái (+5 Green Points)!");
     }
   };
 
