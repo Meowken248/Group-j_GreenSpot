@@ -164,7 +164,7 @@ export const MAP_STYLES = {
     id: "voyager",
     name: "Sinh động",
     icon: "🎨",
-    sourceName: "carto",
+    sourceName: "protomaps",
     isGoogle: false,
     url: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
   },
@@ -226,13 +226,26 @@ export const MAP_STYLES = {
     id: "dark",
     name: "Ban đêm",
     icon: "🌙",
-    sourceName: "carto",
+    sourceName: "protomaps",
     isGoogle: false,
     url: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
   },
 };
 
 export type BuildingColorTheme = "rainbow" | "eco" | "sunset" | "cyber" | "crystal";
+
+export const BUILDING_HEIGHT_EXPRESSION: any = [
+  "case",
+  ["has", "height"],
+  ["to-number", ["get", "height"], 0],
+  ["has", "render_height"],
+  ["to-number", ["get", "render_height"], 0],
+  ["has", "building:levels"],
+  ["*", ["to-number", ["get", "building:levels"], 1], 3.5],
+  ["has", "levels"],
+  ["*", ["to-number", ["get", "levels"], 1], 3.5],
+  0,
+];
 
 export const BUILDING_COLOR_THEMES: Record<
   BuildingColorTheme,
@@ -252,14 +265,14 @@ export const BUILDING_COLOR_THEMES: Record<
     expression: [
       "interpolate",
       ["linear"],
-      ["coalesce", ["get", "render_height"], 16],
-      0, "#34d399",    // 0-10m: Ngọc bích / Mint
-      12, "#38bdf8",   // 12-20m: Xanh Cyan
-      25, "#6366f1",   // 25-35m: Indigo hiện đại
-      45, "#a855f7",   // 45-60m: Tím thạch anh
-      70, "#ec4899",   // 70-90m: Hồng Magenta
-      100, "#f97316",  // 100-130m: Cam san hô
-      150, "#ef4444",  // 150m+: Đỏ cờ rực rỡ
+      BUILDING_HEIGHT_EXPRESSION,
+      0, ["to-color", "#34d399"],
+      12, ["to-color", "#38bdf8"],
+      25, ["to-color", "#6366f1"],
+      45, ["to-color", "#a855f7"],
+      70, ["to-color", "#ec4899"],
+      100, ["to-color", "#f97316"],
+      150, ["to-color", "#ef4444"],
     ],
   },
   eco: {
@@ -270,12 +283,12 @@ export const BUILDING_COLOR_THEMES: Record<
     expression: [
       "interpolate",
       ["linear"],
-      ["coalesce", ["get", "render_height"], 16],
-      0, "#a7f3d0",
-      15, "#34d399",
-      35, "#10b981",
-      65, "#06b6d4",
-      110, "#0284c7",
+      BUILDING_HEIGHT_EXPRESSION,
+      0, ["to-color", "#a7f3d0"],
+      15, ["to-color", "#34d399"],
+      35, ["to-color", "#10b981"],
+      65, ["to-color", "#06b6d4"],
+      110, ["to-color", "#0284c7"],
     ],
   },
   sunset: {
@@ -286,12 +299,12 @@ export const BUILDING_COLOR_THEMES: Record<
     expression: [
       "interpolate",
       ["linear"],
-      ["coalesce", ["get", "render_height"], 16],
-      0, "#fde68a",
-      15, "#fbbf24",
-      35, "#f97316",
-      65, "#e11d48",
-      110, "#9333ea",
+      BUILDING_HEIGHT_EXPRESSION,
+      0, ["to-color", "#fde68a"],
+      15, ["to-color", "#fbbf24"],
+      35, ["to-color", "#f97316"],
+      65, ["to-color", "#e11d48"],
+      110, ["to-color", "#9333ea"],
     ],
   },
   cyber: {
@@ -302,12 +315,12 @@ export const BUILDING_COLOR_THEMES: Record<
     expression: [
       "interpolate",
       ["linear"],
-      ["coalesce", ["get", "render_height"], 16],
-      0, "#00f0ff",
-      20, "#7000ff",
-      50, "#ff007f",
-      90, "#ffe600",
-      140, "#ff003c",
+      BUILDING_HEIGHT_EXPRESSION,
+      0, ["to-color", "#00f0ff"],
+      20, ["to-color", "#7000ff"],
+      50, ["to-color", "#ff007f"],
+      90, ["to-color", "#ffe600"],
+      140, ["to-color", "#ff003c"],
     ],
   },
   crystal: {
@@ -318,12 +331,12 @@ export const BUILDING_COLOR_THEMES: Record<
     expression: [
       "interpolate",
       ["linear"],
-      ["coalesce", ["get", "render_height"], 16],
-      0, "#e0f2fe",
-      15, "#7dd3fc",
-      35, "#38bdf8",
-      65, "#0284c7",
-      110, "#1e3a8a",
+      BUILDING_HEIGHT_EXPRESSION,
+      0, ["to-color", "#e0f2fe"],
+      15, ["to-color", "#7dd3fc"],
+      35, ["to-color", "#38bdf8"],
+      65, ["to-color", "#0284c7"],
+      110, ["to-color", "#1e3a8a"],
     ],
   },
 };
@@ -386,11 +399,12 @@ function EcoMap() {
 
   // States bản đồ & bộ lọc (Mặc định dùng Google Maps Tile Cluster)
   const [activeStyle, setActiveStyle] = useState<StyleKey>("googleRoadmap");
-  const [is3D, setIs3D] = useState<boolean>(true);
+  const [is3D, setIs3D] = useState<boolean>(false);
+  const [detectedVectorSource, setDetectedVectorSource] = useState<string>("protomaps");
   // Bảng màu sắc 3D cho các tòa nhà kiến trúc đô thị
   const [building3DTheme, setBuilding3DTheme] = useState<BuildingColorTheme>("rainbow");
   const [showDistricts, setShowDistricts] = useState<boolean>(false);
-  const [selectedCategory, setSelectedCategory] = useState<EcoCategory | "all">("all");
+  const [selectedCategory, setSelectedCategory] = useState<EcoCategory | "all" | "none">("none");
 
   // Heatmap States (Bản đồ nhiệt: Nhiệt độ thời tiết, Chỉ số AQI, Mật độ rủi ro)
   const [activeHeatmap, setActiveHeatmap] = useState<"none" | "temperature" | "aqi" | "risk">("none");
@@ -402,7 +416,7 @@ function EcoMap() {
   const [liveRadarOverlay, setLiveRadarOverlay] = useState<WeatherOverlay>("temp");
 
   // Flood Watch States (Cảnh báo Ngập lụt Đô thị 3 Nguồn: TP.HCM OpenData, Open-Meteo GloFAS & Lượng mưa thông minh)
-  const [showFloodWatch, setShowFloodWatch] = useState<boolean>(true);
+  const [showFloodWatch, setShowFloodWatch] = useState<boolean>(false);
   const [floodData, setFloodData] = useState<FloodGeoJSONResponse | null>(null);
   const [selectedFloodSpot, setSelectedFloodSpot] = useState<FloodHotspotProperties | null>(null);
   const [selectedGloFAS, setSelectedGloFAS] = useState<GloFASForecastResponse | null>(null);
@@ -433,10 +447,10 @@ function EcoMap() {
 
   // Tự động hủy chọn danh mục nếu vai trò không có quyền truy cập
   useEffect(() => {
-    if (selectedCategory !== "all") {
+    if (selectedCategory !== "all" && selectedCategory !== "none") {
       const mod = CATEGORY_TO_MODULE[selectedCategory];
       if (mod && !canAccess(mod)) {
-        setSelectedCategory("all");
+        setSelectedCategory("none");
       }
     }
   }, [selectedCategory, canAccess]);
@@ -465,7 +479,7 @@ function EcoMap() {
   const [livePOIs, setLivePOIs] = useState<LivePOI[]>([]);
   const [loadingPOIs, setLoadingPOIs] = useState<boolean>(false);
   const [autoFetchPOI, setAutoFetchPOI] = useState<boolean>(false);
-  const [poiType, setPoiType] = useState<"all" | "cafe" | "restaurant" | "shop">("all");
+  const [poiType, setPoiType] = useState<"all" | "cafe" | "restaurant" | "shop" | null>(null);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -510,7 +524,7 @@ function EcoMap() {
     let isMounted = true;
     setLoadingEco(true);
     fetchEcoLocationsAPI(
-      selectedCategory === "all" ? undefined : selectedCategory,
+      selectedCategory === "all" || selectedCategory === "none" ? undefined : selectedCategory,
       simulateFlood ? 1.68 : undefined,
       simulateFlood ? 30.0 : undefined
     ).then((res) => {
@@ -648,11 +662,11 @@ function EcoMap() {
     async (
       lat: number,
       lng: number,
-      type: "all" | "cafe" | "restaurant" | "shop" = poiType,
+      type: "all" | "cafe" | "restaurant" | "shop" | null = poiType,
       reset = false
     ) => {
       setLoadingPOIs(true);
-      const pois = await fetchNearbyPOIsAPI(lat, lng, type);
+      const pois = await fetchNearbyPOIsAPI(lat, lng, type || "all");
 
       setLivePOIs((prev) => {
         if (reset || prev.length === 0) return pois.slice(0, 80);
@@ -814,6 +828,7 @@ function EcoMap() {
 
   // Danh sách địa điểm môi trường hiển thị sau khi lọc
   const filteredLocations = useMemo(() => {
+    if (selectedCategory === "none") return [];
     if (selectedCategory === "all") return accessibleLocations;
     const moduleCode = CATEGORY_TO_MODULE[selectedCategory];
     if (moduleCode && !canAccess(moduleCode)) return [];
@@ -988,13 +1003,70 @@ function EcoMap() {
     setIs3D(next3D);
 
     if (mapRef.current) {
+      const currentZoom = mapRef.current.getZoom();
       mapRef.current.easeTo({
         pitch: next3D ? 58 : 0,
         bearing: next3D ? -20 : 0,
+        zoom: next3D && currentZoom < 13.5 ? 14.5 : currentZoom,
         duration: 1200,
       });
     }
   };
+
+  // Kích hoạt ngay chế độ Bản đồ 3D và căn chỉnh góc nghiêng phối cảnh tối ưu
+  const activate3DView = () => {
+    setIs3D(true);
+    if (mapRef.current) {
+      const currentPitch = mapRef.current.getPitch();
+      const currentZoom = mapRef.current.getZoom();
+      mapRef.current.easeTo({
+        pitch: currentPitch < 25 ? 58 : currentPitch,
+        bearing: currentPitch < 25 ? -20 : mapRef.current.getBearing(),
+        zoom: currentZoom < 13.5 ? 14.5 : currentZoom,
+        duration: 1200,
+      });
+    }
+  };
+
+  // Tự động nhận diện nguồn Vector tile của bản đồ nền
+  const handleStyleLoaded = useCallback(() => {
+    const map = mapRef.current?.getMap();
+    if (map) {
+      try {
+        const style = map.getStyle();
+        if (style && style.sources) {
+          if (style.sources["protomaps"]) {
+            setDetectedVectorSource("protomaps");
+          } else if (style.sources["carto"]) {
+            setDetectedVectorSource("carto");
+          } else if (style.sources["openmaptiles"]) {
+            setDetectedVectorSource("openmaptiles");
+          }
+        }
+      } catch (err) {
+        console.warn("Could not inspect map style sources:", err);
+      }
+    }
+  }, []);
+
+  // Giữ vững góc nhìn 3D khi chuyển đổi bản đồ nền
+  useEffect(() => {
+    if (is3D && mapRef.current) {
+      const timer = setTimeout(() => {
+        if (mapRef.current) {
+          const currentPitch = mapRef.current.getPitch();
+          if (currentPitch < 20) {
+            mapRef.current.easeTo({
+              pitch: 58,
+              bearing: -20,
+              duration: 800,
+            });
+          }
+        }
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [activeStyle, is3D]);
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden", userSelect: "none" }}>
@@ -1035,7 +1107,7 @@ function EcoMap() {
         setPoiType={setPoiType}
         onLoadNearbyPOIs={(type) => {
           const center = mapRef.current ? mapRef.current.getCenter() : mapCenter;
-          handleLoadNearbyPOIs(center.lat, center.lng, type, true);
+          handleLoadNearbyPOIs(center.lat, center.lng, type || "all", true);
         }}
         autoFetchPOI={autoFetchPOI}
         onToggleAutoFetch={handleToggleAutoFetch}
@@ -1045,6 +1117,7 @@ function EcoMap() {
         setActiveStyle={setActiveStyle}
         is3D={is3D}
         onToggle3D={toggle3DView}
+        onActivate3D={activate3DView}
         building3DTheme={building3DTheme}
         setBuilding3DTheme={setBuilding3DTheme}
         showDistricts={showDistricts}
@@ -1243,8 +1316,8 @@ function EcoMap() {
           longitude: 106.7025,
           latitude: 10.7745,
           zoom: 14,
-          pitch: 50,
-          bearing: -15,
+          pitch: 0,
+          bearing: 0,
         }}
         interactiveLayerIds={hasFloodAccess && showFloodWatch ? ["flood-segments-core", "flood-segments-glow", "flood-corridor-main", "flood-corridor-glow"] : []}
         onClick={(e) => {
@@ -1272,7 +1345,7 @@ function EcoMap() {
           });
           setCurrentZoom(e.viewState.zoom);
           if (autoFetchPOI && e.viewState.zoom >= 10) {
-            handleLoadNearbyPOIs(lat, lng, poiType, false);
+            handleLoadNearbyPOIs(lat, lng, poiType || "all", false);
           }
         }}
         onMouseMove={(e) => {
@@ -1304,26 +1377,67 @@ function EcoMap() {
         }}
         style={{ width: "100%", height: "100%", cursor: loadingReverse ? "wait" : hoveredFloodSegment ? "pointer" : "default" }}
         mapStyle={MAP_STYLES[activeStyle].url as any}
+        onLoad={handleStyleLoaded}
+        onStyleData={handleStyleLoaded}
       >
         <NavigationControl position="bottom-right" />
         <FullscreenControl position="bottom-right" />
 
         {/* 1. LỚP TÒA NHÀ 3D ĐA SẮC RỰC RỠ (3D COLORFUL ARCHITECTURAL EXTRUSIONS) */}
-        {is3D && (activeStyle === "voyager" || activeStyle === "dark") && (
-          <Layer
-            id="3d-buildings-extrusion"
-            source="carto"
-            source-layer="building"
-            type="fill-extrusion"
-            minzoom={13}
-            paint={{
-              "fill-extrusion-color": BUILDING_COLOR_THEMES[building3DTheme].expression,
-              "fill-extrusion-height": ["coalesce", ["get", "render_height"], 16],
-              "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
-              "fill-extrusion-opacity": activeStyle === "dark" ? 0.88 : 0.92,
-              "fill-extrusion-vertical-gradient": true,
-            }}
-          />
+        {is3D && (
+          (activeStyle === "voyager" || activeStyle === "dark") ? (
+            <Layer
+              key={`3d-buildings-internal-${activeStyle}`}
+              id="3d-buildings-extrusion"
+              source={detectedVectorSource}
+              source-layer="buildings"
+              type="fill-extrusion"
+              minzoom={12.5}
+              filter={[">", BUILDING_HEIGHT_EXPRESSION, 0] as any}
+              paint={{
+                "fill-extrusion-color": BUILDING_COLOR_THEMES[building3DTheme].expression,
+                "fill-extrusion-height": BUILDING_HEIGHT_EXPRESSION as any,
+                "fill-extrusion-base": [
+                  "coalesce",
+                  ["get", "min_height"],
+                  ["get", "render_min_height"],
+                  0,
+                ],
+                "fill-extrusion-opacity": activeStyle === "dark" ? 0.88 : 0.92,
+                "fill-extrusion-vertical-gradient": true,
+              }}
+            />
+          ) : (
+            <Source
+              key={`3d-buildings-external-${activeStyle}`}
+              id="eco-external-buildings-source"
+              type="vector"
+              tiles={[
+                "https://tiles.basemaps.cartocdn.com/v/20261026-01/vectortiles/carto.streets/v2/{z}/{x}/{y}.mvt",
+              ]}
+              maxzoom={15}
+            >
+              <Layer
+                id="3d-buildings-extrusion"
+                source-layer="buildings"
+                type="fill-extrusion"
+                minzoom={12.5}
+                filter={[">", BUILDING_HEIGHT_EXPRESSION, 0] as any}
+                paint={{
+                  "fill-extrusion-color": BUILDING_COLOR_THEMES[building3DTheme].expression,
+                  "fill-extrusion-height": BUILDING_HEIGHT_EXPRESSION as any,
+                  "fill-extrusion-base": [
+                    "coalesce",
+                    ["get", "min_height"],
+                    ["get", "render_min_height"],
+                    0,
+                  ],
+                  "fill-extrusion-opacity": 0.88,
+                  "fill-extrusion-vertical-gradient": true,
+                }}
+              />
+            </Source>
+          )
         )}
 
         {/* 2. LỚP RANH GIỚI CÁC QUẬN / HUYỆN TP.HCM (GeoJSON Polygons từ API) */}
@@ -2434,7 +2548,7 @@ function EcoMap() {
       )}
 
       {/* 7.5. HUY HIỆU THANG ĐO CHIỀU CAO TÒA NHÀ 3D (GÓC DƯỚI BÊN PHẢI) */}
-      {is3D && (activeStyle === "voyager" || activeStyle === "dark") && activeHeatmap === "none" && (
+      {is3D && activeHeatmap === "none" && (
         <div
           style={{
             position: "absolute",

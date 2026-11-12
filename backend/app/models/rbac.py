@@ -70,17 +70,17 @@ class User(Base, TimestampMixin):
     # Feature STT 17: cho phép bạn bè xem & chúc mừng sinh nhật (mặc định bật)
     show_birthday: Mapped[bool] = mapped_column(Boolean, server_default="true", default=True, nullable=False)
     activated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    total_green_points: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    friends_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)  # Optimistic Locking
+    total_green_points: Mapped[int] = mapped_column(Integer, server_default="0", default=0, nullable=False)
+    friends_count: Mapped[int] = mapped_column(Integer, server_default="0", default=0, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, server_default="1", default=1, nullable=False)  # Optimistic Locking
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)  # Soft Delete
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.role_id"), nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="ACTIVE")
     citizen_id_card: Mapped[Optional[str]] = mapped_column(String(20))
-    reputation_score: Mapped[int] = mapped_column(Integer, default=100)
+    reputation_score: Mapped[int] = mapped_column(Integer, server_default="100", default=100)
     district: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    green_points: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    lifetime_points: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    green_points: Mapped[int] = mapped_column(Integer, server_default="0", default=0, nullable=False)
+    lifetime_points: Mapped[int] = mapped_column(Integer, server_default="0", default=0, nullable=False)
 
     role: Mapped["Role"] = relationship(back_populates="users")
     sessions: Mapped[List["UserSession"]] = relationship(back_populates="user", cascade="all, delete-orphan")

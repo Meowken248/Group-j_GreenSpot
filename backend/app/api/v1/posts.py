@@ -49,6 +49,7 @@ async def get_optional_current_user(
     summary="Đăng bài viết mới (Màn 1 -> Màn 4)",
 )
 async def create_new_post(
+    request: Request,
     payload: CreatePostRequest,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
