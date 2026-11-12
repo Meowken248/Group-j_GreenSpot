@@ -169,10 +169,20 @@ class IncidentExportRepository(IIncidentExportRepository):
                 i.severity,
                 i.title,
                 i.address_text,
-                i.created_at
+                i.created_at,
+                d.order_code AS dispatch_order_code,
+                d.team_name AS assigned_team
             FROM incidents i
             LEFT JOIN waste_categories wc ON i.category_id = wc.category_id
             LEFT JOIN administrative_units au ON i.unit_id = au.unit_id
+            LEFT JOIN LATERAL (
+                SELECT ord.order_code, ord.team_name
+                FROM dispatch_orders ord
+                WHERE ord.incident_id = i.incident_id
+                  AND ord.deleted_at IS NULL
+                ORDER BY ord.created_at DESC
+                LIMIT 1
+            ) d ON TRUE
             WHERE {where_sql}
             ORDER BY i.created_at DESC
         """)
@@ -195,6 +205,8 @@ class IncidentExportRepository(IIncidentExportRepository):
                 "title": str(r.title or ""),
                 "address_text": str(r.address_text or ""),
                 "created_at": r.created_at.strftime("%d/%m/%Y %H:%M") if r.created_at else "",
+                "dispatch_order_code": str(r.dispatch_order_code) if getattr(r, "dispatch_order_code", None) else None,
+                "assigned_team": str(r.assigned_team) if getattr(r, "assigned_team", None) else None,
             })
 
         return items

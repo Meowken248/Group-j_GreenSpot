@@ -119,14 +119,32 @@ class SpatialFacilityService(ISpatialFacilityService):
         delta_lng = (query.radius_meters / (111000.0 * cos_lat)) * 1.15
 
         # Lấy danh sách cơ sở khớp với loại hình trong bounding box qua Repository
-        rows = await spatial_facility_repository.get_facilities_in_bounding_box(
-            db=db,
-            facility_types=query.facility_types,
-            min_lat=inc_lat - delta_lat,
-            max_lat=inc_lat + delta_lat,
-            min_lng=inc_lng - delta_lng,
-            max_lng=inc_lng + delta_lng,
-        )
+        essential_types = [t for t in query.facility_types if t not in ("Trạm tái chế", "RECYCLING")]
+        rows = []
+        if essential_types:
+            rows.extend(
+                await spatial_facility_repository.get_facilities_in_bounding_box(
+                    db=db,
+                    facility_types=essential_types,
+                    min_lat=inc_lat - delta_lat,
+                    max_lat=inc_lat + delta_lat,
+                    min_lng=inc_lng - delta_lng,
+                    max_lng=inc_lng + delta_lng,
+                )
+            )
+
+        # Liên kết STT 23: Nếu bộ lọc yêu cầu trạm tái chế, truy vấn thêm từ recycling_facilities
+        if any(t in ("Trạm tái chế", "RECYCLING") for t in query.facility_types) and hasattr(
+            spatial_facility_repository, "get_recycling_facilities_in_bounding_box"
+        ):
+            recycling_rows = await spatial_facility_repository.get_recycling_facilities_in_bounding_box(
+                db=db,
+                min_lat=inc_lat - delta_lat,
+                max_lat=inc_lat + delta_lat,
+                min_lng=inc_lng - delta_lng,
+                max_lng=inc_lng + delta_lng,
+            )
+            rows.extend(recycling_rows)
 
         results = []
         for r in rows:

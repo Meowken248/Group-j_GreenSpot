@@ -350,10 +350,13 @@ class AdminDashboardService:
                 Table,
                 TableStyle,
             )
+            from app.utils.pdf_fonts import register_vietnamese_pdf_fonts
         except ImportError as exc:
             raise RuntimeError(
                 "Thư viện reportlab chưa được cài đặt. Chạy: pip install reportlab"
             ) from exc
+
+        font_regular, font_bold = register_vietnamese_pdf_fonts()
 
         buf = io.BytesIO()
         doc = SimpleDocTemplate(
@@ -371,7 +374,7 @@ class AdminDashboardService:
         title_style = ParagraphStyle(
             "TitleStyle",
             parent=styles["Title"],
-            fontName="Helvetica-Bold",
+            fontName=font_bold,
             fontSize=16,
             textColor=colors.HexColor("#1F4E79"),
             spaceAfter=6,
@@ -381,6 +384,7 @@ class AdminDashboardService:
         sub_style = ParagraphStyle(
             "SubStyle",
             parent=styles["Normal"],
+            fontName=font_regular,
             fontSize=10,
             textColor=colors.HexColor("#595959"),
             spaceAfter=12,
@@ -416,12 +420,13 @@ class AdminDashboardService:
         table.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1F4E79")),
             ("TEXTCOLOR",  (0, 0), (-1, 0), colors.white),
-            ("FONTNAME",   (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTNAME",   (0, 0), (-1, 0), font_bold),
+            ("FONTNAME",   (0, 1), (-1, -2), font_regular),
             ("ALIGN",      (0, 0), (-1, -1), "CENTER"),
             ("FONTSIZE",   (0, 0), (-1, -1), 9),
             ("ROWBACKGROUNDS", (0, 1), (-1, -2), [colors.white, colors.HexColor("#EBF5FB")]),
             ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#D5E8D4")),
-            ("FONTNAME",   (0, -1), (-1, -1), "Helvetica-Bold"),
+            ("FONTNAME",   (0, -1), (-1, -1), font_bold),
             ("GRID",       (0, 0), (-1, -1), 0.5, colors.HexColor("#BDC3C7")),
             ("VALIGN",     (0, 0), (-1, -1), "MIDDLE"),
             ("TOPPADDING", (0, 0), (-1, -1), 6),

@@ -11,6 +11,7 @@ Kiểm thử toàn diện 3 tầng:
 from __future__ import annotations
 
 import io
+import uuid
 from datetime import date, timedelta
 from typing import List, Tuple
 from unittest.mock import AsyncMock, MagicMock
@@ -236,8 +237,47 @@ def get_test_app() -> FastAPI:
     return app
 
 
+def _make_admin_override(role_code: str = "ADMIN"):
+    from app.models.rbac import User, Role
+
+    async def _override_user():
+        return User(
+            user_id=uuid.uuid4(),
+            email=f"{role_code.lower()}@greenspot.vn",
+            full_name=f"Test {role_code}",
+            status="ACTIVE",
+            role=Role(role_code=role_code, role_name=role_code),
+        )
+
+    return _override_user
+
+
+def test_api_admin_dashboard_rbac_guard(monkeypatch):
+    """Kiểm tra Auth/RBAC STT 48: Chặn ẩn danh (401) và người dùng không phải ADMIN (403)."""
+    from app.api.v1.rbac import get_current_active_user
+    from app.database import get_db
+
+    app = get_test_app()
+    client = TestClient(app)
+
+    async def override_get_db():
+        yield AsyncMock(spec=AsyncSession)
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    # 1. Không có token -> 401
+    resp_unauth = client.get("/api/v1/admin-dashboard/overview?period_days=30")
+    assert resp_unauth.status_code == 401
+
+    # 2. CITIZEN -> 403
+    app.dependency_overrides[get_current_active_user] = _make_admin_override("CITIZEN")
+    resp_citizen = client.get("/api/v1/admin-dashboard/overview?period_days=30")
+    assert resp_citizen.status_code == 403
+
+
 def test_api_overview_endpoint(monkeypatch):
-    """Kiểm tra endpoint GET /api/v1/admin-dashboard/overview."""
+    """Kiểm tra endpoint GET /api/v1/admin-dashboard/overview với quyền ADMIN."""
+    from app.api.v1.rbac import get_current_active_user
     app = get_test_app()
     client = TestClient(app)
 
@@ -245,12 +285,13 @@ def test_api_overview_endpoint(monkeypatch):
     mock_service = AdminDashboardService(repository=MockAdminDashboardRepository())
     monkeypatch.setattr("app.api.v1.admin_dashboard.router._service", mock_service)
 
-    # Mock database session dependency
+    # Mock database session + admin dependency
     from app.database import get_db
     async def override_get_db():
         yield AsyncMock(spec=AsyncSession)
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_active_user] = _make_admin_override("ADMIN")
 
     response = client.get("/api/v1/admin-dashboard/overview?period_days=30")
     assert response.status_code == 200
@@ -262,6 +303,7 @@ def test_api_overview_endpoint(monkeypatch):
 
 def test_api_daily_table_endpoint(monkeypatch):
     """Kiểm tra endpoint GET /api/v1/admin-dashboard/daily-table."""
+    from app.api.v1.rbac import get_current_active_user
     app = get_test_app()
     client = TestClient(app)
 
@@ -273,6 +315,7 @@ def test_api_daily_table_endpoint(monkeypatch):
         yield AsyncMock(spec=AsyncSession)
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_active_user] = _make_admin_override("ADMIN")
 
     response = client.get(
         "/api/v1/admin-dashboard/daily-table?from_date=2026-10-20&to_date=2026-10-22&page=1&page_size=15"
@@ -286,6 +329,7 @@ def test_api_daily_table_endpoint(monkeypatch):
 
 def test_api_export_endpoint_xlsx(monkeypatch):
     """Kiểm tra endpoint POST /api/v1/admin-dashboard/export trả về file Excel."""
+    from app.api.v1.rbac import get_current_active_user
     app = get_test_app()
     client = TestClient(app)
 
@@ -297,6 +341,7 @@ def test_api_export_endpoint_xlsx(monkeypatch):
         yield AsyncMock(spec=AsyncSession)
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_active_user] = _make_admin_override("ADMIN")
 
     payload = {
         "from_date": "2026-10-20",
@@ -312,6 +357,7 @@ def test_api_export_endpoint_xlsx(monkeypatch):
 
 def test_api_export_endpoint_pdf(monkeypatch):
     """Kiểm tra endpoint POST /api/v1/admin-dashboard/export trả về file PDF."""
+    from app.api.v1.rbac import get_current_active_user
     app = get_test_app()
     client = TestClient(app)
 
@@ -323,6 +369,7 @@ def test_api_export_endpoint_pdf(monkeypatch):
         yield AsyncMock(spec=AsyncSession)
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_active_user] = _make_admin_override("ADMIN")
 
     payload = {
         "from_date": "2026-10-20",

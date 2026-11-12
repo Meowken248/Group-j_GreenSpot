@@ -216,9 +216,10 @@ export const Screen1BroadcastConsole: React.FC<Screen1BroadcastConsoleProps> = (
         expires_in_hours: 12,
       });
 
+      const sentCount = res.recipients_count ?? (res as any).actual_sent_count ?? 0;
       setToastMessage({
         type: "success",
-        text: `Phát lệnh cảnh báo khẩn cấp thành công! Hệ thống đang đẩy thông báo đến ${res.recipients_count.toLocaleString("vi-VN")} thiết bị.`,
+        text: `Phát lệnh cảnh báo khẩn cấp thành công! Hệ thống đang đẩy thông báo đến ${Number(sentCount).toLocaleString("vi-VN")} thiết bị.`,
       });
 
       loadHistory();
@@ -509,11 +510,13 @@ export const Screen1BroadcastConsole: React.FC<Screen1BroadcastConsoleProps> = (
                         <span className={`status-badge ${item.status}`}>{item.status}</span>
                       </div>
                       <div style={{ color: "#94a3b8" }}>
-                        Bán kính: {(item.radius_meters / 1000).toFixed(1)} km | {item.recipients_count} thiết bị
+                        Bán kính: {(item.radius_meters / 1000).toFixed(1)} km | {item.recipients_count ?? (item as any).actual_sent_count ?? 0} thiết bị
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
                         <span style={{ fontSize: "0.72rem", color: "#64748b" }}>
-                          {new Date(item.issued_at).toLocaleTimeString("vi-VN")}
+                          {item.issued_at || (item as any).broadcasted_at
+                            ? new Date(item.issued_at || (item as any).broadcasted_at).toLocaleTimeString("vi-VN")
+                            : "Vừa xong"}
                         </span>
                         {item.status === "ACTIVE" && (
                           <button

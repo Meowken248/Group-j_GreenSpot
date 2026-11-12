@@ -403,7 +403,7 @@ class DispatchRepository(IDispatchRepository):
                     COALESCE(i.tracking_code, CONCAT('INC-', SUBSTRING(REPLACE(i.incident_id::text, '-', ''), 1, 8))) AS incident_code,
                     COALESCE(i.title, 'Sự cố phản ánh môi trường') AS title,
                     COALESCE(wc.name, 'Chung') AS category,
-                    COALESCE(i.priority_level, i.ai_suggested_priority, 'MEDIUM') AS urgency,
+                    COALESCE(i.ai_suggested_priority, i.severity, 'MEDIUM') AS urgency,
                     COALESCE(i.address_text, 'TP. Hồ Chí Minh') AS location_address,
                     COALESCE(au.name, 'Quận Bình Tân') AS district,
                     COALESCE(au.name, 'Phường An Lạc') AS ward,
@@ -550,6 +550,17 @@ class DispatchRepository(IDispatchRepository):
                 "is_gps_active": order.is_gps_active,
                 "version": order.version,
             })
+            # Đồng bộ trạng thái sự cố gốc sang IN_PROGRESS (Liên kết STT 43 -> STT 18)
+            sql_sync_inc = text("""
+                UPDATE incidents
+                SET status = 'IN_PROGRESS',
+                    version = version + 1,
+                    updated_at = NOW()
+                WHERE incident_id = :incident_id
+                  AND deleted_at IS NULL
+                  AND status IN ('OPEN', 'PENDING', 'PENDING_VERIFICATION', 'VERIFIED', 'REPORTED')
+            """)
+            await db.execute(sql_sync_inc, {"incident_id": str(order.incident_id)})
             await db.commit()
         except Exception:
             # Rollback nếu xảy ra lỗi DB cục bộ
@@ -665,6 +676,20 @@ class DispatchRepository(IDispatchRepository):
                 "completed_at": now,
                 "version": expected_version,
             })
+            # Đồng bộ trạng thái sự cố gốc sang RESOLVED (Liên kết STT 43 -> STT 18)
+            sql_sync_inc = text("""
+                UPDATE incidents
+                SET status = 'RESOLVED',
+                    resolved_at = :resolved_at,
+                    version = version + 1,
+                    updated_at = NOW()
+                WHERE incident_id = (
+                    SELECT incident_id FROM dispatch_orders WHERE order_id = :order_id LIMIT 1
+                )
+                  AND deleted_at IS NULL
+                  AND status NOT IN ('RESOLVED', 'CLOSED')
+            """)
+            await db.execute(sql_sync_inc, {"order_id": str(order_id), "resolved_at": now})
             await db.commit()
         except Exception:
             await db.rollback()

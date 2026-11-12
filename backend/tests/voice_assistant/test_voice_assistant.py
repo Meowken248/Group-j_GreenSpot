@@ -770,12 +770,12 @@ def test_api_suggestions_with_category_and_offline_fallback():
 
     app.dependency_overrides[get_db] = override_get_db_success
     try:
-        with TestClient(app) as client:
-            res = client.get("/api/v1/voice/suggestions?category=FLOOD&limit=5")
-            assert res.status_code == 200
-            data = res.json()
-            assert len(data) >= 1
-            assert data[0]["intent_code"] == "CHECK_SAFE_ROUTE"
+        client = TestClient(app)
+        res = client.get("/api/v1/voice/suggestions?category=FLOOD&limit=5")
+        assert res.status_code == 200
+        data = res.json()
+        assert len(data) >= 1
+        assert data[0]["intent_code"] == "CHECK_SAFE_ROUTE"
     finally:
         app.dependency_overrides.clear()
 
@@ -787,12 +787,12 @@ def test_api_suggestions_with_category_and_offline_fallback():
 
     app.dependency_overrides[get_db] = override_get_db_fail
     try:
-        with TestClient(app) as client:
-            res = client.get("/api/v1/voice/suggestions?category=INCIDENT")
-            assert res.status_code == 200
-            data = res.json()
-            assert len(data) >= 1
-            assert any("bãi rác" in d["command_text"].lower() for d in data)
+        client = TestClient(app)
+        res = client.get("/api/v1/voice/suggestions?category=INCIDENT")
+        assert res.status_code == 200
+        data = res.json()
+        assert len(data) >= 1
+        assert any("bãi rác" in d["command_text"].lower() for d in data)
     finally:
         app.dependency_overrides.clear()
 
@@ -805,34 +805,34 @@ def test_api_process_command_endpoint_full():
 
     app.dependency_overrides[get_db] = override_get_db
     try:
-        with TestClient(app) as client:
-            # Gửi câu lệnh click gợi ý
-            payload1 = {
-                "transcript": "Báo cáo bãi rác gần đây",
-                "session_source": "SUGGESTION_CLICK",
-                "current_lat": 10.7769,
-                "current_lng": 106.7009,
-            }
-            res1 = client.post("/api/v1/voice/process", json=payload1)
-            assert res1.status_code == 200
-            data1 = res1.json()
-            assert data1["detected_intent"] == "REPORT_INCIDENT"
-            assert data1["is_success"] is True
-            assert data1["action_type"] == "NAVIGATION"
-            assert data1["action_target"] == "/report-incident"
-            assert data1["action_payload"] is not None
+        client = TestClient(app)
+        # Gửi câu lệnh click gợi ý
+        payload1 = {
+            "transcript": "Báo cáo bãi rác gần đây",
+            "session_source": "SUGGESTION_CLICK",
+            "current_lat": 10.7769,
+            "current_lng": 106.7009,
+        }
+        res1 = client.post("/api/v1/voice/process", json=payload1)
+        assert res1.status_code == 200
+        data1 = res1.json()
+        assert data1["detected_intent"] == "REPORT_INCIDENT"
+        assert data1["is_success"] is True
+        assert data1["action_type"] == "NAVIGATION"
+        assert data1["action_target"] == "/report-incident"
+        assert data1["action_payload"] is not None
 
-            # Gửi câu lệnh giọng nói không nhận diện được (Fallback)
-            payload2 = {
-                "transcript": "tìm quán bún chả gần đây",
-                "session_source": "VOICE",
-            }
-            res2 = client.post("/api/v1/voice/process", json=payload2)
-            assert res2.status_code == 200
-            data2 = res2.json()
-            assert data2["is_success"] is False
-            assert data2["action_type"] == "UNKNOWN"
-            assert "chưa hiểu lệnh này" in data2["response_text"]
+        # Gửi câu lệnh giọng nói không nhận diện được (Fallback)
+        payload2 = {
+            "transcript": "tìm quán bún chả gần đây",
+            "session_source": "VOICE",
+        }
+        res2 = client.post("/api/v1/voice/process", json=payload2)
+        assert res2.status_code == 200
+        data2 = res2.json()
+        assert data2["is_success"] is False
+        assert data2["action_type"] == "UNKNOWN"
+        assert "chưa hiểu lệnh này" in data2["response_text"]
     finally:
         app.dependency_overrides.clear()
 
@@ -864,12 +864,12 @@ def test_api_history_endpoint_and_db_fallback():
 
     app.dependency_overrides[get_db] = override_get_db_history
     try:
-        with TestClient(app) as client:
-            res = client.get(f"/api/v1/voice/history?limit=10&user_id={test_user_id}")
-            assert res.status_code == 200
-            data = res.json()
-            assert len(data) == 1
-            assert data[0]["detected_intent"] == "CHECK_REWARD_WALLET"
+        client = TestClient(app)
+        res = client.get(f"/api/v1/voice/history?limit=10&user_id={test_user_id}")
+        assert res.status_code == 200
+        data = res.json()
+        assert len(data) == 1
+        assert data[0]["detected_intent"] == "CHECK_REWARD_WALLET"
     finally:
         app.dependency_overrides.clear()
 
@@ -881,10 +881,10 @@ def test_api_history_endpoint_and_db_fallback():
 
     app.dependency_overrides[get_db] = override_get_db_history_fail
     try:
-        with TestClient(app) as client:
-            res = client.get("/api/v1/voice/history")
-            assert res.status_code == 200
-            assert res.json() == []
+        client = TestClient(app)
+        res = client.get("/api/v1/voice/history")
+        assert res.status_code == 200
+        assert res.json() == []
     finally:
         app.dependency_overrides.clear()
 

@@ -22,7 +22,8 @@ from app.schemas.hotspots.schemas import (
     ExportReportResponse,
     HotspotDetailResponse,
 )
-from app.utils.security import decode_access_token
+from app.api.v1.rbac import require_roles_or_permission
+from app.models.rbac import User
 
 router = APIRouter(prefix="/hotspots", tags=["Hotspot Spatial Analytics & 7-Day Forecast (STT 44)"])
 
@@ -32,34 +33,12 @@ def get_hotspot_service() -> HotspotService:
     return HotspotService(repo)
 
 
-def verify_hotspot_access(authorization: Optional[str] = Header(None)):
-    """Kiểm tra phân quyền: Cán bộ quản lý môi trường, Chuyên viên phân tích dữ liệu đô thị, Quản trị viên"""
-    if not authorization:
-        return None
-
-    try:
-        scheme, token = authorization.split()
-        if scheme.lower() != "bearer":
-            return None
-        payload = decode_access_token(token)
-        if not payload:
-            return None
-        role = payload.get("role")
-        permissions = payload.get("permissions", [])
-
-        allowed_roles = {"ADMIN", "OFFICER", "COORDINATOR", "DISTRICT_MANAGER", "ANALYST"}
-        has_perm = "STATISTICS" in permissions or "INCIDENTS" in permissions
-
-        if role not in allowed_roles and not has_perm:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Chỉ Cán bộ quản lý môi trường và Chuyên viên phân tích mới có quyền truy cập chức năng này.",
-            )
-        return payload
-    except HTTPException:
-        raise
-    except Exception:
-        return None
+verify_hotspot_access = require_roles_or_permission(
+    allowed_roles={"ADMIN", "OFFICER", "COORDINATOR", "DISTRICT_MANAGER", "ANALYST"},
+    module="STATISTICS",
+    action="VIEW",
+    deny_message="Chỉ Cán bộ quản lý môi trường và Chuyên viên phân tích mới có quyền truy cập chức năng này.",
+)
 
 
 @router.get("/map", response_model=HotspotMapResponse)

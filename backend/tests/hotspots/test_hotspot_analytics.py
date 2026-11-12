@@ -160,35 +160,75 @@ async def test_06_hotspot_detail_and_dispatch_prefill(mock_db, hotspot_service_i
 # ==================== 7. TEST HTTP ENDPOINTS & RBAC GUARD ====================
 
 def test_07_http_endpoints_and_rbac_guard(client, admin_token_header, citizen_token_header):
-    """Tiêu chí 7: Kiểm thử toàn bộ RESTful API endpoints và kiểm soát quyền truy cập RBAC"""
-    # 1. GET /api/v1/hotspots/map với quyền Quản trị viên (ADMIN)
-    res_map = client.get("/api/v1/hotspots/map", headers=admin_token_header)
-    assert res_map.status_code == 200
-    data_map = res_map.json()
-    assert data_map["has_data"] is True
+    """Tiêu chí 7: Kiểm thử toàn bộ RESTful API endpoints và kiểm soát quyền truy cập RBAC (401/403/200)"""
+    import uuid
+    from sqlalchemy.ext.asyncio import AsyncSession
+    from app.database import get_db
+    from app.api.v1.rbac import get_current_active_user
+    from app.models.rbac import User, Role
 
-    # 2. GET /api/v1/hotspots/areas
-    res_areas = client.get("/api/v1/hotspots/areas", headers=admin_token_header)
-    assert res_areas.status_code == 200
-    assert len(res_areas.json()) > 0
+    async def override_get_db():
+        yield AsyncMock(spec=AsyncSession)
 
-    # 3. GET /api/v1/hotspots/forecast
-    res_fc = client.get("/api/v1/hotspots/forecast?target_id=dist-q8", headers=admin_token_header)
-    assert res_fc.status_code == 200
-    data_fc = res_fc.json()
-    assert data_fc["model_accuracy_pct"] == 87.5
+    app.dependency_overrides[get_db] = override_get_db
 
-    # 4. POST /api/v1/hotspots/forecast/export
-    res_exp = client.post("/api/v1/hotspots/forecast/export", json={"target_id": "dist-q8", "format": "PDF"}, headers=admin_token_header)
-    assert res_exp.status_code == 200
-    assert res_exp.json()["file_name"] == "BaoCao_DuBao_7Ngay.pdf"
+    try:
+        # 0. Không có Authorization header -> 401 (không cho phép truy cập ẩn danh)
+        res_anon = client.get("/api/v1/hotspots/map")
+        assert res_anon.status_code == 401
 
-    # 5. GET /api/v1/hotspots/{hotspot_id}
-    res_dt = client.get("/api/v1/hotspots/hs-001", headers=admin_token_header)
-    assert res_dt.status_code == 200
-    assert res_dt.json()["hotspot"]["hotspot_code"] == "HS-2026-001"
+        # Override user thành ADMIN
+        async def _admin_user():
+            return User(
+                user_id=uuid.UUID("22222222-2222-2222-2222-222222222222"),
+                email="admin@greenspot.vn",
+                full_name="Admin",
+                status="ACTIVE",
+                role=Role(role_code="ADMIN", role_name="ADMIN"),
+            )
 
-    # 6. RBAC Guard: Citizen không có quyền truy cập module này -> 403 Forbidden
-    res_forbidden = client.get("/api/v1/hotspots/map", headers=citizen_token_header)
-    assert res_forbidden.status_code == 403
-    assert "Chỉ Cán bộ quản lý môi trường và Chuyên viên phân tích" in res_forbidden.json()["detail"]
+        app.dependency_overrides[get_current_active_user] = _admin_user
+
+        # 1. GET /api/v1/hotspots/map với quyền Quản trị viên (ADMIN)
+        res_map = client.get("/api/v1/hotspots/map", headers=admin_token_header)
+        assert res_map.status_code == 200
+        data_map = res_map.json()
+        assert data_map["has_data"] is True
+
+        # 2. GET /api/v1/hotspots/areas
+        res_areas = client.get("/api/v1/hotspots/areas", headers=admin_token_header)
+        assert res_areas.status_code == 200
+        assert len(res_areas.json()) > 0
+
+        # 3. GET /api/v1/hotspots/forecast
+        res_fc = client.get("/api/v1/hotspots/forecast?target_id=dist-q8", headers=admin_token_header)
+        assert res_fc.status_code == 200
+        data_fc = res_fc.json()
+        assert data_fc["model_accuracy_pct"] == 87.5
+
+        # 4. POST /api/v1/hotspots/forecast/export
+        res_exp = client.post("/api/v1/hotspots/forecast/export", json={"target_id": "dist-q8", "format": "PDF"}, headers=admin_token_header)
+        assert res_exp.status_code == 200
+        assert res_exp.json()["file_name"] == "BaoCao_DuBao_7Ngay.pdf"
+
+        # 5. GET /api/v1/hotspots/{hotspot_id}
+        res_dt = client.get("/api/v1/hotspots/hs-001", headers=admin_token_header)
+        assert res_dt.status_code == 200
+        assert res_dt.json()["hotspot"]["hotspot_code"] == "HS-2026-001"
+
+        # 6. RBAC Guard: Citizen không có quyền truy cập module này -> 403 Forbidden
+        async def _citizen_user():
+            return User(
+                user_id=uuid.UUID("11111111-1111-1111-1111-111111111111"),
+                email="citizen@greenspot.vn",
+                full_name="Citizen",
+                status="ACTIVE",
+                role=Role(role_code="CITIZEN", role_name="CITIZEN"),
+            )
+
+        app.dependency_overrides[get_current_active_user] = _citizen_user
+        res_forbidden = client.get("/api/v1/hotspots/map", headers=citizen_token_header)
+        assert res_forbidden.status_code == 403
+        assert "Chỉ Cán bộ quản lý môi trường và Chuyên viên phân tích" in res_forbidden.json()["detail"]
+    finally:
+        app.dependency_overrides.clear()

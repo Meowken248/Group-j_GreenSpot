@@ -27,6 +27,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.localization import get_current_language
 from app.services.translation.translation_service import translation_service
 from app.database import get_db
+from app.api.v1.rbac import require_admin_user
+from app.models.rbac import User
 from app.schemas.admin_dashboard.dashboard_schema import (
     ActivityDashboardResponse,
     DailyReportResponse,
@@ -76,6 +78,7 @@ async def get_overview_dashboard(
         description="Ngày kết thúc tùy chọn (YYYY-MM-DD)",
     ),
     db: AsyncSession = Depends(get_db),
+    _current_admin: User = Depends(require_admin_user),
 ) -> ActivityDashboardResponse:
     """
     **GET /api/v1/admin-dashboard/overview**
@@ -135,6 +138,7 @@ async def get_daily_table(
     page: int = Query(default=1, ge=1, description="Số trang (bắt đầu từ 1)"),
     page_size: int = Query(default=30, ge=1, le=365, description="Số hàng mỗi trang"),
     db: AsyncSession = Depends(get_db),
+    _current_admin: User = Depends(require_admin_user),
 ) -> DailyReportResponse:
     """
     **GET /api/v1/admin-dashboard/daily-table**
@@ -187,6 +191,7 @@ async def get_daily_table(
 async def export_report(
     request: ExportRequest,
     db: AsyncSession = Depends(get_db),
+    _current_admin: User = Depends(require_admin_user),
 ) -> Response:
     """
     **POST /api/v1/admin-dashboard/export**

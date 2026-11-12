@@ -44,9 +44,10 @@ export interface BroadcastAlertResponse {
   alert_id: string;
   title: string;
   alert_type: AlertType;
-  recipients_count: number;
+  recipients_count?: number;
+  actual_sent_count?: number;
   status: AlertStatus;
-  issued_at: string;
+  issued_at?: string;
   message: string;
 }
 
@@ -55,13 +56,16 @@ export interface BroadcastHistoryItem {
   alert_type: AlertType;
   title: string;
   content: string;
-  severity: AlertSeverity;
+  severity?: AlertSeverity;
+  severity_level?: string;
   status: AlertStatus;
   center_latitude: number;
   center_longitude: number;
   radius_meters: number;
-  recipients_count: number;
-  issued_at: string;
+  recipients_count?: number;
+  actual_sent_count?: number;
+  issued_at?: string;
+  broadcasted_at?: string;
   cancelled_at?: string | null;
   cancellation_reason?: string | null;
   version: number;

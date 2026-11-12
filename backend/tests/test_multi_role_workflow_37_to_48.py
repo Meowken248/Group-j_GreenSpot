@@ -501,3 +501,198 @@ class TestMultiRoleWorkflow37To48:
         assert broadcast_res.success is True
         assert broadcast_res.alert_code == "EBA-20261027-9999"
         assert broadcast_res.actual_sent_count == 1
+
+    async def test_07_cross_feature_connections_37_to_48(self):
+        """
+        Kiểm thử các liên kết đa phân hệ STT 37 -> 48 theo FEATURE_LIST.md:
+        - STT 37 -> STT 29 (Ví điểm GreenPoints thực từ DB) & STT 24 (Chatbot Knowledge Engine fallback)
+        - STT 40 -> STT 23 (Trạm tái chế trong vùng đệm)
+        - STT 41 -> STT 33 (Làm giàu độ sâu ngập theo district_environmental_stats)
+        - STT 46 -> STT 45 (Kiểm tra vùng cảnh báo khẩn cấp đang phát sóng khi điều phối SOS)
+        """
+        from app.schemas.voice_assistant import VoiceProcessRequest
+        from app.crud.navigation.navigation_repository import navigation_repository
+        from app.services.triage.spatial_facility_service import (
+            SpatialFacilityService,
+            FacilityBufferQueryFilter,
+        )
+
+        mock_db = AsyncMock()
+
+        # 1. STT 37 -> STT 29 & STT 24
+        mock_voice_repo = MagicMock()
+        mock_voice_repo.get_all_sample_commands = AsyncMock(return_value=[])
+        mock_voice_repo.create_interaction_log = AsyncMock(return_value=None)
+        mock_voice_repo.get_user_reward_wallet_summary = AsyncMock(
+            return_value={
+                "user_id": str(uuid.uuid4()),
+                "full_name": "Lê Anh Tuấn",
+                "balance": 1250,
+                "recent_reward": "Check-in Chủ Nhật Xanh",
+            }
+        )
+        nlu = VoiceNluService(mock_voice_repo)
+        res_wallet = await nlu.process_voice_command(
+            mock_db,
+            VoiceProcessRequest(
+                transcript="Xem số dư ví điểm",
+                user_id=uuid.uuid4(),
+                session_source="VOICE",
+            ),
+        )
+        assert res_wallet.action_payload["balance"] == 1250
+        assert res_wallet.action_payload["source"] == "REWARD_WALLET_STT29"
+
+        res_kb = await nlu.process_voice_command(
+            mock_db,
+            VoiceProcessRequest(
+                transcript="Pin cũ vứt ở đâu đúng quy định?",
+                session_source="VOICE",
+            ),
+        )
+        assert res_kb.is_success is True
+        assert res_kb.action_type == "CHATBOT_ANSWER"
+        assert res_kb.action_payload["source"] == "CHATBOT_STT24"
+
+        # 2. STT 40 -> STT 23 (Recycling facilities in buffer)
+        fake_inc = MagicMock()
+        fake_inc.incident_id = uuid.uuid4()
+        fake_inc.latitude = 10.7765
+        fake_inc.longitude = 106.7009
+
+        mock_spatial_repo = MagicMock()
+        mock_spatial_repo.get_incident_by_id = AsyncMock(return_value=fake_inc)
+        mock_spatial_repo.get_facilities_in_bounding_box = AsyncMock(return_value=[])
+        mock_spatial_repo.get_recycling_facilities_in_bounding_box = AsyncMock(
+            return_value=[(101, "Trạm Tái Chế Quận 1", "Trạm tái chế", "12 Lê Lợi", "0909111222", "MEDIUM", 10.777, 106.701)]
+        )
+
+        with patch("app.services.triage.spatial_facility_service.spatial_facility_repository", mock_spatial_repo):
+            rec_results = await SpatialFacilityService.get_facilities_in_buffer(
+                mock_db,
+                FacilityBufferQueryFilter(
+                    incident_id=fake_inc.incident_id,
+                    radius_meters=1000.0,
+                    facility_types=["Trường học", "Trạm tái chế"],
+                ),
+            )
+            assert any(r.facility_type == "Trạm tái chế" for r in rec_results)
+
+        # 3. STT 41 -> STT 33 (district_environmental_stats enrichment)
+        nav_svc = SafeNavigationService()
+        sample_hotspots = [
+            {
+                "hotspot_id": "hs-nav-1",
+                "hotspot_code": "HP-01",
+                "street_name": "Nguyễn Hữu Cảnh",
+                "district_name": "Quận Bình Thạnh",
+                "threshold_tide_meters": 1.35,
+                "threshold_rain_mm_per_hour": 20.0,
+                "drainage_system_rating": 2,
+                "historical_max_depth_cm": 45.0,
+                "primary_cause": "TIDE_AND_RAIN",
+                "lat": 10.79,
+                "lng": 106.71,
+            }
+        ]
+        with patch.object(navigation_repository, "get_active_flood_hotspots", AsyncMock(return_value=sample_hotspots)), \
+             patch.object(navigation_repository, "get_district_flood_stats", AsyncMock(return_value={"quận bình thạnh": {"risk_score": 82.0, "flood_points_count": 7}})):
+            enriched = await nav_svc._fetch_flood_hotspots(mock_db, tide_m=1.5, rain_mmh=40.0)
+            assert len(enriched) == 1
+            assert enriched[0]["predicted_depth_cm"] > 0
+
+        # 4. STT 46 -> STT 45 (covering emergency alert context in SOS chat)
+        mock_sos_repo = MagicMock()
+        mock_sos_repo.count_nearby_volunteers = AsyncMock(return_value=2)
+        created_sos = FloodSosRequest(
+            request_id=uuid.uuid4(),
+            sos_code="SOS-20261111-TEST",
+            status="PENDING",
+            victim_name="Victim",
+            victim_phone="0900000000",
+            total_victims=2,
+            latitude=10.758,
+            longitude=106.675,
+            address_text="An Dương Vương",
+            version=1,
+        )
+        mock_sos_repo.create_sos_request = AsyncMock(return_value=created_sos)
+        mock_sos_repo.add_chat_message = AsyncMock(return_value=None)
+        mock_sos_repo.get_covering_emergency_alert_title = AsyncMock(return_value="BÁO ĐỘNG NGẬP SÂU Q5")
+
+        sos_svc = FloodSosService(repository=mock_sos_repo)
+        await sos_svc.dispatch_sos(
+            mock_db,
+            CreateFloodSosRequest(
+                victim_name="Victim",
+                victim_phone="0900000000",
+                total_victims=2,
+                description="Nước dâng cao khu vực Q5 cần hỗ trợ",
+                latitude=10.758,
+                longitude=106.675,
+                address_text="An Dương Vương",
+            ),
+        )
+        sent_msg = mock_sos_repo.add_chat_message.call_args.kwargs["content"]
+        assert "BÁO ĐỘNG NGẬP SÂU Q5" in sent_msg
+
+        # 5. STT 45 Emergency Alert: verify DB permission fallback for custom roles (when JWT lacks permissions)
+        from fastapi.testclient import TestClient
+        from app.main import app
+        from app.database import get_db
+        from app.api.v1.rbac import get_current_active_user
+        from app.models.rbac import User, Role
+
+        async def _override_db():
+            yield mock_db
+
+        # Mock DB RolePermission query returning None -> CITIZEN bị 403
+        mock_perm_res_empty = MagicMock()
+        mock_perm_res_empty.scalar_one_or_none.return_value = None
+        mock_db.execute = AsyncMock(return_value=mock_perm_res_empty)
+
+        async def _citizen():
+            return User(
+                user_id=uuid.uuid4(),
+                email="cit@gs.vn",
+                full_name="Cit",
+                status="ACTIVE",
+                role_id=uuid.uuid4(),
+                role=Role(role_code="CUSTOM_VIEWER", role_name="Custom Viewer"),
+            )
+
+        app.dependency_overrides[get_db] = _override_db
+        app.dependency_overrides[get_current_active_user] = _citizen
+        client = TestClient(app)
+        try:
+            r_forbid = client.post(
+                "/api/v1/emergency-alerts/estimate-recipients",
+                json={"latitude": 10.75, "longitude": 106.67, "radius_meters": 1000.0},
+            )
+            assert r_forbid.status_code == 403
+
+            # Khi DB có quyền FLOOD_WARNINGS:CREATE -> được phép dù role_code không nằm trong tập mặc định
+            mock_perm_res_ok = MagicMock()
+            mock_perm_res_ok.scalar_one_or_none.return_value = MagicMock()
+            mock_db.execute = AsyncMock(return_value=mock_perm_res_ok)
+
+            with patch(
+                "app.api.v1.emergency_alert.router.EmergencyAlertService.estimate_recipients",
+                AsyncMock(
+                    return_value={
+                        "center_latitude": 10.75,
+                        "center_longitude": 106.67,
+                        "radius_meters": 1000.0,
+                        "radius_km": 1.0,
+                        "estimated_recipients": 12,
+                        "message": "ok",
+                    }
+                ),
+            ):
+                r_allow = client.post(
+                    "/api/v1/emergency-alerts/estimate-recipients",
+                    json={"latitude": 10.75, "longitude": 106.67, "radius_meters": 1000.0},
+                )
+                assert r_allow.status_code == 200
+        finally:
+            app.dependency_overrides.clear()

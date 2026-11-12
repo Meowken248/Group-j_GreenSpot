@@ -61,6 +61,15 @@ class IVoiceAssistantRepository(ABC):
         """Lấy danh sách lịch sử tương tác gần nhất"""
         pass
 
+    @abstractmethod
+    async def get_user_reward_wallet_summary(
+        self,
+        db: AsyncSession,
+        user_id: uuid.UUID,
+    ) -> Optional[Dict[str, Any]]:
+        """Truy vấn số dư GreenPoints và giao dịch gần nhất từ hệ thống Ví điểm (STT 29)."""
+        pass
+
 
 class IVoiceNluService(ABC):
     """Giao diện Động cơ AI NLU phân tích ngữ âm, chuẩn hóa chính tả và phân loại Intent"""

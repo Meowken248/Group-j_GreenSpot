@@ -32,13 +32,15 @@ async def call_kira_ai(messages: list, timeout: Optional[float] = None) -> Optio
     api_key = settings.KIRA_API_KEY or os.getenv("KIRA_API_KEY", "")
     api_url = settings.KIRA_API_URL or os.getenv("KIRA_API_URL", "https://kiraai.vn/api/v1/chat/completions")
     model_name = settings.KIRA_MODEL or os.getenv("KIRA_MODEL", "kira-mini-1.0")
-    req_timeout = timeout or settings.KIRA_TIMEOUT_SECONDS or float(os.getenv("KIRA_TIMEOUT_SECONDS", "45.0"))
+    configured_timeout = timeout or settings.KIRA_TIMEOUT_SECONDS or float(os.getenv("KIRA_TIMEOUT_SECONDS", "5.0"))
+    req_timeout = min(float(configured_timeout), 5.0)
 
     if not api_key:
         return None
 
     try:
-        async with httpx.AsyncClient(timeout=req_timeout) as client:
+        timeout_cfg = httpx.Timeout(req_timeout, connect=2.0)
+        async with httpx.AsyncClient(timeout=timeout_cfg) as client:
             resp = await client.post(
                 api_url,
                 headers={
@@ -234,7 +236,7 @@ class AITriageService(IAITriageService):
             }
         ]
 
-        kira_result = await call_kira_ai(messages, timeout=35.0)
+        kira_result = await call_kira_ai(messages, timeout=5.0)
         if kira_result:
             cleaned = re.sub(r"\s*\*\(\d+\s*từ\)\*", "", kira_result, flags=re.IGNORECASE).strip()
             return cleaned, False
@@ -391,7 +393,7 @@ class AITriageService(IAITriageService):
                     "content": f"Báo cáo sự cố: {desc.strip()}\nĐịa chỉ: {inc.address_text or ''}\nHãy viết lại bản tóm tắt mới:"
                 }
             ]
-            kira_result = await call_kira_ai(messages, timeout=35.0)
+            kira_result = await call_kira_ai(messages, timeout=5.0)
             if kira_result:
                 summary = re.sub(r"\s*\*\(\d+\s*từ\)\*", "", kira_result, flags=re.IGNORECASE).strip()
             else:

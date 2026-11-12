@@ -22,6 +22,8 @@ from app.schemas.voice_assistant import (
     VoiceProcessResponse,
     VoiceSampleCommandResponse,
 )
+from app.api.v1.rbac import get_current_active_user, get_optional_active_user
+from app.models.rbac import User
 from app.services.voice_assistant import voice_service
 
 router = APIRouter(prefix="/voice", tags=["Voice Assistant"])
@@ -115,11 +117,15 @@ async def process_voice_command(
     voice_req: VoiceProcessRequest,
     req: Request,
     db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_active_user),
 ):
     """
     Tiếp nhận văn bản nhận dạng từ Màn 2 hoặc câu lệnh nhấp trực tiếp từ Màn 1.
     Thực hiện chuẩn hóa câu lệnh, phân tích ý định, sinh câu trả lời TTS và điều hướng.
+    Gắn user_id xác thực từ JWT (STT 2) để truy vấn ví điểm (STT 29) và lưu lịch sử.
     """
+    if current_user is not None:
+        voice_req.user_id = current_user.user_id
     result = await voice_service.process_voice_command(db, voice_req)
     if get_current_language(req) == "en":
         dumped = result.model_dump() if hasattr(result, "model_dump") else result
@@ -137,10 +143,12 @@ async def get_voice_history(
     limit: int = Query(20, ge=1, le=100, description="Số lượng bản ghi tối đa"),
     user_id: Optional[uuid.UUID] = Query(None, description="Lọc theo UUID người dùng"),
     db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_active_user),
 ):
     """Truy xuất danh sách nhật ký tương tác để kiểm tra và audit"""
     try:
-        logs = await voice_repository.get_recent_logs(db, limit=limit, user_id=user_id)
+        effective_user_id = current_user.user_id if current_user is not None else user_id
+        logs = await voice_repository.get_recent_logs(db, limit=limit, user_id=effective_user_id)
         if get_current_language(req) == "en":
             dumped = [l.model_dump() if hasattr(l, "model_dump") else l for l in logs]
             return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")

@@ -24,6 +24,8 @@ from app.models.voice_assistant import VoiceActionType, VoiceInteractionLog, Voi
 from app.schemas.voice_assistant import VoiceProcessRequest, VoiceProcessResponse
 from app.services.weather_service import WeatherService
 from app.services.tide_service import tide_engine
+from app.services.reward_service import calculate_tier_details
+from app.services.chatbot.knowledge_engine import EnvironmentalKnowledgeEngine
 
 # Bảng tọa độ trọng điểm cho các quận huyện và thành phố phục vụ truy vấn thời tiết & AQI thực tế
 LOCATION_COORDINATES: Dict[str, Tuple[float, float]] = {
@@ -643,12 +645,39 @@ class VoiceNluService(IVoiceNluService):
                 "lng": request.current_lng or 106.7009,
             }
         elif intent_code == "CHECK_REWARD_WALLET":
-            action_payload = {
-                "balance": 350,
-                "currency": "GreenPoints",
-                "level": "Chiến binh Xanh (Cấp 3)",
-                "recent_reward": "Đổi voucher 50.000đ thành công",
-            }
+            wallet_data: Optional[Dict[str, Any]] = None
+            if request.user_id:
+                try:
+                    wallet_data = await self.repo.get_user_reward_wallet_summary(db, request.user_id)
+                except Exception:
+                    wallet_data = None
+
+            if wallet_data and isinstance(wallet_data.get("balance"), (int, float)):
+                balance = int(wallet_data["balance"])
+                tier_info, _, _, _ = calculate_tier_details(balance)
+                level_map = {"BRONZE": 1, "SILVER": 2, "GOLD": 3, "DIAMOND": 4}
+                tier_level = level_map.get(tier_info.tier_code, 1)
+                level_display = f"{tier_info.tier_name} (Cấp {tier_level})"
+                recent_reward = wallet_data.get("recent_reward") or "Chưa có giao dịch đổi thưởng gần đây"
+                response_template = (
+                    f"Trợ lý: Số dư ví điểm xanh của bạn hiện có {balance} GreenPoints, "
+                    f"thuộc hạng {level_display}."
+                )
+                action_payload = {
+                    "balance": balance,
+                    "currency": "GreenPoints",
+                    "level": level_display,
+                    "recent_reward": recent_reward,
+                    "source": "REWARD_WALLET_STT29",
+                }
+            else:
+                action_payload = {
+                    "balance": 350,
+                    "currency": "GreenPoints",
+                    "level": "Chiến binh Xanh (Cấp 3)",
+                    "recent_reward": "Đổi voucher 50.000đ thành công",
+                    "source": "GUEST_PREVIEW",
+                }
         elif intent_code == "GREETING":
             response_template = (
                 "Trợ lý: Xin chào bạn! Tôi là Trợ lý Ảo Rảnh Tay GreenSpot. Tôi có thể hỗ trợ bạn tra cứu thời tiết, "
@@ -1020,7 +1049,22 @@ class VoiceNluService(IVoiceNluService):
                         ],
                     }
 
-        # 5. Phản hồi Text-to-Speech
+        # 5. Phản hồi Text-to-Speech (Liên kết STT 24 Chatbot Knowledge Engine cho câu hỏi môi trường)
+        if not is_success:
+            kb_engine = EnvironmentalKnowledgeEngine()
+            in_scope, kb_answer = kb_engine.check_scope_and_answer(normalized_text)
+            if in_scope:
+                intent_code = "CHATBOT_KNOWLEDGE_FALLBACK"
+                confidence = 0.75
+                action_type = "CHATBOT_ANSWER"
+                action_target = "/chatbot"
+                action_payload = {
+                    "source": "CHATBOT_STT24",
+                    "answer": kb_answer,
+                }
+                response_template = kb_answer
+                is_success = True
+
         response_text = response_template
 
         # Danh sách gợi ý nếu rơi vào Fallback

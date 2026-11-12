@@ -200,6 +200,7 @@ function App() {
     currentUser?.role === "OFFICER" ||
     currentUser?.role === "DISTRICT_MANAGER" ||
     currentUser?.role === "COORDINATOR" ||
+    currentUser?.role === "RESPONDER" ||
     canAccess("INCIDENTS");
 
   const hasRiskDashboardAccess =
@@ -216,6 +217,7 @@ function App() {
     currentUser?.role === "DISTRICT_MANAGER" ||
     currentUser?.role === "COORDINATOR" ||
     currentUser?.role === "RESPONDER" ||
+    canAccess("DISPATCH_TASKS") ||
     canAccess("INCIDENTS");
 
   const hasHotspotsAccess =
@@ -1773,9 +1775,27 @@ function App() {
             />
           </div>
         ) : activeTab === "triage" ? (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
-            <TriageAppDashboard />
-          </div>
+          !currentUser ? (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+              <AuthContainer
+                initialView="login"
+                redirectUrl="/incidents/ai-triage"
+                onExitAuth={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+              />
+            </div>
+          ) : (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+              <ModulePermissionGuard
+                moduleCode="INCIDENTS"
+                moduleName="Thẩm định Sự cố AI & Vùng đệm Cơ sở Thiết yếu"
+              >
+                <TriageAppDashboard />
+              </ModulePermissionGuard>
+            </div>
+          )
         ) : activeTab === "navigation" ? (
           <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
             <FloodNavigationContainer />
@@ -2249,21 +2269,77 @@ function App() {
             />
           </div>
         ) : activeTab === "flood-sos" ? (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
-            <FloodSosContainer />
-          </div>
+          !currentUser ? (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+              <AuthContainer
+                initialView="login"
+                redirectUrl="/emergency/flood-sos"
+                onExitAuth={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+              />
+            </div>
+          ) : (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+              <FloodSosContainer />
+            </div>
+          )
         ) : activeTab === "incident-export" ? (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
-            <IncidentExportContainer />
-          </div>
+          !currentUser ? (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+              <AuthContainer
+                initialView="login"
+                redirectUrl="/reports/incident-export"
+                onExitAuth={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+              />
+            </div>
+          ) : (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+              <ModulePermissionGuard
+                moduleCode="INCIDENTS"
+                moduleName="Xuất Danh sách Sự cố (Excel / PDF)"
+              >
+                <IncidentExportContainer />
+              </ModulePermissionGuard>
+            </div>
+          )
         ) : activeTab === "admin-dashboard" ? (
-          <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
-            <AdminDashboardContainer
-              onNavigateHome={() => {
-                navigateTo("map", "#map");
-              }}
-            />
-          </div>
+          !currentUser ? (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}>
+              <AuthContainer
+                initialView="login"
+                redirectUrl="/admin/activity-dashboard"
+                onExitAuth={() => {
+                  setActiveTab("map");
+                  window.location.hash = "#map";
+                }}
+              />
+            </div>
+          ) : currentUser.role !== "ADMIN" ? (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+              <ModulePermissionGuard
+                moduleCode="STATISTICS"
+                moduleName="Thống kê Hoạt động Hệ thống (Chỉ dành cho Admin)"
+              >
+                <div className="empty-placeholder">
+                  <h2>403 - Truy cập bị từ chối</h2>
+                  <p>Chỉ Quản trị viên hệ thống (ADMIN) mới được phép truy cập bảng thống kê tổng hợp.</p>
+                </div>
+              </ModulePermissionGuard>
+            </div>
+          ) : (
+            <div className={`app-view-container ${isDarkMode ? "dark-theme" : "light-theme"}`}>
+              <AdminDashboardContainer
+                onNavigateHome={() => {
+                  navigateTo("map", "#map");
+                }}
+              />
+            </div>
+          )
         ) : (
           /* Mặc định an toàn cho khách vãng lai và tab map: Bản đồ số WebGIS công cộng */
           <ModulePermissionGuard

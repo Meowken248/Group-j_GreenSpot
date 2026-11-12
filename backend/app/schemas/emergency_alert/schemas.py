@@ -6,7 +6,7 @@ Pydantic v2 DTO Schemas cho STT 45: Hệ thống Cảnh báo khẩn cấp theo v
 from datetime import datetime
 from typing import List, Optional
 import uuid
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 
 # =========================================================================
@@ -49,7 +49,18 @@ class BroadcastAlertResponse(BaseModel):
     alert_type: str
     title: str
     actual_sent_count: int
+    recipients_count: Optional[int] = None
+    status: str = "ACTIVE"
+    issued_at: Optional[datetime] = None
     message: str
+
+    @model_validator(mode="after")
+    def populate_compat_fields(self):
+        if self.recipients_count is None:
+            self.recipients_count = self.actual_sent_count
+        if self.issued_at is None:
+            self.issued_at = datetime.utcnow()
+        return self
 
 
 class BroadcastHistoryItem(BaseModel):
@@ -63,12 +74,25 @@ class BroadcastHistoryItem(BaseModel):
     center_longitude: float
     radius_meters: float
     severity_level: str
+    severity: Optional[str] = None
     actual_sent_count: int
+    recipients_count: Optional[int] = None
     status: str
     broadcasted_at: datetime
+    issued_at: Optional[datetime] = None
     version: int
 
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="after")
+    def populate_compat_fields(self):
+        if self.severity is None:
+            self.severity = self.severity_level
+        if self.recipients_count is None:
+            self.recipients_count = self.actual_sent_count
+        if self.issued_at is None:
+            self.issued_at = self.broadcasted_at
+        return self
 
 
 class CancelAlertRequest(BaseModel):

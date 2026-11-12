@@ -50,7 +50,7 @@ class NavigationRepository(INavigationRepository):
                     1.4 as threshold_tide_meters,
                     10.0 as threshold_rain_mm_per_hour,
                     50 as historical_max_depth_cm,
-                    'POOR' as drainage_system_rating,
+                    2 as drainage_system_rating,
                     'HEAVY_RAIN' as primary_cause,
                     i.longitude::float as lng,
                     i.latitude::float as lat
@@ -90,6 +90,31 @@ class NavigationRepository(INavigationRepository):
             """)
             res = await db.execute(fallback_query)
             return [dict(r) for r in res.mappings().all()]
+
+    async def get_district_flood_stats(self, db: AsyncSession) -> Dict[str, Dict[str, Any]]:
+        """Truy vấn chỉ số rủi ro và điểm ngập theo quận từ district_environmental_stats (STT 33)."""
+        try:
+            query = text("""
+                SELECT
+                    au.name AS district_name,
+                    COALESCE(des.risk_score, 0) AS risk_score,
+                    COALESCE(des.flood_points_count, 0) AS flood_points_count
+                FROM district_environmental_stats des
+                JOIN administrative_units au ON des.unit_id = au.unit_id
+                WHERE des.deleted_at IS NULL
+            """)
+            res = await db.execute(query)
+            stats: Dict[str, Dict[str, Any]] = {}
+            for row in res.mappings().all():
+                d_name = str(row["district_name"] or "").strip().lower()
+                if d_name:
+                    stats[d_name] = {
+                        "risk_score": float(row["risk_score"]),
+                        "flood_points_count": int(row["flood_points_count"]),
+                    }
+            return stats
+        except Exception:
+            return {}
 
     async def save_navigation_route(
         self, db: AsyncSession, route: SafeNavigationRoute

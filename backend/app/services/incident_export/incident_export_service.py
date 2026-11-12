@@ -46,21 +46,10 @@ from app.schemas.incident_export.schemas import (
     TriggerExportRequest,
 )
 
-# Đăng ký font tiếng Việt chuẩn cho ReportLab
-FONT_NAME = "Helvetica"
-FONT_BOLD = "Helvetica-Bold"
-if HAS_REPORTLAB:
-    try:
-        if os.path.exists("C:/Windows/Fonts/arial.ttf"):
-            pdfmetrics.registerFont(TTFont("ArialVN", "C:/Windows/Fonts/arial.ttf"))
-            FONT_NAME = "ArialVN"
-        if os.path.exists("C:/Windows/Fonts/arialbd.ttf"):
-            pdfmetrics.registerFont(TTFont("ArialVN-Bold", "C:/Windows/Fonts/arialbd.ttf"))
-            FONT_BOLD = "ArialVN-Bold"
-        elif FONT_NAME == "ArialVN":
-            FONT_BOLD = "ArialVN"
-    except Exception:
-        pass
+from app.utils.pdf_fonts import register_vietnamese_pdf_fonts
+
+# Đăng ký font tiếng Việt đa nền tảng chuẩn cho ReportLab (Linux Docker + Windows)
+FONT_NAME, FONT_BOLD = register_vietnamese_pdf_fonts() if HAS_REPORTLAB else ("Helvetica", "Helvetica-Bold")
 
 # Thư mục lưu trữ tệp xuất an toàn
 EXPORT_STORAGE_DIR = Path(__file__).resolve().parent.parent.parent.parent / "storage" / "exports"

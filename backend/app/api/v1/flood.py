@@ -6,6 +6,7 @@ Phục vụ WebGIS Frontend và Ứng dụng Di động EcoReport / GreenSpot.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import urllib.request
 import uuid
@@ -230,15 +231,18 @@ async def submit_flood_report(
     osrm_url = f"http://router.project-osrm.org/route/v1/driving/{start_lng},{start_lat};{end_lng},{end_lat}?overview=full&geometries=geojson"
 
     road_corridor_wkt = f"LINESTRING({payload.longitude - 0.0001} {payload.latitude - 0.0001}, {payload.longitude + 0.0001} {payload.latitude + 0.0001})"
-    try:
-        req = urllib.request.Request(osrm_url, headers={"User-Agent": "EcoReport-FloodWatch/1.0"})
-        with urllib.request.urlopen(req, timeout=3) as response:
-            route_data = json.loads(response.read().decode())
-            if "routes" in route_data and len(route_data["routes"]) > 0:
-                coords = route_data["routes"][0]["geometry"]["coordinates"]
-                road_corridor_wkt = "LINESTRING(" + ", ".join([f"{c[0]} {c[1]}" for c in coords]) + ")"
-    except Exception:
-        pass
+    def _fetch_osrm_flood_sync(url: str) -> Optional[dict]:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "EcoReport-FloodWatch/1.0"})
+            with urllib.request.urlopen(req, timeout=1.8) as resp:
+                return json.loads(resp.read().decode())
+        except Exception:
+            return None
+
+    route_data = await asyncio.to_thread(_fetch_osrm_flood_sync, osrm_url)
+    if route_data and "routes" in route_data and len(route_data["routes"]) > 0:
+        coords = route_data["routes"][0]["geometry"]["coordinates"]
+        road_corridor_wkt = "LINESTRING(" + ", ".join([f"{c[0]} {c[1]}" for c in coords]) + ")"
 
     # 1. Tạo điểm đen ngập lụt ĐỘNG (Dynamic Hotspot)
     dynamic_hotspot_code = f"FL-DYN-{uuid.uuid4().hex[:6].upper()}"
