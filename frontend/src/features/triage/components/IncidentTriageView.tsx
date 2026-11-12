@@ -396,17 +396,7 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
               </div>
             </div>
 
-            <div className="score-formula-box">
-              <div>
-                <strong>Công thức chuẩn hóa TPS:</strong>
-              </div>
-              <div>
-                min( 100, BaseSeverity × 0.40 + ProximityRisk × 0.30 + ScaleFactor × 0.20 + UrgencyNLP × 0.10 )
-              </div>
-              <div className="score-formula-result">
-                = ({data.base_severity_score} × 0.4) + ({data.proximity_risk_score} × 0.3) + ({data.scale_factor_score} × 0.2) + ({data.urgency_nlp_score} × 0.1) = <strong>{data.ai_triage_score} điểm</strong>
-              </div>
-            </div>
+
           </div>
 
           {/* CỘT PHẢI: KHỐI "QUYẾT ĐỊNH" */}

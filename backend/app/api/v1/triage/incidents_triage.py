@@ -79,7 +79,12 @@ async def get_triage_incidents_list(
             "version": inc.version,
         })
     if get_current_language(request) == "en":
-        return await translation_service.translate_data(output, target_lang="en", source_lang="vi")
+        return await translation_service.translate_data(
+            output,
+            target_lang="en",
+            source_lang="vi",
+            target_keys=["severity", "status", "ai_suggested_priority", "priority_color"],
+        )
     return output
 
 
@@ -134,7 +139,12 @@ async def get_incident_triage_detail(
     )
     if get_current_language(request) == "en":
         dumped = res.model_dump()
-        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+        return await translation_service.translate_data(
+            dumped,
+            target_lang="en",
+            source_lang="vi",
+            target_keys=["current_priority", "status", "ai_suggested_priority", "priority_color", "risk_factors"],
+        )
     return res
 
 

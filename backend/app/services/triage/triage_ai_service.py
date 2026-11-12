@@ -314,14 +314,18 @@ class AITriageService(IAITriageService):
         if not risk_factors:
             risk_factors.append("Không phát hiện yếu tố rủi ro đặc biệt")
 
-        # 7. Summary qua Kira AI
-        cat_name = ""
-        if inc.category_id:
-            cat = await triage_repository.get_waste_category_by_id(db, inc.category_id)
-            if cat:
-                cat_name = cat.name
+        # 7. Summary qua Kira AI (hoặc tái sử dụng cache sẵn có để phản hồi tức thì <50ms)
+        if inc.ai_summary and len(inc.ai_summary.strip()) > 0:
+            summary = inc.ai_summary
+            is_short = len((inc.description or "").strip()) < 10
+        else:
+            cat_name = ""
+            if inc.category_id:
+                cat = await triage_repository.get_waste_category_by_id(db, inc.category_id)
+                if cat:
+                    cat_name = cat.name
 
-        summary, is_short = await cls.generate_summary_ai(inc.description, inc.address_text, cat_name)
+            summary, is_short = await cls.generate_summary_ai(inc.description, inc.address_text, cat_name)
 
         # Màu hiển thị
         color_map = {
