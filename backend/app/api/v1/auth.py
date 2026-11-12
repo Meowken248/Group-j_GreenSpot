@@ -1,4 +1,5 @@
 import uuid
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, Header, status
@@ -12,6 +13,8 @@ from app.schemas.auth import (
     CitizenRegisterRequest,
     CitizenVerifyOtpRequest,
     CitizenResendOtpRequest,
+    CitizenForgotPasswordRequest,
+    CitizenResetPasswordRequest,
     CitizenLoginRequest,
     CitizenLoginResponse,
     UserSummary,
@@ -388,6 +391,281 @@ async def resend_citizen_otp(
     return AuthSuccessResponse(
         success=True,
         message="Mã OTP mới đã được gửi đến email của bạn",
+        email=clean_email
+    )
+
+
+@router.post("/forgot-password", response_model=AuthSuccessResponse)
+async def forgot_password(
+    payload: CitizenForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Yêu cầu cấp mã OTP xác thực để đặt lại mật khẩu:
+    - Kiểm tra email có thuộc tài khoản ACTIVE không (nếu không tồn tại trả 404, nếu PENDING/LOCKED trả 403).
+    - Rate limit: Tối đa 5 lần yêu cầu trong vòng 1 giờ cho cùng 1 email (429).
+    - Hủy các mã OTP RESET_PASSWORD cũ chưa dùng.
+    - Sinh OTP 6 chữ số, thời hạn 5 phút, lưu vào user_otps với purpose='RESET_PASSWORD'.
+    - Gửi mã OTP qua Email và in rõ ra Terminal/Docker Log.
+    """
+    clean_email = payload.email.strip().lower()
+
+    # 1. Tìm tài khoản người dùng
+    user_query = select(User).where(User.email == clean_email)
+    user_result = await db.execute(user_query)
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={
+                "error_code": "EMAIL_NOT_FOUND",
+                "message": "Email này chưa được đăng ký trong hệ thống"
+            }
+        )
+
+    if user.status == "PENDING":
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={
+                "error_code": "ACCOUNT_NOT_ACTIVATED",
+                "message": "Tài khoản chưa được kích hoạt. Vui lòng kích hoạt tài khoản trước"
+            }
+        )
+
+    if user.status != "ACTIVE":
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={
+                "error_code": "ACCOUNT_LOCKED",
+                "message": "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên"
+            }
+        )
+
+    # 2. Kiểm tra Rate Limit: tối đa 5 lần gửi OTP trong vòng 1 giờ
+    one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
+    rate_query = select(func.count(UserOTP.otp_id)).where(
+        and_(
+            UserOTP.email == clean_email,
+            UserOTP.purpose == "RESET_PASSWORD",
+            UserOTP.created_at >= one_hour_ago
+        )
+    )
+    otp_count_result = await db.execute(rate_query)
+    otp_count = otp_count_result.scalar() or 0
+
+    if otp_count >= 5:
+        return JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content={
+                "error_code": "RATE_LIMIT_EXCEEDED",
+                "message": "Bạn đã yêu cầu mã quá nhiều lần. Vui lòng thử lại sau 1 giờ"
+            }
+        )
+
+    # 3. Vô hiệu hóa các OTP RESET_PASSWORD cũ chưa dùng của email này
+    deactivate_query = select(UserOTP).where(
+        and_(
+            UserOTP.email == clean_email,
+            UserOTP.purpose == "RESET_PASSWORD",
+            UserOTP.is_used == False
+        )
+    )
+    old_otps_result = await db.execute(deactivate_query)
+    for old_otp in old_otps_result.scalars():
+        old_otp.is_used = True
+
+    # 4. Sinh OTP 6 chữ số mới, hạn 5 phút
+    plain_otp = generate_otp_code()
+    otp_hash = hash_otp_code(plain_otp)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
+
+    new_otp = UserOTP(
+        email=clean_email,
+        otp_code_hash=otp_hash,
+        otp_plain=plain_otp,
+        expires_at=expires_at,
+        failed_attempts=0,
+        is_used=False,
+        purpose="RESET_PASSWORD"
+    )
+    db.add(new_otp)
+    await db.commit()
+
+    # 5. Gửi email thông báo mã OTP
+    sent = await EmailService.send_otp_email(clean_email, plain_otp, user.full_name)
+    if not sent:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "error_code": "EMAIL_SEND_FAILED",
+                "message": "Không thể gửi mã OTP. Vui lòng thử lại sau"
+            }
+        )
+
+    return AuthSuccessResponse(
+        success=True,
+        message="Mã OTP đã được gửi đến email của bạn",
+        email=clean_email
+    )
+
+
+@router.post("/reset-password", response_model=AuthSuccessResponse)
+async def reset_password(
+    payload: CitizenResetPasswordRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Xác thực mã OTP và đặt lại mật khẩu mới cho tài khoản:
+    - Tìm OTP purpose='RESET_PASSWORD' mới nhất của email.
+    - Kiểm tra tính hợp lệ, thời hạn 5 phút, số lần sai.
+    - Nếu sai quá 5 lần -> khóa OTP (403 MAX_ATTEMPTS_EXCEEDED).
+    - Cập nhật mật khẩu băm mới, tăng version (Optimistic Locking).
+    - Thu hồi (revoked_at) toàn bộ phiên đăng nhập cũ trong UserSession để đảm bảo an toàn.
+    """
+    clean_email = payload.email.strip().lower()
+    clean_code = payload.otp_code.strip()
+
+    # 1. Kiểm tra tài khoản User
+    user_query = select(User).where(User.email == clean_email)
+    user_result = await db.execute(user_query)
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={
+                "error_code": "EMAIL_NOT_FOUND",
+                "message": "Email này không tồn tại trong hệ thống"
+            }
+        )
+
+    if user.status != "ACTIVE":
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={
+                "error_code": "ACCOUNT_NOT_ACTIVE",
+                "message": "Tài khoản không ở trạng thái hoạt động"
+            }
+        )
+
+    # 2. Tìm OTP mục đích RESET_PASSWORD mới nhất
+    otp_query = select(UserOTP).where(
+        and_(
+            UserOTP.email == clean_email,
+            UserOTP.purpose == "RESET_PASSWORD"
+        )
+    ).order_by(UserOTP.created_at.desc())
+    
+    otp_result = await db.execute(otp_query)
+    latest_otp = otp_result.scalars().first()
+
+    if not latest_otp or latest_otp.is_used:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "error_code": "INVALID_OTP",
+                "message": "Mã OTP sai hoặc đã hết hạn"
+            }
+        )
+
+    # 3. Kiểm tra số lần sai
+    if latest_otp.failed_attempts >= 5:
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={
+                "error_code": "MAX_ATTEMPTS_EXCEEDED",
+                "message": "Bạn đã nhập sai quá 5 lần. Vui lòng yêu cầu mã mới"
+            }
+        )
+
+    now = datetime.now(timezone.utc)
+
+    # 4. Kiểm tra thời hạn 5 phút
+    if now > latest_otp.expires_at:
+        latest_otp.failed_attempts += 1
+        await db.commit()
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "error_code": "INVALID_OTP",
+                "message": "Mã OTP sai hoặc đã hết hạn"
+            }
+        )
+
+    # 5. So sánh mã băm SHA-256
+    computed_hash = hash_otp_code(clean_code)
+    if computed_hash != latest_otp.otp_code_hash:
+        latest_otp.failed_attempts += 1
+        if latest_otp.failed_attempts >= 5:
+            latest_otp.is_used = True
+            await db.commit()
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={
+                    "error_code": "MAX_ATTEMPTS_EXCEEDED",
+                    "message": "Bạn đã nhập sai quá 5 lần. Vui lòng yêu cầu mã mới"
+                }
+            )
+
+        await db.commit()
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "error_code": "INVALID_OTP",
+                "message": "Mã OTP không chính xác"
+            }
+        )
+
+    # 6. Kiểm tra độ mạnh mật khẩu mới theo chuẩn Đăng ký GreenSpot (8-32 ký tự, đủ chữ hoa, thường, số, ký tự đặc biệt, không khoảng trắng)
+    new_pwd = payload.new_password
+    if not new_pwd or len(new_pwd) < 8 or len(new_pwd) > 32 or " " in new_pwd:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "error_code": "INVALID_PASSWORD",
+                "message": "Mật khẩu phải từ 8 đến 32 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt"
+            }
+        )
+    has_lower = bool(re.search(r"[a-z]", new_pwd))
+    has_upper = bool(re.search(r"[A-Z]", new_pwd))
+    has_digit = bool(re.search(r"\d", new_pwd))
+    has_special = bool(re.search(r"[`!@#$%^&*()_+\-=[\]{}.:;,?/~]", new_pwd))
+
+    if not (has_lower and has_upper and has_digit and has_special):
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "error_code": "INVALID_PASSWORD",
+                "message": "Mật khẩu phải từ 8 đến 32 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt"
+            }
+        )
+
+    # 7. Mã OTP hợp lệ -> Đánh dấu đã dùng
+    latest_otp.is_used = True
+
+    # 8. Cập nhật mật khẩu băm mới & tăng version (Optimistic Locking)
+    user.password_hash = hash_password(payload.new_password)
+    user.version = (user.version or 1) + 1
+
+    # 9. Thu hồi toàn bộ phiên đăng nhập cũ trên mọi thiết bị
+    revoke_stmt = (
+        update(UserSession)
+        .where(
+            and_(
+                UserSession.user_id == user.user_id,
+                UserSession.revoked_at.is_(None)
+            )
+        )
+        .values(revoked_at=now)
+    )
+    await db.execute(revoke_stmt)
+
+    await db.commit()
+
+    return AuthSuccessResponse(
+        success=True,
+        message="Đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới",
         email=clean_email
     )
 

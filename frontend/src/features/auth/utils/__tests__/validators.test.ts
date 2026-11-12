@@ -165,9 +165,12 @@ describe("Auth Validators - Quy tắc kiểm tra từng ô chức năng #1", () 
       expect(sanitizeRedirectUrl("//google.com")).toBe("/geo-feed");
       expect(sanitizeRedirectUrl("//malicious.site/login")).toBe("/geo-feed");
 
-      // Rỗng hoặc null: trả về mặc định
+      // Rỗng, null, hoặc không phải string (VD: MouseEvent object khi click button): trả về mặc định an toàn
       expect(sanitizeRedirectUrl(null)).toBe("/geo-feed");
       expect(sanitizeRedirectUrl("")).toBe("/geo-feed");
+      expect(sanitizeRedirectUrl(undefined)).toBe("/geo-feed");
+      expect(sanitizeRedirectUrl({} as unknown as string)).toBe("/geo-feed");
+      expect(sanitizeRedirectUrl(true as unknown as string)).toBe("/geo-feed");
     });
   });
 });

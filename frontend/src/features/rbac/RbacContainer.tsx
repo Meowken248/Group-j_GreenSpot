@@ -3,6 +3,7 @@ import { RoleListPage } from "./pages/RoleListPage";
 import { CreateRolePage } from "./pages/CreateRolePage";
 import { RolePermissionMatrixPage } from "./pages/RolePermissionMatrixPage";
 import { AUTH_STORAGE_KEYS } from "../auth/types/auth.types";
+import { navigateToRoute } from "../../routes/appRoutes";
 import "./styles/RbacContainer.scss";
 
 export type RbacViewMode = "list" | "create" | "matrix";
@@ -24,7 +25,6 @@ export const RbacContainer: React.FC<RbacContainerProps> = ({
   initialView = "list",
   initialRoleId,
   onExit,
-  onNavigateToAuth,
 }) => {
   const [currentView, setCurrentView] = useState<RbacViewMode>(initialView);
   const [matrixTargetRoleId, setMatrixTargetRoleId] = useState<number | undefined>(initialRoleId);
@@ -134,7 +134,14 @@ export const RbacContainer: React.FC<RbacContainerProps> = ({
             <button
               type="button"
               className="btn-exit-admin"
-              onClick={onExit}
+              onClick={() => {
+                try {
+                  navigateToRoute("map");
+                } catch {
+                  // ignore
+                }
+                onExit();
+              }}
               title="Quay lại Bản đồ số WebGIS"
             >
               ← Về bản đồ
@@ -169,42 +176,29 @@ export const RbacContainer: React.FC<RbacContainerProps> = ({
           <div className="rbac-admin-gate-wrapper">
             <div className="admin-gate-card">
               <div className="gate-icon-badge">🛡️</div>
-              <h2>Khu vực Quản trị Phân quyền (RBAC)</h2>
+              <h2>Khu vực Quản trị Hệ thống</h2>
               <p className="gate-desc">
-                Chức năng Quản lý Vai trò và Ma trận Phân quyền ACL 7 cột dành riêng cho Quản trị viên (Admin) của nền tảng GreenSpot.
+                Đây là khu vực quản trị hệ thống, bạn không có quyền truy cập vào trang này.Phân hệ dành riêng  Quản trị viên.
+                <br />Vui lòng quay trở lại trang bản đồ.
               </p>
 
-              <div className="gate-credentials-box">
-                <div className="box-title">🔑 Thông tin tài khoản Quản trị viên (Admin):</div>
-                <div className="cred-line">
-                  <span className="cred-label">Tài khoản:</span>
-                  <code className="cred-val">admin</code>
-                </div>
-                <div className="cred-line">
-                  <span className="cred-label">Mật khẩu:</span>
-                  <code className="cred-val">admin123</code>
-                </div>
-              </div>
-
               <div className="gate-actions-row">
-                {onNavigateToAuth ? (
-                  <button
-                    type="button"
-                    className="btn-gate-login"
-                    onClick={onNavigateToAuth}
-                  >
-                    🔐 Đăng nhập Quản trị viên
-                  </button>
-                ) : null}
-                {onExit && (
-                  <button
-                    type="button"
-                    className="btn-gate-back"
-                    onClick={onExit}
-                  >
-                    🗺️ Về Bản đồ WebGIS
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className="btn-gate-back"
+                  onClick={() => {
+                    try {
+                      navigateToRoute("map");
+                    } catch {
+                      window.location.href = "/";
+                    }
+                    if (onExit) {
+                      onExit();
+                    }
+                  }}
+                >
+                  Quay về trang bản đồ
+                </button>
               </div>
             </div>
           </div>

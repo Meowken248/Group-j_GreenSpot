@@ -1,4 +1,5 @@
 import React from 'react';
+import { navigateToRoute } from '../routes/appRoutes';
 
 interface AccessDeniedViewProps {
   moduleName: string;
@@ -111,7 +112,14 @@ export const AccessDeniedView: React.FC<AccessDeniedViewProps> = ({
           {onBackToHome && (
             <button
               type="button"
-              onClick={onBackToHome}
+              onClick={() => {
+                try {
+                  navigateToRoute('map');
+                } catch {
+                  // ignore
+                }
+                onBackToHome();
+              }}
               style={{
                 padding: '10px 20px',
                 borderRadius: '8px',

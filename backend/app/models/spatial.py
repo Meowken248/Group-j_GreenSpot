@@ -39,11 +39,11 @@ class EssentialFacility(Base, TimestampMixin):
     contact_person: Mapped[Optional[str]] = mapped_column(String(100))
     contact_email: Mapped[Optional[str]] = mapped_column(String(100))
     capacity_people: Mapped[Optional[int]] = mapped_column(Integer)
-    vulnerability_level: Mapped[str] = mapped_column(String(50), default="HIGH")
+    vulnerability_level: Mapped[str] = mapped_column(String(255), default="HIGH")
     metadata_json: Mapped[Optional[dict]] = mapped_column("metadata", JSONB)
 
     # Optimistic locking & Soft delete (Tuân thủ Quy tắc 6 & 7)
-    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, server_default="1", default=1, nullable=False)
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
@@ -64,7 +64,7 @@ class RecyclingFacility(Base, TimestampMixin):
     contact_phone: Mapped[Optional[str]] = mapped_column(String(20))
     managing_org: Mapped[Optional[str]] = mapped_column(String(150))
     # Optimistic locking & Soft delete (Tuân thủ Quy tắc 6 & 7)
-    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, server_default="1", default=1, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -13,6 +13,7 @@ import { GreenPassportView } from "./components/GreenPassportView";
 import { ContributionHistoryView } from "./components/ContributionHistoryView";
 import { EditProfileView } from "./components/EditProfileView";
 import { NotificationBell } from "../../components/NotificationBell";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 import "./styles/Profile.scss";
 
 type ProfileViewMode = "timeline" | "passport" | "history" | "edit";
@@ -569,7 +570,7 @@ export const ProfileContainer: React.FC<ProfileContainerProps> = ({
               onClick={() => setCurrentView("timeline")}
             >
               {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="Avatar" />
+                <img src={resolveMediaUrl(profile.avatar_url)} alt="Avatar" />
               ) : (
                 <span>{avatarLetter}</span>
               )}
