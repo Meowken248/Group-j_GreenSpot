@@ -126,7 +126,14 @@ Dùng các thông tin sau để tạo kết nối trong DBeaver hoặc các côn
 > **Lưu ý trong DBeaver**: Sau khi kết nối, mở theo đường dẫn:  
 > **`ecoreport_db`** ➔ **`Schemas`** ➔ **`public`** ➔ **`Tables`** để xem danh sách bảng.
 
----
+---Người mới clone dự án
+
+# Bước 1: Khởi động các container Docker
+docker compose up -d
+# Bước 2: Tạo toàn bộ cấu trúc bảng cơ sở dữ liệu
+docker compose exec backend alembic upgrade head
+# Bước 3: Nạp toàn bộ dữ liệu mẫu hệ thống (18 bước)
+docker compose exec backend python -m app.seeds.seed_all
 
 ## 5. Truy Cập Trực Tiếp Dòng Lệnh PostgreSQL (psql CLI)
 
