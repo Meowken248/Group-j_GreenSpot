@@ -155,62 +155,62 @@ DELETE FROM essential_facilities WHERE facility_name IN (
   'Khu Du lịch Sinh thái Bình Quới', 'Khu Dự trữ Sinh quyển Rừng Sác Cần Giờ', 'Công viên Gia Định'
 );
 
-INSERT INTO essential_facilities (facility_name, facility_type, address, unit_id, location, vulnerability_level, metadata)
+INSERT INTO essential_facilities (facility_name, facility_type, address, unit_id, location, vulnerability_level, metadata, version)
 VALUES
 ('Công viên Tao Đàn', 'PARK', 'Đường Trương Định, Phường Bến Thành, Quận 1', 3,
  ST_SetSRID(ST_MakePoint(106.6925, 10.7745), 4326), 'LOW',
- '{"area_m2": 100000, "trees_count": 1000, "status": "Rất trong lành", "rating": 4.8}'::jsonb),
+ '{"area_m2": 100000, "trees_count": 1000, "status": "Rất trong lành", "rating": 4.8}'::jsonb, 1),
 
 ('Thảo Cầm Viên Sài Gòn', 'BOTANICAL_GARDEN', 'Số 2 Nguyễn Bỉnh Khiêm, Phường Bến Nghé, Quận 1', 3,
  ST_SetSRID(ST_MakePoint(106.7050, 10.7875), 4326), 'LOW',
- '{"area_m2": 170000, "trees_count": 2500, "status": "Cực kỳ xanh mát", "rating": 4.9}'::jsonb),
+ '{"area_m2": 170000, "trees_count": 2500, "status": "Cực kỳ xanh mát", "rating": 4.9}'::jsonb, 1),
 
 ('Công viên Vinhomes Central Park Landmark 81', 'PARK', '208 Nguyễn Hữu Cảnh, Phường 22, Quận Bình Thạnh', 5,
  ST_SetSRID(ST_MakePoint(106.7215, 10.7940), 4326), 'LOW',
- '{"area_m2": 140000, "status": "Thảm cỏ xanh ven sông", "rating": 4.9}'::jsonb),
+ '{"area_m2": 140000, "status": "Thảm cỏ xanh ven sông", "rating": 4.9}'::jsonb, 1),
 
 ('Công viên Bờ sông Sài Gòn Thủ Thiêm', 'PARK', 'Khu Đô thị Mới Thủ Thiêm, Phường An Khánh, TP. Thủ Đức', 2,
  ST_SetSRID(ST_MakePoint(106.7110, 10.7735), 4326), 'LOW',
- '{"area_m2": 200000, "status": "Cánh đồng hoa hướng dương ven sông", "rating": 4.7}'::jsonb),
+ '{"area_m2": 200000, "status": "Cánh đồng hoa hướng dương ven sông", "rating": 4.7}'::jsonb, 1),
 
 ('Công viên Hồ Bán Nguyệt & Cầu Ánh Sao Phú Mỹ Hưng', 'PARK', 'Khu Đô thị Phú Mỹ Hưng, Phường Tân Phú, Quận 7', 4,
  ST_SetSRID(ST_MakePoint(106.7195, 10.7285), 4326), 'LOW',
- '{"area_m2": 120000, "status": "Mặt nước & Cây xanh sinh thái", "rating": 4.8}'::jsonb),
+ '{"area_m2": 120000, "status": "Mặt nước & Cây xanh sinh thái", "rating": 4.8}'::jsonb, 1),
 
 ('Khu Du lịch Sinh thái Bình Quới', 'ECO_TOURISM', 'Bán đảo Thanh Đa, Phường 28, Quận Bình Thạnh', 5,
  ST_SetSRID(ST_MakePoint(106.7350, 10.8285), 4326), 'LOW',
- '{"area_m2": 350000, "status": "Ốc đảo xanh Nam Bộ", "rating": 4.6}'::jsonb),
+ '{"area_m2": 350000, "status": "Ốc đảo xanh Nam Bộ", "rating": 4.6}'::jsonb, 1),
 
 ('Khu Dự trữ Sinh quyển Rừng Sác Cần Giờ', 'BIOSPHERE_RESERVE', 'Đường Rừng Sác, Huyện Cần Giờ', 6,
  ST_SetSRID(ST_MakePoint(106.8750, 10.4550), 4326), 'LOW',
- '{"area_m2": 757400000, "status": "Lá phổi xanh TP.HCM", "rating": 5.0}'::jsonb),
+ '{"area_m2": 757400000, "status": "Lá phổi xanh TP.HCM", "rating": 5.0}'::jsonb, 1),
 
 ('Công viên Gia Định', 'PARK', 'Đường Hoàng Minh Giám, Phường 3, Quận Gò Vấp', 1,
  ST_SetSRID(ST_MakePoint(106.6730, 10.8145), 4326), 'LOW',
- '{"area_m2": 320000, "status": "Lá phổi xanh phía Bắc", "rating": 4.7}'::jsonb);
+ '{"area_m2": 320000, "status": "Lá phổi xanh phía Bắc", "rating": 4.7}'::jsonb, 1);
 
 -- 7. RECYCLING FACILITIES (TRẠM THU GOM RÁC TÁI CHẾ)
 DELETE FROM recycling_facilities WHERE name LIKE '%(TP.HCM)%';
 
-INSERT INTO recycling_facilities (name, facility_code, address, unit_id, location, accepted_waste_types, operating_hours, contact_phone, managing_org, is_active, is_deleted)
+INSERT INTO recycling_facilities (name, facility_code, address, unit_id, location, accepted_waste_types, operating_hours, contact_phone, managing_org, is_active, is_deleted, version)
 VALUES
 ('Trạm Thu gom Rác điện tử & Pin cũ Quận 1 (TP.HCM)', 'REC-Q1-01', '128 Hai Bà Trưng, Phường Đa Kao, Quận 1', 3,
- ST_SetSRID(ST_MakePoint(106.6960, 10.7850), 4326), ARRAY['PIN_CU', 'THIET_BI_DIEN_TU', 'BONG_DEN'], '08:00 - 17:00 (T2 - T7)', '028.3822.1122', 'Sở TN&MT TP.HCM', TRUE, FALSE),
+ ST_SetSRID(ST_MakePoint(106.6960, 10.7850), 4326), ARRAY['PIN_CU', 'THIET_BI_DIEN_TU', 'BONG_DEN'], '08:00 - 17:00 (T2 - T7)', '028.3822.1122', 'Sở TN&MT TP.HCM', TRUE, FALSE, 1),
 
 ('Trạm Tái chế Vỏ hộp sữa & Nhựa Tetra Pak (TP.HCM)', 'REC-TD-01', '105 Võ Văn Ngân, Phường Linh Chiểu, TP. Thủ Đức', 2,
- ST_SetSRID(ST_MakePoint(106.7550, 10.8490), 4326), ARRAY['VO_HOP_SUA', 'NHUA_PET', 'GIAY_BIA'], '07:30 - 17:30 (Hàng ngày)', '028.3722.9988', 'PRO Vietnam & UBND', TRUE, FALSE),
+ ST_SetSRID(ST_MakePoint(106.7550, 10.8490), 4326), ARRAY['VO_HOP_SUA', 'NHUA_PET', 'GIAY_BIA'], '07:30 - 17:30 (Hàng ngày)', '028.3722.9988', 'PRO Vietnam & UBND', TRUE, FALSE, 1),
 
 ('Điểm Thu hồi Kim loại & Chai thủy tinh Xanh (TP.HCM)', 'REC-Q7-01', 'Đường Nguyễn Lương Bằng, Phường Tân Phú, Quận 7', 4,
- ST_SetSRID(ST_MakePoint(106.7260, 10.7290), 4326), ARRAY['THUY_TINH', 'NHOM_KIM_LOAI', 'NHUA_TAI_CHE'], '08:00 - 18:00', '028.5413.5566', 'Môi trường Đô thị Q7', TRUE, FALSE),
+ ST_SetSRID(ST_MakePoint(106.7260, 10.7290), 4326), ARRAY['THUY_TINH', 'NHOM_KIM_LOAI', 'NHUA_TAI_CHE'], '08:00 - 18:00', '028.5413.5566', 'Môi trường Đô thị Q7', TRUE, FALSE, 1),
 
 ('Trạm Phân loại Rác tại Nguồn Bình Thạnh (TP.HCM)', 'REC-BT-01', 'Đường Nơ Trang Long, Phường 14, Quận Bình Thạnh', 5,
- ST_SetSRID(ST_MakePoint(106.6965, 10.8080), 4326), ARRAY['RAC_HUU_CO', 'NHUA_PET', 'PIN_CU'], '07:00 - 18:00', '028.3841.2233', 'Công ty Môi trường Đô thị', TRUE, FALSE),
+ ST_SetSRID(ST_MakePoint(106.6965, 10.8080), 4326), ARRAY['RAC_HUU_CO', 'NHUA_PET', 'PIN_CU'], '07:00 - 18:00', '028.3841.2233', 'Công ty Môi trường Đô thị', TRUE, FALSE, 1),
 
 ('Trạm Thu hồi Đồ gia dụng cũ & E-waste (TP.HCM)', 'REC-TD-02', 'Đường Song Hành Xa Lộ Hà Nội, An Phú, TP. Thủ Đức', 2,
- ST_SetSRID(ST_MakePoint(106.7450, 10.8030), 4326), ARRAY['DO_DIEN_TU_LON', 'MUC_IN', 'PIN_CU'], '08:00 - 17:00', '028.3744.1100', 'Vietnam Recycles', TRUE, FALSE),
+ ST_SetSRID(ST_MakePoint(106.7450, 10.8030), 4326), ARRAY['DO_DIEN_TU_LON', 'MUC_IN', 'PIN_CU'], '08:00 - 17:00', '028.3744.1100', 'Vietnam Recycles', TRUE, FALSE, 1),
 
 ('Điểm Tiếp nhận Thu gom Rác nhựa ven biển (TP.HCM)', 'REC-CG-01', 'Đường Duyên Hải, Thị trấn Cần Thạnh, Huyện Cần Giờ', 6,
- ST_SetSRID(ST_MakePoint(106.9600, 10.3950), 4326), ARRAY['RAC_NHUA_BIEN', 'NHUA_TAI_CHE'], '07:00 - 17:00', '028.3874.0011', 'Ban Quản lý Rừng Sác', TRUE, FALSE)
+ ST_SetSRID(ST_MakePoint(106.9600, 10.3950), 4326), ARRAY['RAC_NHUA_BIEN', 'NHUA_TAI_CHE'], '07:00 - 17:00', '028.3874.0011', 'Ban Quản lý Rừng Sác', TRUE, FALSE, 1)
 ON CONFLICT (facility_code) DO NOTHING;
 
 -- 8. IOT SENSOR STATIONS (TRẠM QUAN TRẮC CẢM BIẾN IOT)
