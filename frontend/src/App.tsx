@@ -2011,6 +2011,7 @@ function App() {
                 onNavigateToFeature={(target, payload) => {
                   if (target === "dashboard_aqi") {
                     setActiveTab("dashboard");
+                    navigateToRoute("dashboard");
                     window.location.hash = "#dashboard";
                   } else if (target === "map_flood" || target === "navigation") {
                     if (payload) {
@@ -2019,30 +2020,51 @@ function App() {
                       } catch { }
                     }
                     setActiveTab("navigation");
+                    navigateToRoute("navigation");
                     window.location.hash = "#navigation";
                   } else if (target === "dispatch" || target === "operations_dispatch") {
                     setActiveTab("dispatch");
+                    navigateToRoute("dispatch");
                     window.location.hash = "#dispatch";
                   } else if (target === "risk_dashboard" || target === "urban_risk") {
                     setActiveTab("risk-dashboard");
+                    navigateToRoute("risk-dashboard");
                     window.location.hash = "#risk-dashboard";
                   } else if (target === "hotspots") {
                     setActiveTab("hotspots");
+                    navigateToRoute("hotspots");
                     window.location.hash = "#hotspots";
                   } else if (target === "dedup") {
                     setActiveTab("dedup");
+                    navigateToRoute("dedup");
                     window.location.hash = "#dedup";
                   } else if (target === "/report-incident") {
                     setActiveTab("triage");
+                    navigateToRoute("triage");
                     window.location.hash = "#triage";
                   } else if (target === "report") {
                     setActiveTab("report");
+                    navigateToRoute("report");
                     window.location.hash = "#report";
                   } else if (target === "/wallet" || target === "rewards" || target === "wallet") {
                     setActiveTab("rewards");
+                    navigateToRoute("rewards");
                     window.location.hash = "#rewards";
+                  } else if (target === "flood_sos" || target === "sos" || target === "flood-sos") {
+                    setActiveTab("flood-sos");
+                    navigateToRoute("flood-sos");
+                    window.location.hash = "#flood-sos";
+                  } else if (target === "emergency_alert" || target === "safety_check" || target === "emergency-alert") {
+                    setActiveTab("emergency-alert");
+                    navigateToRoute("emergency-alert");
+                    window.location.hash = "#emergency-alert";
+                  } else if (target === "events" || target === "green_sunday" || target === "community/events") {
+                    setActiveTab("events");
+                    navigateToRoute("events");
+                    window.location.hash = "#events";
                   } else {
                     setActiveTab("map");
+                    navigateToRoute("map");
                     window.location.hash = "#map";
                   }
                 }}
