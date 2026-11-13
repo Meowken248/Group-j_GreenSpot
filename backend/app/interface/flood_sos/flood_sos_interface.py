@@ -170,3 +170,12 @@ class IFloodSosRepository(ABC):
     ) -> bool:
         """Xoá mềm ca cứu hộ"""
         pass
+
+    async def get_covering_emergency_alert_title(
+        self,
+        db: AsyncSession,
+        lat: float,
+        lng: float,
+    ) -> Optional[str]:
+        """Kiểm tra vùng cảnh báo khẩn cấp đang phát sóng từ STT 45 bao phủ vị trí SOS."""
+        return None

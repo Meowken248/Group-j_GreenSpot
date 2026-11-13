@@ -81,8 +81,9 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
+  const circleRef = useRef<L.Circle | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-
 
   const resetForm = useCallback(() => {
     if (event) {
@@ -97,21 +98,48 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
       setLat(event.latitude);
       setLon(event.longitude);
     } else {
-      setTitle("");
-      setDescription("");
+      let prefillData: {
+        title?: string;
+        description?: string;
+        address?: string;
+        district?: string;
+        latitude?: number;
+        longitude?: number;
+      } | null = null;
+
+      try {
+        const stored = localStorage.getItem("greenspot_prefill_event");
+        if (stored) {
+          prefillData = JSON.parse(stored);
+          localStorage.removeItem("greenspot_prefill_event");
+        }
+      } catch {
+        // Ignored
+      }
+
+      setTitle(prefillData?.title || "");
+      setDescription(prefillData?.description || "");
       setCoverImageUrl("");
       setStartTime(defaultStart());
       setEndTime(defaultEnd());
-      setDistrict(HCM_DISTRICTS[0]);
-      setAddress("");
+      setDistrict(
+        prefillData?.district && HCM_DISTRICTS.includes(prefillData.district)
+          ? prefillData.district
+          : HCM_DISTRICTS[0]
+      );
+      setAddress(prefillData?.address || "");
       setMaxParticipants(50);
-      setLat(10.7735);
-      setLon(106.7068);
+      setLat(prefillData?.latitude ?? 10.7735);
+      setLon(prefillData?.longitude ?? 106.7068);
+
+      if (prefillData?.title && onToast) {
+        onToast("Đã tự động điền thông tin từ điểm nóng ô nhiễm vào chiến dịch!", "success");
+      }
     }
     setErrorMessage(null);
     setFieldErrors({});
     setShowDiscardConfirm(false);
-  }, [event]);
+  }, [event, onToast]);
 
   useEffect(() => {
     if (isOpen) resetForm();
@@ -140,6 +168,9 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
       weight: 2,
     }).addTo(map);
 
+    markerRef.current = marker;
+    circleRef.current = circle;
+
     const applyPosition = (nextLat: number, nextLon: number) => {
       setLat(nextLat);
       setLon(nextLon);
@@ -164,15 +195,27 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
     mapInstanceRef.current = map;
 
-
     setTimeout(() => map.invalidateSize(), 200);
 
     return () => {
       map.remove();
       mapInstanceRef.current = null;
+      markerRef.current = null;
+      circleRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
+
+  // Đồng bộ vị trí bản đồ khi toạ độ thay đổi (ví dụ nạp từ điểm nóng)
+  useEffect(() => {
+    if (!mapInstanceRef.current || !markerRef.current || !circleRef.current) return;
+    const curPos = markerRef.current.getLatLng();
+    if (Math.abs(curPos.lat - lat) > 0.0001 || Math.abs(curPos.lng - lon) > 0.0001) {
+      markerRef.current.setLatLng([lat, lon]);
+      circleRef.current.setLatLng([lat, lon]);
+      mapInstanceRef.current.setView([lat, lon], 14);
+    }
+  }, [lat, lon]);
 
   if (!isOpen) return null;
 

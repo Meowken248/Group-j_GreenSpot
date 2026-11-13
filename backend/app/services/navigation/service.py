@@ -5,6 +5,7 @@ Kế thừa từ ISafeNavigationService. Tích hợp OSRM, PostGIS flood_hotspot
 
 from __future__ import annotations
 
+import asyncio
 import json
 import math
 import urllib.request
@@ -50,12 +51,24 @@ def haversine_distance_meters(lat1: float, lon1: float, lat2: float, lon2: float
     return r * c
 
 
+def _fetch_osrm_json_sync(url: str, timeout: float = 1.8) -> Optional[Dict[str, Any]]:
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={"User-Agent": "EcoReport-FloodNavigation/2.0"},
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode())
+    except Exception:
+        return None
+
+
 class SafeNavigationService(ISafeNavigationService):
     """
     Dịch vụ lõi tính toán và phân tích tuyến đường tránh ngập lụt.
     """
 
-    def _query_osrm_route(
+    async def _query_osrm_route(
         self,
         origin: Tuple[float, float],
         destination: Tuple[float, float],
@@ -78,23 +91,15 @@ class SafeNavigationService(ISafeNavigationService):
             f"?overview=full&geometries=geojson&steps=true"
         )
 
-        try:
-            req = urllib.request.Request(
-                osrm_url,
-                headers={"User-Agent": "EcoReport-FloodNavigation/2.0"},
-            )
-            with urllib.request.urlopen(req, timeout=3.5) as resp:
-                data = json.loads(resp.read().decode())
-                if "routes" in data and len(data["routes"]) > 0:
-                    route = data["routes"][0]
-                    return {
-                        "coordinates": route["geometry"]["coordinates"],
-                        "distance_meters": route["distance"],
-                        "duration_seconds": route["duration"],
-                        "legs": route.get("legs", []),
-                    }
-        except Exception:
-            pass
+        data = await asyncio.to_thread(_fetch_osrm_json_sync, osrm_url, 1.8)
+        if data and "routes" in data and len(data["routes"]) > 0:
+            route = data["routes"][0]
+            return {
+                "coordinates": route["geometry"]["coordinates"],
+                "distance_meters": route["distance"],
+                "duration_seconds": route["duration"],
+                "legs": route.get("legs", []),
+            }
 
         # Fallback: Nội suy mảng tọa độ giả lập đường cong đô thị
         dist = haversine_distance_meters(origin[0], origin[1], destination[0], destination[1])
@@ -126,9 +131,10 @@ class SafeNavigationService(ISafeNavigationService):
         tide_m: float,
         rain_mmh: float,
     ) -> List[Dict[str, Any]]:
-        """Lấy danh sách các điểm ngập thực tế từ Repository CSDL kèm đánh giá rủi ro."""
+        """Lấy danh sách điểm ngập từ Repository CSDL kèm làm giàu dữ liệu rủi ro quận STT 33."""
         from app.crud.navigation.navigation_repository import navigation_repository
         rows = await navigation_repository.get_active_flood_hotspots(db)
+        district_stats = await navigation_repository.get_district_flood_stats(db)
 
         evaluated: List[Dict[str, Any]] = []
         for r in rows:
@@ -145,6 +151,12 @@ class SafeNavigationService(ISafeNavigationService):
                 primary_cause = r["primary_cause"]
 
             risk = flood_engine.calculate_hotspot_risk(TempHotspot(), tide_m, rain_mmh)
+            # Làm giàu rủi ro từ thống kê địa bàn STT 33 (district_environmental_stats)
+            d_key = str(r.get("district_name") or "").strip().lower()
+            d_stat = district_stats.get(d_key)
+            if d_stat and (d_stat.get("flood_points_count", 0) >= 5 or d_stat.get("risk_score", 0) >= 75):
+                risk["predicted_depth_cm"] = round(float(risk.get("predicted_depth_cm", 0.0)) + 5.0, 1)
+
             risk["hotspot_id"] = str(r["hotspot_id"])
             risk["hotspot_code"] = r["hotspot_code"]
             risk["street_name"] = r["street_name"]
@@ -330,7 +342,7 @@ class SafeNavigationService(ISafeNavigationService):
         dest_pt = (request.destination.latitude, request.destination.longitude)
 
         # 3. Tính Tuyến nhanh nhất (Fastest / Default Route)
-        fast_data = self._query_osrm_route(orig_pt, dest_pt)
+        fast_data = await self._query_osrm_route(orig_pt, dest_pt)
         fast_hazards = self._detect_hazards_on_line(
             fast_data["coordinates"],
             hotspots,
@@ -400,7 +412,7 @@ class SafeNavigationService(ISafeNavigationService):
         detour_lng = primary_hazard.longitude + 0.007
         waypoints = [(detour_lat, detour_lng)]
 
-        safe_data = self._query_osrm_route(orig_pt, dest_pt, waypoints=waypoints)
+        safe_data = await self._query_osrm_route(orig_pt, dest_pt, waypoints=waypoints)
         safe_hazards = self._detect_hazards_on_line(
             safe_data["coordinates"],
             hotspots,
@@ -549,7 +561,7 @@ class SafeNavigationService(ISafeNavigationService):
         # Tạo waypoint vòng tránh ngã rẽ kế tiếp (+250m)
         waypoint_lat = curr_pt[0] + 0.005
         waypoint_lng = curr_pt[1] + 0.005
-        detour_data = self._query_osrm_route(curr_pt, dest_pt, waypoints=[(waypoint_lat, waypoint_lng)])
+        detour_data = await self._query_osrm_route(curr_pt, dest_pt, waypoints=[(waypoint_lat, waypoint_lng)])
 
         dist_km = round(detour_data["distance_meters"] / 1000.0, 1)
         dur_mins = max(2, int(round(detour_data["duration_seconds"] / 60.0)))

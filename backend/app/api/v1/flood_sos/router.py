@@ -33,7 +33,8 @@ from app.schemas.flood_sos.schemas import (
     CancelSosResponse,
     CompleteSosRatingRequest,
 )
-from app.utils.security import decode_access_token
+from app.api.v1.rbac import get_current_active_user
+from app.models.rbac import User
 
 router = APIRouter(prefix="/flood-sos", tags=["Cứu hộ ngập cộng đồng (Flood SOS - STT 46)"])
 
@@ -42,21 +43,6 @@ def get_flood_sos_service() -> FloodSosService:
     """Dependency Injection cung cấp FloodSosService."""
     repo = FloodSosRepository()
     return FloodSosService(repository=repo)
-
-
-def get_optional_user_id(authorization: Optional[str] = Header(None)) -> Optional[uuid.UUID]:
-    """Trích xuất user_id từ Bearer Token nếu có (hỗ trợ cả khách vãng lai trong trường hợp khẩn cấp)."""
-    if not authorization:
-        return None
-    try:
-        parts = authorization.split()
-        if len(parts) == 2 and parts[0].lower() == "bearer":
-            payload = decode_access_token(parts[1])
-            if payload and "sub" in payload:
-                return uuid.UUID(payload["sub"])
-    except Exception:
-        pass
-    return None
 
 
 @router.post(
@@ -69,12 +55,13 @@ async def dispatch_sos_request(
     payload: CreateFloodSosRequest,
     db: AsyncSession = Depends(get_db),
     service: FloodSosService = Depends(get_flood_sos_service),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Tiếp nhận yêu cầu cứu hộ từ Màn 1/5 sau khi xác nhận ở Màn 2/5.
     Kiểm tra tính hợp lệ của số người cần cứu, định vị GPS, và phát sóng tới các đội cứu nạn trong bán kính 3km.
     """
-    return await service.dispatch_sos(db=db, req=payload)
+    return await service.dispatch_sos(db=db, req=payload, current_user=current_user)
 
 
 @router.get(
@@ -89,6 +76,7 @@ async def get_nearby_sos_requests(
     radius_km: float = Query(3.0, gt=0, le=50.0, description="Bán kính quét (mặc định 3km)"),
     db: AsyncSession = Depends(get_db),
     service: FloodSosService = Depends(get_flood_sos_service),
+    _current_user: User = Depends(get_current_active_user),
 ):
     """
     Lấy danh sách các thẻ cứu hộ SOS gần tình nguyện viên.
@@ -112,13 +100,14 @@ async def accept_sos_request(
     payload: AcceptSosRequest,
     db: AsyncSession = Depends(get_db),
     service: FloodSosService = Depends(get_flood_sos_service),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Xác nhận tiếp nhận ca cứu hộ.
     Nếu ca đã được tình nguyện viên khác nhận trước hoặc phiên bản version bị lệch,
     hệ thống lập tức trả về HTTP 409 Conflict với thông báo chuẩn quy định.
     """
-    return await service.accept_sos(db=db, request_id=request_id, req=payload)
+    return await service.accept_sos(db=db, request_id=request_id, req=payload, current_user=current_user)
 
 
 @router.post(
@@ -131,6 +120,7 @@ async def skip_sos_request(
     payload: SkipSosRequest,
     db: AsyncSession = Depends(get_db),
     service: FloodSosService = Depends(get_flood_sos_service),
+    _current_user: User = Depends(get_current_active_user),
 ):
     """
     Bỏ qua yêu cầu cứu hộ để nhường quyền cho các tình nguyện viên khác trong khu vực.
@@ -148,6 +138,7 @@ async def get_sos_tracking_detail(
     request_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
     service: FloodSosService = Depends(get_flood_sos_service),
+    _current_user: User = Depends(get_current_active_user),
 ):
     """
     Lấy thông tin tiến trình cứu nạn thời gian thực:
@@ -169,12 +160,13 @@ async def update_sos_progress(
     payload: UpdateSosProgressRequest,
     db: AsyncSession = Depends(get_db),
     service: FloodSosService = Depends(get_flood_sos_service),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Cập nhật trạng thái tiến trình (EN_ROUTE, COMPLETED)
     và tọa độ di chuyển thời gian thực của đội cứu hộ.
     """
-    return await service.update_sos_progress(db=db, request_id=request_id, req=payload)
+    return await service.update_sos_progress(db=db, request_id=request_id, req=payload, current_user=current_user)
 
 
 @router.post(
@@ -188,11 +180,12 @@ async def send_sos_chat_message(
     payload: SendChatMessageRequest,
     db: AsyncSession = Depends(get_db),
     service: FloodSosService = Depends(get_flood_sos_service),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Gửi tin nhắn ngắn trong ca cứu hộ (VD: "Tôi đang mặc áo mưa vàng trên mái nhà").
     """
-    return await service.send_chat_message(db=db, request_id=request_id, req=payload)
+    return await service.send_chat_message(db=db, request_id=request_id, req=payload, current_user=current_user)
 
 
 @router.post(
@@ -205,6 +198,7 @@ async def cancel_sos_request(
     payload: CancelSosRequest,
     db: AsyncSession = Depends(get_db),
     service: FloodSosService = Depends(get_flood_sos_service),
+    _current_user: User = Depends(get_current_active_user),
 ):
     """
     Huỷ yêu cầu cứu nạn khi nạn nhân đã an toàn hoặc tự di chuyển.
@@ -223,6 +217,7 @@ async def submit_sos_rating(
     payload: CompleteSosRatingRequest,
     db: AsyncSession = Depends(get_db),
     service: FloodSosService = Depends(get_flood_sos_service),
+    _current_user: User = Depends(get_current_active_user),
 ):
     """
     Lưu số sao đánh giá (1-5 sao) và nhận xét hỗ trợ của nạn nhân sau khi an toàn.

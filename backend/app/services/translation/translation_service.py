@@ -39,6 +39,7 @@ class HybridTranslationService(ITranslationService):
     def __init__(self, cache_size: int = 5000):
         self._cache: Dict[Tuple[str, str, str], str] = {}
         self._cache_size = cache_size
+        self._rate_limit_until: float = 0.0
         self._supported_langs = ["vi", "en"]
         self._default_target_keys = {
             "title",
@@ -148,13 +149,22 @@ class HybridTranslationService(ITranslationService):
         Translates dynamic user-generated content via multi-engine fallback:
         Engine 1: MyMemory Translation API (Fast, reliable, high availability)
         Engine 2: Google Translate GTX Endpoint (Alternative fallback)
+        Includes Circuit Breaker (cooldown on 429 Too Many Requests).
         """
+        import time
+        if time.time() < self._rate_limit_until:
+            return None
+
         # Engine 1: MyMemory Translation
         try:
             mymemory_url = "https://api.mymemory.translated.net/get"
             langpair = f"{source_lang}|{target_lang}"
-            async with httpx.AsyncClient(timeout=4.0) as client:
+            timeout_cfg = httpx.Timeout(1.0, connect=0.5)
+            async with httpx.AsyncClient(timeout=timeout_cfg) as client:
                 resp = await client.get(mymemory_url, params={"q": text, "langpair": langpair})
+                if resp.status_code == 429:
+                    self._rate_limit_until = time.time() + 300.0
+                    return None
                 if resp.status_code == 200:
                     data = resp.json()
                     trans_text = data.get("responseData", {}).get("translatedText")
@@ -177,8 +187,12 @@ class HybridTranslationService(ITranslationService):
                 "dt": "t",
                 "q": text,
             }
-            async with httpx.AsyncClient(timeout=3.0) as client:
+            timeout_cfg = httpx.Timeout(1.0, connect=0.5)
+            async with httpx.AsyncClient(timeout=timeout_cfg) as client:
                 resp = await client.get(gtx_url, params=params)
+                if resp.status_code == 429:
+                    self._rate_limit_until = time.time() + 300.0
+                    return None
                 if resp.status_code == 200:
                     payload = resp.json()
                     if payload and isinstance(payload, list) and len(payload) > 0:
@@ -296,8 +310,10 @@ class HybridTranslationService(ITranslationService):
         if explicit_keys is not None:
             return key in explicit_keys
 
-        # Skip values that are clearly technical identifiers or not translateable
-        if val.startswith(("http://", "https://", "#", "data:", "/")):
+        # Skip values that are clearly technical identifiers, URLs or permissions
+        if val.startswith(("http://", "https://", "htCitys://", "#", "data:", "/")) or "://" in val:
+            return False
+        if ":" in val and (val.isupper() or "_" in val):
             return False
         if re.match(r"^[0-9a-fA-F-]{36}$", val):  # UUID
             return False
@@ -351,10 +367,21 @@ class HybridTranslationService(ITranslationService):
         explicit_keys = set(target_keys) if target_keys else None
 
         if isinstance(data, dict):
-            new_dict = {}
+            field_tasks = {}
             for k, v in data.items():
                 if self._is_translatable_string(k, v, explicit_keys):
-                    new_dict[k] = await self.translate_text(v, target_lang, source_lang)
+                    field_tasks[k] = self.translate_text(v, target_lang, source_lang)
+
+            if field_tasks:
+                translated_values = await asyncio.gather(*field_tasks.values())
+                field_map = dict(zip(field_tasks.keys(), translated_values))
+            else:
+                field_map = {}
+
+            new_dict = {}
+            for k, v in data.items():
+                if k in field_map:
+                    new_dict[k] = field_map[k]
                 elif isinstance(v, (dict, list)):
                     new_dict[k] = await self.translate_data(v, target_lang, source_lang, target_keys)
                 else:
@@ -362,15 +389,17 @@ class HybridTranslationService(ITranslationService):
             return new_dict
 
         elif isinstance(data, list):
-            new_list = []
+            tasks = []
             for item in data:
                 if isinstance(item, (dict, list)):
-                    new_list.append(await self.translate_data(item, target_lang, source_lang, target_keys))
+                    tasks.append(self.translate_data(item, target_lang, source_lang, target_keys))
                 elif isinstance(item, str) and (explicit_keys is None or self._is_translatable_string("", item, None)):
-                    new_list.append(await self.translate_text(item, target_lang, source_lang))
+                    tasks.append(self.translate_text(item, target_lang, source_lang))
                 else:
-                    new_list.append(item)
-            return new_list
+                    async def _passthrough(val):
+                        return val
+                    tasks.append(_passthrough(item))
+            return list(await asyncio.gather(*tasks))
 
         return data
 

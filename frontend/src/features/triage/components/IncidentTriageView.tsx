@@ -396,17 +396,19 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
               </div>
             </div>
 
-            <div className="score-formula-box">
-              <div>
-                <strong>Công thức chuẩn hóa TPS:</strong>
+            <div className="tps-formula-box" style={{ marginTop: "1rem", padding: "0.85rem 1rem", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.85rem" }}>
+              <div style={{ fontWeight: 700, marginBottom: "0.35rem", color: "#1e293b" }}>
+                📐 Công thức chuẩn hóa TPS:
               </div>
-              <div>
-                min( 100, BaseSeverity × 0.40 + ProximityRisk × 0.30 + ScaleFactor × 0.20 + UrgencyNLP × 0.10 )
+              <div style={{ fontFamily: "monospace", color: "#475569", fontSize: "0.8rem", marginBottom: "0.25rem" }}>
+                TPS = min(100, BaseSeverity × 0.40 + ProximityRisk × 0.30 + ScaleFactor × 0.20 + UrgencyNLP × 0.10)
               </div>
-              <div className="score-formula-result">
-                = ({data.base_severity_score} × 0.4) + ({data.proximity_risk_score} × 0.3) + ({data.scale_factor_score} × 0.2) + ({data.urgency_nlp_score} × 0.1) = <strong>{data.ai_triage_score} điểm</strong>
+              <div style={{ color: "#2563eb", fontWeight: 600, fontSize: "0.8rem" }}>
+                Điểm tính toán thực tế: {data.tps_score} / 100 điểm
               </div>
             </div>
+
+
           </div>
 
           {/* CỘT PHẢI: KHỐI "QUYẾT ĐỊNH" */}

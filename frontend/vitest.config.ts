@@ -29,7 +29,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     css: false,
-    setupFiles: ['./src/setupTests.ts'],
+    setupFiles: [path.resolve(__dirname, 'src/setupTests.ts')],
     server: {
       deps: {
         inline: [/react/, /@testing-library/],

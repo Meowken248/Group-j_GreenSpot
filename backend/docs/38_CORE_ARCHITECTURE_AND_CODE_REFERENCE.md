@@ -94,6 +94,10 @@ Module tự động gom cụm các sự cố môi trường gửi về từ ngư
   - Router: [`BackEnd/app/api/v1/deduplication/router.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/deduplication/router.py) (prefix `/deduplication`).
   - Tích hợp vào Router tổng: [`BackEnd/app/api/v1/__init__.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/app/api/v1/__init__.py#L28) thông qua `api_v1_router.include_router(deduplication_router)`.
 
+### 1.4. Kiểm Thử Độc Lập & Xác Nhận Chất Lượng (Testing & Verification)
+- **Bộ kiểm thử đơn vị & API STT 38:** [`BackEnd/tests/deduplication/test_deduplication.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/deduplication/test_deduplication.py) gồm 14 bài kiểm thử tự động (**14/14 PASSED**), bao phủ thuật toán Haversine, độ tương đồng ảnh Cosine, Pydantic schemas, bộ lọc danh sách cụm, so sánh song song, đánh dấu tách biệt, gộp báo cáo với khóa OCC 409 và phân quyền RBAC.
+- **Bộ kiểm thử tích hợp liên hoàn đa vai trò:** [`BackEnd/tests/test_multi_role_workflow_37_to_48.py`](file:///c:/Users/Admin/source/Group-j_GreenSpot/BackEnd/tests/test_multi_role_workflow_37_to_48.py) xác thực toàn trình liên kết sự cố STT 18 với động cơ đối soát trùng lặp STT 38.
+
 ---
 
 ## CORE BE 2: PHÂN QUYỀN VAI TRÒ RBAC & MA TRẬN PHÂN QUYỀN ĐỘNG (DYNAMIC PERMISSION MATRIX)

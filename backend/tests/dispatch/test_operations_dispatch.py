@@ -229,56 +229,104 @@ async def test_06_field_tracking_data(service):
 
 
 def test_07_http_endpoints_and_rbac_guard():
-    """Kiểm thử tích hợp REST API và bảo vệ phân quyền RBAC"""
+    """Kiểm thử tích hợp REST API và bảo vệ phân quyền RBAC (401 Ẩn danh, 403 CITIZEN, RESPONDER & ADMIN)"""
+    from app.database import get_db
+    from app.api.v1.rbac import get_current_active_user
+    from app.models.rbac import User, Role
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    async def override_get_db():
+        yield AsyncMock(spec=AsyncSession)
+
+    app.dependency_overrides[get_db] = override_get_db
     client = TestClient(app)
 
-    # 1. Truy cập danh sách lệnh (không token hoặc role công dân CITIZEN -> bị từ chối 403)
-    citizen_token = create_access_token(
-        user_id="11111111-1111-1111-1111-111111111111",
-        email="citizen@test.com",
-        role="CITIZEN",
-        session_id="session-cit-123",
-    )
-    headers_citizen = {"Authorization": f"Bearer {citizen_token}"}
-    resp_cit = client.get("/api/v1/dispatch/orders", headers=headers_citizen)
-    assert resp_cit.status_code == 403
-    assert "Chỉ Quản trị viên và Cán bộ điều phối" in resp_cit.json().get("detail", "")
+    try:
+        # 0. Không có Authorization header -> 401 (không còn bypass return None)
+        resp_unauth = client.get("/api/v1/dispatch/orders")
+        assert resp_unauth.status_code == 401
 
-    # 2. Truy cập với quyền ADMIN
-    admin_token = create_access_token(
-        user_id="22222222-2222-2222-2222-222222222222",
-        email="admin@test.com",
-        role="ADMIN",
-        session_id="session-adm-123",
-    )
-    headers_admin = {"Authorization": f"Bearer {admin_token}"}
+        # 1. Role công dân CITIZEN -> bị từ chối 403
+        async def _citizen_user():
+            return User(
+                user_id=uuid.uuid4(),
+                email="citizen@test.com",
+                full_name="Citizen",
+                status="ACTIVE",
+                role=Role(role_code="CITIZEN", role_name="CITIZEN"),
+            )
 
-    # GET /orders
-    resp_orders = client.get("/api/v1/dispatch/orders", headers=headers_admin)
-    assert resp_orders.status_code == 200
-    data_orders = resp_orders.json()
-    assert "orders" in data_orders
-    assert data_orders["total_count"] >= 3
+        app.dependency_overrides[get_current_active_user] = _citizen_user
+        resp_cit = client.get("/api/v1/dispatch/orders")
+        assert resp_cit.status_code == 403
+        assert "Chỉ Quản trị viên" in resp_cit.json().get("detail", "")
 
-    # GET /incidents
-    resp_inc = client.get("/api/v1/dispatch/incidents", headers=headers_admin)
-    assert resp_inc.status_code == 200
-    assert len(resp_inc.json()) >= 3
+        # 2. Role RESPONDER (Đội phản ứng nhanh) -> 200 ở các API thực địa, 403 nếu lập lệnh điều phối mới
+        async def _responder_user():
+            return User(
+                user_id=uuid.uuid4(),
+                email="responder@test.com",
+                full_name="Responder",
+                status="ACTIVE",
+                role=Role(role_code="RESPONDER", role_name="RESPONDER"),
+            )
 
-    # GET /teams
-    resp_teams = client.get("/api/v1/dispatch/teams", headers=headers_admin)
-    assert resp_teams.status_code == 200
-    assert len(resp_teams.json()) >= 4
+        app.dependency_overrides[get_current_active_user] = _responder_user
+        resp_resp_orders = client.get("/api/v1/dispatch/orders")
+        assert resp_resp_orders.status_code == 200
+        tracking_id = "44444444-4444-4444-4444-444444444441"
+        resp_resp_track = client.get(f"/api/v1/dispatch/orders/{tracking_id}/tracking")
+        assert resp_resp_track.status_code == 200
+        resp_resp_create = client.post(
+            "/api/v1/dispatch/orders",
+            json={
+                "incident_id": str(uuid.uuid4()),
+                "team_id": "TEAM_CO_DONG_03",
+                "priority": "HIGH",
+                "deadline": (datetime.now(timezone.utc) + timedelta(hours=4)).isoformat(),
+            },
+        )
+        assert resp_resp_create.status_code == 403
 
-    # GET /orders/{order_id}/tracking
-    tracking_id = "44444444-4444-4444-4444-444444444441"
-    resp_track = client.get(f"/api/v1/dispatch/orders/{tracking_id}/tracking", headers=headers_admin)
-    assert resp_track.status_code == 200
-    assert resp_track.json()["order_code"] == "LX-1042"
+        # 3. Truy cập với quyền ADMIN
+        async def _admin_user():
+            return User(
+                user_id=uuid.uuid4(),
+                email="admin@test.com",
+                full_name="Admin",
+                status="ACTIVE",
+                role=Role(role_code="ADMIN", role_name="ADMIN"),
+            )
 
-    # POST /orders/{order_id}/accept
-    resp_acc = client.post(f"/api/v1/dispatch/orders/{tracking_id}/accept", headers=headers_admin)
-    assert resp_acc.status_code == 200
-    assert resp_acc.json()["success"] is True
-    assert "tiếp nhận" in resp_acc.json()["message"]
+        app.dependency_overrides[get_current_active_user] = _admin_user
+
+        # GET /orders
+        resp_orders = client.get("/api/v1/dispatch/orders")
+        assert resp_orders.status_code == 200
+        data_orders = resp_orders.json()
+        assert "orders" in data_orders
+        assert data_orders["total_count"] >= 3
+
+        # GET /incidents
+        resp_inc = client.get("/api/v1/dispatch/incidents")
+        assert resp_inc.status_code == 200
+        assert len(resp_inc.json()) >= 3
+
+        # GET /teams
+        resp_teams = client.get("/api/v1/dispatch/teams")
+        assert resp_teams.status_code == 200
+        assert len(resp_teams.json()) >= 4
+
+        # GET /orders/{order_id}/tracking
+        resp_track = client.get(f"/api/v1/dispatch/orders/{tracking_id}/tracking")
+        assert resp_track.status_code == 200
+        assert resp_track.json()["order_code"] == "LX-1042"
+
+        # POST /orders/{order_id}/accept
+        resp_acc = client.post(f"/api/v1/dispatch/orders/{tracking_id}/accept")
+        assert resp_acc.status_code == 200
+        assert resp_acc.json()["success"] is True
+        assert "tiếp nhận" in resp_acc.json()["message"]
+    finally:
+        app.dependency_overrides.clear()
 

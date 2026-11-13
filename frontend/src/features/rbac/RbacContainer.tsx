@@ -25,7 +25,6 @@ export const RbacContainer: React.FC<RbacContainerProps> = ({
   initialView = "list",
   initialRoleId,
   onExit,
-  onNavigateToAuth,
 }) => {
   const [currentView, setCurrentView] = useState<RbacViewMode>(initialView);
   const [matrixTargetRoleId, setMatrixTargetRoleId] = useState<number | undefined>(initialRoleId);

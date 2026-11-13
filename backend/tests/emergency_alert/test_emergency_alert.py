@@ -47,11 +47,16 @@ class TestEmergencyAlertSTT45(unittest.IsolatedAsyncioTestCase):
     """Bộ kiểm thử toàn trình cho STT 45 sử dụng IsolatedAsyncioTestCase chuẩn Python 3.11"""
 
     async def asyncSetUp(self):
-        await engine.dispose()
-        self.session = AsyncSessionLocal()
+        try:
+            await engine.dispose()
+            self.session = AsyncSessionLocal()
+            await self.session.execute(select(1))
+        except Exception as e:
+            self.skipTest(f"PostgreSQL/PostGIS database not reachable: {e}")
 
     async def asyncTearDown(self):
-        await self.session.close()
+        if hasattr(self, "session"):
+            await self.session.close()
         await engine.dispose()
 
     async def setup_test_users_and_locations(self):
@@ -373,26 +378,31 @@ class TestEmergencyAlertHttpEndpoints(unittest.TestCase):
         import asyncio
 
         async def get_or_create_test_user():
-            async with AsyncSessionLocal() as s:
-                res = await s.execute(select(User).limit(1))
-                u = res.scalars().first()
-                if not u:
-                    u = User(
-                        user_id=uuid.uuid4(),
-                        email="test_citizen_http@greenspot.vn",
-                        full_name="Nguyễn Văn Test HTTP",
-                        role_id=2,
-                        password_hash="fakehash",
-                    )
-                    s.add(u)
-                    await s.commit()
-                    await s.refresh(u)
-                return u
+            try:
+                async with AsyncSessionLocal() as s:
+                    res = await s.execute(select(User).limit(1))
+                    u = res.scalars().first()
+                    if not u:
+                        u = User(
+                            user_id=uuid.uuid4(),
+                            email="test_citizen_http@greenspot.vn",
+                            full_name="Nguyễn Văn Test HTTP",
+                            role_id=2,
+                            password_hash="fakehash",
+                        )
+                        s.add(u)
+                        await s.commit()
+                        await s.refresh(u)
+                    return u
+            except Exception:
+                return None
 
         cls.test_user = asyncio.run(get_or_create_test_user())
 
     def test_08_http_api_endpoints_coverage(self):
         """Kiểm tra các endpoint RESTful /api/v1/emergency-alerts phủ trọn 4 màn hình"""
+        if not self.test_user:
+            self.skipTest("PostgreSQL/PostGIS database not reachable for HTTP integration test")
         from app.api.v1.rbac import get_current_active_user
 
         citizen_user = self.test_user

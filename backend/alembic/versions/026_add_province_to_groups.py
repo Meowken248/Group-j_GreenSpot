@@ -19,21 +19,30 @@ depends_on: Union[Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # 1. Thêm cột province vào bảng groups
-    op.add_column(
-        "groups",
-        sa.Column("province", sa.String(length=100), nullable=True),
-    )
-    op.create_index("ix_groups_province", "groups", ["province"], unique=False)
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    group_columns = {col["name"] for col in inspector.get_columns("groups")}
+    group_indexes = {idx["name"] for idx in inspector.get_indexes("groups")}
+
+    # 1. Thêm cột province vào bảng groups nếu chưa có
+    if "province" not in group_columns:
+        op.add_column(
+            "groups",
+            sa.Column("province", sa.String(length=100), nullable=True),
+        )
+    if "ix_groups_province" not in group_indexes:
+        op.create_index("ix_groups_province", "groups", ["province"], unique=False)
 
     # 2. Xóa index cũ idx_groups_district_ward và tạo index mới idx_groups_geo_scope
-    op.drop_index("idx_groups_district_ward", table_name="groups")
-    op.create_index(
-        "idx_groups_geo_scope",
-        "groups",
-        ["province", "district", "ward"],
-        unique=False,
-    )
+    if "idx_groups_district_ward" in group_indexes:
+        op.drop_index("idx_groups_district_ward", table_name="groups")
+    if "idx_groups_geo_scope" not in group_indexes:
+        op.create_index(
+            "idx_groups_geo_scope",
+            "groups",
+            ["province", "district", "ward"],
+            unique=False,
+        )
 
     # 3. Gán giá trị mặc định cho các nhóm đã tồn tại là 'Thành phố Hồ Chí Minh'
     op.execute(

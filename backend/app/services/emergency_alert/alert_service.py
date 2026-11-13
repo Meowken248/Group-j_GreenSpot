@@ -174,6 +174,9 @@ class EmergencyAlertService:
             alert_type=saved_alert.alert_type,
             title=saved_alert.title,
             actual_sent_count=actual_count,
+            recipients_count=actual_count,
+            status=saved_alert.status or "ACTIVE",
+            issued_at=saved_alert.broadcasted_at or datetime.utcnow(),
             message=message,
         )
 

@@ -19,6 +19,7 @@ from typing import List, Optional
 from unittest.mock import AsyncMock, patch
 
 from fastapi import HTTPException
+from starlette.requests import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.interface.deduplication.deduplication_interface import IDeduplicationRepository
@@ -203,6 +204,7 @@ class TestAIDeduplicationUnitCoverage(unittest.IsolatedAsyncioTestCase):
             role=citizen_role,
         )
         self.sample_cluster = self.mock_repo.sample_cluster
+        self.mock_request = Request({"type": "http", "query_string": b"", "headers": []})
 
         # Patch deduplication_repository singleton trong router
         self.patcher = patch("app.api.v1.deduplication.router.deduplication_repository", self.mock_repo)
@@ -306,6 +308,7 @@ class TestAIDeduplicationUnitCoverage(unittest.IsolatedAsyncioTestCase):
     async def test_07_api_get_districts(self):
         """Màn 1: Lấy danh sách quận phục vụ bộ lọc"""
         districts = await get_deduplication_districts(
+            request=self.mock_request,
             current_user=self.admin_user,
             db=self.session,
         )
@@ -318,6 +321,7 @@ class TestAIDeduplicationUnitCoverage(unittest.IsolatedAsyncioTestCase):
         """Màn 1: Lấy danh sách cụm trùng lặp, lọc theo quận và lọc theo % tương đồng"""
         # 1. Lấy tất cả
         res_all = await list_duplicate_clusters(
+            request=self.mock_request,
             district_name=None,
             min_similarity=None,
             current_user=self.admin_user,
@@ -327,6 +331,7 @@ class TestAIDeduplicationUnitCoverage(unittest.IsolatedAsyncioTestCase):
 
         # 2. Lọc theo % tương đồng >= 90% (chỉ còn Nhóm 1)
         res_90 = await list_duplicate_clusters(
+            request=self.mock_request,
             district_name=None,
             min_similarity=90.0,
             current_user=self.admin_user,
@@ -337,6 +342,7 @@ class TestAIDeduplicationUnitCoverage(unittest.IsolatedAsyncioTestCase):
 
         # 3. Lọc theo quận "Quận 1"
         res_q1 = await list_duplicate_clusters(
+            request=self.mock_request,
             district_name="Quận 1",
             min_similarity=None,
             current_user=self.admin_user,
@@ -348,6 +354,7 @@ class TestAIDeduplicationUnitCoverage(unittest.IsolatedAsyncioTestCase):
     async def test_09_api_list_clusters_empty_state(self):
         """Màn 1: Bộ lọc không có kết quả trả về total=0 (cho empty state UI)"""
         res_empty = await list_duplicate_clusters(
+            request=self.mock_request,
             district_name="Quận Không Tồn Tại",
             min_similarity=99.9,
             current_user=self.admin_user,
@@ -360,6 +367,7 @@ class TestAIDeduplicationUnitCoverage(unittest.IsolatedAsyncioTestCase):
         """Màn 1: Giả lập lỗi kết nối dịch vụ AI trả về HTTP 503 với thông báo chuẩn"""
         with self.assertRaises(HTTPException) as ctx:
             await list_duplicate_clusters(
+                request=self.mock_request,
                 district_name=None,
                 min_similarity=None,
                 simulate_error=True,
@@ -373,6 +381,7 @@ class TestAIDeduplicationUnitCoverage(unittest.IsolatedAsyncioTestCase):
         """Màn 2: Lấy chi tiết đối chứng song song Báo cáo A & Báo cáo B"""
         comp = await get_cluster_comparison_detail(
             cluster_id=self.sample_cluster.cluster_id,
+            request=self.mock_request,
             current_user=self.admin_user,
             db=self.session,
         )
@@ -454,6 +463,7 @@ class TestAIDeduplicationUnitCoverage(unittest.IsolatedAsyncioTestCase):
         # Citizen gọi API list clusters -> Phải bị HTTP 403 Forbidden
         with self.assertRaises(HTTPException) as ctx:
             await list_duplicate_clusters(
+                request=self.mock_request,
                 district_name=None,
                 min_similarity=None,
                 current_user=self.citizen_user,

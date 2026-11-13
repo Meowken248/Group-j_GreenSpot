@@ -111,7 +111,7 @@ export const FloodNavigationContainer: React.FC = () => {
     }
   }, [toastMessage]);
 
-  // Kiểm tra điểm đến né ngập được truyền từ Điều phối (STT 43) hoặc Trợ lý giọng nói (STT 37)
+  // Kiểm tra điểm đến né ngập được truyền từ Điều phối (STT 43), Cứu hộ SOS (STT 46) hoặc Trợ lý giọng nói (STT 37)
   useEffect(() => {
     try {
       const stored = localStorage.getItem("greenspot_nav_destination");
@@ -132,6 +132,18 @@ export const FloodNavigationContainer: React.FC = () => {
               type: "success",
             });
           }
+
+          const origLat = Number(parsed.originLat ?? parsed.originLatitude);
+          const origLng = Number(parsed.originLng ?? parsed.originLongitude);
+          const origName = parsed.originName || parsed.originAddress || "Vị trí xuất phát của bạn";
+          if (!isNaN(origLat) && !isNaN(origLng)) {
+            setOrigin({
+              name: origName,
+              latitude: origLat,
+              longitude: origLng,
+            });
+          }
+
           localStorage.removeItem("greenspot_nav_destination");
         }
       }

@@ -32,8 +32,24 @@ from app.services.spatial_facility_service import (
     FacilityBufferQueryFilter,
     FacilityAlertRequest,
 )
+from app.api.v1.rbac import require_roles_or_permission
 
 router = APIRouter(prefix="/spatial/facilities", tags=["Spatial Facility Analysis (STT 40)"])
+
+ALLOWED_SPATIAL_ROLES = {"ADMIN", "OFFICER", "DISTRICT_MANAGER", "COORDINATOR", "RESPONDER"}
+
+require_spatial_view = require_roles_or_permission(
+    allowed_roles=ALLOWED_SPATIAL_ROLES,
+    module="INCIDENTS",
+    action="VIEW",
+    deny_message="Chỉ Quản trị viên, Cán bộ điều phối và Đội phản ứng mới có quyền tra cứu cơ sở thiết yếu.",
+)
+require_spatial_action = require_roles_or_permission(
+    allowed_roles=ALLOWED_SPATIAL_ROLES,
+    module="INCIDENTS",
+    action="UPDATE",
+    deny_message="Chỉ Quản trị viên, Cán bộ điều phối và Đội phản ứng mới có quyền gửi cảnh báo hoặc ghi nhật ký liên hệ.",
+)
 
 
 @router.post("/buffer", response_model=FacilityListResponse)
@@ -41,6 +57,7 @@ async def analyze_facilities_in_buffer(
     payload: FacilityBufferQueryRequest,
     request: Request,
     db: AsyncSession = Depends(get_db),
+    _current_user: User = Depends(require_spatial_view),
 ):
     """
     Màn 1/3 &  Quét vùng đệm bán kính (500m, 1km, 2km) và trả về danh sách cơ sở sắp xếp theo khoảng cách
@@ -109,6 +126,7 @@ async def get_facility_profile_detail(
     request: Request,
     incident_id: Optional[uuid.UUID] = Query(None),
     db: AsyncSession = Depends(get_db),
+    _current_user: User = Depends(require_spatial_view),
 ):
     """
      Xem hồ sơ chi tiết cơ sở, đầu mối khẩn cấp, mức độ dễ tổn thương và link chỉ đường
@@ -140,20 +158,16 @@ async def get_facility_profile_detail(
 async def send_emergency_alert(
     payload: SendEmergencyAlertRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_spatial_action),
 ):
     """
     Màn 3/3 Nút "Gửi cảnh báo": Gửi tin nhắn khẩn cấp đến ban giám hiệu/giám đốc cơ sở, ghi vào Audit Log
     """
-    user_stmt = select(User).limit(1)
-    user_res = await db.execute(user_stmt)
-    operator = user_res.scalars().first()
-    operator_id = operator.user_id if operator else None
-
     req = FacilityAlertRequest(
         incident_id=payload.incident_id,
         facility_id=payload.facility_id,
         message_text=payload.message_text,
-        operator_id=operator_id,
+        operator_id=current_user.user_id,
     )
     result = await SpatialFacilityService.send_emergency_alert(db, req)
     return SendEmergencyAlertResponse(
@@ -170,21 +184,18 @@ async def log_call_initiated(
     incident_id: uuid.UUID = Query(...),
     facility_id: int = Query(...),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_spatial_action),
 ):
     """
     Ghi nhận thao tác khi cán bộ bấm nút "Gọi điện" vào Nhật ký kiểm toán (Audit Log)
     """
-    user_stmt = select(User).limit(1)
-    user_res = await db.execute(user_stmt)
-    operator = user_res.scalars().first()
-
     fac = await spatial_facility_repository.get_facility_by_id(db, facility_id)
 
     audit = IncidentAuditLog(
         incident_id=incident_id,
         action="CALL_INITIATED",
         reason=f"Kích hoạt cuộc gọi thoại đến cơ sở {fac.facility_name if fac else facility_id}",
-        performed_by=operator.user_id if operator else None,
+        performed_by=current_user.user_id,
         metadata_json={
             "facility_id": facility_id,
             "facility_name": fac.facility_name if fac else None,

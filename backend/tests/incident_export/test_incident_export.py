@@ -291,3 +291,56 @@ def test_format_file_size_utility():
     assert format_file_size(500) == "500 B"
     assert format_file_size(1024 * 340) == "340.0 KB"
     assert format_file_size(1024 * 1024 * 2) == "2.0 MB"
+
+
+def test_cross_platform_pdf_font_resolver():
+    """Kiểm tra bộ nạp font Unicode đa nền tảng (Linux Docker + Windows) không bị crash."""
+    from app.utils.pdf_fonts import register_vietnamese_pdf_fonts
+
+    reg, bold = register_vietnamese_pdf_fonts()
+    assert isinstance(reg, str) and len(reg) > 0
+    assert isinstance(bold, str) and len(bold) > 0
+
+
+def test_incident_export_http_auth_and_rbac():
+    """Kiểm tra Auth/RBAC trên các endpoint STT 47: Chặn ẩn danh (401), CITIZEN (403), cho phép ADMIN."""
+    from unittest.mock import AsyncMock
+    from fastapi.testclient import TestClient
+    from sqlalchemy.ext.asyncio import AsyncSession
+    from app.main import app
+    from app.database import get_db
+    from app.api.v1.rbac import get_current_active_user
+    from app.api.v1.incident_export.router import get_incident_export_service
+    from app.models.rbac import User, Role
+
+    repo = MockIncidentExportRepository()
+    mock_service = IncidentExportService(repository=repo)
+
+    async def override_get_db():
+        yield AsyncMock(spec=AsyncSession)
+
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_incident_export_service] = lambda: mock_service
+
+    client = TestClient(app)
+    try:
+        # 1. Ẩn danh -> 401
+        r_unauth = client.post("/api/v1/incidents/export/preview", json={})
+        assert r_unauth.status_code == 401
+
+        # 2. CITIZEN -> 403
+        async def _citizen():
+            return User(user_id=uuid.uuid4(), email="c@gs.vn", full_name="Citizen", status="ACTIVE", role=Role(role_code="CITIZEN", role_name="CITIZEN"))
+        app.dependency_overrides[get_current_active_user] = _citizen
+        r_cit = client.post("/api/v1/incidents/export/preview", json={})
+        assert r_cit.status_code == 403
+
+        # 3. RESPONDER -> 200 (được phép trích xuất)
+        async def _responder():
+            return User(user_id=uuid.uuid4(), email="r@gs.vn", full_name="Responder", status="ACTIVE", role=Role(role_code="RESPONDER", role_name="RESPONDER"))
+        app.dependency_overrides[get_current_active_user] = _responder
+        r_ok = client.post("/api/v1/incidents/export/preview", json={})
+        assert r_ok.status_code == 200
+        assert r_ok.json()["total_records"] >= 1
+    finally:
+        app.dependency_overrides.clear()

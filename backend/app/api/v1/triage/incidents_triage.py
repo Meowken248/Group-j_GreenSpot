@@ -29,22 +29,24 @@ from app.schemas.triage import (
 )
 from app.crud.triage.triage_repository import triage_repository
 from app.services.triage_ai_service import AITriageService
+from app.api.v1.rbac import require_roles_or_permission
 
 router = APIRouter(prefix="/incidents/triage", tags=["AI Incident Triage & Priority (STT 39)"])
 
 ALLOWED_TRIAGE_ROLES = {"ADMIN", "OFFICER", "DISTRICT_MANAGER", "COORDINATOR", "RESPONDER"}
 
-
-async def get_optional_current_user(
-    db: AsyncSession = Depends(get_db),
-) -> Optional[User]:
-    """Hỗ trợ cả môi trường production có JWT và mock test"""
-    try:
-        from app.api.v1.rbac import get_current_active_user
-        # Kiểm tra token
-        return None
-    except Exception:
-        return None
+require_triage_view = require_roles_or_permission(
+    allowed_roles=ALLOWED_TRIAGE_ROLES,
+    module="INCIDENTS",
+    action="VIEW",
+    deny_message="Chỉ Quản trị viên, Cán bộ điều phối và Đội phản ứng mới có quyền xem phân loại AI Triage.",
+)
+require_triage_action = require_roles_or_permission(
+    allowed_roles=ALLOWED_TRIAGE_ROLES,
+    module="INCIDENTS",
+    action="UPDATE",
+    deny_message="Chỉ Quản trị viên, Cán bộ điều phối và Đội phản ứng mới có quyền thao tác phân loại AI Triage.",
+)
 
 
 @router.get("/list")
@@ -52,6 +54,7 @@ async def get_triage_incidents_list(
     request: Request,
     db: AsyncSession = Depends(get_db),
     limit: int = Query(20, ge=1, le=100),
+    _current_user: User = Depends(require_triage_view),
 ):
     """Lấy danh sách các sự cố cần thẩm định AI Triage qua TriageRepository"""
     incidents = await triage_repository.get_triage_incidents_list(db, limit)
@@ -76,7 +79,12 @@ async def get_triage_incidents_list(
             "version": inc.version,
         })
     if get_current_language(request) == "en":
-        return await translation_service.translate_data(output, target_lang="en", source_lang="vi")
+        return await translation_service.translate_data(
+            output,
+            target_lang="en",
+            source_lang="vi",
+            target_keys=["severity", "status", "ai_suggested_priority", "priority_color"],
+        )
     return output
 
 
@@ -85,6 +93,7 @@ async def get_incident_triage_detail(
     incident_id: uuid.UUID,
     request: Request,
     db: AsyncSession = Depends(get_db),
+    _current_user: User = Depends(require_triage_view),
 ):
     """
     Màn 1/3 &  Lấy thông tin chi tiết sự cố, tóm tắt AI và bảng giải trình XAI
@@ -130,7 +139,12 @@ async def get_incident_triage_detail(
     )
     if get_current_language(request) == "en":
         dumped = res.model_dump()
-        return await translation_service.translate_data(dumped, target_lang="en", source_lang="vi")
+        return await translation_service.translate_data(
+            dumped,
+            target_lang="en",
+            source_lang="vi",
+            target_keys=["current_priority", "status", "ai_suggested_priority", "priority_color", "risk_factors"],
+        )
     return res
 
 
@@ -138,6 +152,7 @@ async def get_incident_triage_detail(
 async def regenerate_ai_summary(
     incident_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    _current_user: User = Depends(require_triage_action),
 ):
     """
     Nút "Tạo lại tóm tắt": Yêu cầu mô hình AI phân tích và kết xuất bản tóm tắt khác
@@ -155,20 +170,15 @@ async def accept_ai_priority(
     incident_id: uuid.UUID,
     payload: AcceptPriorityRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_triage_action),
 ):
     """
     Màn 2/3 Nút "Chấp nhận": Đồng thuận với gợi ý của AI, áp dụng mức ưu tiên vào phiếu việc
     """
-    # Lấy admin user mặc định nếu không truyền token
-    user_stmt = select(User).limit(1)
-    user_res = await db.execute(user_stmt)
-    operator = user_res.scalars().first()
-    operator_id = operator.user_id if operator else None
-
     updated_inc = await AITriageService.accept_ai_priority(
         db=db,
         incident_id=incident_id,
-        operator_id=operator_id,
+        operator_id=current_user.user_id,
         expected_version=payload.version,
     )
 
@@ -187,23 +197,19 @@ async def override_ai_priority(
     incident_id: uuid.UUID,
     payload: OverridePriorityRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_triage_action),
 ):
     """
     Màn 3/3 Popup Xác nhận đổi mức ưu tiên (Human-in-the-loop).
     Bắt buộc nhập lý do vào ô Ghi chú. Kiểm tra Optimistic locking (HTTP 409).
     """
-    user_stmt = select(User).limit(1)
-    user_res = await db.execute(user_stmt)
-    operator = user_res.scalars().first()
-    operator_id = operator.user_id if operator else None
-
     try:
         updated_inc = await AITriageService.override_priority(
             db=db,
             incident_id=incident_id,
             new_priority=payload.new_priority,
             reason=payload.reason,
-            operator_id=operator_id,
+            operator_id=current_user.user_id,
             expected_version=payload.version,
         )
     except ValueError as ve:
@@ -223,6 +229,7 @@ async def override_ai_priority(
 async def get_incident_audit_logs(
     incident_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    _current_user: User = Depends(require_triage_view),
 ):
     """Lấy toàn bộ nhật ký kiểm toán Human-in-the-loop của sự cố qua TriageRepository"""
     logs = await triage_repository.get_incident_audit_logs(db, incident_id)

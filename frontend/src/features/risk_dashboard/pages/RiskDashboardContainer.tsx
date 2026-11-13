@@ -177,7 +177,7 @@ export const RiskDashboardContainer: React.FC<RiskDashboardContainerProps> = ({
           onClick={() => setActiveScreen(1)}
         >
           <span>🏙️</span>
-          <span>Màn 1: Tổng quan rủi ro đô thị</span>
+          <span>Tổng quan rủi ro đô thị</span>
         </button>
 
         <button
@@ -186,7 +186,7 @@ export const RiskDashboardContainer: React.FC<RiskDashboardContainerProps> = ({
           onClick={() => setActiveScreen(2)}
         >
           <span>🔍</span>
-          <span>Màn 2: Lọc & phân tích chuyên sâu</span>
+          <span>Lọc & phân tích chuyên sâu</span>
         </button>
 
         <button

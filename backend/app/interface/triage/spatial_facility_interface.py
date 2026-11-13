@@ -63,6 +63,17 @@ class ISpatialFacilityRepository(ABC):
         """Ghi nhận nhật ký kiểm toán vào CSDL."""
         pass
 
+    async def get_recycling_facilities_in_bounding_box(
+        self,
+        db: AsyncSession,
+        min_lat: float,
+        max_lat: float,
+        min_lng: float,
+        max_lng: float,
+    ) -> List[Tuple[int, str, str, str, Optional[str], Optional[str], float, float]]:
+        """Truy vấn các trạm tái chế (STT 23) nằm trong vùng đệm không gian quanh sự cố."""
+        return []
+
 
 class ISpatialFacilityService(ABC):
     """

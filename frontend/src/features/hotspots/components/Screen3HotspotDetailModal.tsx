@@ -8,6 +8,7 @@ interface Screen3HotspotDetailModalProps {
   isLoading: boolean;
   onCreateDispatch: (prefillData: SuggestedDispatchOrder) => void;
   onViewActiveOrder: (orderId: string) => void;
+  onOrganizeGreenSunday?: (detail: HotspotDetailResponse) => void;
 }
 
 export const Screen3HotspotDetailModal: React.FC<Screen3HotspotDetailModalProps> = ({
@@ -17,6 +18,7 @@ export const Screen3HotspotDetailModal: React.FC<Screen3HotspotDetailModalProps>
   isLoading,
   onCreateDispatch,
   onViewActiveOrder,
+  onOrganizeGreenSunday,
 }) => {
   if (!isOpen) return null;
 
@@ -144,6 +146,35 @@ export const Screen3HotspotDetailModal: React.FC<Screen3HotspotDetailModalProps>
               <span>Xem lệnh hiện tại</span>
             </button>
           )}
+
+          <button
+            type="button"
+            className="btn-organize-green-sunday"
+            onClick={() => {
+              if (detail && onOrganizeGreenSunday) {
+                onOrganizeGreenSunday(detail);
+              }
+            }}
+            disabled={!detail}
+            data-testid="btn-organize-green-sunday"
+            style={{
+              backgroundColor: "#16a34a",
+              color: "#ffffff",
+              border: "none",
+              padding: "0.55rem 1rem",
+              borderRadius: "6px",
+              fontWeight: 600,
+              fontSize: "0.85rem",
+              cursor: detail ? "pointer" : "not-allowed",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.35rem",
+              transition: "all 0.2s ease",
+            }}
+          >
+            <span>🌱</span>
+            <span>Tổ chức Chủ Nhật Xanh</span>
+          </button>
 
           <button
             type="button"

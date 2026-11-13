@@ -4,9 +4,9 @@ Pydantic v2 DTO Schemas cho STT 45: Hệ thống Cảnh báo khẩn cấp theo v
 """
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 import uuid
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 
 # =========================================================================
@@ -39,6 +39,18 @@ class BroadcastAlertRequest(BaseModel):
     center_longitude: float = Field(..., ge=-180.0, le=180.0)
     radius_meters: float = Field(..., ge=100.0, le=50000.0)
     severity_level: str = Field(default="CRITICAL", description="Mức độ nghiêm trọng: CRITICAL, HIGH, WARNING")
+    severity: Optional[str] = None
+    hotline_phone: Optional[str] = None
+    peak_time_estimate: Optional[str] = None
+    expires_in_hours: Optional[int] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_severity(cls, data: Any):
+        if isinstance(data, dict):
+            if "severity" in data and ("severity_level" not in data or not data["severity_level"]):
+                data["severity_level"] = data["severity"]
+        return data
 
 
 class BroadcastAlertResponse(BaseModel):
@@ -49,7 +61,18 @@ class BroadcastAlertResponse(BaseModel):
     alert_type: str
     title: str
     actual_sent_count: int
+    recipients_count: Optional[int] = None
+    status: str = "ACTIVE"
+    issued_at: Optional[datetime] = None
     message: str
+
+    @model_validator(mode="after")
+    def populate_compat_fields(self):
+        if self.recipients_count is None:
+            self.recipients_count = self.actual_sent_count
+        if self.issued_at is None:
+            self.issued_at = datetime.utcnow()
+        return self
 
 
 class BroadcastHistoryItem(BaseModel):
@@ -63,12 +86,35 @@ class BroadcastHistoryItem(BaseModel):
     center_longitude: float
     radius_meters: float
     severity_level: str
+    severity: Optional[str] = None
     actual_sent_count: int
+    recipients_count: Optional[int] = None
     status: str
     broadcasted_at: datetime
+    issued_at: Optional[datetime] = None
     version: int
 
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="after")
+    def populate_compat_history(self):
+        if self.issued_at is None and self.broadcasted_at:
+            self.issued_at = self.broadcasted_at
+        if self.severity is None and self.severity_level:
+            self.severity = self.severity_level
+        if self.recipients_count is None:
+            self.recipients_count = self.actual_sent_count
+        return self
+
+    @model_validator(mode="after")
+    def populate_compat_fields(self):
+        if self.severity is None:
+            self.severity = self.severity_level
+        if self.recipients_count is None:
+            self.recipients_count = self.actual_sent_count
+        if self.issued_at is None:
+            self.issued_at = self.broadcasted_at
+        return self
 
 
 class CancelAlertRequest(BaseModel):

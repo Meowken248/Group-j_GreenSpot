@@ -3,7 +3,7 @@ Repository Pattern Implementation: Voice Assistant Repository
 Thực hiện các thao tác CRUD và truy vấn tối ưu trên CSDL cho Trợ lý giọng nói với SQL tường minh 100%.
 """
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 import uuid
 from sqlalchemy import text, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -152,6 +152,40 @@ class VoiceAssistantRepository(IVoiceAssistantRepository):
         stmt = select(VoiceInteractionLog).from_statement(text(base_sql)).params(**params)
         result = await db.execute(stmt)
         return list(result.scalars().all())
+
+    async def get_user_reward_wallet_summary(
+        self,
+        db: AsyncSession,
+        user_id: uuid.UUID,
+    ) -> Optional[Dict[str, Any]]:
+        """Truy vấn số dư GreenPoints và giao dịch gần nhất của người dùng bằng SQL tường minh (STT 29)."""
+        sql = text("""
+            SELECT
+                u.user_id,
+                u.full_name,
+                COALESCE(u.green_points, 0) AS green_points,
+                (
+                    SELECT rt.description
+                    FROM reward_transactions rt
+                    WHERE rt.user_id = :user_id
+                    ORDER BY rt.created_at DESC
+                    LIMIT 1
+                ) AS recent_reward
+            FROM users u
+            WHERE u.user_id = :user_id
+              AND u.deleted_at IS NULL
+            LIMIT 1
+        """)
+        result = await db.execute(sql, {"user_id": user_id})
+        row = result.mappings().first()
+        if not row or not isinstance(row.get("green_points"), (int, float)):
+            return None
+        return {
+            "user_id": str(row["user_id"]),
+            "full_name": row.get("full_name") or "Công dân Xanh",
+            "balance": int(row["green_points"]),
+            "recent_reward": row.get("recent_reward") or "Chưa có giao dịch đổi thưởng gần đây",
+        }
 
 
 # Singleton instance sẵn sàng inject vào Router & Service

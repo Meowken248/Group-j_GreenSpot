@@ -145,14 +145,14 @@ export const APP_ROUTES: Record<ActiveTab, RouteDefinition> = {
     path: "/emergency/flood-sos",
     label: "Cứu nạn ngập lụt khẩn cấp (Flood SOS)",
     aliases: ["/emergency/flood-sos", "/flood-sos", "#flood-sos", "#emergency/flood-sos", "#sos"],
-    requiresAuth: false,
+    requiresAuth: true,
   },
   "incident-export": {
     tab: "incident-export",
     path: "/reports/incident-export",
     label: "Trích xuất & Báo cáo dữ liệu sự cố (Excel/PDF)",
     aliases: ["/reports/incident-export", "/incident-export", "#incident-export", "#reports/incident-export", "#export"],
-    requiresAuth: false,
+    requiresAuth: true,
   },
   "admin-dashboard": {
     tab: "admin-dashboard",
@@ -168,7 +168,7 @@ export const APP_ROUTES: Record<ActiveTab, RouteDefinition> = {
       "#system-activity",
       "#admin-stats",
     ],
-    requiresAuth: false,
+    requiresAuth: true,
   },
 
   // ── CÁC PHÂN HỆ NỀN TẢNG KHÁC ───────────────────────────────────────────

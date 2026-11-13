@@ -52,47 +52,32 @@ def get_optional_user_id(authorization: Optional[str] = Header(None)) -> Optiona
     """Trích xuất user_id từ Bearer Token nếu có (hỗ trợ cả người dùng vãng lai và đã đăng nhập)"""
     if not authorization:
         return None
-    try:
-        parts = authorization.split()
-        if len(parts) == 2 and parts[0].lower() == "bearer":
-            payload = decode_access_token(parts[1])
-            if payload and "sub" in payload:
-                return uuid.UUID(payload["sub"])
-    except Exception:
-        pass
-    return None
+from app.api.v1.rbac import (
+    get_current_active_user,
+    get_optional_active_user,
+    require_roles_or_permission,
+)
+
+require_broadcast_role = require_roles_or_permission(
+    allowed_roles={"ADMIN", "OFFICER", "COORDINATOR", "DISTRICT_MANAGER"},
+    module="FLOOD_WARNINGS",
+    action="CREATE",
+    deny_message="Chỉ Cán bộ quản trị và Ban Chỉ huy PCTT mới có quyền phát sóng cảnh báo khẩn cấp",
+)
 
 
-def verify_broadcast_authority(authorization: Optional[str] = Header(None)) -> Optional[uuid.UUID]:
-    """Kiểm tra phân quyền: Chỉ Quản trị viên và Cán bộ Ban chỉ huy mới có quyền phát lệnh khẩn cấp"""
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Yêu cầu đăng nhập để truy cập chức năng này",
-        )
-    try:
-        parts = authorization.split()
-        if len(parts) != 2 or parts[0].lower() != "bearer":
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token không hợp lệ")
-        payload = decode_access_token(parts[1])
-        if not payload:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token không hợp lệ hoặc đã hết hạn")
-        role = payload.get("role")
-        permissions = payload.get("permissions", [])
+async def get_optional_user_id(
+    current_user: Optional[User] = Depends(get_optional_active_user),
+) -> Optional[uuid.UUID]:
+    """Trích xuất user_id từ session đã xác thực nếu có (dùng cho Safety Modal check trạng thái)."""
+    return current_user.user_id if current_user else None
 
-        allowed_roles = {"ADMIN", "OFFICER", "COORDINATOR", "DISTRICT_MANAGER"}
-        has_perm = "INCIDENTS" in permissions or "STATISTICS" in permissions
 
-        if role not in allowed_roles and not has_perm:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Chỉ Cán bộ quản trị và Ban Chỉ huy PCTT mới có quyền phát sóng cảnh báo khẩn cấp",
-            )
-        return uuid.UUID(payload["sub"])
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token xác thực không hợp lệ")
+async def verify_broadcast_authority(
+    current_user: User = Depends(require_broadcast_role),
+) -> uuid.UUID:
+    """Kiểm tra phân quyền thực tế từ DB/RBAC: Chỉ Quản trị viên và Ban Chỉ huy mới được phát lệnh khẩn cấp."""
+    return current_user.user_id
 
 
 # =========================================================================
@@ -108,6 +93,7 @@ async def estimate_recipients(
     payload: AlertEstimateRequest,
     db: AsyncSession = Depends(get_db),
     service: EmergencyAlertService = Depends(get_emergency_service),
+    _user_id: uuid.UUID = Depends(verify_broadcast_authority),
 ):
     """Tính toán thời gian thực số lượng thiết bị công dân nằm trong bán kính tâm ghim"""
     return await service.estimate_recipients(db, payload)

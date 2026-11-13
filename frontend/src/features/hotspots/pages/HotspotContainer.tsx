@@ -269,6 +269,31 @@ export const HotspotContainer: React.FC<HotspotContainerProps> = ({
     }, 400);
   };
 
+  // Điều hướng sang STT 21 (Sự kiện Chủ Nhật Xanh) với thông tin điểm nóng điền sẵn
+  const handleOrganizeGreenSunday = (detail: HotspotDetailResponse) => {
+    setIsDetailOpen(false);
+    try {
+      const prefill = {
+        title: `Chiến dịch Chủ Nhật Xanh dọn dẹp ${detail.title}`,
+        description: `Chiến dịch ra quân tình nguyện làm sạch môi trường tại điểm nóng ô nhiễm ${detail.title} (${detail.incident_type_label}). Dự báo nguy cơ tái phát sinh: ${detail.forecast_48h}.`,
+        address: detail.title,
+        district: detail.district || "Quận 8",
+        latitude: detail.latitude || 10.742,
+        longitude: detail.longitude || 106.662,
+        location_name: detail.title,
+      };
+      localStorage.setItem("greenspot_prefill_event", JSON.stringify(prefill));
+    } catch {
+      // Ignored
+    }
+
+    showToast("🌱 Đang chuyển thông tin điểm nóng sang Sự kiện Chủ Nhật Xanh (STT 21)...", "success");
+
+    setTimeout(() => {
+      navigateToRoute("events");
+    }, 400);
+  };
+
   // Điều hướng sang STT 43 theo dõi hiện trường với orderId
   const handleViewActiveOrder = (orderId: string) => {
     setIsDetailOpen(false);
@@ -370,6 +395,7 @@ export const HotspotContainer: React.FC<HotspotContainerProps> = ({
         isLoading={isDetailLoading}
         onCreateDispatch={handleCreateDispatch}
         onViewActiveOrder={handleViewActiveOrder}
+        onOrganizeGreenSunday={handleOrganizeGreenSunday}
       />
 
       {/* Footer chuẩn hóa */}

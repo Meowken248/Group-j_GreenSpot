@@ -110,6 +110,7 @@ class MockSpatialFacilityRepositoryForTriage(ISpatialFacilityRepository):
 
     def __init__(self, incident: Incident):
         self.incident = incident
+        self.audit_logs: List[IncidentAuditLog] = []
         self.facilities = [
             (1, "Trường Tiểu học Lê Lợi", "Trường học", "128 Lê Lợi, Q.1", "02838221234", "Mức dễ tổn thương cao", 10.7748, 106.7035),
             (2, "Bệnh viện Đa khoa Sài Gòn", "Bệnh viện", "125 Lê Lợi, Q.1", "02838291711", "Mức dễ tổn thương rất cao", 10.7720, 106.7000),
@@ -155,7 +156,7 @@ class MockSpatialFacilityRepositoryForTriage(ISpatialFacilityRepository):
         return None
 
     async def save_audit_log(self, db: AsyncSession, audit_log: IncidentAuditLog) -> None:
-        pass
+        self.audit_logs.append(audit_log)
 
 
 class TestAITriageServiceUnit(unittest.TestCase):
@@ -358,21 +359,67 @@ class TestTriageHttpEndpoints(unittest.TestCase):
 
     def test_12_http_api_endpoints_coverage(self):
         from app.main import app
+        from app.api.v1.rbac import get_current_active_user
+        from app.models.rbac import User, Role
 
         mock_repo = MockTriageRepository()
         mock_spatial_repo = MockSpatialFacilityRepositoryForTriage(mock_repo.incident)
+        operator_uuid = uuid.UUID("33333333-3333-3333-3333-333333333333")
 
         async def override_get_db():
             yield AsyncMock(spec=AsyncSession)
 
         app.dependency_overrides[get_db] = override_get_db
+        client = TestClient(app)
 
-        with patch("app.api.v1.triage.incidents_triage.triage_repository", mock_repo), \
-             patch("app.services.triage.triage_ai_service.triage_repository", mock_repo), \
-             patch("app.api.v1.triage.spatial_facilities.spatial_facility_repository", mock_spatial_repo), \
-             patch("app.services.triage.spatial_facility_service.spatial_facility_repository", mock_spatial_repo), \
-             patch("app.services.triage.triage_ai_service.call_kira_ai", AsyncMock(return_value="Bản tóm tắt sự cố ngõ 128 Lê Lợi do AI tạo lại.")):
-            with TestClient(app) as client:
+        try:
+            with patch("app.api.v1.triage.incidents_triage.triage_repository", mock_repo), \
+                 patch("app.services.triage.triage_ai_service.triage_repository", mock_repo), \
+                 patch("app.api.v1.triage.spatial_facilities.spatial_facility_repository", mock_spatial_repo), \
+                 patch("app.services.triage.spatial_facility_service.spatial_facility_repository", mock_spatial_repo), \
+                 patch("app.services.triage.triage_ai_service.call_kira_ai", AsyncMock(return_value="Bản tóm tắt sự cố ngõ 128 Lê Lợi do AI tạo lại.")):
+                sample_id = str(mock_repo.incident.incident_id)
+
+                # 0. Không đăng nhập -> bị chặn 401
+                r_unauth = client.get("/api/v1/incidents/triage/list")
+                self.assertEqual(r_unauth.status_code, 401)
+                r_accept_unauth = client.post(
+                    f"/api/v1/incidents/triage/{sample_id}/accept",
+                    json={"version": mock_repo.incident.version},
+                )
+                self.assertEqual(r_accept_unauth.status_code, 401)
+                r_alert_unauth = client.post(
+                    "/api/v1/spatial/facilities/alert",
+                    json={"incident_id": sample_id, "facility_id": 1, "message_text": "Test"},
+                )
+                self.assertEqual(r_alert_unauth.status_code, 401)
+
+                # 0b. CITIZEN -> bị chặn 403
+                async def _citizen_user():
+                    return User(
+                        user_id=uuid.uuid4(),
+                        email="citizen@greenspot.vn",
+                        full_name="Citizen",
+                        status="ACTIVE",
+                        role=Role(role_code="CITIZEN", role_name="CITIZEN"),
+                    )
+
+                app.dependency_overrides[get_current_active_user] = _citizen_user
+                r_cit = client.get("/api/v1/incidents/triage/list")
+                self.assertEqual(r_cit.status_code, 403)
+
+                # 0c. OFFICER / COORDINATOR hợp lệ -> được phép & ghi nhận đúng operator_id
+                async def _officer_user():
+                    return User(
+                        user_id=operator_uuid,
+                        email="officer@greenspot.vn",
+                        full_name="Officer Triage",
+                        status="ACTIVE",
+                        role=Role(role_code="OFFICER", role_name="OFFICER"),
+                    )
+
+                app.dependency_overrides[get_current_active_user] = _officer_user
+
                 # 1. Test GET /api/v1/incidents/triage/list
                 r_list = client.get("/api/v1/incidents/triage/list")
                 self.assertEqual(r_list.status_code, 200)
@@ -395,6 +442,14 @@ class TestTriageHttpEndpoints(unittest.TestCase):
                 self.assertEqual(r_regen.status_code, 200)
                 self.assertIn("ai_summary", r_regen.json())
 
+                # 3b. Test POST /api/v1/incidents/triage/{id}/accept ghi nhận đúng operator_id từ JWT
+                r_acc = client.post(
+                    f"/api/v1/incidents/triage/{sample_id}/accept",
+                    json={"version": data["version"]},
+                )
+                self.assertEqual(r_acc.status_code, 200)
+                self.assertEqual(mock_repo.audit_logs[-1].performed_by, operator_uuid)
+
                 # 4. Test GET /api/v1/incidents/triage/{id}/audit-logs
                 r_logs = client.get(f"/api/v1/incidents/triage/{sample_id}/audit-logs")
                 self.assertEqual(r_logs.status_code, 200)
@@ -414,7 +469,14 @@ class TestTriageHttpEndpoints(unittest.TestCase):
                 self.assertIn("facilities", buf_data)
                 self.assertGreaterEqual(buf_data["total_found"], 1)
 
-        app.dependency_overrides.pop(get_db, None)
+                # 6. Test STT 40: alert & call-log ghi nhận đúng operator_id từ JWT
+                r_call = client.post(
+                    f"/api/v1/spatial/facilities/call-log?incident_id={sample_id}&facility_id=1"
+                )
+                self.assertEqual(r_call.status_code, 200)
+                self.assertEqual(mock_spatial_repo.audit_logs[-1].performed_by, operator_uuid)
+        finally:
+            app.dependency_overrides.clear()
 
 
 if __name__ == "__main__":

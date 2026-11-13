@@ -398,6 +398,9 @@ export const Screen6FieldTracking: React.FC<Screen6FieldTrackingProps> = ({
             onClick={() => {
               try {
                 const navData = {
+                  originLat: team_lat,
+                  originLng: team_lng,
+                  originName: `Vị trí đội: ${team_name}`,
                   destLat: incident_lat,
                   destLng: incident_lng,
                   destName: incident_title,

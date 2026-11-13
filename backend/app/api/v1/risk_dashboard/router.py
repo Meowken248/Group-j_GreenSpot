@@ -27,50 +27,18 @@ from app.services.risk_dashboard.risk_dashboard_service import (
     RiskDashboardService,
     risk_dashboard_service,
 )
-from app.utils.security import decode_access_token
+from app.api.v1.rbac import require_roles_or_permission
 
 router = APIRouter(prefix="/risk-dashboard", tags=["Urban Environmental Risk Executive Dashboard (STT 42)"])
 
 ALLOWED_ROLES = {"ADMIN", "OFFICER", "DISTRICT_MANAGER", "COORDINATOR"}
 
-
-async def verify_risk_dashboard_access(
-    authorization: Optional[str] = Header(None),
-) -> Optional[User]:
-    """
-    Quy tắc kiểm tra phân quyền truy cập:
-    Chỉ tài khoản có vai trò Quản trị viên (Admin) hoặc Lãnh đạo cơ quan ban ngành mới có quyền truy cập.
-    Hỗ trợ kiểm tra JWT token nếu có.
-    """
-    if not authorization:
-        # Nếu chưa truyền header (môi trường dev/test hoặc preview), cho phép tiếp tục
-        return None
-
-    try:
-        scheme, token = authorization.split()
-        if scheme.lower() != "bearer":
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Tiêu đề xác thực không đúng định dạng Bearer",
-            )
-        payload = decode_access_token(token)
-        if not payload:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Phiên đăng nhập đã hết hạn hoặc không hợp lệ",
-            )
-
-        role_code = payload.get("role")
-        if role_code and role_code not in ALLOWED_ROLES:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Chỉ Quản trị viên (Admin) hoặc Lãnh đạo cơ quan ban ngành mới có quyền truy cập Dashboard này",
-            )
-        return None
-    except HTTPException:
-        raise
-    except Exception:
-        return None
+verify_risk_dashboard_access = require_roles_or_permission(
+    allowed_roles=ALLOWED_ROLES,
+    module="STATISTICS",
+    action="VIEW",
+    deny_message="Chỉ Quản trị viên (Admin) hoặc Lãnh đạo cơ quan ban ngành mới có quyền truy cập Dashboard này",
+)
 
 
 @router.get(

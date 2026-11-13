@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Set
 from fastapi import APIRouter, Depends, HTTPException, Header, status
 from fastapi.responses import JSONResponse
 from sqlalchemy import select, func, text, delete, update
@@ -168,6 +168,64 @@ def require_permission(module: str, action: str):
         return current_user
 
     return _perm_dependency
+
+
+async def get_optional_active_user(
+    authorization: Optional[str] = Header(None),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[User]:
+    """
+    Xác thực tùy chọn: Trả về None khi KHÔNG gửi Authorization header.
+    Nếu header Authorization được gửi, bắt buộc phải là Bearer token hợp lệ và session đang hoạt động.
+    """
+    if not authorization:
+        return None
+    return await get_current_active_user(authorization=authorization, db=db)
+
+
+def require_roles_or_permission(
+    allowed_roles: Set[str],
+    module: Optional[str] = None,
+    action: str = "VIEW",
+    deny_message: Optional[str] = None,
+):
+    """
+    Dependency kiểm tra người dùng đã đăng nhập hợp lệ (JWT + session ACTIVE)
+    và có role nằm trong `allowed_roles` HOẶC được cấp quyền `module:action` (hoặc `module:ACCESS`) trong CSDL.
+    ADMIN luôn được phép truy cập.
+    """
+    normalized_roles = {r.upper() for r in allowed_roles}
+
+    async def _role_or_perm_dependency(
+        current_user: User = Depends(get_current_active_user),
+        db: AsyncSession = Depends(get_db),
+    ) -> User:
+        role_code = (current_user.role.role_code if current_user.role else "").upper()
+        if role_code == "ADMIN" or role_code in normalized_roles:
+            return current_user
+
+        if module and current_user.role_id:
+            candidate_codes = [f"{module}:{action}"]
+            if action != "ACCESS":
+                candidate_codes.append(f"{module}:ACCESS")
+            stmt = (
+                select(RolePermission)
+                .join(Permission, RolePermission.permission_id == Permission.permission_id)
+                .where(
+                    RolePermission.role_id == current_user.role_id,
+                    Permission.permission_code.in_(candidate_codes),
+                )
+            )
+            res = await db.execute(stmt)
+            if res.scalar_one_or_none():
+                return current_user
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=deny_message or f"Bạn không có quyền truy cập chức năng này (yêu cầu quyền {module or ', '.join(sorted(normalized_roles))}).",
+        )
+
+    return _role_or_perm_dependency
 
 
 @router.get("/roles", response_model=RoleListResponse)

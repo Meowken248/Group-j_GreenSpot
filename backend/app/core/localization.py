@@ -53,17 +53,21 @@ def get_current_language(request: Request) -> str:
     3. Standard Header `Accept-Language` (e.g. 'en-US,en;q=0.9')
     4. Default fallback: 'vi'
     """
+    if request is None:
+        return DEFAULT_LANGUAGE
+
     # 1. Query param
-    query_lang = request.query_params.get("lang") or request.query_params.get("locale")
+    query_lang = getattr(request, "query_params", {}).get("lang") or getattr(request, "query_params", {}).get("locale")
     if query_lang and query_lang.lower().strip() in SUPPORTED_LANGUAGES:
         return query_lang.lower().strip()
 
     # 2. X-Language header
-    x_lang = request.headers.get("x-language") or request.headers.get("X-Language")
+    headers = getattr(request, "headers", {})
+    x_lang = headers.get("x-language") or headers.get("X-Language")
     if x_lang and x_lang.lower().strip() in SUPPORTED_LANGUAGES:
         return x_lang.lower().strip()
 
     # 3. Accept-Language header
-    accept_lang = request.headers.get("accept-language") or request.headers.get("Accept-Language")
+    accept_lang = headers.get("accept-language") or headers.get("Accept-Language")
     return parse_accept_language(accept_lang)
 

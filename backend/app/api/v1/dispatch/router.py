@@ -28,10 +28,11 @@ from app.schemas.dispatch.schemas import (
     UpdateTeamLocationRequest,
 )
 
-from app.utils.security import decode_access_token
-from fastapi import Header
+from app.api.v1.rbac import require_roles_or_permission
+from app.models.rbac import User
 
 router = APIRouter(prefix="/dispatch", tags=["Operations Dispatch Center (STT 43)"])
+
 
 # Dependency Inversion: Khởi tạo service với repository
 def get_dispatch_service() -> DispatchService:
@@ -39,34 +40,22 @@ def get_dispatch_service() -> DispatchService:
     return DispatchService(repo)
 
 
-def verify_dispatch_access(authorization: Optional[str] = Header(None)):
-    """Kiểm tra phân quyền: Chỉ Quản trị viên, Cán bộ điều phối, Cán bộ quận được thao tác"""
-    if not authorization:
-        return None
+DISPATCH_VIEW_ROLES = {"ADMIN", "OFFICER", "COORDINATOR", "DISTRICT_MANAGER", "RESPONDER"}
+DISPATCH_COMMAND_ROLES = {"ADMIN", "OFFICER", "COORDINATOR", "DISTRICT_MANAGER"}
 
-    try:
-        scheme, token = authorization.split()
-        if scheme.lower() != "bearer":
-            return None
-        payload = decode_access_token(token)
-        if not payload:
-            return None
-        role = payload.get("role")
-        permissions = payload.get("permissions", [])
+verify_dispatch_access = require_roles_or_permission(
+    allowed_roles=DISPATCH_VIEW_ROLES,
+    module="DISPATCH_TASKS",
+    action="VIEW",
+    deny_message="Chỉ Quản trị viên, Cán bộ điều phối và Đội phản ứng tác nghiệp mới có quyền truy cập chức năng này.",
+)
 
-        allowed_roles = {"ADMIN", "OFFICER", "COORDINATOR", "DISTRICT_MANAGER"}
-        has_perm = "INCIDENTS" in permissions or "STATISTICS" in permissions
-
-        if role not in allowed_roles and not has_perm:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Chỉ Quản trị viên và Cán bộ điều phối tác nghiệp mới có quyền truy cập chức năng này.",
-            )
-        return payload
-    except HTTPException:
-        raise
-    except Exception:
-        return None
+verify_dispatch_command_access = require_roles_or_permission(
+    allowed_roles=DISPATCH_COMMAND_ROLES,
+    module="DISPATCH_TASKS",
+    action="UPDATE",
+    deny_message="Chỉ Quản trị viên và Cán bộ điều phối tác nghiệp mới có quyền lập, chỉnh sửa, huỷ hoặc đóng lệnh.",
+)
 
 
 @router.get("/orders", response_model=DispatchListResponse)
@@ -135,7 +124,7 @@ async def create_dispatch_order(
     request: CreateDispatchOrderRequest,
     db: AsyncSession = Depends(get_db),
     service: DispatchService = Depends(get_dispatch_service),
-    _user: Optional[dict] = Depends(verify_dispatch_access),
+    _user: User = Depends(verify_dispatch_command_access),
 ):
     """Màn 2/6: Khởi tạo và giao lệnh điều động tác nghiệp mới"""
     return await service.create_dispatch_order(db, request)
@@ -147,7 +136,7 @@ async def edit_dispatch_order(
     request: EditDispatchOrderRequest,
     db: AsyncSession = Depends(get_db),
     service: DispatchService = Depends(get_dispatch_service),
-    _user: Optional[dict] = Depends(verify_dispatch_access),
+    _user: User = Depends(verify_dispatch_command_access),
 ):
     """Màn 3/6: Điều chỉnh đội cơ động hoặc gia hạn thời gian lệnh"""
     return await service.edit_dispatch_order(db, order_id, request)
@@ -159,7 +148,7 @@ async def cancel_dispatch_order(
     request: CancelDispatchOrderRequest,
     db: AsyncSession = Depends(get_db),
     service: DispatchService = Depends(get_dispatch_service),
-    _user: Optional[dict] = Depends(verify_dispatch_access),
+    _user: User = Depends(verify_dispatch_command_access),
 ):
     """Màn 4/6 & 5/6: Thu hồi và huỷ bỏ lệnh điều phối kèm lý do giải trình"""
     return await service.cancel_dispatch_order(db, order_id, request)
@@ -171,7 +160,7 @@ async def close_dispatch_order(
     request: CloseDispatchOrderRequest,
     db: AsyncSession = Depends(get_db),
     service: DispatchService = Depends(get_dispatch_service),
-    _user: Optional[dict] = Depends(verify_dispatch_access),
+    _user: User = Depends(verify_dispatch_command_access),
 ):
     """Màn 6/6: Nghiệm thu và đóng lệnh xử lý hiện trường"""
     return await service.close_dispatch_order(db, order_id, request)

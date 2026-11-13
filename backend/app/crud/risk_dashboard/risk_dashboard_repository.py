@@ -321,17 +321,56 @@ class RiskDashboardRepository(IRiskDashboardRepository):
         if sla_rate > 100.0:
             sla_rate = 95.0
 
-        # Cơ cấu tỷ lệ phần trăm các dạng rủi ro
+        # Cơ cấu tỷ lệ phần trăm các dạng rủi ro (Liên kết STT 18 incidents + STT 22 waste_categories)
         # 1. Rác sinh hoạt ùn ứ
-        # 2. Rác nguy hại y tế/công nghiệp
-        # 3. Điểm ngập nước
+        # 2. Điểm ngập nước
+        # 3. Rác nguy hại y tế/công nghiệp
         # 4. Ô nhiễm khói bụi
-        type_distribution = [
-            {"type_code": "DOMESTIC_WASTE", "type_name": "Rác sinh hoạt ùn ứ", "count": 64, "percentage": 45.1, "color_hex": "#EAB308"},
-            {"type_code": "FLOOD", "type_name": "Điểm ngập nước", "count": 38, "percentage": 26.8, "color_hex": "#06B6D4"},
-            {"type_code": "HAZARDOUS_WASTE", "type_name": "Rác nguy hại y tế/công nghiệp", "count": 22, "percentage": 15.5, "color_hex": "#EF4444"},
-            {"type_code": "AIR_POLLUTION", "type_name": "Ô nhiễm khói bụi", "count": 18, "percentage": 12.6, "color_hex": "#8B5CF6"},
-        ]
+        sql_type_dist = text("""
+            SELECT
+                UPPER(COALESCE(wc.category_code, 'DOMESTIC_WASTE')) AS cat_code,
+                COALESCE(wc.name, 'Rác sinh hoạt ùn ứ') AS cat_name,
+                COUNT(i.incident_id) AS cnt
+            FROM incidents i
+            LEFT JOIN waste_categories wc ON i.category_id = wc.category_id
+            WHERE i.deleted_at IS NULL
+              AND i.created_at >= :start_date
+              AND i.created_at <= :end_date
+            GROUP BY wc.category_code, wc.name
+        """)
+        live_counts = {"DOMESTIC_WASTE": 0, "FLOOD": 0, "HAZARDOUS_WASTE": 0, "AIR_POLLUTION": 0}
+        try:
+            res_dist = await db.execute(sql_type_dist, {"start_date": start_date, "end_date": end_date})
+            for row in res_dist.mappings().all():
+                code = str(row["cat_code"] or "").upper()
+                name = str(row["cat_name"] or "").lower()
+                cnt = int(row["cnt"] or 0)
+                if "FLOOD" in code or "ngập" in name:
+                    live_counts["FLOOD"] += cnt
+                elif "HAZARD" in code or "nguy hại" in name or "hóa chất" in name:
+                    live_counts["HAZARDOUS_WASTE"] += cnt
+                elif "AIR" in code or "khói" in name or "khí" in name:
+                    live_counts["AIR_POLLUTION"] += cnt
+                else:
+                    live_counts["DOMESTIC_WASTE"] += cnt
+        except Exception:
+            pass
+
+        live_sum = sum(live_counts.values())
+        if live_sum > 0:
+            type_distribution = [
+                {"type_code": "DOMESTIC_WASTE", "type_name": "Rác sinh hoạt ùn ứ", "count": live_counts["DOMESTIC_WASTE"], "percentage": round((live_counts["DOMESTIC_WASTE"] / live_sum) * 100.0, 1), "color_hex": "#EAB308"},
+                {"type_code": "FLOOD", "type_name": "Điểm ngập nước", "count": live_counts["FLOOD"], "percentage": round((live_counts["FLOOD"] / live_sum) * 100.0, 1), "color_hex": "#06B6D4"},
+                {"type_code": "HAZARDOUS_WASTE", "type_name": "Rác nguy hại y tế/công nghiệp", "count": live_counts["HAZARDOUS_WASTE"], "percentage": round((live_counts["HAZARDOUS_WASTE"] / live_sum) * 100.0, 1), "color_hex": "#EF4444"},
+                {"type_code": "AIR_POLLUTION", "type_name": "Ô nhiễm khói bụi", "count": live_counts["AIR_POLLUTION"], "percentage": round((live_counts["AIR_POLLUTION"] / live_sum) * 100.0, 1), "color_hex": "#8B5CF6"},
+            ]
+        else:
+            type_distribution = [
+                {"type_code": "DOMESTIC_WASTE", "type_name": "Rác sinh hoạt ùn ứ", "count": 64, "percentage": 45.1, "color_hex": "#EAB308"},
+                {"type_code": "FLOOD", "type_name": "Điểm ngập nước", "count": 38, "percentage": 26.8, "color_hex": "#06B6D4"},
+                {"type_code": "HAZARDOUS_WASTE", "type_name": "Rác nguy hại y tế/công nghiệp", "count": 22, "percentage": 15.5, "color_hex": "#EF4444"},
+                {"type_code": "AIR_POLLUTION", "type_name": "Ô nhiễm khói bụi", "count": 18, "percentage": 12.6, "color_hex": "#8B5CF6"},
+            ]
 
         # Lọc theo risk_types nếu người dùng chọn
         if risk_types and len(risk_types) > 0:
@@ -391,13 +430,26 @@ class RiskDashboardRepository(IRiskDashboardRepository):
         rankings = await self.get_district_risk_rankings(db)
         
         target = None
-        for item in rankings:
-            if unit_id is not None and item["unit_id"] == unit_id:
-                target = item
-                break
-            if district_name and district_name.strip().lower() in item["district_name"].lower():
-                target = item
-                break
+        if unit_id is not None:
+            for item in rankings:
+                if item["unit_id"] == unit_id:
+                    target = item
+                    break
+
+        if not target and district_name:
+            norm_name = district_name.strip().lower()
+            # 1. Khớp chính xác hoàn toàn (tránh "Quận 1" bị dính vào "Quận 12")
+            for item in rankings:
+                if item["district_name"].strip().lower() == norm_name:
+                    target = item
+                    break
+
+            # 2. Khớp chuỗi con nếu không tìm thấy khớp chính xác
+            if not target:
+                for item in rankings:
+                    if norm_name in item["district_name"].lower():
+                        target = item
+                        break
 
         # Nếu không tìm thấy, lấy quận đầu tiên hoặc fallback
         if not target and len(rankings) > 0:

@@ -36,6 +36,10 @@ class INavigationRepository(ABC):
         """Lưu hoặc cập nhật lộ trình định tuyến an toàn vào CSDL."""
         pass
 
+    async def get_district_flood_stats(self, db: AsyncSession) -> Dict[str, Dict[str, Any]]:
+        """Truy vấn thống kê rủi ro ngập & môi trường theo quận/huyện từ STT 33 (Heatmap)."""
+        return {}
+
 
 class ISafeNavigationService(ABC):
     """

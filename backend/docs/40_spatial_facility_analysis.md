@@ -446,7 +446,11 @@ python -m unittest tests/triage/test_spatial_facility_analysis.py -v
 # OK
 ```
 
-### 9.3. Kiểm tra Frontend Build
+### 9.3. Kiểm thử Tích hợp Đa vai trò Toàn trình
+Toàn bộ luồng quét vùng đệm cơ sở nhạy cảm (STT 40) đã được kiểm thử liên hoàn cùng STT 18 (Sự cố) và STT 41 (Lộ trình an toàn né ngập) trong test suite:
+`pytest BackEnd/tests/test_multi_role_workflow_37_to_48.py -v` $\to$ **6/6 PASSED (100%)**.
+
+### 9.4. Kiểm tra Frontend Build
 ```bash
 cd FrontEnd
 npm run build

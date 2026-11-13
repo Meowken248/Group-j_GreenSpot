@@ -206,7 +206,7 @@ Mọi bảng nghiệp vụ trong hệ thống phải tuân thủ nghiêm ngặt 
 
 ---
 
-## 7. MA TRẬN ĐỐI CHIẾU 8 TÍNH NĂNG ĐÃ CHUẨN HÓA (STT 37 - 44)
+## 7. MA TRẬN ĐỐI CHIẾU 12 TÍNH NĂNG ĐÃ CHUẨN HÓA (STT 37 - 48)
 
 Bảng đối chiếu đảm bảo **tính nhất quán 100%** giữa tài liệu đặc tả kỹ thuật và cấu trúc mã nguồn Backend:
 
@@ -220,6 +220,10 @@ Bảng đối chiếu đảm bảo **tính nhất quán 100%** giữa tài liệ
 | **42** | Urban Environmental Risk Dashboard | `docs/42_urban_risk_dashboard.md` | `app/interface/risk_dashboard/risk_dashboard_interface.py` | `app/crud/risk_dashboard/risk_dashboard_repository.py` | `app/services/risk_dashboard/risk_dashboard_service.py` | `app/api/v1/risk_dashboard/router.py` |
 | **43** | Operations Dispatch Center | `docs/43_operations_dispatch.md` | `app/interface/dispatch/dispatch_interface.py` | `app/crud/dispatch/dispatch_repository.py` | `app/services/dispatch/dispatch_service.py` | `app/api/v1/dispatch/router.py` |
 | **44** | Hotspot Spatial Analytics & 7-Day Forecast | `docs/44_hotspot_analytics_forecast.md` | `app/interface/hotspots/hotspot_interface.py` | `app/crud/hotspots/hotspot_repository.py` | `app/services/hotspots/hotspot_service.py` | `app/api/v1/hotspots/router.py` |
+| **45** | Emergency Broadcast Alert & Safety Survey | `docs/45_emergency_broadcast_alert.md` | `app/interface/emergency_alert/alert_interface.py` | `app/crud/emergency_alert/alert_repository.py` | `app/services/emergency_alert/alert_service.py` | `app/api/v1/emergency_alert/router.py` |
+| **46** | Flood SOS & Community Volunteer Network | `docs/46_flood_sos_volunteer_network.md` | `app/interface/flood_sos/flood_sos_interface.py` | `app/crud/flood_sos/flood_sos_repository.py` | `app/services/flood_sos/flood_sos_service.py` | `app/api/v1/flood_sos/router.py` |
+| **47** | Environmental Incident Data Export (Excel/PDF) | `docs/47_incident_export_reporting.md` | `app/interface/incident_export/incident_export_interface.py` | `app/crud/incident_export/incident_export_repository.py` | `app/services/incident_export/incident_export_service.py` | `app/api/v1/incident_export/router.py` |
+| **48** | Admin Executive System Activity Dashboard | `docs/48_admin_executive_dashboard.md` | `app/interface/admin_dashboard/dashboard_interface.py` | `app/crud/admin_dashboard/dashboard_repository.py` | `app/services/admin_dashboard/dashboard_service.py` | `app/api/v1/admin_dashboard/router.py` |
 
 
 ---

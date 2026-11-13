@@ -129,6 +129,64 @@ class SpatialFacilityRepository(ISpatialFacilityRepository):
                 ))
         return output
 
+    async def get_recycling_facilities_in_bounding_box(
+        self,
+        db: AsyncSession,
+        min_lat: float,
+        max_lat: float,
+        min_lng: float,
+        max_lng: float,
+    ) -> List[Tuple[int, str, str, str, Optional[str], Optional[str], float, float]]:
+        """
+        Liên kết STT 23: Truy vấn các trạm thu gom & tái chế đang hoạt động trong Bounding Box PostGIS.
+        """
+        sql = text("""
+            SELECT
+                rf.facility_id,
+                rf.name AS facility_name,
+                'Trạm tái chế' AS facility_type,
+                rf.address,
+                rf.contact_phone,
+                'MEDIUM' AS vulnerability_level,
+                ST_Y(rf.location)::float AS lat,
+                ST_X(rf.location)::float AS lng
+            FROM recycling_facilities rf
+            WHERE rf.deleted_at IS NULL
+              AND COALESCE(rf.is_deleted, FALSE) = FALSE
+              AND COALESCE(rf.is_active, TRUE) = TRUE
+              AND ST_Y(rf.location) >= :min_lat
+              AND ST_Y(rf.location) <= :max_lat
+              AND ST_X(rf.location) >= :min_lng
+              AND ST_X(rf.location) <= :max_lng
+        """)
+        try:
+            res = await db.execute(
+                sql,
+                {
+                    "min_lat": min_lat,
+                    "max_lat": max_lat,
+                    "min_lng": min_lng,
+                    "max_lng": max_lng,
+                },
+            )
+            rows = res.fetchall()
+            output = []
+            for r in rows:
+                if r.lat is not None and r.lng is not None:
+                    output.append((
+                        r.facility_id,
+                        r.facility_name,
+                        r.facility_type,
+                        r.address,
+                        r.contact_phone,
+                        r.vulnerability_level,
+                        float(r.lat),
+                        float(r.lng),
+                    ))
+            return output
+        except Exception:
+            return []
+
     async def get_facility_with_coords(
         self, db: AsyncSession, facility_id: int
     ) -> Optional[Tuple[EssentialFacility, float, float]]:

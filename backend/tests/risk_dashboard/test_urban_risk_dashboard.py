@@ -293,91 +293,120 @@ async def test_05_district_detail_popup(mock_service):
 
 
 def test_06_http_endpoints_integration(monkeypatch):
-    """Kiểm thử tích hợp các endpoint HTTP của router STT 42 với Mock Repository"""
+    """Kiểm thử tích hợp các endpoint HTTP của router STT 42 với Mock Repository & Auth Guard"""
+    import uuid
     from app.database import get_db
+    from app.api.v1.rbac import get_current_active_user
+    from app.models.rbac import User, Role
     from sqlalchemy.ext.asyncio import AsyncSession
+
     async def override_get_db():
         yield AsyncMock(spec=AsyncSession)
+
+    async def override_admin_user():
+        return User(
+            user_id=uuid.uuid4(),
+            email="admin@greenspot.vn",
+            full_name="Admin User",
+            status="ACTIVE",
+            role=Role(role_code="ADMIN", role_name="ADMIN"),
+        )
+
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_active_user] = override_admin_user
 
     mock_svc = RiskDashboardService(repository=MockRiskDashboardRepository())
     monkeypatch.setattr("app.api.v1.risk_dashboard.router.risk_dashboard_service", mock_svc)
 
     client = TestClient(app)
+    try:
+        # 1. Overview endpoint
+        resp_overview = client.get("/api/v1/risk-dashboard/overview")
+        assert resp_overview.status_code == 200
+        data_overview = resp_overview.json()
+        assert "overall_risk_score" in data_overview
+        assert "district_risks" in data_overview
+        assert len(data_overview["district_risks"]) >= 5
 
-    # 1. Overview endpoint
-    resp_overview = client.get("/api/v1/risk-dashboard/overview")
-    assert resp_overview.status_code == 200
-    data_overview = resp_overview.json()
-    assert "overall_risk_score" in data_overview
-    assert "district_risks" in data_overview
-    assert len(data_overview["district_risks"]) >= 5
+        # 2. Filter analysis endpoint (POST)
+        resp_analysis = client.post(
+            "/api/v1/risk-dashboard/analysis",
+            json={"period": "THIS_MONTH", "risk_types": ["DOMESTIC_WASTE", "FLOOD"]},
+        )
+        assert resp_analysis.status_code == 200
+        data_analysis = resp_analysis.json()
+        assert "summary_table" in data_analysis
+        assert "risk_type_distribution" in data_analysis
 
-    # 2. Filter analysis endpoint (POST)
-    resp_analysis = client.post(
-        "/api/v1/risk-dashboard/analysis",
-        json={"period": "THIS_MONTH", "risk_types": ["DOMESTIC_WASTE", "FLOOD"]},
-    )
-    assert resp_analysis.status_code == 200
-    data_analysis = resp_analysis.json()
-    assert "summary_table" in data_analysis
-    assert "risk_type_distribution" in data_analysis
+        # 3. District detail popup endpoint
+        resp_detail = client.get("/api/v1/risk-dashboard/district/Quận%20Bình%20Tân")
+        assert resp_detail.status_code == 200
+        data_detail = resp_detail.json()
+        assert "district_name" in data_detail
+        assert "pending_incidents_text" in data_detail
+        assert "threatened_facilities_text" in data_detail
 
-    # 3. District detail popup endpoint
-    resp_detail = client.get("/api/v1/risk-dashboard/district/Quận%20Bình%20Tân")
-    assert resp_detail.status_code == 200
-    data_detail = resp_detail.json()
-    assert "district_name" in data_detail
-    assert "pending_incidents_text" in data_detail
-    assert "threatened_facilities_text" in data_detail
-
-    # 4. Export CSV endpoint
-    resp_export = client.post(
-        "/api/v1/risk-dashboard/export?format=csv",
-        json={"period": "THIS_MONTH"},
-    )
-    assert resp_export.status_code == 200
-    assert "text/csv" in resp_export.headers.get("content-type", "")
-    assert "BÁO CÁO PHÂN TÍCH RỦI RO ĐÔ THỊ" in resp_export.text
-
-    app.dependency_overrides.pop(get_db, None)
+        # 4. Export CSV endpoint
+        resp_export = client.post(
+            "/api/v1/risk-dashboard/export?format=csv",
+            json={"period": "THIS_MONTH"},
+        )
+        assert resp_export.status_code == 200
+        assert "text/csv" in resp_export.headers.get("content-type", "")
+        assert "BÁO CÁO PHÂN TÍCH RỦI RO ĐÔ THỊ" in resp_export.text
+    finally:
+        app.dependency_overrides.clear()
 
 
 def test_07_rbac_access_guard(monkeypatch):
-    """Kiểm thử bảo vệ phân quyền: Từ chối vai trò không được phép"""
+    """Kiểm thử bảo vệ phân quyền: Chặn ẩn danh (401), từ chối CITIZEN (403), cho phép ADMIN (200)"""
+    import uuid
     from app.database import get_db
+    from app.api.v1.rbac import get_current_active_user
+    from app.models.rbac import User, Role
     from sqlalchemy.ext.asyncio import AsyncSession
+
     async def override_get_db():
         yield AsyncMock(spec=AsyncSession)
+
     app.dependency_overrides[get_db] = override_get_db
 
     mock_svc = RiskDashboardService(repository=MockRiskDashboardRepository())
     monkeypatch.setattr("app.api.v1.risk_dashboard.router.risk_dashboard_service", mock_svc)
 
     client = TestClient(app)
+    try:
+        # 1. Không có Authorization header -> 401 (không còn bypass return None!)
+        resp_anon = client.get("/api/v1/risk-dashboard/overview")
+        assert resp_anon.status_code == 401
 
-    # Token của CITIZEN (không có quyền truy cập dashboard lãnh đạo)
-    citizen_token = create_access_token(
-        user_id="11111111-1111-1111-1111-111111111111",
-        email="citizen@test.com",
-        role="CITIZEN",
-        session_id="session-citizen-123",
-    )
-    headers = {"Authorization": f"Bearer {citizen_token}"}
+        # 2. CITIZEN (không có quyền truy cập dashboard lãnh đạo) -> 403
+        async def override_citizen():
+            return User(
+                user_id=uuid.uuid4(),
+                email="citizen@test.com",
+                full_name="Citizen",
+                status="ACTIVE",
+                role=Role(role_code="CITIZEN", role_name="CITIZEN"),
+            )
 
-    resp = client.get("/api/v1/risk-dashboard/overview", headers=headers)
-    assert resp.status_code == 403
-    assert "Chỉ Quản trị viên" in resp.json().get("detail", "")
+        app.dependency_overrides[get_current_active_user] = override_citizen
+        resp = client.get("/api/v1/risk-dashboard/overview")
+        assert resp.status_code == 403
+        assert "Chỉ Quản trị viên" in resp.json().get("detail", "")
 
-    # Token của ADMIN (được phép truy cập)
-    admin_token = create_access_token(
-        user_id="22222222-2222-2222-2222-222222222222",
-        email="admin@test.com",
-        role="ADMIN",
-        session_id="session-admin-123",
-    )
-    admin_headers = {"Authorization": f"Bearer {admin_token}"}
-    resp_admin = client.get("/api/v1/risk-dashboard/overview", headers=admin_headers)
-    assert resp_admin.status_code == 200
+        # 3. ADMIN (được phép truy cập) -> 200
+        async def override_admin():
+            return User(
+                user_id=uuid.uuid4(),
+                email="admin@test.com",
+                full_name="Admin",
+                status="ACTIVE",
+                role=Role(role_code="ADMIN", role_name="ADMIN"),
+            )
 
-    app.dependency_overrides.pop(get_db, None)
+        app.dependency_overrides[get_current_active_user] = override_admin
+        resp_admin = client.get("/api/v1/risk-dashboard/overview")
+        assert resp_admin.status_code == 200
+    finally:
+        app.dependency_overrides.clear()

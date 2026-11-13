@@ -439,3 +439,30 @@ class FloodSosRepository(IFloodSosRepository):
         sos.version += 1
         await db.commit()
         return True
+
+    async def get_covering_emergency_alert_title(
+        self,
+        db: AsyncSession,
+        lat: float,
+        lng: float,
+    ) -> Optional[str]:
+        """Liên kết mềm STT 45: Kiểm tra cảnh báo khẩn cấp đang hoạt động bao phủ vị trí SOS."""
+        try:
+            sql = text("""
+                SELECT a.title
+                FROM emergency_broadcast_alerts a
+                WHERE a.deleted_at IS NULL
+                  AND a.status = 'ACTIVE'
+                  AND ST_DWithin(
+                      ST_Transform(a.center_location, 3857),
+                      ST_Transform(ST_SetSRID(ST_MakePoint(:lng, :lat), 4326), 3857),
+                      a.radius_meters
+                  )
+                ORDER BY a.broadcasted_at DESC
+                LIMIT 1
+            """)
+            res = await db.execute(sql, {"lat": lat, "lng": lng})
+            row = res.first()
+            return str(row[0]) if row and row[0] else None
+        except Exception:
+            return None

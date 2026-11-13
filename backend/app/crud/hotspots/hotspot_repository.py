@@ -355,6 +355,24 @@ class HotspotRepository(IHotspotRepository):
         daily_points: List[DailyForecastItem] = []
 
         base_val = 14.0 if target_type == "HOTSPOT" else 35.0
+        # Liên kết STT 18 (incidents) & STT 42 (district_risk_snapshots) để hiệu chỉnh dự báo từ dữ liệu thực
+        try:
+            sql_live_base = text("""
+                SELECT
+                    (SELECT COUNT(i.incident_id) FROM incidents i WHERE i.deleted_at IS NULL AND i.created_at >= NOW() - INTERVAL '30 days') AS inc_30d,
+                    (SELECT COALESCE(AVG(s.risk_score), 0) FROM district_risk_snapshots s WHERE s.deleted_at IS NULL) AS avg_risk
+            """)
+            live_res = await db.execute(sql_live_base)
+            live_row = live_res.mappings().first() if live_res else None
+            if live_row:
+                inc_30d = live_row.get("inc_30d")
+                avg_risk = live_row.get("avg_risk")
+                if isinstance(inc_30d, (int, float)) and inc_30d > 0:
+                    weekly_rate = max(6.0, round(float(inc_30d) / 4.0, 1))
+                    risk_factor = 1.0 + (float(avg_risk) / 200.0) if isinstance(avg_risk, (int, float)) and avg_risk > 0 else 1.0
+                    base_val = round(weekly_rate * risk_factor, 1)
+        except Exception:
+            pass
         peak_idx = 4 # Ngày thứ 5 (Thứ Sáu) đỉnh điểm
 
         for i in range(1, 8):

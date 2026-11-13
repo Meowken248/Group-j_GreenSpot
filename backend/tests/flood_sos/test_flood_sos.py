@@ -564,7 +564,10 @@ async def test_07_cancel_sos_safeguard_under_100m(service):
 
 
 def test_08_rest_api_http_endpoints():
-    """Kiểm thử tích hợp qua REST API TestClient bằng Dependency Overrides."""
+    """Kiểm thử tích hợp qua REST API TestClient bằng Dependency Overrides + kiểm tra bắt buộc JWT."""
+    from app.api.v1.rbac import get_current_active_user
+    from app.models.rbac import User, Role
+
     mock_repository = MockFloodSosRepository()
     mock_service = FloodSosService(repository=mock_repository)
 
@@ -573,6 +576,32 @@ def test_08_rest_api_http_endpoints():
     client = TestClient(app)
 
     try:
+        # 0. Không có JWT -> 401 Unauthorized
+        unauth_res = client.post(
+            "/api/v1/flood-sos/dispatch",
+            json={
+                "victim_name": "Anon",
+                "victim_phone": "0987654321",
+                "total_victims": 1,
+                "latitude": 10.765,
+                "longitude": 106.665,
+                "address_text": "Quận 10",
+            },
+        )
+        assert unauth_res.status_code == 401
+
+        # Đăng nhập giả lập người dùng hợp lệ
+        async def _mock_user():
+            return User(
+                user_id=uuid.uuid4(),
+                email="citizen@greenspot.vn",
+                full_name="API Caller",
+                status="ACTIVE",
+                role=Role(role_code="CITIZEN", role_name="CITIZEN"),
+            )
+
+        app.dependency_overrides[get_current_active_user] = _mock_user
+
         # 1. Dispatch
         dispatch_res = client.post(
             "/api/v1/flood-sos/dispatch",

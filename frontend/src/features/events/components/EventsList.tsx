@@ -112,6 +112,18 @@ export const EventsList: React.FC<EventsListProps> = ({
     [buildParams]
   );
 
+  // Tự động mở modal tạo chiến dịch nếu được điều hướng từ STT 44 (Phân tích Điểm nóng ô nhiễm)
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("greenspot_prefill_event");
+      if (stored) {
+        setIsCreateOpen(true);
+      }
+    } catch {
+      // Ignored
+    }
+  }, []);
+
   // Reset về trang 1 mỗi khi bộ lọc thay đổi
   useEffect(() => {
     fetchEvents(1);
@@ -560,6 +572,7 @@ export const EventsList: React.FC<EventsListProps> = ({
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         onSuccess={handleEventCreated}
+        onToast={showToast}
       />
 
       {selectedEvent && (

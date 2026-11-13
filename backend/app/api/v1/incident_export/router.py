@@ -28,7 +28,8 @@ from app.schemas.incident_export.schemas import (
     IncidentPreviewResponse,
     TriggerExportRequest,
 )
-from app.utils.security import decode_access_token
+from app.api.v1.rbac import require_roles_or_permission
+from app.models.rbac import User
 
 router = APIRouter(prefix="/incidents/export", tags=["Xuất danh sách sự cố (Data Export - STT 47)"])
 
@@ -41,18 +42,14 @@ def get_incident_export_service(
     return IncidentExportService(repository=repo)
 
 
-def get_optional_user_id(authorization: Optional[str] = Header(None)) -> Optional[uuid.UUID]:
-    """Trích xuất user_id từ Authorization Bearer Token nếu có."""
-    if not authorization:
-        return None
-    try:
-        token = authorization.replace("Bearer ", "").strip()
-        payload = decode_access_token(token)
-        if payload and "sub" in payload:
-            return uuid.UUID(payload["sub"])
-    except Exception:
-        pass
-    return None
+EXPORT_ALLOWED_ROLES = {"ADMIN", "OFFICER", "DISTRICT_MANAGER", "COORDINATOR", "RESPONDER"}
+
+require_export_access = require_roles_or_permission(
+    allowed_roles=EXPORT_ALLOWED_ROLES,
+    module="INCIDENTS",
+    action="EXPORT",
+    deny_message="Chỉ Quản trị viên, Cán bộ điều phối và Đội phản ứng mới có quyền trích xuất dữ liệu sự cố.",
+)
 
 
 @router.get(
@@ -63,6 +60,7 @@ def get_optional_user_id(authorization: Optional[str] = Header(None)) -> Optiona
 async def get_filter_metadata(
     request: Request,
     service: IncidentExportService = Depends(get_incident_export_service),
+    _current_user: User = Depends(require_export_access),
 ):
     """Cung cấp danh mục quận huyện, loại sự cố cho dropdown bộ lọc cột trái."""
     result = await service.get_metadata_options()
@@ -81,6 +79,7 @@ async def preview_incidents(
     params: IncidentExportFilterParams,
     request: Request,
     service: IncidentExportService = Depends(get_incident_export_service),
+    _current_user: User = Depends(require_export_access),
 ):
     """
     Truy vấn và trả về danh sách sự cố theo bộ lọc với các cột chuẩn:
@@ -107,7 +106,7 @@ async def preview_incidents(
 )
 async def generate_export(
     request: TriggerExportRequest,
-    user_id: Optional[uuid.UUID] = Depends(get_optional_user_id),
+    current_user: User = Depends(require_export_access),
     service: IncidentExportService = Depends(get_incident_export_service),
 ):
     """
@@ -115,7 +114,7 @@ async def generate_export(
     Tạo link tải có thời hạn bảo mật 15 phút.
     """
     try:
-        return await service.generate_export(request, user_id=user_id)
+        return await service.generate_export(request, user_id=current_user.user_id)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -136,6 +135,7 @@ async def generate_export(
 async def get_export_status(
     export_id: uuid.UUID,
     service: IncidentExportService = Depends(get_incident_export_service),
+    _current_user: User = Depends(require_export_access),
 ):
     """Kiểm tra tệp và cảnh báo nếu liên kết đã hết hạn sau 15 phút."""
     try:
@@ -154,6 +154,7 @@ async def get_export_status(
 async def download_file(
     export_id: uuid.UUID,
     service: IncidentExportService = Depends(get_incident_export_service),
+    _current_user: User = Depends(require_export_access),
 ):
     """
     Tải trực tiếp tệp về máy người dùng.

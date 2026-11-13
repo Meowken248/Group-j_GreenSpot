@@ -32,13 +32,15 @@ async def call_kira_ai(messages: list, timeout: Optional[float] = None) -> Optio
     api_key = settings.KIRA_API_KEY or os.getenv("KIRA_API_KEY", "")
     api_url = settings.KIRA_API_URL or os.getenv("KIRA_API_URL", "https://kiraai.vn/api/v1/chat/completions")
     model_name = settings.KIRA_MODEL or os.getenv("KIRA_MODEL", "kira-mini-1.0")
-    req_timeout = timeout or settings.KIRA_TIMEOUT_SECONDS or float(os.getenv("KIRA_TIMEOUT_SECONDS", "45.0"))
+    configured_timeout = timeout or settings.KIRA_TIMEOUT_SECONDS or float(os.getenv("KIRA_TIMEOUT_SECONDS", "5.0"))
+    req_timeout = min(float(configured_timeout), 5.0)
 
     if not api_key:
         return None
 
     try:
-        async with httpx.AsyncClient(timeout=req_timeout) as client:
+        timeout_cfg = httpx.Timeout(req_timeout, connect=2.0)
+        async with httpx.AsyncClient(timeout=timeout_cfg) as client:
             resp = await client.post(
                 api_url,
                 headers={
@@ -234,7 +236,7 @@ class AITriageService(IAITriageService):
             }
         ]
 
-        kira_result = await call_kira_ai(messages, timeout=35.0)
+        kira_result = await call_kira_ai(messages, timeout=5.0)
         if kira_result:
             cleaned = re.sub(r"\s*\*\(\d+\s*từ\)\*", "", kira_result, flags=re.IGNORECASE).strip()
             return cleaned, False
@@ -312,14 +314,18 @@ class AITriageService(IAITriageService):
         if not risk_factors:
             risk_factors.append("Không phát hiện yếu tố rủi ro đặc biệt")
 
-        # 7. Summary qua Kira AI
-        cat_name = ""
-        if inc.category_id:
-            cat = await triage_repository.get_waste_category_by_id(db, inc.category_id)
-            if cat:
-                cat_name = cat.name
+        # 7. Summary qua Kira AI (hoặc tái sử dụng cache sẵn có để phản hồi tức thì <50ms)
+        if inc.ai_summary and len(inc.ai_summary.strip()) > 0:
+            summary = inc.ai_summary
+            is_short = len((inc.description or "").strip()) < 10
+        else:
+            cat_name = ""
+            if inc.category_id:
+                cat = await triage_repository.get_waste_category_by_id(db, inc.category_id)
+                if cat:
+                    cat_name = cat.name
 
-        summary, is_short = await cls.generate_summary_ai(inc.description, inc.address_text, cat_name)
+            summary, is_short = await cls.generate_summary_ai(inc.description, inc.address_text, cat_name)
 
         # Màu hiển thị
         color_map = {
@@ -391,7 +397,7 @@ class AITriageService(IAITriageService):
                     "content": f"Báo cáo sự cố: {desc.strip()}\nĐịa chỉ: {inc.address_text or ''}\nHãy viết lại bản tóm tắt mới:"
                 }
             ]
-            kira_result = await call_kira_ai(messages, timeout=35.0)
+            kira_result = await call_kira_ai(messages, timeout=5.0)
             if kira_result:
                 summary = re.sub(r"\s*\*\(\d+\s*từ\)\*", "", kira_result, flags=re.IGNORECASE).strip()
             else:

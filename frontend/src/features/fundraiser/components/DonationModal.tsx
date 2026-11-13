@@ -23,6 +23,7 @@ export const DonationModal: React.FC<DonationModalProps> = ({
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -62,7 +63,6 @@ export const DonationModal: React.FC<DonationModalProps> = ({
 
   const vietQrUrl = `https://img.vietqr.io/image/${bankCode}-${bankAccountNo}-compact2.png?amount=${currentAmount > 0 ? currentAmount : 50000}&addInfo=${encodeURIComponent(qrTransferContent)}&accountName=${encodeURIComponent(bankAccountOwner)}`;
 
-  const [copiedField, setCopiedField] = useState<string | null>(null);
   const handleCopy = (text: string, field: string) => {
     navigator.clipboard?.writeText(text);
     setCopiedField(field);

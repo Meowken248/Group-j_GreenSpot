@@ -115,6 +115,18 @@ class FloodSosService:
             flood_depth_meters=req.flood_depth_meters,
         )
 
+        # Liên kết mềm STT 45: Kiểm tra xem vị trí SOS có nằm trong vùng cảnh báo khẩn cấp đang phát sóng không
+        covering_alert_title = None
+        if hasattr(self.repo, "get_covering_emergency_alert_title"):
+            try:
+                covering_alert_title = await self.repo.get_covering_emergency_alert_title(
+                    db, lat=req.latitude, lng=req.longitude
+                )
+            except Exception:
+                covering_alert_title = None
+
+        alert_suffix = f" [Cảnh báo khu vực: {covering_alert_title}]" if covering_alert_title else ""
+
         # Thêm tin nhắn khởi tạo hệ thống
         await self.repo.add_chat_message(
             db=db,
@@ -122,7 +134,7 @@ class FloodSosService:
             sender_id=None,
             sender_type="SYSTEM",
             sender_name="Hệ thống Cứu nạn GreenSpot",
-            content=f"Đã phát tín hiệu cứu hộ SOS ({sos.sos_code}) tới mạng lưới tình nguyện viên và ca nô trong bán kính 3km.",
+            content=f"Đã phát tín hiệu cứu hộ SOS ({sos.sos_code}) tới mạng lưới tình nguyện viên và ca nô trong bán kính 3km.{alert_suffix}",
         )
 
         return CreateFloodSosResponse(
