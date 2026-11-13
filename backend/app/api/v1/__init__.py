@@ -67,6 +67,7 @@ from app.api.v1.milestone import router as milestone_router
 from app.api.v1.admin_dashboard import admin_dashboard_router
 from app.api.v1.audit_logs import router as audit_logs_router
 from app.api.v1.translation import translation_router
+from app.api.v1.search.router import router as search_router
 
 api_v1_router = APIRouter()
 
@@ -138,3 +139,6 @@ api_v1_router.include_router(milestone_router)
 # Admin & Audit
 api_v1_router.include_router(admin_dashboard_router)
 api_v1_router.include_router(audit_logs_router)
+
+# Elasticsearch Global Search
+api_v1_router.include_router(search_router)

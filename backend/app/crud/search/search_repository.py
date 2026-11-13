@@ -191,8 +191,12 @@ class ElasticsearchSearchRepository(ISearchRepository):
                 return False
 
     async def search_global(self, req: GlobalSearchRequest) -> GlobalSearchResponse:
-        """Thực thi tìm kiếm toàn cục đa thực thể."""
+        """Thực thi tìm kiếm toàn cục đa thực thể với độ chính xác cấu hình từ .env."""
         start_time = time.perf_counter()
+
+        fuzziness_val = getattr(settings, "ELASTICSEARCH_FUZZINESS", "AUTO")
+        min_should_match_val = getattr(settings, "ELASTICSEARCH_MIN_SHOULD_MATCH", "70%")
+        min_score_val = float(getattr(settings, "ELASTICSEARCH_MIN_SCORE", 0.5))
 
         must_clause: List[Dict[str, Any]] = [
             {
@@ -200,9 +204,35 @@ class ElasticsearchSearchRepository(ISearchRepository):
                     "should": [
                         {"term": {"code": {"value": req.q.upper(), "boost": 6.0}}},
                         {"match": {"title.autocomplete": {"query": req.q, "boost": 4.5}}},
-                        {"match": {"title": {"query": req.q, "boost": 3.5}}},
-                        {"match": {"description": {"query": req.q, "boost": 1.8}}},
-                        {"match": {"address": {"query": req.q, "boost": 1.5}}},
+                        {
+                            "match": {
+                                "title": {
+                                    "query": req.q,
+                                    "boost": 3.5,
+                                    "fuzziness": fuzziness_val,
+                                    "minimum_should_match": min_should_match_val,
+                                }
+                            }
+                        },
+                        {
+                            "match": {
+                                "description": {
+                                    "query": req.q,
+                                    "boost": 1.8,
+                                    "fuzziness": fuzziness_val,
+                                    "minimum_should_match": min_should_match_val,
+                                }
+                            }
+                        },
+                        {
+                            "match": {
+                                "address": {
+                                    "query": req.q,
+                                    "boost": 1.5,
+                                    "fuzziness": fuzziness_val,
+                                }
+                            }
+                        },
                         {"match": {"category": {"query": req.q, "boost": 2.0}}},
                     ],
                     "minimum_should_match": 1,
@@ -236,6 +266,7 @@ class ElasticsearchSearchRepository(ISearchRepository):
         dsl_body = {
             "from": from_offset,
             "size": req.page_size,
+            "min_score": min_score_val,
             "query": {
                 "bool": {
                     "must": must_clause,
