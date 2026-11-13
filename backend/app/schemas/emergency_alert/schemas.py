@@ -4,7 +4,7 @@ Pydantic v2 DTO Schemas cho STT 45: Hệ thống Cảnh báo khẩn cấp theo v
 """
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 import uuid
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 
