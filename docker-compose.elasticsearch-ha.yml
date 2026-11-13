@@ -1,0 +1,251 @@
+version: "3.8"
+
+services:
+  # -------------------------------------------------------------------------
+  # 0. SETUP: Tự động khởi tạo chứng chỉ SSL/TLS CA và Node Certificates
+  # -------------------------------------------------------------------------
+  setup_certs:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    container_name: greenspot_es_setup
+    volumes:
+      - certs_data:/usr/share/elasticsearch/config/certs
+    user: "0"
+    command: >
+      bash -c '
+        if [ ! -f config/certs/ca.zip ]; then
+          echo "=== 1. Khởi tạo Certificate Authority (CA) ===";
+          bin/elasticsearch-certutil ca --silent --pem -out config/certs/ca.zip;
+          unzip config/certs/ca.zip -d config/certs;
+        fi;
+        if [ ! -f config/certs/certs.zip ]; then
+          echo "=== 2. Tạo chứng chỉ TLS cho 3 Nodes & Kibana ===";
+          echo "instances:
+            - name: es01
+              dns:
+                - es01
+                - localhost
+              ip:
+                - 127.0.0.1
+            - name: es02
+              dns:
+                - es02
+                - localhost
+              ip:
+                - 127.0.0.1
+            - name: es03
+              dns:
+                - es03
+                - localhost
+              ip:
+                - 127.0.0.1
+            - name: kibana
+              dns:
+                - kibana
+                - localhost
+              ip:
+                - 127.0.0.1
+          " > config/certs/instances.yml;
+          bin/elasticsearch-certutil cert --silent --pem -out config/certs/certs.zip --in config/certs/instances.yml --ca-cert config/certs/ca/ca.crt --ca-key config/certs/ca/ca.key;
+          unzip config/certs/certs.zip -d config/certs;
+        fi;
+        echo "=== 3. Phân quyền thư mục chứng chỉ ===";
+        chown -R 1000:0 config/certs;
+        find config/certs -type d -exec chmod 750 {} \;;
+        find config/certs -type f -exec chmod 640 {} \;;
+        echo "=== Hoàn tất sinh chứng chỉ SSL/TLS ===";
+      '
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f config/certs/es01/es01.crt ]"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  # -------------------------------------------------------------------------
+  # Node 1: es01 (Master-eligible, Data, Ingest)
+  # -------------------------------------------------------------------------
+  es01:
+    depends_on:
+      setup_certs:
+        condition: service_healthy
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    container_name: greenspot_es01
+    environment:
+      - node.name=es01
+      - cluster.name=greenspot-cluster
+      - cluster.initial_master_nodes=es01,es02,es03
+      - discovery.seed_hosts=es02,es03
+      - node.roles=master,data,ingest
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD:-GreenSpotSecure2026!}
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.key=certs/es01/es01.key
+      - xpack.security.http.ssl.certificate=certs/es01/es01.crt
+      - xpack.security.http.ssl.certificate_authorities=certs/ca/ca.crt
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.key=certs/es01/es01.key
+      - xpack.security.transport.ssl.certificate=certs/es01/es01.crt
+      - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - path.repo=/usr/share/elasticsearch/snapshots
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - certs_data:/usr/share/elasticsearch/config/certs
+      - es01_data:/usr/share/elasticsearch/data
+      - es_snapshots:/usr/share/elasticsearch/snapshots
+    ports:
+      - "9200:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -u elastic:${ELASTICSEARCH_PASSWORD:-GreenSpotSecure2026!} https://localhost:9200/_cluster/health | grep -vq '\"status\":\"red\"'"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    networks:
+      - es_net
+
+  # -------------------------------------------------------------------------
+  # Node 2: es02 (Master-eligible, Data, Ingest)
+  # -------------------------------------------------------------------------
+  es02:
+    depends_on:
+      es01:
+        condition: service_healthy
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    container_name: greenspot_es02
+    environment:
+      - node.name=es02
+      - cluster.name=greenspot-cluster
+      - cluster.initial_master_nodes=es01,es02,es03
+      - discovery.seed_hosts=es01,es03
+      - node.roles=master,data,ingest
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD:-GreenSpotSecure2026!}
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.key=certs/es02/es02.key
+      - xpack.security.http.ssl.certificate=certs/es02/es02.crt
+      - xpack.security.http.ssl.certificate_authorities=certs/ca/ca.crt
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.key=certs/es02/es02.key
+      - xpack.security.transport.ssl.certificate=certs/es02/es02.crt
+      - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - path.repo=/usr/share/elasticsearch/snapshots
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - certs_data:/usr/share/elasticsearch/config/certs
+      - es02_data:/usr/share/elasticsearch/data
+      - es_snapshots:/usr/share/elasticsearch/snapshots
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -u elastic:${ELASTICSEARCH_PASSWORD:-GreenSpotSecure2026!} https://localhost:9200/_cluster/health | grep -vq '\"status\":\"red\"'"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    networks:
+      - es_net
+
+  # -------------------------------------------------------------------------
+  # Node 3: es03 (Master-eligible, Data, Ingest)
+  # -------------------------------------------------------------------------
+  es03:
+    depends_on:
+      es02:
+        condition: service_healthy
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    container_name: greenspot_es03
+    environment:
+      - node.name=es03
+      - cluster.name=greenspot-cluster
+      - cluster.initial_master_nodes=es01,es02,es03
+      - discovery.seed_hosts=es01,es02
+      - node.roles=master,data,ingest
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD:-GreenSpotSecure2026!}
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.key=certs/es03/es03.key
+      - xpack.security.http.ssl.certificate=certs/es03/es03.crt
+      - xpack.security.http.ssl.certificate_authorities=certs/ca/ca.crt
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.key=certs/es03/es03.key
+      - xpack.security.transport.ssl.certificate=certs/es03/es03.crt
+      - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - path.repo=/usr/share/elasticsearch/snapshots
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - certs_data:/usr/share/elasticsearch/config/certs
+      - es03_data:/usr/share/elasticsearch/data
+      - es_snapshots:/usr/share/elasticsearch/snapshots
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -u elastic:${ELASTICSEARCH_PASSWORD:-GreenSpotSecure2026!} https://localhost:9200/_cluster/health | grep -vq '\"status\":\"red\"'"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    networks:
+      - es_net
+
+  # -------------------------------------------------------------------------
+  # Kibana: Quản trị, trực quan hóa và giám sát cụm (Monitoring UI)
+  # -------------------------------------------------------------------------
+  kibana:
+    depends_on:
+      es01:
+        condition: service_healthy
+    image: docker.elastic.co/kibana/kibana:8.13.4
+    container_name: greenspot_kibana
+    volumes:
+      - certs_data:/usr/share/kibana/config/certs
+      - kibana_data:/usr/share/kibana/data
+    ports:
+      - "5601:5601"
+    environment:
+      - SERVERNAME=kibana
+      - ELASTICSEARCH_HOSTS=https://es01:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD:-GreenSpotSecure2026!}
+      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=config/certs/ca/ca.crt
+      - XPACK_SECURITY_ENCRYPTIONKEY=${KIBANA_ENCRYPTION_KEY:-greenspot_super_secret_kibana_encryption_key_32_chars!}
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${KIBANA_ENCRYPTION_KEY:-greenspot_super_secret_kibana_encryption_key_32_chars!}
+      - XPACK_REPORTING_ENCRYPTIONKEY=${KIBANA_ENCRYPTION_KEY:-greenspot_super_secret_kibana_encryption_key_32_chars!}
+    networks:
+      - es_net
+
+volumes:
+  certs_data:
+    driver: local
+  es01_data:
+    driver: local
+  es02_data:
+    driver: local
+  es03_data:
+    driver: local
+  es_snapshots:
+    driver: local
+  kibana_data:
+    driver: local
+
+networks:
+  es_net:
+    driver: bridge
