@@ -6,6 +6,7 @@ import {
   fetchFloodRescueRoute,
   getRealisticFloodRouteFallback,
 } from "../services/floodSosRouting";
+import { navigateToRoute } from "../../../routes/appRoutes";
 
 interface VolunteerResponseDashboardProps {
   cards: VolunteerSosCard[];
@@ -14,6 +15,7 @@ interface VolunteerResponseDashboardProps {
   onAccept: (card: VolunteerSosCard) => Promise<void>;
   onSkip: (card: VolunteerSosCard) => Promise<void>;
   newAlertToast?: string | null;
+  onNavigateSafeRoute?: (card: VolunteerSosCard) => void;
 }
 
 export const VolunteerResponseDashboard: React.FC<VolunteerResponseDashboardProps> = ({
@@ -23,6 +25,7 @@ export const VolunteerResponseDashboard: React.FC<VolunteerResponseDashboardProp
   onAccept,
   onSkip,
   newAlertToast,
+  onNavigateSafeRoute,
 }) => {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(
     cards.length > 0 ? cards[0].request_id : null,
@@ -93,6 +96,30 @@ export const VolunteerResponseDashboard: React.FC<VolunteerResponseDashboardProp
       await onAccept(card);
     } finally {
       setAcceptingId(null);
+    }
+  };
+
+  // Điều hướng sang STT 41 (Bản đồ né ngập) để vẽ lộ trình né vùng ngập sâu
+  const handleNavigateSafeRoute = (card: VolunteerSosCard) => {
+    try {
+      const payload = {
+        originLat: volunteerLat,
+        originLng: volunteerLng,
+        originName: "Vị trí Tình nguyện viên",
+        destLat: card.latitude,
+        destLng: card.longitude,
+        destName: `Nạn nhân ${card.victim_name || card.sos_code} - ${card.address_text}`,
+        destAddress: card.address_text,
+      };
+      localStorage.setItem("greenspot_nav_destination", JSON.stringify(payload));
+    } catch {
+      // Ignored
+    }
+
+    if (onNavigateSafeRoute) {
+      onNavigateSafeRoute(card);
+    } else {
+      navigateToRoute("navigation");
     }
   };
 
@@ -320,6 +347,19 @@ export const VolunteerResponseDashboard: React.FC<VolunteerResponseDashboardProp
 
                     <button
                       type="button"
+                      className="btn-safe-route"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNavigateSafeRoute(card);
+                      }}
+                      title="Xem lộ trình né ngập an toàn (STT 41)"
+                      data-testid={`btn-safe-route-${card.request_id}`}
+                    >
+                      🧭 Tuyến né ngập
+                    </button>
+
+                    <button
+                      type="button"
                       className="btn-skip-sos"
                       disabled={isBusy}
                       onClick={(e) => {
@@ -428,8 +468,33 @@ export const VolunteerResponseDashboard: React.FC<VolunteerResponseDashboardProp
                 <div>
                   🛣️ <strong>Lộ trình thực tế:</strong> {routeDistanceKm}km (~{routeDurationMin} phút di chuyển)
                 </div>
-                <div style={{ color: "#2b6cb0", fontWeight: "600" }}>
-                  📍 {routeWaypoints.join(" ➔ ")}
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+                  <div style={{ color: "#2b6cb0", fontWeight: "600" }}>
+                    📍 {routeWaypoints.join(" ➔ ")}
+                  </div>
+                  {selectedCard && (
+                    <button
+                      type="button"
+                      style={{
+                        background: "#2b6cb0",
+                        color: "#ffffff",
+                        border: "none",
+                        borderRadius: "6px",
+                        padding: "0.3rem 0.65rem",
+                        fontSize: "0.78rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.25rem",
+                      }}
+                      onClick={() => handleNavigateSafeRoute(selectedCard)}
+                      title="Mở ứng dụng Bản đồ né ngập STT 41"
+                      data-testid="btn-open-flood-nav-detail"
+                    >
+                      🧭 Mở Bản đồ né ngập
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
