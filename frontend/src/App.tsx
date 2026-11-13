@@ -64,6 +64,7 @@ import type { SyncResultSummary } from "./features/offline/types/offline.types";
 import { navigateToRoute, resolveTabFromUrl, APP_ROUTES } from "./routes/appRoutes";
 import type { ActiveTab } from "./routes/appRoutes";
 import { useLanguage } from "./i18n";
+import { GlobalSearchBar } from "./components/GlobalSearchBar";
 
 import api from "./api/client";
 import "./App.css";
@@ -603,6 +604,18 @@ function App() {
             </div>
           </button>
         </div>
+
+        {/* THANH TÌM KIẾM TOÀN DIỆN ELASTICSEARCH CHUẨN ENTERPRISE */}
+        <GlobalSearchBar
+          isDarkMode={isDarkMode}
+          onNavigate={(urlPath) => {
+            const cleanPath = urlPath.startsWith("/") ? urlPath.slice(1) : urlPath;
+            const tabName = cleanPath.split("?")[0];
+            const queryStr = cleanPath.includes("?") ? cleanPath.slice(cleanPath.indexOf("?")) : "";
+            window.location.hash = `#${tabName}${queryStr}`;
+            setActiveTab(tabName as ActiveTab);
+          }}
+        />
 
         {/* KHỐI GIỮA: 4 NHÓM MENU ĐIỀU HƯỚNG TINH GỌN */}
         <nav className="header-center-nav" aria-label="Điều hướng chính">
