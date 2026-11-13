@@ -13,7 +13,7 @@ if hasattr(sys.stdout, "reconfigure"):
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 from geoalchemy2.elements import WKTElement
-from sqlalchemy import select
+from sqlalchemy import select, text
 from app.database import AsyncSessionLocal
 from app.models.incident import WasteCategory, Incident, IncidentMedia
 from app.models.spatial import AdministrativeUnit, EssentialFacility
@@ -24,12 +24,15 @@ async def seed_triage_and_spatial_data():
     async with AsyncSessionLocal() as db:
         print("🌱 [Seeder] Đang kiểm tra và nạp dữ liệu mẫu STT 39 & 40...")
 
-        # 1. Lấy hoặc tạo Admin user & Administrative unit
+        # 1. Lấy hoặc tạo Admin user & Administrative units
         user_res = await db.execute(select(User).limit(1))
         admin_user = user_res.scalars().first()
 
-        unit_res = await db.execute(select(AdministrativeUnit).limit(1))
-        admin_unit = unit_res.scalars().first()
+        unit_res = await db.execute(select(AdministrativeUnit))
+        units_list = unit_res.scalars().all()
+        unit_map = {u.unit_code: u.unit_id for u in units_list}
+        admin_unit = units_list[0] if units_list else None
+
         if not admin_unit:
             admin_unit = AdministrativeUnit(
                 unit_code="79_01",
@@ -40,8 +43,8 @@ async def seed_triage_and_spatial_data():
             )
             db.add(admin_unit)
             await db.flush()
+            unit_map["79_01"] = admin_unit.unit_id
 
-        from sqlalchemy import text
         await db.execute(text("SELECT setval('waste_categories_category_id_seq', COALESCE((SELECT MAX(category_id) FROM waste_categories), 1));"))
         await db.commit()
 
@@ -84,6 +87,15 @@ async def seed_triage_and_spatial_data():
                 "color_hex": "#22C55E",
                 "icon_name": "leaf",
             },
+            {
+                "code": "DOMESTIC_WASTE",
+                "name": "Rác thải sinh hoạt ứ đọng",
+                "desc": "Bãi rác tự phát, túi ni lông bốc mùi",
+                "default_severity": "MEDIUM",
+                "sla_hours": 24,
+                "color_hex": "#EAB308",
+                "icon_name": "trash-2",
+            },
         ]
 
         cat_map = {}
@@ -107,19 +119,127 @@ async def seed_triage_and_spatial_data():
                 await db.flush()
             cat_map[c["code"]] = cat
 
-        # 3. Tạo các cơ sở thiết yếu (Essential Facilities) quanh tọa độ ngõ 128 Lê Lợi (10.7725, 106.6980)
-        # Cự ly tính toán từ tâm sự cố:
-        # - Trường Lê Lợi: ~45m (<= 50m: Rủi ro 100 điểm, cảnh báo nguy hiểm < 100m)
-        # - BV Quận 1: ~140m (50-150m: 75 điểm, cảnh báo < 200m)
-        # - Trường THCS Chu Văn An: ~180m (150-300m: 50 điểm, cảnh báo < 200m)
-        # - Trạm Y tế Cầu Kho: ~650m (> 300m: 0 điểm)
+        # 3. Tạo các cơ sở thiết yếu (Essential Facilities) phục vụ tra cứu phân tích vùng đệm GIS (STT 40)
+        # Bao gồm:
+        # - TP. Thủ Đức (quanh Võ Văn Ngân, ECO-HCM-002: 10.8512, 106.7625)
+        # - Quận 1 (quanh Lê Lợi INC-2026-3901: 10.7725, 106.6980 và Bến Bạch Đằng ECO-HCM-001)
+        # - Quận 7 (quanh Nguyễn Thị Thập ECO-HCM-003: 10.7380, 106.7215)
+        # - Quận Bình Thạnh (quanh Cầu Điện Biên Phủ ECO-HCM-004: 10.7930, 106.6995)
         facilities_data = [
+            # === KHU VỰC TP. THỦ ĐỨC (Quanh sự cố ECO-HCM-002: 245 Võ Văn Ngân) ===
+            {
+                "name": "Trường THCS Lê Quý Đôn (TP. Thủ Đức)",
+                "type": "Trường học",
+                "address": "234 Võ Văn Ngân, Phường Linh Chiểu, TP. Thủ Đức, TP.HCM",
+                "lat": 10.8518,
+                "lng": 106.7635,  # ~130m
+                "unit_code": "769",
+                "contact_phone": "028 3896 6843",
+                "contact_person": "Cô Phạm Thị Thanh Vân (Hiệu trưởng)",
+                "contact_email": "thcs.lequydon.thuduc@tphcm.edu.vn",
+                "capacity": 1550,
+                "vulnerability": "Mức dễ tổn thương: Cao - Trường trung học cơ sở hơn 1.500 học sinh",
+            },
+            {
+                "name": "Trường Tiểu học Lương Thế Vinh",
+                "type": "Trường học",
+                "address": "18 Dân Chủ, Phường Bình Thọ, TP. Thủ Đức, TP.HCM",
+                "lat": 10.8498,
+                "lng": 106.7642,  # ~240m
+                "unit_code": "769",
+                "contact_phone": "028 3896 0345",
+                "contact_person": "Thầy Đỗ Minh Hoàng (Hiệu trưởng)",
+                "contact_email": "th.luongthevinh@tphcm.edu.vn",
+                "capacity": 1120,
+                "vulnerability": "Mức dễ tổn thương: Rất cao - Trường tiểu học có hơn 1.100 học sinh",
+            },
+            {
+                "name": "Trường THPT Nguyễn Hữu Huân",
+                "type": "Trường học",
+                "address": "11 Đoàn Kết, Phường Bình Thọ, TP. Thủ Đức, TP.HCM",
+                "lat": 10.8528,
+                "lng": 106.7602,  # ~310m
+                "unit_code": "769",
+                "contact_phone": "028 3896 6855",
+                "contact_person": "Thầy Nguyễn Hữu Hùng (Hiệu trưởng)",
+                "contact_email": "thpt.nguyenhuuhuan@tphcm.edu.vn",
+                "capacity": 1800,
+                "vulnerability": "Mức dễ tổn thương: Cao - Trường THPT trọng điểm TP. Thủ Đức",
+            },
+            {
+                "name": "Trường Đại học Sư phạm Kỹ thuật TP.HCM (HCMUTE)",
+                "type": "Trường học",
+                "address": "01 Võ Văn Ngân, Phường Linh Chiểu, TP. Thủ Đức, TP.HCM",
+                "lat": 10.8507,
+                "lng": 106.7719,  # ~1.0 km
+                "unit_code": "769",
+                "contact_phone": "028 3896 8641",
+                "contact_person": "Phòng Hành chính - Quản trị",
+                "contact_email": "vanphong@hcmute.edu.vn",
+                "capacity": 25000,
+                "vulnerability": "Mức dễ tổn thương: Trung bình - Trường Đại học quy mô lớn",
+            },
+            {
+                "name": "Phòng khám Đa khoa Linh Chiểu (TTYT TP. Thủ Đức)",
+                "type": "Bệnh viện",
+                "address": "118 Võ Văn Ngân, Phường Bình Thọ, TP. Thủ Đức, TP.HCM",
+                "lat": 10.8505,
+                "lng": 106.7610,  # ~180m
+                "unit_code": "769",
+                "contact_phone": "028 3722 0054",
+                "contact_person": "Bác sĩ CKI Hoàng Minh Tuấn (Phụ trách cơ sở)",
+                "contact_email": "pkdk.linhchieu@tphcm.gov.vn",
+                "capacity": 250,
+                "vulnerability": "Mức dễ tổn thương: Rất cao - Cơ sở khám chữa bệnh đa khoa và sơ cấp cứu",
+            },
+            {
+                "name": "Bệnh viện Thành phố Thủ Đức (Cơ sở 2)",
+                "type": "Bệnh viện",
+                "address": "64 Lê Văn Chí, Phường Linh Trung, TP. Thủ Đức, TP.HCM",
+                "lat": 10.8555,
+                "lng": 106.7680,  # ~820m
+                "unit_code": "769",
+                "contact_phone": "028 3896 6598",
+                "contact_person": "Khoa Cấp cứu 115 Bệnh viện TP. Thủ Đức",
+                "contact_email": "capcuu.bvtd@tphcm.gov.vn",
+                "capacity": 650,
+                "vulnerability": "Mức dễ tổn thương: Rất cao - Bệnh viện hạng I tiếp nhận cấp cứu 24/7",
+            },
+            {
+                "name": "Trạm Y tế Phường Linh Chiểu",
+                "type": "Trạm y tế",
+                "address": "14 Tô Vĩnh Diện, Phường Linh Chiểu, TP. Thủ Đức, TP.HCM",
+                "lat": 10.8525,
+                "lng": 106.7615,  # ~170m
+                "unit_code": "769",
+                "contact_phone": "028 3896 0346",
+                "contact_person": "Bác sĩ Trần Thị Bích (Trạm trưởng)",
+                "contact_email": "tyt.linhchieu@tphcm.gov.vn",
+                "capacity": 50,
+                "vulnerability": "Mức dễ tổn thương: Trung bình - Điểm tiêm chủng và sơ cấp cứu ban đầu",
+            },
+            {
+                "name": "Trạm Y tế Phường Bình Thọ",
+                "type": "Trạm y tế",
+                "address": "49 Thống Nhất, Phường Bình Thọ, TP. Thủ Đức, TP.HCM",
+                "lat": 10.8480,
+                "lng": 106.7650,  # ~470m
+                "unit_code": "769",
+                "contact_phone": "028 3896 4512",
+                "contact_person": "Y sĩ Lê Văn Hùng",
+                "contact_email": "tyt.binhtho@tphcm.gov.vn",
+                "capacity": 40,
+                "vulnerability": "Mức dễ tổn thương: Trung bình - Trạm y tế cơ sở phường Bình Thọ",
+            },
+
+            # === KHU VỰC QUẬN 1 (Quanh Lê Lợi INC-2026-3901 & Bến Bạch Đằng ECO-HCM-001) ===
             {
                 "name": "Trường Tiểu học Lê Lợi",
                 "type": "Trường học",
                 "address": "120 Lê Lợi, Phường Bến Nghé, Quận 1, TP.HCM",
                 "lat": 10.77265,
                 "lng": 106.69835,  # ~45m
+                "unit_code": "760",
                 "contact_phone": "028 3822 5412",
                 "contact_person": "Cô Nguyễn Thị Mai (Hiệu trưởng)",
                 "contact_email": "th.leloi@tphcm.edu.vn",
@@ -132,6 +252,7 @@ async def seed_triage_and_spatial_data():
                 "address": "338 Hai Bà Trưng, Phường Tân Định, Quận 1, TP.HCM",
                 "lat": 10.77340,
                 "lng": 106.69720,  # ~140m
+                "unit_code": "760",
                 "contact_phone": "028 3820 0451",
                 "contact_person": "Bác sĩ CKII Trần Văn Nam (Trực cấp cứu)",
                 "contact_email": "capcuu.bvq1@tphcm.gov.vn",
@@ -144,6 +265,7 @@ async def seed_triage_and_spatial_data():
                 "address": "115 Cống Quỳnh, Phường Nguyễn Cư Trinh, Quận 1, TP.HCM",
                 "lat": 10.77110,
                 "lng": 106.69880,  # ~180m
+                "unit_code": "760",
                 "contact_phone": "028 3839 2174",
                 "contact_person": "Thầy Lê Hoàng Long (Phó Hiệu trưởng)",
                 "contact_email": "thcs.chuvanan@tphcm.edu.vn",
@@ -156,6 +278,7 @@ async def seed_triage_and_spatial_data():
                 "address": "45 Pasteur, Phường Bến Nghé, Quận 1, TP.HCM",
                 "lat": 10.77450,
                 "lng": 106.69950,  # ~270m
+                "unit_code": "760",
                 "contact_phone": "028 3829 7654",
                 "contact_person": "Y sĩ Phạm Thu Hằng (Trạm trưởng)",
                 "contact_email": "tyt.bennghe@tphcm.gov.vn",
@@ -168,10 +291,119 @@ async def seed_triage_and_spatial_data():
                 "address": "52 Cầu Kho, Quận 1, TP.HCM",
                 "lat": 10.76750,
                 "lng": 106.69450,  # ~650m
+                "unit_code": "760",
                 "contact_phone": "028 3836 1234",
                 "contact_person": "Bác sĩ Vũ Mạnh Dũng",
                 "contact_email": "tyt.caukho@tphcm.gov.vn",
                 "capacity": 60,
+                "vulnerability": "Mức dễ tổn thương: Trung bình",
+            },
+            {
+                "name": "Bệnh viện Nhi Đồng 2",
+                "type": "Bệnh viện",
+                "address": "14 Lý Tự Trọng, Phường Bến Nghé, Quận 1, TP.HCM",
+                "lat": 10.7800,
+                "lng": 106.7020,  # ~800m
+                "unit_code": "760",
+                "contact_phone": "028 3829 5723",
+                "contact_person": "Khoa Cấp cứu Nhi Đồng 2",
+                "contact_email": "benhviennhidong2@tphcm.gov.vn",
+                "capacity": 1400,
+                "vulnerability": "Mức dễ tổn thương: Rất cao - Bệnh viện chuyên khoa Nhi lớn",
+            },
+            {
+                "name": "Trường Tiểu học Hòa Bình",
+                "type": "Trường học",
+                "address": "1 Công xã Paris, Phường Bến Nghé, Quận 1, TP.HCM",
+                "lat": 10.7795,
+                "lng": 106.6990,  # ~900m
+                "unit_code": "760",
+                "contact_phone": "028 3822 5163",
+                "contact_person": "Cô Trương Thị Kim Nga",
+                "contact_email": "th.hoabinh@tphcm.edu.vn",
+                "capacity": 1100,
+                "vulnerability": "Mức dễ tổn thương: Rất cao",
+            },
+
+            # === KHU VỰC QUẬN 7 (Quanh Nguyễn Thị Thập ECO-HCM-003: 10.7380, 106.7215) ===
+            {
+                "name": "Bệnh viện FV (Pháp Việt)",
+                "type": "Bệnh viện",
+                "address": "6 Nguyễn Lương Bằng, Phường Tân Phú, Quận 7, TP.HCM",
+                "lat": 10.7320,
+                "lng": 106.7225,  # ~680m
+                "unit_code": "778",
+                "contact_phone": "028 5411 3333",
+                "contact_person": "Khoa Cấp cứu FV",
+                "contact_email": "emergency@fvhospital.com",
+                "capacity": 220,
+                "vulnerability": "Mức dễ tổn thương: Rất cao - Bệnh viện quốc tế",
+            },
+            {
+                "name": "Trường THCS Huỳnh Tấn Phát",
+                "type": "Trường học",
+                "address": "488 Huỳnh Tấn Phát, Phường Bình Thuận, Quận 7, TP.HCM",
+                "lat": 10.7410,
+                "lng": 106.7250,  # ~500m
+                "unit_code": "778",
+                "contact_phone": "028 3873 0123",
+                "contact_person": "Thầy Hoàng Văn Hải",
+                "contact_email": "thcs.htpat@tphcm.edu.vn",
+                "capacity": 1300,
+                "vulnerability": "Mức dễ tổn thương: Cao",
+            },
+            {
+                "name": "Trạm Y tế Phường Tân Phú (Quận 7)",
+                "type": "Trạm y tế",
+                "address": "24 Nguyễn Thị Thập, Phường Tân Phú, Quận 7, TP.HCM",
+                "lat": 10.7370,
+                "lng": 106.7230,  # ~200m
+                "unit_code": "778",
+                "contact_phone": "028 3771 0456",
+                "contact_person": "Bác sĩ Lê Thị Mai",
+                "contact_email": "tyt.tanphuq7@tphcm.gov.vn",
+                "capacity": 45,
+                "vulnerability": "Mức dễ tổn thương: Trung bình",
+            },
+
+            # === KHU VỰC QUẬN BÌNH THẠNH (Quanh Cầu Điện Biên Phủ ECO-HCM-004: 10.7930, 106.6995) ===
+            {
+                "name": "Trường THCS Điện Biên",
+                "type": "Trường học",
+                "address": "127 Đinh Tiên Hoàng, Phường 3, Quận Bình Thạnh, TP.HCM",
+                "lat": 10.7960,
+                "lng": 106.6980,  # ~370m
+                "unit_code": "765",
+                "contact_phone": "028 3841 2345",
+                "contact_person": "Cô Vũ Thị Lan",
+                "contact_email": "thcs.dienbien@tphcm.edu.vn",
+                "capacity": 1200,
+                "vulnerability": "Mức dễ tổn thương: Cao",
+            },
+            {
+                "name": "Bệnh viện Quận Bình Thạnh",
+                "type": "Bệnh viện",
+                "address": "112 Đinh Tiên Hoàng, Phường 1, Quận Bình Thạnh, TP.HCM",
+                "lat": 10.7980,
+                "lng": 106.6970,  # ~600m
+                "unit_code": "765",
+                "contact_phone": "028 3841 7493",
+                "contact_person": "Bác sĩ Trực Cấp cứu BV Bình Thạnh",
+                "contact_email": "capcuu.bvbt@tphcm.gov.vn",
+                "capacity": 550,
+                "vulnerability": "Mức dễ tổn thương: Rất cao",
+            },
+            {
+                "name": "Trạm Y tế Phường 15 (Bình Thạnh)",
+                "type": "Trạm y tế",
+                "address": "15 Điện Biên Phủ, Phường 15, Quận Bình Thạnh, TP.HCM",
+                "lat": 10.7925,
+                "lng": 106.7010,  # ~180m
+                "unit_code": "765",
+                "contact_phone": "028 3840 5678",
+                "contact_person": "Y sĩ Nguyễn Văn Tâm",
+                "contact_email": "tyt.p15bt@tphcm.gov.vn",
+                "capacity": 50,
                 "vulnerability": "Mức dễ tổn thương: Trung bình",
             },
         ]
@@ -181,12 +413,13 @@ async def seed_triage_and_spatial_data():
             res = await db.execute(stmt)
             facility = res.scalars().first()
             wkt = f"POINT({f['lng']} {f['lat']})"
+            uid = unit_map.get(f.get("unit_code")) or (admin_unit.unit_id if admin_unit else None)
             if not facility:
                 facility = EssentialFacility(
                     facility_name=f["name"],
                     facility_type=f["type"],
                     address=f["address"],
-                    unit_id=admin_unit.unit_id if admin_unit else None,
+                    unit_id=uid,
                     location=WKTElement(wkt, srid=4326),
                     contact_phone=f["contact_phone"],
                     contact_person=f["contact_person"],
@@ -196,15 +429,51 @@ async def seed_triage_and_spatial_data():
                 )
                 db.add(facility)
             else:
+                facility.facility_type = f["type"]
+                facility.address = f["address"]
                 facility.contact_phone = f["contact_phone"]
                 facility.contact_person = f["contact_person"]
                 facility.contact_email = f["contact_email"]
                 facility.capacity_people = f["capacity"]
                 facility.vulnerability_level = f["vulnerability"]
                 facility.location = WKTElement(wkt, srid=4326)
+                if uid:
+                    facility.unit_id = uid
 
-        # 4. Tạo các sự cố mẫu phục vụ STT 39 và STT 40
+        # 4. Tạo và cập nhật các sự cố mẫu phục vụ STT 39 và STT 40
         incidents_data = [
+            # === SỰ CỐ ECO-HCM-002 TẠI THỦ ĐỨC (Màn hình thẩm định mặc định) ===
+            {
+                "code": "ECO-HCM-002",
+                "title": "Bãi rác tự phát lấn chiếm vỉa hè đường Võ Văn Ngân",
+                "description": "Túi rác sinh hoạt chất đống gần ngã 5 Chợ Thủ Đức, nước rỉ rác bốc mùi nồng nặc và cản trở người đi bộ, có nguy cơ phát tán dịch bệnh gần khu dân cư và các trường học lân cận.",
+                "address": "Số 245 Võ Văn Ngân, Phường Linh Chiểu, TP. Thủ Đức",
+                "lat": 10.8512,
+                "lng": 106.7625,
+                "cat_code": "DOMESTIC_OVERFLOW",
+                "severity": "CRITICAL",
+                "area_m2": 35.0,
+                "ai_summary": "Bãi rác tự phát nghiêm trọng lấn chiếm vỉa hè đường Võ Văn Ngân gần ngã 5 Chợ Thủ Đức, cự ly gần Trường THCS Lê Quý Đôn (~130m) và Trạm Y tế Linh Chiểu (~170m). Cần ưu tiên cử xe ép rác 5 tấn thu dọn và phun khử trùng khẩn cấp.",
+                "ai_triage_score": 91.5,
+                "ai_suggested_priority": "Khẩn cấp",
+                "ai_factors": {
+                    "base_severity": 100,
+                    "proximity_risk": 90,
+                    "proximity_facility": "Trường THCS Lê Quý Đôn (cách ~130m), Trạm Y tế Linh Chiểu (cách ~170m)",
+                    "scale_factor": 85,
+                    "area_m2": 35.0,
+                    "urgency_nlp": 90,
+                    "keywords": ["chất đống", "bốc mùi nồng nặc", "lấn chiếm vỉa hè", "gần trường học"],
+                    "risk_factors": [
+                        "Mức độ nghiêm trọng: Rất khẩn cấp (CRITICAL)",
+                        "Gần trường học và trạm y tế dưới 200m",
+                        "Nước rỉ rác bốc mùi hôi thối nồng nặc",
+                        "Cản trở giao thông và người đi bộ khu vực chợ"
+                    ]
+                },
+                "media_url": "https://images.unsplash.com/photo-1605600659908-0ef719419d41?w=800",
+            },
+            # === SỰ CỐ INC-2026-3901 (LÊ LỢI, QUẬN 1) ===
             {
                 "code": "INC-2026-3901",
                 "title": "Bãi rác thải sinh hoạt ùn ứ chắn lối đi ngõ 128 Lê Lợi",
@@ -235,6 +504,7 @@ async def seed_triage_and_spatial_data():
                 },
                 "media_url": "https://images.unsplash.com/photo-1605600659908-0ef719419d41?w=800",
             },
+            # === SỰ CỐ INC-2026-3902 (HÓA CHẤT KÊNH TÀU HỦ) ===
             {
                 "code": "INC-2026-3902",
                 "title": "Đổ trộm thùng hóa chất dung môi nguy hại ven kênh",
@@ -262,6 +532,7 @@ async def seed_triage_and_spatial_data():
                 },
                 "media_url": "https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?w=800",
             },
+            # === SỰ CỐ INC-2026-3903 (CÀNH CÂY KHÔ NGUYỄN DU) ===
             {
                 "code": "INC-2026-3903",
                 "title": "Cành cây khô sau tỉa chưa dọn tại lề đường",
@@ -285,17 +556,18 @@ async def seed_triage_and_spatial_data():
                 },
                 "media_url": "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800",
             },
+            # === SỰ CỐ INC-2026-3904 (PASTEUR) ===
             {
                 "code": "INC-2026-3904",
                 "title": "Rác thải sinh hoạt lặt vặt",
-                "description": "Rác bẩn",  # Mô tả siêu ngắn < 10 ký tự để test tính năng edge case
+                "description": "Rác bẩn",
                 "address": "22 Pasteur, Quận 1, TP.HCM",
                 "lat": 10.7730,
                 "lng": 106.6990,
                 "cat_code": "DOMESTIC_OVERFLOW",
                 "severity": "LOW",
                 "area_m2": 1.0,
-                "ai_summary": None,  # Chưa có tóm tắt vì mô tả quá ngắn
+                "ai_summary": None,
                 "ai_triage_score": 25.0,
                 "ai_suggested_priority": "Thấp",
                 "ai_factors": {
@@ -305,6 +577,78 @@ async def seed_triage_and_spatial_data():
                     "urgency_nlp": 0,
                     "keywords": [],
                     "risk_factors": []
+                },
+                "media_url": None,
+            },
+            # === SỰ CỐ ECO-HCM-001 (BẾN BẠCH ĐẰNG, QUẬN 1) ===
+            {
+                "code": "ECO-HCM-001",
+                "title": "Rác thải trôi nổi và lục bình ứ đọng ven sông Sài Gòn",
+                "description": "Túi nilon và chai nhựa dạt vào bến Bạch Đằng gây mất mỹ quan đô thị trung tâm và bốc mùi khi nước ròng.",
+                "address": "Bến Bạch Đằng, Tôn Đức Thắng, Quận 1",
+                "lat": 10.7725,
+                "lng": 106.7065,
+                "cat_code": "DOMESTIC_OVERFLOW",
+                "severity": "HIGH",
+                "area_m2": 40.0,
+                "ai_summary": "Rác thải và lục bình dày đặc dạt vào bến Bạch Đằng gây ô nhiễm nguồn nước mặt và cảnh quan du lịch. Cần điều ca nô vớt rác chuyên dụng.",
+                "ai_triage_score": 82.0,
+                "ai_suggested_priority": "Cao",
+                "ai_factors": {
+                    "base_severity": 80,
+                    "proximity_risk": 70,
+                    "scale_factor": 80,
+                    "urgency_nlp": 75,
+                    "keywords": ["trôi nổi", "ô nhiễm sông", "mất mỹ quan"],
+                    "risk_factors": ["Ô nhiễm trực tiếp nguồn nước sông Sài Gòn", "Khu vực du lịch trọng điểm"]
+                },
+                "media_url": None,
+            },
+            # === SỰ CỐ ECO-HCM-003 (NGUYỄN THỊ THẬP, QUẬN 7) ===
+            {
+                "code": "ECO-HCM-003",
+                "title": "Cửa cống thoát nước bị rác bít kín gây ngập Kênh Tè",
+                "description": "Miệng hố ga gom nước mưa bị bùn đất và lá cây chèn cứng gây ngập nước sâu sau các đợt mưa lớn.",
+                "address": "Đường Nguyễn Thị Thập, Phường Tân Phú, Quận 7",
+                "lat": 10.7380,
+                "lng": 106.7215,
+                "cat_code": "DRAIN_BLOCKAGE",
+                "severity": "HIGH",
+                "area_m2": 20.0,
+                "ai_summary": "Miệng hố ga bị rác và bùn đất lấp kín gây nguy cơ ngập sâu khi triều cường. Cần điều đội nạo vét khơi thông miệng cống.",
+                "ai_triage_score": 75.0,
+                "ai_suggested_priority": "Cao",
+                "ai_factors": {
+                    "base_severity": 80,
+                    "proximity_risk": 60,
+                    "scale_factor": 70,
+                    "urgency_nlp": 70,
+                    "keywords": ["ngập nước", "bít cống", "mưa lớn"],
+                    "risk_factors": ["Nguy cơ ngập sâu kết hợp triều cường", "Cản trở thoát nước đô thị"]
+                },
+                "media_url": None,
+            },
+            # === SỰ CỐ ECO-HCM-004 (ĐIỆN BIÊN PHỦ, BÌNH THẠNH) ===
+            {
+                "code": "ECO-HCM-004",
+                "title": "Ô nhiễm kênh Nhiêu Lộc - Thị Nghè đoạn cầu Điện Biên Phủ",
+                "description": "Xuất hiện váng dầu loang và mùi khét rác thải hữu cơ theo dòng chảy thủy triều qua địa bàn Bình Thạnh.",
+                "address": "Chân cầu Điện Biên Phủ, Phường 15, Quận Bình Thạnh",
+                "lat": 10.7930,
+                "lng": 106.6995,
+                "cat_code": "HAZARDOUS",
+                "severity": "HIGH",
+                "area_m2": 30.0,
+                "ai_summary": "Váng dầu loang và rác thải hữu cơ bốc mùi nồng trên kênh Nhiêu Lộc đoạn cầu Điện Biên Phủ, gần trường THCS Điện Biên và trạm y tế P15.",
+                "ai_triage_score": 78.0,
+                "ai_suggested_priority": "Cao",
+                "ai_factors": {
+                    "base_severity": 80,
+                    "proximity_risk": 75,
+                    "scale_factor": 75,
+                    "urgency_nlp": 75,
+                    "keywords": ["váng dầu", "mùi khét", "ô nhiễm kênh"],
+                    "risk_factors": ["Váng dầu loang trên mặt nước kênh", "Gần khu dân cư đông đúc"]
                 },
                 "media_url": None,
             },

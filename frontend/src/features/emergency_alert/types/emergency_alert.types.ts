@@ -33,6 +33,7 @@ export interface BroadcastAlertRequest {
   center_longitude: number;
   radius_meters: number;
   severity?: AlertSeverity;
+  severity_level?: AlertSeverity;
   hotline_phone?: string;
   safe_routes_summary?: string;
   peak_time_estimate?: string;

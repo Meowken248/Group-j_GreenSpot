@@ -211,6 +211,7 @@ export const Screen1BroadcastConsole: React.FC<Screen1BroadcastConsoleProps> = (
         center_longitude: centerLng,
         radius_meters: radiusMeters,
         severity: severity,
+        severity_level: severity,
         hotline_phone: hotline,
         peak_time_estimate: "17h30",
         expires_in_hours: 12,
@@ -226,10 +227,11 @@ export const Screen1BroadcastConsole: React.FC<Screen1BroadcastConsoleProps> = (
       if (onBroadcastSuccess) {
         onBroadcastSuccess(res.alert_id);
       }
-    } catch {
+    } catch (err: any) {
+      const errorDetail = err?.response?.data?.detail || err?.message;
       setToastMessage({
         type: "danger",
-        text: "Không thể gửi cảnh báo tức thời do gián đoạn hạ tầng đẩy tin. Đang kích hoạt máy chủ dự phòng...",
+        text: typeof errorDetail === "string" ? errorDetail : "Không thể gửi cảnh báo tức thời do gián đoạn hạ tầng đẩy tin. Đang kích hoạt máy chủ dự phòng...",
       });
     } finally {
       setIsSending(false);
@@ -514,9 +516,12 @@ export const Screen1BroadcastConsole: React.FC<Screen1BroadcastConsoleProps> = (
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
                         <span style={{ fontSize: "0.72rem", color: "#64748b" }}>
-                          {item.issued_at || (item as any).broadcasted_at
-                            ? new Date(item.issued_at || (item as any).broadcasted_at).toLocaleTimeString("vi-VN")
-                            : "Vừa xong"}
+                          {(() => {
+                            const rawDate = item.issued_at || (item as any).broadcasted_at || (item as any).created_at;
+                            if (!rawDate) return "Vừa xong";
+                            const d = new Date(rawDate);
+                            return isNaN(d.getTime()) ? "Vừa xong" : d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+                          })()}
                         </span>
                         {item.status === "ACTIVE" && (
                           <button

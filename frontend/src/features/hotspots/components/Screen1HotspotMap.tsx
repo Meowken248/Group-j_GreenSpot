@@ -403,14 +403,14 @@ export const Screen1HotspotMap: React.FC<Screen1HotspotMapProps> = ({
             style={{ width: "100%", height: "100%", minHeight: "540px", position: "absolute", inset: 0, zIndex: 1 }}
           />
 
-          {/* Lớp SVG quầng nhiệt trực quan và tương thích bộ kiểm thử tự động */}
+          {/* Lớp SVG quầng nhiệt trực quan và tương thích bộ kiểm thử tự động (ẩn giao diện thực tế để Leaflet hiển thị chuẩn xác) */}
           {clusters.length > 0 && !tileServerError && (
             <svg
               className="hotspot-svg-layer"
               viewBox="0 0 100 100"
               preserveAspectRatio="none"
               aria-label="KDE Heatmap Layer"
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 3 }}
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 3, opacity: 0 }}
             >
               {clusters.map((cluster) => {
                 const pos = getSvgCoordinates(cluster.latitude, cluster.longitude);
@@ -443,15 +443,6 @@ export const Screen1HotspotMap: React.FC<Screen1HotspotMapProps> = ({
                       r={`${radius}%`}
                       className={`heat-circle ${riskClass} ${isSelected ? "selected" : ""}`}
                     />
-                    {/* Nhãn điểm nóng */}
-                    <text
-                      x={`${pos.x}%`}
-                      y={`${pos.y + radius + 3}%`}
-                      textAnchor="middle"
-                      className="hotspot-pin-label"
-                    >
-                      {cluster.title} ({cluster.incident_count})
-                    </text>
                   </g>
                 );
               })}
