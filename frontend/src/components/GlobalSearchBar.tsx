@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   getSearchAutocompleteAPI,
   searchGlobalAPI,
+} from "../services/searchApi";
+import type {
   AutocompleteItem,
   GlobalSearchResultItem,
   GlobalSearchResponse,
