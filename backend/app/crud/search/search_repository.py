@@ -52,6 +52,22 @@ def resolve_entity_url(entity_type: str, entity_id: str) -> str:
     return routes.get(entity_type, f"/detail/{entity_type}/{entity_id}")
 
 
+def parse_iso_date(dt_val: Any) -> Optional[str]:
+    """Chuẩn hóa ngày giờ sang chuẩn ISO-8601 tương thích Elasticsearch."""
+    if not dt_val:
+        return None
+    s = str(dt_val).strip()
+    if " " in s:
+        s = s.replace(" ", "T", 1)
+    if s.endswith("+00"):
+        s = s[:-3] + "Z"
+    elif s.endswith("+00:00"):
+        s = s[:-6] + "Z"
+    elif s.endswith("+0000"):
+        s = s[:-5] + "Z"
+    return s
+
+
 class ElasticsearchSearchRepository(ISearchRepository):
     """
     Thực thi kết nối, lập chỉ mục và truy vấn Elasticsearch 8.x.
@@ -164,8 +180,14 @@ class ElasticsearchSearchRepository(ISearchRepository):
                         "type": "text",
                         "fields": { "raw": { "type": "keyword" } }
                     },
-                    "created_at": { "type": "date" },
-                    "updated_at": { "type": "date" }
+                    "created_at": {
+                        "type": "date",
+                        "format": "strict_date_optional_time||yyyy-MM-dd HH:mm:ssZZ||yyyy-MM-dd HH:mm:ss||epoch_millis"
+                    },
+                    "updated_at": {
+                        "type": "date",
+                        "format": "strict_date_optional_time||yyyy-MM-dd HH:mm:ssZZ||yyyy-MM-dd HH:mm:ss||epoch_millis"
+                    }
                 }
             }
         }
@@ -511,7 +533,7 @@ class ElasticsearchSearchRepository(ISearchRepository):
                     "address": m.get("address_text"),
                     "district": None,
                     "location": {"lat": m["latitude"], "lon": m["longitude"]} if m.get("latitude") and m.get("longitude") else None,
-                    "created_at": m.get("created_at"),
+                    "created_at": parse_iso_date(m.get("created_at")),
                 }
                 bulk_docs.append(doc)
                 counts["incidents"] += 1
@@ -551,7 +573,7 @@ class ElasticsearchSearchRepository(ISearchRepository):
                     "address": m.get("address"),
                     "district": m.get("district"),
                     "location": {"lat": m["latitude"], "lon": m["longitude"]} if m.get("latitude") and m.get("longitude") else None,
-                    "created_at": m.get("created_at"),
+                    "created_at": parse_iso_date(m.get("created_at")),
                 }
                 bulk_docs.append(doc)
                 counts["events"] += 1
@@ -590,7 +612,7 @@ class ElasticsearchSearchRepository(ISearchRepository):
                     "address": "Hướng dẫn phân loại tại nguồn",
                     "district": "TP.HCM",
                     "location": None,
-                    "created_at": m.get("created_at"),
+                    "created_at": parse_iso_date(m.get("created_at")),
                 }
                 bulk_docs.append(doc)
                 counts["waste_handbook"] += 1
@@ -611,7 +633,15 @@ class ElasticsearchSearchRepository(ISearchRepository):
                         content=bulk_payload,
                         headers={"Content-Type": "application/x-ndjson"},
                     )
-                    logger.info(f"Đã đồng bộ {len(bulk_docs)} tài liệu vào Elasticsearch (_bulk status: {res.status_code})")
+                    res_data = res.json() if res.status_code in (200, 201) else {}
+                    has_errs = res_data.get("errors", False)
+                    if has_errs:
+                        err_items = [
+                            it for it in res_data.get("items", [])
+                            if list(it.values())[0].get("error")
+                        ]
+                        logger.warning(f"Elasticsearch bulk gặp lỗi tại {len(err_items)} tài liệu. Ví dụ: {err_items[:2]}")
+                    logger.info(f"Đã đồng bộ {len(bulk_docs)} tài liệu vào Elasticsearch (_bulk status: {res.status_code}, has_errors: {has_errs})")
                 except Exception as e:
                     logger.error(f"Lỗi gửi bulk request tới Elasticsearch: {e}")
 
