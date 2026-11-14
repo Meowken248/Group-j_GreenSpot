@@ -78,25 +78,60 @@
 
 .search-input-field {
   width: 100%;
-  padding: 12px 14px 12px 40px;
-  border: 1px solid #cbd5e1;
+  padding: 12px 38px 12px 42px;
+  border: 1.5px solid #cbd5e1;
   border-radius: 10px;
-  font-size: 14px;
+  font-size: 14.5px;
+  font-weight: 500;
   box-sizing: border-box;
-  background: #f8fafc;
+  background: #ffffff !important;
+  color: #0f172a !important;
   transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .search-input-field:focus {
   outline: none;
-  background: #ffffff;
+  background: #ffffff !important;
+  color: #0f172a !important;
   border-color: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+}
+
+.search-input-field::placeholder {
+  color: #94a3b8 !important;
+  opacity: 1;
+  font-weight: 400;
 }
 
 .search-input-field.input-error {
   border-color: #ef4444;
-  background: #fef2f2;
+  background: #fef2f2 !important;
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #e2e8f0;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 11px;
+  color: #475569;
+  transition: all 0.15s;
+  z-index: 2;
+}
+
+.search-clear-btn:hover {
+  background: #cbd5e1;
+  color: #0f172a;
 }
 
 .search-icon-inside {
@@ -106,6 +141,7 @@
   transform: translateY(-50%);
   font-size: 16px;
   color: #94a3b8;
+  z-index: 2;
 }
 
 .search-hint-text {
@@ -616,15 +652,17 @@
 
 .autocomplete-dropdown {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   left: 0;
   right: 0;
   background: #ffffff;
-  border: 1px solid #cbd5e1;
+  border: 1.5px solid #cbd5e1;
   border-radius: 12px;
-  box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.15);
-  z-index: 50;
+  box-shadow: 0 16px 36px -4px rgba(15, 23, 42, 0.22), 0 4px 12px rgba(0, 0, 0, 0.08);
+  z-index: 1000 !important;
   overflow: hidden;
+  max-height: 380px;
+  overflow-y: auto;
   animation: fadeInDown 0.15s ease-out;
 }
 
@@ -654,7 +692,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
+  gap: 12px;
+  padding: 11px 14px;
   cursor: pointer;
   border-bottom: 1px solid #f8fafc;
   transition: background 0.15s;
@@ -672,6 +711,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+  flex: 1;
 }
 
 .autocomplete-cat-dot {
@@ -684,14 +725,27 @@
 .autocomplete-item-name {
   font-size: 13.5px;
   font-weight: 600;
-  color: #0f172a;
+  color: #0f172a !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.autocomplete-item-right {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
 }
 
 .autocomplete-cat-tag {
   font-size: 11px;
   font-weight: 600;
-  padding: 3px 8px;
+  padding: 4px 9px;
   border-radius: 6px;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  letter-spacing: 0.2px;
 }
 
 /* ==========================================================================
@@ -779,6 +833,13 @@
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   font-size: 13px;
+  color: #0f172a !important;
+  background: #ffffff !important;
+}
+
+.admin-search-input::placeholder {
+  color: #94a3b8 !important;
+  opacity: 1;
 }
 
 .admin-select {
@@ -786,7 +847,8 @@
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   font-size: 13px;
-  background: #ffffff;
+  color: #0f172a !important;
+  background: #ffffff !important;
 }
 
 .btn-admin-search {
@@ -990,9 +1052,15 @@
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   font-size: 13px;
-  color: #0f172a;
-  background: #ffffff;
+  color: #0f172a !important;
+  background: #ffffff !important;
   box-sizing: border-box;
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: #94a3b8 !important;
+  opacity: 1;
 }
 
 .form-input:focus,
@@ -1024,4 +1092,120 @@
   margin-top: 2px;
   cursor: pointer;
 }
+
+/* ==========================================================================
+   A4 INFOGRAPHIC CHEAT SHEET MODAL & PRINT STYLES
+   ========================================================================== */
+.btn-a4-infographic {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-a4-infographic:hover {
+  background: #f8fafc;
+  border-color: #059669;
+  color: #059669;
+}
+
+.btn-admin-reset-defaults {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-admin-reset-defaults:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+}
+
+.a4-infographic-card {
+  background: #ffffff;
+  border-radius: 16px;
+  max-width: 900px;
+  width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 28px;
+  box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.25);
+  position: relative;
+}
+
+.a4-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin: 20px 0;
+}
+
+@media (max-width: 768px) {
+  .a4-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.a4-quadrant {
+  border-radius: 12px;
+  padding: 18px;
+  border: 2px solid;
+}
+
+.a4-quadrant-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.a4-quadrant-sub {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.a4-item-list {
+  font-size: 12.5px;
+  color: #1e293b;
+  line-height: 1.6;
+  padding-left: 18px;
+  margin: 0;
+}
+
+.a4-item-list li {
+  margin-bottom: 4px;
+}
+
+.a4-rule-note {
+  font-size: 11.5px;
+  margin-top: 10px;
+  font-style: italic;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.8);
+}
+
 

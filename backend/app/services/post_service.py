@@ -77,6 +77,25 @@ class PostService:
                 )
                 db.add(tag)
 
+        # Ghi nhận nhật ký an ninh kiểm toán AuditLog
+        try:
+            from app.services.audit_service import AuditService
+            await AuditService.log_activity(
+                db=db,
+                action="CREATE_POST",
+                table_name="posts",
+                user_id=author_id,
+                record_id=str(post.post_id),
+                new_data={
+                    "content": (post.content[:200] + "...") if post.content and len(post.content) > 200 else post.content,
+                    "location_name": post.location_name,
+                    "tagged_count": len(request.tagged_friend_ids or []),
+                },
+                request_uri="/api/v1/posts",
+            )
+        except Exception as audit_err:
+            print(f"[Audit Notice] {audit_err}")
+
         await db.commit()
 
         # Tải lại bài viết kèm relationship
@@ -173,6 +192,25 @@ class PostService:
             post.address = request.address
 
         post.version += 1
+        # Ghi nhận nhật ký an ninh kiểm toán AuditLog
+        try:
+            from app.services.audit_service import AuditService
+            await AuditService.log_activity(
+                db=db,
+                action="UPDATE_DATA",
+                table_name="posts",
+                user_id=user_id,
+                record_id=str(post.post_id),
+                new_data={
+                    "content": (post.content[:200] + "...") if post.content and len(post.content) > 200 else post.content,
+                    "location_name": post.location_name,
+                    "version": post.version,
+                },
+                request_uri=f"/api/v1/posts/{post_id}",
+            )
+        except Exception as audit_err:
+            print(f"[Audit Notice] {audit_err}")
+
         await db.commit()
         await db.refresh(post)
         return await self.get_post_by_id(db, post.post_id)
@@ -214,6 +252,21 @@ class PostService:
             .where(PostTaggedFriend.post_id == post_id)
             .values(deleted_at=now)
         )
+
+        # Ghi nhận nhật ký an ninh kiểm toán AuditLog
+        try:
+            from app.services.audit_service import AuditService
+            await AuditService.log_activity(
+                db=db,
+                action="DELETE_POST",
+                table_name="posts",
+                user_id=user_id,
+                record_id=str(post.post_id),
+                old_data={"content": post.content[:100] if post.content else ""},
+                request_uri=f"/api/v1/posts/{post_id}",
+            )
+        except Exception as audit_err:
+            print(f"[Audit Notice] {audit_err}")
 
         await db.commit()
         return True

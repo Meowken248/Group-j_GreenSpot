@@ -74,5 +74,63 @@ export interface LeaderboardSnapshotResponse {
   message: string;
 }
 
-export type LeaderboardTab = "INDIVIDUAL" | "GROUP" | "DISTRICT";
+export type LeaderboardTab = "INDIVIDUAL" | "GROUP" | "DISTRICT" | "TIERS_CRUD";
 export type CycleFilter = "WEEK" | "MONTH" | "ALL";
+
+// ============================================================
+// CỘT MỐC CẤP BẬC & ĐIỂM SỐ XẾP HẠNG (TIERS CRUD - CN 28, 32, 36)
+// ============================================================
+export interface TierItem {
+  tier_id: number;
+  tier_code: string;
+  tier_name: string;
+  min_points: number;
+  badge_icon: string;
+  color_hex: string;
+  bg_gradient: string;
+  discount_percent: number;
+  description?: string | null;
+  benefits: string[];
+  order_index: number;
+  is_active: boolean;
+  users_count?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface TierCreatePayload {
+  tier_code: string;
+  tier_name: string;
+  min_points: number;
+  badge_icon: string;
+  color_hex: string;
+  bg_gradient?: string;
+  discount_percent: number;
+  description?: string;
+  benefits: string[];
+  order_index?: number;
+  is_active?: boolean;
+}
+
+export interface TierUpdatePayload {
+  tier_name?: string;
+  min_points?: number;
+  badge_icon?: string;
+  color_hex?: string;
+  bg_gradient?: string;
+  discount_percent?: number;
+  description?: string;
+  benefits?: string[];
+  order_index?: number;
+  is_active?: boolean;
+}
+
+export interface TierListResponse {
+  total: number;
+  tiers: TierItem[];
+}
+
+export interface TierAdminResponse {
+  tier: TierItem;
+  message: string;
+}

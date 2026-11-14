@@ -69,6 +69,13 @@ export const handbookApi = {
     return res.data;
   },
 
+  adminResetDefaults: async (): Promise<{ message: string; count: number }> => {
+    const res = await api.post<{ message: string; count: number }>(
+      "/api/v1/waste-handbook/admin/reset-defaults"
+    );
+    return res.data;
+  },
+
   claimQuizReward: async (itemName: string): Promise<{ points_awarded?: number; message?: string }> => {
     const res = await api.post("/api/v1/rewards/claim", {
       action_type: "ECO_REACTION",

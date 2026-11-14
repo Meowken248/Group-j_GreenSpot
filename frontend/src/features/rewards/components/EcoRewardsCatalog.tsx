@@ -59,6 +59,44 @@ export const EcoRewardsCatalog: React.FC<EcoRewardsCatalogProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Chế độ Quản trị viên Kho quà (Admin CRUD Mode)
+  const [isAdminMode, setIsAdminMode] = useState<boolean>(true);
+
+  // Modal xem chi tiết quà tặng
+  const [detailItem, setDetailItem] = useState<EcoRewardItem | null>(null);
+
+  // Trạng thái nhập kho nhanh
+  const [quickStockLoading, setQuickStockLoading] = useState<number | null>(null);
+
+  // Bộ sưu tập ảnh mẫu sinh thái có sẵn
+  const SAMPLE_PRESET_IMAGES = [
+    { label: "Co.opmart Siêu Thị Xanh", url: "https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=600&q=80" },
+    { label: "Bình Giữ Nhiệt Inox", url: "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80" },
+    { label: "GrabEco Chuyến Đi Xanh", url: "https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&w=600&q=80" },
+    { label: "VinBus Xe Buýt Điện", url: "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=600&q=80" },
+    { label: "Cà Phê Mang Ly Cá Nhân", url: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=600&q=80" },
+    { label: "Chậu Cây Lọc Không Khí", url: "https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=600&q=80" },
+    { label: "Túi Vải Canvas Eco", url: "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=600&q=80" },
+    { label: "Ống Hút Cỏ Bàng Tự Nhiên", url: "https://images.unsplash.com/photo-1584824486509-112e4181ff6b?auto=format&fit=crop&w=600&q=80" },
+  ];
+
+  // Hàm nhập kho nhanh
+  const handleQuickStockAdd = async (item: EcoRewardItem, delta: number) => {
+    setQuickStockLoading(item.reward_id);
+    try {
+      const newQty = Math.max(0, item.stock_quantity + delta);
+      await rewardsApi.updateReward(item.reward_id, {
+        stock_quantity: newQty,
+      });
+      showToast(`Đã cập nhật kho: ${item.title} -> ${newQty} cái (+${delta})`);
+      loadCatalog();
+    } catch (err: any) {
+      showToast("Lỗi nhập kho: " + (err.response?.data?.detail || err.message));
+    } finally {
+      setQuickStockLoading(null);
+    }
+  };
+
   // Trạng thái xác nhận thoát khi có thay đổi chưa lưu (Table 127 R7)
   const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
 
@@ -533,7 +571,7 @@ export const EcoRewardsCatalog: React.FC<EcoRewardsCatalogProps> = ({
             </div>
 
             <div className="form-group">
-              <label className="form-label">Ảnh sản phẩm (URL trực tuyến hoặc ảnh mẫu)</label>
+              <label className="form-label">Ảnh sản phẩm (URL trực tuyến hoặc chọn ảnh mẫu bên dưới)</label>
               <input
                 type="text"
                 className="form-input"
@@ -541,9 +579,36 @@ export const EcoRewardsCatalog: React.FC<EcoRewardsCatalogProps> = ({
                 value={formData.image_url}
                 onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
               />
+
+              <div style={{ marginTop: "10px" }}>
+                <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569", display: "block", marginBottom: "6px" }}>
+                  🖼️ Chọn nhanh ảnh mẫu sinh thái có sẵn:
+                </span>
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                  {SAMPLE_PRESET_IMAGES.map((img) => (
+                    <button
+                      key={img.label}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, image_url: img.url })}
+                      style={{
+                        padding: "4px 8px",
+                        fontSize: "0.75rem",
+                        borderRadius: "6px",
+                        border: formData.image_url === img.url ? "1.5px solid #10b981" : "1px solid #cbd5e1",
+                        background: formData.image_url === img.url ? "#ecfdf5" : "#ffffff",
+                        color: formData.image_url === img.url ? "#047857" : "#334155",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {img.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {formData.image_url && (
-                <div className="image-preview-box">
-                  <img src={formData.image_url} alt="Preview" className="preview-img" />
+                <div className="image-preview-box" style={{ marginTop: "10px" }}>
+                  <img src={formData.image_url} alt="Preview" className="preview-img" style={{ maxHeight: "140px", objectFit: "cover", borderRadius: "8px" }} />
                 </div>
               )}
             </div>
@@ -708,7 +773,30 @@ export const EcoRewardsCatalog: React.FC<EcoRewardsCatalogProps> = ({
           </p>
         </div>
 
-        <div className="header-action-group">
+        <div className="header-action-group" style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          {/* Nút Chuyển đổi Quyền Quản trị Kho (CRUD Admin) */}
+          <button
+            type="button"
+            onClick={() => setIsAdminMode(!isAdminMode)}
+            style={{
+              background: isAdminMode ? "#0f172a" : "#ffffff",
+              color: isAdminMode ? "#34d399" : "#334155",
+              border: isAdminMode ? "1px solid #334155" : "1px solid #cbd5e1",
+              padding: "8px 14px",
+              borderRadius: "8px",
+              fontWeight: 700,
+              fontSize: "0.85rem",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+            }}
+          >
+            <span>{isAdminMode ? "🛠️ Đang bật quyền Admin Kho (CRUD)" : "👤 Chế độ Công Dân (Đổi quà)"}</span>
+            <span style={{ fontSize: "0.75rem", opacity: 0.8 }}>({isAdminMode ? "Tắt" : "Bật quản trị"})</span>
+          </button>
+
           {onNavigateToMyVouchers && (
             <button
               type="button"
@@ -901,11 +989,53 @@ export const EcoRewardsCatalog: React.FC<EcoRewardsCatalogProps> = ({
                           </div>
                         </td>
                         <td className="col-stock">
-                          {isOutOfStock ? (
-                            <span className="badge-out-of-stock">Hết hàng</span>
-                          ) : (
-                            <span className="stock-count">{item.stock_quantity} cái</span>
-                          )}
+                          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                            {isOutOfStock ? (
+                              <span className="badge-out-of-stock">Hết hàng (0)</span>
+                            ) : (
+                              <span className="stock-count">{item.stock_quantity} cái</span>
+                            )}
+                            {isAdminMode && (
+                              <div style={{ display: "flex", gap: "4px", marginTop: "2px" }}>
+                                <button
+                                  type="button"
+                                  disabled={quickStockLoading === item.reward_id}
+                                  onClick={() => handleQuickStockAdd(item, 10)}
+                                  style={{
+                                    fontSize: "10px",
+                                    padding: "2px 6px",
+                                    borderRadius: "4px",
+                                    border: "1px solid #a7f3d0",
+                                    background: "#ecfdf5",
+                                    color: "#047857",
+                                    cursor: "pointer",
+                                    fontWeight: 700,
+                                  }}
+                                  title="Nhập thêm 10 cái vào kho"
+                                >
+                                  +10
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={quickStockLoading === item.reward_id}
+                                  onClick={() => handleQuickStockAdd(item, 50)}
+                                  style={{
+                                    fontSize: "10px",
+                                    padding: "2px 6px",
+                                    borderRadius: "4px",
+                                    border: "1px solid #bfdbfe",
+                                    background: "#eff6ff",
+                                    color: "#1d4ed8",
+                                    cursor: "pointer",
+                                    fontWeight: 700,
+                                  }}
+                                  title="Nhập thêm 50 cái vào kho"
+                                >
+                                  +50
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td className="col-exp">
                           <span className="expiry-text">{formatDateStr(item.expiry_date)}</span>
@@ -932,23 +1062,38 @@ export const EcoRewardsCatalog: React.FC<EcoRewardsCatalogProps> = ({
                           })()}
                         </td>
                         <td className="col-actions">
-                          <div className="table-btn-row">
+                          <div className="table-btn-row" style={{ flexWrap: "wrap", gap: "4px" }}>
                             <button
                               type="button"
-                              className="btn-table-edit"
-                              title="Chỉnh sửa thông tin và điều chỉnh kho"
-                              onClick={() => handleOpenEdit(item)}
+                              className="action-btn-secondary"
+                              style={{ padding: "4px 8px", fontSize: "12px", border: "1px solid #cbd5e1" }}
+                              title="Xem chi tiết quà tặng"
+                              onClick={() => setDetailItem(item)}
                             >
-                              Sửa
+                              🔍 Chi tiết
                             </button>
-                            <button
-                              type="button"
-                              className="btn-table-delete"
-                              title="Xóa quà tặng khỏi danh mục"
-                              onClick={() => setDeleteTarget(item)}
-                            >
-                              Xoá
-                            </button>
+
+                            {isAdminMode && (
+                              <>
+                                <button
+                                  type="button"
+                                  className="btn-table-edit"
+                                  title="Chỉnh sửa thông tin và điều chỉnh kho"
+                                  onClick={() => handleOpenEdit(item)}
+                                >
+                                  Sửa
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-table-delete"
+                                  title="Xóa quà tặng khỏi danh mục"
+                                  onClick={() => setDeleteTarget(item)}
+                                >
+                                  Xoá
+                                </button>
+                              </>
+                            )}
+
                             <button
                               type="button"
                               className="btn-table-redeem"
@@ -1057,6 +1202,86 @@ export const EcoRewardsCatalog: React.FC<EcoRewardsCatalogProps> = ({
                 onClick={() => setDeleteSuccessModal(false)}
               >
                 Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP CHI TIẾT QUÀ TẶNG SINH THÁI */}
+      {detailItem && (
+        <div className="reward-modal-backdrop" onClick={() => setDetailItem(null)}>
+          <div className="confirm-modal-box" style={{ maxWidth: "520px", textAlign: "left" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+              <div>
+                <span style={{ fontSize: "0.75rem", background: "#ecfdf5", color: "#047857", padding: "3px 8px", borderRadius: "4px", fontWeight: 700, border: "1px solid #a7f3d0" }}>
+                  🌱 Quỹ ESG: {detailItem.brand || "GreenSpot ESG"}
+                </span>
+                <h3 style={{ margin: "8px 0 4px", fontSize: "1.2rem", fontWeight: 800, color: "#0f172a" }}>
+                  {detailItem.title}
+                </h3>
+                <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Mã kho: #{detailItem.reward_code}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDetailItem(null)}
+                style={{ background: "transparent", border: "none", fontSize: "1.2rem", cursor: "pointer", color: "#64748b" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {detailItem.image_url && (
+              <div style={{ width: "100%", maxHeight: "200px", overflow: "hidden", borderRadius: "10px", marginBottom: "14px" }}>
+                <img src={detailItem.image_url} alt={detailItem.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </div>
+            )}
+
+            <div style={{ background: "#f8fafc", padding: "12px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", marginBottom: "14px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "0.85rem" }}>
+              <div>
+                <span style={{ color: "#64748b", display: "block" }}>Điểm quy đổi:</span>
+                <strong style={{ color: "#059669", fontSize: "1.1rem" }}>{detailItem.points_required} Điểm Xanh</strong>
+              </div>
+              <div>
+                <span style={{ color: "#64748b", display: "block" }}>Tồn kho khả dụng:</span>
+                <strong>{detailItem.stock_quantity > 0 ? `${detailItem.stock_quantity} phần quà` : "Hết hàng"}</strong>
+              </div>
+              <div>
+                <span style={{ color: "#64748b", display: "block" }}>Hạn chương trình:</span>
+                <span>{formatDateStr(detailItem.expiry_date)}</span>
+              </div>
+              <div>
+                <span style={{ color: "#64748b", display: "block" }}>Hình thức:</span>
+                <span>{detailItem.reward_type === "VOUCHER" ? "🎟️ E-Voucher điện tử" : "📦 Hiện vật nhận tại trạm"}</span>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: "16px", fontSize: "0.88rem", color: "#334155", lineHeight: 1.6 }}>
+              <strong style={{ display: "block", marginBottom: "4px", color: "#0f172a" }}>📖 Mô tả & Tiêu chuẩn sinh thái:</strong>
+              <p style={{ margin: 0, whiteSpace: "pre-line" }}>
+                {detailItem.description || "Phần quà sinh thái đạt chuẩn tiêu chuẩn ESG, khuyến khích lối sống bền vững và giảm thiểu rác thải."}
+              </p>
+            </div>
+
+            <div className="confirm-modal-actions">
+              <button
+                type="button"
+                className="action-btn-secondary"
+                onClick={() => setDetailItem(null)}
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                className="primary-action-btn"
+                disabled={detailItem.stock_quantity <= 0 || redeemingId === detailItem.reward_id}
+                onClick={() => {
+                  const it = detailItem;
+                  setDetailItem(null);
+                  handleRedeemQuick(it);
+                }}
+              >
+                {redeemingId === detailItem.reward_id ? "Đang xử lý..." : "🎁 Đổi Quà Ngay"}
               </button>
             </div>
           </div>

@@ -87,8 +87,8 @@ class WasteHandbookService:
                 )
             )
 
-        # Featured items
-        featured_q = select(WasteHandbookItem).where(WasteHandbookItem.is_active == True).limit(8)
+        # Featured items (12 diverse items across categories)
+        featured_q = select(WasteHandbookItem).where(WasteHandbookItem.is_active == True).limit(12)
         featured_res = await db.execute(featured_q)
         items = featured_res.scalars().all()
 
@@ -406,4 +406,41 @@ class WasteHandbookService:
         )
         db.add(audit)
         await db.commit()
+
+    @staticmethod
+    async def admin_reset_defaults(
+        db: AsyncSession,
+        admin_id: uuid.UUID
+    ) -> int:
+        """
+        Khôi phục toàn bộ danh mục từ điển chuẩn hóa 24+ loại rác theo Luật BVMT 2020.
+        """
+        from scratch.seed_full_waste_handbook import DEFAULT_ITEMS
+
+        upserted_count = 0
+        for data in DEFAULT_ITEMS:
+            item = await db.get(WasteHandbookItem, data["item_id"])
+            if not item:
+                item = WasteHandbookItem(**data)
+                db.add(item)
+            else:
+                for k, v in data.items():
+                    setattr(item, k, v)
+            upserted_count += 1
+
+        audit = AuditLog(
+            user_id=admin_id,
+            action="UPDATE_DATA",
+            table_name="waste_handbook_items",
+            record_id="ALL_DEFAULTS",
+            old_data=None,
+            new_data={"action": "RESET_DEFAULTS", "count": upserted_count},
+            ip_address="127.0.0.1",
+            user_agent="Admin Portal Waste Handbook Service",
+            request_uri="/api/v1/waste-handbook/admin/reset-defaults",
+            is_suspicious=False
+        )
+        db.add(audit)
+        await db.commit()
+        return upserted_count
 

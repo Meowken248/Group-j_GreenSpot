@@ -41,33 +41,35 @@ class MilestoneService:
                 detail="Không tìm thấy thông tin công dân trên hệ thống",
             )
 
-        # [CN 36 10/10] Tính tiến độ cấp bậc dựa trên Điểm xét hạng trọn đời (Bảo toàn 100% khi đổi quà)
+        # [CN 36 10/10] Tính tiến độ cấp bậc dựa trên Cột mốc động từ cơ sở dữ liệu
+        from app.services.tier_service import TierService
         current_points = max(int(user.lifetime_points or 0), int(user.green_points or 0))
-        cur_tier, nxt_tier, pts_needed, progress = calculate_tier_details(current_points)
+        tiers_db = await TierService.get_all_tiers(self.db, active_only=True)
+        cur_tier, nxt_tier, pts_needed, progress = TierService.calculate_tier_details_sync(current_points, tiers_db)
 
         # Build list of all tiers with status
         all_tier_items: List[TierDetailItem] = []
-        for t in TIERS_CONFIG:
+        for t in tiers_db:
             tier_item = TierDetailItem(
-                tier_code=t["tier_code"],
-                tier_name=t["tier_name"],
-                min_points=t["min_points"],
-                badge_icon=t["badge_icon"],
-                color_hex=t["color_hex"],
-                bg_gradient=t["bg_gradient"],
-                description=t["description"],
-                benefits=t["benefits"],
-                is_current=(t["tier_code"] == cur_tier.tier_code),
-                is_unlocked=(current_points >= t["min_points"]),
+                tier_code=t.tier_code,
+                tier_name=t.tier_name,
+                min_points=t.min_points,
+                badge_icon=t.badge_icon,
+                color_hex=t.color_hex,
+                bg_gradient=t.bg_gradient,
+                description=t.description,
+                benefits=t.benefits,
+                is_current=(t.tier_code == cur_tier.tier_code),
+                is_unlocked=(current_points >= t.min_points),
             )
             all_tier_items.append(tier_item)
 
         current_tier_item = next((ti for ti in all_tier_items if ti.tier_code == cur_tier.tier_code), all_tier_items[0])
         next_tier_item = next((ti for ti in all_tier_items if nxt_tier and ti.tier_code == nxt_tier.tier_code), None)
 
-        is_max = (cur_tier.tier_code == "DIAMOND" or next_tier_item is None)
+        is_max = (next_tier_item is None)
         max_tier_msg = (
-            "Bạn đã đạt danh hiệu cao nhất: Đại sứ Môi trường Kim Cương!" if is_max else None
+            f"Bạn đã đạt danh hiệu cao nhất: {cur_tier.tier_name}!" if is_max else None
         )
 
         # Lời chúc theo Bảng 149: "Chúc mừng bạn đã thăng lên cấp {tên danh hiệu}!"

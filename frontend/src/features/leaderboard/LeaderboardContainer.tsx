@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { leaderboardApi } from "./leaderboardApi";
+import { TierCrudManager } from "./components/TierCrudManager";
 import type {
   LeaderboardTab,
   CycleFilter,
@@ -147,6 +148,31 @@ export const LeaderboardContainer: React.FC<Props> = ({
     ALL: "Tất cả",
   };
 
+  const DISTRICT_NAMES_MAP: Record<string, string> = {
+    QUAN_1: "Quận 1",
+    QUAN_3: "Quận 3",
+    QUAN_4: "Quận 4",
+    QUAN_5: "Quận 5",
+    QUAN_6: "Quận 6",
+    QUAN_7: "Quận 7",
+    QUAN_8: "Quận 8",
+    QUAN_10: "Quận 10",
+    QUAN_11: "Quận 11",
+    QUAN_12: "Quận 12",
+    BINH_THANH: "Bình Thạnh",
+    THU_DUC: "TP. Thủ Đức",
+    GO_VAP: "Gò Vấp",
+    PHU_NHUAN: "Phú Nhuận",
+    TAN_BINH: "Tân Bình",
+    TAN_PHU: "Tân Phú",
+    BINH_TAN: "Bình Tân",
+    NHA_BE: "Nhà Bè",
+    HOC_MON: "Hóc Môn",
+    BINH_CHANH: "Bình Chánh",
+    CU_CHI: "Củ Chi",
+    CAN_GIO: "Cần Giờ",
+  };
+
   return (
     <div className="lb-page-container">
       {/* Header Banner */}
@@ -161,27 +187,51 @@ export const LeaderboardContainer: React.FC<Props> = ({
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleTakeSnapshot}
-          disabled={isTakingSnapshot}
-          style={{
-            background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-            color: "#ffffff",
-            border: "none",
-            padding: "10px 18px",
-            borderRadius: "8px",
-            fontWeight: 700,
-            cursor: "pointer",
-            boxShadow: "0 4px 10px rgba(245, 158, 11, 0.3)",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            fontSize: "0.9rem",
-          }}
-        >
-          {isTakingSnapshot ? "⏳ Đang Chốt Sổ…" : "👑 Chốt Mùa Giải & Trao Thưởng Top 3"}
-        </button>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+          <button
+            type="button"
+            onClick={() => handleTabChange("TIERS_CRUD")}
+            style={{
+              background: activeTab === "TIERS_CRUD" ? "#ffffff" : "rgba(255, 255, 255, 0.2)",
+              color: activeTab === "TIERS_CRUD" ? "#064e3b" : "#ffffff",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              padding: "10px 16px",
+              borderRadius: "8px",
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              fontSize: "0.9rem",
+              transition: "all 0.2s ease",
+            }}
+          >
+            <span>⚙️</span>
+            <span>Cột Mốc Cấp Bậc (CRUD)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleTakeSnapshot}
+            disabled={isTakingSnapshot}
+            style={{
+              background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+              color: "#ffffff",
+              border: "none",
+              padding: "10px 18px",
+              borderRadius: "8px",
+              fontWeight: 700,
+              cursor: "pointer",
+              boxShadow: "0 4px 10px rgba(245, 158, 11, 0.3)",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              fontSize: "0.9rem",
+            }}
+          >
+            {isTakingSnapshot ? "⏳ Đang Chốt Sổ…" : "👑 Chốt Mùa Giải & Trao Thưởng Top 3"}
+          </button>
+        </div>
       </div>
 
       {/* Tabs, District Filter and Cycle Filter bar */}
@@ -208,66 +258,75 @@ export const LeaderboardContainer: React.FC<Props> = ({
             <span>📍</span>
             <span>Quận / Huyện</span>
           </button>
+          <button
+            className={`lb-tab-btn ${activeTab === "TIERS_CRUD" ? "active" : ""}`}
+            onClick={() => handleTabChange("TIERS_CRUD")}
+          >
+            <span>⚙️</span>
+            <span>Cột Mốc Cấp Bậc (CRUD)</span>
+          </button>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginLeft: "auto" }}>
-          {/* Bộ lọc Quận huyện cho tab Cá nhân */}
-          {activeTab === "INDIVIDUAL" && (
-            <select
-              value={selectedDistrict}
-              onChange={(e) => {
-                setSelectedDistrict(e.target.value);
-                fetchIndividual(e.target.value, cycle);
-              }}
-              style={{
-                padding: "8px 12px",
-                borderRadius: "8px",
-                border: "1px solid #cbd5e1",
-                background: "#ffffff",
-                fontSize: "0.85rem",
-                fontWeight: 600,
-                color: "#1e293b",
-                cursor: "pointer",
-              }}
-            >
-              <option value="ALL">🌐 Toàn TP. Hồ Chí Minh</option>
-              <option value="QUAN_1">Quận 1</option>
-              <option value="QUAN_3">Quận 3</option>
-              <option value="QUAN_4">Quận 4</option>
-              <option value="QUAN_5">Quận 5</option>
-              <option value="QUAN_6">Quận 6</option>
-              <option value="QUAN_7">Quận 7</option>
-              <option value="QUAN_8">Quận 8</option>
-              <option value="QUAN_10">Quận 10</option>
-              <option value="QUAN_11">Quận 11</option>
-              <option value="QUAN_12">Quận 12</option>
-              <option value="BINH_THANH">Bình Thạnh</option>
-              <option value="THU_DUC">TP. Thủ Đức</option>
-              <option value="GO_VAP">Gò Vấp</option>
-              <option value="PHU_NHUAN">Phú Nhuận</option>
-              <option value="TAN_BINH">Tân Bình</option>
-              <option value="TAN_PHU">Tân Phú</option>
-              <option value="BINH_TAN">Bình Tân</option>
-              <option value="NHA_BE">Nhà Bè</option>
-              <option value="HOC_MON">Hóc Môn</option>
-              <option value="BINH_CHANH">Bình Chánh</option>
-              <option value="CU_CHI">Củ Chi</option>
-              <option value="CAN_GIO">Cần Giờ</option>
-            </select>
-          )}
-
-          <div className="lb-cycle-filters">
-            {(["WEEK", "MONTH", "ALL"] as CycleFilter[]).map((c) => (
-              <button
-                key={c}
-                className={`lb-cycle-btn ${cycle === c ? "active" : ""}`}
-                onClick={() => handleCycleChange(c)}
+        {activeTab !== "TIERS_CRUD" && (
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginLeft: "auto" }}>
+            {/* Bộ lọc Quận huyện cho tab Cá nhân */}
+            {activeTab === "INDIVIDUAL" && (
+              <select
+                value={selectedDistrict}
+                onChange={(e) => {
+                  setSelectedDistrict(e.target.value);
+                  fetchIndividual(e.target.value, cycle);
+                }}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  background: "#ffffff",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  color: "#1e293b",
+                  cursor: "pointer",
+                }}
               >
-                {cycleLabels[c]}
-              </button>
-            ))}
+                <option value="ALL">🌐 Toàn TP. Hồ Chí Minh</option>
+                <option value="QUAN_1">Quận 1</option>
+                <option value="QUAN_3">Quận 3</option>
+                <option value="QUAN_4">Quận 4</option>
+                <option value="QUAN_5">Quận 5</option>
+                <option value="QUAN_6">Quận 6</option>
+                <option value="QUAN_7">Quận 7</option>
+                <option value="QUAN_8">Quận 8</option>
+                <option value="QUAN_10">Quận 10</option>
+                <option value="QUAN_11">Quận 11</option>
+                <option value="QUAN_12">Quận 12</option>
+                <option value="BINH_THANH">Bình Thạnh</option>
+                <option value="THU_DUC">TP. Thủ Đức</option>
+                <option value="GO_VAP">Gò Vấp</option>
+                <option value="PHU_NHUAN">Phú Nhuận</option>
+                <option value="TAN_BINH">Tân Bình</option>
+                <option value="TAN_PHU">Tân Phú</option>
+                <option value="BINH_TAN">Bình Tân</option>
+                <option value="NHA_BE">Nhà Bè</option>
+                <option value="HOC_MON">Hóc Môn</option>
+                <option value="BINH_CHANH">Bình Chánh</option>
+                <option value="CU_CHI">Củ Chi</option>
+                <option value="CAN_GIO">Cần Giờ</option>
+              </select>
+            )}
+
+            <div className="lb-cycle-filters">
+              {(["WEEK", "MONTH", "ALL"] as CycleFilter[]).map((c) => (
+                <button
+                  key={c}
+                  className={`lb-cycle-btn ${cycle === c ? "active" : ""}`}
+                  onClick={() => handleCycleChange(c)}
+                >
+                  {cycleLabels[c]}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* TAB 1: INDIVIDUAL (MÀN 1) */}
@@ -291,7 +350,11 @@ export const LeaderboardContainer: React.FC<Props> = ({
                     <span>🌟</span>
                     <span>Top 10 Công Dân Xuất Sắc</span>
                   </div>
-                  <span className="lb-card-badge">Toàn thành phố</span>
+                  <span className="lb-card-badge">
+                    {selectedDistrict === "ALL"
+                      ? "Toàn thành phố"
+                      : DISTRICT_NAMES_MAP[selectedDistrict] || selectedDistrict}
+                  </span>
                 </div>
 
                 <div className="lb-list">
@@ -323,11 +386,16 @@ export const LeaderboardContainer: React.FC<Props> = ({
                         )}
                         <div className="lb-user-info">
                           <span className="lb-user-name">{item.full_name}</span>
-                          <span className="lb-user-tier">
+                          <span className="lb-user-tier" style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                             <span className={`lb-tier-pill tier-${item.tier_code}`}>
                               {item.tier_name}
                             </span>
                             <span>• Hạng {item.rank}</span>
+                            {item.district_name && (
+                              <span style={{ fontSize: "0.75rem", color: "#475569", background: "#f1f5f9", padding: "1px 6px", borderRadius: "4px", border: "1px solid #e2e8f0" }}>
+                                📍 {item.district_name}
+                              </span>
+                            )}
                           </span>
                         </div>
                       </div>
@@ -376,7 +444,9 @@ export const LeaderboardContainer: React.FC<Props> = ({
                         <div className="lb-stat-val">
                           {individualData.my_rank.green_points.toLocaleString()}
                         </div>
-                        <div className="lb-stat-lbl">Điểm hiện tại</div>
+                        <div className="lb-stat-lbl">
+                          {cycle === "WEEK" ? "Điểm tuần này" : cycle === "MONTH" ? "Điểm tháng này" : "Điểm tích lũy"}
+                        </div>
                       </div>
                     </div>
 
@@ -577,6 +647,15 @@ export const LeaderboardContainer: React.FC<Props> = ({
             </div>
           )}
         </>
+      )}
+
+      {/* TAB 4: QUẢN LÝ CỘT MỐC CẤP BẬC (TIERS CRUD - CN 28, 32, 36) */}
+      {activeTab === "TIERS_CRUD" && (
+        <TierCrudManager
+          onTiersChanged={() => {
+            fetchIndividual(selectedDistrict, cycle);
+          }}
+        />
       )}
 
       {/* Group Detail Modal */}

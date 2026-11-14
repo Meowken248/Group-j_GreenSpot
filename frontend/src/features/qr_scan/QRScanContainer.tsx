@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import jsQR from "jsqr";
+import QRCode from "qrcode";
 import { qrScanApi } from "./qrScanApi";
-import type { QRScanResult } from "./types";
+import type { QRScanResult, QRCodeDetail, QRCodeCreatePayload } from "./types";
 import "./qr_scan.css";
 
 interface Props {
@@ -10,14 +11,39 @@ interface Props {
   onNavigateLogin?: () => void;
 }
 
+// Chuẩn hóa và bóc tách mã QR từ URL hoặc chuỗi
+export const parseQRCodeString = (raw: string): string => {
+  let s = (raw || "").trim();
+  if (!s) return "";
+  if (s.startsWith("http://") || s.startsWith("https://") || s.startsWith("greenspot://")) {
+    try {
+      const url = new URL(s);
+      const codeParam = url.searchParams.get("code") || url.searchParams.get("qr");
+      if (codeParam) return codeParam.trim().toUpperCase();
+      const parts = url.pathname.split("/").filter(Boolean);
+      if (parts.length > 0) {
+        const last = parts[parts.length - 1];
+        if (last && last.length > 2 && !last.includes(".")) {
+          return last.trim().toUpperCase();
+        }
+      }
+    } catch {}
+  }
+  return s.toUpperCase();
+};
+
 export const QRScanContainer: React.FC<Props> = ({
   onBackToHome,
   onNavigateWallet,
   onNavigateLogin,
 }) => {
+  // Navigation Tabs: scanner | generator | list
+  const [activeTab, setActiveTab] = useState<"scanner" | "generator" | "list">("scanner");
+
   // Camera & Stream Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scanIntervalRef = useRef<number | null>(null);
@@ -39,26 +65,56 @@ export const QRScanContainer: React.FC<Props> = ({
   const [showManualModal, setShowManualModal] = useState<boolean>(false);
   const [manualCode, setManualCode] = useState<string>("");
 
-  // [CN 34 10/10] Phân loại rác nộp & Mô phỏng Trạm thông minh Dynamic OTP
+  // Kiosk Simulator States
   const [selectedWaste, setSelectedWaste] = useState<string>("BOTTLE");
   const [showStationSimulator, setShowStationSimulator] = useState<boolean>(false);
   const [stationCountdown, setStationCountdown] = useState<number>(60);
+  const kioskCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // Result Modals
   const [successResult, setSuccessResult] = useState<QRScanResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
-  // Bộ đếm ngược 60 giây mô phỏng mã QR động tại trạm IoT (Dynamic Station OTP)
-  useEffect(() => {
-    if (!showStationSimulator) return;
-    const interval = setInterval(() => {
-      setStationCountdown((prev) => (prev <= 1 ? 60 : prev - 1));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [showStationSimulator]);
+  // Modal xem phóng to ảnh QR để quét
+  const [previewQrModalCode, setPreviewQrModalCode] = useState<string | null>(null);
+  const [previewQrModalTitle, setPreviewQrModalTitle] = useState<string>("");
+  const modalCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Detect GPS Location for anti-fraud radius check
+  // =========================================================================
+  // TAB 2: QR GENERATOR STATES
+  // =========================================================================
+  const generatorCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [genForm, setGenForm] = useState<QRCodeCreatePayload>({
+    code: "ECO-STATION-BT-01",
+    title: "Trạm Tái Chế Nhựa & Lon Bình Thạnh",
+    location_name: "284 Bạch Đằng, Phường 24, Quận Bình Thạnh",
+    point_reward: 20,
+    qr_type: "RECYCLING_STATION",
+    lat: 10.8012,
+    lng: 106.7028,
+    max_distance_meters: 50.0,
+    description: "Nhận vỏ lon nhôm, chai nhựa PET và pin cũ. Cộng điểm ngay.",
+  });
+  const [genColor, setGenColor] = useState<string>("#059669");
+  const [genBgColor, setGenBgColor] = useState<string>("#ffffff");
+  const [genSize, setGenSize] = useState<number>(240);
+  const [genErrorLevel] = useState<"L" | "M" | "Q" | "H">("M");
+  const [isSavingQR, setIsSavingQR] = useState<boolean>(false);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+
+  // =========================================================================
+  // TAB 3: SYSTEM QR LIST STATES
+  // =========================================================================
+  const [qrList, setQrList] = useState<QRCodeDetail[]>([]);
+  const [loadingList, setLoadingList] = useState<boolean>(false);
+  const [listSearch, setListSearch] = useState<string>("");
+  const [listType, setListType] = useState<string>("ALL");
+  const [listTotal, setListTotal] = useState<number>(0);
+
+  // =========================================================================
+  // DETECT GPS LOCATION
+  // =========================================================================
   useEffect(() => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -69,7 +125,6 @@ export const QRScanContainer: React.FC<Props> = ({
           });
         },
         () => {
-          // Default fallback near Ben Nghe, District 1
           setCurrentCoords({ lat: 10.7769, lng: 106.7009 });
         },
         { enableHighAccuracy: true, timeout: 5000 }
@@ -79,6 +134,103 @@ export const QRScanContainer: React.FC<Props> = ({
     }
   }, []);
 
+  // Countdown timer for station simulator
+  useEffect(() => {
+    if (!showStationSimulator) return;
+    const interval = setInterval(() => {
+      setStationCountdown((prev) => (prev <= 1 ? 60 : prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [showStationSimulator]);
+
+  // Render Kiosk QR Code on canvas
+  useEffect(() => {
+    if (!showStationSimulator || !kioskCanvasRef.current) return;
+    QRCode.toCanvas(
+      kioskCanvasRef.current,
+      `ECO-STATION-BT-01`,
+      {
+        width: 140,
+        margin: 2,
+        color: {
+          dark: "#065f46",
+          light: "#ffffff",
+        },
+      },
+      (err) => {
+        if (err) console.error("Kiosk QR render error:", err);
+      }
+    );
+  }, [showStationSimulator, stationCountdown]);
+
+  // Render Live Generator QR Code on Canvas
+  useEffect(() => {
+    if (activeTab !== "generator" || !generatorCanvasRef.current) return;
+    const textToEncode = genForm.code.trim().toUpperCase() || "GREENSPOT-DEMO";
+    QRCode.toCanvas(
+      generatorCanvasRef.current,
+      textToEncode,
+      {
+        width: genSize,
+        margin: 2,
+        errorCorrectionLevel: genErrorLevel,
+        color: {
+          dark: genColor,
+          light: genBgColor,
+        },
+      },
+      (err) => {
+        if (err) console.error("Generator QR render error:", err);
+      }
+    );
+  }, [activeTab, genForm.code, genColor, genBgColor, genSize, genErrorLevel]);
+
+  // Render Modal Preview QR Code
+  useEffect(() => {
+    if (!previewQrModalCode || !modalCanvasRef.current) return;
+    QRCode.toCanvas(
+      modalCanvasRef.current,
+      previewQrModalCode,
+      {
+        width: 260,
+        margin: 2,
+        errorCorrectionLevel: "M",
+        color: {
+          dark: "#047857",
+          light: "#ffffff",
+        },
+      },
+      (err) => {
+        if (err) console.error("Modal QR render error:", err);
+      }
+    );
+  }, [previewQrModalCode]);
+
+  // Load System QR List when tab 3 opens
+  const fetchQRList = useCallback(async () => {
+    try {
+      setLoadingList(true);
+      const res = await qrScanApi.listQRCodes({
+        search: listSearch,
+        qr_type: listType === "ALL" ? undefined : listType,
+        page: 1,
+        limit: 50,
+      });
+      setQrList(res.items);
+      setListTotal(res.total);
+    } catch (err) {
+      console.error("Failed to load QR list:", err);
+    } finally {
+      setLoadingList(false);
+    }
+  }, [listSearch, listType]);
+
+  useEffect(() => {
+    if (activeTab === "list") {
+      fetchQRList();
+    }
+  }, [activeTab, fetchQRList]);
+
   // Beep feedback on successful QR recognition
   const playBeep = () => {
     try {
@@ -86,16 +238,47 @@ export const QRScanContainer: React.FC<Props> = ({
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = "sine";
-      osc.frequency.setValueAtTime(880, audioCtx.currentTime); // 880 Hz (A5)
-      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.start();
-      osc.stop(audioCtx.currentTime + 0.15);
-    } catch {
-      // AudioContext not allowed or not supported, ignore silently
-    }
+      osc.stop(audioCtx.currentTime + 0.18);
+    } catch {}
+  };
+
+  // Draw detected QR bounding box on camera overlay
+  const drawBoundingBox = (location: {
+    topLeftCorner: { x: number; y: number };
+    topRightCorner: { x: number; y: number };
+    bottomRightCorner: { x: number; y: number };
+    bottomLeftCorner: { x: number; y: number };
+  }, scanW: number, scanH: number) => {
+    const canvas = overlayCanvasRef.current;
+    if (!canvas) return;
+    canvas.width = scanW;
+    canvas.height = scanH;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, scanW, scanH);
+    ctx.beginPath();
+    ctx.moveTo(location.topLeftCorner.x, location.topLeftCorner.y);
+    ctx.lineTo(location.topRightCorner.x, location.topRightCorner.y);
+    ctx.lineTo(location.bottomRightCorner.x, location.bottomRightCorner.y);
+    ctx.lineTo(location.bottomLeftCorner.x, location.bottomLeftCorner.y);
+    ctx.closePath();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "#10b981";
+    ctx.fillStyle = "rgba(16, 185, 129, 0.2)";
+    ctx.fill();
+    ctx.stroke();
+
+    // Auto clear after 1 second
+    window.setTimeout(() => {
+      ctx.clearRect(0, 0, scanW, scanH);
+    }, 1200);
   };
 
   // Stop camera tracks cleanly
@@ -116,7 +299,7 @@ export const QRScanContainer: React.FC<Props> = ({
   // Start real-time camera stream
   const startCamera = useCallback(async () => {
     stopCamera();
-    if (!isCameraActive) return;
+    if (!isCameraActive || activeTab !== "scanner") return;
 
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -124,7 +307,6 @@ export const QRScanContainer: React.FC<Props> = ({
         return;
       }
 
-      // Build video constraints tailored for both mobile phone and laptop
       let videoConstraints: MediaTrackConstraints = selectedDeviceId
         ? { deviceId: { exact: selectedDeviceId } }
         : { facingMode: { ideal: cameraFacingMode }, width: { ideal: 1280 }, height: { ideal: 720 } };
@@ -136,7 +318,6 @@ export const QRScanContainer: React.FC<Props> = ({
           audio: false,
         });
       } catch {
-        // Fallback to basic constraints if requested device or facingMode fails (common on laptop webcams)
         stream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: false,
@@ -145,15 +326,19 @@ export const QRScanContainer: React.FC<Props> = ({
 
       streamRef.current = stream;
       if (videoRef.current) {
+        videoRef.current.muted = true;
         videoRef.current.srcObject = stream;
         videoRef.current.setAttribute("playsinline", "true");
-        await videoRef.current.play().catch(() => {});
+        try {
+          await videoRef.current.play();
+        } catch (playErr) {
+          console.warn("Video play error (handled):", playErr);
+        }
       }
 
       setHasCameraPermission(true);
       setIsScanning(true);
 
-      // Check torch capability
       const videoTrack = stream.getVideoTracks()[0];
       if (videoTrack && typeof (videoTrack as any).getCapabilities === "function") {
         const capabilities = (videoTrack as any).getCapabilities();
@@ -162,7 +347,6 @@ export const QRScanContainer: React.FC<Props> = ({
         setIsTorchSupported(false);
       }
 
-      // Enumerate available video devices
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoInputs = devices.filter((d) => d.kind === "videoinput");
       setAvailableDevices(videoInputs);
@@ -170,15 +354,18 @@ export const QRScanContainer: React.FC<Props> = ({
       setHasCameraPermission(false);
       setIsScanning(false);
     }
-  }, [cameraFacingMode, isCameraActive, selectedDeviceId, stopCamera]);
+  }, [activeTab, cameraFacingMode, isCameraActive, selectedDeviceId, stopCamera]);
 
-  // Restart camera when configuration changes
   useEffect(() => {
-    startCamera();
+    if (activeTab === "scanner") {
+      startCamera();
+    } else {
+      stopCamera();
+    }
     return () => {
       stopCamera();
     };
-  }, [startCamera, stopCamera]);
+  }, [activeTab, startCamera, stopCamera]);
 
   // Toggle flashlight / torch
   const handleToggleFlash = async () => {
@@ -198,19 +385,19 @@ export const QRScanContainer: React.FC<Props> = ({
     }
   };
 
-  // Flip camera between front (user) and back (environment)
+  // Switch Camera
   const handleSwitchCamera = () => {
     setCameraFacingMode((prev) => (prev === "environment" ? "user" : "environment"));
-    setSelectedDeviceId(""); // clear specific device ID so ideal facingMode takes effect
+    setSelectedDeviceId("");
   };
 
   // Execute Scan API Call
   const handleExecuteScan = async (codeToScan: string) => {
-    if (!codeToScan.trim() || submitting) return;
+    const cleanCode = parseQRCodeString(codeToScan);
+    if (!cleanCode || submitting) return;
 
-    // Throttle duplicate scans within 3 seconds
     const now = Date.now();
-    if (now - lastScannedTimeRef.current < 3000) return;
+    if (now - lastScannedTimeRef.current < 2500) return;
     lastScannedTimeRef.current = now;
 
     setSubmitting(true);
@@ -220,17 +407,18 @@ export const QRScanContainer: React.FC<Props> = ({
 
     try {
       const res = await qrScanApi.scanQRCode({
-        code: codeToScan.trim().toUpperCase(),
+        code: cleanCode,
         user_lat: currentCoords?.lat,
         user_lng: currentCoords?.lng,
       });
       setSuccessResult(res);
       setShowManualModal(false);
       setManualCode("");
+      setPreviewQrModalCode(null);
     } catch (err: unknown) {
-      let msg = "Mã QR không hợp lệ hoặc không thuộc hệ thống GreenSpot";
+      let msg = `Mã QR [${cleanCode}] không tồn tại trong hệ thống GreenSpot hoặc không hợp lệ. Quét không thành công!`;
       if (err && typeof err === "object" && "response" in err) {
-        const res = (err as { response?: { data?: { detail?: string }; status?: number } }).response;
+        const res = (err as { response?: { data?: { detail?: any }; status?: number } }).response;
         if (res?.status === 401) {
           if (onNavigateLogin) {
             onNavigateLogin();
@@ -238,7 +426,8 @@ export const QRScanContainer: React.FC<Props> = ({
           }
           msg = "Vui lòng đăng nhập để quét mã nhận điểm";
         } else if (res?.data?.detail) {
-          msg = res.data.detail;
+          const rawDetail = res.data.detail;
+          msg = typeof rawDetail === "string" ? rawDetail : rawDetail?.message || JSON.stringify(rawDetail);
         }
       }
       setErrorMessage(msg);
@@ -248,42 +437,49 @@ export const QRScanContainer: React.FC<Props> = ({
     }
   };
 
-  // Real-time video frame QR scanning loop
+  // Real-time video frame QR scanning loop with jsQR
   useEffect(() => {
-    if (!isScanning || !isCameraActive) return;
+    if (activeTab !== "scanner" || !isScanning || !isCameraActive) return;
 
     const interval = window.setInterval(() => {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       if (!video || !canvas || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
 
-      const width = video.videoWidth;
-      const height = video.videoHeight;
-      if (!width || !height) return;
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      if (!vw || !vh) return;
 
-      canvas.width = width;
-      canvas.height = height;
+      const scale = Math.min(1, 640 / vw);
+      const scanW = Math.max(160, Math.floor(vw * scale));
+      const scanH = Math.max(160, Math.floor(vh * scale));
+
+      canvas.width = scanW;
+      canvas.height = scanH;
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
       if (!ctx) return;
 
-      ctx.drawImage(video, 0, 0, width, height);
-      const imageData = ctx.getImageData(0, 0, width, height);
+      ctx.drawImage(video, 0, 0, scanW, scanH);
+      const imageData = ctx.getImageData(0, 0, scanW, scanH);
       const code = jsQR(imageData.data, imageData.width, imageData.height, {
-        inversionAttempts: "dontInvert",
+        inversionAttempts: "attemptBoth",
       });
 
       if (code && code.data && code.data.trim()) {
         playBeep();
+        if (code.location) {
+          drawBoundingBox(code.location, scanW, scanH);
+        }
         handleExecuteScan(code.data.trim());
       }
-    }, 150);
+    }, 100);
 
     scanIntervalRef.current = interval;
     return () => {
       clearInterval(interval);
       scanIntervalRef.current = null;
     };
-  }, [isScanning, isCameraActive]);
+  }, [activeTab, isScanning, isCameraActive]);
 
   // Handle Image File Upload (QR Image Import)
   const handleImageFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -298,13 +494,26 @@ export const QRScanContainer: React.FC<Props> = ({
       const img = new Image();
       img.onload = () => {
         const canvas = canvasRef.current || document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
+        const maxDim = 1000;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+
+        canvas.width = w;
+        canvas.height = h;
         const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
         if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          const imageData = ctx.getImageData(0, 0, img.width, img.height);
+          ctx.drawImage(img, 0, 0, w, h);
+          const imageData = ctx.getImageData(0, 0, w, h);
           const code = jsQR(imageData.data, imageData.width, imageData.height, {
             inversionAttempts: "attemptBoth",
           });
@@ -315,7 +524,7 @@ export const QRScanContainer: React.FC<Props> = ({
             handleExecuteScan(code.data.trim());
           } else {
             setErrorMessage(
-              "Không nhận diện được mã QR trong hình ảnh đã chọn. Vui lòng chọn ảnh chụp góc thẳng, rõ nét hơn hoặc nhập mã trạm thủ công."
+              "QUÉT KHÔNG THÀNH CÔNG: Không nhận diện được mã QR trong hình ảnh đã chọn. Vui lòng chọn ảnh chụp rõ nét hơn hoặc nhập mã trực tiếp."
             );
           }
         } else {
@@ -333,7 +542,6 @@ export const QRScanContainer: React.FC<Props> = ({
     };
 
     reader.readAsDataURL(file);
-    // Reset file input value so user can upload the same file again if needed
     e.target.value = "";
   };
 
@@ -344,14 +552,58 @@ export const QRScanContainer: React.FC<Props> = ({
         if (successResult) setSuccessResult(null);
         if (errorMessage) setErrorMessage(null);
         if (showManualModal) setShowManualModal(false);
+        if (previewQrModalCode) setPreviewQrModalCode(null);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [successResult, errorMessage, showManualModal]);
+  }, [successResult, errorMessage, showManualModal, previewQrModalCode]);
+
+  // Handle Save New QR Code to DB
+  const handleSaveQRCode = async () => {
+    if (!genForm.code.trim() || !genForm.title.trim() || !genForm.location_name.trim()) {
+      alert("Vui lòng điền đầy đủ Mã định danh, Tên trạm và Địa chỉ vị trí!");
+      return;
+    }
+    setIsSavingQR(true);
+    setSaveSuccessMsg(null);
+    try {
+      const created = await qrScanApi.createQRCode({
+        ...genForm,
+        code: genForm.code.trim().toUpperCase(),
+      });
+      setSaveSuccessMsg(`Đã tạo và kích hoạt mã QR [${created.code}] thành công trong hệ thống!`);
+      setTimeout(() => setSaveSuccessMsg(null), 5000);
+    } catch (err: any) {
+      alert("Lỗi tạo mã QR: " + (err?.response?.data?.detail || err.message));
+    } finally {
+      setIsSavingQR(false);
+    }
+  };
+
+  // Download QR as PNG image
+  const handleDownloadPNG = () => {
+    if (!generatorCanvasRef.current) return;
+    const url = generatorCanvasRef.current.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `GreenSpot_QR_${genForm.code.trim().toUpperCase() || "CODE"}.png`;
+    a.click();
+  };
+
+  // Print QR Poster
+  const handlePrintQR = () => {
+    window.print();
+  };
+
+  // Quick random code generator
+  const handleGenerateRandomCode = () => {
+    const prefix = genForm.qr_type === "EVENT" ? "EVENT" : "ECO-BIN";
+    const rand = Math.floor(100 + Math.random() * 900);
+    setGenForm((prev) => ({ ...prev, code: `${prefix}-${rand}` }));
+  };
 
   const sampleCodes = [
-    { code: "ECO-STATION-BT-01", title: "Trạm IoT Thông Minh Bình Thạnh" },
     { code: "ECO-BIN-101", title: "Trạm Ve Chai Xanh Q1" },
     { code: "PIN-UBND-P4", title: "Thùng thu pin Q3" },
     { code: "RECYCLE-BT-02", title: "Trạm thông minh Bình Thạnh" },
@@ -373,14 +625,14 @@ export const QRScanContainer: React.FC<Props> = ({
       <canvas ref={canvasRef} style={{ display: "none" }} />
 
       {/* Header */}
-      <div className="qr-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+      <div className="qr-header">
         <div>
           <div className="qr-title">
             <span>📷</span>
-            <span>Máy Quét Mã QR Nhận Điểm</span>
+            <span>Trung Tâm Mã QR & Điểm Thưởng Sinh Thái</span>
           </div>
           <p className="qr-subtitle">
-            Hỗ trợ quét trực tiếp qua camera điện thoại/laptop hoặc tải ảnh chụp mã QR từ máy để tích lũy Điểm Xanh ngay lập tức!
+            Hỗ trợ toàn diện tính năng tạo mã QR trạm thu gom và quét nhận diện tức thời qua Camera điện thoại / Laptop hoặc tải ảnh QR từ thiết bị.
           </p>
         </div>
 
@@ -402,287 +654,797 @@ export const QRScanContainer: React.FC<Props> = ({
             boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
           }}
         >
-          {showStationSimulator ? "✖ Đóng Mô Phỏng Trạm" : "📺 Mô Phỏng Trạm Thu Gom IoT"}
+          {showStationSimulator ? "✖ Đóng Kiosk Mô Phỏng" : "📺 Bật Màn Hình Kiosk Trạm IoT"}
         </button>
       </div>
 
-      {/* [CN 34 10/10] Phân loại rác nộp tại trạm */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "10px",
-        background: "#ffffff",
-        padding: "12px 18px",
-        borderRadius: "12px",
-        border: "1px solid #e2e8f0",
-        flexWrap: "wrap",
-        boxShadow: "0 2px 4px rgba(0,0,0,0.03)",
-      }}>
-        <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#334155" }}>
-          ♻️ Loại rác nộp tại trạm hôm nay:
-        </span>
-        {[
-          { key: "BOTTLE", label: "🍾 Chai nhựa PET", pts: "+20đ" },
-          { key: "CAN", label: "🥫 Vỏ lon nhôm", pts: "+20đ" },
-          { key: "BATTERY", label: "🔋 Pin & Rác điện tử", pts: "+30đ" },
-          { key: "PAPER", label: "📦 Giấy & Carton", pts: "+15đ" },
-        ].map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            onClick={() => setSelectedWaste(item.key)}
-            style={{
-              padding: "6px 14px",
-              borderRadius: "8px",
-              fontSize: "0.85rem",
-              fontWeight: 600,
-              border: selectedWaste === item.key ? "2px solid #10b981" : "1px solid #cbd5e1",
-              background: selectedWaste === item.key ? "#ecfdf5" : "#ffffff",
-              color: selectedWaste === item.key ? "#047857" : "#475569",
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-            }}
-          >
-            {item.label} <b style={{ color: selectedWaste === item.key ? "#059669" : "#64748b" }}>({item.pts})</b>
-          </button>
-        ))}
+      {/* TAB NAVIGATION: QUÉT MÃ / TẠO MÃ / DANH MỤC HỆ THỐNG */}
+      <div className="qr-nav-tabs">
+        <button
+          type="button"
+          className={`qr-nav-tab ${activeTab === "scanner" ? "active" : ""}`}
+          onClick={() => setActiveTab("scanner")}
+        >
+          <span>📷</span>
+          <span>1. Quét Mã QR Qua Camera</span>
+        </button>
+        <button
+          type="button"
+          className={`qr-nav-tab ${activeTab === "generator" ? "active" : ""}`}
+          onClick={() => setActiveTab("generator")}
+        >
+          <span>✨</span>
+          <span>2. Tạo Mã QR Mới (QR Generator)</span>
+        </button>
+        <button
+          type="button"
+          className={`qr-nav-tab ${activeTab === "list" ? "active" : ""}`}
+          onClick={() => setActiveTab("list")}
+        >
+          <span>📋</span>
+          <span>3. Danh Mục Mã QR Hệ Thống ({listTotal > 0 ? listTotal : "145+"})</span>
+        </button>
       </div>
 
-      {/* [CN 34 10/10] BẢNG MÔ PHỎNG MÀN HÌNH TRẠM THU GOM THÔNG MINH IOT */}
-      {showStationSimulator && (
-        <div style={{
-          background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-          color: "#ffffff",
-          padding: "20px",
-          borderRadius: "14px",
-          border: "1px solid #334155",
-          boxShadow: "0 10px 25px -5px rgba(15, 23, 42, 0.4)",
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ background: "#065f46", color: "#34d399", padding: "3px 10px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 700, border: "1px solid #059669" }}>
-                  MÀN HÌNH TRẠM IOT THÔNG MINH
-                </span>
-                <span style={{ fontSize: "0.85rem", color: "#94a3b8" }}>Chống chụp ảnh gian lận bằng Dynamic OTP</span>
+      {/* =========================================================================
+          TAB 1: CAMERA SCANNER (QUÉT MÃ QR QUA CAMERA)
+          ========================================================================= */}
+      {activeTab === "scanner" && (
+        <>
+          {/* Phân loại rác nộp tại trạm */}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            background: "#ffffff",
+            padding: "12px 18px",
+            borderRadius: "12px",
+            border: "1px solid #e2e8f0",
+            flexWrap: "wrap",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.03)",
+          }}>
+            <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#334155" }}>
+              ♻️ Loại rác nộp tại trạm:
+            </span>
+            {[
+              { key: "BOTTLE", label: "🍾 Chai nhựa PET", pts: "+20đ" },
+              { key: "CAN", label: "🥫 Vỏ lon nhôm", pts: "+20đ" },
+              { key: "BATTERY", label: "🔋 Pin & Rác điện tử", pts: "+30đ" },
+              { key: "PAPER", label: "📦 Giấy & Carton", pts: "+15đ" },
+            ].map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setSelectedWaste(item.key)}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: "8px",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  border: selectedWaste === item.key ? "2px solid #10b981" : "1px solid #cbd5e1",
+                  background: selectedWaste === item.key ? "#ecfdf5" : "#ffffff",
+                  color: selectedWaste === item.key ? "#047857" : "#475569",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                {item.label} <b style={{ color: selectedWaste === item.key ? "#059669" : "#64748b" }}>({item.pts})</b>
+              </button>
+            ))}
+          </div>
+
+          {/* BẢNG MÔ PHỎNG MÀN HÌNH TRẠM THU GOM THÔNG MINH IOT */}
+          {showStationSimulator && (
+            <div style={{
+              background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+              color: "#ffffff",
+              padding: "20px",
+              borderRadius: "14px",
+              border: "1px solid #334155",
+              boxShadow: "0 10px 25px -5px rgba(15, 23, 42, 0.4)",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ background: "#065f46", color: "#34d399", padding: "3px 10px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 700, border: "1px solid #059669" }}>
+                      MÀN HÌNH KIOSK TRẠM IOT THỰC TẾ
+                    </span>
+                    <span style={{ fontSize: "0.85rem", color: "#94a3b8" }}>Mã QR thật 100% - Camera quét trực tiếp được ngay</span>
+                  </div>
+                  <h3 style={{ margin: "6px 0 0", fontSize: "1.2rem", fontWeight: 700, color: "#f8fafc" }}>
+                    Trạm Thu Gom Phân Loại Rác Tự Động Kiosk Screen
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowStationSimulator(false)}
+                  style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: "1.2rem" }}
+                >
+                  ✕
+                </button>
               </div>
-              <h3 style={{ margin: "6px 0 0", fontSize: "1.2rem", fontWeight: 700, color: "#f8fafc" }}>
-                Trạm Thu Gom Phân Loại Rác Tự Động (Kiosk Screen)
-              </h3>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "20px", flexWrap: "wrap", background: "rgba(255,255,255,0.04)", padding: "16px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <div style={{ background: "#ffffff", padding: "12px", borderRadius: "10px", textAlign: "center" }}>
+                  {/* Mã QR THẬT VẼ TRÊN CANVAS */}
+                  <canvas ref={kioskCanvasRef} style={{ display: "block", borderRadius: "6px" }} />
+                  <span style={{ display: "block", color: "#0f172a", fontSize: "0.75rem", fontWeight: 800, marginTop: "6px" }}>
+                    ECO-STATION-BT-01
+                  </span>
+                </div>
+
+                <div style={{ flex: 1, minWidth: "240px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+                    <span style={{ fontSize: "0.9rem", color: "#e2e8f0" }}>⏱️ Mã QR trạm tự động làm mới sau:</span>
+                    <span style={{ background: "#0284c7", color: "#ffffff", padding: "2px 8px", borderRadius: "4px", fontWeight: 700, fontSize: "0.85rem" }}>
+                      {stationCountdown}s
+                    </span>
+                  </div>
+                  <div style={{ width: "100%", height: "6px", background: "rgba(255,255,255,0.1)", borderRadius: "3px", overflow: "hidden", marginBottom: "14px" }}>
+                    <div style={{ width: `${(stationCountdown / 60) * 100}%`, height: "100%", background: "#10b981", transition: "width 1s linear" }} />
+                  </div>
+                  <p style={{ margin: "0 0 12px", fontSize: "0.85rem", color: "#94a3b8", lineHeight: 1.5 }}>
+                    Mã QR trên đã được render chuẩn 2D Matrix thật sự. Bạn có thể giơ điện thoại quét thẳng vào màn hình hoặc bấm nút quét nhanh bên dưới!
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleExecuteScan("ECO-STATION-BT-01")}
+                    disabled={submitting}
+                    style={{
+                      background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                      color: "#ffffff",
+                      border: "none",
+                      padding: "10px 18px",
+                      borderRadius: "8px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      boxShadow: "0 4px 10px rgba(16, 185, 129, 0.3)",
+                    }}
+                  >
+                    {submitting ? "Đang xử lý…" : "⚡ Quét Mã Này Ngay (Test 1-Click)"}
+                  </button>
+                </div>
+              </div>
             </div>
+          )}
+
+          {/* Camera Viewfinder Card */}
+          <div className="qr-scanner-card">
+            {!hasCameraPermission ? (
+              <div className="qr-permission-denied-box">
+                <span style={{ fontSize: "2rem" }}>🚫</span>
+                <span className="qr-permission-denied-title">
+                  Không thể mở camera. Hãy cấp quyền truy cập camera
+                </span>
+                <p style={{ fontSize: "0.85rem", margin: 0 }}>
+                  Trình duyệt chưa được cấp quyền sử dụng máy ảnh hoặc thiết bị không có camera sẵn sàng. Bạn có thể cấp lại quyền, tải ảnh QR từ máy hoặc nhập mã thủ công.
+                </p>
+                <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem", flexWrap: "wrap", justifyContent: "center" }}>
+                  <button className="qr-btn qr-btn-manual" onClick={startCamera}>
+                    Cấp quyền lại
+                  </button>
+                  <button
+                    className="qr-btn qr-btn-upload"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    📁 Tải ảnh QR từ máy
+                  </button>
+                  <button
+                    className="qr-btn qr-btn-flash"
+                    onClick={() => setShowManualModal(true)}
+                  >
+                    Nhập mã thủ công
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Viewfinder Target Box with Live Video */}
+                <div className="qr-viewfinder-box">
+                  {/* Real camera video feed */}
+                  <video
+                    ref={videoRef}
+                    className="qr-video-feed"
+                    playsInline
+                    autoPlay
+                    muted
+                  />
+
+                  {/* Canvas overlay for drawing AI bounding box */}
+                  <canvas ref={overlayCanvasRef} className="qr-overlay-canvas" />
+
+                  {/* Corner brackets */}
+                  <div className="qr-corner qr-corner-tl" />
+                  <div className="qr-corner qr-corner-tr" />
+                  <div className="qr-corner qr-corner-bl" />
+                  <div className="qr-corner qr-corner-br" />
+
+                  {/* Laser line animation */}
+                  {isScanning && isCameraActive && <div className="qr-laser-line" />}
+
+                  <span className="qr-guide-text">
+                    {submitting
+                      ? "Đang xác thực điểm…"
+                      : isProcessingFile
+                      ? "Đang đọc ảnh QR…"
+                      : !isCameraActive
+                      ? "Camera đang tạm dừng"
+                      : isScanning
+                      ? "Đưa mã QR vào khung để quét"
+                      : "Đang bắt nét…"}
+                  </span>
+                </div>
+
+                {/* Processing loader for image upload */}
+                {isProcessingFile && (
+                  <div className="qr-upload-loading">
+                    <span>🔄</span>
+                    <span>Đang phân tích và giải mã hình ảnh QR...</span>
+                  </div>
+                )}
+
+                {/* Action buttons */}
+                <div className="qr-actions-row">
+                  <button
+                    className="qr-btn qr-btn-upload"
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Tải ảnh mã QR từ thiết bị / Thư viện ảnh"
+                  >
+                    <span>📁</span>
+                    <span>Tải ảnh QR từ máy</span>
+                  </button>
+
+                  <button
+                    className="qr-btn qr-btn-switch"
+                    onClick={handleSwitchCamera}
+                    title="Chuyển đổi camera trước/sau"
+                  >
+                    <span>🔄</span>
+                    <span>Đổi camera ({cameraFacingMode === "environment" ? "Sau" : "Trước"})</span>
+                  </button>
+
+                  <button
+                    className={`qr-btn qr-btn-flash ${flashOn ? "active" : ""}`}
+                    onClick={handleToggleFlash}
+                    title="Bật/Tắt đèn trợ sáng"
+                  >
+                    <span>{flashOn ? "🔦" : "💡"}</span>
+                    <span>{flashOn ? "Tắt flash" : "Bật flash"}</span>
+                  </button>
+
+                  <button
+                    className={`qr-btn qr-btn-camera ${!isCameraActive ? "paused" : ""}`}
+                    onClick={() => setIsCameraActive((prev) => !prev)}
+                    title="Tạm dừng hoặc tiếp tục camera"
+                  >
+                    <span>{isCameraActive ? "⏸️" : "▶️"}</span>
+                    <span>{isCameraActive ? "Tắt Camera" : "Bật Camera"}</span>
+                  </button>
+
+                  <button
+                    className="qr-btn qr-btn-manual"
+                    onClick={() => setShowManualModal(true)}
+                    title="Nhập mã chữ số in trên trạm thu gom"
+                  >
+                    <span>⌨️</span>
+                    <span>Nhập mã thủ công</span>
+                  </button>
+                </div>
+
+                {/* Camera device selector */}
+                {availableDevices.length > 1 && (
+                  <div className="qr-device-select-row">
+                    <span>📷 Chọn thiết bị:</span>
+                    <select
+                      className="qr-device-select"
+                      value={selectedDeviceId}
+                      onChange={(e) => setSelectedDeviceId(e.target.value)}
+                    >
+                      <option value="">Tự động (Mặc định)</option>
+                      {availableDevices.map((d, idx) => (
+                        <option key={d.deviceId || idx} value={d.deviceId}>
+                          {d.label || `Camera ${idx + 1}`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Anti-fraud GPS status badge */}
+                <div className="qr-gps-badge">
+                  <span>📍</span>
+                  <span>
+                    GPS Anti-Fraud: Đang xác thực bán kính trạm thu gom ({currentCoords ? `${currentCoords.lat.toFixed(4)}, ${currentCoords.lng.toFixed(4)}` : "Đang lấy toạ độ..."})
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* KHU VỰC THỬ NGHIỆM MÃ QR (1-CLICK HOẶC XEM HÌNH ẢNH MÃ ĐỂ QUÉT) */}
+          <div style={{
+            background: "#ffffff",
+            borderRadius: "14px",
+            padding: "18px 22px",
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "8px" }}>
+              <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#1e293b", display: "flex", alignItems: "center", gap: "8px" }}>
+                <span>⚡</span>
+                <span>Mã Mẫu Thực Nghiệm (Bấm xem ảnh mã QR để giơ trước Camera quét thử)</span>
+              </div>
+              <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Có sẵn ảnh QR thật 100%</span>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "10px" }}>
+              {sampleCodes.map((item) => (
+                <div
+                  key={item.code}
+                  style={{
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "10px",
+                    padding: "10px 14px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "#065f46" }}>{item.code}</div>
+                    <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{item.title}</div>
+                  </div>
+                  <div style={{ display: "flex", gap: "6px" }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPreviewQrModalCode(item.code);
+                        setPreviewQrModalTitle(item.title);
+                      }}
+                      style={{
+                        background: "#ffffff",
+                        border: "1px solid #cbd5e1",
+                        padding: "5px 10px",
+                        borderRadius: "6px",
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                      title="Hiện mã QR thật trên màn hình để dùng camera điện thoại hoặc webcam quét"
+                    >
+                      🔍 Xem QR
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleExecuteScan(item.code)}
+                      disabled={submitting}
+                      style={{
+                        background: "#10b981",
+                        color: "#ffffff",
+                        border: "none",
+                        padding: "5px 10px",
+                        borderRadius: "6px",
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Quét ngay
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* =========================================================================
+          TAB 2: QR CODE GENERATOR (TẠO MÃ QR MỚI)
+          ========================================================================= */}
+      {activeTab === "generator" && (
+        <div className="qr-generator-grid">
+          {/* CỘT 1: FORM CẤU HÌNH TẠO MÃ */}
+          <div className="qr-card-white">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+              <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#0f172a" }}>
+                ✨ Thông Tin Mã QR & Điểm Thưởng
+              </h3>
+              <button
+                type="button"
+                className="qr-btn-tool qr-btn-outline"
+                style={{ padding: "5px 10px", fontSize: "0.75rem" }}
+                onClick={handleGenerateRandomCode}
+              >
+                🎲 Sinh mã ngẫu nhiên
+              </button>
+            </div>
+
+            {saveSuccessMsg && (
+              <div style={{
+                background: "#ecfdf5",
+                color: "#047857",
+                border: "1px solid #a7f3d0",
+                padding: "10px 14px",
+                borderRadius: "8px",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+                marginBottom: "14px",
+              }}>
+                ✅ {saveSuccessMsg}
+              </div>
+            )}
+
+            <div className="qr-form-row">
+              <label>Loại mã QR:</label>
+              <select
+                className="qr-form-select"
+                value={genForm.qr_type}
+                onChange={(e) => setGenForm({ ...genForm, qr_type: e.target.value })}
+              >
+                <option value="RECYCLING_STATION">🏢 Trạm thu gom / Thùng rác thông minh (RECYCLING_STATION)</option>
+                <option value="EVENT">🎯 Chiến dịch & Thử thách sống xanh (EVENT)</option>
+                <option value="PROMOTION">🎁 Quà tặng & Voucher đối tác (PROMOTION)</option>
+                <option value="GENERAL">🌐 Liên kết Website / Văn bản tự do (GENERAL)</option>
+              </select>
+            </div>
+
+            <div className="qr-form-row">
+              <label>
+                <span>Mã định danh duy nhất (Code):</span>
+                <span style={{ color: "#059669" }}>In hoa, gạch nối</span>
+              </label>
+              <input
+                type="text"
+                className="qr-form-input"
+                placeholder="VD: ECO-BIN-105"
+                value={genForm.code}
+                onChange={(e) => setGenForm({ ...genForm, code: e.target.value.toUpperCase() })}
+              />
+            </div>
+
+            <div className="qr-form-row">
+              <label>Tên tiêu đề trạm / Sự kiện:</label>
+              <input
+                type="text"
+                className="qr-form-input"
+                placeholder="VD: Trạm Ve Chai Xanh Quận 1"
+                value={genForm.title}
+                onChange={(e) => setGenForm({ ...genForm, title: e.target.value })}
+              />
+            </div>
+
+            <div className="qr-form-row">
+              <label>Địa điểm đặt trạm / Vị trí thực tế:</label>
+              <input
+                type="text"
+                className="qr-form-input"
+                placeholder="VD: 15 Lê Duẩn, Bến Nghé, Quận 1"
+                value={genForm.location_name}
+                onChange={(e) => setGenForm({ ...genForm, location_name: e.target.value })}
+              />
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              <div className="qr-form-row">
+                <label>Điểm thưởng cộng (+đ):</label>
+                <input
+                  type="number"
+                  className="qr-form-input"
+                  min={1}
+                  max={500}
+                  value={genForm.point_reward}
+                  onChange={(e) => setGenForm({ ...genForm, point_reward: parseInt(e.target.value, 10) || 20 })}
+                />
+              </div>
+              <div className="qr-form-row">
+                <label>Bán kính GPS hợp lệ (m):</label>
+                <input
+                  type="number"
+                  className="qr-form-input"
+                  min={5}
+                  max={5000}
+                  value={genForm.max_distance_meters}
+                  onChange={(e) => setGenForm({ ...genForm, max_distance_meters: parseFloat(e.target.value) || 50 })}
+                />
+              </div>
+            </div>
+
+            <div className="qr-form-row">
+              <label>Ghi chú / Hướng dẫn phân loại:</label>
+              <textarea
+                className="qr-form-textarea"
+                placeholder="VD: Tiếp nhận vỏ chai nhựa rỗng và pin cũ. Đảm bảo rửa sạch trước khi bỏ vào thùng."
+                value={genForm.description || ""}
+                onChange={(e) => setGenForm({ ...genForm, description: e.target.value })}
+              />
+            </div>
+
+            {/* Tùy chỉnh màu sắc & độ phân giải */}
+            <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px", border: "1px solid #e2e8f0", marginTop: "10px" }}>
+              <div style={{ fontWeight: 700, fontSize: "0.82rem", color: "#334155", marginBottom: "8px" }}>
+                🎨 Tùy Biến Giao Diện Mã QR
+              </div>
+              <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+                <div>
+                  <span style={{ fontSize: "0.75rem", color: "#64748b", display: "block" }}>Màu mã QR:</span>
+                  <input
+                    type="color"
+                    value={genColor}
+                    onChange={(e) => setGenColor(e.target.value)}
+                    style={{ cursor: "pointer", border: "none", width: "36px", height: "30px", borderRadius: "4px" }}
+                  />
+                </div>
+                <div>
+                  <span style={{ fontSize: "0.75rem", color: "#64748b", display: "block" }}>Màu nền:</span>
+                  <input
+                    type="color"
+                    value={genBgColor}
+                    onChange={(e) => setGenBgColor(e.target.value)}
+                    style={{ cursor: "pointer", border: "none", width: "36px", height: "30px", borderRadius: "4px" }}
+                  />
+                </div>
+                <div>
+                  <span style={{ fontSize: "0.75rem", color: "#64748b", display: "block" }}>Kích thước:</span>
+                  <select
+                    className="qr-form-select"
+                    style={{ padding: "4px 8px", fontSize: "0.8rem", width: "100px" }}
+                    value={genSize}
+                    onChange={(e) => setGenSize(parseInt(e.target.value, 10))}
+                  >
+                    <option value={200}>200 px</option>
+                    <option value={240}>240 px</option>
+                    <option value={300}>300 px</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Nút lưu vào hệ thống */}
             <button
               type="button"
-              onClick={() => setShowStationSimulator(false)}
-              style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: "1.2rem" }}
+              className="qr-btn-tool qr-btn-primary-green"
+              style={{ width: "100%", justifyContent: "center", marginTop: "16px", padding: "12px" }}
+              onClick={handleSaveQRCode}
+              disabled={isSavingQR}
             >
-              ✕
+              {isSavingQR ? "Đang lưu vào hệ thống…" : "💾 Lưu Vào Hệ Thống GreenSpot & Kích Hoạt Mã"}
             </button>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "20px", flexWrap: "wrap", background: "rgba(255,255,255,0.04)", padding: "16px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <div style={{ background: "#ffffff", padding: "12px", borderRadius: "10px", textAlign: "center" }}>
-              <div style={{ width: "120px", height: "120px", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "8px", border: "2px dashed #059669" }}>
-                <span style={{ fontSize: "3rem" }}>🏁</span>
+          {/* CỘT 2: LIVE PREVIEW & TẢI XUỐNG / IN ẤN */}
+          <div className="qr-card-white qr-preview-wrapper">
+            <h3 style={{ margin: "0 0 16px", fontSize: "1.1rem", fontWeight: 800, color: "#0f172a" }}>
+              🖼️ Tem Dán Mã QR Thực Tế (Live Preview)
+            </h3>
+
+            {/* Poster tem dán in thực tế */}
+            <div className="qr-poster-preview">
+              <div className="qr-poster-header">
+                <span>🌱</span>
+                <span>GreenSpot Eco-Station</span>
               </div>
-              <span style={{ display: "block", color: "#0f172a", fontSize: "0.75rem", fontWeight: 700, marginTop: "6px" }}>
-                MÃ: ECO-STATION-BT-01
-              </span>
+              <div className="qr-poster-sub">Quét mã nhận điểm xanh tức thì</div>
+
+              <div className="qr-canvas-holder">
+                <canvas ref={generatorCanvasRef} />
+              </div>
+
+              <div className="qr-poster-footer">
+                {genForm.title || "Trạm Thu Gom Phân Loại"}
+              </div>
+              <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "2px" }}>
+                MÃ: <b>{genForm.code.toUpperCase() || "ECO-CODE"}</b>
+              </div>
+              <div className="qr-poster-points">
+                +{genForm.point_reward} Điểm Xanh Mỗi Lần Nộp
+              </div>
             </div>
 
-            <div style={{ flex: 1, minWidth: "240px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
-                <span style={{ fontSize: "0.9rem", color: "#e2e8f0" }}>⏱️ Mã QR tự làm mới sau:</span>
-                <span style={{ background: "#0284c7", color: "#ffffff", padding: "2px 8px", borderRadius: "4px", fontWeight: 700, fontSize: "0.85rem" }}>
-                  {stationCountdown}s
-                </span>
-              </div>
-              <div style={{ width: "100%", height: "6px", background: "rgba(255,255,255,0.1)", borderRadius: "3px", overflow: "hidden", marginBottom: "14px" }}>
-                <div style={{ width: `${(stationCountdown / 60) * 100}%`, height: "100%", background: "#10b981", transition: "width 1s linear" }} />
-              </div>
-              <p style={{ margin: "0 0 12px", fontSize: "0.85rem", color: "#94a3b8", lineHeight: 1.5 }}>
-                Tại các trạm IoT thực tế, màn hình Kiosk đổi mã QR mỗi 60 giây và đối chiếu tọa độ GPS máy khách để chống gian lận tuyệt đối.
-              </p>
+            {/* Action Tools */}
+            <div className="qr-preview-tools">
               <button
                 type="button"
-                onClick={() => handleExecuteScan("ECO-STATION-BT-01")}
-                disabled={submitting}
-                style={{
-                  background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                  color: "#ffffff",
-                  border: "none",
-                  padding: "10px 18px",
-                  borderRadius: "8px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  boxShadow: "0 4px 10px rgba(16, 185, 129, 0.3)",
+                className="qr-btn-tool qr-btn-primary-green"
+                onClick={handleDownloadPNG}
+              >
+                <span>📥</span>
+                <span>Tải Ảnh PNG</span>
+              </button>
+
+              <button
+                type="button"
+                className="qr-btn-tool qr-btn-outline"
+                onClick={handlePrintQR}
+              >
+                <span>🖨️</span>
+                <span>In Tem Mã QR</span>
+              </button>
+
+              <button
+                type="button"
+                className="qr-btn-tool qr-btn-outline"
+                onClick={() => {
+                  setActiveTab("scanner");
+                  setTimeout(() => handleExecuteScan(genForm.code), 300);
                 }}
               >
-                {submitting ? "Đang xử lý…" : "⚡ Quét Mã Này Ngay (Test 1-Click)"}
+                <span>⚡</span>
+                <span>Quét Thử Mã Này Ngay</span>
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Camera Viewfinder Card */}
-      <div className="qr-scanner-card">
-        {!hasCameraPermission ? (
-          <div className="qr-permission-denied-box">
-            <span style={{ fontSize: "2rem" }}>🚫</span>
-            <span className="qr-permission-denied-title">
-              Không thể mở camera. Hãy cấp quyền truy cập camera
-            </span>
-            <p style={{ fontSize: "0.85rem", margin: 0 }}>
-              Trình duyệt chưa được cấp quyền sử dụng máy ảnh hoặc thiết bị không có camera sẵn sàng. Bạn có thể cấp lại quyền, tải ảnh QR từ máy hoặc nhập mã thủ công.
+      {/* =========================================================================
+          TAB 3: SYSTEM QR LIST (DANH MỤC MÃ QR HỆ THỐNG)
+          ========================================================================= */}
+      {activeTab === "list" && (
+        <div className="qr-card-white">
+          <div className="qr-list-controls">
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", flex: 1 }}>
+              <input
+                type="text"
+                className="qr-form-input"
+                style={{ maxWidth: "320px" }}
+                placeholder="🔍 Tìm theo mã, tên trạm, địa chỉ..."
+                value={listSearch}
+                onChange={(e) => setListSearch(e.target.value)}
+              />
+
+              <select
+                className="qr-form-select"
+                style={{ width: "auto" }}
+                value={listType}
+                onChange={(e) => setListType(e.target.value)}
+              >
+                <option value="ALL">Tất cả loại mã</option>
+                <option value="RECYCLING_STATION">🏢 Trạm thu gom / Kiosk</option>
+                <option value="EVENT">🎯 Chiến dịch sự kiện</option>
+                <option value="PROMOTION">🎁 Voucher quà tặng</option>
+              </select>
+
+              <button
+                type="button"
+                className="qr-btn-tool qr-btn-primary-green"
+                style={{ padding: "8px 14px" }}
+                onClick={fetchQRList}
+              >
+                Tìm kiếm
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className="qr-btn-tool qr-btn-outline"
+              onClick={() => setActiveTab("generator")}
+            >
+              ➕ Thêm mã QR mới
+            </button>
+          </div>
+
+          {loadingList ? (
+            <div style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>
+              🔄 Đang tải danh sách mã QR hệ thống...
+            </div>
+          ) : qrList.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>
+              Không tìm thấy mã QR nào phù hợp với bộ lọc.
+            </div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table className="qr-table">
+                <thead>
+                  <tr>
+                    <th>Mã QR</th>
+                    <th>Tên trạm / Sự kiện</th>
+                    <th>Địa chỉ vị trí</th>
+                    <th>Điểm thưởng</th>
+                    <th>Loại</th>
+                    <th>Hành động</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {qrList.map((q) => (
+                    <tr key={q.code}>
+                      <td style={{ fontWeight: 800, color: "#065f46" }}>{q.code}</td>
+                      <td style={{ fontWeight: 600 }}>{q.title}</td>
+                      <td style={{ color: "#475569" }}>{q.location_name}</td>
+                      <td>
+                        <span style={{ background: "#ecfdf5", color: "#047857", padding: "2px 8px", borderRadius: "4px", fontWeight: 700 }}>
+                          +{q.point_reward}đ
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: "0.75rem", background: "#f1f5f9", padding: "2px 6px", borderRadius: "4px", color: "#334155" }}>
+                          {q.qr_type}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", gap: "6px" }}>
+                          <button
+                            type="button"
+                            className="qr-btn-tool qr-btn-outline"
+                            style={{ padding: "4px 8px", fontSize: "0.75rem" }}
+                            onClick={() => {
+                              setPreviewQrModalCode(q.code);
+                              setPreviewQrModalTitle(q.title);
+                            }}
+                          >
+                            🔍 Xem mã QR
+                          </button>
+                          <button
+                            type="button"
+                            className="qr-btn-tool qr-btn-primary-green"
+                            style={{ padding: "4px 8px", fontSize: "0.75rem" }}
+                            onClick={() => {
+                              setActiveTab("scanner");
+                              setTimeout(() => handleExecuteScan(q.code), 300);
+                            }}
+                          >
+                            ⚡ Quét thử
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL XEM MÃ QR PHÓNG TO ĐỂ TEST QUÉT
+          ========================================================================= */}
+      {previewQrModalCode && (
+        <div className="qr-modal-overlay" onClick={() => setPreviewQrModalCode(null)}>
+          <div className="qr-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "380px" }}>
+            <h3 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#065f46", margin: "0 0 6px" }}>
+              {previewQrModalTitle || "Mã QR Trạm Thu Gom"}
+            </h3>
+            <p style={{ fontSize: "0.8rem", color: "#64748b", margin: "0 0 16px" }}>
+              Mã chuẩn 2D: <b>{previewQrModalCode}</b>. Bạn có thể giơ camera điện thoại quét thẳng vào đây!
             </p>
-            <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem", flexWrap: "wrap", justifyContent: "center" }}>
-              <button className="qr-btn qr-btn-manual" onClick={startCamera}>
-                Cấp quyền lại
+
+            <div style={{ background: "#ffffff", padding: "14px", borderRadius: "12px", border: "1px solid #e2e8f0", display: "inline-block", boxShadow: "0 4px 12px rgba(0,0,0,0.06)" }}>
+              <canvas ref={modalCanvasRef} />
+            </div>
+
+            <div className="qr-modal-buttons" style={{ marginTop: "1.25rem" }}>
+              <button
+                type="button"
+                className="qr-btn-secondary"
+                onClick={() => setPreviewQrModalCode(null)}
+              >
+                Đóng
               </button>
               <button
-                className="qr-btn qr-btn-upload"
-                onClick={() => fileInputRef.current?.click()}
+                type="button"
+                className="qr-btn-primary"
+                onClick={() => {
+                  const code = previewQrModalCode;
+                  setPreviewQrModalCode(null);
+                  setActiveTab("scanner");
+                  setTimeout(() => handleExecuteScan(code), 200);
+                }}
               >
-                📁 Tải ảnh QR từ máy
-              </button>
-              <button
-                className="qr-btn qr-btn-flash"
-                onClick={() => setShowManualModal(true)}
-              >
-                Nhập mã thủ công
+                Quét mã này ngay
               </button>
             </div>
           </div>
-        ) : (
-          <>
-            {/* Viewfinder Target Box with Live Video */}
-            <div className="qr-viewfinder-box">
-              {/* Real camera video feed */}
-              <video
-                ref={videoRef}
-                className="qr-video-feed"
-                playsInline
-                autoPlay
-                muted
-              />
+        </div>
+      )}
 
-              {/* Corner brackets */}
-              <div className="qr-corner qr-corner-tl" />
-              <div className="qr-corner qr-corner-tr" />
-              <div className="qr-corner qr-corner-bl" />
-              <div className="qr-corner qr-corner-br" />
-
-              {/* Laser line animation */}
-              {isScanning && isCameraActive && <div className="qr-laser-line" />}
-
-              <span className="qr-guide-text">
-                {submitting
-                  ? "Đang xác thực điểm…"
-                  : isProcessingFile
-                  ? "Đang đọc ảnh QR…"
-                  : !isCameraActive
-                  ? "Camera đang tạm dừng"
-                  : isScanning
-                  ? "Đưa mã QR vào khung để quét"
-                  : "Đang bắt nét…"}
-              </span>
-            </div>
-
-            {/* Processing loader for image upload */}
-            {isProcessingFile && (
-              <div className="qr-upload-loading">
-                <span>🔄</span>
-                <span>Đang phân tích và giải mã hình ảnh QR...</span>
-              </div>
-            )}
-
-            {/* Action buttons */}
-            <div className="qr-actions-row">
-              {/* Upload image button */}
-              <button
-                className="qr-btn qr-btn-upload"
-                onClick={() => fileInputRef.current?.click()}
-                title="Tải ảnh mã QR từ thiết bị / Thư viện ảnh"
-              >
-                <span>📁</span>
-                <span>Tải ảnh QR từ máy</span>
-              </button>
-
-              {/* Switch camera button (Front/Back on phone or between cameras) */}
-              <button
-                className="qr-btn qr-btn-switch"
-                onClick={handleSwitchCamera}
-                title="Chuyển đổi camera trước/sau"
-              >
-                <span>🔄</span>
-                <span>Đổi camera ({cameraFacingMode === "environment" ? "Sau" : "Trước"})</span>
-              </button>
-
-              {/* Flashlight button */}
-              <button
-                className={`qr-btn qr-btn-flash ${flashOn ? "active" : ""}`}
-                onClick={handleToggleFlash}
-                title="Bật/Tắt đèn trợ sáng"
-              >
-                <span>{flashOn ? "🔦" : "💡"}</span>
-                <span>{flashOn ? "Tắt flash" : "Bật flash"}</span>
-              </button>
-
-              {/* Camera toggle button */}
-              <button
-                className={`qr-btn qr-btn-camera ${!isCameraActive ? "paused" : ""}`}
-                onClick={() => setIsCameraActive((prev) => !prev)}
-                title="Tạm dừng hoặc tiếp tục camera"
-              >
-                <span>{isCameraActive ? "⏸️" : "▶️"}</span>
-                <span>{isCameraActive ? "Tắt Camera" : "Bật Camera"}</span>
-              </button>
-
-              {/* Manual input button */}
-              <button
-                className="qr-btn qr-btn-manual"
-                onClick={() => setShowManualModal(true)}
-                title="Nhập mã chữ số in trên trạm thu gom"
-              >
-                <span>⌨️</span>
-                <span>Nhập mã thủ công</span>
-              </button>
-            </div>
-
-            {/* Camera device selector for laptops / multi-camera phones */}
-            {availableDevices.length > 1 && (
-              <div className="qr-device-select-row">
-                <span>📷 Chọn thiết bị:</span>
-                <select
-                  className="qr-device-select"
-                  value={selectedDeviceId}
-                  onChange={(e) => setSelectedDeviceId(e.target.value)}
-                >
-                  <option value="">Tự động (Mặc định)</option>
-                  {availableDevices.map((d, idx) => (
-                    <option key={d.deviceId || idx} value={d.deviceId}>
-                      {d.label || `Camera ${idx + 1}`}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Anti-fraud GPS status badge */}
-            <div className="qr-gps-badge">
-              <span>📍</span>
-              <span>
-                Cơ chế chống gian lận GPS: Đang xác thực bán kính 50m quanh trạm thu gom
-              </span>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* MÀN 2: POPUP QUÉT THÀNH CÔNG (Table 143) */}
+      {/* =========================================================================
+          MÀN 2: POPUP QUÉT THÀNH CÔNG (Table 143)
+          ========================================================================= */}
       {successResult && (
         <div className="qr-modal-overlay" onClick={() => setSuccessResult(null)}>
           <div className="qr-modal-card" onClick={(e) => e.stopPropagation()}>
@@ -726,13 +1488,15 @@ export const QRScanContainer: React.FC<Props> = ({
         </div>
       )}
 
-      {/* MÀN 3: POPUP KHÔNG THỂ NHẬN ĐIỂM (Table 144) */}
+      {/* =========================================================================
+          MÀN 3: POPUP QUÉT KHÔNG THÀNH CÔNG (Table 144)
+          ========================================================================= */}
       {errorMessage && (
         <div className="qr-modal-overlay" onClick={() => setErrorMessage(null)}>
           <div className="qr-modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="qr-modal-icon">⚠️</div>
-            <h3 className="qr-modal-title error">KHÔNG THỂ NHẬN ĐIỂM</h3>
-            <p className="qr-modal-desc">{errorMessage}</p>
+            <div className="qr-modal-icon" style={{ color: "#ef4444" }}>❌</div>
+            <h3 className="qr-modal-title error" style={{ color: "#dc2626" }}>QUÉT KHÔNG THÀNH CÔNG</h3>
+            <p className="qr-modal-desc" style={{ color: "#475569", lineHeight: 1.6 }}>{errorMessage}</p>
             <div className="qr-modal-buttons">
               <button
                 className="qr-btn-secondary"
@@ -761,7 +1525,9 @@ export const QRScanContainer: React.FC<Props> = ({
         </div>
       )}
 
-      {/* MODAL NHẬP MÃ THỦ CÔNG */}
+      {/* =========================================================================
+          MODAL NHẬP MÃ THỦ CÔNG
+          ========================================================================= */}
       {showManualModal && (
         <div className="qr-modal-overlay" onClick={() => setShowManualModal(false)}>
           <div className="qr-modal-card" onClick={(e) => e.stopPropagation()}>

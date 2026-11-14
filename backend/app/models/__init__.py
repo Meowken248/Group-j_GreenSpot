@@ -90,12 +90,14 @@ from app.models.qr_lucky import (
     EcoQRCode,
     UserQRScan,
     LuckyWheelSpin,
+    LuckyWheelSlot,
 )
 
 # 12. Hiệu ứng thăng cấp danh hiệu & Bài vinh danh (Chức năng 36)
 from app.models.milestone import (
     MilestonePost,
 )
+from app.models.tier import CitizenTier
 
 # 13. Cảnh báo Môi trường, Thông báo Đẩy & Tra cứu Công khai
 from app.models.alert_notification import (
@@ -197,6 +199,7 @@ __all__ = [
     "EcoQRCode",
     "UserQRScan",
     "LuckyWheelSpin",
+    "LuckyWheelSlot",
     # Feature 36
     "MilestonePost",
     # Spatial & Green Facilities
@@ -276,4 +279,6 @@ __all__ = [
     # Hotspots & Forecasting (STT 44)
     "HotspotCluster",
     "HotspotDailyForecast",
+    # Citizen Tiers & Milestone Thresholds (STT 28, 32, 36)
+    "CitizenTier",
 ]

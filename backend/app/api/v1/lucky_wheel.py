@@ -4,6 +4,11 @@ Endpoints:
 - GET  /api/v1/gamification/lucky-wheel/status
 - POST /api/v1/gamification/lucky-wheel/spin
 - GET  /api/v1/gamification/lucky-wheel/history
+- GET  /api/v1/gamification/lucky-wheel/admin/slots
+- POST /api/v1/gamification/lucky-wheel/admin/slots
+- PUT  /api/v1/gamification/lucky-wheel/admin/slots/{slot_id}
+- DELETE /api/v1/gamification/lucky-wheel/admin/slots/{slot_id}
+- POST /api/v1/gamification/lucky-wheel/admin/slots/reset-default
 """
 
 import uuid
@@ -17,6 +22,10 @@ from app.api.v1.rbac import get_current_active_user
 from app.utils.security import decode_access_token
 from app.services.lucky_wheel_service import LuckyWheelService
 from app.schemas.lucky_wheel import (
+    WheelSlotItem,
+    WheelSlotCreate,
+    WheelSlotUpdate,
+    AdminSlotStatsResponse,
     WheelStatusResponse,
     SpinResultResponse,
     SpinHistoryResponse,
@@ -67,3 +76,47 @@ async def get_spin_history(
     db: AsyncSession = Depends(get_db),
 ):
     return await LuckyWheelService.get_spin_history(db, current_user.user_id)
+
+
+# =============================================================================
+# ADMIN CRUD ENDPOINTS CÁC Ô GIẢI THƯỞNG VÒNG QUAY (CHỨC NĂNG 35 CRUD)
+# =============================================================================
+
+@router.get("/admin/slots", response_model=AdminSlotStatsResponse, summary="Admin - Xem danh sách toàn bộ ô thưởng và thống kê xác suất")
+async def get_admin_slots(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await LuckyWheelService.get_admin_slots(db)
+
+@router.post("/admin/slots", response_model=WheelSlotItem, summary="Admin - Tạo mới một ô giải thưởng trên vòng quay")
+async def create_slot(
+    payload: WheelSlotCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await LuckyWheelService.create_slot(db, payload, current_user)
+
+@router.put("/admin/slots/{slot_id}", response_model=WheelSlotItem, summary="Admin - Cập nhật ô giải thưởng")
+async def update_slot(
+    slot_id: uuid.UUID,
+    payload: WheelSlotUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await LuckyWheelService.update_slot(db, slot_id, payload, current_user)
+
+@router.delete("/admin/slots/{slot_id}", summary="Admin - Xóa ô giải thưởng")
+async def delete_slot(
+    slot_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await LuckyWheelService.delete_slot(db, slot_id, current_user)
+
+@router.post("/admin/slots/reset-default", response_model=AdminSlotStatsResponse, summary="Admin - Khôi phục 8 ô giải thưởng mặc định ban đầu")
+async def reset_default_slots(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await LuckyWheelService.reset_default_slots(db, current_user)

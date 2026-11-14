@@ -54,6 +54,9 @@ export const WasteHandbookContainer: React.FC<WasteHandbookContainerProps> = ({
   const [activeItemDetail, setActiveItemDetail] = useState<WasteItemDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState<boolean>(false);
 
+  // A4 Printable Cheat Sheet Modal
+  const [showA4Modal, setShowA4Modal] = useState<boolean>(false);
+
   // Toast message
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -96,6 +99,24 @@ export const WasteHandbookContainer: React.FC<WasteHandbookContainerProps> = ({
       correctBinLabel: "🍃 Rác Hữu Cơ",
       explanation:
         "Bã cà phê, bã trà và vỏ trứng đập vụn là nguyên liệu vàng để ủ phân hữu cơ (Compost) giàu dinh dưỡng cho cây trồng đô thị.",
+    },
+    {
+      id: "quiz_5",
+      itemName: "Dầu ăn đã qua sử dụng / mỡ chiên rán thừa",
+      hint: "Chất béo lỏng hữu cơ nhưng có nhiệt độ đông đặc cao và không tan trong nước.",
+      correctCategory: "HAZARDOUS",
+      correctBinLabel: "☣️ Rác Nguy Hại (Gom chai riêng)",
+      explanation:
+        "Đổ dầu ăn vào cống thoát nước là nguyên nhân số 1 gây vón cục đóng tảng 'Fatberg' làm nghẹt toàn bộ cống đô thị TP.HCM! Hãy để nguội, gom vào chai kín gửi Trạm Thu Hồi để tinh chế thành dầu sinh học Biodiesel.",
+    },
+    {
+      id: "quiz_6",
+      itemName: "Xương ống bò/heo hầm canh & vỏ sò nghêu ốc hến",
+      hint: "Chất hữu cơ động vật nhưng kết cấu đá vôi cứng đặc, phân hủy siêu chậm.",
+      correctCategory: "OTHER",
+      correctBinLabel: "🗑️ Rác Khác (Rác còn lại)",
+      explanation:
+        "Xương lớn và vỏ nghêu sò mất nhiều năm mới phân hủy, dễ làm hỏng lưỡi dao máy nghiền ủ phân hữu cơ vi sinh 30 ngày. Theo quy chuẩn TP.HCM, hãy bỏ vào Thùng Rác Khác.",
     },
   ];
   const [quizIndex, setQuizIndex] = useState<number>(0);
@@ -431,6 +452,27 @@ export const WasteHandbookContainer: React.FC<WasteHandbookContainerProps> = ({
     }
   };
 
+  const handleResetDefaults = async () => {
+    if (
+      !window.confirm(
+        "Bạn có chắc muốn khôi phục 24+ danh mục rác chuẩn hóa theo Luật BVMT 2020 không? Thao tác này sẽ đồng bộ lại các đồ vật chuẩn."
+      )
+    ) {
+      return;
+    }
+    try {
+      setAdminLoading(true);
+      const res = await handbookApi.adminResetDefaults();
+      showToast(`🎉 ${res.message}!`);
+      await fetchAdminItems();
+      await fetchOverview();
+    } catch (err: any) {
+      showToast("Không thể khôi phục danh mục mẫu. Vui lòng thử lại");
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
   // Helper auto-set default bin color when category changes
   const handleCategoryChange = (code: string) => {
     setFormCategory(code);
@@ -472,6 +514,16 @@ export const WasteHandbookContainer: React.FC<WasteHandbookContainerProps> = ({
         </div>
 
         <div className="handbook-header-actions">
+          {/* Nút xem bảng tóm tắt A4 */}
+          <button
+            type="button"
+            className="btn-a4-infographic"
+            onClick={() => setShowA4Modal(true)}
+            title="Xem và in bảng tóm tắt 4 nhóm rác dán tủ lạnh gia đình"
+          >
+            <span>🖨️</span> Bảng Tóm Tắt A4
+          </button>
+
           {/* Admin Switcher */}
           {isAdmin && (
             <div className="admin-nav-segmented">
@@ -531,7 +583,7 @@ export const WasteHandbookContainer: React.FC<WasteHandbookContainerProps> = ({
                     <input
                       type="text"
                       className={`search-input-field ${searchErrorMsg ? "input-error" : ""}`}
-                      placeholder="Gõ tên đồ vật (vd: pin cũ, vỏ lon bia, bóng đèn, hộp xốp)..."
+                      placeholder="Gõ tên đồ vật (vd: pin cũ, vỏ hộp sữa, chai dầu ăn, bóng đèn, hộp xốp)..."
                       value={searchQuery}
                       onChange={(e) => {
                         setSearchQuery(e.target.value);
@@ -542,7 +594,29 @@ export const WasteHandbookContainer: React.FC<WasteHandbookContainerProps> = ({
                         if (autocompleteItems.length > 0) setShowAutocomplete(true);
                       }}
                     />
-                    {isAutocompleting && <span className="autocomplete-spinner">⏳</span>}
+                    {searchQuery.trim().length > 0 && (
+                      <button
+                        type="button"
+                        className="search-clear-btn"
+                        title="Xóa tìm kiếm"
+                        onClick={() => {
+                          setSearchQuery("");
+                          setAutocompleteItems([]);
+                          setShowAutocomplete(false);
+                          handleClearFilter();
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                    {isAutocompleting && (
+                      <span
+                        className="autocomplete-spinner"
+                        style={{ right: searchQuery.trim().length > 0 ? "36px" : "12px" }}
+                      >
+                        ⏳
+                      </span>
+                    )}
 
                     {/* INSTANT AUTOCOMPLETE DROPDOWN */}
                     {showAutocomplete && autocompleteItems.length > 0 && (
@@ -599,8 +673,12 @@ export const WasteHandbookContainer: React.FC<WasteHandbookContainerProps> = ({
                       "Vỏ hộp sữa",
                       "Bìa carton",
                       "Bã cà phê",
+                      "Dầu ăn thừa",
                       "Bóng đèn huỳnh quang",
+                      "Hộp cơm xốp",
                       "Túi nilon",
+                      "Chai nhựa PET",
+                      "Xương heo/bò",
                     ].map((term) => (
                       <button
                         key={term}
@@ -699,7 +777,7 @@ export const WasteHandbookContainer: React.FC<WasteHandbookContainerProps> = ({
                         marginBottom: "10px",
                       }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                         <span style={{ fontSize: "20px" }}>🎯</span>
                         <strong style={{ fontSize: "15px", color: "#065f46" }}>
                           Thử Tài Phân Loại Rác 30 Giây (Câu {quizIndex + 1}/{TRICKY_WASTE_QUIZ.length})
@@ -716,6 +794,21 @@ export const WasteHandbookContainer: React.FC<WasteHandbookContainerProps> = ({
                         >
                           +2 Điểm Xanh / câu đúng
                         </span>
+                        {quizRewardedIds.length > 0 && (
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: 700,
+                              padding: "2px 10px",
+                              borderRadius: "999px",
+                              background: "#ecfdf5",
+                              color: "#047857",
+                              border: "1px solid #6ee7b7",
+                            }}
+                          >
+                            🏆 Đã đúng {quizRewardedIds.length}/{TRICKY_WASTE_QUIZ.length} câu (+{quizRewardedIds.length * 2}đ)
+                          </span>
+                        )}
                       </div>
                       <button
                         type="button"
@@ -933,13 +1026,25 @@ export const WasteHandbookContainer: React.FC<WasteHandbookContainerProps> = ({
               </p>
             </div>
 
-            <button
-              type="button"
-              className="btn-admin-add"
-              onClick={handleOpenCreateModal}
-            >
-              <span>➕</span> Thêm loại rác mới
-            </button>
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+              <button
+                type="button"
+                className="btn-admin-reset-defaults"
+                onClick={handleResetDefaults}
+                disabled={adminLoading}
+                title="Khôi phục 24+ loại rác chuẩn hóa theo Luật BVMT 2020"
+              >
+                <span>🔄</span> Khôi phục 24+ danh mục chuẩn BVMT
+              </button>
+
+              <button
+                type="button"
+                className="btn-admin-add"
+                onClick={handleOpenCreateModal}
+              >
+                <span>➕</span> Thêm loại rác mới
+              </button>
+            </div>
           </div>
 
           {/* Admin Filter bar */}
@@ -1448,6 +1553,131 @@ export const WasteHandbookContainer: React.FC<WasteHandbookContainerProps> = ({
               >
                 Đóng
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL BẢNG TÓM TẮT PHÂN LOẠI RÁC A4 (DÁN TỦ LẠNH)        */}
+      {/* ======================================================== */}
+      {showA4Modal && (
+        <div className="modal-overlay">
+          <div className="a4-infographic-card">
+            <div className="modal-header">
+              <div>
+                <h2 style={{ margin: 0, fontSize: "18px", color: "#065f46", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span>📋</span> BẢNG TÓM TẮT PHÂN LOẠI RÁC TẠI NGUỒN (KHỔ A4)
+                </h2>
+                <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>
+                  Bám sát Luật Bảo vệ Môi trường 2020 & Quy chuẩn Quản lý Chất thải Rắn TP.HCM
+                </div>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setShowA4Modal(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* 4 Quadrants Grid */}
+            <div className="a4-grid">
+              {/* Ô 1: HỮU CƠ */}
+              <div className="a4-quadrant" style={{ borderColor: "#22c55e", background: "#f0fdf4" }}>
+                <div className="a4-quadrant-header" style={{ color: "#15803d" }}>
+                  <span>🍃</span> 1. RÁC HỮU CƠ
+                </div>
+                <div className="a4-quadrant-sub" style={{ background: "#dcfce7", color: "#166534" }}>
+                  Thùng Xanh Lá (Dễ Phân Hủy Sinh Học)
+                </div>
+                <ul className="a4-item-list">
+                  <li><strong>Gồm:</strong> Thức ăn thừa, cơm nguội, vỏ rau củ quả, cuống rau.</li>
+                  <li><strong>Compost:</strong> Bã trà, bã cà phê, vỏ trứng gà vịt bóp vụn.</li>
+                  <li><strong>Sân vườn:</strong> Lá rụng, hoa cúng héo, cành cây tỉa nhỏ.</li>
+                </ul>
+                <div className="a4-rule-note" style={{ color: "#166534" }}>
+                  💡 <em>Quy tắc vàng:</em> Gạn sạch nước canh trước khi bỏ thùng; không lẫn nilon hay tăm tre.
+                </div>
+              </div>
+
+              {/* Ô 2: TÁI CHẾ */}
+              <div className="a4-quadrant" style={{ borderColor: "#3b82f6", background: "#eff6ff" }}>
+                <div className="a4-quadrant-header" style={{ color: "#1d4ed8" }}>
+                  <span>♻️</span> 2. RÁC TÁI CHẾ
+                </div>
+                <div className="a4-quadrant-sub" style={{ background: "#dbeafe", color: "#1e40af" }}>
+                  Thùng Xanh Dương / Trắng (Tài Nguyên)
+                </div>
+                <ul className="a4-item-list">
+                  <li><strong>Vỏ hộp sữa giấy:</strong> Hộp Tetra Pak (rút ống hút, tráng sơ, làm dẹp).</li>
+                  <li><strong>Nhựa tái chế:</strong> Chai nhựa PET nước suối/nước ngọt, can dầu gội HDPE.</li>
+                  <li><strong>Giấy & Kim loại:</strong> Thùng carton mì tôm, lon bia/nước ngọt, chai lọ thủy tinh.</li>
+                </ul>
+                <div className="a4-rule-note" style={{ color: "#1e40af" }}>
+                  💡 <em>Quy tắc vàng:</em> Tráng sơ để không bốc mùi, làm dẹp để tiết kiệm diện tích.
+                </div>
+              </div>
+
+              {/* Ô 3: NGUY HẠI */}
+              <div className="a4-quadrant" style={{ borderColor: "#ef4444", background: "#fef2f2" }}>
+                <div className="a4-quadrant-header" style={{ color: "#b91c1c" }}>
+                  <span>☣️</span> 3. RÁC NGUY HẠI
+                </div>
+                <div className="a4-quadrant-sub" style={{ background: "#fee2e2", color: "#991b1b" }}>
+                  Thùng Đỏ / Cam (Gom Riêng & Trạm Thu Hồi)
+                </div>
+                <ul className="a4-item-list">
+                  <li><strong>Pin & Điện tử:</strong> Pin tiểu AA/AAA, pin cúc áo, sạc dự phòng, cáp sạc hỏng.</li>
+                  <li><strong>Độc hại:</strong> Bóng đèn huỳnh quang/compact, nhiệt kế vỡ, vỏ chai xịt muỗi.</li>
+                  <li><strong>Dầu ăn thừa:</strong> Tuyệt đối KHÔNG đổ cống; để nguội rót vào chai kín.</li>
+                </ul>
+                <div className="a4-rule-note" style={{ color: "#991b1b" }}>
+                  ⚠️ <em>Quy tắc vàng:</em> Đem tới các Trạm Xanh WebGIS; không vứt chung rác sinh hoạt.
+                </div>
+              </div>
+
+              {/* Ô 4: RÁC KHÁC */}
+              <div className="a4-quadrant" style={{ borderColor: "#64748b", background: "#f8fafc" }}>
+                <div className="a4-quadrant-header" style={{ color: "#334155" }}>
+                  <span>🗑️</span> 4. RÁC THẢI KHÁC
+                </div>
+                <div className="a4-quadrant-sub" style={{ background: "#e2e8f0", color: "#334155" }}>
+                  Thùng Xám / Đen (Rác Sinh Hoạt Còn Lại)
+                </div>
+                <ul className="a4-item-list">
+                  <li><strong>Hộp xốp dính dầu mỡ:</strong> Nhựa PS bẩn không tái chế được.</li>
+                  <li><strong>Bọc & Vệ sinh:</strong> Túi nilon bẩn, màng bọc thức ăn, tã bỉm, khẩu trang y tế.</li>
+                  <li><strong>Vật liệu cứng:</strong> Xương ống bò/heo lớn, vỏ nghêu sò ốc hến, mảnh sành sứ vỡ.</li>
+                </ul>
+                <div className="a4-rule-note" style={{ color: "#334155" }}>
+                  💡 <em>Quy tắc vàng:</em> Gói cẩn thận các mảnh vỡ sắc nhọn bằng giấy báo; buộc kín miệng bao rác.
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer" style={{ marginTop: "16px", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
+              <div style={{ fontSize: "12px", color: "#64748b", display: "flex", alignItems: "center", gap: "6px" }}>
+                <span>🌱</span> Hãy in bảng này và dán tại góc bếp để cả gia đình cùng sống xanh!
+              </div>
+
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowA4Modal(false)}
+                >
+                  Đóng
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => window.print()}
+                >
+                  <span>🖨️</span> In Bảng Chuẩn A4
+                </button>
+              </div>
             </div>
           </div>
         </div>

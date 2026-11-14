@@ -137,3 +137,15 @@ async def admin_delete_waste_item(
     await WasteHandbookService.admin_delete_item(db=db, item_id=item_id, admin_id=current_admin.user_id)
     return {"message": "Đã xóa loại rác thành công"}
 
+
+@router.post("/admin/reset-defaults")
+async def admin_reset_handbook_defaults(
+    current_admin: User = Depends(require_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    [Admin] Khôi phục toàn bộ danh mục từ điển chuẩn hóa 24+ loại rác theo Luật BVMT 2020.
+    """
+    count = await WasteHandbookService.admin_reset_defaults(db=db, admin_id=current_admin.user_id)
+    return {"message": f"Đã khôi phục thành công {count} loại rác chuẩn hóa", "count": count}
+

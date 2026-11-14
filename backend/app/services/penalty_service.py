@@ -351,6 +351,27 @@ class PenaltyRegulationService:
             except Exception:
                 pass
 
+        # Ghi nhận nhật ký kiểm toán an ninh AuditLog (Chức năng 26)
+        try:
+            from app.services.audit_service import AuditService
+            await AuditService.log_activity(
+                db=session,
+                action="CREATE_PENALTY",
+                table_name="penalty_reports",
+                user_id=saved_reporter_id,
+                record_id=str(report.report_id),
+                new_data={
+                    "tracking_code": report.tracking_code,
+                    "title": data.violation_title,
+                    "target_type": data.target_type,
+                    "address": data.address_text,
+                    "is_anonymous": data.is_anonymous,
+                },
+                request_uri="/api/v1/penalties/reports",
+            )
+        except Exception as err:
+            print(f"[Audit Notice] {err}")
+
         await session.commit()
         await session.refresh(report)
 
@@ -456,6 +477,7 @@ class PenaltyRegulationService:
         if not report:
             return None
 
+        old_status = report.status
         report.status = data.status
         if data.officer_note is not None:
             report.officer_note = data.officer_note
@@ -534,6 +556,26 @@ class PenaltyRegulationService:
                 session.add(notif)
             except Exception:
                 pass
+
+        # Ghi nhận nhật ký kiểm toán an ninh AuditLog (Chức năng 26)
+        try:
+            from app.services.audit_service import AuditService
+            await AuditService.log_activity(
+                db=session,
+                action="UPDATE_PENALTY",
+                table_name="penalty_reports",
+                user_id=report.reporter_id,
+                record_id=str(report.report_id),
+                old_data={"status": old_status},
+                new_data={
+                    "tracking_code": report.tracking_code,
+                    "new_status": data.status,
+                    "officer_note": data.officer_note or "",
+                },
+                request_uri=f"/api/v1/penalties/reports/{report.report_id}/status",
+            )
+        except Exception as err:
+            print(f"[Audit Notice] {err}")
 
         await session.commit()
         await session.refresh(report)

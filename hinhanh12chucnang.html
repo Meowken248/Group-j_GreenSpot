@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenSpot - Báo Cáo Hình Ảnh Giao Diện 12 Chức Năng (Full Database)</title>
+    <style>
+        :root {
+            --primary: #059669;
+            --primary-dark: #047857;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            padding: 32px 16px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            background: var(--surface);
+            padding: 36px 24px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            margin-bottom: 32px;
+        }
+        .header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--primary-dark);
+            margin-bottom: 8px;
+        }
+        .header p {
+            color: var(--text-muted);
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+        .meta-badges {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 14px;
+        }
+        .meta-pill {
+            background: #ecfdf5;
+            color: #065f46;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid #a7f3d0;
+        }
+        .feature-card {
+            background: var(--surface);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 24px;
+            margin-bottom: 32px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.04);
+            page-break-inside: avoid;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .code-badge {
+            background: #ecfdf5;
+            color: #065f46;
+            font-weight: 700;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 14px;
+            border: 1px solid #a7f3d0;
+        }
+        .card-header h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+        .meta-row {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .meta-label {
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-right: 6px;
+        }
+        .url-link {
+            color: #2563eb;
+            text-decoration: none;
+            font-family: monospace;
+            word-break: break-all;
+        }
+        .url-link:hover {
+            text-decoration: underline;
+        }
+        .description {
+            color: #334155;
+            font-size: 14.5px;
+            margin-bottom: 18px;
+        }
+        .image-wrapper {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06);
+            background: #000;
+        }
+        .image-wrapper img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .caption {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 10px;
+            font-style: italic;
+        }
+        @media print {
+            body { padding: 0; background: #fff; }
+            .feature-card { border: none; box-shadow: none; margin-bottom: 40px; page-break-after: always; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>GREENSPOT / ECOREPORT TP. HỒ CHÍ MINH</h1>
+            <p><strong>BÁO CÁO HÌNH ẢNH GIAO DIỆN 12 CHỨC NĂNG HỆ THỐNG (CN 25 → CN 36)</strong></p>
+            <p>Phân hệ Động lực Công dân Xanh, Kinh tế Điểm thưởng (Eco-Tokenomics), WebGIS Leaflet & Kiểm toán Minh bạch</p>
+            <div class="meta-badges">
+                <span class="meta-pill">Tác giả: Bùi Nguyễn Minh Quân (MSSV: 2200004944)</span>
+                <span class="meta-pill">CSDL: Docker PostGIS 111 bảng đầy đủ</span>
+                <span class="meta-pill">12/12 API HTTP 200 OK</span>
+            </div>
+        </header>
+
+        
+        <section class="feature-card">
+            <div class="card-header">
+                <div class="code-badge">CN 25</div>
+                <h2>1. Thử Thách Sống Xanh Trong Tuần</h2>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Đường dẫn:</span>
+                <a href="http://localhost:5173/#challenges" target="_blank" class="url-link">http://localhost:5173/#challenges</a>
+            </div>
+            <p class="description"><strong>Mô tả & CSDL:</strong> Hệ thống nhiệm vụ sống xanh hằng tuần dành cho công dân (đạp xe, phân loại rác, dọn dẹp vệ sinh). Dữ liệu tải trực tiếp từ DB API, hỗ trợ nộp ảnh minh chứng nén Canvas, chống nộp trùng lặp bằng mã băm SHA-256, thưởng Combo +100 điểm khi hoàn thành trọn bộ.</p>
+            <div class="image-wrapper">
+                <img src="hinhanh12chucnang/CN25_ThuThachTuan.png" alt="Thử Thách Sống Xanh Trong Tuần" loading="lazy" />
+            </div>
+            <div class="caption">Hình 1: Giao diện thực tế vận hành có dữ liệu CSDL của CN 25 - Thử Thách Sống Xanh Trong Tuần</div>
+        </section>
+        
+        <section class="feature-card">
+            <div class="card-header">
+                <div class="code-badge">CN 26</div>
+                <h2>2. Nhật Ký Kiểm Toán Audit Log & Merkle Chain</h2>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Đường dẫn:</span>
+                <a href="http://localhost:5173/#audit-logs" target="_blank" class="url-link">http://localhost:5173/#audit-logs</a>
+            </div>
+            <p class="description"><strong>Mô tả & CSDL:</strong> Hệ thống ghi vết toàn diện mọi giao dịch dữ liệu nhạy cảm (duyệt thử thách, đổi điểm thưởng, cấp voucher, quét QR). Dữ liệu 192+ bản ghi thực từ CSDL, ứng dụng chuỗi băm móc xích mật mã học (Chained Cryptographic Hash) đảm bảo tính bất biến và chống chối bỏ.</p>
+            <div class="image-wrapper">
+                <img src="hinhanh12chucnang/CN26_NhatKyAuditLog.png" alt="Nhật Ký Kiểm Toán Audit Log & Merkle Chain" loading="lazy" />
+            </div>
+            <div class="caption">Hình 2: Giao diện thực tế vận hành có dữ liệu CSDL của CN 26 - Nhật Ký Kiểm Toán Audit Log & Merkle Chain</div>
+        </section>
+        
+        <section class="feature-card">
+            <div class="card-header">
+                <div class="code-badge">CN 27</div>
+                <h2>3. Thư Viện Sống Xanh: Cẩm Nang Phân Loại Rác</h2>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Đường dẫn:</span>
+                <a href="http://localhost:5173/#handbook" target="_blank" class="url-link">http://localhost:5173/#handbook</a>
+            </div>
+            <p class="description"><strong>Mô tả & CSDL:</strong> Cẩm nang hướng dẫn phân loại chất thải sinh hoạt chuẩn hóa (hữu cơ, tái chế, nguy hại, cồng kềnh, rác khác). Đồng bộ trực tiếp danh mục từ CSDL, tích hợp bộ lọc vật phẩm dễ nhầm lẫn và Mini-Quiz tương tác 'Thử tài phân loại rác nhận +5 điểm thưởng'.</p>
+            <div class="image-wrapper">
+                <img src="hinhanh12chucnang/CN27_CamNangPhanLoaiRac.png" alt="Thư Viện Sống Xanh: Cẩm Nang Phân Loại Rác" loading="lazy" />
+            </div>
+            <div class="caption">Hình 3: Giao diện thực tế vận hành có dữ liệu CSDL của CN 27 - Thư Viện Sống Xanh: Cẩm Nang Phân Loại Rác</div>
+        </section>
+        
+        <section class="feature-card">
+            <div class="card-header">
+                <div class="code-badge">CN 28</div>
+                <h2>4. Cơ Chế Tích Lũy Điểm Thưởng Công Dân Xanh</h2>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Đường dẫn:</span>
+                <a href="http://localhost:5173/#policy" target="_blank" class="url-link">http://localhost:5173/#policy</a>
+            </div>
+            <p class="description"><strong>Mô tả & CSDL:</strong> Biểu khung chính sách điểm thưởng sinh thái (Eco-Tokenomics). Tách biệt rõ giữa điểm khả dụng (green_points) và điểm xét hạng trọn đời (lifetime_points). Cơ chế phân hạng (Đồng, Bạc, Vàng, Bạch Kim, Kim Cương) và chiết khấu đổi quà theo hạng thành viên.</p>
+            <div class="image-wrapper">
+                <img src="hinhanh12chucnang/CN28_ChinhSachTichDiem.png" alt="Cơ Chế Tích Lũy Điểm Thưởng Công Dân Xanh" loading="lazy" />
+            </div>
+            <div class="caption">Hình 4: Giao diện thực tế vận hành có dữ liệu CSDL của CN 28 - Cơ Chế Tích Lũy Điểm Thưởng Công Dân Xanh</div>
+        </section>
+        
+        <section class="feature-card">
+            <div class="card-header">
+                <div class="code-badge">CN 29</div>
+                <h2>5. Ví Điểm & Lịch Sử Biến Động Điểm Xanh</h2>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Đường dẫn:</span>
+                <a href="http://localhost:5173/#wallet" target="_blank" class="url-link">http://localhost:5173/#wallet</a>
+            </div>
+            <p class="description"><strong>Mô tả & CSDL:</strong> Ví điện tử sinh thái theo dõi số dư điểm khả dụng, điểm tích lũy trọn đời, biểu đồ tăng trưởng điểm xanh. Cung cấp sổ cái sao kê biến động chi tiết thời gian thực từ CSDL và tính năng xuất báo cáo sao kê cá nhân định dạng CSV.</p>
+            <div class="image-wrapper">
+                <img src="hinhanh12chucnang/CN29_ViDiemSinhThai.png" alt="Ví Điểm & Lịch Sử Biến Động Điểm Xanh" loading="lazy" />
+            </div>
+            <div class="caption">Hình 5: Giao diện thực tế vận hành có dữ liệu CSDL của CN 29 - Ví Điểm & Lịch Sử Biến Động Điểm Xanh</div>
+        </section>
+        
+        <section class="feature-card">
+            <div class="card-header">
+                <div class="code-badge">CN 30</div>
+                <h2>6. Quản Trị CRUD Danh Mục Quà Tặng Xanh & Kho Voucher</h2>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Đường dẫn:</span>
+                <a href="http://localhost:5173/#catalog" target="_blank" class="url-link">http://localhost:5173/#catalog</a>
+            </div>
+            <p class="description"><strong>Mô tả & CSDL:</strong> Sàn đổi quà sinh thái kết nối đối tác ESG/CSR (voucher Co.opmart, bình nước giữ nhiệt, túi vải, cây xanh). Hỗ trợ khóa dòng giao dịch chống Race Condition và tự động tính giá chiết khấu theo Hạng hội viên.</p>
+            <div class="image-wrapper">
+                <img src="hinhanh12chucnang/CN30_KhoQuaTangVoucher.png" alt="Quản Trị CRUD Danh Mục Quà Tặng Xanh & Kho Voucher" loading="lazy" />
+            </div>
+            <div class="caption">Hình 6: Giao diện thực tế vận hành có dữ liệu CSDL của CN 30 - Quản Trị CRUD Danh Mục Quà Tặng Xanh & Kho Voucher</div>
+        </section>
+        
+        <section class="feature-card">
+            <div class="card-header">
+                <div class="code-badge">CN 31</div>
+                <h2>7. Quản Lý Danh Sách Quà Tặng & Voucher Cá Nhân</h2>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Đường dẫn:</span>
+                <a href="http://localhost:5173/#vouchers" target="_blank" class="url-link">http://localhost:5173/#vouchers</a>
+            </div>
+            <p class="description"><strong>Mô tả & CSDL:</strong> Kho lưu trữ voucher cá nhân của công dân kèm mã QR đối soát điện tử. Tích hợp cổng xác thực thu ngân đối tác POS (Cashier PIN / OTP: 2026) giúp tránh việc tự bấm nhầm mất hiệu lực voucher trước khi đến quầy.</p>
+            <div class="image-wrapper">
+                <img src="hinhanh12chucnang/CN31_VoucherCaNhanDaDoi.png" alt="Quản Lý Danh Sách Quà Tặng & Voucher Cá Nhân" loading="lazy" />
+            </div>
+            <div class="caption">Hình 7: Giao diện thực tế vận hành có dữ liệu CSDL của CN 31 - Quản Lý Danh Sách Quà Tặng & Voucher Cá Nhân</div>
+        </section>
+        
+        <section class="feature-card">
+            <div class="card-header">
+                <div class="code-badge">CN 32</div>
+                <h2>8. Bảng Xếp Hạng Vinh Danh Top Công Dân Xanh</h2>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Đường dẫn:</span>
+                <a href="http://localhost:5173/#leaderboard" target="_blank" class="url-link">http://localhost:5173/#leaderboard</a>
+            </div>
+            <p class="description"><strong>Mô tả & CSDL:</strong> Hệ thống vinh danh Top Công dân Xanh tiêu biểu theo cá nhân, đội nhóm tình nguyện và 22 Quận/Huyện TP.HCM. Hỗ trợ lọc chu kỳ Tuần này, Tháng này và Toàn thời gian; xếp hạng công bằng dựa trên tổng điểm cống hiến trọn đời từ CSDL.</p>
+            <div class="image-wrapper">
+                <img src="hinhanh12chucnang/CN32_BangXepHangTopXanh.png" alt="Bảng Xếp Hạng Vinh Danh Top Công Dân Xanh" loading="lazy" />
+            </div>
+            <div class="caption">Hình 8: Giao diện thực tế vận hành có dữ liệu CSDL của CN 32 - Bảng Xếp Hạng Vinh Danh Top Công Dân Xanh</div>
+        </section>
+        
+        <section class="feature-card">
+            <div class="card-header">
+                <div class="code-badge">CN 33</div>
+                <h2>9. Bản Đồ Nhiệt Môi Trường & Khí Hậu Đa Chế Độ</h2>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Đường dẫn:</span>
+                <a href="http://localhost:5173/#heatmap" target="_blank" class="url-link">http://localhost:5173/#heatmap</a>
+            </div>
+            <p class="description"><strong>Mô tả & CSDL:</strong> Bản đồ WebGIS Leaflet không gian địa lý thời gian thực bao quát 22 Quận/Huyện TP.HCM với 3 chế độ chuyên sâu: Chất lượng không khí (AQI), Nhiệt độ bề mặt (°C) và Điểm rủi ro ô nhiễm. Tích hợp hiệu ứng bức xạ nhiệt thực tế.</p>
+            <div class="image-wrapper">
+                <img src="hinhanh12chucnang/CN33_BanDoNhietLeafletGIS.png" alt="Bản Đồ Nhiệt Môi Trường & Khí Hậu Đa Chế Độ" loading="lazy" />
+            </div>
+            <div class="caption">Hình 9: Giao diện thực tế vận hành có dữ liệu CSDL của CN 33 - Bản Đồ Nhiệt Môi Trường & Khí Hậu Đa Chế Độ</div>
+        </section>
+        
+        <section class="feature-card">
+            <div class="card-header">
+                <div class="code-badge">CN 34</div>
+                <h2>10. Quét Mã QR Nhận Điểm Tại Trạm Thu Gom Rác</h2>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Đường dẫn:</span>
+                <a href="http://localhost:5173/#qr-scan" target="_blank" class="url-link">http://localhost:5173/#qr-scan</a>
+            </div>
+            <p class="description"><strong>Mô tả & CSDL:</strong> Module quét mã QR tại các trạm thu gom rác thông minh hoặc thùng rác phân loại (147 trạm trong CSDL PostGIS). Hỗ trợ camera trực tiếp, tải ảnh mã QR, cơ chế mã động có chữ ký thời gian (Signed OTP / Session Token) và khai báo loại rác tái chế.</p>
+            <div class="image-wrapper">
+                <img src="hinhanh12chucnang/CN34_QuetMaQRTramRac.png" alt="Quét Mã QR Nhận Điểm Tại Trạm Thu Gom Rác" loading="lazy" />
+            </div>
+            <div class="caption">Hình 10: Giao diện thực tế vận hành có dữ liệu CSDL của CN 34 - Quét Mã QR Nhận Điểm Tại Trạm Thu Gom Rác</div>
+        </section>
+        
+        <section class="feature-card">
+            <div class="card-header">
+                <div class="code-badge">CN 35</div>
+                <h2>11. Vòng Quay May Mắn Sinh Thái Hằng Ngày</h2>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Đường dẫn:</span>
+                <a href="http://localhost:5173/#lucky-wheel" target="_blank" class="url-link">http://localhost:5173/#lucky-wheel</a>
+            </div>
+            <p class="description"><strong>Mô tả & CSDL:</strong> Vòng quay may mắn tri ân công dân tích cực (Action-Gated Lucky Wheel). Cơ chế nhận vé quay gắn với hành động môi trường thực tế, quay số trúng điểm thưởng xanh, voucher giảm giá và huy hiệu danh dự môi trường kết nối trực tiếp CSDL.</p>
+            <div class="image-wrapper">
+                <img src="hinhanh12chucnang/CN35_VongQuayMayMan.png" alt="Vòng Quay May Mắn Sinh Thái Hằng Ngày" loading="lazy" />
+            </div>
+            <div class="caption">Hình 11: Giao diện thực tế vận hành có dữ liệu CSDL của CN 35 - Vòng Quay May Mắn Sinh Thái Hằng Ngày</div>
+        </section>
+        
+        <section class="feature-card">
+            <div class="card-header">
+                <div class="code-badge">CN 36</div>
+                <h2>12. Hiệu Ứng Thăng Cấp & Chứng Nhận Công Dân Xanh</h2>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Đường dẫn:</span>
+                <a href="http://localhost:5173/#milestone" target="_blank" class="url-link">http://localhost:5173/#milestone</a>
+            </div>
+            <p class="description"><strong>Mô tả & CSDL:</strong> Lộ trình cống hiến môi trường đô thị, bảng tin chia sẻ cột mốc thành tựu cộng đồng, hiệu ứng thăng cấp pháo hoa Confetti và cấp Giấy chứng nhận Công dân Xanh điện tử (Digital Eco-Certificate) có thể tải về hoặc in trực tiếp.</p>
+            <div class="image-wrapper">
+                <img src="hinhanh12chucnang/CN36_CotMocChungNhanSo.png" alt="Hiệu Ứng Thăng Cấp & Chứng Nhận Công Dân Xanh" loading="lazy" />
+            </div>
+            <div class="caption">Hình 12: Giao diện thực tế vận hành có dữ liệu CSDL của CN 36 - Hiệu Ứng Thăng Cấp & Chứng Nhận Công Dân Xanh</div>
+        </section>
+        
+    </div>
+</body>
+</html>

@@ -284,6 +284,28 @@ async def create_new_incident(
             )
             db.add(activity)
 
+    # Ghi nhận nhật ký an ninh kiểm toán AuditLog (Chức năng 26)
+    try:
+        from app.services.audit_service import AuditService
+        await AuditService.log_activity(
+            db=db,
+            action="CREATE_INCIDENT",
+            table_name="incidents",
+            user_id=current_user_id,
+            record_id=str(new_incident.incident_id),
+            new_data={
+                "tracking_code": new_incident.tracking_code,
+                "title": new_incident.title,
+                "category": category.name,
+                "address": new_incident.address_text,
+                "severity": new_incident.severity,
+                "green_points": points_awarded,
+            },
+            request_uri="/api/v1/incidents",
+        )
+    except Exception as audit_err:
+        print(f"[Audit Notice] {audit_err}")
+
     await db.commit()
     await db.refresh(new_incident)
 
@@ -545,6 +567,27 @@ async def verify_incident_by_admin(
         )
         db.add(activity)
 
+    # Ghi nhận nhật ký kiểm toán AuditLog
+    try:
+        from app.services.audit_service import AuditService
+        await AuditService.log_activity(
+            db=db,
+            action="VERIFY_INCIDENT",
+            table_name="incidents",
+            user_id=admin_id,
+            record_id=str(inc.incident_id),
+            old_data={"status": "PENDING"},
+            new_data={
+                "tracking_code": inc.tracking_code,
+                "action": action,
+                "new_status": inc.status,
+                "note": note or "",
+            },
+            request_uri=f"/api/v1/incidents/{incident_id}/verify",
+        )
+    except Exception as audit_err:
+        print(f"[Audit Notice] {audit_err}")
+
     await db.commit()
     await db.refresh(inc)
 
@@ -565,6 +608,7 @@ async def update_incident_status_by_admin(
     if not inc:
         raise ValueError("Không tìm thấy sự cố phản ánh.")
 
+    old_status = inc.status
     inc.status = new_status
     now_utc = datetime.now(timezone.utc)
     if new_status == "RESOLVED":
@@ -582,6 +626,26 @@ async def update_incident_status_by_admin(
             points=0,
         )
         db.add(activity)
+
+    # Ghi nhận nhật ký kiểm toán AuditLog
+    try:
+        from app.services.audit_service import AuditService
+        await AuditService.log_activity(
+            db=db,
+            action="UPDATE_INCIDENT_STATUS",
+            table_name="incidents",
+            user_id=admin_id,
+            record_id=str(inc.incident_id),
+            old_data={"status": old_status},
+            new_data={
+                "tracking_code": inc.tracking_code,
+                "status": new_status,
+                "note": note or "",
+            },
+            request_uri=f"/api/v1/incidents/{incident_id}/status",
+        )
+    except Exception as audit_err:
+        print(f"[Audit Notice] {audit_err}")
 
     await db.commit()
     await db.refresh(inc)

@@ -62,8 +62,9 @@ export const WeeklyChallengesContainer: React.FC<WeeklyChallengesProps> = ({
 
   // Toast
   const [toastMsg, setToastMsg] = useState<string | null>(null);
-  const showToast = (msg: string) => {
-    setToastMsg(msg);
+  const showToast = (msg: any) => {
+    const text = typeof msg === "string" ? msg : msg?.message || (msg ? JSON.stringify(msg) : "");
+    setToastMsg(text);
     setTimeout(() => setToastMsg(null), 3000);
   };
 
@@ -211,7 +212,8 @@ export const WeeklyChallengesContainer: React.FC<WeeklyChallengesProps> = ({
       await fetchChallenges();
       if (isAdmin) fetchAdminSubmissions();
     } catch (err: any) {
-      const msg = err.response?.data?.detail || "Không thể gửi minh chứng. Vui lòng thử lại";
+      const raw = err.response?.data?.detail;
+      const msg = typeof raw === "string" ? raw : raw?.message || "Không thể gửi minh chứng. Vui lòng thử lại";
       setFormError(msg);
     } finally {
       setIsSubmitting(false);

@@ -73,3 +73,22 @@ class LuckyWheelSpin(Base):
     badge_won = Column(String(100), nullable=True)
     voucher_code = Column(String(100), nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+
+class LuckyWheelSlot(Base):
+    """Danh mục cấu hình các ô giải thưởng trên Vòng quay may mắn (Chức năng 35 CRUD)"""
+    __tablename__ = "lucky_wheel_slots"
+
+    slot_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    slot_index = Column(Integer, nullable=False, default=0, index=True)
+    reward_type = Column(String(50), nullable=False) # POINTS | BADGE | VOUCHER | LUCK
+    reward_name = Column(String(255), nullable=False)
+    points_won = Column(Integer, default=0, nullable=False)
+    badge_won = Column(String(100), nullable=True)
+    voucher_code = Column(String(100), nullable=True)
+    icon = Column(String(50), default="🎁", nullable=False)
+    color = Column(String(50), default="#10b981", nullable=False)
+    probability_weight = Column(Integer, default=10, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)

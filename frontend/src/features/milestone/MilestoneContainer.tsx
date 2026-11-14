@@ -17,16 +17,6 @@ import type {
 import "./milestone.css";
 
 // ============================================================
-// Tier points ranges for display
-// ============================================================
-const TIER_RANGES: Record<string, string> = {
-  BRONZE: "0 – 499 điểm",
-  SILVER: "500 – 999 điểm",
-  GOLD: "1.000 – 1.999 điểm",
-  DIAMOND: "≥ 2.000 điểm",
-};
-
-// ============================================================
 // Confetti Particle Component
 // ============================================================
 function ConfettiEffect() {
@@ -282,21 +272,27 @@ function TierProgressionMap({ progression }: TierProgressionMapProps) {
       <div className="ms-prog-card">
         <div className="ms-prog-card-title">CÁC CẤP TIẾP THEO</div>
         <div className="ms-tier-steps">
-          {progression.all_tiers.map((tier) => (
-            <div key={tier.tier_code}>
-              <div
-                className={`ms-tier-step ${tier.is_current ? "current" : ""} ${tier.is_unlocked ? "unlocked" : "locked"}`}
-                onClick={() => setExpandedTier(expandedTier === tier.tier_code ? null : tier.tier_code)}
-              >
-                <span className="ms-tier-step-icon">{tier.badge_icon}</span>
-                <div className="ms-tier-step-info">
-                  <div className="ms-tier-step-name">{tier.tier_name}</div>
-                  <div className="ms-tier-step-range">{TIER_RANGES[tier.tier_code] || `${tier.min_points}+ điểm`}</div>
+          {progression.all_tiers.map((tier, idx) => {
+            const nextTier = progression.all_tiers[idx + 1];
+            const rangeText = nextTier
+              ? `${tier.min_points.toLocaleString()} – ${(nextTier.min_points - 1).toLocaleString()} điểm`
+              : `≥ ${tier.min_points.toLocaleString()} điểm`;
+
+            return (
+              <div key={tier.tier_code}>
+                <div
+                  className={`ms-tier-step ${tier.is_current ? "current" : ""} ${tier.is_unlocked ? "unlocked" : "locked"}`}
+                  onClick={() => setExpandedTier(expandedTier === tier.tier_code ? null : tier.tier_code)}
+                >
+                  <span className="ms-tier-step-icon">{tier.badge_icon}</span>
+                  <div className="ms-tier-step-info">
+                    <div className="ms-tier-step-name">{tier.tier_name}</div>
+                    <div className="ms-tier-step-range">{rangeText}</div>
+                  </div>
+                  {tier.is_current && (
+                    <span className="ms-tier-step-current-badge">HIỆN TẠI</span>
+                  )}
                 </div>
-                {tier.is_current && (
-                  <span className="ms-tier-step-current-badge">HIỆN TẠI</span>
-                )}
-              </div>
               {expandedTier === tier.tier_code && (
                 <div className="ms-tier-detail-panel">
                   <div className="ms-tier-detail-desc">{tier.description}</div>
@@ -308,7 +304,8 @@ function TierProgressionMap({ progression }: TierProgressionMapProps) {
                 </div>
               )}
             </div>
-          ))}
+          );
+        })}
         </div>
       </div>
 

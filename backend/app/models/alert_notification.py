@@ -82,6 +82,7 @@ class Notification(Base):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     target_url: Mapped[Optional[str]] = mapped_column(String(255))
+    reference_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     
     is_read: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     read_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))

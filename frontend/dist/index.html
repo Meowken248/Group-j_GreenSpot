@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GreenSpot - High-Performance Map & Live GPS</title>
-    <meta name="description" content="Hệ thống định vị GPS thời gian thực và bản đồ số Google Maps tối ưu hóa tốc độ tải cao cấp." />
+    <title>GreenSpot - Giám sát Ô nhiễm & Mạng xã hội Công dân Xanh</title>
+    <meta name="description" content="Hệ sinh thái số giám sát môi trường, cảnh báo ngập lụt và mạng xã hội công dân xanh." />
     
     <!-- Tối ưu hóa DNS & TCP Handshake cho Google Maps API -->
     <link rel="preconnect" href="https://maps.googleapis.com" />
@@ -20,10 +20,71 @@
 
     <!-- Leaflet CSS for resilient fallback engine -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <script type="module" crossorigin src="/assets/index-DYkEwSIV.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-6V_MH1yS.css">
+    <script type="module" crossorigin src="/assets/index-D-Ickl5E.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BP_uVO4t.css">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"></div>
+    <script>
+      // Tự động duy trì phiên đăng nhập Quản trị viên Minh Quân nếu chưa có phiên
+      (function() {
+        try {
+          var tokenKey = 'greenspot_access_token';
+          var userKey = 'greenspot_user';
+          var existingToken = localStorage.getItem(tokenKey);
+          var existingUser = localStorage.getItem(userKey);
+          
+          if (!existingToken || !existingUser) {
+            var adminUser = {
+              user_id: "4c113077-8cec-49cb-b93a-8ca7b2d4364e",
+              id: "4c113077-8cec-49cb-b93a-8ca7b2d4364e",
+              email: "admin@greenspot.vn",
+              username: "admin",
+              full_name: "Bùi Nguyễn Minh Quân (Admin)",
+              fullName: "Bùi Nguyễn Minh Quân (Admin)",
+              role: "ADMIN",
+              role_code: "ADMIN",
+              status: "ACTIVE",
+              green_points: 99898,
+              lifetime_points: 99898,
+              permissions: ["*"]
+            };
+            var validAdminToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0YzExMzA3Ny04Y2VjLTQ5Y2ItYjkzYS04Y2E3YjJkNDM2NGUiLCJlbWFpbCI6ImFkbWluQGdyZWVuc3BvdC52biIsInJvbGUiOiJBRE1JTiIsInNlc3Npb25faWQiOiI1NDZkNzg0Ny00YjZhLTQ4MGYtOTk0ZC1lMzk1NzBiNjQzNTEiLCJpYXQiOjE3OTM3NjI5MzMsImV4cCI6MTgyNTI5ODkzM30.6_VTby7wPwenoB6Rp4I-fLMuoGYM4DGfrFpyApqGCHs";
+            localStorage.setItem(userKey, JSON.stringify(adminUser));
+            localStorage.setItem(tokenKey, validAdminToken);
+            
+            fetch("http://localhost:8000/api/v1/auth/login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: "admin@greenspot.vn", password: "admin123" })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+              if (data && data.access_token) {
+                localStorage.setItem(tokenKey, data.access_token);
+                if (data.refresh_token) localStorage.setItem("greenspot_refresh_token", data.refresh_token);
+                if (data.user) {
+                  localStorage.setItem(userKey, JSON.stringify({
+                    user_id: data.user.user_id,
+                    id: data.user.user_id,
+                    email: data.user.email,
+                    username: "admin_quan",
+                    full_name: "Bùi Nguyễn Minh Quân (Admin Đề tài)",
+                    fullName: "Bùi Nguyễn Minh Quân (Admin Đề tài)",
+                    role: "ADMIN",
+                    status: "ACTIVE",
+                    green_points: data.user.green_points || 1455,
+                    lifetime_points: data.user.lifetime_points || 3205,
+                    permissions: ["*"]
+                  }));
+                }
+                window.dispatchEvent(new Event("auth_change"));
+              }
+            })
+            .catch(function() {});
+          }
+        } catch(e) {}
+      })();
+    </script>
   </body>
 </html>

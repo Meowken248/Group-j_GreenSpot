@@ -80,7 +80,7 @@ services:
       dockerfile: Dockerfile
     container_name: ecoreport_frontend
     restart: always
-    command: [ "sh", "-c", "pnpm install --prefer-offline --no-frozen-lockfile --store-dir /root/.local/share/pnpm/store && pnpm dev --host 0.0.0.0" ]
+    command: [ "sh", "-c", "npm install -g pnpm && rm -rf /app/node_modules/* /app/node_modules/.* 2>/dev/null; pnpm install --no-frozen-lockfile && pnpm dev --host 0.0.0.0" ]
     environment:
       VITE_API_URL: http://localhost:8000
     ports:

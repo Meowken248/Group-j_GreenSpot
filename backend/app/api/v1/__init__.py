@@ -37,6 +37,7 @@ from app.api.v1.alerts import router as alerts_router
 from app.api.v1.public_tracking import router as public_tracking_router
 from app.api.v1.public_reports import router as public_reports_router
 from app.api.v1.admin_dashboard import admin_dashboard_router
+from app.api.v1.tiers import router as tiers_router
 
 api_v1_router = APIRouter()
 api_v1_router.include_router(auth_router)
@@ -77,3 +78,4 @@ api_v1_router.include_router(flood_sos_router)
 api_v1_router.include_router(incidents_router)
 api_v1_router.include_router(incident_export_router)
 api_v1_router.include_router(admin_dashboard_router)
+api_v1_router.include_router(tiers_router)

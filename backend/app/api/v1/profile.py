@@ -631,6 +631,29 @@ async def update_my_profile(
             detail={"error_code": "CONCURRENCY_CONFLICT", "message": "Dữ liệu đã bị thay đổi bởi phiên khác, vui lòng tải lại"}
         )
 
+    # Ghi nhận nhật ký an ninh kiểm toán AuditLog (Chức năng 26)
+    try:
+        from app.services.audit_service import AuditService
+        await AuditService.log_activity(
+            db=db,
+            action="UPDATE_PROFILE",
+            table_name="users",
+            user_id=current_user.user_id,
+            record_id=str(current_user.user_id),
+            old_data={
+                "full_name": current_user.full_name,
+                "bio": current_user.bio,
+            },
+            new_data={
+                "full_name": body.full_name,
+                "bio": body.bio,
+                "has_avatar_change": bool(new_avatar_url != current_user.avatar_url),
+            },
+            request_uri="/api/v1/profile/me",
+        )
+    except Exception as audit_err:
+        print(f"[Audit Notice] {audit_err}")
+
     await db.commit()
 
     # Lấy lại bản ghi sau khi cập nhật

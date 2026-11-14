@@ -179,31 +179,36 @@ def format_transaction_code(tx_id: uuid.UUID) -> str:
 
 
 def calculate_tier_details(points: int) -> Tuple[TierInfo, Optional[TierInfo], int, float]:
-    """Tính toán cấp bậc hiện tại, cấp bậc tiếp theo, số điểm còn thiếu và phần trăm tiến trình"""
-    sorted_tiers = sorted(TIERS_CONFIG, key=lambda x: x["min_points"])
-    current_tier_dict = sorted_tiers[0]
-    next_tier_dict: Optional[Dict[str, Any]] = None
+    """Tính toán cấp bậc hiện tại, cấp bậc tiếp theo, số điểm còn thiếu và phần trăm tiến trình (hỗ trợ cột mốc động)"""
+    from app.services.tier_service import TierService
+    cur_t, nxt_t, pts_needed, progress = TierService.calculate_tier_details_sync(points)
 
-    for i, t in enumerate(sorted_tiers):
-        if points >= t["min_points"]:
-            current_tier_dict = t
-            if i + 1 < len(sorted_tiers):
-                next_tier_dict = sorted_tiers[i + 1]
-            else:
-                next_tier_dict = None
+    cur_info = TierInfo(
+        tier_code=cur_t.tier_code,
+        tier_name=cur_t.tier_name,
+        min_points=cur_t.min_points,
+        badge_icon=cur_t.badge_icon,
+        color_hex=cur_t.color_hex,
+        bg_gradient=cur_t.bg_gradient,
+        description=cur_t.description or "",
+        benefits=cur_t.benefits,
+    )
+    nxt_info = (
+        TierInfo(
+            tier_code=nxt_t.tier_code,
+            tier_name=nxt_t.tier_name,
+            min_points=nxt_t.min_points,
+            badge_icon=nxt_t.badge_icon,
+            color_hex=nxt_t.color_hex,
+            bg_gradient=nxt_t.bg_gradient,
+            description=nxt_t.description or "",
+            benefits=nxt_t.benefits,
+        )
+        if nxt_t
+        else None
+    )
 
-    current_tier = TierInfo(**current_tier_dict)
-    next_tier = TierInfo(**next_tier_dict) if next_tier_dict else None
-
-    if next_tier:
-        points_to_next = max(0, next_tier.min_points - points)
-        span = next_tier.min_points - current_tier.min_points
-        progress = min(100.0, max(0.0, ((points - current_tier.min_points) / span) * 100.0))
-    else:
-        points_to_next = 0
-        progress = 100.0
-
-    return current_tier, next_tier, points_to_next, round(progress, 1)
+    return cur_info, nxt_info, pts_needed, progress
 
 
 class RewardService:
@@ -1006,7 +1011,7 @@ class RewardService:
 
         audit = AuditLog(
             user_id=None,
-            action="UPDATE_DATA",
+            action="CREATE_REWARD",
             table_name="citizen_rewards",
             record_id=str(reward.reward_id),
             old_data=None,
@@ -1097,7 +1102,7 @@ class RewardService:
 
         audit = AuditLog(
             user_id=None,
-            action="UPDATE_DATA",
+            action="UPDATE_REWARD",
             table_name="citizen_rewards",
             record_id=str(r.reward_id),
             old_data=None,
@@ -1156,6 +1161,19 @@ class RewardService:
         if active_vouchers_count > 0:
             r.is_active = False
             r.stock_quantity = 0
+            audit = AuditLog(
+                user_id=None,
+                action="DELETE_REWARD",
+                table_name="citizen_rewards",
+                record_id=str(r.reward_id),
+                old_data={"title": r.title, "is_active": True},
+                new_data={"is_active": False, "stock_quantity": 0, "reason": "Deactivated due to active vouchers"},
+                ip_address="127.0.0.1",
+                user_agent="Admin Portal Reward Catalog",
+                request_uri=f"/api/v1/rewards/catalog/{reward_id}",
+                is_suspicious=False,
+            )
+            self.db.add(audit)
             await self.db.commit()
             return {
                 "message": "Danh sách đã cập nhật",
@@ -1163,6 +1181,19 @@ class RewardService:
                 "reward_id": reward_id,
             }
 
+        audit = AuditLog(
+            user_id=None,
+            action="DELETE_REWARD",
+            table_name="citizen_rewards",
+            record_id=str(r.reward_id),
+            old_data={"title": r.title, "reward_code": r.reward_code},
+            new_data=None,
+            ip_address="127.0.0.1",
+            user_agent="Admin Portal Reward Catalog",
+            request_uri=f"/api/v1/rewards/catalog/{reward_id}",
+            is_suspicious=False,
+        )
+        self.db.add(audit)
         await self.db.delete(r)
         await self.db.commit()
         return {

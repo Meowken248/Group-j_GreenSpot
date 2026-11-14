@@ -1,9 +1,12 @@
-from datetime import datetime, timezone
+import logging
+from datetime import datetime, timezone, timedelta
 import uuid
 from typing import Optional, List
-from sqlalchemy import select, func, desc, update
+from sqlalchemy import select, func, desc, update, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
+
+logger = logging.getLogger(__name__)
 
 from app.models.rbac import User
 from app.models.leaderboard import CommunityGroup, DistrictEnvironmentalStat
@@ -57,20 +60,53 @@ class LeaderboardService:
         district_code: Optional[str] = None,
         cycle: str = "ALL",
     ) -> IndividualLeaderboardResponse:
-        q = select(User).where(User.status == "ACTIVE")
+        norm_cycle = (cycle or "ALL").upper()
+        if norm_cycle not in ["WEEK", "MONTH", "ALL"]:
+            norm_cycle = "ALL"
+
+        now = datetime.now(timezone.utc)
+
+        # [CN 32 10/10] Tính toán điểm số thực tế từ sổ cái reward_transactions theo đúng chu kỳ
+        tx_conditions = [RewardTransaction.points_amount > 0]
+        if norm_cycle == "WEEK":
+            tx_conditions.append(RewardTransaction.created_at >= now - timedelta(days=7))
+        elif norm_cycle == "MONTH":
+            tx_conditions.append(RewardTransaction.created_at >= now - timedelta(days=30))
+
+        # Subquery tổng hợp điểm thưởng thực tế từ các lần cộng điểm của user
+        period_subq = (
+            select(
+                RewardTransaction.user_id,
+                func.sum(RewardTransaction.points_amount).label("period_score"),
+            )
+            .where(and_(*tx_conditions))
+            .group_by(RewardTransaction.user_id)
+            .subquery()
+        )
+
+        if norm_cycle == "ALL":
+            score_col = func.coalesce(period_subq.c.period_score, func.greatest(User.lifetime_points, User.green_points, 0))
+        else:
+            score_col = func.coalesce(period_subq.c.period_score, 0)
+
+        q = (
+            select(User, score_col.label("score"))
+            .select_from(User)
+            .outerjoin(period_subq, User.user_id == period_subq.c.user_id)
+            .where(User.status == "ACTIVE")
+        )
         if district_code and district_code.upper() != "ALL":
             q = q.where(User.district_code == district_code)
 
-        # [CN 32 10/10] Xếp hạng dựa trên Điểm Tích Lũy Bền Vững (Lifetime Points / Green Points)
-        score_expr = func.greatest(User.lifetime_points, User.green_points)
-        q = q.order_by(desc(score_expr)).limit(10)
+        # Xếp hạng giảm dần theo điểm thực tế của chu kỳ, ưu tiên điểm tích lũy bền vững
+        q = q.order_by(desc(score_col), desc(User.lifetime_points), User.created_at.asc()).limit(10)
         res = await db.execute(q)
-        top_users = res.scalars().all()
+        top_results = res.all()
 
         top_10: List[IndividualLeaderboardItem] = []
-        for rank_idx, u in enumerate(top_users, start=1):
-            rank_score = max(u.lifetime_points, u.green_points)
-            tier, _, _, _ = calculate_tier_details(rank_score)
+        for rank_idx, (u, rank_score) in enumerate(top_results, start=1):
+            rank_score = int(rank_score or 0)
+            tier, _, _, _ = calculate_tier_details(max(u.lifetime_points, u.green_points, rank_score))
             badge_icon = "🥇" if rank_idx == 1 else "🥈" if rank_idx == 2 else "🥉" if rank_idx == 3 else "🎖️"
             d_code = getattr(u, "district_code", None) or "QUAN_1"
             d_name = DISTRICT_NAMES.get(d_code, "TP. Hồ Chí Minh")
@@ -93,32 +129,49 @@ class LeaderboardService:
         if current_user_id:
             me = await db.get(User, current_user_id)
             if me:
-                my_score = max(me.lifetime_points, me.green_points)
+                # 1. Tính điểm thực tế của tôi trong chu kỳ hiện tại
+                my_score_q = (
+                    select(func.coalesce(func.sum(RewardTransaction.points_amount), 0))
+                    .where(and_(RewardTransaction.user_id == current_user_id, *tx_conditions))
+                )
+                my_period_score = int((await db.execute(my_score_q)).scalar() or 0)
+                if norm_cycle == "ALL" and my_period_score == 0:
+                    my_period_score = int(max(me.lifetime_points, me.green_points, 0))
+
+                # 2. Tổng số công dân hoạt động
                 total_q = select(func.count(User.user_id)).where(User.status == "ACTIVE")
                 if district_code and district_code.upper() != "ALL":
                     total_q = total_q.where(User.district_code == district_code)
                 total_citizens = (await db.execute(total_q)).scalar() or 1
 
-                rank_q = select(func.count(User.user_id)).where(
-                    User.status == "ACTIVE",
-                    score_expr > my_score,
+                # 3. Tính thứ hạng cá nhân theo đúng điểm chu kỳ
+                rank_q = (
+                    select(func.count(User.user_id))
+                    .select_from(User)
+                    .outerjoin(period_subq, User.user_id == period_subq.c.user_id)
+                    .where(
+                        User.status == "ACTIVE",
+                        score_col > my_period_score,
+                    )
                 )
                 if district_code and district_code.upper() != "ALL":
                     rank_q = rank_q.where(User.district_code == district_code)
                 my_rank = ((await db.execute(rank_q)).scalar() or 0) + 1
 
-                tier, _, _, _ = calculate_tier_details(my_score)
+                tier, _, _, _ = calculate_tier_details(max(me.lifetime_points, me.green_points, my_period_score))
                 is_top_10 = my_rank <= 10
 
                 top_100_q = (
-                    select(score_expr)
+                    select(score_col)
+                    .select_from(User)
+                    .outerjoin(period_subq, User.user_id == period_subq.c.user_id)
                     .where(User.status == "ACTIVE")
-                    .order_by(desc(score_expr))
-                    .offset(99)
-                    .limit(1)
                 )
+                if district_code and district_code.upper() != "ALL":
+                    top_100_q = top_100_q.where(User.district_code == district_code)
+                top_100_q = top_100_q.order_by(desc(score_col)).offset(99).limit(1)
                 p_100 = (await db.execute(top_100_q)).scalar() or 0
-                points_to_top_100 = max(0, p_100 - my_score + 10) if my_rank > 100 else 0
+                points_to_top_100 = max(0, int(p_100) - my_period_score + 10) if my_rank > 100 else 0
 
                 msg = "Chúc mừng bạn đang nằm trong Top 10 Công dân Xanh xuất sắc!" if is_top_10 else None
 
@@ -126,7 +179,7 @@ class LeaderboardService:
                     is_logged_in=True,
                     rank=my_rank,
                     total_citizens=total_citizens,
-                    green_points=my_score,
+                    green_points=my_period_score,
                     points_to_top_100=points_to_top_100,
                     is_top_10=is_top_10,
                     tier_name=tier.tier_name,
@@ -364,8 +417,32 @@ class LeaderboardService:
         - Ghi nhận lịch sử giao dịch và nhật ký kiểm toán.
         """
         norm_cycle = cycle.upper() if cycle else "WEEK"
-        score_expr = func.greatest(User.lifetime_points, User.green_points)
-        top_q = select(User).where(User.status == "ACTIVE").order_by(desc(score_expr)).limit(3)
+        now = datetime.now(timezone.utc)
+        tx_conditions = [RewardTransaction.points_amount > 0]
+        if norm_cycle == "WEEK":
+            tx_conditions.append(RewardTransaction.created_at >= now - timedelta(days=7))
+        elif norm_cycle == "MONTH":
+            tx_conditions.append(RewardTransaction.created_at >= now - timedelta(days=30))
+
+        period_subq = (
+            select(
+                RewardTransaction.user_id,
+                func.sum(RewardTransaction.points_amount).label("period_score"),
+            )
+            .where(and_(*tx_conditions))
+            .group_by(RewardTransaction.user_id)
+            .subquery()
+        )
+
+        score_col = func.coalesce(period_subq.c.period_score, 0)
+        top_q = (
+            select(User)
+            .select_from(User)
+            .outerjoin(period_subq, User.user_id == period_subq.c.user_id)
+            .where(User.status == "ACTIVE")
+            .order_by(desc(score_col), desc(User.lifetime_points), User.created_at.asc())
+            .limit(3)
+        )
         res = await db.execute(top_q)
         top_users = res.scalars().all()
 

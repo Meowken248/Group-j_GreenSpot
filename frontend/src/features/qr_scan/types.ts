@@ -23,5 +23,28 @@ export interface QRCodeDetail {
   qr_type: string;
   lat: number;
   lng: number;
+  max_distance_meters?: number;
+  is_active?: boolean;
   description?: string | null;
+  created_at?: string | null;
 }
+
+export interface QRCodeCreatePayload {
+  code: string;
+  title: string;
+  location_name: string;
+  point_reward: number;
+  qr_type: string;
+  lat: number;
+  lng: number;
+  max_distance_meters?: number;
+  description?: string;
+}
+
+export interface QRCodeListResult {
+  items: QRCodeDetail[];
+  total: number;
+  page: number;
+  limit: number;
+}
+

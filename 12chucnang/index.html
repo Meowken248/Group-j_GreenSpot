@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GreenSpot TP.HCM - Bộ Sưu Tập Ảnh Chụp 12 Chức Năng Chi Tiết (Full Data & CRUD)</title>
+  <style>
+    :root {
+      --primary: #059669;
+      --primary-dark: #047857;
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface-light: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --accent: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 32px 20px;
+    }
+    .header {
+      text-align: center;
+      max-width: 1000px;
+      margin: 0 auto 40px;
+      padding: 36px 24px;
+      background: var(--surface);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    .header h1 {
+      font-size: 28px;
+      color: var(--accent);
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+    .header p {
+      color: var(--text-muted);
+      font-size: 15px;
+    }
+    .stats-pills {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+    .pill {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid rgba(52, 211, 153, 0.3);
+    }
+    .nav-shortcuts {
+      max-width: 1300px;
+      margin: 0 auto 30px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+    .nav-btn {
+      background: var(--surface);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .nav-btn:hover {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .section-block {
+      max-width: 1300px;
+      margin: 0 auto 48px;
+      background: var(--surface);
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      padding: 28px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .badge-code {
+      background: var(--primary);
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .folder-path {
+      font-size: 12px;
+      font-family: monospace;
+      color: var(--accent);
+      background: rgba(16, 185, 129, 0.1);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 24px;
+    }
+    .img-card {
+      background: #0f172a;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .img-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+      border-color: var(--accent);
+    }
+    .img-card a {
+      display: block;
+      background: #000;
+      overflow: hidden;
+    }
+    .img-card img {
+      width: 100%;
+      height: 230px;
+      object-fit: cover;
+      object-position: top;
+      display: block;
+      transition: transform 0.3s ease;
+    }
+    .img-card:hover img {
+      transform: scale(1.03);
+    }
+    .card-meta {
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .card-filename {
+      font-size: 12px;
+      font-family: monospace;
+      color: var(--text-muted);
+      word-break: break-all;
+    }
+    .tag-crud {
+      align-self: flex-start;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      background: #2563eb;
+      color: #fff;
+    }
+    .tag-modal { background: #d97706; }
+    .tag-admin { background: #7c3aed; }
+    .tag-citizen { background: #059669; }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <h1>HỆ THỐNG GREENSPOT / ECOREPORT TP. HỒ CHÍ MINH</h1>
+    <p><strong>BỘ SƯU TẬP HÌNH ẢNH 12 CHỨC NĂNG HỆ THỐNG ĐẦY ĐỦ DATA & CRUD (CN 25 → CN 36)</strong></p>
+    <p>Phân hệ Động lực Công dân Xanh, Kinh tế Điểm thưởng (Eco-Tokenomics), WebGIS Leaflet & Kiểm toán Minh bạch</p>
+    <div class="stats-pills">
+      <span class="pill">📁 Thư mục: /12chucnang</span>
+      <span class="pill">📸 Tổng cộng: 59 Ảnh Chụp Màn Hình Chi Tiết</span>
+      <span class="pill">⚡ Đầy đủ CRUD + Modal + Tab</span>
+      <span class="pill">👤 Tài khoản Quản trị: admin@greenspot.vn</span>
+    </div>
+  </header>
+
+  <nav class="nav-shortcuts">
+    <a href="#cn25" class="nav-btn">CN 25 (5 ảnh)</a>
+    <a href="#cn26" class="nav-btn">CN 26 (5 ảnh)</a>
+    <a href="#cn27" class="nav-btn">CN 27 (7 ảnh)</a>
+    <a href="#cn28" class="nav-btn">CN 28 (4 ảnh)</a>
+    <a href="#cn29" class="nav-btn">CN 29 (4 ảnh)</a>
+    <a href="#cn30" class="nav-btn">CN 30 (7 ảnh)</a>
+    <a href="#cn31" class="nav-btn">CN 31 (4 ảnh)</a>
+    <a href="#cn32" class="nav-btn">CN 32 (7 ảnh)</a>
+    <a href="#cn33" class="nav-btn">CN 33 (5 ảnh)</a>
+    <a href="#cn34" class="nav-btn">CN 34 (6 ảnh)</a>
+    <a href="#cn35" class="nav-btn">CN 35 (5 ảnh)</a>
+    <a href="#cn36" class="nav-btn">CN 36 (4 ảnh)</a>
+  </nav>
+
+  <!-- CN 25 -->
+  <section class="section-block" id="cn25">
+    <div class="section-header">
+      <div class="section-title">
+        <span class="badge-code">CN 25</span>
+        <span>Thử Thách Sống Xanh Trong Tuần (#challenges)</span>
+      </div>
+      <span class="folder-path">CN25_ThuThachTuan/ (5 ảnh)</span>
+    </div>
+    <div class="gallery-grid">
+      <div class="img-card">
+        <a href="CN25_ThuThachTuan/CN25_01_Citizen_DanhSachThuThach.png" target="_blank"><img src="CN25_ThuThachTuan/CN25_01_Citizen_DanhSachThuThach.png" alt="CN25_01"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Công dân</span>
+          <div class="card-title">1. Danh sách thử thách tuần & Hộp Combo +100đ</div>
+          <div class="card-filename">CN25_01_Citizen_DanhSachThuThach.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN25_ThuThachTuan/CN25_02_Modal_NopMinhChung_Upload.png" target="_blank"><img src="CN25_ThuThachTuan/CN25_02_Modal_NopMinhChung_Upload.png" alt="CN25_02"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-modal">Modal</span>
+          <div class="card-title">2. Modal nộp ảnh minh chứng nén Canvas + Hash SHA-256</div>
+          <div class="card-filename">CN25_02_Modal_NopMinhChung_Upload.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN25_ThuThachTuan/CN25_03_Admin_QuanTriCRUD_DanhSach.png" target="_blank"><img src="CN25_ThuThachTuan/CN25_03_Admin_QuanTriCRUD_DanhSach.png" alt="CN25_03"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-admin">Admin CRUD</span>
+          <div class="card-title">3. Bảng danh sách quản trị thử thách & Thao tác Sửa/Xóa</div>
+          <div class="card-filename">CN25_03_Admin_QuanTriCRUD_DanhSach.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN25_ThuThachTuan/CN25_04_Admin_Form_ThemMoiThuThach.png" target="_blank"><img src="CN25_ThuThachTuan/CN25_04_Admin_Form_ThemMoiThuThach.png" alt="CN25_04"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-admin">Form Create</span>
+          <div class="card-title">4. Form Admin thêm mới thử thách sống xanh</div>
+          <div class="card-filename">CN25_04_Admin_Form_ThemMoiThuThach.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN25_ThuThachTuan/CN25_05_Admin_DuyetMinhChung_Submissions.png" target="_blank"><img src="CN25_ThuThachTuan/CN25_05_Admin_DuyetMinhChung_Submissions.png" alt="CN25_05"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-admin">Hậu kiểm</span>
+          <div class="card-title">5. Tab Admin Duyệt minh chứng bài nộp công dân</div>
+          <div class="card-filename">CN25_05_Admin_DuyetMinhChung_Submissions.png</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CN 26 -->
+  <section class="section-block" id="cn26">
+    <div class="section-header">
+      <div class="section-title">
+        <span class="badge-code">CN 26</span>
+        <span>Nhật Ký Kiểm Toán Audit Log & Merkle Chain (#audit-logs)</span>
+      </div>
+      <span class="folder-path">CN26_NhatKyAuditLog/ (5 ảnh)</span>
+    </div>
+    <div class="gallery-grid">
+      <div class="img-card">
+        <a href="CN26_NhatKyAuditLog/CN26_01_DanhSach_AuditLog_FullData.png" target="_blank"><img src="CN26_NhatKyAuditLog/CN26_01_DanhSach_AuditLog_FullData.png" alt="CN26_01"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Sổ cái</span>
+          <div class="card-title">1. Danh sách 190+ nhật ký kiểm toán với bộ lọc</div>
+          <div class="card-filename">CN26_01_DanhSach_AuditLog_FullData.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN26_NhatKyAuditLog/CN26_02_BoLoc_SuKien_DangNgo.png" target="_blank"><img src="CN26_NhatKyAuditLog/CN26_02_BoLoc_SuKien_DangNgo.png" alt="CN26_02"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-admin">Cảnh báo</span>
+          <div class="card-title">2. Bộ lọc thao tác khả nghi & cảnh báo bất thường</div>
+          <div class="card-filename">CN26_02_BoLoc_SuKien_DangNgo.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN26_NhatKyAuditLog/CN26_03_Modal_ChiTiet_Diff_Va_MerkleHash.png" target="_blank"><img src="CN26_NhatKyAuditLog/CN26_03_Modal_ChiTiet_Diff_Va_MerkleHash.png" alt="CN26_03"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-modal">Modal</span>
+          <div class="card-title">3. Modal Chi tiết bản ghi, So sánh Diff & Chuỗi băm SHA-256</div>
+          <div class="card-filename">CN26_03_Modal_ChiTiet_Diff_Va_MerkleHash.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN26_NhatKyAuditLog/CN26_04_Modal_KiemDinh_ChuoiBam_MerkleChain.png" target="_blank"><img src="CN26_NhatKyAuditLog/CN26_04_Modal_KiemDinh_ChuoiBam_MerkleChain.png" alt="CN26_04"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-modal">Mật mã học</span>
+          <div class="card-title">4. Modal Kiểm định Chuỗi băm Móc xích Bất biến Merkle Chain</div>
+          <div class="card-filename">CN26_04_Modal_KiemDinh_ChuoiBam_MerkleChain.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN26_NhatKyAuditLog/CN26_05_Modal_XuatBaoCao_Export.png" target="_blank"><img src="CN26_NhatKyAuditLog/CN26_05_Modal_XuatBaoCao_Export.png" alt="CN26_05"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-modal">Export</span>
+          <div class="card-title">5. Modal Xuất báo cáo kiểm toán Excel / CSV / PDF</div>
+          <div class="card-filename">CN26_05_Modal_XuatBaoCao_Export.png</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CN 27 -->
+  <section class="section-block" id="cn27">
+    <div class="section-header">
+      <div class="section-title">
+        <span class="badge-code">CN 27</span>
+        <span>Thư Viện Sống Xanh: Cẩm Nang Phân Loại Rác (#handbook)</span>
+      </div>
+      <span class="folder-path">CN27_CamNangPhanLoaiRac/ (7 ảnh)</span>
+    </div>
+    <div class="gallery-grid">
+      <div class="img-card">
+        <a href="CN27_CamNangPhanLoaiRac/CN27_01_Citizen_TraCuu_5NhomRac.png" target="_blank"><img src="CN27_CamNangPhanLoaiRac/CN27_01_Citizen_TraCuu_5NhomRac.png" alt="CN27_01"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Tra cứu</span>
+          <div class="card-title">1. Màn hình tra cứu 5 nhóm rác thải sinh hoạt</div>
+          <div class="card-filename">CN27_01_Citizen_TraCuu_5NhomRac.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN27_CamNangPhanLoaiRac/CN27_02_BoLoc_VatPham_DeNhamLan.png" target="_blank"><img src="CN27_CamNangPhanLoaiRac/CN27_02_BoLoc_VatPham_DeNhamLan.png" alt="CN27_02"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Bộ lọc</span>
+          <div class="card-title">2. Bộ lọc tra cứu nhanh vật phẩm người dân dễ nhầm lẫn</div>
+          <div class="card-filename">CN27_02_BoLoc_VatPham_DeNhamLan.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN27_CamNangPhanLoaiRac/CN27_03_Modal_ChiTiet_VatPham.png" target="_blank"><img src="CN27_CamNangPhanLoaiRac/CN27_03_Modal_ChiTiet_VatPham.png" alt="CN27_03"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-modal">Chi tiết</span>
+          <div class="card-title">3. Modal Chi tiết vật phẩm rác, tác hại & khung xử phạt</div>
+          <div class="card-filename">CN27_03_Modal_ChiTiet_VatPham.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN27_CamNangPhanLoaiRac/CN27_04_Interactive_MiniQuiz_NhanDiem.png" target="_blank"><img src="CN27_CamNangPhanLoaiRac/CN27_04_Interactive_MiniQuiz_NhanDiem.png" alt="CN27_04"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Mini-Quiz</span>
+          <div class="card-title">4. Mini-Quiz tương tác 'Thử tài phân loại rác nhận +5 điểm'</div>
+          <div class="card-filename">CN27_04_Interactive_MiniQuiz_NhanDiem.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN27_CamNangPhanLoaiRac/CN27_05_Modal_BangInA4_PrintableCheatSheet.png" target="_blank"><img src="CN27_CamNangPhanLoaiRac/CN27_05_Modal_BangInA4_PrintableCheatSheet.png" alt="CN27_05"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-modal">Print A4</span>
+          <div class="card-title">5. Modal Bảng cẩm nang in nhanh khổ A4 dán tại hộ gia đình</div>
+          <div class="card-filename">CN27_05_Modal_BangInA4_PrintableCheatSheet.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN27_CamNangPhanLoaiRac/CN27_06_Admin_CMS_QuanTriDanhMuc.png" target="_blank"><img src="CN27_CamNangPhanLoaiRac/CN27_06_Admin_CMS_QuanTriDanhMuc.png" alt="CN27_06"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-admin">Admin CMS</span>
+          <div class="card-title">6. Bảng CRUD Quản trị danh mục vật phẩm cẩm nang</div>
+          <div class="card-filename">CN27_06_Admin_CMS_QuanTriDanhMuc.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN27_CamNangPhanLoaiRac/CN27_07_Admin_Modal_ThemSua_VatPham.png" target="_blank"><img src="CN27_CamNangPhanLoaiRac/CN27_07_Admin_Modal_ThemSua_VatPham.png" alt="CN27_07"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-modal">Form Modal</span>
+          <div class="card-title">7. Form Modal Thêm mới / Sửa vật phẩm cẩm nang</div>
+          <div class="card-filename">CN27_07_Admin_Modal_ThemSua_VatPham.png</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CN 28 -->
+  <section class="section-block" id="cn28">
+    <div class="section-header">
+      <div class="section-title">
+        <span class="badge-code">CN 28</span>
+        <span>Cơ Chế Tích Lũy Điểm Thưởng Công Dân Xanh (#policy)</span>
+      </div>
+      <span class="folder-path">CN28_ChinhSachTichDiem/ (4 ảnh)</span>
+    </div>
+    <div class="gallery-grid">
+      <div class="img-card">
+        <a href="CN28_ChinhSachTichDiem/CN28_01_BieuMuc_TichLuyDiem_Rates.png" target="_blank"><img src="CN28_ChinhSachTichDiem/CN28_01_BieuMuc_TichLuyDiem_Rates.png" alt="CN28_01"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Định mức</span>
+          <div class="card-title">1. Biểu mức tích lũy Điểm Xanh theo hành động môi trường</div>
+          <div class="card-filename">CN28_01_BieuMuc_TichLuyDiem_Rates.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN28_ChinhSachTichDiem/CN28_02_NacThang_HangHoiVien_Tiers.png" target="_blank"><img src="CN28_ChinhSachTichDiem/CN28_02_NacThang_HangHoiVien_Tiers.png" alt="CN28_02"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Phân hạng</span>
+          <div class="card-title">2. Nấc thang 5 Hạng hội viên & Mức chiết khấu đổi quà ưu đãi</div>
+          <div class="card-filename">CN28_02_NacThang_HangHoiVien_Tiers.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN28_ChinhSachTichDiem/CN28_03_HanMuc_QuyTacChongGianLan_Limits.png" target="_blank"><img src="CN28_ChinhSachTichDiem/CN28_03_HanMuc_QuyTacChongGianLan_Limits.png" alt="CN28_03"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-admin">Anti-Fraud</span>
+          <div class="card-title">3. Hạn mức tích lũy ngày (Daily Cap) & Cơ chế chống gian lận</div>
+          <div class="card-filename">CN28_03_HanMuc_QuyTacChongGianLan_Limits.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN28_ChinhSachTichDiem/CN28_04_Modal_ThuongDiemNhanh_PointReward.png" target="_blank"><img src="CN28_ChinhSachTichDiem/CN28_04_Modal_ThuongDiemNhanh_PointReward.png" alt="CN28_04"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-modal">Popup</span>
+          <div class="card-title">4. Modal Cấp thưởng điểm sinh thái nhanh cho công dân</div>
+          <div class="card-filename">CN28_04_Modal_ThuongDiemNhanh_PointReward.png</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CN 29 -->
+  <section class="section-block" id="cn29">
+    <div class="section-header">
+      <div class="section-title">
+        <span class="badge-code">CN 29</span>
+        <span>Ví Điểm & Lịch Sử Biến Động Điểm Xanh (#wallet)</span>
+      </div>
+      <span class="folder-path">CN29_ViDiemSinhThai/ (4 ảnh)</span>
+    </div>
+    <div class="gallery-grid">
+      <div class="img-card">
+        <a href="CN29_ViDiemSinhThai/CN29_01_TheViDiem_Va_ThongKeSoDu.png" target="_blank"><img src="CN29_ViDiemSinhThai/CN29_01_TheViDiem_Va_ThongKeSoDu.png" alt="CN29_01"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Tổng quan</span>
+          <div class="card-title">1. Thẻ ví điện tử sinh thái & Biểu đồ tăng trưởng điểm</div>
+          <div class="card-filename">CN29_01_TheViDiem_Va_ThongKeSoDu.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN29_ViDiemSinhThai/CN29_02_SaoKe_LichSuGiaoDich_Full.png" target="_blank"><img src="CN29_ViDiemSinhThai/CN29_02_SaoKe_LichSuGiaoDich_Full.png" alt="CN29_02"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Sao kê</span>
+          <div class="card-title">2. Bảng sao kê chi tiết mọi biến động điểm thời gian thực</div>
+          <div class="card-filename">CN29_02_SaoKe_LichSuGiaoDich_Full.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN29_ViDiemSinhThai/CN29_03_Modal_ChiTietGiaoDich.png" target="_blank"><img src="CN29_ViDiemSinhThai/CN29_03_Modal_ChiTietGiaoDich.png" alt="CN29_03"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-modal">Modal</span>
+          <div class="card-title">3. Modal Chi tiết một bút toán giao dịch điểm xanh</div>
+          <div class="card-filename">CN29_03_Modal_ChiTietGiaoDich.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN29_ViDiemSinhThai/CN29_04_XuatSaoKe_CSV.png" target="_blank"><img src="CN29_ViDiemSinhThai/CN29_04_XuatSaoKe_CSV.png" alt="CN29_04"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Xuất file</span>
+          <div class="card-title">4. Tính năng xuất sao kê tài khoản cá nhân định dạng CSV</div>
+          <div class="card-filename">CN29_04_XuatSaoKe_CSV.png</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CN 30 -->
+  <section class="section-block" id="cn30">
+    <div class="section-header">
+      <div class="section-title">
+        <span class="badge-code">CN 30</span>
+        <span>Quản Trị CRUD Danh Mục Quà Tặng Xanh & Kho Voucher (#catalog)</span>
+      </div>
+      <span class="folder-path">CN30_KhoQuaTangVoucher/ (7 ảnh)</span>
+    </div>
+    <div class="gallery-grid">
+      <div class="img-card">
+        <a href="CN30_KhoQuaTangVoucher/CN30_01_SanDoiQua_Citizen_Catalog.png" target="_blank"><img src="CN30_KhoQuaTangVoucher/CN30_01_SanDoiQua_Citizen_Catalog.png" alt="CN30_01"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Sàn quà</span>
+          <div class="card-title">1. Sàn đổi quà sinh thái cho công dân (giá ưu đãi theo Hạng)</div>
+          <div class="card-filename">CN30_01_SanDoiQua_Citizen_Catalog.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN30_KhoQuaTangVoucher/CN30_02_Admin_QuanTriKhoQua_CRUD_List.png" target="_blank"><img src="CN30_KhoQuaTangVoucher/CN30_02_Admin_QuanTriKhoQua_CRUD_List.png" alt="CN30_02"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-admin">Admin CRUD</span>
+          <div class="card-title">2. Bảng quản trị kho quà hệ thống & Số lượng tồn kho</div>
+          <div class="card-filename">CN30_02_Admin_QuanTriKhoQua_CRUD_List.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN30_KhoQuaTangVoucher/CN30_03_Form_ThemMoiQuaTang_Create.png" target="_blank"><img src="CN30_KhoQuaTangVoucher/CN30_03_Form_ThemMoiQuaTang_Create.png" alt="CN30_03"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-admin">Form Create</span>
+          <div class="card-title">3. Form Thêm mới Quà tặng / Voucher đối tác ESG</div>
+          <div class="card-filename">CN30_03_Form_ThemMoiQuaTang_Create.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN30_KhoQuaTangVoucher/CN30_04_Form_ChinhSuaQuaTang_Edit.png" target="_blank"><img src="CN30_KhoQuaTangVoucher/CN30_04_Form_ChinhSuaQuaTang_Edit.png" alt="CN30_04"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-admin">Form Edit</span>
+          <div class="card-title">4. Form Chỉnh sửa thông tin quà tặng & cập nhật kho</div>
+          <div class="card-filename">CN30_04_Form_ChinhSuaQuaTang_Edit.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN30_KhoQuaTangVoucher/CN30_05_Modal_XacNhanXoa_Delete.png" target="_blank"><img src="CN30_KhoQuaTangVoucher/CN30_05_Modal_XacNhanXoa_Delete.png" alt="CN30_05"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-modal">Modal Delete</span>
+          <div class="card-title">5. Modal Xác nhận xóa quà tặng khỏi sàn giao dịch</div>
+          <div class="card-filename">CN30_05_Modal_XacNhanXoa_Delete.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN30_KhoQuaTangVoucher/CN30_06_Modal_ChiTietQuaTang_Va_DoiQua.png" target="_blank"><img src="CN30_KhoQuaTangVoucher/CN30_06_Modal_ChiTietQuaTang_Va_DoiQua.png" alt="CN30_06"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-modal">Modal Đổi quà</span>
+          <div class="card-title">6. Modal Chi tiết quà tặng & Xác nhận đổi quà khóa dòng ACID</div>
+          <div class="card-filename">CN30_06_Modal_ChiTietQuaTang_Va_DoiQua.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN30_KhoQuaTangVoucher/CN30_07_BaoCao_ThongKe_Analytics.png" target="_blank"><img src="CN30_KhoQuaTangVoucher/CN30_07_BaoCao_ThongKe_Analytics.png" alt="CN30_07"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-admin">Analytics</span>
+          <div class="card-title">7. Báo cáo phân tích tỷ lệ quy đổi & Ngân sách ESG đối tác</div>
+          <div class="card-filename">CN30_07_BaoCao_ThongKe_Analytics.png</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CN 31 -->
+  <section class="section-block" id="cn31">
+    <div class="section-header">
+      <div class="section-title">
+        <span class="badge-code">CN 31</span>
+        <span>Quản Lý Danh Sách Quà Tặng & Voucher Cá Nhân (#vouchers)</span>
+      </div>
+      <span class="folder-path">CN31_VoucherCaNhanDaDoi/ (4 ảnh)</span>
+    </div>
+    <div class="gallery-grid">
+      <div class="img-card">
+        <a href="CN31_VoucherCaNhanDaDoi/CN31_01_Voucher_KhaDung_ACTIVE.png" target="_blank"><img src="CN31_VoucherCaNhanDaDoi/CN31_01_Voucher_KhaDung_ACTIVE.png" alt="CN31_01"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Còn hạn</span>
+          <div class="card-title">1. Tab Voucher khả dụng (ACTIVE) kèm mã QR quét tại quầy</div>
+          <div class="card-filename">CN31_01_Voucher_KhaDung_ACTIVE.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN31_VoucherCaNhanDaDoi/CN31_02_Voucher_DaSuDung_USED.png" target="_blank"><img src="CN31_VoucherCaNhanDaDoi/CN31_02_Voucher_DaSuDung_USED.png" alt="CN31_02"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Đã dùng</span>
+          <div class="card-title">2. Tab Voucher đã sử dụng (USED) lưu vết đối soát</div>
+          <div class="card-filename">CN31_02_Voucher_DaSuDung_USED.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN31_VoucherCaNhanDaDoi/CN31_03_Voucher_HetHan_EXPIRED.png" target="_blank"><img src="CN31_VoucherCaNhanDaDoi/CN31_03_Voucher_HetHan_EXPIRED.png" alt="CN31_03"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Hết hạn</span>
+          <div class="card-title">3. Tab Voucher đã hết hạn (EXPIRED)</div>
+          <div class="card-filename">CN31_03_Voucher_HetHan_EXPIRED.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN31_VoucherCaNhanDaDoi/CN31_04_Modal_DoiSoat_ThuNgan_CashierPIN.png" target="_blank"><img src="CN31_VoucherCaNhanDaDoi/CN31_04_Modal_DoiSoat_ThuNgan_CashierPIN.png" alt="CN31_04"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-modal">Mã PIN</span>
+          <div class="card-title">4. Modal Đối soát Quầy thu ngân yêu cầu Cashier PIN: 2026</div>
+          <div class="card-filename">CN31_04_Modal_DoiSoat_ThuNgan_CashierPIN.png</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CN 32 -->
+  <section class="section-block" id="cn32">
+    <div class="section-header">
+      <div class="section-title">
+        <span class="badge-code">CN 32</span>
+        <span>Bảng Xếp Hạng Vinh Danh Top Công Dân Xanh (#leaderboard)</span>
+      </div>
+      <span class="folder-path">CN32_BangXepHangTopXanh/ (7 ảnh)</span>
+    </div>
+    <div class="gallery-grid">
+      <div class="img-card">
+        <a href="CN32_BangXepHangTopXanh/CN32_01_BXH_CaNhan_Tuan_Week.png" target="_blank"><img src="CN32_BangXepHangTopXanh/CN32_01_BXH_CaNhan_Tuan_Week.png" alt="CN32_01"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Tuần này</span>
+          <div class="card-title">1. Bục vinh danh Top 1, 2, 3 mạ vàng/bạc/đồng & Top 10 tuần</div>
+          <div class="card-filename">CN32_01_BXH_CaNhan_Tuan_Week.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN32_BangXepHangTopXanh/CN32_02_BXH_CaNhan_Thang_Va_ToanThoiGian.png" target="_blank"><img src="CN32_BangXepHangTopXanh/CN32_02_BXH_CaNhan_Thang_Va_ToanThoiGian.png" alt="CN32_02"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Toàn thời gian</span>
+          <div class="card-title">2. Lọc chu kỳ Tháng này & Toàn thời gian theo điểm trọn đời</div>
+          <div class="card-filename">CN32_02_BXH_CaNhan_Thang_Va_ToanThoiGian.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN32_BangXepHangTopXanh/CN32_03_BXH_DoiNhom_TinhNguyen.png" target="_blank"><img src="CN32_BangXepHangTopXanh/CN32_03_BXH_DoiNhom_TinhNguyen.png" alt="CN32_03"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Đội nhóm</span>
+          <div class="card-title">3. Tab Bảng xếp hạng Đội nhóm & Câu lạc bộ tình nguyện xanh</div>
+          <div class="card-filename">CN32_03_BXH_DoiNhom_TinhNguyen.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN32_BangXepHangTopXanh/CN32_04_Modal_ChiTiet_DoiNhom.png" target="_blank"><img src="CN32_BangXepHangTopXanh/CN32_04_Modal_ChiTiet_DoiNhom.png" alt="CN32_04"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-modal">Chi tiết nhóm</span>
+          <div class="card-title">4. Modal Chi tiết thông tin thành viên & thành tích nhóm xanh</div>
+          <div class="card-filename">CN32_04_Modal_ChiTiet_DoiNhom.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN32_BangXepHangTopXanh/CN32_05_BXH_22_QuanHuyen.png" target="_blank"><img src="CN32_BangXepHangTopXanh/CN32_05_BXH_22_QuanHuyen.png" alt="CN32_05"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Quận/Huyện</span>
+          <div class="card-title">5. Tab Bảng xếp hạng tỷ lệ sống xanh giữa 22 Quận / Huyện</div>
+          <div class="card-filename">CN32_05_BXH_22_QuanHuyen.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN32_BangXepHangTopXanh/CN32_06_Admin_Modal_ChotSo_TraoGiai.png" target="_blank"><img src="CN32_BangXepHangTopXanh/CN32_06_Admin_Modal_ChotSo_TraoGiai.png" alt="CN32_06"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-admin">Admin Chốt Sổ</span>
+          <div class="card-title">6. Modal Admin Chốt sổ kỳ thi đua & Trao giải Top 3</div>
+          <div class="card-filename">CN32_06_Admin_Modal_ChotSo_TraoGiai.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN32_BangXepHangTopXanh/CN32_07_Admin_CRUD_CotMocCapBac.png" target="_blank"><img src="CN32_BangXepHangTopXanh/CN32_07_Admin_CRUD_CotMocCapBac.png" alt="CN32_07"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-admin">Tiers CRUD</span>
+          <div class="card-title">7. Tab Admin Quản trị Cột mốc cấp bậc danh hiệu (Tiers CRUD)</div>
+          <div class="card-filename">CN32_07_Admin_CRUD_CotMocCapBac.png</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CN 33 -->
+  <section class="section-block" id="cn33">
+    <div class="section-header">
+      <div class="section-title">
+        <span class="badge-code">CN 33</span>
+        <span>Bản Đồ Nhiệt Môi Trường & Khí Hậu Đa Chế Độ (#heatmap)</span>
+      </div>
+      <span class="folder-path">CN33_BanDoNhietLeafletGIS/ (5 ảnh)</span>
+    </div>
+    <div class="gallery-grid">
+      <div class="img-card">
+        <a href="CN33_BanDoNhietLeafletGIS/CN33_01_LeafletGIS_Mode_AQI.png" target="_blank"><img src="CN33_BanDoNhietLeafletGIS/CN33_01_LeafletGIS_Mode_AQI.png" alt="CN33_01"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Mode AQI</span>
+          <div class="card-title">1. Chế độ 1: WebGIS Leaflet Chất lượng Không khí (AQI)</div>
+          <div class="card-filename">CN33_01_LeafletGIS_Mode_AQI.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN33_BanDoNhietLeafletGIS/CN33_02_LeafletGIS_Mode_Temperature.png" target="_blank"><img src="CN33_BanDoNhietLeafletGIS/CN33_02_LeafletGIS_Mode_Temperature.png" alt="CN33_02"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Mode Nhiệt độ</span>
+          <div class="card-title">2. Chế độ 2: Nhiệt độ bề mặt đô thị (°C) phát hiện đảo nhiệt</div>
+          <div class="card-filename">CN33_02_LeafletGIS_Mode_Temperature.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN33_BanDoNhietLeafletGIS/CN33_03_LeafletGIS_Mode_RiskScore.png" target="_blank"><img src="CN33_BanDoNhietLeafletGIS/CN33_03_LeafletGIS_Mode_RiskScore.png" alt="CN33_03"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Mode Rủi ro</span>
+          <div class="card-title">3. Chế độ 3: Chỉ số rủi ro ô nhiễm tích hợp (Risk Score)</div>
+          <div class="card-filename">CN33_03_LeafletGIS_Mode_RiskScore.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN33_BanDoNhietLeafletGIS/CN33_04_Sidebar_ChiTiet_DiemDo_QuanHuyen.png" target="_blank"><img src="CN33_BanDoNhietLeafletGIS/CN33_04_Sidebar_ChiTiet_DiemDo_QuanHuyen.png" alt="CN33_04"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Sidebar</span>
+          <div class="card-title">4. Sidebar tra cứu thông số thời tiết, gió, trạm quan trắc</div>
+          <div class="card-filename">CN33_04_Sidebar_ChiTiet_DiemDo_QuanHuyen.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN33_BanDoNhietLeafletGIS/CN33_05_CheDo_RadarMap_TongQuan.png" target="_blank"><img src="CN33_BanDoNhietLeafletGIS/CN33_05_CheDo_RadarMap_TongQuan.png" alt="CN33_05"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Radar View</span>
+          <div class="card-title">5. Chế độ Lược đồ Radar SVG tọa độ không gian</div>
+          <div class="card-filename">CN33_05_CheDo_RadarMap_TongQuan.png</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CN 34 -->
+  <section class="section-block" id="cn34">
+    <div class="section-header">
+      <div class="section-title">
+        <span class="badge-code">CN 34</span>
+        <span>Quét Mã QR Nhận Điểm Tại Trạm Thu Gom Rác (#qr-scan)</span>
+      </div>
+      <span class="folder-path">CN34_QuetMaQRTramRac/ (6 ảnh)</span>
+    </div>
+    <div class="gallery-grid">
+      <div class="img-card">
+        <a href="CN34_QuetMaQRTramRac/CN34_01_Scanner_Camera_TrucTiep.png" target="_blank"><img src="CN34_QuetMaQRTramRac/CN34_01_Scanner_Camera_TrucTiep.png" alt="CN34_01"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Camera</span>
+          <div class="card-title">1. Giao diện camera trực tiếp quét mã tại trạm rác</div>
+          <div class="card-filename">CN34_01_Scanner_Camera_TrucTiep.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN34_QuetMaQRTramRac/CN34_02_Scanner_TaiAnhQR_Va_NhapThuCong.png" target="_blank"><img src="CN34_QuetMaQRTramRac/CN34_02_Scanner_TaiAnhQR_Va_NhapThuCong.png" alt="CN34_02"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-modal">Nhập mã</span>
+          <div class="card-title">2. Tải file ảnh QR từ thiết bị & Modal nhập mã thủ công</div>
+          <div class="card-filename">CN34_02_Scanner_TaiAnhQR_Va_NhapThuCong.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN34_QuetMaQRTramRac/CN34_03_Modal_QuetThanhCong_NhanDiem.png" target="_blank"><img src="CN34_QuetMaQRTramRac/CN34_03_Modal_QuetThanhCong_NhanDiem.png" alt="CN34_03"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-modal">Nhận điểm</span>
+          <div class="card-title">3. Modal thông báo check-in trạm thành công & cộng điểm ví</div>
+          <div class="card-filename">CN34_03_Modal_QuetThanhCong_NhanDiem.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN34_QuetMaQRTramRac/CN34_04_Tab_Generator_TaoMaQR_TramMoi.png" target="_blank"><img src="CN34_QuetMaQRTramRac/CN34_04_Tab_Generator_TaoMaQR_TramMoi.png" alt="CN34_04"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-admin">Generator</span>
+          <div class="card-title">4. Tab Trình tạo mã QR động cho trạm thu gom rác mới</div>
+          <div class="card-filename">CN34_04_Tab_Generator_TaoMaQR_TramMoi.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN34_QuetMaQRTramRac/CN34_05_Tab_List_DanhSach_147_TramRac.png" target="_blank"><img src="CN34_QuetMaQRTramRac/CN34_05_Tab_List_DanhSach_147_TramRac.png" alt="CN34_05"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-admin">Kho trạm</span>
+          <div class="card-title">5. Danh mục 147 trạm thu gom rác PostGIS kèm tọa độ</div>
+          <div class="card-filename">CN34_05_Tab_List_DanhSach_147_TramRac.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN34_QuetMaQRTramRac/CN34_06_Modal_XemPhongTo_QRCode.png" target="_blank"><img src="CN34_QuetMaQRTramRac/CN34_06_Modal_XemPhongTo_QRCode.png" alt="CN34_06"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-modal">Phóng to</span>
+          <div class="card-title">6. Modal xem chi tiết và phóng to mã QR trạm để in ấn</div>
+          <div class="card-filename">CN34_06_Modal_XemPhongTo_QRCode.png</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CN 35 -->
+  <section class="section-block" id="cn35">
+    <div class="section-header">
+      <div class="section-title">
+        <span class="badge-code">CN 35</span>
+        <span>Vòng Quay May Mắn Sinh Thái Hằng Ngày (#lucky-wheel)</span>
+      </div>
+      <span class="folder-path">CN35_VongQuayMayMan/ (5 ảnh)</span>
+    </div>
+    <div class="gallery-grid">
+      <div class="img-card">
+        <a href="CN35_VongQuayMayMan/CN35_01_VongQuay_Canvas_Interactive.png" target="_blank"><img src="CN35_VongQuayMayMan/CN35_01_VongQuay_Canvas_Interactive.png" alt="CN35_01"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Vòng quay</span>
+          <div class="card-title">1. Vòng quay may mắn Canvas tương tác 8 ô giải thưởng</div>
+          <div class="card-filename">CN35_01_VongQuay_Canvas_Interactive.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN35_VongQuayMayMan/CN35_02_Modal_ChucMung_TrungThuong.png" target="_blank"><img src="CN35_VongQuayMayMan/CN35_02_Modal_ChucMung_TrungThuong.png" alt="CN35_02"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-modal">Trúng giải</span>
+          <div class="card-title">2. Popup Chúc mừng trúng thưởng điểm và voucher</div>
+          <div class="card-filename">CN35_02_Modal_ChucMung_TrungThuong.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN35_VongQuayMayMan/CN35_03_Tab_LichSuQuayThuong_History.png" target="_blank"><img src="CN35_VongQuayMayMan/CN35_03_Tab_LichSuQuayThuong_History.png" alt="CN35_03"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Lịch sử</span>
+          <div class="card-title">3. Tab Lịch sử quay thưởng cá nhân & trạng thái cộng ví</div>
+          <div class="card-filename">CN35_03_Tab_LichSuQuayThuong_History.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN35_VongQuayMayMan/CN35_04_Tab_Admin_QuanTriTyLe_CRUD.png" target="_blank"><img src="CN35_VongQuayMayMan/CN35_04_Tab_Admin_QuanTriTyLe_CRUD.png" alt="CN35_04"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-admin">Admin CRUD</span>
+          <div class="card-title">4. Tab Admin Quản trị Tỷ lệ xác suất % & Tồn kho giải</div>
+          <div class="card-filename">CN35_04_Tab_Admin_QuanTriTyLe_CRUD.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN35_VongQuayMayMan/CN35_05_Admin_Modal_ThemSua_OGiaiThuong.png" target="_blank"><img src="CN35_VongQuayMayMan/CN35_05_Admin_Modal_ThemSua_OGiaiThuong.png" alt="CN35_05"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-modal">Form Slot</span>
+          <div class="card-title">5. Modal Admin Thêm / Chỉnh sửa thông số ô giải thưởng</div>
+          <div class="card-filename">CN35_05_Admin_Modal_ThemSua_OGiaiThuong.png</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CN 36 -->
+  <section class="section-block" id="cn36">
+    <div class="section-header">
+      <div class="section-title">
+        <span class="badge-code">CN 36</span>
+        <span>Hiệu Ứng Thăng Cấp & Chứng Nhận Công Dân Xanh (#milestone)</span>
+      </div>
+      <span class="folder-path">CN36_CotMocChungNhanSo/ (4 ảnh)</span>
+    </div>
+    <div class="gallery-grid">
+      <div class="img-card">
+        <a href="CN36_CotMocChungNhanSo/CN36_01_Popup_ChucMung_ThangCap_Confetti.png" target="_blank"><img src="CN36_CotMocChungNhanSo/CN36_01_Popup_ChucMung_ThangCap_Confetti.png" alt="CN36_01"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-modal">Confetti</span>
+          <div class="card-title">1. Popup Chúc mừng thăng cấp rực rỡ với pháo hoa Confetti</div>
+          <div class="card-filename">CN36_01_Popup_ChucMung_ThangCap_Confetti.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN36_CotMocChungNhanSo/CN36_02_LoTrinh_CongHien_TierMap.png" target="_blank"><img src="CN36_CotMocChungNhanSo/CN36_02_LoTrinh_CongHien_TierMap.png" alt="CN36_02"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Roadmap</span>
+          <div class="card-title">2. Lộ trình cống hiến 5 nấc từ Mầm Xanh đến Đại Sứ Xanh</div>
+          <div class="card-filename">CN36_02_LoTrinh_CongHien_TierMap.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN36_CotMocChungNhanSo/CN36_03_BangTin_GeoFeed_VinhDanh.png" target="_blank"><img src="CN36_CotMocChungNhanSo/CN36_03_BangTin_GeoFeed_VinhDanh.png" alt="CN36_03"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Geo-Feed</span>
+          <div class="card-title">3. Bảng tin cộng đồng Geo-Feed chia sẻ thành tựu thăng cấp</div>
+          <div class="card-filename">CN36_03_BangTin_GeoFeed_VinhDanh.png</div>
+        </div>
+      </div>
+      <div class="img-card">
+        <a href="CN36_CotMocChungNhanSo/CN36_04_ChungNhan_CongDanXanh_DigitalCert.png" target="_blank"><img src="CN36_CotMocChungNhanSo/CN36_04_ChungNhan_CongDanXanh_DigitalCert.png" alt="CN36_04"></a>
+        <div class="card-meta">
+          <span class="tag-crud tag-citizen">Chứng nhận</span>
+          <div class="card-title">4. Giấy Chứng Nhận Công Dân Xanh Điện Tử & Mộc dấu số TP.HCM</div>
+          <div class="card-filename">CN36_04_ChungNhan_CongDanXanh_DigitalCert.png</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</body>
+</html>

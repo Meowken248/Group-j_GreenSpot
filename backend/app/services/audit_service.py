@@ -127,6 +127,9 @@ ACTION_MAP = {
     "REWARD_POINTS": "Cộng/trừ điểm",
     "VERIFY_VOUCHER": "Đối soát Voucher",
     "REDEEM_REWARD": "Đổi quà xanh",
+    "CREATE_REWARD": "Thêm quà vào kho",
+    "UPDATE_REWARD": "Cập nhật quà tặng",
+    "DELETE_REWARD": "Xóa quà tặng",
     "QR_CHECKIN": "Quét QR Trạm Xanh",
     "LUCKY_WHEEL_SPIN": "Vòng quay may mắn",
     "LEADERBOARD_SNAPSHOT": "Chốt giải BXH",
@@ -139,14 +142,90 @@ ACTION_MAP = {
     "SOS_DISPATCH": "Điều phối SOS",
     "UPDATE_THRESHOLD": "Cập nhật ngưỡng",
     "CREATE_INCIDENT": "Tạo sự cố",
+    "VERIFY_INCIDENT": "Kiểm chứng sự cố",
+    "UPDATE_INCIDENT_STATUS": "Cập nhật tiến độ sự cố",
     "DISPATCH_TEAM": "Điều phối đội ngũ",
     "APPROVE_VERIFICATION": "Duyệt nghiệm thu",
+    "CREATE_PENALTY": "Lập biên bản vi phạm",
+    "PAY_PENALTY": "Nộp phạt vi phạm",
+    "UPDATE_PENALTY": "Cập nhật biên bản",
+    "CREATE_POST": "Đăng bài cộng đồng",
+    "DELETE_POST": "Xóa bài cộng đồng",
+    "UPDATE_PROFILE": "Cập nhật hồ sơ",
+    "UPDATE_AVATAR": "Đổi ảnh đại diện",
+    "CHANGE_PASSWORD": "Đổi mật khẩu",
+    "CREATE_QR_CODE": "Tạo mã QR trạm",
+    "UPDATE_QR_CODE": "Cập nhật mã QR trạm",
+    "DELETE_QR_CODE": "Xóa mã QR trạm",
+    "SEND_FRIEND_REQUEST": "Gửi lời mời kết bạn",
+    "ACCEPT_FRIEND_REQUEST": "Chấp nhận kết bạn",
+    "REJECT_FRIEND_REQUEST": "Từ chối kết bạn",
+    "UNFRIEND": "Hủy kết bạn",
+    "JOIN_CHALLENGE": "Tham gia thử thách",
+    "CLAIM_CHALLENGE": "Nhận thưởng thử thách",
+    "CREATE_WASTE_ITEM": "Thêm cẩm nang rác",
+    "UPDATE_WASTE_ITEM": "Sửa cẩm nang rác",
+    "DELETE_WASTE_ITEM": "Xóa cẩm nang rác",
     "DB_BACKUP": "Sao lưu CSDL",
     "DELETE_AUDIT_ATTEMPT": "Cố gắng xóa nhật ký",
 }
 
 
 class AuditService:
+    @staticmethod
+    async def log_activity(
+        db: AsyncSession,
+        action: str,
+        table_name: str,
+        user_id: Optional[uuid.UUID] = None,
+        record_id: Optional[str] = None,
+        old_data: Optional[dict[str, Any]] = None,
+        new_data: Optional[dict[str, Any]] = None,
+        ip_address: Optional[str] = "127.0.0.1",
+        user_agent: Optional[str] = None,
+        request_uri: Optional[str] = None,
+        is_suspicious: Optional[bool] = None,
+    ) -> Optional[AuditLog]:
+        """
+        Ghi nhận nhật ký an ninh kiểm toán AuditLog tập trung, bất biến và an toàn:
+        - Tự động bóc tách trạng thái đáng ngờ (is_suspicious)
+        - Mask dữ liệu nhạy cảm (password, tokens...)
+        - Không làm vỡ transaction nghiệp vụ nếu có cảnh báo phụ
+        """
+        try:
+            susp = is_suspicious if is_suspicious is not None else False
+            if not susp:
+                if action in {"UPDATE_ROLE", "LOCK_USER", "DELETE_USER", "DELETE_AUDIT_ATTEMPT"}:
+                    susp = True
+                elif action == "REWARD_POINTS" and new_data:
+                    delta = new_data.get("points_awarded") or new_data.get("points_amount") or new_data.get("delta") or 0
+                    if isinstance(delta, (int, float)) and delta > 500:
+                        susp = True
+                elif action in {"CREATE_PENALTY", "UPDATE_PENALTY"} and new_data:
+                    fine = new_data.get("fine_amount") or 0
+                    if isinstance(fine, (int, float)) and fine > 20000000:
+                        susp = True
+
+            clean_old = mask_sensitive(old_data) if old_data else None
+            clean_new = mask_sensitive(new_data) if new_data else None
+
+            log_entry = AuditLog(
+                user_id=user_id,
+                action=action,
+                table_name=table_name,
+                record_id=str(record_id) if record_id is not None else None,
+                old_data=clean_old,
+                new_data=clean_new,
+                ip_address=ip_address or "127.0.0.1",
+                user_agent=user_agent or "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                request_uri=request_uri,
+                is_suspicious=susp,
+            )
+            db.add(log_entry)
+            return log_entry
+        except Exception as e:
+            print(f"[AuditLog Notice] Failed to log activity for {action}: {e}")
+            return None
     @staticmethod
     def validate_date_range(start_date: Optional[datetime], end_date: Optional[datetime]) -> tuple[datetime, datetime]:
         now = datetime.now(timezone.utc)

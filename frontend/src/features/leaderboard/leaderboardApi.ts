@@ -4,6 +4,10 @@ import type {
   GroupLeaderboardResponse,
   DistrictLeaderboardResponse,
   CycleFilter,
+  TierListResponse,
+  TierAdminResponse,
+  TierCreatePayload,
+  TierUpdatePayload,
 } from "./types";
 
 export const leaderboardApi = {
@@ -34,6 +38,39 @@ export const leaderboardApi = {
       null,
       { params: { cycle } }
     );
+    return res.data;
+  },
+
+  // ============================================================
+  // CỘT MỐC CẤP BẬC CRUD (Chức năng 28, 32, 36)
+  // ============================================================
+  getPublicTiers: async (): Promise<TierListResponse> => {
+    const res = await api.get<TierListResponse>("/api/v1/gamification/tiers");
+    return res.data;
+  },
+
+  getAdminTiers: async (): Promise<TierListResponse> => {
+    const res = await api.get<TierListResponse>("/api/v1/gamification/tiers/admin/all");
+    return res.data;
+  },
+
+  createTier: async (payload: TierCreatePayload): Promise<TierAdminResponse> => {
+    const res = await api.post<TierAdminResponse>("/api/v1/gamification/tiers/admin", payload);
+    return res.data;
+  },
+
+  updateTier: async (tierId: number, payload: TierUpdatePayload): Promise<TierAdminResponse> => {
+    const res = await api.put<TierAdminResponse>(`/api/v1/gamification/tiers/admin/${tierId}`, payload);
+    return res.data;
+  },
+
+  deleteTier: async (tierId: number): Promise<{ message: string }> => {
+    const res = await api.delete<{ message: string }>(`/api/v1/gamification/tiers/admin/${tierId}`);
+    return res.data;
+  },
+
+  resetDefaultTiers: async (): Promise<TierListResponse> => {
+    const res = await api.post<TierListResponse>("/api/v1/gamification/tiers/admin/reset-defaults");
     return res.data;
   },
 };
