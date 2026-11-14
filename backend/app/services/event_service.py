@@ -359,10 +359,32 @@ class EventService:
                 and_(Event.start_time >= now, Event.start_time <= now + timedelta(days=7))
             )
 
-        # Tìm kiếm theo tên hoặc địa chỉ
+        # Tìm kiếm theo tên hoặc địa chỉ (Ưu tiên Elasticsearch)
         if search and search.strip():
-            keyword = f"%{search.strip()}%"
-            query = query.where(or_(Event.title.ilike(keyword), Event.address.ilike(keyword)))
+            es_ev_ids: List[str] = []
+            try:
+                from app.services.search.search_service import search_service
+                es_ev_ids = await search_service.search_entity_ids(
+                    entity_type="event",
+                    query=search.strip(),
+                    limit=100
+                )
+            except Exception:
+                es_ev_ids = []
+
+            valid_ev_uuids = []
+            for eid in es_ev_ids:
+                try:
+                    import uuid as _uuid
+                    valid_ev_uuids.append(_uuid.UUID(str(eid)))
+                except (ValueError, TypeError):
+                    pass
+
+            if valid_ev_uuids:
+                query = query.where(Event.event_id.in_(valid_ev_uuids))
+            else:
+                keyword = f"%{search.strip()}%"
+                query = query.where(or_(Event.title.ilike(keyword), Event.address.ilike(keyword)))
 
         # Đếm tổng
         count_query = select(func.count()).select_from(query.subquery())

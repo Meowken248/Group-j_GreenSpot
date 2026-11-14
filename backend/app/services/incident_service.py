@@ -424,12 +424,34 @@ async def list_incidents_for_management(
         conditions.append(Incident.unit_id == unit_id)
 
     if search and search.strip():
-        kw = f"%{search.strip().lower()}%"
-        conditions.append(
-            (Incident.tracking_code.ilike(kw)) |
-            (Incident.title.ilike(kw)) |
-            (Incident.address_text.ilike(kw))
-        )
+        es_inc_ids: List[str] = []
+        try:
+            from app.services.search.search_service import search_service
+            es_inc_ids = await search_service.search_entity_ids(
+                entity_type="incident",
+                query=search.strip(),
+                limit=150
+            )
+        except Exception:
+            es_inc_ids = []
+
+        valid_inc_uuids = []
+        for iid in es_inc_ids:
+            try:
+                import uuid as _uuid
+                valid_inc_uuids.append(_uuid.UUID(str(iid)))
+            except (ValueError, TypeError):
+                pass
+
+        if valid_inc_uuids:
+            conditions.append(Incident.incident_id.in_(valid_inc_uuids))
+        else:
+            kw = f"%{search.strip().lower()}%"
+            conditions.append(
+                (Incident.tracking_code.ilike(kw)) |
+                (Incident.title.ilike(kw)) |
+                (Incident.address_text.ilike(kw))
+            )
 
     if conditions:
         query = query.where(and_(*conditions))

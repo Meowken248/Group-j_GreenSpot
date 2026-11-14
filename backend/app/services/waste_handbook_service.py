@@ -1,5 +1,5 @@
 from typing import Optional, List
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, case
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 
@@ -117,7 +117,24 @@ class WasteHandbookService:
         if category and category.upper() in CAT_LOOKUP:
             q = q.where(WasteHandbookItem.category_code == category.upper())
 
+        es_item_ids: List[str] = []
         if query and query.strip():
+            try:
+                from app.services.search.search_service import search_service
+                cat_filter = category.upper() if category and category.upper() in CAT_LOOKUP else None
+                es_item_ids = await search_service.search_entity_ids(
+                    entity_type="handbook",
+                    query=query.strip(),
+                    category=cat_filter,
+                    limit=limit
+                )
+            except Exception:
+                es_item_ids = []
+
+        if es_item_ids:
+            q = q.where(WasteHandbookItem.item_id.in_(es_item_ids))
+            q = q.order_by(case(*[(WasteHandbookItem.item_id == iid, idx) for idx, iid in enumerate(es_item_ids)], else_=999))
+        elif query and query.strip():
             term = f"%{query.strip().lower()}%"
             q = q.where(
                 or_(

@@ -13,7 +13,7 @@ class GlobalSearchRequest(BaseModel):
     q: str = Field(..., min_length=1, max_length=200, description="Từ khóa tìm kiếm (có dấu hoặc không dấu)")
     entity_types: Optional[List[str]] = Field(
         None,
-        description="Lọc theo loại thực thể: incident, event, post, sos, hotspot, handbook",
+        description="Lọc theo loại thực thể: incident, event, post, sos, hotspot, handbook, penalty",
     )
     district: Optional[str] = Field(None, description="Lọc theo quận/huyện tại TP.HCM")
     status: Optional[str] = Field(None, description="Lọc theo trạng thái nghiệp vụ")
@@ -27,7 +27,7 @@ class GlobalSearchRequest(BaseModel):
 class GlobalSearchResultItem(BaseModel):
     """Một mục kết quả tìm kiếm đa thực thể trả về cho giao diện."""
     entity_id: str = Field(..., description="ID định danh duy nhất của thực thể")
-    entity_type: str = Field(..., description="Loại thực thể: incident, event, post, sos, hotspot, handbook")
+    entity_type: str = Field(..., description="Loại thực thể: incident, event, post, sos, hotspot, handbook, penalty")
     code: Optional[str] = Field(None, description="Mã nghiệp vụ: SC-2026-001, SOS-001...")
     title: str = Field(..., description="Tiêu đề hoặc tên hiển thị")
     description: Optional[str] = Field(None, description="Mô tả tóm tắt")

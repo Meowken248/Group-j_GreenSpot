@@ -48,6 +48,7 @@ def resolve_entity_url(entity_type: str, entity_id: str) -> str:
         "sos": f"/flood-sos?id={entity_id}",
         "hotspot": f"/hotspots?id={entity_id}",
         "handbook": f"/handbook?id={entity_id}",
+        "penalty": f"/penalties?id={entity_id}",
     }
     return routes.get(entity_type, f"/detail/{entity_type}/{entity_id}")
 
@@ -479,6 +480,60 @@ class ElasticsearchSearchRepository(ISearchRepository):
                 logger.error(f"Lỗi xóa tài liệu {doc_id}: {e}")
                 return False
 
+    async def search_entity_ids(
+        self,
+        entity_type: str,
+        query: str,
+        category: Optional[str] = None,
+        limit: int = 50,
+    ) -> List[str]:
+        """
+        Truy vấn nhanh danh sách ID thực thể từ Elasticsearch phục vụ lọc và xếp hạng theo BM25.
+        Dùng làm Search Engine tích hợp cho mọi thanh tìm kiếm chuyên biệt trong hệ thống.
+        """
+        if not query or not query.strip():
+            return []
+
+        async with self._get_client() as client:
+            try:
+                must_clauses: List[Dict[str, Any]] = [
+                    {"term": {"entity_type": entity_type}},
+                    {
+                        "multi_match": {
+                            "query": query.strip(),
+                            "fields": [
+                                "title^4",
+                                "title.autocomplete^2",
+                                "description^1.5",
+                                "code^2",
+                                "category"
+                            ],
+                            "fuzziness": "AUTO",
+                            "prefix_length": 2
+                        }
+                    }
+                ]
+                if category and category.strip() and category.strip() != "ALL":
+                    must_clauses.append({"term": {"category": category.strip()}})
+
+                payload = {
+                    "size": limit,
+                    "query": {
+                        "bool": {
+                            "must": must_clauses
+                        }
+                    },
+                    "_source": ["entity_id"]
+                }
+                res = await client.post(f"/{self.index_name}/_search", json=payload)
+                if res.status_code != 200:
+                    return []
+                hits = res.json().get("hits", {}).get("hits", [])
+                return [h["_source"]["entity_id"] for h in hits if "_source" in h and "entity_id" in h["_source"]]
+            except Exception as e:
+                logger.warning(f"search_entity_ids ES error ({entity_type}): {e}")
+                return []
+
     async def sync_all_from_database(
         self,
         db: AsyncSession,
@@ -494,6 +549,7 @@ class ElasticsearchSearchRepository(ISearchRepository):
             "incidents": 0,
             "events": 0,
             "waste_handbook": 0,
+            "penalties": 0,
             "flood_sos": 0,
         }
 
@@ -618,6 +674,48 @@ class ElasticsearchSearchRepository(ISearchRepository):
                 counts["waste_handbook"] += 1
         except Exception as e:
             logger.warning(f"Lỗi đọc dữ liệu waste_handbook: {e}")
+
+        # 4. Quét bảng penalty_regulations (Cẩm nang pháp lý & xử phạt vi phạm môi trường)
+        sql_penalties = text("""
+            SELECT 
+                p.id::text AS id,
+                p.title,
+                p.domain,
+                p.quick_category,
+                p.legal_basis,
+                p.description,
+                p.keywords,
+                p.min_fine_individual,
+                p.max_fine_individual,
+                p.created_at::text AS created_at
+            FROM penalty_regulations p
+            WHERE p.deleted_at IS NULL
+            ORDER BY p.created_at DESC
+            LIMIT 500
+        """)
+        try:
+            res_pen = await db.execute(sql_penalties)
+            for row in res_pen.mappings():
+                m = dict(row)
+                desc = f"{m.get('description', '')}. Căn cứ: {m.get('legal_basis', '')}. Từ khóa: {m.get('keywords', '')}"
+                doc = {
+                    "entity_id": m["id"],
+                    "entity_type": "penalty",
+                    "code": m.get("legal_basis"),
+                    "title": m["title"],
+                    "description": desc,
+                    "category": m.get("domain"),
+                    "status": "ACTIVE",
+                    "priority": "NORMAL",
+                    "address": "Nghị định 45/2022/NĐ-CP",
+                    "district": None,
+                    "location": None,
+                    "created_at": parse_iso_date(m.get("created_at")),
+                }
+                bulk_docs.append(doc)
+                counts["penalties"] += 1
+        except Exception as e:
+            logger.warning(f"Lỗi đọc dữ liệu penalty_regulations: {e}")
 
         # Gửi bulk request sang Elasticsearch
         if bulk_docs:
