@@ -45,6 +45,9 @@ class MockSearchRepository(ISearchRepository):
     async def delete_document(self, doc_id: str, index_name=None) -> bool:
         return True
 
+    async def search_entity_ids(self, entity_type: str, query: str, category=None, limit: int = 50) -> list:
+        return ["id-1", "id-2"]
+
     async def sync_all_from_database(self, db) -> dict:
         return await self.sync_mock(db)
 
@@ -178,6 +181,19 @@ async def test_get_cluster_health():
     assert res.index_doc_count == 1050
 
 
+@pytest.mark.asyncio
+async def test_search_entity_ids():
+    repo = MockSearchRepository()
+    service = SearchService(repository=repo)
+
+    ids = await service.search_entity_ids("penalty", "rác")
+    assert ids == ["id-1", "id-2"]
+
+    # Empty query should return empty list
+    empty_ids = await service.search_entity_ids("penalty", "   ")
+    assert empty_ids == []
+
+
 def main():
     print("Running search unit tests...")
     asyncio.run(test_global_search_empty_query())
@@ -187,7 +203,8 @@ def main():
     asyncio.run(test_trigger_database_sync_success())
     asyncio.run(test_trigger_database_sync_failure())
     asyncio.run(test_get_cluster_health())
-    print(">>> ALL 7 SEARCH UNIT TESTS PASSED SUCCESSFULLY! <<<")
+    asyncio.run(test_search_entity_ids())
+    print(">>> ALL 8 SEARCH UNIT TESTS PASSED SUCCESSFULLY! <<<")
 
 
 if __name__ == "__main__":

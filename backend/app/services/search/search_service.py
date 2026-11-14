@@ -64,6 +64,23 @@ class SearchService:
         clamped_limit = max(1, min(limit, 20))
         return await self.repo.autocomplete(cleaned_query, entity_types, clamped_limit)
 
+    async def search_entity_ids(
+        self,
+        entity_type: str,
+        query: str,
+        category: Optional[str] = None,
+        limit: int = 50,
+    ) -> List[str]:
+        """Truy vấn danh sách ID thực thể từ Elasticsearch phục vụ lọc và xếp hạng theo BM25."""
+        if not query or not query.strip():
+            return []
+        return await self.repo.search_entity_ids(
+            entity_type=entity_type,
+            query=query.strip(),
+            category=category,
+            limit=limit,
+        )
+
     async def trigger_database_sync(self, db: AsyncSession) -> SyncStatusResponse:
         """Kích hoạt đồng bộ toàn bộ dữ liệu từ PostgreSQL sang Elasticsearch."""
         start_time = time.perf_counter()

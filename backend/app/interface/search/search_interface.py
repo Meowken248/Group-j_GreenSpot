@@ -42,6 +42,17 @@ class ISearchRepository(ABC):
         pass
 
     @abstractmethod
+    async def search_entity_ids(
+        self,
+        entity_type: str,
+        query: str,
+        category: Optional[str] = None,
+        limit: int = 50,
+    ) -> List[str]:
+        """Truy vấn nhanh danh sách ID thực thể từ Elasticsearch phục vụ lọc và xếp hạng theo BM25."""
+        pass
+
+    @abstractmethod
     async def index_document(
         self,
         doc_id: str,
