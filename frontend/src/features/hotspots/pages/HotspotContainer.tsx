@@ -147,26 +147,37 @@ export const HotspotContainer: React.FC<HotspotContainerProps> = ({
     loadAreas();
   }, [loadAreas]);
 
-  // Tự động nhận diện khu vực từ URL (?district=...) được liên kết từ Dashboard Rủi ro (STT 42)
+  // Tự động nhận diện khu vực (?district=...) từ Dashboard Rủi ro (STT 42)
+  // hoặc (?id=...) từ Elasticsearch Search Result (STT 44)
   useEffect(() => {
-    if (areas.length > 0) {
-      const searchString = window.location.search
-        ? window.location.search.slice(1)
-        : (window.location.hash.split("?")[1] || "");
-      if (searchString) {
-        const urlParams = new URLSearchParams(searchString);
-        const distName = urlParams.get("district");
-        if (distName) {
-          const matched = areas.find(
-            (a) =>
-              a.name.toLowerCase().includes(distName.toLowerCase()) ||
-              distName.toLowerCase().includes(a.name.toLowerCase())
-          );
-          if (matched) {
-            setSelectedAreaId(matched.id);
-            setActiveScreen("forecast");
-            showToast(`📍 Đã chuyển sang phân tích điểm nóng & dự báo: ${matched.name}`, "info");
-          }
+    const searchString = window.location.search
+      ? window.location.search.slice(1)
+      : (window.location.hash.split("?")[1] || "");
+    if (searchString) {
+      const urlParams = new URLSearchParams(searchString);
+      const targetId = urlParams.get("id");
+      if (targetId) {
+        setSelectedClusterId(targetId);
+        setIsDetailOpen(true);
+        setIsDetailLoading(true);
+        hotspotApi
+          .getHotspotDetail(targetId)
+          .then((d) => setDetailData(d))
+          .catch(() => showToast("Không thể tải chi tiết điểm nóng", "error"))
+          .finally(() => setIsDetailLoading(false));
+      }
+
+      const distName = urlParams.get("district");
+      if (distName && areas.length > 0) {
+        const matched = areas.find(
+          (a) =>
+            a.name.toLowerCase().includes(distName.toLowerCase()) ||
+            distName.toLowerCase().includes(a.name.toLowerCase())
+        );
+        if (matched) {
+          setSelectedAreaId(matched.id);
+          setActiveScreen("forecast");
+          showToast(`📍 Đã chuyển sang phân tích điểm nóng & dự báo: ${matched.name}`, "info");
         }
       }
     }

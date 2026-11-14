@@ -22,9 +22,20 @@ export const TriageAppDashboard: React.FC = () => {
       const list = await triageService.getIncidentsList(20);
       setIncidentsList(list);
       if (list.length > 0) {
-        const firstId = list[0].incident_id;
-        setSelectedIncidentId(firstId);
-        await loadDetail(firstId);
+        // Tự động nhận diện ?id= từ Elasticsearch Global Search hoặc URL
+        const searchStr = window.location.search
+          ? window.location.search.slice(1)
+          : (window.location.hash.split("?")[1] || "");
+        const urlParams = new URLSearchParams(searchStr);
+        const targetId = urlParams.get("id");
+
+        const found = targetId
+          ? list.find((it) => it.incident_id === targetId || it.incident_code === targetId)
+          : null;
+        const activeId = found ? found.incident_id : (targetId || list[0].incident_id);
+
+        setSelectedIncidentId(activeId);
+        await loadDetail(activeId);
       }
     } catch (err: any) {
       setErrorMsg("Không thể kết nối máy chủ dữ liệu sự cố. Vui lòng thử lại!");
@@ -46,7 +57,21 @@ export const TriageAppDashboard: React.FC = () => {
 
   useEffect(() => {
     loadIncidents();
-  }, []);
+
+    const handleHashChange = () => {
+      const searchStr = window.location.hash.split("?")[1] || "";
+      if (searchStr) {
+        const urlParams = new URLSearchParams(searchStr);
+        const targetId = urlParams.get("id");
+        if (targetId && targetId !== selectedIncidentId) {
+          setSelectedIncidentId(targetId);
+          loadDetail(targetId);
+        }
+      }
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, [selectedIncidentId]);
 
   const handleSelectIncident = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const id = e.target.value;
