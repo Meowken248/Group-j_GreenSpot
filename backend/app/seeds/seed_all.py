@@ -111,6 +111,19 @@ async def run_seed_all():
     print("\n👉 [BƯỚC 19/19] Nạp dữ liệu Phân tích Điểm nóng & Dự báo xu hướng 7 ngày (STT 44)...")
     await seed_hotspots_data()
 
+    print("\n👉 [BƯỚC 20/20] Đồng bộ toàn bộ dữ liệu hệ thống sang Elasticsearch Search Engine...")
+    try:
+        from app.database import AsyncSessionLocal
+        from app.services.search.search_service import search_service
+        async with AsyncSessionLocal() as db:
+            sync_res = await search_service.trigger_database_sync(db)
+            if sync_res.success:
+                print(f"✅ [Elasticsearch] {sync_res.message}")
+            else:
+                print(f"ℹ️ [Elasticsearch] Cụm ES tạm thời chưa bật: {sync_res.message}")
+    except Exception as es_e:
+        print(f"ℹ️ [Elasticsearch] Bỏ qua đồng bộ tự động ({es_e})")
+
     print("\n" + "=" * 70)
     print("🎉 HOÀN TẤT NẠP TOÀN BỘ CƠ SỞ DỮ LIỆU TOÀN HỆ THỐNG THÀNH CÔNG 100%!")
     print("=" * 70)
