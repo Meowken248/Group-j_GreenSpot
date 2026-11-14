@@ -713,6 +713,18 @@ async def seed_triage_and_spatial_data():
         await db.commit()
         print("✅ [Seeder] Hoàn thành nạp dữ liệu mẫu STT 39 & STT 40 thành công!")
 
+        # 4. Tự động đồng bộ các thực thể vừa nạp vào Elasticsearch (Non-blocking)
+        try:
+            from app.services.search.search_service import search_service
+            print("🔍 [Seeder] Đang đồng bộ tài liệu vào Elasticsearch Search Engine...")
+            sync_res = await search_service.trigger_database_sync(db)
+            if sync_res.success:
+                print(f"✅ [Seeder] Elasticsearch: {sync_res.message}")
+            else:
+                print(f"ℹ️ [Seeder] Elasticsearch tạm thời chưa kết nối: {sync_res.message}")
+        except Exception as es_err:
+            print(f"ℹ️ [Seeder] Bỏ qua đồng bộ Elasticsearch: {es_err}")
+
 
 if __name__ == "__main__":
     asyncio.run(seed_triage_and_spatial_data())

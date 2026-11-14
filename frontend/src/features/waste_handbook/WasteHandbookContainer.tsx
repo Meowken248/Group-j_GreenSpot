@@ -57,6 +57,17 @@ export const WasteHandbookContainer: React.FC<WasteHandbookContainerProps> = ({
 
   useEffect(() => {
     fetchOverview();
+    const searchString = window.location.search
+      ? window.location.search.slice(1)
+      : (window.location.hash.split("?")[1] || "");
+    if (searchString) {
+      const urlParams = new URLSearchParams(searchString);
+      const queryParam = urlParams.get("q") || urlParams.get("id");
+      if (queryParam) {
+        setSearchQuery(queryParam);
+        handleSearch(queryParam, null);
+      }
+    }
   }, []);
 
   const handleSearch = async (queryText?: string, catCode?: string | null) => {
