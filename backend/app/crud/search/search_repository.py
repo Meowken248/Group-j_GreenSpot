@@ -52,6 +52,17 @@ def resolve_entity_url(entity_type: str, entity_id: str) -> str:
     return routes.get(entity_type, f"/detail/{entity_type}/{entity_id}")
 
 
+def _format_iso_datetime(val: Any) -> Optional[str]:
+    """Chuẩn hóa datetime string sang chuẩn ISO 8601 hợp lệ với Pydantic và Elasticsearch."""
+    if not val:
+        return None
+    s = str(val).strip()
+    s = s.replace(" ", "T")
+    if s.endswith("+00"):
+        s = s[:-3] + "+00:00"
+    return s
+
+
 class ElasticsearchSearchRepository(ISearchRepository):
     """
     Thực thi kết nối, lập chỉ mục và truy vấn Elasticsearch 8.x.
@@ -335,7 +346,7 @@ class ElasticsearchSearchRepository(ISearchRepository):
                             latitude=doc_loc.get("lat") if doc_loc else None,
                             longitude=doc_loc.get("lon") if doc_loc else None,
                             distance_km=dist_km,
-                            created_at=src.get("created_at"),
+                            created_at=_format_iso_datetime(src.get("created_at")),
                             url_path=resolve_entity_url(src.get("entity_type", ""), src.get("entity_id", "")),
                             score=hit.get("_score", 0.0),
                         )
@@ -511,7 +522,7 @@ class ElasticsearchSearchRepository(ISearchRepository):
                     "address": m.get("address_text"),
                     "district": None,
                     "location": {"lat": m["latitude"], "lon": m["longitude"]} if m.get("latitude") and m.get("longitude") else None,
-                    "created_at": m.get("created_at"),
+                    "created_at": _format_iso_datetime(m.get("created_at")),
                 }
                 bulk_docs.append(doc)
                 counts["incidents"] += 1
@@ -551,7 +562,7 @@ class ElasticsearchSearchRepository(ISearchRepository):
                     "address": m.get("address"),
                     "district": m.get("district"),
                     "location": {"lat": m["latitude"], "lon": m["longitude"]} if m.get("latitude") and m.get("longitude") else None,
-                    "created_at": m.get("created_at"),
+                    "created_at": _format_iso_datetime(m.get("created_at")),
                 }
                 bulk_docs.append(doc)
                 counts["events"] += 1
@@ -590,7 +601,7 @@ class ElasticsearchSearchRepository(ISearchRepository):
                     "address": "Hướng dẫn phân loại tại nguồn",
                     "district": "TP.HCM",
                     "location": None,
-                    "created_at": m.get("created_at"),
+                    "created_at": _format_iso_datetime(m.get("created_at")),
                 }
                 bulk_docs.append(doc)
                 counts["waste_handbook"] += 1

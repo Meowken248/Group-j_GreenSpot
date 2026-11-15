@@ -1,0 +1,897 @@
+// =============================================================================
+// GLOBAL SEARCH BAR & MODAL STYLES (SASS - .scss)
+// Phân hệ Tìm kiếm Toàn diện Elasticsearch - Chức năng STT 12
+// Tuân thủ PROJECT_RULES.md: 100% SASS, Scoped BEM, Hỗ trợ Light & Dark Mode
+// =============================================================================
+
+// --- 1. SASS Variables ---
+$search-primary-emerald: #059669;
+$search-primary-light: #10b981;
+$search-primary-hover: #047857;
+$search-primary-focus-ring: rgba(16, 185, 129, 0.35);
+
+$search-light-bg: #ffffff;
+$search-light-card: #f8fafc;
+$search-light-border: #e2e8f0;
+$search-light-text: #0f172a;
+$search-light-text-secondary: #475569;
+$search-light-text-muted: #94a3b8;
+
+$search-dark-bg: #0b0f19;
+$search-dark-card: #151e2e;
+$search-dark-card-hover: #1e293b;
+$search-dark-border: #26334d;
+$search-dark-text: #f8fafc;
+$search-dark-text-secondary: #cbd5e1;
+$search-dark-text-muted: #64748b;
+
+$search-radius-lg: 16px;
+$search-radius-md: 12px;
+$search-radius-pill: 9999px;
+$search-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+// --- 2. SASS Mixins ---
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+// --- 3. Scoped Container ---
+.global-search-container {
+  position: relative;
+  flex: 1;
+  max-width: 440px;
+  margin: 0 12px;
+  font-family: inherit;
+
+  // Thanh input tìm kiếm trên Header
+  .global-search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+
+    .search-lens-btn {
+      position: absolute;
+      left: 6px;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      background: transparent;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      color: $search-light-text-muted;
+      transition: $search-transition;
+      z-index: 2;
+
+      &:hover {
+        background: rgba(16, 185, 129, 0.15);
+        color: $search-primary-emerald;
+        transform: scale(1.08);
+      }
+    }
+
+    .search-input-field {
+      width: 100%;
+      height: 36px;
+      padding-left: 36px;
+      padding-right: 56px;
+      font-size: 12px;
+      line-height: 1.5;
+      border-radius: $search-radius-pill;
+      border: 1px solid $search-light-border;
+      background: $search-light-bg;
+      color: $search-light-text;
+      outline: none;
+      transition: $search-transition;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
+      &::placeholder {
+        color: $search-light-text-muted;
+      }
+
+      &:focus {
+        border-color: $search-primary-emerald;
+        box-shadow: 0 0 0 3px $search-primary-focus-ring;
+      }
+    }
+
+    .search-input-actions {
+      position: absolute;
+      right: 10px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      .search-loading-spinner {
+        font-size: 11px;
+        animation: spin 1s linear infinite;
+      }
+
+      .search-clear-btn {
+        background: transparent;
+        border: none;
+        color: $search-light-text-muted;
+        font-size: 12px;
+        cursor: pointer;
+        padding: 2px 4px;
+        border-radius: 4px;
+        transition: $search-transition;
+
+        &:hover {
+          color: $search-light-text;
+          background: rgba(0, 0, 0, 0.05);
+        }
+      }
+
+      .search-kbd-shortcut {
+        display: none;
+        padding: 2px 5px;
+        font-size: 10px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        color: $search-light-text-muted;
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        user-select: none;
+
+        @media (min-width: 640px) {
+          display: inline-block;
+        }
+      }
+    }
+  }
+
+  // Dropdown Autocomplete (Search-as-you-type)
+  .global-search-autocomplete-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: $search-light-bg;
+    border: 1px solid $search-light-border;
+    border-radius: $search-radius-md;
+    box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    z-index: 1000;
+    font-size: 12px;
+
+    .autocomplete-header {
+      @include flex-between;
+      padding: 8px 12px;
+      background: $search-light-card;
+      border-bottom: 1px solid $search-light-border;
+      font-size: 11px;
+      font-weight: 600;
+      color: $search-light-text-muted;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+
+      .results-count {
+        color: $search-primary-emerald;
+        font-weight: 500;
+        text-transform: lowercase;
+      }
+    }
+
+    .autocomplete-list {
+      max-height: 280px;
+      overflow-y: auto;
+      padding: 4px 0;
+
+      .autocomplete-item {
+        @include flex-between;
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: $search-transition;
+
+        &:hover,
+        &.selected {
+          background: #ecfdf5;
+          color: #065f46;
+        }
+
+        .item-main {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 0;
+          padding-right: 8px;
+
+          .item-icon {
+            font-size: 14px;
+            flex-shrink: 0;
+          }
+
+          .item-title {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .item-category {
+            font-size: 10px;
+            color: $search-light-text-muted;
+            flex-shrink: 0;
+          }
+        }
+
+        .item-badge {
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-size: 10px;
+          font-weight: 600;
+          flex-shrink: 0;
+        }
+      }
+    }
+
+    .autocomplete-footer-action {
+      padding: 10px 12px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 12px;
+      color: $search-primary-emerald;
+      background: $search-light-card;
+      border-top: 1px solid $search-light-border;
+      cursor: pointer;
+      transition: $search-transition;
+
+      &:hover {
+        background: #f1f5f9;
+        color: $search-primary-hover;
+      }
+    }
+  }
+
+  // --- Dark Mode cho Container & Dropdown ---
+  &.dark-mode {
+    .global-search-input-wrapper {
+      .search-lens-btn,
+      .search-lens-icon {
+        color: $search-dark-text-muted;
+
+        &:hover {
+          background: rgba(16, 185, 129, 0.25);
+          color: $search-primary-light;
+        }
+      }
+
+      .search-input-field {
+        background: rgba(15, 23, 42, 0.9);
+        border-color: $search-dark-border;
+        color: $search-dark-text;
+
+        &::placeholder {
+          color: $search-dark-text-muted;
+        }
+
+        &:focus {
+          border-color: $search-primary-light;
+          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+        }
+      }
+
+      .search-input-actions {
+        .search-clear-btn:hover {
+          color: $search-dark-text;
+          background: rgba(255, 255, 255, 0.1);
+        }
+
+        .search-kbd-shortcut {
+          background: #1e293b;
+          border-color: #334155;
+          color: $search-dark-text-muted;
+        }
+      }
+    }
+
+    .global-search-autocomplete-dropdown {
+      background: #0f172a;
+      border-color: $search-dark-border;
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5);
+
+      .autocomplete-header {
+        background: #0b0f19;
+        border-color: $search-dark-border;
+        color: $search-dark-text-muted;
+
+        .results-count {
+          color: $search-primary-light;
+        }
+      }
+
+      .autocomplete-list {
+        .autocomplete-item {
+          color: $search-dark-text-secondary;
+
+          &:hover,
+          &.selected {
+            background: #1e293b;
+            color: $search-primary-light;
+          }
+
+          .item-main .item-category {
+            color: $search-dark-text-muted;
+          }
+        }
+      }
+
+      .autocomplete-footer-action {
+        background: #0b0f19;
+        border-color: $search-dark-border;
+        color: $search-primary-light;
+
+        &:hover {
+          background: #1e293b;
+        }
+      }
+    }
+  }
+}
+
+// --- 4. DROPDOWN & BACKDROP KẾT QUẢ TÌM KIẾM ---
+// Backdrop mờ nhẹ phía dưới Top Header (click outside để đóng panel)
+.global-search-backdrop,
+.global-search-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  top: 56px;
+  z-index: 1002;
+  background-color: rgba(11, 15, 25, 0.4);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  animation: searchModalFadeIn 0.15s ease-out;
+}
+
+// Khung hộp thoại kết quả neo CHÍNH XÁC NGAY DƯỚI THANH / NÚT TÌM KIẾM
+.global-search-dialog {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 1005;
+  width: 680px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(86vh - 64px);
+  display: flex;
+  flex-direction: column;
+  border-radius: $search-radius-md;
+  overflow: hidden;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  background: $search-light-bg;
+  color: $search-light-text;
+  border: 1px solid $search-light-border;
+  animation: searchDropdownSlideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  @media (max-width: 768px) {
+    position: fixed;
+    top: 60px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+    transform: none;
+  }
+
+  // Modal Header
+  .modal-header {
+    @include flex-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid $search-light-border;
+    background: $search-light-bg;
+
+    .header-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      .header-icon {
+        font-size: 18px;
+      }
+
+      .header-text {
+        h3 {
+          margin: 0;
+          font-size: 14px;
+          font-weight: 700;
+          color: $search-light-text;
+        }
+
+        p {
+          margin: 2px 0 0;
+          font-size: 11px;
+          color: $search-light-text-secondary;
+
+          strong {
+            color: $search-primary-emerald;
+            font-weight: 600;
+          }
+        }
+      }
+    }
+
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      font-size: 15px;
+      color: $search-light-text-muted;
+      cursor: pointer;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      @include flex-center;
+      transition: $search-transition;
+
+      &:hover {
+        background: #f1f5f9;
+        color: $search-light-text;
+      }
+    }
+  }
+
+  // Filter Tabs Bar
+  .modal-filter-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 10px 20px;
+    overflow-x: auto;
+    background: $search-light-card;
+    border-bottom: 1px solid $search-light-border;
+
+    .filter-pill-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      padding: 5px 12px;
+      border-radius: $search-radius-pill;
+      font-size: 11px;
+      font-weight: 500;
+      color: $search-light-text-secondary;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: $search-transition;
+
+      &:hover {
+        background: #e2e8f0;
+        color: $search-light-text;
+      }
+
+      &.active {
+        background: $search-primary-emerald;
+        color: #ffffff;
+        font-weight: 600;
+        box-shadow: 0 2px 6px rgba(5, 150, 105, 0.35);
+      }
+    }
+  }
+
+  // Modal Content / Results List
+  .modal-results-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    // Loading State
+    .loading-state-box {
+      padding: 40px 0;
+      text-align: center;
+      color: $search-light-text-muted;
+
+      .spinner {
+        font-size: 24px;
+        margin-bottom: 8px;
+        animation: spin 1.2s infinite ease-in-out;
+      }
+
+      p {
+        font-size: 12px;
+        margin: 0;
+      }
+    }
+
+    // Empty State Box
+    .empty-state-box {
+      padding: 48px 16px;
+      text-align: center;
+
+      .empty-icon {
+        font-size: 34px;
+        margin-bottom: 10px;
+        opacity: 0.8;
+      }
+
+      .empty-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: $search-light-text;
+        margin: 0 0 4px;
+      }
+
+      .empty-hint {
+        font-size: 11px;
+        color: $search-light-text-muted;
+        margin: 0;
+      }
+    }
+
+    // Result Cards
+    .search-result-card {
+      padding: 12px 14px;
+      border-radius: $search-radius-md;
+      border: 1px solid $search-light-border;
+      background: $search-light-card;
+      cursor: pointer;
+      transition: $search-transition;
+
+      &:hover {
+        border-color: $search-primary-emerald;
+        background: $search-light-bg;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        transform: translateY(-1px);
+      }
+
+      .card-header-row {
+        @include flex-between;
+        gap: 12px;
+        margin-bottom: 4px;
+
+        .card-title-group {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 0;
+
+          .card-icon {
+            font-size: 15px;
+            flex-shrink: 0;
+          }
+
+          .card-title {
+            margin: 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #065f46;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+
+            mark {
+              background: #fef08a;
+              color: #854d0e;
+              padding: 0 2px;
+              border-radius: 2px;
+            }
+          }
+
+          .card-code {
+            font-size: 10px;
+            font-family: monospace;
+            padding: 2px 5px;
+            border-radius: 4px;
+            background: #e2e8f0;
+            color: #334155;
+          }
+        }
+
+        .card-badge {
+          padding: 2px 8px;
+          border-radius: $search-radius-pill;
+          font-size: 10px;
+          font-weight: 600;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+      }
+
+      .card-description {
+        font-size: 11px;
+        line-height: 1.5;
+        color: $search-light-text-secondary;
+        margin: 0 0 6px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+
+        mark {
+          background: #fef08a;
+          color: #854d0e;
+          padding: 0 2px;
+          border-radius: 2px;
+        }
+      }
+
+      .card-metadata-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        font-size: 11px;
+        color: $search-light-text-muted;
+
+        .meta-distance {
+          color: #d97706;
+          font-weight: 600;
+        }
+
+        .meta-score {
+          margin-left: auto;
+          font-size: 10px;
+          color: #94a3b8;
+        }
+      }
+    }
+  }
+
+  // Modal Footer
+  .modal-footer {
+    @include flex-between;
+    padding: 10px 20px;
+    border-top: 1px solid $search-light-border;
+    background: $search-light-bg;
+    font-size: 11px;
+    color: $search-light-text-muted;
+
+    .footer-branding {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .footer-close-btn {
+      background: #e2e8f0;
+      border: none;
+      color: #334155;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: $search-transition;
+
+      &:hover {
+        background: #cbd5e1;
+        color: #0f172a;
+      }
+    }
+  }
+}
+
+// --- Dark Mode cho Modal Dialog ---
+.global-search-container.dark-mode {
+  .global-search-dialog {
+    background: $search-dark-card;
+    border-color: $search-dark-border;
+    color: $search-dark-text;
+    box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+    .modal-header {
+      background: $search-dark-card;
+      border-color: $search-dark-border;
+
+      .header-title-group .header-text {
+        h3 {
+          color: $search-dark-text;
+        }
+
+        p {
+          color: $search-dark-text-secondary;
+
+          strong {
+            color: $search-primary-light;
+          }
+        }
+      }
+
+      .modal-close-btn {
+        color: $search-dark-text-muted;
+
+        &:hover {
+          background: #1e293b;
+          color: $search-dark-text;
+        }
+      }
+    }
+
+    .modal-filter-tabs {
+      background: #0b0f19;
+      border-color: $search-dark-border;
+
+      .filter-pill-btn {
+        color: $search-dark-text-secondary;
+
+        &:hover {
+          background: #1e293b;
+          color: $search-dark-text;
+        }
+
+        &.active {
+          background: $search-primary-light;
+          color: #042f2e;
+          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+        }
+      }
+    }
+
+    .modal-results-body {
+      .loading-state-box {
+        color: $search-dark-text-muted;
+      }
+
+      .empty-state-box {
+        .empty-title {
+          color: $search-dark-text;
+        }
+
+        .empty-hint {
+          color: $search-dark-text-muted;
+        }
+      }
+
+      .search-result-card {
+        background: #0f172a;
+        border-color: $search-dark-border;
+
+        &:hover {
+          border-color: $search-primary-light;
+          background: #151e2e;
+        }
+
+        .card-header-row .card-title-group {
+          .card-title {
+            color: $search-primary-light;
+
+            mark {
+              background: #854d0e;
+              color: #fef08a;
+            }
+          }
+
+          .card-code {
+            background: #1e293b;
+            color: #94a3b8;
+          }
+        }
+
+        .card-description {
+          color: $search-dark-text-secondary;
+
+          mark {
+            background: #854d0e;
+            color: #fef08a;
+          }
+        }
+
+        .card-metadata-row {
+          color: $search-dark-text-muted;
+
+          .meta-distance {
+            color: #fbbf24;
+          }
+        }
+      }
+    }
+
+    .modal-footer {
+      background: $search-dark-card;
+      border-color: $search-dark-border;
+      color: $search-dark-text-muted;
+
+      .footer-close-btn {
+        background: #1e293b;
+        color: #f8fafc;
+
+        &:hover {
+          background: #334155;
+        }
+      }
+    }
+  }
+}
+
+
+// Keyframes
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes searchModalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes searchDropdownSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes searchModalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+// --- 5. Entity Badges (Light & Dark Mode) ---
+.badge-incident {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.badge-hotspot {
+  background: #fef3c7;
+  color: #b45309;
+}
+.badge-sos {
+  background: #ffedd5;
+  color: #c2410c;
+}
+.badge-event {
+  background: #d1fae5;
+  color: #047857;
+}
+.badge-post {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+.badge-handbook {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.dark-mode {
+  .badge-incident {
+    background: rgba(239, 68, 68, 0.22);
+    color: #fca5a5;
+  }
+  .badge-hotspot {
+    background: rgba(245, 158, 11, 0.22);
+    color: #fcd34d;
+  }
+  .badge-sos {
+    background: rgba(249, 115, 22, 0.22);
+    color: #fdba74;
+  }
+  .badge-event {
+    background: rgba(16, 185, 129, 0.22);
+    color: #6ee7b7;
+  }
+  .badge-post {
+    background: rgba(59, 130, 246, 0.22);
+    color: #93c5fd;
+  }
+  .badge-handbook {
+    background: rgba(20, 184, 166, 0.22);
+    color: #5eead4;
+  }
+}
+
