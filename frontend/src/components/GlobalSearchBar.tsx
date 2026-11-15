@@ -278,17 +278,19 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({
                 badgeClass: "badge-post",
               };
               const isSelected = idx === selectedIndex;
+              const displayTitle = item.title || (item as any).text;
+              const displayId = item.id || (item as any).entity_id;
 
               return (
                 <div
-                  key={`${item.entity_type}-${item.id}`}
+                  key={`${item.entity_type}-${displayId}`}
                   onClick={() => handleSelectItem(item)}
                   onMouseEnter={() => setSelectedIndex(idx)}
                   className={`autocomplete-item ${isSelected ? "selected" : ""}`}
                 >
                   <div className="item-main">
                     <span className="item-icon">{cfg.icon}</span>
-                    <span className="item-title">{item.title}</span>
+                    <span className="item-title">{displayTitle}</span>
                     {item.category && (
                       <span className="item-category">
                         • {item.category}
