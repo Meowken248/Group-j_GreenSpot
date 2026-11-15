@@ -3,7 +3,7 @@
  * Tương thích Clean Architecture & Pydantic v2 DTO backend.
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 export interface GlobalSearchResultItem {
   entity_id: string;
@@ -138,10 +138,12 @@ export async function getSearchAutocompleteAPI(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  console.log("[searchApi] getSearchAutocompleteAPI fetch URL:", `${API_BASE_URL}/api/v1/search/autocomplete?${searchParams.toString()}`);
   const res = await fetch(`${API_BASE_URL}/api/v1/search/autocomplete?${searchParams.toString()}`, {
     method: "GET",
     headers,
   });
+  console.log("[searchApi] getSearchAutocompleteAPI status:", res.status);
 
   if (!res.ok) {
     throw new Error(`Gợi ý tìm kiếm thất bại: HTTP ${res.status}`);

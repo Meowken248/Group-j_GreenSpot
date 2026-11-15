@@ -4,7 +4,7 @@ Tuân thủ Clean Architecture Tầng 2: Data Transfer Objects (DTO).
 """
 
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 from pydantic import BaseModel, Field
 
 
@@ -41,7 +41,7 @@ class GlobalSearchResultItem(BaseModel):
     latitude: Optional[float] = Field(None, description="Tọa độ vĩ độ")
     longitude: Optional[float] = Field(None, description="Tọa độ kinh độ")
     distance_km: Optional[float] = Field(None, description="Cự ly so với vị trí người dùng (nếu có GPS)")
-    created_at: Optional[datetime] = Field(None, description="Thời điểm tạo")
+    created_at: Optional[Union[datetime, str]] = Field(None, description="Thời điểm tạo")
     url_path: str = Field(..., description="Đường dẫn điều hướng trên ứng dụng Web/App")
     score: float = Field(..., description="Điểm số độ liên quan (Relevance Score)")
 
