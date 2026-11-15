@@ -199,12 +199,22 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({
       data-testid="global-search-container"
     >
       {/* Ô nhập từ khóa tìm kiếm */}
-      <div className="global-search-input-wrapper">
+      <div
+        className="global-search-input-wrapper"
+        onClick={() => inputRef.current?.focus()}
+      >
         <button
           type="button"
           className="search-lens-btn"
-          onClick={() => executeFullSearch(query, selectedFilter)}
-          title="Nhấn để tìm kiếm"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (query.trim()) {
+              executeFullSearch(query, selectedFilter);
+            } else {
+              inputRef.current?.focus();
+            }
+          }}
+          title={query.trim() ? "Nhấn để tìm kiếm" : "Nhấp để nhập từ khóa tìm kiếm"}
           aria-label="Thực hiện tìm kiếm"
         >
           🔍
@@ -221,7 +231,7 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({
             if (suggestions.length > 0) setIsOpen(true);
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Tìm kiếm sự cố, SOS, sự kiện, rác thải... (Ctrl+K)"
+          placeholder="Tìm kiếm sự cố, SOS, sự kiện, cẩm nang... (Ctrl+K)"
           aria-label="Tìm kiếm toàn hệ thống"
           className="search-input-field"
         />
@@ -232,10 +242,12 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({
           ) : query ? (
             <button
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setQuery("");
                 setSuggestions([]);
                 setIsOpen(false);
+                inputRef.current?.focus();
               }}
               className="search-clear-btn"
               title="Xoá tìm kiếm"

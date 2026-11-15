@@ -46,10 +46,18 @@ $search-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 // --- 3. Scoped Container ---
 .global-search-container {
   position: relative;
-  flex: 1;
+  flex: 0 1 320px;
+  min-width: 250px;
   max-width: 440px;
+  flex-shrink: 0; // TUYỆT ĐỐI KHÔNG BỊ HEADER CO RÚT LẠI THÀNH VIÊN THUỐC
   margin: 0 12px;
   font-family: inherit;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &:focus-within {
+    flex: 0 1 400px;
+    min-width: 300px;
+  }
 
   // Thanh input tìm kiếm trên Header
   .global-search-input-wrapper {
@@ -57,6 +65,7 @@ $search-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     width: 100%;
+    cursor: text; // Bấm vào bất cứ đâu cũng kích hoạt nhập liệu
 
     .search-lens-btn {
       position: absolute;
@@ -145,6 +154,7 @@ $search-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         border: 1px solid #cbd5e1;
         border-radius: 4px;
         user-select: none;
+        pointer-events: none; // Click xuyên qua, không chặn focus vào ô input bên dưới
 
         @media (min-width: 640px) {
           display: inline-block;
@@ -894,4 +904,41 @@ $search-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     color: #5eead4;
   }
 }
+
+// --- 6. Tối ưu tương thích Layout Header Enterprise ---
+.app-top-header {
+  .global-search-container {
+    flex: 0 1 320px;
+    min-width: 250px;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 1366px) {
+    .header-center-nav {
+      gap: 3px;
+
+      .nav-group-btn {
+        padding: 6px 9px;
+        font-size: 12px;
+      }
+    }
+  }
+
+  @media (max-width: 1080px) {
+    .header-center-nav {
+      gap: 2px;
+
+      .nav-group-btn {
+        padding: 5px 6px;
+        font-size: 11px;
+      }
+    }
+
+    .global-search-container {
+      flex: 0 1 240px;
+      min-width: 200px;
+    }
+  }
+}
+
 
