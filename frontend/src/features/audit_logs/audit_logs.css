@@ -1,0 +1,548 @@
+/* ==========================================================================
+   CHỨC NĂNG 26: NHẬT KÝ KIỂM TOÁN AUDIT LOG
+   ========================================================================== */
+
+.audit-page-container {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
+  font-family: inherit;
+  color: #1e293b;
+}
+
+/* Header */
+.audit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.audit-header-left h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.audit-header-left p {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+/* Two-column layout */
+.audit-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 992px) {
+  .audit-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Column Left: Bộ lọc */
+.filter-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 20px;
+  position: sticky;
+  top: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04);
+}
+
+.filter-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-group {
+  margin-bottom: 16px;
+}
+
+.filter-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.filter-input,
+.filter-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #1e293b;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.filter-input:focus,
+.filter-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-input.input-error {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.filter-error-text {
+  font-size: 12px;
+  color: #ef4444;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-filter-apply {
+  flex: 1;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-filter-apply:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.btn-filter-apply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-filter-reset {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-filter-reset:hover {
+  background: #e2e8f0;
+}
+
+/* Column Right: Table & Logs */
+.audit-content-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04);
+}
+
+.audit-table-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.audit-count-badge {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.btn-open-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #10b981;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-open-export:hover {
+  background: #059669;
+}
+
+.audit-table-wrap {
+  overflow-x: auto;
+}
+
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.audit-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.audit-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.audit-table tr:hover td {
+  background: #f8fafc;
+}
+
+.time-cell {
+  font-family: monospace;
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.actor-cell {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.actor-email-sub {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: normal;
+}
+
+.deleted-tag {
+  font-size: 10px;
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
+}
+
+/* Action Badges */
+.action-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.badge-login {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.badge-role {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.badge-data {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.badge-points {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.badge-export {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.badge-other {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.target-cell {
+  font-family: monospace;
+  font-size: 12px;
+  color: #475569;
+}
+
+.btn-row-detail {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-row-detail:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+/* Load more row */
+.load-more-section {
+  text-align: center;
+  padding: 20px;
+}
+
+.btn-load-more {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 24px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-load-more:hover {
+  background: #e2e8f0;
+}
+
+.all-loaded-text {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-top: 10px;
+}
+
+/* MÀN 2: CHI TIẾT DÒNG NHẬT KÝ (3 KHỐI) */
+.audit-detail-modal {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 920px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.detail-three-blocks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  padding: 24px;
+}
+
+@media (max-width: 840px) {
+  .detail-three-blocks {
+    grid-template-columns: 1fr;
+  }
+}
+
+.detail-block {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.detail-block-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 8px;
+}
+
+.detail-row {
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.detail-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 2px;
+}
+
+.detail-value {
+  color: #0f172a;
+  word-break: break-all;
+}
+
+/* DIFF HIGHLIGHT */
+.diff-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.diff-field-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.diff-field-box.changed {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.diff-key-name {
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.diff-values-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-family: monospace;
+}
+
+.diff-val-old {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 4px 6px;
+  border-radius: 4px;
+  word-break: break-all;
+}
+
+.diff-val-new {
+  background: #dcfce7;
+  color: #166534;
+  padding: 4px 6px;
+  border-radius: 4px;
+  word-break: break-all;
+}
+
+.btn-trace-actor {
+  margin-top: 14px;
+  width: 100%;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-trace-actor:hover {
+  background: #1d4ed8;
+}
+
+/* MÀN 3: EMPTY SEARCH STATE */
+.empty-audit-card {
+  text-align: center;
+  padding: 60px 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.empty-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.empty-subtext {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 16px;
+}
+
+/* MÀN 4: POPUP XUẤT NHẬT KÝ */
+.export-modal-card {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  padding: 24px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+}
+
+.export-modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.export-summary-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.export-warning-cap {
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  color: #b45309;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 12px;
+  margin-bottom: 16px;
+  font-weight: 500;
+}

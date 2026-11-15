@@ -1,0 +1,241 @@
+@use './variables' as *;
+@use './mixins' as *;
+
+.login-card {
+  width: 100%;
+  max-width: 480px;
+  background-color: #ffffff;
+  border: 1px solid $neutral-200;
+  border-radius: $radius-xl;
+  padding: 2.5rem 2.25rem;
+  box-shadow: $shadow-xl;
+  box-sizing: border-box;
+  transition: $transition-normal;
+
+  @include mobile {
+    padding: 1.75rem 1.25rem;
+  }
+
+  .card-header-section {
+    text-align: center;
+    margin-bottom: 2rem;
+
+    .badge-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background-color: $primary-50;
+      border: 1px solid $primary-200;
+      border-radius: 9999px;
+      color: $primary-700;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+
+    .card-title {
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: $neutral-900;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .card-subtitle {
+      font-size: 0.92rem;
+      color: $neutral-500;
+      line-height: 1.5;
+      margin: 0;
+    }
+  }
+
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+
+      .form-input {
+        @include form-input-base;
+
+        &.has-error {
+          border-color: $error-500;
+          background-color: rgba($error-50, 0.4);
+
+          &:focus {
+            box-shadow: 0 0 0 4px rgba($error-500, 0.15);
+            border-color: $error-600;
+          }
+        }
+      }
+
+      .input-error-msg {
+        font-size: 0.84rem;
+        color: $error-600;
+        font-weight: 500;
+        margin-top: 6px;
+        line-height: 1.35;
+
+        .btn-inline-activate {
+          background: none;
+          border: none;
+          color: $primary-700;
+          text-decoration: underline;
+          font-weight: 700;
+          font-size: inherit;
+          cursor: pointer;
+          padding: 0 2px;
+          display: inline;
+
+          &:hover {
+            color: $primary-800;
+          }
+
+          &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+        }
+      }
+
+      &.password-group {
+        .input-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+
+          .form-input {
+            padding-right: 44px;
+          }
+
+          .password-toggle-btn {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            color: $neutral-400;
+            cursor: pointer;
+            @include flex-center;
+            padding: 4px;
+            border-radius: $radius-sm;
+            transition: $transition-fast;
+
+            &:hover {
+              color: $neutral-700;
+            }
+
+            &:disabled {
+              cursor: not-allowed;
+              opacity: 0.5;
+            }
+          }
+        }
+      }
+    }
+
+    .form-extra-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-top: -0.25rem;
+
+      .btn-forgot-password {
+        background: none;
+        border: none;
+        color: $neutral-500;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        padding: 2px 0;
+        transition: $transition-fast;
+
+        &:hover:not(:disabled) {
+          color: $primary-700;
+          text-decoration: underline;
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+    }
+
+    .btn-submit {
+      margin-top: 0.5rem;
+      width: 100%;
+      height: 48px;
+      background: linear-gradient(135deg, $primary-500, $primary-600);
+      color: #ffffff;
+      font-family: $font-family;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: $radius-md;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba($primary-600, 0.3);
+      transition: $transition-fast;
+      @include flex-center;
+      gap: 8px;
+
+      &:hover:not(:disabled) {
+        background: linear-gradient(135deg, $primary-600, $primary-700);
+        box-shadow: 0 6px 16px rgba($primary-600, 0.4);
+      }
+
+      &:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+      }
+
+      .btn-spinner {
+        width: 18px;
+        height: 18px;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        border-top-color: #ffffff;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+    }
+
+    .switch-auth-action {
+      text-align: center;
+      margin-top: 0.75rem;
+
+      .btn-switch-register {
+        background: none;
+        border: none;
+        font-size: 0.88rem;
+        color: $neutral-600;
+        cursor: pointer;
+        transition: $transition-fast;
+
+        span {
+          color: $primary-700;
+          font-weight: 700;
+          margin-left: 4px;
+        }
+
+        &:hover span {
+          text-decoration: underline;
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
