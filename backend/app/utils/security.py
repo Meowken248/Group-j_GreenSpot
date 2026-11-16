@@ -15,7 +15,7 @@ from app.models.rbac import LoginAttempt
 # =========================================================================
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "greenspot_super_secret_jwt_key_2026_safe_and_strong")
 JWT_ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 15      # Access Token ngắn hạn: 15 phút
+ACCESS_TOKEN_EXPIRE_MINUTES = 60      # Access Token ngắn hạn: 60 phút
 REFRESH_TOKEN_EXPIRE_DAYS = 7        # Refresh Token dài hạn: 7 ngày
 
 

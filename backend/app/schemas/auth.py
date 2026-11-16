@@ -54,7 +54,7 @@ class CitizenLoginResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
-    expires_in: int = 900
+    expires_in: int = 3600
     session_id: str
     user: UserSummary
 
@@ -69,7 +69,7 @@ class RefreshTokenResponse(BaseModel):
     success: bool = True
     access_token: str
     token_type: str = "bearer"
-    expires_in: int = 900
+    expires_in: int = 3600
 
 
 class SessionItemResponse(BaseModel):

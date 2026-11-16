@@ -27,6 +27,7 @@ from app.schemas.auth import (
 )
 from app.services.email_service import EmailService
 from app.utils.security import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
     generate_otp_code,
     hash_otp_code,
     hash_password,
@@ -925,7 +926,7 @@ async def login_citizen(
         access_token=access_token,
         refresh_token=raw_refresh_token,
         token_type="bearer",
-        expires_in=900,
+        expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         session_id=str(new_session_id),
         user=UserSummary(
             user_id=str(user.user_id),
@@ -999,7 +1000,7 @@ async def refresh_access_token(
         success=True,
         access_token=new_access_token,
         token_type="bearer",
-        expires_in=900
+        expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
 
 
