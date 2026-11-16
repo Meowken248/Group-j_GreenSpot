@@ -166,16 +166,6 @@ export const Screen1DispatchList: React.FC<Screen1DispatchListProps> = ({
               Đặt lại bộ lọc
             </button>
           )}
-
-          {/* Quick filter guide */}
-          <div className="filter-quick-tips mt-auto pt-3">
-            <div className="tip-title">⚡ Hướng dẫn nhanh</div>
-            <div className="tip-body">
-              • Bấm 1 lần vào hàng để chọn lệnh.
-              <br />
-              • Nhấp đúp vào hàng để xem <strong>Theo dõi hiện trường</strong>.
-            </div>
-          </div>
         </form>
       </div>
 
