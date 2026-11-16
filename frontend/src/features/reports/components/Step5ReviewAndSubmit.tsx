@@ -12,7 +12,7 @@ import {
 } from "../services/reportService";
 import { DuplicateWarningModal } from "./DuplicateWarningModal";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
-import { enqueueReport, replaceQueueItem, deleteQueueItem } from "../../offline/services/outboxQueueRepository";
+import { enqueueReport, replaceQueueItem } from "../../offline/services/outboxQueueRepository";
 import { getCurrentUserId } from "../../offline/services/offlineDb";
 
 interface Step5Props {
@@ -25,6 +25,7 @@ interface Step5Props {
   onTrackIncident: (trackingCode: string) => void;
   onOpenOutbox?: () => void;
   editingQueueItemId?: string | null;
+  editingQueueItemUpdatedAt?: number;
 }
 
 export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
@@ -37,6 +38,7 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
   onTrackIncident,
   onOpenOutbox,
   editingQueueItemId,
+  editingQueueItemUpdatedAt,
 }) => {
   const initiatingRef = useRef(false);
   const submittingRef = useRef(false);
@@ -123,7 +125,7 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
 
       if (editingQueueItemId) {
         // Thay thế nguyên tử mục cũ trong cùng transaction, không bị chặn bởi giới hạn 20 mục (Issue 6)
-        await replaceQueueItem(editingQueueItemId, queuePayload);
+        await replaceQueueItem(editingQueueItemId, queuePayload, editingQueueItemUpdatedAt);
       } else {
         await enqueueReport(queuePayload);
       }
@@ -151,7 +153,7 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
     setNetworkWarning(null);
 
     // Kiểm tra mất mạng: tự động chuyển sang hàng đợi ngoại tuyến (R08, R11)
-    if (!navigator.onLine) {
+    if (!navigator.onLine || editingQueueItemId) {
       try { await handleEnqueueOfflineReport(); } finally { submittingRef.current = false; }
       return;
     }
@@ -192,9 +194,6 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
         : formData;
 
       const result = await submitIncidentReport(submissionPayload);
-      if (editingQueueItemId) {
-        await deleteQueueItem(editingQueueItemId, true).catch(() => {});
-      }
       setSubmissionResult(result);
       onClearDraftAndReset(); // Xoá dữ liệu nháp sau khi gửi thành công
     } catch (err: any) {

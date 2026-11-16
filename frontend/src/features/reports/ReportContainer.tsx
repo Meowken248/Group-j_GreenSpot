@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { AUTH_STORAGE_KEYS } from "../auth";
 import type {
   ReportStep,
@@ -42,6 +42,7 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
   editingQueueItem,
   onClearEditingItem,
 }) => {
+  const autosaveIdRef = useRef(crypto.randomUUID());
   const [currentStep, setCurrentStep] = useState<ReportStep>(1);
   const [formData, setFormData] = useState<ReportFormData>(INITIAL_FORM_DATA);
   const [categories, setCategories] = useState<WasteCategoryItem[]>([]);
@@ -171,7 +172,7 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
         // Tự động lưu nháp ngầm vào localStorage & IndexedDB theo user_id (R04, R18)
         saveDraft(next, currentStep, currentUid);
         saveDraftToDb({
-          draft_id: `draft_${currentUid}`,
+          draft_id: `draft_${currentUid}_${autosaveIdRef.current}`,
           user_id: currentUid,
           title: next.title || "Bản nháp phản ánh",
           formData: next,
@@ -325,7 +326,7 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
     const draftIdsToDelete = new Set<string>();
     if (activeDraftId) draftIdsToDelete.add(activeDraftId);
     if (pendingIndexedDraft?.draft_id) draftIdsToDelete.add(pendingIndexedDraft.draft_id);
-    draftIdsToDelete.add(`draft_${currentUid}`);
+    draftIdsToDelete.add(`draft_${currentUid}_${autosaveIdRef.current}`);
 
     for (const did of draftIdsToDelete) {
       await deleteDraftFromDb(did).catch(() => {});
@@ -447,13 +448,14 @@ export const ReportContainer: React.FC<ReportContainerProps> = ({
                 onNavigateStep={handleNavigateStep}
                 onPrevStep={handlePrevStep}
                 editingQueueItemId={editingQueueItemId}
+                editingQueueItemUpdatedAt={editingQueueItem?.updated_at}
                 onClearDraftAndReset={async () => {
                   const currentUid = getCurrentUserId();
                   clearDraft(currentUid);
                   const draftIdsToDelete = new Set<string>();
                   if (activeDraftId) draftIdsToDelete.add(activeDraftId);
                   if (pendingIndexedDraft?.draft_id) draftIdsToDelete.add(pendingIndexedDraft.draft_id);
-                  draftIdsToDelete.add(`draft_${currentUid}`);
+                  draftIdsToDelete.add(`draft_${currentUid}_${autosaveIdRef.current}`);
 
                   for (const did of draftIdsToDelete) {
                     await deleteDraftFromDb(did).catch(() => {});

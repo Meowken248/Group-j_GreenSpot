@@ -24,9 +24,13 @@ class UploadRoutesTests(unittest.IsolatedAsyncioTestCase):
         from app.api.v1.events import upload_event_cover
         from app.api.v1.fundraisers import upload_fundraiser_image
         from app.api.v1.groups import upload_group_cover
-        for route in [upload_event_cover, upload_fundraiser_image, upload_group_cover]:
+        from app.api.v1.offline_sync import upload_offline_media_endpoint
+        for route in [upload_event_cover, upload_fundraiser_image, upload_group_cover, upload_offline_media_endpoint]:
             file = UploadFile(BytesIO(b"%PDF-1.7 fake"), filename="renamed.jpg",
                               headers=Headers({"content-type": "image/jpeg"}))
             with self.subTest(route=route.__name__), self.assertRaises(HTTPException) as error:
-                await route(file=file, current_user=None)
+                if route == upload_offline_media_endpoint:
+                    await route(file=file, client_file_id="img", latitude=None, longitude=None, captured_at=None, auth_data=None)
+                else:
+                    await route(file=file, current_user=None)
             self.assertEqual(error.exception.status_code, 400)

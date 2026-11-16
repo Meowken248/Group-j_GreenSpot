@@ -1,38 +1,20 @@
-import { openOfflineDatabase, STORES, getCurrentUserId, isQuotaError } from "./offlineDb";
+import { writeOffline } from "./offlineTransaction";
+import { openOfflineDatabase, STORES, getCurrentUserId } from "./offlineDb";
 import type { OfflineDraft } from "../types/offline.types";
 
 /**
  * Lưu hoặc cập nhật bản nháp vào IndexedDB (hỗ trợ nhiều bản nháp & Blob tệp tin).
  */
 export const saveDraftToDb = async (draft: OfflineDraft): Promise<void> => {
-  const db = await openOfflineDatabase();
-  return new Promise((resolve, reject) => {
-    try {
-      const tx = db.transaction(STORES.DRAFTS, "readwrite");
-      const store = tx.objectStore(STORES.DRAFTS);
-      const record = {
-        ...draft,
-        user_id: draft.user_id || getCurrentUserId(),
-        updated_at: Date.now(),
-      };
-      const req = store.put(record);
-
-      req.onsuccess = () => resolve();
-      req.onerror = (e) => {
-        const err = (e.target as IDBRequest).error;
-        if (isQuotaError(err)) {
-          reject(new Error("Dung lượng bộ nhớ thiết bị đã đầy. Không thể lưu thêm bản nháp."));
-        } else {
-          reject(err || new Error("Lỗi khi ghi bản nháp vào IndexedDB"));
-        }
-      };
-    } catch (err) {
-      if (isQuotaError(err)) {
-        reject(new Error("Dung lượng bộ nhớ thiết bị đã đầy. Không thể lưu thêm bản nháp."));
-      } else {
-        reject(err);
-      }
-    }
+  const userId = getCurrentUserId();
+  if (draft.user_id && draft.user_id !== userId) throw new Error("Tài khoản đã thay đổi. Vui lòng tải lại trang.");
+  return writeOffline(STORES.DRAFTS, (store, done, fail) => {
+    const request = store.get(draft.draft_id);
+    request.onsuccess = () => {
+      const current = request.result as OfflineDraft | undefined;
+      if (current && current.user_id !== userId) { fail(new Error("Bạn không có quyền sửa bản nháp này.")); return; }
+      store.put({...draft, user_id: userId, updated_at: Math.max(Date.now(), (current?.updated_at || 0) + 1)}).onsuccess = () => done(undefined);
+    };
   });
 };
 
@@ -98,15 +80,13 @@ export const getDraftById = async (draftId: string): Promise<OfflineDraft | null
  * Xóa một bản nháp khỏi IndexedDB.
  */
 export const deleteDraftFromDb = async (draftId: string): Promise<void> => {
-  const db = await openOfflineDatabase();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORES.DRAFTS, "readwrite");
-    const store = tx.objectStore(STORES.DRAFTS);
-    const req = store.delete(draftId);
-
-    req.onsuccess = () => resolve();
-    req.onerror = (e) => {
-      reject((e.target as IDBRequest).error || new Error("Lỗi khi xóa bản nháp"));
+  const userId = getCurrentUserId();
+  return writeOffline(STORES.DRAFTS, (store, done, fail) => {
+    const request = store.get(draftId);
+    request.onsuccess = () => {
+      const current = request.result as OfflineDraft | undefined;
+      if (!current || current.user_id !== userId) { fail(new Error("Bản nháp không còn tồn tại. Vui lòng tải lại danh sách.")); return; }
+      store.delete(draftId).onsuccess = () => done(undefined);
     };
   });
 };

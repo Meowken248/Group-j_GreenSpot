@@ -6,8 +6,10 @@ import { Step2MediaCapture } from "../components/Step2MediaCapture";
 import { Step5ReviewAndSubmit } from "../components/Step5ReviewAndSubmit";
 import { INITIAL_FORM_DATA } from "../types/report.types";
 import * as service from "../services/reportService";
+import { replaceQueueItem } from "../../offline/services/outboxQueueRepository";
 
 vi.mock("../services/reportService", () => ({uploadMediaWithWatermark: vi.fn(), checkNearbyDuplicates: vi.fn(), submitIncidentReport: vi.fn()}));
+vi.mock("../../offline/services/outboxQueueRepository", () => ({enqueueReport: vi.fn(), replaceQueueItem: vi.fn()}));
 
 describe("Ảnh và gửi phản ánh", () => {
   beforeEach(() => {
@@ -49,5 +51,17 @@ describe("Ảnh và gửi phản ánh", () => {
     await waitFor(() => expect(service.submitIncidentReport).toHaveBeenCalledTimes(1));
     expect(service.uploadMediaWithWatermark).toHaveBeenCalledTimes(1);
     expect(vi.mocked(service.submitIncidentReport).mock.calls[0][0].media[0].file_url).toBe("/uploads/a.png");
+  });
+
+  it("sửa mục hàng đợi khi có mạng vẫn qua giao dịch thay thế và kiểm tra phiên bản", async () => {
+    vi.mocked(replaceQueueItem).mockRejectedValue(new Error("Phản ánh đã được thay đổi ở tab khác. Vui lòng tải lại trang."));
+    const formData = {...INITIAL_FORM_DATA, category_id: 1, title: "Rác", description: "Cần thu gom",
+      location: {latitude: 10.77, longitude: 106.7, address_text: "Quận 1", is_within_hcmc: true},
+      media: [{id: "offline", file_url: "blob:offline", media_type: "IMAGE" as const, file: new File(["a"], "a.png", {type: "image/png"})}]};
+    render(<Step5ReviewAndSubmit formData={formData} editingQueueItemId="old" editingQueueItemUpdatedAt={123} onNavigateStep={vi.fn()} onPrevStep={vi.fn()} onClearDraftAndReset={vi.fn()} onSessionExpired={vi.fn()} onGoHome={vi.fn()} onTrackIncident={vi.fn()}/>);
+    fireEvent.click(screen.getByRole("button", {name: /🚀 Gửi phản ánh/}));
+    await screen.findByText(/Phản ánh đã được thay đổi ở tab khác/);
+    expect(replaceQueueItem).toHaveBeenCalledWith("old", expect.objectContaining({title: "Rác"}), 123);
+    expect(service.submitIncidentReport).not.toHaveBeenCalled();
   });
 });

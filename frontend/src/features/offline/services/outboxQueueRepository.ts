@@ -1,4 +1,5 @@
-import { openOfflineDatabase, STORES, getCurrentUserId, isQuotaError } from "./offlineDb";
+import { writeOffline } from "./offlineTransaction";
+import { openOfflineDatabase, STORES, getCurrentUserId } from "./offlineDb";
 import type { OfflineQueueItem, QueueStatistics } from "../types/offline.types";
 
 export const MAX_QUEUE_CAPACITY = 20;
@@ -7,160 +8,46 @@ export const MAX_QUEUE_CAPACITY = 20;
  * Thêm một phản ánh đã xác nhận vào hàng đợi gửi (Offline Outbox Queue).
  * Tuân thủ R08 (kiểm tra đầy đủ), R09 (tối đa 20 phản ánh), R10 (bảo toàn dữ liệu khi đầy bộ nhớ).
  */
-export const enqueueReport = async (
-  itemData: Omit<
-    OfflineQueueItem,
-    "queue_id" | "status" | "retry_count" | "max_retries" | "next_retry_at" | "last_error" | "created_at" | "updated_at"
-  >
-): Promise<OfflineQueueItem> => {
-  const db = await openOfflineDatabase();
-  const currentUserId = itemData.user_id || getCurrentUserId();
+type QueueInput = Omit<OfflineQueueItem, "queue_id" | "status" | "retry_count" | "max_retries" | "next_retry_at" | "last_error" | "created_at" | "updated_at">;
+
+const newQueueItem = (data: QueueInput): OfflineQueueItem => {
+  const userId = getCurrentUserId();
+  if (data.user_id && data.user_id !== userId) throw new Error("Tài khoản đã thay đổi. Vui lòng tải lại trang.");
   const now = Date.now();
-  const queueItem: OfflineQueueItem = {
-    ...itemData,
-    queue_id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `queue_${now}_${Math.random().toString(36).substring(2, 9)}`,
-    user_id: currentUserId,
-    status: "QUEUED",
-    retry_count: 0,
-    max_retries: 3,
-    next_retry_at: null,
-    last_error: null,
-    created_at: now,
-    updated_at: now,
-  };
+  return {...data, user_id: userId, queue_id: crypto.randomUUID(), status: "QUEUED", retry_count: 0,
+    max_retries: 3, next_retry_at: null, last_error: null, created_at: now, updated_at: now};
+};
 
-  return new Promise((resolve, reject) => {
-    try {
-      // Đảm bảo kiểm tra dung lượng và ghi mục diễn ra nguyên tử trong cùng 1 transaction readwrite (Issue 10)
-      const tx = db.transaction(STORES.OUTBOX_QUEUE, "readwrite");
-      const store = tx.objectStore(STORES.OUTBOX_QUEUE);
-      const userIndex = store.index("by_user_id");
-      const countReq = userIndex.getAll(currentUserId);
-
-      countReq.onsuccess = () => {
-        const userItems: OfflineQueueItem[] = countReq.result || [];
-        const activeCount = userItems.filter(
-          (item) => item.status === "QUEUED" || item.status === "SENDING" || item.status === "FAILED"
-        ).length;
-
-        if (activeCount >= MAX_QUEUE_CAPACITY) {
-          reject(new Error(`Hàng đợi đã đạt dung lượng tối đa (${MAX_QUEUE_CAPACITY} phản ánh). Vui lòng kết nối mạng để đồng bộ trước khi gửi thêm.`));
-          return;
-        }
-
-        const putReq = store.put(queueItem);
-        putReq.onsuccess = () => resolve(queueItem);
-        putReq.onerror = (e) => {
-          const err = (e.target as IDBRequest).error;
-          if (isQuotaError(err)) {
-            reject(new Error("Dung lượng bộ nhớ thiết bị đã đầy. Không thể đưa thêm phản ánh vào hàng đợi."));
-          } else {
-            reject(err || new Error("Lỗi khi ghi phản ánh vào hàng đợi"));
-          }
-        };
-      };
-
-      countReq.onerror = (e) => {
-        reject((e.target as IDBRequest).error || new Error("Lỗi khi kiểm tra dung lượng hàng đợi"));
-      };
-
-      tx.onerror = (e) => {
-        const err = (e.target as IDBTransaction).error;
-        if (isQuotaError(err)) {
-          reject(new Error("Dung lượng bộ nhớ thiết bị đã đầy. Không thể đưa thêm phản ánh vào hàng đợi."));
-        } else {
-          reject(err || new Error("Giao dịch hàng đợi thất bại"));
-        }
-      };
-    } catch (err) {
-      if (isQuotaError(err)) {
-        reject(new Error("Dung lượng bộ nhớ thiết bị đã đầy. Không thể đưa thêm phản ánh vào hàng đợi."));
-      } else {
-        reject(err);
+export const enqueueReport = async (data: QueueInput): Promise<OfflineQueueItem> => {
+  const item = newQueueItem(data);
+  return writeOffline(STORES.OUTBOX_QUEUE, (store, done, fail) => {
+    const request = store.index("by_user_id").getAll(item.user_id);
+    request.onsuccess = () => {
+      const items = request.result as OfflineQueueItem[];
+      const duplicate = items.find(i => i.client_submission_id === item.client_submission_id || i.idempotency_key === item.idempotency_key);
+      if (duplicate) { fail(new Error("Phản ánh đã có trong hàng đợi. Vui lòng tải lại danh sách.")); return; }
+      if (items.filter(i => i.status !== "SENT").length >= MAX_QUEUE_CAPACITY) {
+        fail(new Error(`Hàng đợi đã đạt dung lượng tối đa (${MAX_QUEUE_CAPACITY} phản ánh). Vui lòng kết nối mạng để đồng bộ trước khi gửi thêm.`)); return;
       }
-    }
+      store.add(item).onsuccess = () => done(item);
+    };
   });
 };
 
-/**
- * Thay thế nguyên tử một mục trong hàng đợi (sửa phản ánh lỗi khi hàng đợi có thể đã đạt 20 mục - Issue 6).
- * Xóa mục cũ và ghi mục mới trong cùng 1 transaction readwrite duy nhất.
- */
-export const replaceQueueItem = async (
-  oldQueueId: string,
-  itemData: Omit<
-    OfflineQueueItem,
-    "queue_id" | "status" | "retry_count" | "max_retries" | "next_retry_at" | "last_error" | "created_at" | "updated_at"
-  >
-): Promise<OfflineQueueItem> => {
-  const db = await openOfflineDatabase();
-  const currentUserId = itemData.user_id || getCurrentUserId();
-  const now = Date.now();
-  const queueItem: OfflineQueueItem = {
-    ...itemData,
-    queue_id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `queue_${now}_${Math.random().toString(36).substring(2, 9)}`,
-    user_id: currentUserId,
-    status: "QUEUED",
-    retry_count: 0,
-    max_retries: 3,
-    next_retry_at: null,
-    last_error: null,
-    created_at: now,
-    updated_at: now,
-  };
-
-  return new Promise((resolve, reject) => {
-    try {
-      const tx = db.transaction(STORES.OUTBOX_QUEUE, "readwrite");
-      const store = tx.objectStore(STORES.OUTBOX_QUEUE);
-      const userIndex = store.index("by_user_id");
-      const countReq = userIndex.getAll(currentUserId);
-
-      countReq.onsuccess = () => {
-        const userItems: OfflineQueueItem[] = countReq.result || [];
-        // Tính dung lượng sau khi loại trừ mục cũ đang được thay thế
-        const remainingActive = userItems.filter(
-          (item) => item.queue_id !== oldQueueId && (item.status === "QUEUED" || item.status === "SENDING" || item.status === "FAILED")
-        ).length;
-
-        if (remainingActive >= MAX_QUEUE_CAPACITY) {
-          reject(new Error(`Hàng đợi đã đạt dung lượng tối đa (${MAX_QUEUE_CAPACITY} phản ánh). Vui lòng kết nối mạng để đồng bộ trước khi gửi thêm.`));
-          return;
-        }
-
-        // Xóa mục cũ và ghi mục mới nguyên tử trong cùng 1 transaction
-        store.delete(oldQueueId);
-        const putReq = store.put(queueItem);
-        putReq.onsuccess = () => resolve(queueItem);
-        putReq.onerror = (e) => {
-          const err = (e.target as IDBRequest).error;
-          if (isQuotaError(err)) {
-            reject(new Error("Dung lượng bộ nhớ thiết bị đã đầy. Không thể đưa thêm phản ánh vào hàng đợi."));
-          } else {
-            reject(err || new Error("Lỗi khi ghi phản ánh vào hàng đợi"));
-          }
-        };
-      };
-
-      countReq.onerror = (e) => {
-        reject((e.target as IDBRequest).error || new Error("Lỗi khi kiểm tra dung lượng hàng đợi"));
-      };
-
-      tx.onerror = (e) => {
-        const err = (e.target as IDBTransaction).error;
-        if (isQuotaError(err)) {
-          reject(new Error("Dung lượng bộ nhớ thiết bị đã đầy. Không thể đưa thêm phản ánh vào hàng đợi."));
-        } else {
-          reject(err || new Error("Giao dịch thay thế hàng đợi thất bại"));
-        }
-      };
-    } catch (err) {
-      if (isQuotaError(err)) {
-        reject(new Error("Dung lượng bộ nhớ thiết bị đã đầy. Không thể đưa thêm phản ánh vào hàng đợi."));
-      } else {
-        reject(err);
+export const replaceQueueItem = async (oldQueueId: string, data: QueueInput, expectedUpdatedAt?: number): Promise<OfflineQueueItem> => {
+  const item = newQueueItem(data);
+  return writeOffline(STORES.OUTBOX_QUEUE, (store, done, fail) => {
+    const request = store.get(oldQueueId);
+    request.onsuccess = () => {
+      const old = request.result as OfflineQueueItem | undefined;
+      if (!old || old.user_id !== item.user_id) { fail(new Error("Phản ánh không còn tồn tại. Vui lòng tải lại danh sách.")); return; }
+      if (old.status === "SENDING" || old.status === "SENT") { fail(new Error("Phản ánh đang gửi hoặc đã gửi, không thể chỉnh sửa.")); return; }
+      if (expectedUpdatedAt !== undefined && expectedUpdatedAt !== old.updated_at) {
+        fail(new Error("Phản ánh đã được thay đổi ở tab khác. Vui lòng tải lại trang trước khi cập nhật.")); return;
       }
-    }
+      store.delete(oldQueueId);
+      store.add(item).onsuccess = () => done(item);
+    };
   });
 };
 
@@ -225,56 +112,49 @@ export const getQueueItemById = async (queueId: string): Promise<OfflineQueueIte
  * Cập nhật trạng thái của mục trong hàng đợi (optimistic locking / state transition).
  */
 export const updateQueueItemStatus = async (
-  queueId: string,
-  updates: Partial<OfflineQueueItem>
-): Promise<void> => {
-  const db = await openOfflineDatabase();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORES.OUTBOX_QUEUE, "readwrite");
-    const store = tx.objectStore(STORES.OUTBOX_QUEUE);
-    const req = store.get(queueId);
-
-    req.onsuccess = () => {
-      const current = req.result as OfflineQueueItem | undefined;
-      if (!current) {
-        reject(new Error("Không tìm thấy mục hàng đợi để cập nhật"));
-        return;
+  queueId: string, updates: Partial<OfflineQueueItem>, expectedUpdatedAt?: number,
+): Promise<number> => {
+  const userId = getCurrentUserId();
+  return writeOffline(STORES.OUTBOX_QUEUE, (store, done, fail) => {
+    const request = store.get(queueId);
+    request.onsuccess = () => {
+      const current = request.result as OfflineQueueItem | undefined;
+      if (!current || current.user_id !== userId) { fail(new Error("Không tìm thấy mục hàng đợi của tài khoản hiện tại.")); return; }
+      if ((expectedUpdatedAt !== undefined && current.updated_at !== expectedUpdatedAt)
+          || (updates.status === "SENDING" && !["QUEUED", "FAILED"].includes(current.status))) {
+        fail(new Error("Phản ánh đã được xử lý ở tab khác. Vui lòng tải lại danh sách.")); return;
       }
-      const updated = {
-        ...current,
-        ...updates,
-        updated_at: Date.now(),
-      };
-      const putReq = store.put(updated);
-      putReq.onsuccess = () => resolve();
-      putReq.onerror = (e) => reject((e.target as IDBRequest).error);
+      // Internal state changes cannot overwrite ownership, content or idempotency keys.
+      const allowed = ["status", "retry_count", "max_retries", "next_retry_at", "last_error", "incident_id", "incident_code", "points_awarded"] as const;
+      const state = Object.fromEntries(allowed.filter(k => k in updates).map(k => [k, updates[k]]));
+      const updatedAt = Math.max(Date.now(), current.updated_at + 1);
+      store.put({...current, ...state, updated_at: updatedAt}).onsuccess = () => done(updatedAt);
     };
-
-    req.onerror = (e) => reject((e.target as IDBRequest).error);
   });
 };
 
-/**
- * Xóa một mục khỏi hàng đợi.
- * R15: Người dùng không được phép xóa mục đang ở trạng thái SENDING.
- * Tiến trình SyncEngine truyền force = true khi hoàn tất đồng bộ thành công (R24).
- */
-export const deleteQueueItem = async (queueId: string, force: boolean = false): Promise<void> => {
-  const item = await getQueueItemById(queueId);
-  if (!item) return;
+// Release only the claim this sync run acquired, even if login changed mid-request.
+export const releaseQueueClaim = async (queueId: string, ownerId: string, claimedAt: number): Promise<void> =>
+  writeOffline(STORES.OUTBOX_QUEUE, (store, done) => {
+    const request = store.get(queueId);
+    request.onsuccess = () => {
+      const item = request.result as OfflineQueueItem | undefined;
+      if (!item || item.user_id !== ownerId || item.status !== "SENDING" || item.updated_at !== claimedAt) { done(undefined); return; }
+      store.put({...item, status: "QUEUED", updated_at: Math.max(Date.now(), claimedAt + 1)}).onsuccess = () => done(undefined);
+    };
+  });
 
-  if (item.status === "SENDING" && !force) {
-    throw new Error("Không thể xóa phản ánh khi đang trong tiến trình gửi lên máy chủ.");
-  }
-
-  const db = await openOfflineDatabase();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORES.OUTBOX_QUEUE, "readwrite");
-    const store = tx.objectStore(STORES.OUTBOX_QUEUE);
-    const req = store.delete(queueId);
-
-    req.onsuccess = () => resolve();
-    req.onerror = (e) => reject((e.target as IDBRequest).error || new Error("Lỗi khi xóa khỏi hàng đợi"));
+export const deleteQueueItem = async (queueId: string, force = false): Promise<void> => {
+  const userId = getCurrentUserId();
+  return writeOffline(STORES.OUTBOX_QUEUE, (store, done, fail) => {
+    const request = store.get(queueId);
+    request.onsuccess = () => {
+      const item = request.result as OfflineQueueItem | undefined;
+      if (!item && force) { done(undefined); return; }
+      if (!item || item.user_id !== userId) { fail(new Error("Phản ánh không còn tồn tại. Vui lòng tải lại danh sách.")); return; }
+      if (item.status === "SENDING" && !force) { fail(new Error("Không thể xóa phản ánh khi đang trong tiến trình gửi lên máy chủ.")); return; }
+      store.delete(queueId).onsuccess = () => done(undefined);
+    };
   });
 };
 
