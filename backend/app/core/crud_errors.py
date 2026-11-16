@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 
 FEATURE_PATHS = (
     "/posts", "/comments", "/chat", "/groups", "/birthday", "/incidents",
-    "/offline", "/fundraisers", "/events", "/waste-categories",
+    "/offline", "/offline-sync", "/fundraisers", "/events", "/waste-categories",
     "/recycling-facilities", "/ai/chatbot",
 )
 LABELS = {

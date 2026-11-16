@@ -2,7 +2,7 @@
 import unittest
 import uuid
 from types import SimpleNamespace as NS
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import app.models  # noqa: F401
 from fastapi import HTTPException
@@ -31,6 +31,19 @@ class CommentRegressionTests(unittest.IsolatedAsyncioTestCase):
         self.db.get = AsyncMock()
         self.db.commit = AsyncMock()
         self.service = CommentService()
+
+    async def test_friend_share_counts_only_delivered_messages(self):
+        first, second = uuid.uuid4(), uuid.uuid4()
+        self.post.content = "Bài viết"
+        self.db.get.return_value = NS(user_id=self.viewer)
+        self.db.execute.side_effect = [result(), result(self.post)]
+        from app.services.chat_service import ChatService
+        with patch.object(ChatService, "get_or_create_direct_conversation", AsyncMock(side_effect=[NS(conversation_id=uuid.uuid4()), HTTPException(403, "Blocked")])) as create, patch.object(ChatService, "send_message", AsyncMock()):
+            response = await self.service.share_post(self.db, self.viewer, self.pid,
+                SharePostRequest(share_type="FRIENDS", target_friend_ids=[first, first, second]))
+        self.assertEqual(create.await_count, 2)
+        self.assertEqual(response.shares_count, 1)
+        self.assertIn("không gửi được", response.message)
 
     async def assert_unreadable(self, **changes):
         self.post.__dict__.update(changes)

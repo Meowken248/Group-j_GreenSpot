@@ -636,12 +636,13 @@ class GroupService:
         ))).scalars().all()
         now = datetime.now(timezone.utc)
         post_ids = select(Post.post_id).where(Post.group_id == group_id)
-        await db.execute(update(Comment).where(
-            Comment.post_id.in_(post_ids), Comment.deleted_at.is_(None)
-        ).values(deleted_at=now))
+        # Match comment mutations: lock/update posts before their comments.
         await db.execute(update(Post).where(
             Post.group_id == group_id, Post.deleted_at.is_(None)
         ).values(deleted_at=now, version=Post.version + 1))
+        await db.execute(update(Comment).where(
+            Comment.post_id.in_(post_ids), Comment.deleted_at.is_(None)
+        ).values(deleted_at=now))
         for recipient_id in set(recipients):
             db.add(Notification(user_id=recipient_id, title="Nhóm đã giải tán",
                 message=f"Nhóm {group.name} đã được quản trị nhóm giải tán.",

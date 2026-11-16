@@ -523,40 +523,39 @@ class CommentService:
             message = "Đã chia sẻ bài viết lên bảng tin"
 
         elif share_type == "FRIENDS":
-            # Gửi cho danh sách bạn bè
-            count_friends = len(payload.target_friend_ids or [])
-            if count_friends == 0:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Vui lòng chọn ít nhất 1 người nhận",
-                )
-            post.shares_count += count_friends
-            message = f"Đã gửi bài viết cho {count_friends} người"
-
-            # Tự động gửi tin nhắn kèm liên kết bài viết vào chat 1-1 với bạn bè
-            try:
-                from app.services.chat_service import chat_service
-                from app.schemas.chat import SendMessageRequest
-                cur_user = await db.get(User, user_id)
-                if cur_user and payload.target_friend_ids:
-                    share_content = (
-                        f"Đã chia sẻ bài viết: {post.content[:100]}...\nXem tại: #posts"
-                        if not payload.caption
-                        else f"{payload.caption}\n\n[Bài viết chia sẻ: {post.content[:80]}...]"
-                    )
-                    for f_id in payload.target_friend_ids:
-                        try:
-                            direct_conv = await chat_service.get_or_create_direct_conversation(db, cur_user, f_id)
-                            if direct_conv and direct_conv.conversation_id:
-                                await chat_service.send_message(
-                                    db, cur_user, direct_conv.conversation_id,
-                                    SendMessageRequest(content=share_content, message_type="TEXT")
-                                )
-                        except Exception:
-                            # Bỏ qua nếu có bạn bè bị chặn hoặc chưa kết bạn để không gián đoạn luồng chia sẻ
-                            pass
-            except Exception:
-                pass
+            from app.services.chat_service import ChatService
+            from app.schemas.chat import SendMessageRequest
+            chat_service = ChatService()
+            friend_ids = list(dict.fromkeys(payload.target_friend_ids or []))
+            if not friend_ids:
+                raise HTTPException(400, "Vui lòng chọn ít nhất 1 người nhận")
+            cur_user = await db.get(User, user_id)
+            if not cur_user:
+                raise HTTPException(401, "Vui lòng đăng nhập lại để chia sẻ")
+            share_content = (
+                f"Đã chia sẻ bài viết: {post.content[:100]}...\nXem tại: #posts"
+                if not payload.caption
+                else f"{payload.caption}\n\n[Bài viết chia sẻ: {post.content[:80]}...]"
+            )
+            delivered = []
+            for friend_id in friend_ids:
+                try:
+                    conversation = await chat_service.get_or_create_direct_conversation(db, cur_user, friend_id)
+                    await chat_service.send_message(db, cur_user, conversation.conversation_id,
+                        SendMessageRequest(content=share_content))
+                    delivered.append(friend_id)
+                except HTTPException as error:
+                    if error.status_code not in (400, 403, 404):
+                        raise
+            if not delivered:
+                raise HTTPException(400, "Không gửi được bài viết. Người nhận có thể đã hủy kết bạn hoặc chặn tin nhắn.")
+            # Chat methods commit their own messages. Reload before updating the share counter.
+            await db.refresh(post, with_for_update=True)
+            post.shares_count += len(delivered)
+            payload.target_friend_ids = delivered
+            message = f"Đã gửi bài viết cho {len(delivered)} người"
+            if len(delivered) < len(friend_ids):
+                message += ". Một số người nhận đã hủy kết bạn hoặc chặn tin nhắn nên không gửi được."
 
         elif share_type == "GROUP":
             # Đăng vào nhóm

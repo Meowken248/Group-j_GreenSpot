@@ -16,6 +16,8 @@ from app.services.event_service import EventService
 from app.services.group_service import GroupService
 from app.schemas.group import GroupMemberRoleUpdateRequest
 from app.models.audit_log import AuditLog
+from app.schemas.chat import SendMessageRequest
+from pydantic import ValidationError
 
 
 def result(value):
@@ -26,6 +28,12 @@ def result(value):
 
 
 class SocialTests(unittest.IsolatedAsyncioTestCase):
+    async def test_blank_chat_message_cannot_bypass_missing_media_validator(self):
+        for payload in [{}, {"content": "　"}, {"content": "  "}, {"media_url": "blob:missing"}]:
+            with self.subTest(payload=payload), self.assertRaises(ValidationError):
+                SendMessageRequest(**payload)
+        self.assertEqual(SendMessageRequest(content="Xin chào").content, "Xin chào")
+
     async def test_second_tab_clear_chat_reports_missing(self):
         db = MagicMock(spec=AsyncSession)
         now = datetime.now(timezone.utc)

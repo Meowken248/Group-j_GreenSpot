@@ -22,6 +22,7 @@ from sqlalchemy import (
     or_,
     select,
     update,
+    text,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
@@ -568,6 +569,14 @@ class ChatService:
         - Cập nhật last_message_* và tăng unread_count cho các thành viên khác
         - Phát broadcast thời gian thực qua WebSocket
         """
+        # 2. Kiểm tra cuộc trò chuyện
+        conv = await db.get(Conversation, conversation_id, with_for_update=True, populate_existing=True)
+        if not conv or conv.deleted_at is not None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Không tìm thấy cuộc trò chuyện",
+            )
+
         # 1. Kiểm tra thành viên
         m_stmt = select(ConversationMember).where(
             ConversationMember.conversation_id == conversation_id,
@@ -586,14 +595,6 @@ class ChatService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Bạn không còn là thành viên của nhóm này",
-            )
-
-        # 2. Kiểm tra cuộc trò chuyện
-        conv = await db.get(Conversation, conversation_id, with_for_update=True, populate_existing=True)
-        if not conv or conv.deleted_at is not None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Không tìm thấy cuộc trò chuyện",
             )
 
         # 3. Kiểm tra điều kiện Chat 1-1 (Không bị chặn, vẫn còn là bạn bè)
@@ -754,6 +755,9 @@ class ChatService:
         self, db: AsyncSession, user: User, conversation_id: uuid.UUID
     ) -> dict:
         """Đánh dấu đã đọc toàn bộ tin nhắn trong hội thoại, xóa badge unread"""
+        conv = await db.get(Conversation, conversation_id, with_for_update=True, populate_existing=True)
+        if not conv or conv.deleted_at is not None:
+            raise HTTPException(404, "Không tìm thấy cuộc trò chuyện")
         m_stmt = select(ConversationMember).where(
             ConversationMember.conversation_id == conversation_id,
             ConversationMember.user_id == user.user_id,
@@ -763,7 +767,6 @@ class ChatService:
 
         if member:
             member.unread_count = 0
-            conv = await db.get(Conversation, conversation_id, with_for_update=True, populate_existing=True)
             if conv and conv.last_message_id:
                 member.last_read_message_id = conv.last_message_id
             await db.commit()
@@ -842,6 +845,7 @@ class ChatService:
                 detail="Bạn không thể nhắn tin cho người này",
             )
 
+        await db.execute(text("SELECT pg_advisory_xact_lock(151115)"))
         # Tìm hội thoại 1-1 đã có giữa 2 người
         m1 = aliased(ConversationMember)
         m2 = aliased(ConversationMember)
