@@ -13,12 +13,14 @@ from app.core.localization_middleware import ResponseLocalizationMiddleware
 async def lifespan(app: FastAPI):
     # Tự động đồng bộ cấu trúc bảng (User, Role, UserOTP...) vào cơ sở dữ liệu
     from app.database import engine, Base
+    from sqlalchemy import text
     import app.models  # noqa: F401
     try:
         async with engine.begin() as conn:
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS unaccent;"))
             await conn.run_sync(Base.metadata.create_all)
     except Exception as e:
-        print(f"[Database Error] Không thể tự động tạo bảng: {e}")
+        print(f"[Database Error] Không thể tự động tạo bảng / extension: {e}")
 
     # Khởi động tiến trình background runtime đồng bộ số liệu IoT và cảnh báo
     worker_task = asyncio.create_task(run_periodic_runtime_worker())

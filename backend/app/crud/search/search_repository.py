@@ -69,6 +69,11 @@ def parse_iso_date(dt_val: Any) -> Optional[str]:
     return s
 
 
+def _format_iso_datetime(val: Any) -> Optional[str]:
+    """Chuẩn hóa datetime string sang chuẩn ISO 8601 hợp lệ với Pydantic và Elasticsearch."""
+    return parse_iso_date(val)
+
+
 class ElasticsearchSearchRepository(ISearchRepository):
     """
     Thực thi kết nối, lập chỉ mục và truy vấn Elasticsearch 8.x.
@@ -358,7 +363,7 @@ class ElasticsearchSearchRepository(ISearchRepository):
                             latitude=doc_loc.get("lat") if doc_loc else None,
                             longitude=doc_loc.get("lon") if doc_loc else None,
                             distance_km=dist_km,
-                            created_at=src.get("created_at"),
+                            created_at=_format_iso_datetime(src.get("created_at")),
                             url_path=resolve_entity_url(src.get("entity_type", ""), src.get("entity_id", "")),
                             score=hit.get("_score", 0.0),
                         )
