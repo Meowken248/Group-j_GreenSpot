@@ -30,6 +30,27 @@ from app.services.fundraiser_service import FundraiserService
 
 router = APIRouter(prefix="/fundraisers", tags=["Fundraiser - Feature 20"])
 
+
+@router.get("/{campaign_id}/payment-details")
+async def get_payment_details(campaign_id: uuid.UUID,
+                              current_user: User = Depends(get_current_user),
+                              db: AsyncSession = Depends(get_db)):
+    return await FundraiserService.payment_details(db, campaign_id)
+
+
+@router.get("/{campaign_id}/pending-donations", response_model=List[FundraiserDonationItem])
+async def get_pending_donations(campaign_id: uuid.UUID,
+                                admin: User = Depends(require_admin_user),
+                                db: AsyncSession = Depends(get_db)):
+    return await FundraiserService.pending_donations(db, campaign_id)
+
+
+@router.post("/{campaign_id}/donations/{donation_id}/confirm", response_model=FundraiserDonationItem)
+async def confirm_donation(campaign_id: uuid.UUID, donation_id: uuid.UUID,
+                            admin: User = Depends(require_admin_user),
+                            db: AsyncSession = Depends(get_db)):
+    return await FundraiserService.confirm_donation(db, campaign_id, donation_id, admin)
+
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024  # 5MB theo đặc tả Màn 2 & Màn 5
 
@@ -223,7 +244,7 @@ async def close_campaign(
 async def donate_to_campaign(
     campaign_id: uuid.UUID,
     req: FundraiserDonationCreateRequest,
-    optional_user: Optional[User] = Depends(get_optional_user),
+    optional_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     return await FundraiserService.donate(

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import type {
   FundraiserCampaignItem,
   FundraiserExpenseItem,
@@ -19,6 +19,8 @@ export const ExpenseReportView: React.FC<ExpenseReportViewProps> = ({
   isCreator,
   onExpenseAdded,
 }) => {
+  const submittingRef = useRef(false);
+  const referenceRef = useRef(crypto.randomUUID());
   const [showAddForm, setShowAddForm] = useState(false);
   const [content, setContent] = useState("");
   const [amountRaw, setAmountRaw] = useState("");
@@ -40,7 +42,8 @@ export const ExpenseReportView: React.FC<ExpenseReportViewProps> = ({
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, "");
+    const raw = e.target.value.normalize("NFKC").replace(/[.,\s]/g, "");
+    if (raw && !/^[0-9]+$/.test(raw)) { setAmountRaw(e.target.value); return; }
     if (!raw) {
       setAmountRaw("");
       return;
@@ -66,8 +69,7 @@ export const ExpenseReportView: React.FC<ExpenseReportViewProps> = ({
       const res = await fundraiserService.uploadImage(file);
       setProofImageUrl(res.url);
     } catch {
-      const localUrl = URL.createObjectURL(file);
-      setProofImageUrl(localUrl);
+      setErrorMsg("Không tải được ảnh. Vui lòng thử lại, ảnh cũ được giữ nguyên.");
     } finally {
       setIsUploading(false);
     }
@@ -75,10 +77,12 @@ export const ExpenseReportView: React.FC<ExpenseReportViewProps> = ({
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     setErrorMsg(null);
 
-    const numericAmount = parseInt(amountRaw.replace(/\D/g, ""), 10) || 0;
-    if (!content.trim() || numericAmount <= 0 || !proofImageUrl) {
+    const numericAmount = /^[0-9.,\s]+$/.test(amountRaw) ? Number(amountRaw.replace(/[.,\s]/g, "")) : 0;
+    if (!Number.isSafeInteger(numericAmount)) { setErrorMsg("Số tiền không hợp lệ hoặc quá lớn."); return; }
+    if (!content.trim() || numericAmount <= 0 || !proofImageUrl || /^(blob:|data:)/i.test(proofImageUrl)) {
       setErrorMsg("Vui lòng nhập nội dung, số tiền và ảnh minh chứng");
       return;
     }
@@ -89,8 +93,10 @@ export const ExpenseReportView: React.FC<ExpenseReportViewProps> = ({
       return;
     }
 
+    submittingRef.current = true;
     setIsSubmitting(true);
     const payload: FundraiserExpenseCreateInput = {
+      client_reference: referenceRef.current,
       content: content.trim(),
       amount: numericAmount,
       expense_date: expenseDate,
@@ -99,6 +105,7 @@ export const ExpenseReportView: React.FC<ExpenseReportViewProps> = ({
 
     try {
       const created = await fundraiserService.addExpense(campId, payload);
+      referenceRef.current = crypto.randomUUID();
       onExpenseAdded(created);
       setContent("");
       setAmountRaw("");
@@ -108,19 +115,18 @@ export const ExpenseReportView: React.FC<ExpenseReportViewProps> = ({
       const msg = err?.response?.data?.detail || "Không thể lưu khoản chi. Vui lòng thử lại";
       setErrorMsg(msg);
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
 
   const handleDownloadReport = () => {
-    alert("Đã tạo báo cáo PDF");
     window.print();
   };
 
   // Cảnh báo 30 ngày: Chiến dịch kết thúc mà quá 30 ngày chưa có báo cáo chi tiêu
   const isOver30DaysNoReport = (() => {
     if (expenses.length > 0) return false;
-    if (campaign.status === "closed") return true;
     if (campaign.end_date) {
       const endMs = new Date(campaign.end_date).getTime();
       const diffDays = (Date.now() - endMs) / (1000 * 60 * 60 * 24);

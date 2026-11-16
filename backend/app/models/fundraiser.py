@@ -114,7 +114,7 @@ class FundraiserDonation(Base, TimestampMixin):
     message: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     is_anonymous: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     payment_status: Mapped[str] = mapped_column(
-        String(20), default="completed", nullable=False
+        String(20), default="pending", nullable=False
     )
     transaction_code: Mapped[str] = mapped_column(
         String(50), nullable=False, unique=True, index=True

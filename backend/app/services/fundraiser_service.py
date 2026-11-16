@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 from fastapi import HTTPException, status
-from sqlalchemy import desc, func, or_, select
+from sqlalchemy import desc, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -39,6 +39,60 @@ def _check_is_admin(user: Optional[User]) -> bool:
 
 class FundraiserService:
     @staticmethod
+    async def payment_details(db: AsyncSession, campaign_id: uuid.UUID) -> dict:
+        camp = (await db.execute(select(FundraiserCampaign).where(
+            FundraiserCampaign.campaign_id == campaign_id,
+            FundraiserCampaign.is_deleted.is_(False),
+        ))).scalar_one_or_none()
+        if not camp:
+            raise HTTPException(404, "Chiến dịch không còn tồn tại")
+        if camp.status not in [FundraiserStatus.APPROVED.value, FundraiserStatus.COMPLETED.value] or camp.end_date < date.today():
+            raise HTTPException(400, "Chiến dịch chưa được duyệt hoặc đã kết thúc")
+        if not all([camp.bank_name, camp.bank_account_number, camp.bank_account_name]):
+            raise HTTPException(400, "Chiến dịch chưa có đủ thông tin nhận tiền. Vui lòng liên hệ chủ chiến dịch.")
+        return {"bank_name": camp.bank_name, "bank_account_number": camp.bank_account_number,
+                "bank_account_name": camp.bank_account_name}
+
+    @staticmethod
+    async def pending_donations(db: AsyncSession, campaign_id: uuid.UUID) -> List[FundraiserDonationItem]:
+        rows = (await db.execute(select(FundraiserDonation).where(
+            FundraiserDonation.campaign_id == campaign_id,
+            FundraiserDonation.payment_status == "pending",
+        ).order_by(FundraiserDonation.created_at.asc()).limit(100))).scalars().all()
+        return [FundraiserDonationItem.model_validate(row) for row in rows]
+
+    @classmethod
+    async def confirm_donation(cls, db: AsyncSession, campaign_id: uuid.UUID,
+                               donation_id: uuid.UUID, admin: User) -> FundraiserDonationItem:
+        if not _check_is_admin(admin):
+            raise HTTPException(403, "Chỉ quản trị viên được xác nhận khoản chuyển tiền sau khi đối soát ngân hàng.")
+        camp = (await db.execute(select(FundraiserCampaign).where(
+            FundraiserCampaign.campaign_id == campaign_id,
+            FundraiserCampaign.is_deleted.is_(False),
+        ).with_for_update().execution_options(populate_existing=True))).scalar_one_or_none()
+        if not camp:
+            raise HTTPException(404, "Chiến dịch không còn tồn tại")
+        donation = (await db.execute(select(FundraiserDonation).where(
+            FundraiserDonation.donation_id == donation_id,
+            FundraiserDonation.campaign_id == campaign_id,
+        ).with_for_update().execution_options(populate_existing=True))).scalar_one_or_none()
+        if not donation:
+            raise HTTPException(404, "Khoản quyên góp không tồn tại")
+        if donation.payment_status != "pending":
+            raise HTTPException(409, "Khoản quyên góp đã được xử lý. Vui lòng tải lại danh sách.")
+        donation.payment_status = "completed"
+        camp.total_donated += donation.amount
+        camp.donation_count += 1
+        if camp.total_donated >= camp.target_amount and camp.status == FundraiserStatus.APPROVED.value:
+            camp.status = FundraiserStatus.COMPLETED.value
+        db.add(AuditLog(user_id=admin.user_id, user_email=admin.email,
+            action="CONFIRM_DONATION", table_name="fundraiser_donations", record_id=str(donation_id),
+            new_values={"payment_status": "completed", "amount": donation.amount}))
+        await db.commit()
+        await db.refresh(donation)
+        return FundraiserDonationItem.model_validate(donation)
+
+    @staticmethod
     def _to_campaign_item(camp: FundraiserCampaign, current_user: Optional[User] = None) -> FundraiserCampaignItem:
         today = date.today()
         days_left = max(0, (camp.end_date - today).days)
@@ -71,6 +125,7 @@ class FundraiserService:
             percent_achieved=percent,
             remaining_balance=remaining,
             created_at=camp.created_at,
+            updated_at=camp.updated_at,
             bank_account_name=camp.bank_account_name if (is_admin or is_creator) else None,
             bank_account_number=camp.bank_account_number if (is_admin or is_creator) else None,
             bank_name=camp.bank_name if (is_admin or is_creator) else None,
@@ -142,6 +197,8 @@ class FundraiserService:
 
         count_query = select(func.count()).select_from(query.subquery())
         total = (await db.execute(count_query)).scalar_one()
+        if page > max(1, (total + page_size - 1) // page_size):
+            raise HTTPException(404, "Trang chiến dịch không tồn tại. Vui lòng về trang đầu.")
 
         query = query.order_by(FundraiserCampaign.end_date.asc(), FundraiserCampaign.created_at.desc())
         query = query.offset((page - 1) * page_size).limit(page_size)
@@ -204,6 +261,13 @@ class FundraiserService:
                 detail="Hạn chót phải từ ngày mai và tối đa 90 ngày",
             )
 
+        await db.execute(text("SELECT pg_advisory_xact_lock(201120)"))
+        duplicate = (await db.execute(select(FundraiserCampaign.campaign_id).where(
+            FundraiserCampaign.creator_id == current_user.user_id,
+            FundraiserCampaign.title == req.title, FundraiserCampaign.is_deleted.is_(False)
+        ).limit(1))).scalar_one_or_none()
+        if duplicate:
+            raise HTTPException(409, "Bạn đã tạo chiến dịch có tên này. Vui lòng kiểm tra danh sách.")
         pending_count_query = select(func.count()).select_from(FundraiserCampaign).where(
             FundraiserCampaign.creator_id == current_user.user_id,
             FundraiserCampaign.status == FundraiserStatus.PENDING.value,
@@ -258,7 +322,7 @@ class FundraiserService:
         req: FundraiserCampaignUpdateRequest,
         current_user: User,
     ) -> FundraiserCampaignItem:
-        query = select(FundraiserCampaign).where(
+        query = select(FundraiserCampaign).with_for_update().execution_options(populate_existing=True).where(
             FundraiserCampaign.campaign_id == campaign_id,
             FundraiserCampaign.is_deleted.is_(False),
         )
@@ -275,6 +339,11 @@ class FundraiserService:
                 detail="Bạn không có quyền chỉnh sửa chiến dịch này",
             )
 
+        if camp.updated_at != req.updated_at:
+            raise HTTPException(409, "Chiến dịch đã được sửa ở tab khác. Vui lòng tải lại trang trước khi cập nhật.")
+        if camp.status == FundraiserStatus.CLOSED.value:
+            raise HTTPException(400, "Chiến dịch đã kết thúc, không thể chỉnh sửa.")
+
         if camp.total_donated > 0:
             if (
                 req.title is not None and req.title != camp.title
@@ -290,6 +359,10 @@ class FundraiserService:
                     detail="Chiến dịch đã nhận quyên góp, chỉ có thể bổ sung mô tả",
                 )
 
+        if req.end_date is not None and req.end_date != camp.end_date:
+            if not date.today() + timedelta(days=1) <= req.end_date <= date.today() + timedelta(days=90):
+                raise HTTPException(400, "Hạn chót phải từ ngày mai và tối đa 90 ngày")
+
         if req.title is not None:
             camp.title = req.title.strip()
         if req.description is not None:
@@ -303,6 +376,7 @@ class FundraiserService:
         if req.cover_image_url is not None:
             camp.cover_image_url = req.cover_image_url
 
+        camp.updated_at = datetime.now(timezone.utc)
         await db.commit()
         return await cls.get_campaign_detail(db, camp.campaign_id, current_user)
 
@@ -314,8 +388,10 @@ class FundraiserService:
         req: FundraiserDonationCreateRequest,
         current_user: Optional[User] = None,
     ) -> FundraiserDonationItem:
+        if current_user is None:
+            raise HTTPException(401, "Vui lòng đăng nhập trước khi quyên góp")
         today = date.today()
-        query = select(FundraiserCampaign).where(
+        query = select(FundraiserCampaign).with_for_update().execution_options(populate_existing=True).where(
             FundraiserCampaign.campaign_id == campaign_id,
             FundraiserCampaign.is_deleted.is_(False),
         )
@@ -325,6 +401,17 @@ class FundraiserService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Chiến dịch không còn tồn tại",
             )
+
+        txn_code = f"DON-{req.client_reference.hex}"
+        existing = (await db.execute(select(FundraiserDonation).where(
+            FundraiserDonation.transaction_code == txn_code
+        ))).scalar_one_or_none()
+        if existing:
+            if (existing.campaign_id != campaign_id or existing.donor_id != current_user.user_id
+                    or existing.amount != req.amount or existing.is_anonymous != req.is_anonymous
+                    or existing.message != req.message):
+                raise HTTPException(409, "Yêu cầu đã được dùng với thông tin khác. Vui lòng tải lại trang.")
+            return FundraiserDonationItem.model_validate(existing)
 
         if camp.status == FundraiserStatus.CLOSED.value or camp.end_date < today:
             raise HTTPException(
@@ -342,24 +429,18 @@ class FundraiserService:
             current_user.full_name if current_user and current_user.full_name else "Mạnh thường quân"
         )
 
-        txn_code = f"TXN-{uuid.uuid4().hex[:8].upper()}"
         donation = FundraiserDonation(
+            donation_id=uuid.uuid4(),
             campaign_id=camp.campaign_id,
             donor_id=current_user.user_id if current_user else None,
             donor_name=donor_name,
             amount=req.amount,
             message=req.message,
             is_anonymous=req.is_anonymous,
-            payment_status="completed",
+            payment_status="pending",
             transaction_code=txn_code,
         )
         db.add(donation)
-
-        camp.total_donated += req.amount
-        camp.donation_count += 1
-
-        if camp.total_donated >= camp.target_amount and camp.status == FundraiserStatus.APPROVED.value:
-            camp.status = FundraiserStatus.COMPLETED.value
 
         audit = AuditLog(
             user_id=current_user.user_id if current_user else None,
@@ -385,6 +466,8 @@ class FundraiserService:
             message=donation.message,
             is_anonymous=donation.is_anonymous,
             created_at=donation.created_at,
+            payment_status=donation.payment_status,
+            transaction_code=donation.transaction_code,
         )
 
     @classmethod
@@ -428,7 +511,7 @@ class FundraiserService:
         req: FundraiserExpenseCreateRequest,
         current_user: User,
     ) -> FundraiserExpenseItem:
-        query = select(FundraiserCampaign).where(
+        query = select(FundraiserCampaign).with_for_update().execution_options(populate_existing=True).where(
             FundraiserCampaign.campaign_id == campaign_id,
             FundraiserCampaign.is_deleted.is_(False),
         )
@@ -445,6 +528,17 @@ class FundraiserService:
                 detail="Chỉ người tạo chiến dịch mới có quyền cập nhật báo cáo chi tiêu",
             )
 
+        existing = (await db.execute(select(FundraiserExpense).where(
+            FundraiserExpense.expense_id == req.client_reference
+        ))).scalar_one_or_none()
+        if existing:
+            if (existing.campaign_id != campaign_id or existing.created_by != current_user.user_id
+                    or existing.content != req.content or existing.amount != req.amount
+                    or existing.expense_date != req.expense_date or existing.proof_image_url != req.proof_image_url):
+                raise HTTPException(409, "Yêu cầu khoản chi đã dùng với thông tin khác. Vui lòng tải lại trang.")
+            return FundraiserExpenseItem.model_validate(existing)
+        if req.expense_date > date.today():
+            raise HTTPException(400, "Ngày chi tiêu không được nằm trong tương lai.")
         if camp.total_spent + req.amount > camp.total_donated:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -452,6 +546,7 @@ class FundraiserService:
             )
 
         expense = FundraiserExpense(
+            expense_id=req.client_reference,
             campaign_id=camp.campaign_id,
             content=req.content,
             amount=req.amount,
@@ -522,7 +617,7 @@ class FundraiserService:
         campaign_id: uuid.UUID,
         current_user: User,
     ) -> FundraiserCampaignItem:
-        query = select(FundraiserCampaign).where(
+        query = select(FundraiserCampaign).with_for_update().execution_options(populate_existing=True).where(
             FundraiserCampaign.campaign_id == campaign_id,
             FundraiserCampaign.is_deleted.is_(False),
         )
@@ -540,6 +635,8 @@ class FundraiserService:
                 detail="Bạn không có quyền kết thúc chiến dịch này",
             )
 
+        if camp.status == FundraiserStatus.CLOSED.value:
+            raise HTTPException(409, "Chiến dịch đã kết thúc trước đó. Vui lòng tải lại danh sách.")
         camp.status = FundraiserStatus.CLOSED.value
 
         audit = AuditLog(
@@ -562,7 +659,7 @@ class FundraiserService:
         campaign_id: uuid.UUID,
         current_user: User,
     ) -> bool:
-        query = select(FundraiserCampaign).where(
+        query = select(FundraiserCampaign).with_for_update().execution_options(populate_existing=True).where(
             FundraiserCampaign.campaign_id == campaign_id,
             FundraiserCampaign.is_deleted.is_(False),
         )
@@ -580,7 +677,11 @@ class FundraiserService:
                 detail="Chiến dịch không còn tồn tại hoặc bạn không có quyền",
             )
 
-        if camp.total_donated > 0:
+        has_receipt = (await db.execute(select(FundraiserDonation.donation_id).where(
+            FundraiserDonation.campaign_id == campaign_id,
+            FundraiserDonation.payment_status.in_(["pending", "completed"])
+        ).limit(1))).scalar_one_or_none()
+        if camp.total_donated > 0 or has_receipt:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Chiến dịch đã nhận quyên góp nên không thể xoá. Bạn có thể kết thúc sớm chiến dịch",
@@ -608,7 +709,7 @@ class FundraiserService:
         req: FundraiserApprovalRequest,
         current_admin: User,
     ) -> FundraiserCampaignItem:
-        query = select(FundraiserCampaign).where(
+        query = select(FundraiserCampaign).with_for_update().execution_options(populate_existing=True).where(
             FundraiserCampaign.campaign_id == campaign_id,
             FundraiserCampaign.is_deleted.is_(False),
         )
