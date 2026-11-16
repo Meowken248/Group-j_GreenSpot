@@ -410,7 +410,11 @@ function App() {
       }
 
       // Nếu người dùng vào bằng hash cũ (VD: #admin-dashboard), tự động chuẩn hóa URL đẹp
-      if (window.location.hash && window.location.hash.startsWith("#")) {
+      if (
+        window.location.hash &&
+        window.location.hash.startsWith("#") &&
+        !window.location.hash.startsWith("#post-comments")
+      ) {
         navigateToRoute(resolved, undefined, true);
       }
     };
@@ -424,7 +428,11 @@ function App() {
         setActiveTab("map");
         navigateToRoute("map", undefined, true);
       }
-    } else if (window.location.hash && window.location.hash.startsWith("#")) {
+    } else if (
+      window.location.hash &&
+      window.location.hash.startsWith("#") &&
+      !window.location.hash.startsWith("#post-comments")
+    ) {
       navigateToRoute(initialTab, undefined, true);
     }
 
@@ -2141,7 +2149,19 @@ function App() {
               />
             </div>
           ) : (
-            <div className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`} style={{ paddingTop: "64px", height: "100vh", overflow: "hidden" }}>
+            <div
+              className={`app-view-container ${isDarkMode ? "dark-theme" : ""}`}
+              style={{
+                position: "absolute",
+                top: "56px",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: "calc(100vh - 56px)",
+                overflow: "hidden",
+                boxSizing: "border-box",
+              }}
+            >
               <ChatContainer
                 currentUser={currentUser}
                 initialTargetUserId={chatTargetUserId}
@@ -2449,8 +2469,8 @@ function App() {
         </button>
       )}
 
-      {/* NÚT TRỢ LÝ GIỌNG NÓI NHANH NỔI (CHỈ HIỂN THỊ KHI ĐÃ ĐĂNG NHẬP VÀ KHÔNG Ở TAB VOICE) */}
-      {currentUser && activeTab !== "voice" && (
+      {/* NÚT TRỢ LÝ GIỌNG NÓI NHANH NỔI (CHỈ HIỂN THỊ KHI ĐÃ ĐĂNG NHẬP VÀ KHÔNG Ở TAB VOICE HOẶC MESSAGES) */}
+      {currentUser && activeTab !== "voice" && activeTab !== "messages" && (
         <button
           type="button"
           className="floating-voice-quick-btn"

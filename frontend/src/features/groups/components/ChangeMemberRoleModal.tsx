@@ -140,7 +140,7 @@ export const ChangeMemberRoleModal: React.FC<ChangeMemberRoleModalProps> = ({
 
   return (
     <div
-      className="modal-backdrop-overlay"
+      className="group-member-modal-backdrop"
       onClick={handleBackdropClick}
       data-testid="change-role-modal-backdrop"
     >

@@ -104,7 +104,7 @@ export const DeletePostModal: React.FC<DeletePostModalProps> = ({
                 </div>
               )}
 
-              <div className="modal-actions-row">
+              <div className="profile-modal-actions-row">
                 <button
                   type="button"
                   className="btn-modal-ghost"
@@ -148,7 +148,7 @@ export const DeletePostModal: React.FC<DeletePostModalProps> = ({
                 Tự động đóng sau 3 giây...
               </div>
 
-              <div className="modal-actions-row single-action">
+              <div className="profile-modal-actions-row single-action">
                 <button
                   type="button"
                   className="btn-modal-primary-solid"

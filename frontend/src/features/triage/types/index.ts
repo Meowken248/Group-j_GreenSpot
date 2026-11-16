@@ -6,6 +6,7 @@ export type SpatialScreenStep = "SCREEN_1_MAP_BUFFER" | "SCREEN_2_FACILITY_LIST"
 export interface TriageIncidentSummaryItem {
   incident_id: string;
   tracking_code: string;
+  incident_code?: string;
   title: string;
   description: string;
   address_text: string;
@@ -39,6 +40,7 @@ export interface TriageEvaluationData {
 
   // Khối Ưu tiên & XAI
   ai_triage_score: number;
+  tps_score?: number;
   ai_suggested_priority: string;
   priority_color: "red" | "orange" | "yellow" | "green";
   sla_response_hours: number;

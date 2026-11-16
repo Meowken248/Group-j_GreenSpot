@@ -404,7 +404,7 @@ export const IncidentTriageView: React.FC<IncidentTriageViewProps> = ({
                 TPS = min(100, BaseSeverity × 0.40 + ProximityRisk × 0.30 + ScaleFactor × 0.20 + UrgencyNLP × 0.10)
               </div>
               <div style={{ color: "#2563eb", fontWeight: 600, fontSize: "0.8rem" }}>
-                Điểm tính toán thực tế: {data.tps_score} / 100 điểm
+                Điểm tính toán thực tế: {data.tps_score ?? data.ai_triage_score} / 100 điểm
               </div>
             </div>
 

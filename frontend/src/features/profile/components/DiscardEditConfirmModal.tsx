@@ -46,7 +46,7 @@ export const DiscardEditConfirmModal: React.FC<DiscardEditConfirmModalProps> = (
             Mọi nội dung chỉnh sửa chưa được lưu sẽ bị hủy bỏ và không thể khôi phục.
           </p>
 
-          <div className="modal-actions-row">
+          <div className="profile-modal-actions-row">
             <button
               type="button"
               className="btn-modal-ghost"

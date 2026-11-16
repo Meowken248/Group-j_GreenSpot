@@ -4,13 +4,15 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Tuple
 from fastapi import HTTPException, status
-from sqlalchemy import select, update, func, desc, asc, and_
+from sqlalchemy import select, update, func, desc, asc, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.post import Post
 from app.models.comment import Comment, PostShare
 from app.models.rbac import User
+from app.models.friends import Friendship
+from app.models.group import Group, GroupMember, GroupMemberStatus, GroupPrivacy
 from app.schemas.comment import (
     AuthorSummary,
     CreateCommentRequest,
@@ -72,6 +74,54 @@ class CommentService:
             created_at=reply.created_at,
         )
 
+    async def _require_visible_post(
+        self, db: AsyncSession, post_id: uuid.UUID,
+        viewer_id: Optional[uuid.UUID] = None, *, lock: bool = False,
+    ) -> Post:
+        """Apply the same privacy boundary to comments, replies and writes."""
+        stmt = select(Post).where(Post.post_id == post_id, Post.deleted_at.is_(None))
+        if lock:
+            stmt = stmt.with_for_update()
+        post = (await db.execute(stmt)).scalar_one_or_none()
+        denied = HTTPException(404, "Bài viết không còn tồn tại hoặc bạn không có quyền xem")
+        if not post:
+            raise denied
+        owner = viewer_id is not None and post.user_id == viewer_id
+        if post.is_hidden and not owner:
+            raise denied
+        visibility = (post.visibility or "PUBLIC").upper()
+        if not owner:
+            if visibility == "FRIENDS" and viewer_id:
+                friendship = (await db.execute(select(Friendship).where(
+                    Friendship.deleted_at.is_(None),
+                    or_(
+                        and_(Friendship.user_id_1 == viewer_id, Friendship.user_id_2 == post.user_id),
+                        and_(Friendship.user_id_2 == viewer_id, Friendship.user_id_1 == post.user_id),
+                    ),
+                ))).scalars().first()
+                if not friendship:
+                    raise denied
+            elif visibility not in ("PUBLIC", "COMMUNITY", "GROUP") or (
+                visibility == "GROUP" and viewer_id is None
+            ):
+                raise denied
+        if post.group_id:
+            group = await db.get(Group, post.group_id)
+            if not group or group.deleted_at is not None or group.status == "DISBANDED":
+                raise denied
+            if group.privacy != GroupPrivacy.PUBLIC.value:
+                if viewer_id is None:
+                    raise denied
+                membership = (await db.execute(select(GroupMember).where(
+                    GroupMember.group_id == post.group_id,
+                    GroupMember.user_id == viewer_id,
+                    GroupMember.status == GroupMemberStatus.ACTIVE.value,
+                    GroupMember.deleted_at.is_(None),
+                ))).scalars().first()
+                if not membership:
+                    raise denied
+        return post
+
     async def get_post_comments(
         self,
         db: AsyncSession,
@@ -79,6 +129,7 @@ class CommentService:
         page: int = 1,
         limit: int = 10,
         sort: str = "relevant",
+        viewer_id: Optional[uuid.UUID] = None,
     ) -> CommentListResponse:
         """
         Lấy danh sách bình luận cấp 1 theo đặc tả Màn 1:
@@ -91,14 +142,7 @@ class CommentService:
         - Kèm theo tối đa 3 câu trả lời ban đầu (cũ nhất ở trên ASC)
         """
         # 1. Kiểm tra bài viết gốc
-        post_stmt = select(Post).where(Post.post_id == post_id, Post.deleted_at.is_(None))
-        post_res = await db.execute(post_stmt)
-        post = post_res.scalar_one_or_none()
-        if not post:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Bài viết không còn tồn tại",
-            )
+        await self._require_visible_post(db, post_id, viewer_id)
 
         # 2. Đếm tổng số bình luận cấp 1
         count_stmt = select(func.count(Comment.comment_id)).where(
@@ -182,6 +226,7 @@ class CommentService:
         self,
         db: AsyncSession,
         comment_id: uuid.UUID,
+        viewer_id: Optional[uuid.UUID] = None,
     ) -> ReplyListResponse:
         """
         Lấy toàn bộ câu trả lời của một bình luận gốc (Màn 2):
@@ -199,6 +244,8 @@ class CommentService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Bình luận gốc không còn tồn tại",
             )
+
+        await self._require_visible_post(db, parent.post_id, viewer_id)
 
         # Lấy toàn bộ câu trả lời
         replies_stmt = (
@@ -234,14 +281,7 @@ class CommentService:
         """
         self.check_rate_limit(user_id)
 
-        post_stmt = select(Post).where(Post.post_id == post_id, Post.deleted_at.is_(None))
-        post_res = await db.execute(post_stmt)
-        post = post_res.scalar_one_or_none()
-        if not post:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Bài viết không còn tồn tại",
-            )
+        post = await self._require_visible_post(db, post_id, user_id, lock=True)
 
         new_comment = Comment(
             comment_id=uuid.uuid4(),
@@ -332,13 +372,7 @@ class CommentService:
             actual_reply_to_user_id = payload.reply_to_user_id or target_comment.user_id
 
         # Kiểm tra bài viết gốc
-        post_stmt = select(Post).where(Post.post_id == root_comment.post_id, Post.deleted_at.is_(None))
-        post = (await db.execute(post_stmt)).scalar_one_or_none()
-        if not post:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Bài viết không còn tồn tại",
-            )
+        post = await self._require_visible_post(db, root_comment.post_id, user_id, lock=True)
 
         new_reply = Comment(
             comment_id=uuid.uuid4(),
@@ -424,13 +458,7 @@ class CommentService:
         - Kiểm tra bảo mật: Bài viết PRIVATE hoặc FRIENDS thì không được phép chia sẻ
         - Hỗ trợ 4 loại: FEED, FRIENDS, GROUP, LINK
         """
-        post_stmt = select(Post).where(Post.post_id == post_id, Post.deleted_at.is_(None))
-        post = (await db.execute(post_stmt)).scalar_one_or_none()
-        if not post:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Bài viết không còn tồn tại",
-            )
+        post = await self._require_visible_post(db, post_id, user_id, lock=True)
 
         # Kiểm tra Quyền riêng tư: Chỉ bài viết PUBLIC mới được chia sẻ
         vis = (post.visibility or "PUBLIC").upper()
@@ -439,6 +467,13 @@ class CommentService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Bài viết này không thể chia sẻ",
             )
+
+        if post.is_hidden:
+            raise HTTPException(403, "Bài viết này không thể chia sẻ")
+        if post.group_id:
+            source_group = await db.get(Group, post.group_id)
+            if source_group.privacy != GroupPrivacy.PUBLIC.value:
+                raise HTTPException(403, "Không thể chia sẻ bài viết từ nhóm riêng tư")
 
         share_type = payload.share_type
         new_post_id: Optional[uuid.UUID] = None
@@ -477,14 +512,66 @@ class CommentService:
             post.shares_count += count_friends
             message = f"Đã gửi bài viết cho {count_friends} người"
 
+            # Tự động gửi tin nhắn kèm liên kết bài viết vào chat 1-1 với bạn bè
+            try:
+                from app.services.chat_service import chat_service
+                from app.schemas.chat import SendMessageRequest
+                cur_user = await db.get(User, user_id)
+                if cur_user and payload.target_friend_ids:
+                    share_content = (
+                        f"Đã chia sẻ bài viết: {post.content[:100]}...\nXem tại: #posts"
+                        if not payload.caption
+                        else f"{payload.caption}\n\n[Bài viết chia sẻ: {post.content[:80]}...]"
+                    )
+                    for f_id in payload.target_friend_ids:
+                        try:
+                            direct_conv = await chat_service.get_or_create_direct_conversation(db, cur_user, f_id)
+                            if direct_conv and direct_conv.conversation_id:
+                                await chat_service.send_message(
+                                    db, cur_user, direct_conv.conversation_id,
+                                    SendMessageRequest(content=share_content, message_type="TEXT")
+                                )
+                        except Exception:
+                            # Bỏ qua nếu có bạn bè bị chặn hoặc chưa kết bạn để không gián đoạn luồng chia sẻ
+                            pass
+            except Exception:
+                pass
+
         elif share_type == "GROUP":
             # Đăng vào nhóm
-            count_groups = len(payload.target_group_ids or [])
+            group_ids = list(dict.fromkeys(payload.target_group_ids or []))
+            count_groups = len(group_ids)
             if count_groups == 0:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Vui lòng chọn ít nhất 1 nhóm để đăng",
                 )
+            # Validate all destinations first, so a failure cannot partially share.
+            groups = []
+            for group_id in sorted(group_ids):
+                group = await db.get(Group, group_id, with_for_update=True)
+                if not group or group.deleted_at is not None or group.status == "DISBANDED":
+                    raise HTTPException(404, "Nhóm không tồn tại hoặc đã bị giải tán")
+                member = (await db.execute(select(GroupMember).where(
+                    GroupMember.group_id == group_id,
+                    GroupMember.user_id == user_id,
+                    GroupMember.status == GroupMemberStatus.ACTIVE.value,
+                    GroupMember.deleted_at.is_(None),
+                ))).scalars().first()
+                if not member:
+                    raise HTTPException(403, "Bạn phải là thành viên của nhóm để chia sẻ bài viết")
+                groups.append((group_id, group))
+            for group_id, group in groups:
+                repost = Post(
+                    post_id=uuid.uuid4(), user_id=user_id, content=payload.caption or "",
+                    media_urls=None, group_id=group_id, visibility="PUBLIC", is_hidden=False,
+                    reactions_count=0, comments_count=0, shares_count=0,
+                    shared_post_id=post.post_id, version=1, deleted_at=None,
+                )
+                db.add(repost)
+                new_post_id = new_post_id or repost.post_id
+                group.posts_count = (group.posts_count or 0) + 1
+            payload.target_group_ids = group_ids
             post.shares_count += count_groups
             message = "Đã chia sẻ bài viết vào nhóm"
 

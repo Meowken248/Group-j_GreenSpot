@@ -246,8 +246,8 @@ export const APP_ROUTES: Record<ActiveTab, RouteDefinition> = {
     tab: "posts",
     path: "/community/create-post",
     label: "Đăng tải bài viết cộng đồng",
-    aliases: ["/community/create-post", "/posts", "/create-post", "#posts", "#create-post"],
-    requiresAuth: true,
+    aliases: ["/community/create-post", "/posts", "/create-post", "#posts", "#create-post", "#post-comments"],
+    requiresAuth: false,
   },
   "report": {
     tab: "report",

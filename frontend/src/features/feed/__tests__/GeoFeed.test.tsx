@@ -365,6 +365,29 @@ describe('Feature STT 08: Bảng tin Geo-Feed theo bán kính (SRS pp. 97-102)',
 
       expect(await screen.findByText(/Bạn đã xem hết bài viết/i)).toBeInTheDocument();
     });
+
+    it('bấm nút Bình luận trên bài viết mở modal PostCommentsModal thành công (STT 14)', async () => {
+      (feedService.getGeoFeed as any).mockResolvedValueOnce({
+        items: [mockPost],
+        total: 1,
+        page: 1,
+        limit: 10,
+        has_more: false,
+      });
+
+      render(<FeedContainer />);
+
+      expect(await screen.findByText('Trần Văn Xanh')).toBeInTheDocument();
+
+      const commentBtns = screen.getAllByRole('button', { name: /bình luận/i });
+      expect(commentBtns.length).toBeGreaterThanOrEqual(1);
+
+      // Bấm nút Bình luận (comment-trigger-btn)
+      fireEvent.click(commentBtns[commentBtns.length - 1]);
+
+      expect(await screen.findByRole('dialog')).toBeInTheDocument();
+      expect(screen.getByText(/Bài viết của Trần Văn Xanh/i)).toBeInTheDocument();
+    });
   });
 
   describe('4. Tích hợp Nhóm cộng đồng vào Bảng tin (Chức năng 16)', () => {

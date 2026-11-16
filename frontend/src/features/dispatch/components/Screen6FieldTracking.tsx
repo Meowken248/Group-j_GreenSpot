@@ -47,6 +47,8 @@ export const Screen6FieldTracking: React.FC<Screen6FieldTrackingProps> = ({
     incident_lng,
     team_name,
     team_phone,
+    team_lat,
+    team_lng,
     stepper,
     before_image_url,
     after_image_url,
