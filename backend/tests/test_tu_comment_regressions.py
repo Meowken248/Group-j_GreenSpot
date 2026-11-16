@@ -87,7 +87,7 @@ class CommentRegressionTests(unittest.IsolatedAsyncioTestCase):
         gid = uuid.uuid4()
         group = NS(deleted_at=None, status="ACTIVE", posts_count=3)
         self.db.get.return_value = group
-        self.db.execute.side_effect = [result(self.post), result(NS())]
+        self.db.execute.side_effect = [result(), result(self.post), result(NS())]
         response = await self.service.share_post(self.db, self.viewer, self.pid,
             SharePostRequest(share_type="GROUP", target_group_ids=[gid, gid], caption="Join us"))
         posts = [c.args[0] for c in self.db.add.call_args_list if isinstance(c.args[0], Post)]
@@ -100,7 +100,7 @@ class CommentRegressionTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_nonmember_cannot_share_into_group(self):
         self.db.get.return_value = NS(deleted_at=None, status="ACTIVE")
-        self.db.execute.side_effect = [result(self.post), result()]
+        self.db.execute.side_effect = [result(), result(self.post), result()]
         with self.assertRaises(HTTPException) as error:
             await self.service.share_post(self.db, self.viewer, self.pid,
                 SharePostRequest(share_type="GROUP", target_group_ids=[uuid.uuid4()]))

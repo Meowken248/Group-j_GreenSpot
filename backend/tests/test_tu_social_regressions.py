@@ -14,6 +14,8 @@ from app.schemas.event import EventUpdate
 from app.services.chat_service import ChatService
 from app.services.event_service import EventService
 from app.services.group_service import GroupService
+from app.schemas.group import GroupMemberRoleUpdateRequest
+from app.models.audit_log import AuditLog
 
 
 def result(value):
@@ -24,12 +26,42 @@ def result(value):
 
 
 class SocialTests(unittest.IsolatedAsyncioTestCase):
+    async def test_second_tab_clear_chat_reports_missing(self):
+        db = MagicMock(spec=AsyncSession)
+        now = datetime.now(timezone.utc)
+        db.get = AsyncMock(return_value=SimpleNamespace(type="DIRECT", deleted_at=None, last_message_at=now-timedelta(minutes=1)))
+        db.execute = AsyncMock(return_value=result(SimpleNamespace(cleared_at=now)))
+        db.commit = AsyncMock()
+        with self.assertRaises(HTTPException) as error:
+            await ChatService().clear_direct_conversation(db, SimpleNamespace(user_id=uuid.uuid4()), uuid.uuid4())
+        self.assertEqual(error.exception.status_code, 404)
+        db.commit.assert_not_awaited()
+
+    async def test_role_update_writes_valid_audit_and_advances_version(self):
+        db = MagicMock(spec=AsyncSession)
+        db.get = AsyncMock(return_value=SimpleNamespace(deleted_at=None, status="ACTIVE"))
+        user_id = uuid.uuid4()
+        target = SimpleNamespace(id=uuid.uuid4(), user_id=user_id, role="MEMBER", version=1,
+            joined_at=datetime.now(timezone.utc), user=SimpleNamespace(full_name="A", avatar_url=None, district=None))
+        db.execute = AsyncMock(return_value=result(target))
+        db.commit, db.refresh = AsyncMock(), AsyncMock()
+        caller = SimpleNamespace(user_id=uuid.uuid4(), email="a@example.com", role_id=1)
+        from unittest.mock import patch
+        with patch.object(GroupService, "_check_system_admin", AsyncMock(return_value=True)):
+            response = await GroupService.update_member_role(db, uuid.uuid4(), user_id,
+                GroupMemberRoleUpdateRequest(version=1, new_role="MODERATOR"), caller)
+        self.assertEqual(response.version, 2)
+        audit = [c.args[0] for c in db.add.call_args_list if isinstance(c.args[0], AuditLog)][0]
+        self.assertEqual(audit.old_values["role"], "MEMBER")
+        self.assertEqual(audit.new_values["role"], "MODERATOR")
+        db.commit.assert_awaited_once()
+
     async def test_disband_notifies_members_and_soft_deletes_content(self):
         db = MagicMock(spec=AsyncSession)
         group = SimpleNamespace(name="Nhóm xanh", status="ACTIVE", deleted_at=None, version=1)
         recipients = result(None)
         recipients.scalars.return_value.all.return_value = [uuid.uuid4(), uuid.uuid4()]
-        db.execute = AsyncMock(side_effect=[result(group), result(SimpleNamespace(role="ADMIN")),
+        db.execute = AsyncMock(side_effect=[result(None), result(group), result(SimpleNamespace(role="ADMIN")),
                                            recipients, result(None), result(None), result(None)])
         db.commit = AsyncMock()
         await GroupService.disband_group(db, uuid.uuid4(), uuid.uuid4(), "Nhóm xanh")

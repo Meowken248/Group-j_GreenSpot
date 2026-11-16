@@ -8,6 +8,7 @@ from sqlalchemy import select, update, func, desc, asc, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.group_content_lock import lock_group_content
 from app.models.post import Post
 from app.models.comment import Comment, PostShare
 from app.models.rbac import User
@@ -477,6 +478,7 @@ class CommentService:
         - Kiểm tra bảo mật: Bài viết PRIVATE hoặc FRIENDS thì không được phép chia sẻ
         - Hỗ trợ 4 loại: FEED, FRIENDS, GROUP, LINK
         """
+        await lock_group_content(db)
         post = await self._require_visible_post(db, post_id, user_id, lock=True)
 
         # Kiểm tra Quyền riêng tư: Chỉ bài viết PUBLIC mới được chia sẻ
@@ -568,7 +570,7 @@ class CommentService:
             # Validate all destinations first, so a failure cannot partially share.
             groups = []
             for group_id in sorted(group_ids):
-                group = await db.get(Group, group_id, with_for_update=True)
+                group = await db.get(Group, group_id, with_for_update=True, populate_existing=True)
                 if not group or group.deleted_at is not None or group.status == "DISBANDED":
                     raise HTTPException(404, "Nhóm không tồn tại hoặc đã bị giải tán")
                 member = (await db.execute(select(GroupMember).where(

@@ -9,6 +9,7 @@ from sqlalchemy import select, update, delete, and_, or_, func, desc, asc, case,
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.group_content_lock import lock_group_content
 from app.core.config import UPLOAD_DIR
 from app.models.post import Post, PostTaggedFriend, PostReaction
 from app.models.comment import Comment
@@ -49,6 +50,7 @@ class PostService:
         - Khởi tạo version = 1 cho Optimistic Locking
         - Lưu các bạn bè được gắn thẻ vào bảng post_tagged_friends
         """
+        await lock_group_content(db)
         # Serialize media_urls nếu có
         media_json = None
         if request.media_urls and len(request.media_urls) > 0:
@@ -57,7 +59,7 @@ class PostService:
         # Kiểm tra nhóm nếu đăng bài vào nhóm
         if request.group_id:
             from app.models.group import Group, GroupMember, GroupMemberStatus
-            group = await db.get(Group, request.group_id)
+            group = await db.get(Group, request.group_id, with_for_update=True, populate_existing=True)
             if not group or group.deleted_at is not None or group.status == "DISBANDED":
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -169,6 +171,7 @@ class PostService:
         - Kiểm tra version hiện tại, nếu không khớp trả về HTTP 409 Conflict
         - Tự động tăng version + 1
         """
+        await lock_group_content(db)
         stmt = select(Post).with_for_update().execution_options(populate_existing=True).where(
             and_(
                 Post.post_id == post_id,
@@ -220,7 +223,7 @@ class PostService:
             from app.models.group import Group, GroupMember, GroupMemberStatus
 
             if request.group_id is not None:
-                group = await db.get(Group, request.group_id, with_for_update=True)
+                group = await db.get(Group, request.group_id, with_for_update=True, populate_existing=True)
                 if not group or group.deleted_at is not None or group.status == "DISBANDED":
                     raise HTTPException(404, "Nhóm không tồn tại hoặc đã bị giải tán")
                 member = (await db.execute(select(GroupMember).where(

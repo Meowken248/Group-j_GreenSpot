@@ -589,7 +589,7 @@ class ChatService:
             )
 
         # 2. Kiểm tra cuộc trò chuyện
-        conv = await db.get(Conversation, conversation_id)
+        conv = await db.get(Conversation, conversation_id, with_for_update=True, populate_existing=True)
         if not conv or conv.deleted_at is not None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -763,7 +763,7 @@ class ChatService:
 
         if member:
             member.unread_count = 0
-            conv = await db.get(Conversation, conversation_id)
+            conv = await db.get(Conversation, conversation_id, with_for_update=True, populate_existing=True)
             if conv and conv.last_message_id:
                 member.last_read_message_id = conv.last_message_id
             await db.commit()
@@ -1007,7 +1007,7 @@ class ChatService:
         Xóa cuộc trò chuyện 1-1:
         Chỉ xóa lịch sử phía người dùng (cleared_at = now). Đối phương vẫn giữ nguyên lịch sử!
         """
-        conv = await db.get(Conversation, conversation_id)
+        conv = await db.get(Conversation, conversation_id, with_for_update=True, populate_existing=True)
         if not conv or conv.deleted_at is not None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -1024,7 +1024,7 @@ class ChatService:
             ConversationMember.conversation_id == conversation_id,
             ConversationMember.user_id == user.user_id,
         )
-        res = await db.execute(m_stmt)
+        res = await db.execute(m_stmt.with_for_update().execution_options(populate_existing=True))
         member = res.scalars().first()
 
         if not member:
@@ -1033,6 +1033,11 @@ class ChatService:
                 detail="Bạn không phải thành viên của cuộc trò chuyện này",
             )
 
+        if member.cleared_at is not None:
+            cleared = member.cleared_at.replace(tzinfo=timezone.utc) if member.cleared_at.tzinfo is None else member.cleared_at
+            last = conv.last_message_at
+            if last is None or (last.replace(tzinfo=timezone.utc) if last.tzinfo is None else last) <= cleared:
+                raise HTTPException(404, "Cuộc trò chuyện đã được xóa trước đó. Vui lòng tải lại danh sách.")
         member.cleared_at = datetime.now(timezone.utc)
         member.unread_count = 0
         await db.commit()
@@ -1055,7 +1060,7 @@ class ChatService:
         - Nếu là Quản trị nhóm duy nhất: Chặn không cho rời, yêu cầu chuyển quyền quản trị trước
         - Thêm tin nhắn hệ thống: '{Tên} đã rời nhóm'
         """
-        conv = await db.get(Conversation, conversation_id)
+        conv = await db.get(Conversation, conversation_id, with_for_update=True, populate_existing=True)
         if not conv or conv.deleted_at is not None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -1151,7 +1156,7 @@ class ChatService:
         new_admin_user_id: uuid.UUID,
     ) -> dict:
         """Chuyển quyền quản trị nhóm cho một thành viên khác đang hoạt động"""
-        conv = await db.get(Conversation, conversation_id)
+        conv = await db.get(Conversation, conversation_id, with_for_update=True, populate_existing=True)
         if not conv or conv.deleted_at is not None or conv.type != ConversationType.GROUP.value:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

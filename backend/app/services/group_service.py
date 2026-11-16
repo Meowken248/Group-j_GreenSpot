@@ -21,6 +21,7 @@ from app.models.post import Post, PostReaction, PostTaggedFriend
 from app.models.comment import Comment
 from app.models.notification import Notification
 from app.models.rbac import User, Role
+from app.core.group_content_lock import lock_group_content
 from app.models.audit_log import AuditLog
 from app.schemas.group import (
     GroupCreate,
@@ -602,6 +603,7 @@ class GroupService:
         3. Tên xác nhận phải khớp hoàn toàn với tên nhóm.
         4. Soft delete nhóm, set status = DISBANDED, xóa thành viên.
         """
+        await lock_group_content(db)
         group = (await db.execute(select(Group).where(Group.group_id == group_id)
             .with_for_update().execution_options(populate_existing=True))).scalar_one_or_none()
         if not group or group.deleted_at is not None or group.status == GroupStatus.DISBANDED.value:
@@ -1109,7 +1111,7 @@ class GroupService:
         caller: User,
     ) -> GroupMemberResponse:
         """Đổi vai trò thành viên nhóm với Optimistic Locking (Chức năng 04 - Màn 2/4)."""
-        group = await db.get(Group, group_id)
+        group = await db.get(Group, group_id, with_for_update=True, populate_existing=True)
         if not group or group.deleted_at is not None or group.status == GroupStatus.DISBANDED.value:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -1138,7 +1140,7 @@ class GroupService:
             GroupMember.deleted_at.is_(None),
             GroupMember.status == GroupMemberStatus.ACTIVE.value
         )
-        target_mem = (await db.execute(target_stmt)).scalar_one_or_none()
+        target_mem = (await db.execute(target_stmt.with_for_update().execution_options(populate_existing=True))).scalar_one_or_none()
         if not target_mem:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -1186,8 +1188,8 @@ class GroupService:
             action="GROUP_ROLE_UPDATE",
             table_name="group_members",
             record_id=str(target_mem.id),
-            old_data={"role": old_role, "version": payload.version, "user_id": str(target_user_id)},
-            new_data={"role": new_role, "version": target_mem.version, "user_id": str(target_user_id)},
+            old_values={"role": old_role, "version": payload.version, "user_id": str(target_user_id)},
+            new_values={"role": new_role, "version": target_mem.version, "user_id": str(target_user_id)},
         )
         db.add(audit)
         await db.commit()
@@ -1221,7 +1223,7 @@ class GroupService:
                 detail="Bạn không thể tự xoá mình khỏi nhóm"
             )
 
-        group = await db.get(Group, group_id)
+        group = await db.get(Group, group_id, with_for_update=True, populate_existing=True)
         if not group or group.deleted_at is not None or group.status == GroupStatus.DISBANDED.value:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -1257,7 +1259,7 @@ class GroupService:
             GroupMember.deleted_at.is_(None),
             GroupMember.status == GroupMemberStatus.ACTIVE.value
         )
-        target_mem = (await db.execute(target_stmt)).scalar_one_or_none()
+        target_mem = (await db.execute(target_stmt.with_for_update().execution_options(populate_existing=True))).scalar_one_or_none()
         if not target_mem:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -1291,8 +1293,8 @@ class GroupService:
             action="GROUP_MEMBER_REMOVE",
             table_name="group_members",
             record_id=str(target_mem.id),
-            old_data={"role": target_mem.role, "status": "ACTIVE", "user_id": str(target_user_id), "group_id": str(group_id)},
-            new_data={"status": "REMOVED", "deleted_at": str(target_mem.deleted_at)},
+            old_values={"role": target_mem.role, "status": "ACTIVE", "user_id": str(target_user_id), "group_id": str(group_id)},
+            new_values={"status": "REMOVED", "deleted_at": str(target_mem.deleted_at)},
         )
         db.add(audit)
         await db.commit()
