@@ -750,6 +750,7 @@
 
     .comment-composer-form {
       flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
       gap: 0.35rem;
@@ -772,6 +773,7 @@
 
         .composer-textarea {
           flex: 1;
+          min-width: 0;
           border: none;
           background: transparent;
           font-size: 0.925rem;
@@ -1279,5 +1281,24 @@
 @keyframes lightboxFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@media (max-width: 640px) {
+  .sticky-comment-bar-wrapper .sticky-comment-bar-inner .comment-composer-form {
+    .composer-input-field {
+      flex-wrap: wrap;
+
+      .composer-textarea {
+        flex-basis: 100%;
+        width: 100%;
+      }
+
+      .composer-controls-row {
+        width: 100%;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+    }
+  }
 }
 

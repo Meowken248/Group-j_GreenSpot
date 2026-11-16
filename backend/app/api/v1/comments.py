@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.rbac import User
 from app.api.v1.rbac import get_current_active_user
+from app.api.v1.posts import get_optional_current_user
 from app.services.comment_service import CommentService
 from app.schemas.comment import (
     CreateCommentRequest,
@@ -40,6 +41,7 @@ async def get_post_comments_endpoint(
     page: int = Query(1, ge=1, description="Số trang (10 bình luận/lần tải)"),
     limit: int = Query(10, ge=1, le=50, description="Số lượng bình luận mỗi lần tải"),
     sort: str = Query("relevant", description="Sắp xếp: relevant (phù hợp nhất), newest (mới nhất), all (tất cả bình luận)"),
+    viewer: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -55,6 +57,7 @@ async def get_post_comments_endpoint(
         page=page,
         limit=limit,
         sort=sort,
+        viewer_id=viewer.user_id if viewer else None,
     )
 
 
@@ -96,6 +99,7 @@ async def create_post_comment_endpoint(
 )
 async def get_comment_replies_endpoint(
     comment_id: uuid.UUID,
+    viewer: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -105,6 +109,7 @@ async def get_comment_replies_endpoint(
     return await comment_service.get_comment_replies(
         db=db,
         comment_id=comment_id,
+        viewer_id=viewer.user_id if viewer else None,
     )
 
 
