@@ -168,7 +168,7 @@ class PostService:
         - Kiểm tra version hiện tại, nếu không khớp trả về HTTP 409 Conflict
         - Tự động tăng version + 1
         """
-        stmt = select(Post).where(
+        stmt = select(Post).with_for_update().where(
             and_(
                 Post.post_id == post_id,
                 Post.deleted_at.is_(None),
@@ -200,6 +200,29 @@ class PostService:
                 }
             )
 
+        # Validate the destination before changing the post or any counters.
+        if "group_id" in request.model_fields_set and request.group_id != post.group_id:
+            from app.models.group import Group, GroupMember, GroupMemberStatus
+
+            if request.group_id is not None:
+                group = await db.get(Group, request.group_id, with_for_update=True)
+                if not group or group.deleted_at is not None or group.status == "DISBANDED":
+                    raise HTTPException(404, "Nhóm không tồn tại hoặc đã bị giải tán")
+                member = (await db.execute(select(GroupMember).where(
+                    GroupMember.group_id == request.group_id,
+                    GroupMember.user_id == user_id,
+                    GroupMember.status == GroupMemberStatus.ACTIVE.value,
+                    GroupMember.deleted_at.is_(None),
+                ))).scalars().first()
+                if not member:
+                    raise HTTPException(403, "Bạn phải là thành viên của nhóm để đăng bài viết")
+                await db.execute(update(Group).where(Group.group_id == request.group_id).values(
+                    posts_count=Group.posts_count + 1))
+            if post.group_id is not None:
+                await db.execute(update(Group).where(Group.group_id == post.group_id).values(
+                    posts_count=func.greatest(Group.posts_count - 1, 0)))
+            post.group_id = request.group_id
+
         # Cập nhật các trường
         if request.content is not None:
             post.content = request.content
@@ -219,8 +242,6 @@ class PostService:
             if request.address is not None:
                 post.address = request.address
 
-        if request.group_id is not None:
-            post.group_id = request.group_id
         if request.visibility is not None:
             post.visibility = request.visibility
 
