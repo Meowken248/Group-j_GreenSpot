@@ -69,6 +69,11 @@ export const BirthdayWishModal: React.FC<BirthdayWishModalProps> = ({
   const [sending, setSending] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  const sendingRef = useRef(false);
+  const requestClose = () => {
+    if (sendingRef.current) return;
+    if (!messageEdited || window.confirm("Lời chúc chưa được gửi. Bạn có muốn bỏ thay đổi và đóng không?")) onClose();
+  };
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const selectedCard = useMemo(
@@ -80,12 +85,12 @@ export const BirthdayWishModal: React.FC<BirthdayWishModalProps> = ({
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !sending) {
-        onClose();
+        requestClose();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, sending]);
+  }, [onClose, sending, messageEdited]);
 
   // Chuyển đổi giữa lời chúc và thiệp xanh (giữ nguyên lời chúc người dùng đã sửa)
   const handleTypeChange = (nextType: BirthdayWishType) => {
@@ -129,6 +134,7 @@ export const BirthdayWishModal: React.FC<BirthdayWishModalProps> = ({
   };
 
   const handleSubmit = async () => {
+    if (sendingRef.current) return;
     const cleanMessage = message.trim().replace(/\s+/g, " ");
 
     if (!cleanMessage) {
@@ -145,6 +151,7 @@ export const BirthdayWishModal: React.FC<BirthdayWishModalProps> = ({
       return;
     }
 
+    sendingRef.current = true;
     setSending(true);
     setError(null);
     try {
@@ -166,6 +173,7 @@ export const BirthdayWishModal: React.FC<BirthdayWishModalProps> = ({
           : "Không thể gửi lời chúc lúc này. Vui lòng thử lại sau."
       );
     } finally {
+      sendingRef.current = false;
       setSending(false);
     }
   };
@@ -173,7 +181,7 @@ export const BirthdayWishModal: React.FC<BirthdayWishModalProps> = ({
   const remainingPoints = Math.max(0, dailyPointsCap - dailyPointsEarned);
 
   return (
-    <div className="feed-modal-backdrop" onClick={sending ? undefined : onClose}>
+    <div className="feed-modal-backdrop" onClick={sending ? undefined : requestClose}>
       <div
         className="feed-modal-content birthday-wish-card"
         role="dialog"
@@ -198,7 +206,7 @@ export const BirthdayWishModal: React.FC<BirthdayWishModalProps> = ({
             type="button"
             className="btn-close-birthday-wish"
             aria-label="Đóng popup gửi lời chúc"
-            onClick={onClose}
+            onClick={requestClose}
             disabled={sending}
           >
             ✕
@@ -310,7 +318,7 @@ export const BirthdayWishModal: React.FC<BirthdayWishModalProps> = ({
         </div>
 
         <div className="birthday-wish-actions">
-          <button type="button" className="btn-cancel-birthday-wish" onClick={onClose} disabled={sending}>
+          <button type="button" className="btn-cancel-birthday-wish" onClick={requestClose} disabled={sending}>
             Huỷ
           </button>
           <button type="button" className="btn-submit-birthday-wish" onClick={handleSubmit} disabled={sending}>

@@ -13,6 +13,15 @@
     flex-wrap: wrap;
     gap: 16px;
 
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      min-width: 0;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+
     .btn-back {
       background: none;
       border: none;

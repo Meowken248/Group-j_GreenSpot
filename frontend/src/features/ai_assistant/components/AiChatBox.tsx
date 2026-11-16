@@ -14,7 +14,7 @@ interface AiChatBoxProps {
   onOpenHistoryModal: () => void;
   activeConversationId?: string;
   initialMessages?: ChatbotMessageItem[];
-  onConversationCreated?: (id: string, title: string) => void;
+  onConversationCreated?: (id: string, title: string, messages: ChatbotMessageItem[]) => void;
   onNewChat?: () => void;
 }
 
@@ -45,6 +45,9 @@ export const AiChatBox: React.FC<AiChatBoxProps> = ({
 
   // Đồng bộ initial messages khi mở lại cuộc trò chuyện từ Màn 3/4
   useEffect(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setIsGenerating(false);
     if (activeConversationId) {
       setMessages(initialMessages);
       setConversationId(activeConversationId);
@@ -57,6 +60,8 @@ export const AiChatBox: React.FC<AiChatBoxProps> = ({
     setErrorMessage(null);
     setRateLimitError(null);
   }, [activeConversationId, initialMessages]);
+
+  useEffect(() => () => { abortControllerRef.current?.abort(); }, []);
 
   // Tải danh sách câu hỏi mẫu gợi ý
   useEffect(() => {
@@ -113,7 +118,7 @@ export const AiChatBox: React.FC<AiChatBoxProps> = ({
   // Gửi câu hỏi
   const handleSendMessage = async (textToSend?: string) => {
     const text = (textToSend || inputText).trim();
-    if (!text || text.length > 500 || isGenerating) return;
+    if (!text || text.length > 500 || isGenerating || abortControllerRef.current) return;
 
     if (!isLoggedIn) {
       onOpenLoginModal();
@@ -148,9 +153,10 @@ export const AiChatBox: React.FC<AiChatBoxProps> = ({
         controller.signal
       );
 
+      if (controller.signal.aborted || abortControllerRef.current !== controller) return;
       setConversationId(res.conversation_id);
       if (!conversationId && onConversationCreated) {
-        onConversationCreated(res.conversation_id, res.conversation_title);
+        onConversationCreated(res.conversation_id, res.conversation_title, [...messages, res.user_message, res.ai_message]);
       }
 
       setHasContextWarning(res.has_context_warning);
@@ -162,6 +168,7 @@ export const AiChatBox: React.FC<AiChatBoxProps> = ({
         res.ai_message,
       ]);
     } catch (err: any) {
+      if (controller.signal.aborted || abortControllerRef.current !== controller) return;
       if (err?.name === "CanceledError" || err?.name === "AbortError") {
         // Đã dừng trả lời bởi người dùng
         return;
@@ -192,8 +199,10 @@ export const AiChatBox: React.FC<AiChatBoxProps> = ({
         setMessages((prev) => [...prev, errorAiMsg]);
       }
     } finally {
-      setIsGenerating(false);
-      abortControllerRef.current = null;
+      if (abortControllerRef.current === controller) {
+        setIsGenerating(false);
+        abortControllerRef.current = null;
+      }
     }
   };
 
