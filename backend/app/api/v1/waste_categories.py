@@ -1,5 +1,5 @@
-from typing import Optional
-from fastapi import APIRouter, Depends, Query, Request, status
+from typing import Annotated, Optional
+from fastapi import APIRouter, Depends, Query, Path as ApiPath, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -70,7 +70,7 @@ async def validate_category_name(
 
 @router.get("/{category_id}", response_model=WasteCategoryItem)
 async def get_category_detail(
-    category_id: int,
+    category_id: Annotated[int, ApiPath(ge=1, le=2147483647)],
     current_admin: User = Depends(require_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -104,7 +104,7 @@ async def create_new_category(
 
 @router.put("/{category_id}", response_model=WasteCategoryItem)
 async def update_existing_category(
-    category_id: int,
+    category_id: Annotated[int, ApiPath(ge=1, le=2147483647)],
     req: WasteCategoryUpdateRequest,
     request: Request,
     current_admin: User = Depends(require_admin_user),
@@ -129,7 +129,7 @@ async def update_existing_category(
 
 @router.delete("/{category_id}")
 async def delete_existing_category(
-    category_id: int,
+    category_id: Annotated[int, ApiPath(ge=1, le=2147483647)],
     request: Request,
     current_admin: User = Depends(require_admin_user),
     db: AsyncSession = Depends(get_db),

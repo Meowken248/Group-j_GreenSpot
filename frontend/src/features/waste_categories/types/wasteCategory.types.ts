@@ -38,6 +38,7 @@ export interface WasteCategoryCreateRequest {
 }
 
 export interface WasteCategoryUpdateRequest {
+  updated_at: string;
   name: string;
   description?: string;
   default_severity: SeverityLevel;

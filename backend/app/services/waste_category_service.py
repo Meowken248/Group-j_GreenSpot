@@ -2,7 +2,7 @@ import math
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 from fastapi import HTTPException, status
-from sqlalchemy import select, func, and_, or_, desc
+from sqlalchemy import select, func, and_, or_, desc, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.incident import WasteCategory, Incident
@@ -39,6 +39,8 @@ async def list_categories(
 
     # Bộ lọc trạng thái: ALL, ACTIVE, INACTIVE
     filter_upper = status_filter.strip().upper()
+    if filter_upper not in {"ALL", "ACTIVE", "INACTIVE"}:
+        raise HTTPException(400, "Vui lòng chọn trạng thái hợp lệ")
     if filter_upper == "ACTIVE":
         base_conditions.append(WasteCategory.is_active == True)
     elif filter_upper == "INACTIVE":
@@ -58,6 +60,8 @@ async def list_categories(
     count_stmt = select(func.count(WasteCategory.category_id)).where(and_(*base_conditions))
     total_res = await db.execute(count_stmt)
     total_count = total_res.scalar() or 0
+    if page > max(1, math.ceil(total_count / limit)):
+        raise HTTPException(404, "Trang danh mục không tồn tại. Vui lòng về trang đầu.")
 
     # Đếm số lượng active và inactive tổng thể (không phân trang, không tính search)
     active_stmt = select(func.count(WasteCategory.category_id)).where(
@@ -187,13 +191,15 @@ async def create_category(
     - Mặc định trạng thái Đang áp dụng
     - Tự động ghi nhận vào Nhật ký kiểm toán (Audit Log)
     """
+    # Serialize uniqueness checks with writes, including concurrent requests.
+    await db.execute(text("SELECT pg_advisory_xact_lock(221122)"))
     code_clean = req.category_code.strip().upper()
     name_clean = req.name.strip()
 
     # Kiểm tra mã đã tồn tại
     check_code = await db.execute(
         select(WasteCategory).where(
-            and_(WasteCategory.category_code == code_clean, WasteCategory.is_deleted == False)
+            WasteCategory.category_code == code_clean
         )
     )
     if check_code.scalar_one_or_none():
@@ -283,7 +289,8 @@ async def update_category(
     - Kiểm tra tên loại rác không trùng với các danh mục khác
     - Tự động ghi nhận Audit Log
     """
-    stmt = select(WasteCategory).where(
+    await db.execute(text("SELECT pg_advisory_xact_lock(221122)"))
+    stmt = select(WasteCategory).with_for_update().execution_options(populate_existing=True).where(
         and_(WasteCategory.category_id == category_id, WasteCategory.is_deleted == False)
     )
     res = await db.execute(stmt)
@@ -293,6 +300,9 @@ async def update_category(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Danh mục không còn tồn tại",
         )
+
+    if cat.updated_at != req.updated_at:
+        raise HTTPException(409, "Danh mục đã được thay đổi ở tab khác. Vui lòng tải lại trang trước khi cập nhật.")
 
     name_clean = req.name.strip()
     # Kiểm tra tên có trùng với danh mục khác không
@@ -322,6 +332,7 @@ async def update_category(
     }
 
     # Cập nhật giá trị mới
+    cat.updated_at = datetime.now(timezone.utc)
     cat.name = name_clean
     cat.description = req.description.strip() if req.description else None
     cat.default_severity = req.default_severity
@@ -398,7 +409,8 @@ async def delete_category(
     - Không xóa cứng trong DB để bảo toàn dữ liệu phản ánh cũ
     - Ghi nhận Audit Log kèm người thực hiện và thời điểm
     """
-    stmt = select(WasteCategory).where(
+    await db.execute(text("SELECT pg_advisory_xact_lock(221122)"))
+    stmt = select(WasteCategory).with_for_update().execution_options(populate_existing=True).where(
         and_(WasteCategory.category_id == category_id, WasteCategory.is_deleted == False)
     )
     res = await db.execute(stmt)
@@ -464,7 +476,7 @@ async def check_code_unique(db: AsyncSession, code: str) -> ValidationCheckRespo
 
     code_clean = code_raw.upper()
     stmt = select(WasteCategory.category_id).where(
-        and_(WasteCategory.category_code == code_clean, WasteCategory.is_deleted == False)
+        WasteCategory.category_code == code_clean
     )
     res = await db.execute(stmt)
     if res.scalar_one_or_none():

@@ -6,6 +6,7 @@ import type {
 } from "./types/wasteCategory.types";
 import {
   getWasteCategories,
+  fetchCategoryDetail,
   createWasteCategory,
   updateWasteCategory,
   deleteWasteCategory,
@@ -51,6 +52,8 @@ export const WasteCategoryContainer: React.FC<Props> = ({
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalCount, setTotalCount] = useState<number>(0);
+  const [activeCount, setActiveCount] = useState(0);
+  const [inactiveCount, setInactiveCount] = useState(0);
   const pageSize = 10;
 
   // 6. Trạng thái Modal Màn 4 & Màn 5 & Thoát chưa lưu
@@ -96,6 +99,8 @@ export const WasteCategoryContainer: React.FC<Props> = ({
       setCategories(res.items);
       setTotalPages(res.total_pages || 1);
       setTotalCount(res.total || 0);
+      setActiveCount(res.active_count || 0);
+      setInactiveCount(res.inactive_count || 0);
     } catch (err: any) {
       const msg =
         err?.response?.data?.detail ||
@@ -221,8 +226,6 @@ export const WasteCategoryContainer: React.FC<Props> = ({
   };
 
   // Thống kê nhanh số lượng
-  const activeCount = categories.filter((c) => c.is_active).length;
-  const inactiveCount = categories.filter((c) => !c.is_active).length;
 
   return (
     <div className="waste-category-management-root">
@@ -299,6 +302,10 @@ export const WasteCategoryContainer: React.FC<Props> = ({
         ) : (
           /* MÀN 2 HOẶC MÀN 3: FORM THÊM MỚI / SỬA (3 KHỐI NGANG) */
           <CategoryFormView
+            key={`${viewMode}-${selectedCategory?.category_id}-${selectedCategory?.updated_at}`}
+            onReload={async () => {
+              if (selectedCategory) setSelectedCategory(await fetchCategoryDetail(selectedCategory.category_id));
+            }}
             mode={viewMode}
             initialItem={selectedCategory}
             onSaveCreate={handleSaveCreate}

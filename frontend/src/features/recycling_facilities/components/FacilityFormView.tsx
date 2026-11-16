@@ -1,11 +1,11 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import type {
   RecyclingFacilityItem,
   RecyclingFacilityCreateRequest,
   RecyclingFacilityUpdateRequest,
   DistrictItem,
 } from "../types/recyclingFacility.types";
-import { AVAILABLE_WASTE_TYPES } from "../types/recyclingFacility.types";
+import api from "../../../api/client";
 import {
   checkFacilityNameUnique,
   checkFacilityProximity,
@@ -32,6 +32,16 @@ export const FacilityFormView: React.FC<FacilityFormViewProps> = ({
   onCancelRequest,
   onReload,
 }) => {
+  const submittingRef = useRef(false);
+  const [wasteOptions, setWasteOptions] = useState<{code: string; label: string; icon: string}[]>([]);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    api.get<{category_code: string; name: string}[]>("/api/v1/incidents/categories")
+      .then(({data}) => { if (active) setWasteOptions(data.map(c => ({code: c.category_code, label: c.name, icon: "♻"}))); })
+      .catch(() => { if (active) setCatalogError("Không thể tải danh mục rác. Vui lòng tải lại trang."); });
+    return () => { active = false; };
+  }, []);
   const isEdit = mode === "edit";
 
   // Form State
@@ -57,7 +67,7 @@ export const FacilityFormView: React.FC<FacilityFormViewProps> = ({
 
   // Waste types & Operating hours
   const [acceptedWasteTypes, setAcceptedWasteTypes] = useState<string[]>(
-    initialItem?.accepted_waste_types || ["PIN_CU", "THIET_BI_DIEN_TU", "NHUA"]
+    initialItem?.accepted_waste_types || []
   );
   const [openTime, setOpenTime] = useState<string>(
     initialItem?.open_time || "07:30"
@@ -97,6 +107,8 @@ export const FacilityFormView: React.FC<FacilityFormViewProps> = ({
         managingOrg.trim().length > 0 ||
         latitude !== 10.7769 ||
         longitude !== 106.7009 ||
+        acceptedWasteTypes.length > 0 ||
+        unitId !== districts[0]?.unit_id ||
         openTime !== "07:30" ||
         closeTime !== "17:00"
       );
@@ -199,7 +211,7 @@ export const FacilityFormView: React.FC<FacilityFormViewProps> = ({
     }
 
     // 3. Quận / Huyện
-    if (!unitId) {
+    if (!unitId || !districts.some(d => d.unit_id === unitId)) {
       setUnitError("Vui lòng chọn quận/huyện");
       valid = false;
     } else {
@@ -276,13 +288,12 @@ export const FacilityFormView: React.FC<FacilityFormViewProps> = ({
   // Submit Form
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setIsSubmitting(true);
     setServerError(null);
-
-    const isValid = await validateForm();
-    if (!isValid) return;
-
     try {
-      setIsSubmitting(true);
+      if (!(await validateForm())) return;
       if (isEdit && initialItem) {
         const updateData: RecyclingFacilityUpdateRequest = {
           name: name.trim(),
@@ -321,6 +332,7 @@ export const FacilityFormView: React.FC<FacilityFormViewProps> = ({
         "Có lỗi xảy ra khi lưu thông tin trạm. Vui lòng thử lại";
       setServerError(msg);
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -491,8 +503,9 @@ export const FacilityFormView: React.FC<FacilityFormViewProps> = ({
             <label className="field-label">
               Danh mục rác tiếp nhận <span className="text-req">*</span>:
             </label>
+            {catalogError && <span role="alert" className="error-text">{catalogError}</span>}
             <div className="waste-type-checkbox-grid">
-              {AVAILABLE_WASTE_TYPES.map((type) => {
+              {wasteOptions.map((type) => {
                 const checked = acceptedWasteTypes.includes(type.code);
                 return (
                   <button
