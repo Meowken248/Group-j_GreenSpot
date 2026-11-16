@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 import React, { useState, useRef } from "react";
 import type { FundraiserCampaignCreateInput } from "../types/fundraiser.types";
 import {
@@ -312,7 +313,7 @@ export const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
 
               {coverImageUrl && (
                 <div style={{ marginTop: "0.75rem", borderRadius: "8px", overflow: "hidden", maxHeight: "160px" }}>
-                  <img
+                  <img onError={showImageFallback}
                     src={coverImageUrl}
                     alt="Xem trước ảnh bìa"
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}

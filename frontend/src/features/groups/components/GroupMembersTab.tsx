@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 /**
  * GroupMembersTab.tsx
  * Tab danh sách thành viên nhóm cộng đồng (Chức năng 16)
@@ -255,7 +256,7 @@ export const GroupMembersTab: React.FC<GroupMembersTabProps> = ({
           }}
         >
           {mem.avatar_url ? (
-            <img
+            <img onError={showImageFallback}
               src={resolveMediaUrl(mem.avatar_url)}
               alt={mem.full_name}
               style={{ width: "100%", height: "100%", objectFit: "cover" }}

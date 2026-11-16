@@ -10,6 +10,7 @@ import { DonationModal } from "./DonationModal";
 import { ExpenseReportView } from "./ExpenseReportView";
 import { CampaignDeleteModal } from "./CampaignDeleteModal";
 import { CampaignShareModal } from "./CampaignShareModal";
+import { showImageFallback } from "../../../utils/imageFallback";
 
 interface CampaignDetailModalProps {
   isOpen: boolean;
@@ -322,6 +323,7 @@ export const CampaignDetailModal: React.FC<CampaignDetailModalProps> = ({
                   <img
                     src={campaign.cover_image_url}
                     alt={campaign.title}
+                    onError={showImageFallback}
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   />
                 </div>
@@ -473,8 +475,8 @@ export const CampaignDetailModal: React.FC<CampaignDetailModalProps> = ({
         </div>
 
         {/* FOOTER NÚT THAO TÁC */}
-        <div className="modal-footer">
-          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+        <div className="modal-footer campaign-detail-footer">
+          <div className="campaign-owner-actions" style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
             <button
               type="button"
               className="btn-share-action"

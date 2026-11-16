@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 import React, { useState, useRef, useEffect } from "react";
 import type { CommentItem, ReplyItem } from "../types/commentTypes";
 import { CommentReplyItem } from "./CommentReplyItem";
@@ -256,13 +257,10 @@ export const CommentItemRow: React.FC<CommentItemRowProps> = ({
       <div className="comment-main-line">
         <div className="comment-avatar-col">
           {avatarUrl ? (
-            <img
+            <img onError={showImageFallback}
               src={resolveMediaUrl(avatarUrl)}
               alt={authorName}
               className="comment-avatar-img"
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-              }}
             />
           ) : (
             <div className="comment-avatar-fallback">
@@ -279,7 +277,7 @@ export const CommentItemRow: React.FC<CommentItemRowProps> = ({
             {/* Hiển thị ảnh đính kèm bình luận cấp 1 (nếu có) */}
             {comment.media_url && (
               <div className="comment-attached-media">
-                <img
+                <img onError={showImageFallback}
                   src={resolveMediaUrl(comment.media_url)}
                   alt="Ảnh đính kèm"
                   className="comment-media-img"
@@ -362,7 +360,7 @@ export const CommentItemRow: React.FC<CommentItemRowProps> = ({
             {previewReplyUrl && (
               <div className="composer-media-preview-container reply-media-preview">
                 <div className="composer-media-thumbnail-box">
-                  <img
+                  <img onError={showImageFallback}
                     src={previewReplyUrl}
                     alt="Ảnh xem trước"
                     className="composer-media-thumbnail-img"

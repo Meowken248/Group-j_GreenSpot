@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 /**
  * BirthdayBanner (Widget Sinh nhật bạn bè hôm nay - Feature STT 17)
  * Căn cứ tài liệu: Đồ Án Chuyên Đề Web 1 - Báo Cáo.docx.pdf (Trang 142 - 145)
@@ -177,7 +178,7 @@ export const BirthdayBanner: React.FC<BirthdayBannerProps> = ({
           >
             <div className="birthday-friend-avatar" aria-hidden="true">
               {friend.avatar_url ? (
-                <img src={friend.avatar_url} alt="" />
+                <img onError={showImageFallback} src={friend.avatar_url} alt="" />
               ) : (
                 <span>{getInitialLetter(friend.full_name)}</span>
               )}

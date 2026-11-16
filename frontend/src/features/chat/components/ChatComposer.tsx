@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 
 interface ChatComposerProps {
@@ -203,7 +204,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
       {/* Khung xem trước hình ảnh đính kèm */}
       {previewUrl && (
         <div className="media-attachment-preview">
-          <img src={previewUrl} alt="Ảnh chuẩn bị gửi" />
+          <img onError={showImageFallback} src={previewUrl} alt="Ảnh chuẩn bị gửi" />
           <button
             type="button"
             className="btn-remove-preview"

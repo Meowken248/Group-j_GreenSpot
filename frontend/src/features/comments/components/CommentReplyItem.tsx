@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 import React from "react";
 import type { ReplyItem } from "../types/commentTypes";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
@@ -36,13 +37,10 @@ export const CommentReplyItem: React.FC<CommentReplyItemProps> = ({
     <div className="comment-reply-item-row" id={`reply-${reply.comment_id}`}>
       <div className="reply-avatar-col">
         {avatarUrl ? (
-          <img
+          <img onError={showImageFallback}
             src={resolveMediaUrl(avatarUrl)}
             alt={authorName}
             className="reply-avatar-img"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
           />
         ) : (
           <div className="reply-avatar-fallback">
@@ -66,7 +64,7 @@ export const CommentReplyItem: React.FC<CommentReplyItemProps> = ({
           {/* Hiển thị ảnh đính kèm câu trả lời (nếu có) */}
           {reply.media_url && (
             <div className="reply-attached-media">
-              <img
+              <img onError={showImageFallback}
                 src={resolveMediaUrl(reply.media_url)}
                 alt="Ảnh đính kèm"
                 className="reply-media-img"

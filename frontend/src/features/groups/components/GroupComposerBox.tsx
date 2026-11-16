@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 /**
  * GroupComposerBox.tsx
  * Khung đăng bài viết nhanh trong Trang nhóm cộng đồng (Chức năng 16)
@@ -76,7 +77,7 @@ export const GroupComposerBox: React.FC<GroupComposerBoxProps> = ({
           }}
         >
           {userAvatar ? (
-            <img
+            <img onError={showImageFallback}
               src={resolveMediaUrl(userAvatar)}
               alt={userName}
               style={{ width: "100%", height: "100%", objectFit: "cover" }}
@@ -119,6 +120,7 @@ export const GroupComposerBox: React.FC<GroupComposerBoxProps> = ({
         className="composer-action-buttons"
         style={{
           display: "flex",
+          flexWrap: "wrap",
           alignItems: "center",
           justifyContent: "space-around",
           gap: "8px",

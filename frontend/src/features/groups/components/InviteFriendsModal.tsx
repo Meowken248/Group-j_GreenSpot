@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 import React, { useState, useEffect } from "react";
 import api from "../../../api/client";
 import { groupService } from "../services/groupService";
@@ -191,7 +192,7 @@ export const InviteFriendsModal: React.FC<InviteFriendsModalProps> = ({
                     data-testid={`friend-item-${friend.user_id}`}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <img
+                      <img onError={showImageFallback}
                         src={resolveMediaUrl(friend.avatar_url) || "/default-avatar.png"}
                         alt={friend.full_name}
                         style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover" }}

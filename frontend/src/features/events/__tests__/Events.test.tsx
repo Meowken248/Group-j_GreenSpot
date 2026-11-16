@@ -93,6 +93,24 @@ describe("Feature 21: Sự kiện và chiến dịch Chủ Nhật Xanh (Frontend
     vi.clearAllMocks();
   });
 
+  it("không cắt số thập phân thành số người nguyên khi lưu", async () => {
+    const {container} = render(<CreateEventModal isOpen event={mockSampleEvent} onClose={vi.fn()} onSuccess={vi.fn()} />);
+    fireEvent.change(screen.getByTestId("input-event-max-participants"), {target: {value: "100.5"}});
+    fireEvent.submit(container.ownerDocument.querySelector(".event-modal-box form")!);
+    expect(eventService.updateEvent).not.toHaveBeenCalled();
+    expect(screen.getByTestId("input-event-max-participants")).toHaveValue(100.5);
+    expect(container.ownerDocument.querySelector(".input-invalid")).not.toBeNull();
+  });
+
+  it("hai lần submit liên tiếp chỉ cập nhật sự kiện một lần", async () => {
+    vi.mocked(eventService.updateEvent).mockImplementation(() => new Promise(() => {}));
+    const {container} = render(<CreateEventModal isOpen event={mockSampleEvent} onClose={vi.fn()} onSuccess={vi.fn()} />);
+    const form = container.ownerDocument.querySelector(".event-modal-box form")!;
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+    expect(eventService.updateEvent).toHaveBeenCalledTimes(1);
+  });
+
   // 1. Màn 1/4: Render danh sách sự kiện và bộ lọc
   it("TC-01: Hiển thị danh sách sự kiện Chủ Nhật Xanh và các bộ lọc", async () => {
     vi.mocked(eventService.getEvents).mockResolvedValue({

@@ -5,6 +5,7 @@ import type {
   FundraiserExpenseCreateInput,
 } from "../types/fundraiser.types";
 import { fundraiserService } from "../services/fundraiserService";
+import { showImageFallback } from "../../../utils/imageFallback";
 
 interface ExpenseReportViewProps {
   campaign: FundraiserCampaignItem;
@@ -311,7 +312,7 @@ export const ExpenseReportView: React.FC<ExpenseReportViewProps> = ({
             )}
             {proofImageUrl && (
               <div style={{ marginTop: "0.5rem", maxHeight: "120px", overflow: "hidden", borderRadius: "6px" }}>
-                <img
+                <img onError={showImageFallback}
                   src={proofImageUrl}
                   alt="Chứng từ minh chứng"
                   style={{ maxHeight: "120px", objectFit: "contain" }}
@@ -416,7 +417,7 @@ export const ExpenseReportView: React.FC<ExpenseReportViewProps> = ({
             >
               ×
             </button>
-            <img src={lightboxImageUrl} alt="Ảnh chứng từ hóa đơn phóng to" />
+            <img src={lightboxImageUrl} alt="Ảnh chứng từ hóa đơn phóng to" onError={showImageFallback} />
           </div>
         </div>
       )}

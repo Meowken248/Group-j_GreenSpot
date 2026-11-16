@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 import React, { useState, useEffect, useRef } from "react";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
 import { commentService } from "../services/commentService";
@@ -194,13 +195,10 @@ export const StickyCommentInputBar: React.FC<StickyCommentInputBarProps> = ({
         {/* Avatar người dùng */}
         <div className="user-avatar-slot">
           {isLoggedIn && userAvatar ? (
-            <img
+            <img onError={showImageFallback}
               src={resolveMediaUrl(userAvatar)}
               alt={userName}
               className="user-bar-avatar-img"
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-              }}
             />
           ) : (
             <div className="user-bar-avatar-fallback">
@@ -215,7 +213,7 @@ export const StickyCommentInputBar: React.FC<StickyCommentInputBarProps> = ({
           {previewUrl && (
             <div className="composer-media-preview-container">
               <div className="composer-media-thumbnail-box">
-                <img
+                <img onError={showImageFallback}
                   src={previewUrl}
                   alt="Ảnh xem trước"
                   className="composer-media-thumbnail-img"

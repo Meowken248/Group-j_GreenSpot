@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 /**
  * BirthdayWishModal (Popup gửi lời chúc / tặng thiệp xanh sinh nhật - Feature STT 17)
  * Căn cứ tài liệu: Đồ Án Chuyên Đề Web 1 - Báo Cáo.docx.pdf (Trang 145 - 147)
@@ -192,7 +193,7 @@ export const BirthdayWishModal: React.FC<BirthdayWishModalProps> = ({
         <div className="birthday-wish-head">
           <div className="birthday-wish-avatar" aria-hidden="true">
             {friend.avatar_url ? (
-              <img src={friend.avatar_url} alt="" />
+              <img onError={showImageFallback} src={friend.avatar_url} alt="" />
             ) : (
               <span>{getInitialLetter(friend.full_name)}</span>
             )}

@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 import React, { useState, useEffect } from "react";
 import type {
   ShareType,
@@ -377,7 +378,7 @@ export const SharePostModal: React.FC<SharePostModalProps> = ({
                           />
                           <div className="item-avatar">
                             {f.avatar_url ? (
-                              <img src={resolveMediaUrl(f.avatar_url)} alt={f.full_name} />
+                              <img onError={showImageFallback} src={resolveMediaUrl(f.avatar_url)} alt={f.full_name} />
                             ) : (
                               <span>{f.full_name.charAt(0).toUpperCase()}</span>
                             )}

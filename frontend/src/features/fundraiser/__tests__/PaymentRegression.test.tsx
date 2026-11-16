@@ -2,8 +2,10 @@ import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DonationModal } from "../components/DonationModal";
 import { PendingDonations } from "../components/PendingDonations";
+import { ExpenseReportView } from "../components/ExpenseReportView";
 import { fundraiserService } from "../services/fundraiserService";
 import type { FundraiserCampaignItem } from "../types/fundraiser.types";
+import imagePlaceholder from "../../../assets/image-unavailable.svg";
 
 vi.mock("../services/fundraiserService", () => ({ fundraiserService: {
   getPaymentDetails: vi.fn(), donate: vi.fn(), getPendingDonations: vi.fn(), confirmDonation: vi.fn(),
@@ -13,6 +15,19 @@ afterEach(cleanup);
 beforeEach(() => vi.resetAllMocks());
 
 describe("Đối soát và gửi lặp quyên góp", () => {
+  it("hiển thị ảnh thay thế khi chứng từ gốc bị mất", () => {
+    const {container} = render(<ExpenseReportView campaign={{...campaign, total_donated:100000}} expenses={[
+      {expense_id:"expense", content:"Mua cây", amount:10000, expense_date:"2026-11-01", proof_image_url:"/uploads/missing.jpg"} as never,
+    ]} isCreator={false} onExpenseAdded={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("btn-view-proof-expense"));
+    const img = container.querySelector("[data-testid='proof-lightbox'] img")!;
+    fireEvent.error(img);
+    expect(img.src).toBe(new URL(imagePlaceholder, window.location.href).href);
+    const fallback = img.src;
+    fireEvent.error(img);
+    expect(img.src).toBe(fallback);
+  });
+
   it("không hiển thị tài khoản tự đặt khi không tải được thông tin", async () => {
     vi.mocked(fundraiserService.getPaymentDetails).mockRejectedValue(new Error("offline"));
     const onClose = vi.fn();

@@ -94,6 +94,8 @@ $event-info: #3b82f6;
 
     .toolbar-actions-group {
       display: flex;
+      flex-wrap: wrap;
+      max-width: 100%;
       align-items: center;
       gap: 0.75rem;
 

@@ -14,6 +14,7 @@ import {
   resolveMediaUrl,
 } from "../utils/datetime";
 import "../styles/Events.scss";
+import { showImageFallback } from "../../../utils/imageFallback";
 
 const PAGE_SIZE = 12;
 
@@ -486,7 +487,7 @@ export const EventsList: React.FC<EventsListProps> = ({
                   onClick={() => setSelectedEvent(ev)}
                 >
                   <div className="card-media">
-                    <img src={resolveMediaUrl(ev.cover_image_url)} alt={ev.title} loading="lazy" />
+                    <img src={resolveMediaUrl(ev.cover_image_url)} alt={ev.title} loading="lazy" onError={showImageFallback} />
                     {renderStatusBadge(ev)}
                     <span className="district-tag">📍 {ev.district}</span>
                   </div>

@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 import React, { useState, useEffect, useRef } from "react";
 import type { PostItem, UpdatePostPayload } from "../types/profile.types";
 import { profileService } from "../services/profile.service";
@@ -478,7 +479,7 @@ export const EditPostModal: React.FC<EditPostModalProps> = ({
                               <span className="video-badge-pill">▶ VIDEO</span>
                             </div>
                           ) : (
-                            <img
+                            <img onError={showImageFallback}
                               src={resolveMediaUrl(m.url)}
                               alt={`Đính kèm ${idx + 1}`}
                               className="preview-media-thumb"
