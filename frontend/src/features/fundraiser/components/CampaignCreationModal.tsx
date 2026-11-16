@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { showImageFallback } from "../../../utils/imageFallback";
+import React, { useState, useRef } from "react";
 import type { FundraiserCampaignCreateInput } from "../types/fundraiser.types";
 import {
   VIETNAM_PROVINCES,
@@ -19,6 +20,7 @@ export const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
   onSuccess,
   pendingCampaignCount = 0,
 }) => {
+  const submittingRef = useRef(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedProvince, setSelectedProvince] = useState("TP. Hồ Chí Minh");
@@ -56,7 +58,8 @@ export const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
   };
 
   const handleTargetAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value.replace(/\D/g, "");
+    const rawValue = e.target.value.normalize("NFKC").replace(/[.,\s]/g, "");
+    if (rawValue && !/^[0-9]+$/.test(rawValue)) { setTargetAmountRaw(e.target.value); return; }
     if (!rawValue) {
       setTargetAmountRaw("");
       return;
@@ -88,9 +91,7 @@ export const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
       const res = await fundraiserService.uploadImage(file);
       setCoverImageUrl(res.url);
     } catch {
-      // Fallback preview local nếu upload API chưa khởi động
-      const localUrl = URL.createObjectURL(file);
-      setCoverImageUrl(localUrl);
+      setGeneralError("Không tải được ảnh. Vui lòng thử lại, ảnh cũ được giữ nguyên.");
     } finally {
       setIsUploadingImage(false);
     }
@@ -143,6 +144,7 @@ export const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    if (submittingRef.current) return;
     e.preventDefault();
     setGeneralError(null);
 
@@ -152,7 +154,9 @@ export const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
     }
 
     if (!validateForm()) return;
+    if (!/^[0-9.,\s]+$/.test(targetAmountRaw) || !Number.isSafeInteger(Number(targetAmountRaw.replace(/[.,\s]/g, "")))) { setGeneralError("Mục tiêu phải là số nguyên hợp lệ, chỉ gồm chữ số 0–9."); return; }
 
+    submittingRef.current = true;
     setIsSubmitting(true);
     const numericAmount = parseInt(targetAmountRaw.replace(/\D/g, ""), 10);
     const finalDistrict = selectedDistrict.includes(selectedProvince)
@@ -181,6 +185,7 @@ export const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         err?.response?.data?.detail || "Không thể gửi chiến dịch. Vui lòng thử lại";
       setGeneralError(msg);
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -308,7 +313,7 @@ export const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
 
               {coverImageUrl && (
                 <div style={{ marginTop: "0.75rem", borderRadius: "8px", overflow: "hidden", maxHeight: "160px" }}>
-                  <img
+                  <img onError={showImageFallback}
                     src={coverImageUrl}
                     alt="Xem trước ảnh bìa"
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}

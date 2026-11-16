@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class MessageSenderSummary(BaseModel):
@@ -90,7 +90,15 @@ class CreateGroupConversationRequest(BaseModel):
 
 class SendMessageRequest(BaseModel):
     content: Optional[str] = Field(None, max_length=1000, description="Tin nhắn tối đa 1000 ký tự")
-    media_url: Optional[str] = None
+    media_url: Optional[str] = Field(None, max_length=1000)
+
+    @model_validator(mode="after")
+    def require_message(self):
+        if not (self.content and self.content.strip()) and not (self.media_url and self.media_url.strip()):
+            raise ValueError("Vui lòng nhập nội dung tin nhắn hoặc đính kèm ảnh")
+        if self.media_url and self.media_url.strip().lower().startswith(("blob:", "data:", "javascript:")):
+            raise ValueError("Ảnh chưa được tải lên. Vui lòng chọn lại ảnh.")
+        return self
 
     @field_validator("content")
     def validate_content_length(cls, v: Optional[str]) -> Optional[str]:

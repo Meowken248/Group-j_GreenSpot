@@ -1,3 +1,4 @@
+from app.core.media_validation import validate_image_bytes
 """
 FastAPI Router cho Chức năng 16: Tạo nhóm theo quận, theo phường hoặc theo chủ đề (Community Groups)
 Tuân thủ nghiêm ngặt đặc tả Báo cáo Đồ án Web 1 (pp. 137-141).
@@ -124,17 +125,18 @@ async def upload_group_cover(
         )
 
     # Đọc nội dung để kiểm tra kích thước
-    content = await file.read()
+    content = await file.read(5 * 1024 * 1024 + 1)
     if len(content) > 5 * 1024 * 1024:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Ảnh không hợp lệ (chỉ nhận JPG, PNG, tối đa 5MB)",
         )
 
+    verified_ext = validate_image_bytes(content)
     group_upload_dir = os.path.join(UPLOAD_DIR, "groups")
     os.makedirs(group_upload_dir, exist_ok=True)
 
-    file_ext = os.path.splitext(file.filename or "")[1] or ".jpg"
+    file_ext = verified_ext
     new_filename = f"group_cover_{uuid.uuid4()}{file_ext}"
     target_path = os.path.join(group_upload_dir, new_filename)
 

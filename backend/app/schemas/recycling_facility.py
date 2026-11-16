@@ -32,12 +32,12 @@ class RecyclingFacilityItem(BaseModel):
 class RecyclingFacilityCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100, description="Tên trạm tái chế")
     address: str = Field(..., min_length=1, max_length=200, description="Địa chỉ trạm")
-    unit_id: int = Field(..., description="ID quận/huyện thuộc TP.HCM")
+    unit_id: int = Field(..., strict=True, ge=1, le=2147483647, description="ID quận/huyện thuộc TP.HCM")
     latitude: float = Field(..., ge=-90, le=90, description="Vĩ độ WGS84")
     longitude: float = Field(..., ge=-180, le=180, description="Kinh độ WGS84")
     accepted_waste_types: List[str] = Field(..., min_length=1, description="Các loại rác tiếp nhận")
-    open_time: str = Field(..., description="Giờ mở cửa (HH:MM)")
-    close_time: str = Field(..., description="Giờ đóng cửa (HH:MM)")
+    open_time: str = Field(..., pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$", description="Giờ mở cửa (HH:MM)")
+    close_time: str = Field(..., pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$", description="Giờ đóng cửa (HH:MM)")
     contact_phone: Optional[str] = Field(None, max_length=20)
     managing_org: Optional[str] = Field(None, max_length=150)
 
@@ -76,14 +76,14 @@ class RecyclingFacilityCreateRequest(BaseModel):
 class RecyclingFacilityUpdateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     address: str = Field(..., min_length=1, max_length=200)
-    unit_id: int
+    unit_id: int = Field(..., strict=True, ge=1, le=2147483647)
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
     accepted_waste_types: List[str] = Field(..., min_length=1)
-    open_time: str
-    close_time: str
+    open_time: str = Field(..., pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
+    close_time: str = Field(..., pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
     is_active: bool
-    version: Optional[int] = None
+    version: int = Field(..., strict=True, ge=1)
     contact_phone: Optional[str] = Field(None, max_length=20)
     managing_org: Optional[str] = Field(None, max_length=150)
 

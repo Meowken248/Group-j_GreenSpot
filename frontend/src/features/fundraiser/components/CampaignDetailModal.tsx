@@ -5,10 +5,12 @@ import type {
   FundraiserExpenseItem,
 } from "../types/fundraiser.types";
 import { fundraiserService } from "../services/fundraiserService";
+import { PendingDonations } from "./PendingDonations";
 import { DonationModal } from "./DonationModal";
 import { ExpenseReportView } from "./ExpenseReportView";
 import { CampaignDeleteModal } from "./CampaignDeleteModal";
 import { CampaignShareModal } from "./CampaignShareModal";
+import { showImageFallback } from "../../../utils/imageFallback";
 
 interface CampaignDetailModalProps {
   isOpen: boolean;
@@ -109,7 +111,7 @@ export const CampaignDetailModal: React.FC<CampaignDetailModalProps> = ({
 
   const handleDonationSuccess = async (amount: number) => {
     setShowDonationModal(false);
-    showToast(`Quyên góp thành công. Cảm ơn bạn đã đóng góp ${formatVND(amount)}!`);
+    showToast(`Đã ghi nhận khoản ${formatVND(amount)} chờ đối soát ngân hàng. Tổng quỹ sẽ cập nhật sau khi xác nhận.`);
     try {
       const refreshed = await fundraiserService.getCampaignDetail(campId);
       onCampaignUpdated(refreshed);
@@ -130,6 +132,7 @@ export const CampaignDetailModal: React.FC<CampaignDetailModalProps> = ({
     try {
       const updated = await fundraiserService.updateCampaign(campId, {
         description: editDescText.trim(),
+        updated_at: campaign.updated_at!,
       });
       onCampaignUpdated(updated);
       setShowEditDescModal(false);
@@ -320,6 +323,7 @@ export const CampaignDetailModal: React.FC<CampaignDetailModalProps> = ({
                   <img
                     src={campaign.cover_image_url}
                     alt={campaign.title}
+                    onError={showImageFallback}
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   />
                 </div>
@@ -454,6 +458,11 @@ export const CampaignDetailModal: React.FC<CampaignDetailModalProps> = ({
             </div>
           )}
 
+          {activeTab === "donors" && isAdmin && <PendingDonations campaignId={campId} onConfirmed={async () => {
+            onCampaignUpdated(await fundraiserService.getCampaignDetail(campId));
+            setDonations(await fundraiserService.getDonations(campId));
+          }}/>}
+
           {/* TAB 3: BÁO CÁO SỬ DỤNG QUỸ (MÀN 5) */}
           {activeTab === "expenses" && (
             <ExpenseReportView
@@ -466,8 +475,8 @@ export const CampaignDetailModal: React.FC<CampaignDetailModalProps> = ({
         </div>
 
         {/* FOOTER NÚT THAO TÁC */}
-        <div className="modal-footer">
-          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+        <div className="modal-footer campaign-detail-footer">
+          <div className="campaign-owner-actions" style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
             <button
               type="button"
               className="btn-share-action"

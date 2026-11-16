@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import { showImageFallback } from "../../../utils/imageFallback";
+import React, { useState, useEffect, useRef } from "react";
 import { chatService } from "../services/chatService";
 import type { FriendItem } from "../../friends/types";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
@@ -19,6 +20,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   const [friends, setFriends] = useState<FriendItem[]>([]);
   const [selectedFriends, setSelectedFriends] = useState<FriendItem[]>([]);
   const [isLoadingFriends, setIsLoadingFriends] = useState(false);
+  const submittingRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -99,6 +101,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   // Xác nhận tạo nhóm
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     const cleanTitle = title.trim();
 
     if (!cleanTitle) {
@@ -111,6 +114,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
       return;
     }
 
+    submittingRef.current = true;
     try {
       setIsSubmitting(true);
       setErrorMessage(null);
@@ -127,6 +131,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
       const msg = err?.response?.data?.detail || "Không thể tạo nhóm. Vui lòng thử lại.";
       setErrorMessage(msg);
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -243,7 +248,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                   const isChecked = selectedFriends.some((f) => f.user_id === friend.user_id);
                   return (
                     <label key={friend.user_id} className="friend-pick-row">
-                      <img
+                      <img onError={showImageFallback}
                         src={
                           friend.avatar_url
                             ? resolveMediaUrl(friend.avatar_url)

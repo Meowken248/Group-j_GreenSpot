@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../../utils/imageFallback";
 import React, { useEffect } from 'react';
 
 interface ImageLightboxModalProps {
@@ -39,7 +40,7 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
         ✕
       </button>
 
-      <img
+      <img onError={showImageFallback}
         src={imageUrl}
         alt={caption || 'Ảnh hiện trường chi tiết'}
         className="lightbox-img"

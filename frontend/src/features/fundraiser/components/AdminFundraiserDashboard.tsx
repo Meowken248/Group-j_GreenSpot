@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 import React, { useState, useEffect, useMemo } from "react";
 import type { FundraiserCampaignItem } from "../types/fundraiser.types";
 import { VIETNAM_PROVINCES } from "../types/fundraiser.types";
@@ -412,7 +413,7 @@ const AdminFundraiserDashboardInternal: React.FC<AdminFundraiserDashboardProps> 
                       <td>
                         <div className="cell-campaign-info">
                           {camp.cover_image_url && (
-                            <img
+                            <img onError={showImageFallback}
                               src={camp.cover_image_url}
                               alt=""
                               className="thumb-img"
@@ -681,7 +682,7 @@ const AdminFundraiserDashboardInternal: React.FC<AdminFundraiserDashboardProps> 
           onClick={() => setPreviewImageUrl(null)}
         >
           <div style={{ maxWidth: "800px", maxHeight: "90vh", position: "relative" }}>
-            <img
+            <img onError={showImageFallback}
               src={previewImageUrl}
               alt="Hóa đơn chứng từ phóng to"
               style={{ width: "100%", height: "auto", borderRadius: "10px" }}

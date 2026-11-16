@@ -23,6 +23,15 @@ export interface FundraiserQueryParams {
 }
 
 export const fundraiserService = {
+  async getPaymentDetails(id: string): Promise<{bank_name: string; bank_account_number: string; bank_account_name: string}> {
+    return (await api.get(`${API_BASE}/${id}/payment-details`)).data;
+  },
+  async getPendingDonations(id: string): Promise<FundraiserDonationItem[]> {
+    return (await api.get(`${API_BASE}/${id}/pending-donations`)).data;
+  },
+  async confirmDonation(id: string, donationId: string): Promise<FundraiserDonationItem> {
+    return (await api.post(`${API_BASE}/${id}/donations/${donationId}/confirm`)).data;
+  },
   async getCampaigns(params?: FundraiserQueryParams): Promise<FundraiserCampaignListResponse> {
     const res = await api.get<FundraiserCampaignListResponse>(API_BASE, { params });
     return res.data;

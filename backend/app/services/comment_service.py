@@ -8,6 +8,7 @@ from sqlalchemy import select, update, func, desc, asc, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.group_content_lock import lock_group_content
 from app.models.post import Post
 from app.models.comment import Comment, PostShare
 from app.models.rbac import User
@@ -81,7 +82,7 @@ class CommentService:
         """Apply the same privacy boundary to comments, replies and writes."""
         stmt = select(Post).where(Post.post_id == post_id, Post.deleted_at.is_(None))
         if lock:
-            stmt = stmt.with_for_update()
+            stmt = stmt.with_for_update().execution_options(populate_existing=True)
         post = (await db.execute(stmt)).scalar_one_or_none()
         denied = HTTPException(404, "Bài viết không còn tồn tại hoặc bạn không có quyền xem")
         if not post:
@@ -374,6 +375,16 @@ class CommentService:
         # Kiểm tra bài viết gốc
         post = await self._require_visible_post(db, root_comment.post_id, user_id, lock=True)
 
+        # Re-read after obtaining the post lock: another tab may have deleted the thread.
+        root_comment = (await db.execute(select(Comment).where(
+            Comment.comment_id == root_id, Comment.deleted_at.is_(None)
+        ).execution_options(populate_existing=True))).scalar_one_or_none()
+        target_exists = (await db.execute(select(Comment.comment_id).where(
+            Comment.comment_id == comment_id, Comment.deleted_at.is_(None)
+        ))).scalar_one_or_none()
+        if root_comment is None or target_exists is None:
+            raise HTTPException(404, "Bình luận gốc không còn tồn tại")
+
         new_reply = Comment(
             comment_id=uuid.uuid4(),
             post_id=root_comment.post_id,
@@ -420,6 +431,13 @@ class CommentService:
                 detail="Bình luận không còn tồn tại",
             )
 
+        # All comment mutations lock the post first, then refresh the comment.
+        post = (await db.execute(select(Post).where(Post.post_id == comment.post_id)
+            .with_for_update().execution_options(populate_existing=True))).scalar_one_or_none()
+        comment = (await db.execute(stmt.with_for_update().execution_options(populate_existing=True))).scalar_one_or_none()
+        if not comment:
+            raise HTTPException(404, "Bình luận không còn tồn tại hoặc đã bị xóa")
+
         if comment.user_id != user_id and not is_admin:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -427,10 +445,12 @@ class CommentService:
             )
 
         comment.deleted_at = datetime.now(timezone.utc)
+        if comment.parent_id is None:
+            await db.execute(update(Comment).where(
+                Comment.parent_id == comment_id, Comment.deleted_at.is_(None)
+            ).values(deleted_at=comment.deleted_at))
 
         # Giảm số lượng
-        post_stmt = select(Post).where(Post.post_id == comment.post_id)
-        post = (await db.execute(post_stmt)).scalar_one_or_none()
         if post:
             if comment.parent_id is None:
                 post.comments_count = max(0, post.comments_count - (1 + comment.replies_count))
@@ -458,6 +478,7 @@ class CommentService:
         - Kiểm tra bảo mật: Bài viết PRIVATE hoặc FRIENDS thì không được phép chia sẻ
         - Hỗ trợ 4 loại: FEED, FRIENDS, GROUP, LINK
         """
+        await lock_group_content(db)
         post = await self._require_visible_post(db, post_id, user_id, lock=True)
 
         # Kiểm tra Quyền riêng tư: Chỉ bài viết PUBLIC mới được chia sẻ
@@ -502,40 +523,39 @@ class CommentService:
             message = "Đã chia sẻ bài viết lên bảng tin"
 
         elif share_type == "FRIENDS":
-            # Gửi cho danh sách bạn bè
-            count_friends = len(payload.target_friend_ids or [])
-            if count_friends == 0:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Vui lòng chọn ít nhất 1 người nhận",
-                )
-            post.shares_count += count_friends
-            message = f"Đã gửi bài viết cho {count_friends} người"
-
-            # Tự động gửi tin nhắn kèm liên kết bài viết vào chat 1-1 với bạn bè
-            try:
-                from app.services.chat_service import chat_service
-                from app.schemas.chat import SendMessageRequest
-                cur_user = await db.get(User, user_id)
-                if cur_user and payload.target_friend_ids:
-                    share_content = (
-                        f"Đã chia sẻ bài viết: {post.content[:100]}...\nXem tại: #posts"
-                        if not payload.caption
-                        else f"{payload.caption}\n\n[Bài viết chia sẻ: {post.content[:80]}...]"
-                    )
-                    for f_id in payload.target_friend_ids:
-                        try:
-                            direct_conv = await chat_service.get_or_create_direct_conversation(db, cur_user, f_id)
-                            if direct_conv and direct_conv.conversation_id:
-                                await chat_service.send_message(
-                                    db, cur_user, direct_conv.conversation_id,
-                                    SendMessageRequest(content=share_content, message_type="TEXT")
-                                )
-                        except Exception:
-                            # Bỏ qua nếu có bạn bè bị chặn hoặc chưa kết bạn để không gián đoạn luồng chia sẻ
-                            pass
-            except Exception:
-                pass
+            from app.services.chat_service import ChatService
+            from app.schemas.chat import SendMessageRequest
+            chat_service = ChatService()
+            friend_ids = list(dict.fromkeys(payload.target_friend_ids or []))
+            if not friend_ids:
+                raise HTTPException(400, "Vui lòng chọn ít nhất 1 người nhận")
+            cur_user = await db.get(User, user_id)
+            if not cur_user:
+                raise HTTPException(401, "Vui lòng đăng nhập lại để chia sẻ")
+            share_content = (
+                f"Đã chia sẻ bài viết: {post.content[:100]}...\nXem tại: #posts"
+                if not payload.caption
+                else f"{payload.caption}\n\n[Bài viết chia sẻ: {post.content[:80]}...]"
+            )
+            delivered = []
+            for friend_id in friend_ids:
+                try:
+                    conversation = await chat_service.get_or_create_direct_conversation(db, cur_user, friend_id)
+                    await chat_service.send_message(db, cur_user, conversation.conversation_id,
+                        SendMessageRequest(content=share_content))
+                    delivered.append(friend_id)
+                except HTTPException as error:
+                    if error.status_code not in (400, 403, 404):
+                        raise
+            if not delivered:
+                raise HTTPException(400, "Không gửi được bài viết. Người nhận có thể đã hủy kết bạn hoặc chặn tin nhắn.")
+            # Chat methods commit their own messages. Reload before updating the share counter.
+            await db.refresh(post, with_for_update=True)
+            post.shares_count += len(delivered)
+            payload.target_friend_ids = delivered
+            message = f"Đã gửi bài viết cho {len(delivered)} người"
+            if len(delivered) < len(friend_ids):
+                message += ". Một số người nhận đã hủy kết bạn hoặc chặn tin nhắn nên không gửi được."
 
         elif share_type == "GROUP":
             # Đăng vào nhóm
@@ -549,7 +569,7 @@ class CommentService:
             # Validate all destinations first, so a failure cannot partially share.
             groups = []
             for group_id in sorted(group_ids):
-                group = await db.get(Group, group_id, with_for_update=True)
+                group = await db.get(Group, group_id, with_for_update=True, populate_existing=True)
                 if not group or group.deleted_at is not None or group.status == "DISBANDED":
                     raise HTTPException(404, "Nhóm không tồn tại hoặc đã bị giải tán")
                 member = (await db.execute(select(GroupMember).where(

@@ -19,6 +19,9 @@ import type {
 
 vi.mock("../services/fundraiserService", () => ({
   fundraiserService: {
+    getPaymentDetails: vi.fn(),
+    getPendingDonations: vi.fn(),
+    confirmDonation: vi.fn(),
     getCampaigns: vi.fn(),
     listCampaigns: vi.fn(),
     getCampaignDetail: vi.fn(),
@@ -153,6 +156,8 @@ const mockExpenses: FundraiserExpenseItem[] = [
 describe("Feature 20: Gây quỹ cộng đồng (Fundraiser)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(fundraiserService.getPaymentDetails).mockResolvedValue({bank_name: "Vietcombank", bank_account_number: "0123456789", bank_account_name: "HUYNH ANH TU"});
+    vi.mocked(fundraiserService.getPendingDonations).mockResolvedValue([]);
   });
 
   // ==========================================
@@ -536,6 +541,7 @@ describe("Feature 20: Gây quỹ cộng đồng (Fundraiser)", () => {
     fireEvent.change(amountInput, { target: { value: "5000" } });
 
     const donateBtn = screen.getByTestId("btn-confirm-donation");
+    await waitFor(() => expect(donateBtn).not.toBeDisabled());
     fireEvent.click(donateBtn);
 
     await waitFor(() => {
@@ -719,7 +725,7 @@ describe("Feature 20: Gây quỹ cộng đồng (Fundraiser)", () => {
   // ==========================================
   // NÂNG CẤP MỚI: ADMIN DASHBOARD, VIETQR & CSS MXH
   // ==========================================
-  it("Test 19: DonationModal hiển thị khối VietQR Napas247 và thông tin ngân hàng", () => {
+  it("Test 19: DonationModal hiển thị khối VietQR Napas247 và thông tin ngân hàng", async () => {
     render(
       <DonationModal
         isOpen={true}
@@ -729,7 +735,7 @@ describe("Feature 20: Gây quỹ cộng đồng (Fundraiser)", () => {
       />
     );
 
-    expect(screen.getByTestId("vietqr-payment-card")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId("vietqr-payment-card")).toBeInTheDocument());
     expect(screen.getByText(/NAPAS 24\/7 • VIETQR/i)).toBeInTheDocument();
     expect(screen.getByText(/HUYNH ANH TU/i)).toBeInTheDocument();
     expect(screen.getByText(/0123456789/i)).toBeInTheDocument();

@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 import React from "react";
 import type { ChatMessage } from "../types/chat.types";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
@@ -54,7 +55,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
     >
       {/* Avatar người gửi (chỉ hiện bên trái khi không phải tin nhắn của tôi) */}
       {!isMine && showAvatar && (
-        <img
+        <img onError={showImageFallback}
           src={
             senderAvatar
               ? resolveMediaUrl(senderAvatar)
@@ -79,7 +80,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
         {/* Nội dung tin nhắn */}
         <div className="message-bubble">
           {message.media_url && (
-            <img
+            <img onError={showImageFallback}
               src={resolveMediaUrl(message.media_url)}
               alt="Hình ảnh đính kèm"
               className="msg-image"

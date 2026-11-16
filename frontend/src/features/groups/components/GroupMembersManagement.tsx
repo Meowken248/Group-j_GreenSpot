@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 /**
  * GroupMembersManagement.tsx
  * STT 04 - Màn 1/4: Quản lý danh sách thành viên nhóm
@@ -328,7 +329,7 @@ export const GroupMembersManagement: React.FC<GroupMembersManagementProps> = ({
                       <div className="member-profile-info">
                         <div className="avatar-circle">
                           {mem.avatar_url ? (
-                            <img src={resolveMediaUrl(mem.avatar_url)} alt={mem.full_name} />
+                            <img onError={showImageFallback} src={resolveMediaUrl(mem.avatar_url)} alt={mem.full_name} />
                           ) : (
                             <span>{mem.full_name.charAt(0).toUpperCase()}</span>
                           )}

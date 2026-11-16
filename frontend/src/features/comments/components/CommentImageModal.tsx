@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 import React, { useEffect } from "react";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
 
@@ -41,7 +42,7 @@ export const CommentImageModal: React.FC<CommentImageModalProps> = ({
       </button>
 
       <div className="comment-lightbox-content" onClick={(e) => e.stopPropagation()}>
-        <img
+        <img onError={showImageFallback}
           src={resolveMediaUrl(imageUrl)}
           alt="Ảnh đính kèm bình luận"
           className="comment-lightbox-img"

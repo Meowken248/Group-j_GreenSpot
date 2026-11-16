@@ -1,6 +1,7 @@
 import {
   listUserQueue,
   updateQueueItemStatus,
+  releaseQueueClaim,
   deleteQueueItem,
 } from "./outboxQueueRepository";
 import { getCurrentUserId } from "./offlineDb";
@@ -233,7 +234,9 @@ const uploadSingleBlob = async (
   assertUserConsistency(syncUserId, item.user_id);
 
   const formData = new FormData();
-  formData.append("file", blob, `${clientFileId}.${mediaType === "IMAGE" ? "jpg" : mediaType === "VIDEO" ? "mp4" : "webm"}`);
+  const mime = blob.type.toLowerCase();
+  const extension = mime.includes("webm") ? "webm" : mime.includes("png") ? "png" : mime.includes("webp") ? "webp" : mime.includes("quicktime") ? "mov" : mediaType === "IMAGE" ? "jpg" : mediaType === "VIDEO" ? "mp4" : "webm";
+  formData.append("file", blob, `${clientFileId}.${extension}`);
   formData.append("client_file_id", clientFileId);
   formData.append("latitude", String(item.latitude));
   formData.append("longitude", String(item.longitude));
@@ -446,7 +449,7 @@ export const syncOutboxQueue = async (
     // Nếu có manualQueueId: ưu tiên gửi ngay không phụ thuộc next_retry_at
     let candidateItems = queue.filter((item) => {
       if (manualQueueId) {
-        return item.queue_id === manualQueueId;
+        return item.queue_id === manualQueueId && ["QUEUED", "FAILED"].includes(item.status);
       }
       if (item.status !== "QUEUED") return false;
       if (item.next_retry_at && item.next_retry_at > now) {
@@ -456,7 +459,7 @@ export const syncOutboxQueue = async (
     });
 
     if (manualQueueId) {
-      candidateItems = queue.filter((item) => item.queue_id === manualQueueId);
+      candidateItems = queue.filter((item) => item.queue_id === manualQueueId && ["QUEUED", "FAILED"].includes(item.status));
     }
 
     summary.total = candidateItems.length;
@@ -471,20 +474,24 @@ export const syncOutboxQueue = async (
       }
 
       // Đánh dấu SENDING
-      await updateQueueItemStatus(item.queue_id, { status: "SENDING" });
+      let claimedAt: number;
+      try {
+        claimedAt = await updateQueueItemStatus(item.queue_id, { status: "SENDING" }, item.updated_at);
+      } catch { continue; } // Another tab edited, deleted or claimed this item.
 
       // Kiểm tra tài khoản NGAY SAU KHI updateQueueItemStatus (Issue 3 - đóng khoảng hở async)
       try {
         assertUserConsistency(syncUserId, item.user_id);
       } catch {
         console.warn("[SyncEngine] Tài khoản người dùng đã thay đổi trong khi đang cập nhật SENDING. Hoàn trả về QUEUED và dừng.");
-        await updateQueueItemStatus(item.queue_id, { status: "QUEUED" });
+        await releaseQueueClaim(item.queue_id, syncUserId, claimedAt);
         break;
       }
 
       try {
         const sendResult = await sendSingleQueueItem(item, syncUserId);
 
+        assertUserConsistency(syncUserId, item.user_id);
         // Thành công: Giải phóng khỏi hàng đợi (R24)
         await deleteQueueItem(item.queue_id, true);
 
@@ -503,7 +510,7 @@ export const syncOutboxQueue = async (
       } catch (err: any) {
         if (err.userSwitched) {
           console.warn("[SyncEngine] Phát hiện chuyển đổi tài khoản trong lúc gửi tệp/sự cố. Hoàn trả mục về QUEUED và dừng.");
-          await updateQueueItemStatus(item.queue_id, { status: "QUEUED" });
+          await releaseQueueClaim(item.queue_id, syncUserId, claimedAt);
           break;
         }
 

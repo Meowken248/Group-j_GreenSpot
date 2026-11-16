@@ -3,6 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.media_validation import validate_image_bytes
 from app.database import get_db
 from app.models.rbac import User, UserSession
 from app.api.v1.auth import get_current_user_and_session
@@ -63,7 +64,7 @@ async def submit_offline_incident_endpoint(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi hệ thống khi đồng bộ phản ánh ngoại tuyến: {str(e)}",
+            detail="Không thể đồng bộ lúc này. Phản ánh vẫn được giữ trong hàng đợi, vui lòng thử lại sau.",
         )
 
 
@@ -109,7 +110,7 @@ async def upload_offline_media_endpoint(
     Upload tệp đa phương tiện (ảnh, video, âm thanh) được lưu trong hàng đợi ngoại tuyến.
     Bảo toàn mộc thời gian chụp/ghi âm thực tế ngoại tuyến (captured_at).
     """
-    content = await file.read()
+    content = await file.read(50 * 1024 * 1024 + 1)
     file_size = len(content)
     filename = file.filename or "media.jpg"
     content_type = file.content_type or ""
@@ -148,6 +149,11 @@ async def upload_offline_media_endpoint(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Tệp ghi âm vượt quá dung lượng tối đa 20MB.",
         )
+
+    if not content:
+        raise HTTPException(400, "Tệp rỗng. Vui lòng chọn lại tệp.")
+    if is_image:
+        validate_image_bytes(content)
 
     # Đóng dấu watermark và lưu trữ theo loại phương tiện
     if is_image:

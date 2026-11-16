@@ -10,6 +10,7 @@ import {
   KHANHHOA_DISTRICTS,
   VIETNAM_PROVINCES,
 } from "../types/fundraiser.types";
+import { showImageFallback } from "../../../utils/imageFallback";
 
 interface CampaignListPanelProps {
   campaigns: FundraiserCampaignItem[];
@@ -333,6 +334,7 @@ export const CampaignListPanel: React.FC<CampaignListPanelProps> = ({
                       "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=800&q=80"
                     }
                     alt={camp.title}
+                    onError={showImageFallback}
                   />
                   {getStatusBadge(camp)}
                   <span className="district-tag">📍 {camp.district}</span>

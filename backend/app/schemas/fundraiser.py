@@ -1,8 +1,12 @@
 import uuid
+import json
+from pathlib import Path
 from datetime import date, datetime
 from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator
 
+
+LOCATION_DISTRICTS = json.loads(Path(__file__).with_name("fundraiser_locations.json").read_text(encoding="utf-8"))
 
 VIETNAM_PROVINCES = {
     "Hà Nội", "Hải Phòng", "Quảng Ninh", "Bắc Ninh", "Hải Dương", "Hưng Yên",
@@ -31,12 +35,19 @@ class FundraiserCampaignBase(BaseModel):
     title: str = Field(..., max_length=100, description="Tên chiến dịch, tối đa 100 ký tự")
     description: str = Field(..., max_length=2000, description="Mô tả chiến dịch, tối đa 2000 ký tự")
     district: str = Field(..., description="Quận/huyện thuộc 22 quận/huyện TP.HCM")
-    target_amount: int = Field(..., gt=0, description="Mục tiêu gây quỹ (VNĐ), phải lớn hơn 0")
+    target_amount: int = Field(..., strict=True, gt=0, le=9007199254740991, description="Mục tiêu gây quỹ (VNĐ), phải lớn hơn 0")
     end_date: date = Field(..., description="Hạn chót chiến dịch, từ ngày mai và tối đa 90 ngày")
     cover_image_url: Optional[str] = Field(None, max_length=500)
     bank_account_name: str = Field(..., max_length=100, description="Tên chủ tài khoản nhận")
     bank_account_number: str = Field(..., max_length=50, description="Số tài khoản ngân hàng")
     bank_name: str = Field(..., max_length=100, description="Tên ngân hàng")
+
+    @field_validator("bank_account_name", "bank_account_number", "bank_name")
+    @classmethod
+    def bank_required(cls, value):
+        if not value.strip():
+            raise ValueError("Vui lòng nhập đầy đủ tên ngân hàng, chủ tài khoản và số tài khoản.")
+        return value.strip()
 
     @field_validator("title")
     @classmethod
@@ -71,18 +82,19 @@ class FundraiserCampaignBase(BaseModel):
         s = v.strip()
         if not s or len(s) < 2:
             raise ValueError("Vui lòng chọn địa bàn hợp lệ")
+        if ", " in s:
+            district, province = s.rsplit(", ", 1)
+            if province in VIETNAM_PROVINCES and district in LOCATION_DISTRICTS.get(province, []):
+                return s
         # Khớp với Tỉnh/Thành Việt Nam
         matched_province = [p for p in VIETNAM_PROVINCES if s.lower() == p.lower()]
         if matched_province:
             return matched_province[0]
         # Khớp với Quận/Huyện TP.HCM
-        matched_district = [d for d in VALID_DISTRICTS if s.lower() in d.lower()]
+        matched_district = [d for d in VALID_DISTRICTS if s.lower() == d.lower()]
         if matched_district:
             return matched_district[0]
-        # Cho phép các địa bàn toàn quốc hợp lệ
-        if len(s) <= 100:
-            return s
-        raise ValueError(f"Địa bàn '{s}' vượt quá 100 ký tự")
+        raise ValueError("Vui lòng chọn tỉnh/thành hoặc quận/huyện hợp lệ trong danh sách.")
 
 
 class FundraiserCampaignCreateRequest(FundraiserCampaignBase):
@@ -90,16 +102,30 @@ class FundraiserCampaignCreateRequest(FundraiserCampaignBase):
 
 
 class FundraiserCampaignUpdateRequest(BaseModel):
+    updated_at: datetime
     title: Optional[str] = Field(None, max_length=100)
     description: Optional[str] = Field(None, max_length=2000)
-    district: Optional[str] = None
-    target_amount: Optional[int] = None
+    district: Optional[str] = Field(None, max_length=100)
+    target_amount: Optional[int] = Field(None, strict=True, gt=0, le=9007199254740991)
     end_date: Optional[date] = None
-    cover_image_url: Optional[str] = None
+    cover_image_url: Optional[str] = Field(None, max_length=500)
+
+    @field_validator("district")
+    @classmethod
+    def valid_district(cls, value):
+        return FundraiserCampaignBase.validate_district(value) if value is not None else value
+
+    @field_validator("title", "description", "district")
+    @classmethod
+    def nonblank(cls, value):
+        if value is not None and not value.strip():
+            raise ValueError("Tên, mô tả và địa bàn không được chỉ chứa khoảng trắng.")
+        return value.strip() if value is not None else value
 
 
 class FundraiserDonationCreateRequest(BaseModel):
-    amount: int = Field(..., ge=10000, description="Số tiền quyên góp tối thiểu 10.000 VNĐ")
+    client_reference: uuid.UUID
+    amount: int = Field(..., strict=True, ge=10000, le=9007199254740991, description="Số tiền quyên góp tối thiểu 10.000 VNĐ")
     message: Optional[str] = Field(None, max_length=200, description="Lời nhắn, tối đa 200 ký tự")
     is_anonymous: bool = Field(False, description="Tùy chọn quyên góp ẩn danh")
 
@@ -119,8 +145,9 @@ class FundraiserDonationCreateRequest(BaseModel):
 
 
 class FundraiserExpenseCreateRequest(BaseModel):
+    client_reference: uuid.UUID
     content: str = Field(..., max_length=255, description="Nội dung khoản chi")
-    amount: int = Field(..., gt=0, description="Số tiền chi (VNĐ)")
+    amount: int = Field(..., strict=True, gt=0, le=9007199254740991, description="Số tiền chi (VNĐ)")
     expense_date: date = Field(..., description="Ngày chi tiêu")
     proof_image_url: str = Field(..., max_length=500, description="Ảnh chứng từ/hóa đơn")
 
@@ -145,6 +172,8 @@ class FundraiserDonationItem(BaseModel):
     message: Optional[str] = None
     is_anonymous: bool
     created_at: datetime
+    payment_status: str = "completed"
+    transaction_code: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -182,6 +211,7 @@ class FundraiserCampaignItem(BaseModel):
     percent_achieved: float
     remaining_balance: int
     created_at: datetime
+    updated_at: datetime
 
     # Thông tin tài khoản nhận tiền (chỉ trả về khi có quyền)
     bank_account_name: Optional[str] = None

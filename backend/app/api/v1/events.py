@@ -1,3 +1,4 @@
+from app.core.media_validation import validate_image_bytes
 """
 Router API cho Chức năng 21: Sự kiện và chiến dịch Chủ Nhật Xanh
 Tài liệu căn cứ: Đồ Án Chuyên Đề Web 1 - Báo Cáo.docx.pdf (Trang 169 - 177)
@@ -55,7 +56,7 @@ async def upload_event_cover(
             detail="Ảnh bìa phải có định dạng JPG hoặc PNG.",
         )
 
-    content = await file.read()
+    content = await file.read(5 * 1024 * 1024 + 1)
     if len(content) > MAX_COVER_SIZE_BYTES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -67,6 +68,7 @@ async def upload_event_cover(
             detail="Tệp ảnh bìa rỗng, vui lòng chọn ảnh khác.",
         )
 
+    ext = validate_image_bytes(content, ("JPEG", "PNG"))
     folder = os.path.join(UPLOAD_DIR, "events")
     os.makedirs(folder, exist_ok=True)
     unique_name = f"{uuid.uuid4().hex}{ext}"

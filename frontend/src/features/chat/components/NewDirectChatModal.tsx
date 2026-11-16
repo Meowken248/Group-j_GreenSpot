@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 import React, { useState, useEffect } from "react";
 import { chatService } from "../services/chatService";
 import type { FriendItem } from "../../friends/types";
@@ -146,7 +147,7 @@ export const NewDirectChatModal: React.FC<NewDirectChatModalProps> = ({
                   style={{ cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between" }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <img
+                    <img onError={showImageFallback}
                       src={
                         friend.avatar_url
                           ? resolveMediaUrl(friend.avatar_url)

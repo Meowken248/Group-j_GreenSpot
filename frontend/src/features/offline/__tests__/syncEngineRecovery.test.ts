@@ -1,3 +1,4 @@
+import { mockTransaction } from "./mockTransaction";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   enqueueReport,
@@ -72,14 +73,7 @@ const mockDraftsStore = new MockIDBStore();
 const mockQueueStore = new MockIDBStore();
 
 const mockDB = {
-  transaction: (storeName: string) => {
-    return {
-      objectStore: () => {
-        if (storeName === "drafts") return mockDraftsStore;
-        return mockQueueStore;
-      },
-    };
-  },
+  transaction: (storeName: string) => mockTransaction(storeName === "drafts" ? mockDraftsStore : mockQueueStore),
 };
 
 let mockedActiveUserId = "test_user_recovery_123";
@@ -368,7 +362,8 @@ describe("Sync Engine Retry & Stuck SENDING Recovery (Issue 4, 5, 9)", () => {
     const summary = await syncOutboxQueue();
     // Chỉ gửi được 1 mục đầu tiên, mục thứ 2 bị dừng lại để bảo vệ tài khoản
     expect(sentTitles).toEqual(["Phản ánh A1"]);
-    expect(summary.success_count).toBe(1);
+    // Account changed before local cleanup: retain A1 for receipt reconciliation.
+    expect(summary.success_count).toBe(0);
 
     // Mục thứ 2 vẫn an toàn trong hàng đợi của User A
     const queueA = await listUserQueue("test_user_recovery_123");

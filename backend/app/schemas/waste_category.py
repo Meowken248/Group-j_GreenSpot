@@ -37,8 +37,8 @@ class WasteCategoryCreateRequest(BaseModel):
     name: str = Field(..., max_length=100, description="Tên loại rác, tối đa 100 ký tự")
     description: Optional[str] = Field(None, max_length=500, description="Mô tả loại rác, tối đa 500 ký tự")
     default_severity: str = Field("MEDIUM", description="Mức ưu tiên: LOW, MEDIUM, HIGH, CRITICAL")
-    sla_hours: int = Field(..., ge=1, le=720, description="Thời hạn SLA (1 - 720 giờ)")
-    sla_warning_hours: int = Field(..., ge=0, description="Cảnh báo trước hạn SLA (giờ)")
+    sla_hours: int = Field(..., strict=True, ge=1, le=720, description="Thời hạn SLA (1 - 720 giờ)")
+    sla_warning_hours: int = Field(..., strict=True, ge=0, description="Cảnh báo trước hạn SLA (giờ)")
     color_hex: Optional[str] = Field("#22C55E", max_length=10)
     icon_name: Optional[str] = Field("trash-2", max_length=50)
 
@@ -98,11 +98,12 @@ class WasteCategoryCreateRequest(BaseModel):
 
 
 class WasteCategoryUpdateRequest(BaseModel):
+    updated_at: datetime = Field(..., description="Thời điểm phiên bản đang chỉnh sửa")
     name: str = Field(..., max_length=100, description="Tên loại rác, tối đa 100 ký tự")
     description: Optional[str] = Field(None, max_length=500, description="Mô tả loại rác, tối đa 500 ký tự")
     default_severity: str = Field("MEDIUM", description="Mức ưu tiên: LOW, MEDIUM, HIGH, CRITICAL")
-    sla_hours: int = Field(..., ge=1, le=720, description="Thời hạn SLA (1 - 720 giờ)")
-    sla_warning_hours: int = Field(..., ge=0, description="Cảnh báo trước hạn SLA (giờ)")
+    sla_hours: int = Field(..., strict=True, ge=1, le=720, description="Thời hạn SLA (1 - 720 giờ)")
+    sla_warning_hours: int = Field(..., strict=True, ge=0, description="Cảnh báo trước hạn SLA (giờ)")
     is_active: bool = Field(True, description="Trạng thái áp dụng")
     color_hex: Optional[str] = Field(None, max_length=10)
     icon_name: Optional[str] = Field(None, max_length=50)

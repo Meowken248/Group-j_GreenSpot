@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Literal, Optional
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -15,12 +15,17 @@ class EventBase(BaseModel):
     longitude: float = Field(..., ge=-180.0, le=180.0, description="Kinh độ điểm tập trung")
     address: str = Field(..., min_length=5, max_length=255, description="Địa chỉ điểm tập trung")
     district: str = Field(..., min_length=2, max_length=100, description="Quận/huyện thuộc TP.HCM")
-    max_participants: int = Field(50, ge=5, le=500, description="Số lượng người tham gia tối đa (5-500)")
+    max_participants: int = Field(50, strict=True, ge=5, le=500, description="Số lượng người tham gia tối đa (5-500)")
 
     @field_validator("title", "description", "cover_image_url", "address", "district", mode="before")
     @classmethod
     def strip_text(cls, v):
         return v.strip() if isinstance(v, str) else v
+
+    @field_validator("start_time", "end_time")
+    @classmethod
+    def normalize_timezone(cls, value):
+        return value.replace(tzinfo=timezone.utc) if value is not None and value.tzinfo is None else value
 
     @model_validator(mode="after")
     def validate_time_range(self):
@@ -41,7 +46,7 @@ class EventCreate(EventBase):
 class EventUpdate(BaseModel):
     """Payload chỉnh sửa sự kiện (Màn 3/4 - chỉ người tạo, trước khi sự kiện diễn ra)."""
 
-    version: int = Field(..., ge=1, description="Phiên bản hiện tại để chống ghi đè (optimistic locking)")
+    version: int = Field(..., strict=True, ge=1, description="Phiên bản hiện tại để chống ghi đè (optimistic locking)")
 
     title: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = Field(None, min_length=10, max_length=2000)
@@ -52,7 +57,7 @@ class EventUpdate(BaseModel):
     longitude: Optional[float] = Field(None, ge=-180.0, le=180.0)
     address: Optional[str] = Field(None, min_length=5, max_length=255)
     district: Optional[str] = Field(None, min_length=2, max_length=100)
-    max_participants: Optional[int] = Field(None, ge=5, le=500)
+    max_participants: Optional[int] = Field(None, strict=True, ge=5, le=500)
 
     @field_validator("title", "description", "cover_image_url", "address", "district", mode="before")
     @classmethod

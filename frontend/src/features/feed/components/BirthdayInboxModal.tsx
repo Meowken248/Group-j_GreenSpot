@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 /**
  * BirthdayInboxModal (Hộp thư lời chúc & thiệp xanh sinh nhật đã nhận - Feature STT 17)
  * Căn cứ tài liệu: Đồ Án Chuyên Đề Web 1 - Báo Cáo.docx.pdf (Trang 146 - 147)
@@ -208,7 +209,7 @@ export const BirthdayInboxModal: React.FC<BirthdayInboxModalProps> = ({
                   >
                     <div className="birthday-inbox-avatar" aria-hidden="true">
                       {item.sender_avatar_url ? (
-                        <img src={item.sender_avatar_url} alt="" />
+                        <img onError={showImageFallback} src={item.sender_avatar_url} alt="" />
                       ) : (
                         <span>{getInitialLetter(item.sender_name)}</span>
                       )}

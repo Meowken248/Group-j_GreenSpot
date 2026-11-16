@@ -55,6 +55,7 @@ export interface FundraiserCampaignCreateInput {
 }
 
 export interface FundraiserCampaignUpdateInput {
+  updated_at: string;
   title?: string;
   description?: string;
   district?: string;
@@ -66,6 +67,8 @@ export interface FundraiserCampaignUpdateInput {
 export interface FundraiserDonationItem {
   id?: string;
   donation_id: string;
+  payment_status?: "pending" | "completed";
+  transaction_code?: string;
   campaign_id?: string;
   donor_id?: string | null;
   donor_name: string;
@@ -76,6 +79,7 @@ export interface FundraiserDonationItem {
 }
 
 export interface FundraiserDonationCreateInput {
+  client_reference: string;
   amount: number;
   message?: string;
   is_anonymous: boolean;
@@ -96,6 +100,7 @@ export interface FundraiserExpenseItem {
 }
 
 export interface FundraiserExpenseCreateInput {
+  client_reference: string;
   content: string;
   amount: number;
   expense_date: string;
@@ -390,15 +395,6 @@ export function getDistrictsByProvince(provinceName: string): string[] {
   if (VIETNAM_PROVINCE_DISTRICTS_MAP[provinceName]) {
     return VIETNAM_PROVINCE_DISTRICTS_MAP[provinceName];
   }
-  // Mặc định đối với các tỉnh thành còn lại: Các đơn vị hành chính chuẩn
-  return [
-    `Thành phố trung tâm (${provinceName})`,
-    `Thị xã trung tâm (${provinceName})`,
-    `Khu vực Huyện phía Bắc (${provinceName})`,
-    `Khu vực Huyện phía Nam (${provinceName})`,
-    `Khu vực Huyện phía Đông (${provinceName})`,
-    `Khu vực Huyện phía Tây (${provinceName})`,
-    `Địa bàn toàn tỉnh (${provinceName})`,
-  ];
+  return [];
 }
 

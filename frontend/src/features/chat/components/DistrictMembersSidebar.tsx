@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 import React from "react";
 import type { ChatUserSummary } from "../types/chat.types";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
@@ -51,7 +52,7 @@ export const DistrictMembersSidebar: React.FC<DistrictMembersSidebarProps> = ({
         ) : (
           members.map((member) => (
             <div key={member.user_id} className="member-item">
-              <img
+              <img onError={showImageFallback}
                 src={
                   member.avatar_url
                     ? resolveMediaUrl(member.avatar_url)

@@ -99,7 +99,7 @@ class UpdatePostRequest(BaseModel):
     tagged_friend_ids: Optional[List[uuid.UUID]] = Field(default=None, description="Danh sách bạn bè gắn thẻ mới")
     group_id: Optional[uuid.UUID] = Field(default=None, description="ID nhóm tình nguyện")
     visibility: Optional[str] = Field(default=None, description="Chế độ hiển thị: PUBLIC, FRIENDS, ONLY_ME, PRIVATE")
-    version: int = Field(..., description="Phiên bản OCC hiện tại của bài viết")
+    version: int = Field(..., strict=True, ge=1, description="Phiên bản OCC hiện tại của bài viết")
 
     @model_validator(mode="after")
     def validate_update(self) -> "UpdatePostRequest":

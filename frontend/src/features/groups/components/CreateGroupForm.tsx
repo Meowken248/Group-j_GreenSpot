@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 import React, { useState, useEffect } from "react";
 import type { GroupType, GroupPrivacy, CreateGroupPayload, AdministrativeMetadata } from "../types/group";
 import { groupService } from "../services/groupService";
@@ -280,7 +281,7 @@ export const CreateGroupForm: React.FC<CreateGroupFormProps> = ({
               <label>Ảnh bìa nhóm (JPG, PNG, tối đa 5MB)</label>
               <label className="cover-upload-box" htmlFor="cover-file-input">
                 {coverPreview ? (
-                  <img src={coverPreview} alt="Ảnh bìa xem trước" className="preview-image" />
+                  <img onError={showImageFallback} src={coverPreview} alt="Ảnh bìa xem trước" className="preview-image" />
                 ) : (
                   <div className="upload-prompt">
                     <div className="upload-icon">📸</div>

@@ -1,5 +1,5 @@
-from typing import Optional, List
-from fastapi import APIRouter, Depends, Query, Request, status
+from typing import Annotated, Optional, List
+from fastapi import APIRouter, Depends, Query, Path as ApiPath, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
 
@@ -100,7 +100,7 @@ async def validate_facility_proximity(
 
 @router.get("/{facility_id}", response_model=RecyclingFacilityItem)
 async def get_facility_detail(
-    facility_id: int,
+    facility_id: Annotated[int, ApiPath(ge=1, le=2147483647)],
     current_admin: User = Depends(require_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -132,7 +132,7 @@ async def create_new_facility(
 
 @router.put("/{facility_id}", response_model=RecyclingFacilityItem)
 async def update_existing_facility(
-    facility_id: int,
+    facility_id: Annotated[int, ApiPath(ge=1, le=2147483647)],
     req: RecyclingFacilityUpdateRequest,
     request: Request,
     current_admin: User = Depends(require_admin_user),
@@ -156,7 +156,7 @@ async def update_existing_facility(
 
 @router.delete("/{facility_id}")
 async def delete_existing_facility(
-    facility_id: int,
+    facility_id: Annotated[int, ApiPath(ge=1, le=2147483647)],
     request: Request,
     current_admin: User = Depends(require_admin_user),
     db: AsyncSession = Depends(get_db),

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import type {
   ReportFormData,
   ReportStep,
@@ -12,7 +12,7 @@ import {
 } from "../services/reportService";
 import { DuplicateWarningModal } from "./DuplicateWarningModal";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
-import { enqueueReport, replaceQueueItem, deleteQueueItem } from "../../offline/services/outboxQueueRepository";
+import { enqueueReport, replaceQueueItem } from "../../offline/services/outboxQueueRepository";
 import { getCurrentUserId } from "../../offline/services/offlineDb";
 
 interface Step5Props {
@@ -25,6 +25,7 @@ interface Step5Props {
   onTrackIncident: (trackingCode: string) => void;
   onOpenOutbox?: () => void;
   editingQueueItemId?: string | null;
+  editingQueueItemUpdatedAt?: number;
 }
 
 export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
@@ -37,7 +38,11 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
   onTrackIncident,
   onOpenOutbox,
   editingQueueItemId,
+  editingQueueItemUpdatedAt,
 }) => {
+  const initiatingRef = useRef(false);
+  const submittingRef = useRef(false);
+  const queueingRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submissionResult, setSubmissionResult] = useState<IncidentSubmissionResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -67,6 +72,8 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
       return;
     }
 
+    if (queueingRef.current) return;
+    queueingRef.current = true;
     setIsSubmitting(true);
     setErrorMessage(null);
 
@@ -118,7 +125,7 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
 
       if (editingQueueItemId) {
         // Thay thế nguyên tử mục cũ trong cùng transaction, không bị chặn bởi giới hạn 20 mục (Issue 6)
-        await replaceQueueItem(editingQueueItemId, queuePayload);
+        await replaceQueueItem(editingQueueItemId, queuePayload, editingQueueItemUpdatedAt);
       } else {
         await enqueueReport(queuePayload);
       }
@@ -132,19 +139,22 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
       console.error("Lỗi khi xếp hàng đợi:", err);
       setErrorMessage(err.message || "Không thể đưa phản ánh vào hàng đợi.");
     } finally {
+      queueingRef.current = false;
       setIsSubmitting(false);
     }
   };
 
   // Thực thi gửi phản ánh lên máy chủ
   const executeSubmission = async () => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setIsSubmitting(true);
     setErrorMessage(null);
     setNetworkWarning(null);
 
     // Kiểm tra mất mạng: tự động chuyển sang hàng đợi ngoại tuyến (R08, R11)
-    if (!navigator.onLine) {
-      await handleEnqueueOfflineReport();
+    if (!navigator.onLine || editingQueueItemId) {
+      try { await handleEnqueueOfflineReport(); } finally { submittingRef.current = false; }
       return;
     }
 
@@ -155,7 +165,8 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
 
       for (let i = 0; i < updatedMedia.length; i++) {
         const m = updatedMedia[i];
-        if ((!m.file_url || m.file_url.trim() === "") && m.file) {
+        if (!m.file_url?.trim() || /^(blob:|data:)/i.test(m.file_url)) {
+          if (!m.file) throw new Error("Không tìm thấy tệp ảnh/video gốc. Vui lòng quay lại bước 2 và chọn lại tệp.");
           hasMissingBlobUploads = true;
           if (!navigator.onLine) {
             await handleEnqueueOfflineReport();
@@ -165,6 +176,7 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
             ? { lat: formData.location.latitude, lng: formData.location.longitude }
             : undefined;
           const uploadRes = await uploadMediaWithWatermark(m.file, coords);
+          if (!uploadRes.file_url || /^(blob:|data:)/i.test(uploadRes.file_url)) throw new Error("Tệp chưa được tải lên thành công. Vui lòng thử lại.");
           updatedMedia[i] = {
             ...m,
             id: uploadRes.id || m.id,
@@ -182,9 +194,6 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
         : formData;
 
       const result = await submitIncidentReport(submissionPayload);
-      if (editingQueueItemId) {
-        await deleteQueueItem(editingQueueItemId, true).catch(() => {});
-      }
       setSubmissionResult(result);
       onClearDraftAndReset(); // Xoá dữ liệu nháp sau khi gửi thành công
     } catch (err: any) {
@@ -198,12 +207,13 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
       } else if (status === 429) {
         // Giới hạn tần suất gửi (anti-spam)
         setErrorMessage("Bạn gửi phản ánh quá nhiều. Vui lòng thử lại sau");
-      } else if (status === 400 && typeof detail === "string") {
+      } else if ([400, 404, 409, 422].includes(status) && typeof detail === "string") {
         setErrorMessage(detail);
       } else {
-        setErrorMessage("Không thể gửi phản ánh. Vui lòng thử lại");
+        setErrorMessage(!err.response && err instanceof Error && !((err as any).isAxiosError) ? err.message : "Không thể gửi phản ánh. Vui lòng thử lại");
       }
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -217,6 +227,8 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
 
     if (!formData.location) return;
 
+    if (initiatingRef.current) return;
+    initiatingRef.current = true;
     setIsSubmitting(true);
     setErrorMessage(null);
 
@@ -231,6 +243,7 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
 
       if (dupCheck.has_duplicate && dupCheck.duplicates.length > 0) {
         setDuplicateList(dupCheck.duplicates);
+        initiatingRef.current = false;
         setDuplicateModalOpen(true);
         setIsSubmitting(false);
         return;
@@ -240,7 +253,7 @@ export const Step5ReviewAndSubmit: React.FC<Step5Props> = ({
     }
 
     // Nếu không trùng lặp, tiến hành gửi ngay
-    await executeSubmission();
+    try { await executeSubmission(); } finally { initiatingRef.current = false; }
   };
 
   return (

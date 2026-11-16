@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 import React, { useState } from "react";
 import type { FeedPostItem } from "../../feed/types/feed.types";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
@@ -90,13 +91,10 @@ export const PostSummaryHeader: React.FC<PostSummaryHeaderProps> = ({
       <div className="summary-body-row">
         <div className="author-avatar-col">
           {authorAvatar ? (
-            <img
+            <img onError={showImageFallback}
               src={resolveMediaUrl(authorAvatar)}
               alt={authorName}
               className="summary-avatar-img"
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-              }}
             />
           ) : (
             <div className="summary-avatar-fallback">
@@ -141,7 +139,7 @@ export const PostSummaryHeader: React.FC<PostSummaryHeaderProps> = ({
           {/* Ảnh đầu tiên của bài viết (Màn 1: tên người đăng, nội dung rút gọn, ảnh đầu tiên) */}
           {firstImage && (
             <div className="summary-first-media-box">
-              <img
+              <img onError={showImageFallback}
                 src={resolveMediaUrl(firstImage)}
                 alt="Ảnh bài viết"
                 className="summary-first-image"

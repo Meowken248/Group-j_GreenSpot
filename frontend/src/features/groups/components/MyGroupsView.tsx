@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 import React from "react";
 import type { GroupItem } from "../types/group";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
@@ -60,7 +61,7 @@ export const MyGroupsView: React.FC<MyGroupsViewProps> = ({
           >
             <div className="card-cover">
               {group.cover_image_url ? (
-                <img src={resolveMediaUrl(group.cover_image_url)} alt={group.name} />
+                <img onError={showImageFallback} src={resolveMediaUrl(group.cover_image_url)} alt={group.name} />
               ) : (
                 <div
                   style={{

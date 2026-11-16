@@ -243,7 +243,9 @@ class ChatbotService:
         self, session: AsyncSession, conversation_id: uuid.UUID, user_id: uuid.UUID
     ) -> ChatbotStopResponse:
         """Đánh dấu dừng sinh văn bản cho tin nhắn AI cuối cùng (SRS trang 195 - Màn 2/4)"""
-        conv = await session.get(ChatbotConversation, conversation_id)
+        conv = (await session.execute(select(ChatbotConversation).where(
+            ChatbotConversation.conversation_id == conversation_id
+        ).with_for_update().execution_options(populate_existing=True))).scalar_one_or_none()
         if not conv or conv.user_id != user_id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -290,6 +292,8 @@ class ChatbotService:
         )
         total_res = await session.execute(count_stmt)
         total = total_res.scalar() or 0
+        if page > max(1, (total + size - 1) // size):
+            raise HTTPException(404, "Trang lịch sử không tồn tại. Vui lòng về trang đầu.")
 
         offset = (page - 1) * size
         stmt = (

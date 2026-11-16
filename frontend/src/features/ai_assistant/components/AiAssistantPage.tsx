@@ -79,7 +79,10 @@ export const AiAssistantPage: React.FC<AiAssistantPageProps> = ({
         onOpenHistoryModal={() => setIsHistoryOpen(true)}
         activeConversationId={activeConversationId}
         initialMessages={activeMessages}
-        onConversationCreated={(id) => setActiveConversationId(id)}
+        onConversationCreated={(id, _title, messages) => {
+          setActiveConversationId(id);
+          setActiveMessages(messages);
+        }}
         onNewChat={handleNewChat}
       />
 

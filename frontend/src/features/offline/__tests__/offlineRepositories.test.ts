@@ -1,3 +1,4 @@
+import { mockTransaction } from "./mockTransaction";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   enqueueReport,
@@ -75,14 +76,7 @@ const mockDraftsStore = new MockIDBStore();
 const mockQueueStore = new MockIDBStore();
 
 const mockDB = {
-  transaction: (storeName: string) => {
-    return {
-      objectStore: () => {
-        if (storeName === "drafts") return mockDraftsStore;
-        return mockQueueStore;
-      },
-    };
-  },
+  transaction: (storeName: string) => mockTransaction(storeName === "drafts" ? mockDraftsStore : mockQueueStore),
 };
 
 vi.mock("../services/offlineDb", () => ({
@@ -166,7 +160,7 @@ describe("Offline Repositories & Sync Engine Suite (STT 19)", () => {
       };
 
       await saveDraftToDb(draftA);
-      await saveDraftToDb(draftB);
+      mockDraftsStore.data.set(draftB.draft_id, draftB);
 
       // User A chỉ lấy danh sách của mình
       const listA = await listUserDrafts("user_test_uuid_123");

@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../utils/imageFallback";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import type { FeedPostItem } from "../feed/types/feed.types";
 import type { CommentItem, ReplyItem } from "./types/commentTypes";
@@ -325,7 +326,7 @@ export const PostCommentsModal: React.FC<PostCommentsModalProps> = ({
             <div className="summary-author-row">
               <div className="author-avatar-circle">
                 {post.author?.avatar_url ? (
-                  <img src={resolveMediaUrl(post.author.avatar_url)} alt={authorName} />
+                      <img onError={showImageFallback} src={resolveMediaUrl(post.author.avatar_url)} alt={authorName} />
                 ) : (
                   <span>{authorName.charAt(0).toUpperCase()}</span>
                 )}
@@ -354,7 +355,7 @@ export const PostCommentsModal: React.FC<PostCommentsModalProps> = ({
                     {m.media_type === "VIDEO" ? (
                       <video src={resolveMediaUrl(m.url)} controls preload="metadata" />
                     ) : (
-                      <img src={resolveMediaUrl(m.url)} alt={`Media ${idx + 1}`} loading="lazy" />
+                      <img onError={showImageFallback} src={resolveMediaUrl(m.url)} alt={`Media ${idx + 1}`} loading="lazy" />
                     )}
                   </div>
                 ))}

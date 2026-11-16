@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { FundraiserCampaignItem } from "../types/fundraiser.types";
 import { fundraiserService } from "../services/fundraiserService";
 
@@ -17,6 +17,20 @@ export const DonationModal: React.FC<DonationModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const referenceRef = useRef(crypto.randomUUID());
+  const submittingRef = useRef(false);
+  const [paymentDetails, setPaymentDetails] = useState<{bank_name: string; bank_account_number: string; bank_account_name: string} | null>(null);
+  useEffect(() => {
+    if (!isOpen) return;
+    let active = true;
+    referenceRef.current = crypto.randomUUID();
+    setPaymentDetails(null);
+    setErrorText(null);
+    fundraiserService.getPaymentDetails(campaign.campaign_id || campaign.id || "")
+      .then(data => { if (active) setPaymentDetails(data); })
+      .catch(err => { if (active) setErrorText(err?.response?.data?.detail || "Không thể tải thông tin nhận tiền. Vui lòng thử lại."); });
+    return () => { active = false; };
+  }, [isOpen, campaign.campaign_id, campaign.id]);
   const [selectedPreset, setSelectedPreset] = useState<number | null>(50000);
   const [customAmountRaw, setCustomAmountRaw] = useState("");
   const [message, setMessage] = useState("");
@@ -39,7 +53,7 @@ export const DonationModal: React.FC<DonationModalProps> = ({
 
   if (!isOpen) return null;
 
-  const currentAmount = selectedPreset !== null ? selectedPreset : parseInt(customAmountRaw.replace(/\D/g, ""), 10) || 0;
+  const currentAmount = selectedPreset !== null ? selectedPreset : (/^[0-9.,\s]+$/.test(customAmountRaw) ? Number(customAmountRaw.replace(/[.,\s]/g, "")) : 0);
 
   // Xác định mã ngân hàng cho VietQR chuẩn Napas247
   const getBankCode = (bName?: string | null) => {
@@ -48,25 +62,27 @@ export const DonationModal: React.FC<DonationModalProps> = ({
     if (s.includes("vietcombank")) return "VCB";
     if (s.includes("vietinbank") || s.includes("công thương")) return "CTG";
     if (s.includes("bidv") || s.includes("đầu tư")) return "BIDV";
-    if (s.includes("quân đội") || s.includes("mbbank") || s.includes("mb")) return "MB";
+    if (s.includes("quân đội") || s.includes("mbbank") || s.trim() === "mb") return "MB";
     if (s.includes("sacombank")) return "STB";
     if (s.includes("acb") || s.includes("á châu")) return "ACB";
     if (s.includes("vpbank")) return "VPB";
     if (s.includes("tpbank")) return "TPB";
-    return "VCB";
+    return null;
   };
 
-  const bankCode = getBankCode(campaign.bank_name);
-  const bankAccountNo = campaign.bank_account_number || "19038291038472";
-  const bankAccountOwner = campaign.bank_account_name || "BAN DIEU HANH QUY XANH";
-  const qrTransferContent = `Ung ho ${campaign.campaign_id?.slice(0, 6) || "XANH"} ${campaign.title.slice(0, 18)}`;
+  const bankCode = getBankCode(paymentDetails?.bank_name);
+  const bankAccountNo = paymentDetails?.bank_account_number || "";
+  const bankAccountOwner = paymentDetails?.bank_account_name || "";
+  const qrTransferContent = `DON-${referenceRef.current.replace(/-/g, "")}`;
 
-  const vietQrUrl = `https://img.vietqr.io/image/${bankCode}-${bankAccountNo}-compact2.png?amount=${currentAmount > 0 ? currentAmount : 50000}&addInfo=${encodeURIComponent(qrTransferContent)}&accountName=${encodeURIComponent(bankAccountOwner)}`;
+  const vietQrUrl = paymentDetails && bankCode ? `https://img.vietqr.io/image/${bankCode}-${bankAccountNo}-compact2.png?amount=${currentAmount > 0 ? currentAmount : 50000}&addInfo=${encodeURIComponent(qrTransferContent)}&accountName=${encodeURIComponent(bankAccountOwner)}` : "";
 
-  const handleCopy = (text: string, field: string) => {
-    navigator.clipboard?.writeText(text);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
+  const handleCopy = async (text: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch { setErrorText("Không sao chép được. Vui lòng chọn và chép thông tin thủ công."); }
   };
 
   const handlePresetClick = (amount: number) => {
@@ -77,7 +93,8 @@ export const DonationModal: React.FC<DonationModalProps> = ({
 
   const handleCustomAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedPreset(null);
-    const raw = e.target.value.replace(/\D/g, "");
+    const raw = e.target.value.normalize("NFKC").replace(/[.,\s]/g, "");
+    if (raw && !/^[0-9]+$/.test(raw)) { setCustomAmountRaw(e.target.value); setErrorText("Số tiền chỉ được chứa chữ số 0–9."); return; }
     if (!raw) {
       setCustomAmountRaw("");
       return;
@@ -89,7 +106,9 @@ export const DonationModal: React.FC<DonationModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     setErrorText(null);
+    if (!paymentDetails) { setErrorText("Chưa có thông tin nhận tiền. Vui lòng tải lại trang."); return; }
 
     if (!currentAmount) {
       setErrorText("Vui lòng chọn hoặc nhập số tiền quyên góp");
@@ -101,15 +120,19 @@ export const DonationModal: React.FC<DonationModalProps> = ({
       return;
     }
 
+    if (!Number.isSafeInteger(currentAmount)) { setErrorText("Số tiền quá lớn. Vui lòng nhập lại."); return; }
+
     if (message.length > 200) {
       setErrorText("Lời nhắn tối đa 200 ký tự");
       return;
     }
 
     const campId = campaign.campaign_id || campaign.id || "";
+    submittingRef.current = true;
     setIsSubmitting(true);
     try {
       await fundraiserService.donate(campId, {
+        client_reference: referenceRef.current,
         amount: currentAmount,
         message: message.trim() || undefined,
         is_anonymous: isAnonymous,
@@ -120,6 +143,7 @@ export const DonationModal: React.FC<DonationModalProps> = ({
         err?.response?.data?.detail || "Thanh toán không thành công. Vui lòng thử lại";
       setErrorText(msg);
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -218,7 +242,7 @@ export const DonationModal: React.FC<DonationModalProps> = ({
           </div>
 
           {/* KHỐI VIETQR THANH TOÁN TỰ ĐỘNG CHUẨN NAPAS247 */}
-          <div className="vietqr-payment-card" data-testid="vietqr-payment-card">
+          {paymentDetails && <div className="vietqr-payment-card" data-testid="vietqr-payment-card">
             <div className="vietqr-card-header">
               <span className="napas-badge">NAPAS 24/7 • VIETQR</span>
               <span className="qr-title">Quét mã ngân hàng chuyển khoản nhanh</span>
@@ -227,12 +251,13 @@ export const DonationModal: React.FC<DonationModalProps> = ({
             <div className="vietqr-card-body">
               <div className="qr-image-wrapper">
                 <img
-                  src={vietQrUrl}
+                  hidden={!vietQrUrl}
+                  src={vietQrUrl || undefined}
                   alt="Mã VietQR thanh toán tự động"
                   className="qr-img"
                   onError={(e) => {
-                    // Fallback placeholder nếu mạng offline
-                    (e.target as HTMLElement).style.display = "none";
+                    e.currentTarget.hidden = true;
+                    setErrorText("Không tải được mã QR. Vui lòng chuyển khoản theo đúng thông tin ngân hàng bên cạnh.");
                   }}
                 />
                 <span className="qr-guide-text">Mở app Ngân hàng hoặc Ví để quét</span>
@@ -241,7 +266,7 @@ export const DonationModal: React.FC<DonationModalProps> = ({
               <div className="bank-details-box">
                 <div className="bank-row">
                   <span className="label">Ngân hàng:</span>
-                  <span className="val bold">{campaign.bank_name || "Ngân hàng Việt Nam"}</span>
+                  <span className="val bold">{paymentDetails?.bank_name}</span>
                 </div>
                 <div className="bank-row">
                   <span className="label">Số tài khoản:</span>
@@ -261,6 +286,13 @@ export const DonationModal: React.FC<DonationModalProps> = ({
                   <span className="val uppercase">{bankAccountOwner}</span>
                 </div>
                 <div className="bank-row">
+                  <span className="label">Nội dung chuyển khoản:</span>
+                  <div className="copy-val-wrap">
+                    <span className="val" style={{overflowWrap: "anywhere"}}>{qrTransferContent}</span>
+                    <button type="button" className="btn-copy-mini" onClick={() => { void handleCopy(qrTransferContent, "ref"); }}>{copiedField === "ref" ? "✓ Đã chép" : "Sao chép"}</button>
+                  </div>
+                </div>
+                <div className="bank-row">
                   <span className="label">Số tiền:</span>
                   <div className="copy-val-wrap">
                     <span className="val amount-text">
@@ -272,13 +304,16 @@ export const DonationModal: React.FC<DonationModalProps> = ({
             </div>
           </div>
 
+          }
+          {!paymentDetails && !errorText && <p>Đang tải thông tin nhận tiền…</p>}
+
           {/* KHỐI CAM KẾT BẢO CHỨNG MINH BẠCH */}
           <div className="trust-assurance-card">
             <span className="shield-icon">🛡️</span>
             <div className="trust-text">
               <strong>Cam kết bảo trợ tài chính GreenSpot:</strong>
               <p>
-                100% số tiền ủng hộ được chuyển vào tài khoản thiện nguyện đã kiểm duyệt CCCD/ĐKKD.
+                Khoản bạn báo đã chuyển sẽ chờ quản trị viên đối soát với ngân hàng trước khi cộng vào tổng quỹ.
                 Chủ quỹ có nghĩa vụ công khai minh chứng và hóa đơn chứng từ giải ngân cho toàn thể cộng đồng.
               </p>
             </div>
@@ -340,10 +375,10 @@ export const DonationModal: React.FC<DonationModalProps> = ({
               <button
                 type="submit"
                 className="btn-submit-primary"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !paymentDetails}
                 data-testid="btn-confirm-donation"
               >
-                {isSubmitting ? "Đang kết nối cổng thanh toán…" : "Xác nhận"}
+                {isSubmitting ? "Đang ghi nhận…" : "Xác nhận đã chuyển khoản"}
               </button>
             </div>
           </div>

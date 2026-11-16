@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import L from "leaflet";
@@ -69,6 +70,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
   const [endTime, setEndTime] = useState("");
   const [district, setDistrict] = useState(HCM_DISTRICTS[0]);
   const [address, setAddress] = useState("");
+  const submittingRef = useRef(false);
   const [maxParticipants, setMaxParticipants] = useState<number>(50);
   const [lat, setLat] = useState<number>(10.7735);
   const [lon, setLon] = useState<number>(106.7068);
@@ -322,7 +324,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
     if (!trimmedAddress) errors.address = EVENT_MESSAGES.VALIDATION_ADDRESS_REQUIRED;
     else if (trimmedAddress.length < 5) errors.address = EVENT_MESSAGES.VALIDATION_ADDRESS_MIN;
 
-    if (maxParticipants < 5 || maxParticipants > 500)
+    if (!Number.isInteger(maxParticipants) || maxParticipants < 5 || maxParticipants > 500)
       errors.maxParticipants = EVENT_MESSAGES.VALIDATION_MAX_PARTICIPANTS;
     else if (isEdit && event && maxParticipants < event.current_participants)
       errors.maxParticipants = EVENT_MESSAGES.VALIDATION_MAX_PARTICIPANTS_LT_CURRENT;
@@ -344,9 +346,11 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     setErrorMessage(null);
     if (!validate()) return;
 
+    submittingRef.current = true;
     const payload: CreateEventPayload = {
       title: title.trim(),
       description: description.trim(),
@@ -372,6 +376,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
     } catch (err) {
       setErrorMessage(extractErrorMessage(err));
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
@@ -431,7 +436,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
               <div className="cover-upload-area">
                 {coverImageUrl ? (
                   <div className="cover-preview-wrapper">
-                    <img
+                    <img onError={showImageFallback}
                       src={resolveMediaUrl(coverImageUrl)}
                       alt="Ảnh bìa xem trước"
                       className="preview-cover-img"
@@ -561,7 +566,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                   min={5}
                   max={500}
                   value={maxParticipants}
-                  onChange={(e) => setMaxParticipants(parseInt(e.target.value, 10) || 0)}
+                  onChange={(e) => setMaxParticipants(Number(e.target.value))}
                   className={fieldErrors.maxParticipants ? "input-invalid" : ""}
                 />
                 {fieldErrors.maxParticipants && (

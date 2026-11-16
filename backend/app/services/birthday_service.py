@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Dict, List, Optional, Sequence
 
 from fastapi import HTTPException, status
-from sqlalchemy import and_, case, extract, func, or_, select, update
+from sqlalchemy import and_, case, extract, func, or_, select, update, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -415,6 +415,7 @@ async def send_birthday_wish(
                 "Mẫu thiệp không hợp lệ, vui lòng chọn lại",
             )
 
+    await db.execute(text("SELECT pg_advisory_xact_lock(171117)"))
     # 6. Chống gửi trùng trong ngày sinh nhật
     existed = await db.scalar(
         select(BirthdayWish.wish_id).where(

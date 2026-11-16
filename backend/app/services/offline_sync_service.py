@@ -137,7 +137,7 @@ async def submit_offline_incident(
         raise ValueError("Vị trí nằm ngoài phạm vi tiếp nhận của hệ thống (22 quận/huyện TP.HCM).")
 
     # 3. Lấy thông tin danh mục sự cố
-    cat_stmt = select(WasteCategory).where(WasteCategory.category_id == data.category_id)
+    cat_stmt = select(WasteCategory).where(WasteCategory.category_id == data.category_id, WasteCategory.deleted_at.is_(None))
     cat_res = await db.execute(cat_stmt)
     category = cat_res.scalar_one_or_none()
     if not category:

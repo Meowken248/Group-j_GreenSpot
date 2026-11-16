@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 import React, { useRef, useState, useLayoutEffect } from "react";
 import type { ChatMessage, ConversationType } from "../types/chat.types";
 import { MessageItem } from "./MessageItem";
@@ -158,7 +159,7 @@ export const MessageList: React.FC<MessageListProps> = ({
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <img
+            <img onError={showImageFallback}
               src={selectedImageUrl}
               alt="Hình ảnh lớn"
               style={{

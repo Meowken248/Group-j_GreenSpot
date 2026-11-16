@@ -31,6 +31,12 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
   const isMountedRef = useRef<boolean>(true);
 
   const currentMediaList = formData.media || [];
+  const mediaListRef = useRef(currentMediaList);
+  useEffect(() => { mediaListRef.current = currentMediaList; }, [formData.media]);
+  const publishMedia = (media: AttachedMedia[]) => {
+    mediaListRef.current = media;
+    onUpdateFormData({media});
+  };
   const isMaxReached = currentMediaList.length >= 5;
   const isAnyUploading = currentMediaList.some((m) => m.is_uploading);
 
@@ -115,14 +121,14 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
 
   // Xử lý upload file lên server để đóng watermark
   const handleUploadFile = async (file: File) => {
-    if (currentMediaList.length >= 5) {
+    if (mediaListRef.current.length >= 5) {
       setGeneralError("Tối đa 5 tệp đính kèm");
       return;
     }
 
     // 1. Kiểm tra định dạng & dung lượng
-    const isImage = file.type.startsWith("image/");
-    const isVideo = file.type.startsWith("video/");
+    const isImage = ["image/jpeg", "image/png", "image/webp"].includes(file.type);
+    const isVideo = ["video/mp4", "video/webm", "video/quicktime"].includes(file.type);
     if (!isImage && !isVideo) {
       setGeneralError(
         "Tệp không hợp lệ (ảnh JPG/PNG tối đa 10MB, video MP4 tối đa 50MB)"
@@ -160,7 +166,7 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
         watermark_text: "Đã chụp (Lưu ngoại tuyến)",
         file,
       };
-      onUpdateFormData({ media: [...currentMediaList, offlineItem] });
+      publishMedia([...mediaListRef.current, offlineItem]);
       setGeneralError(null);
       return;
     }
@@ -178,8 +184,7 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
       file,
     };
 
-    const updatedList = [...currentMediaList, tempItem];
-    onUpdateFormData({ media: updatedList });
+    publishMedia([...mediaListRef.current, tempItem]);
 
     try {
       // Gửi tọa độ GPS nếu đã có
@@ -190,10 +195,11 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
       const result = await uploadMediaWithWatermark(file, coords);
 
       // Cập nhật item với kết quả đã đóng watermark từ server
-      const finalList = updatedList.map((m) =>
+      const finalList = mediaListRef.current.map((m) =>
         m.id === tempId
           ? {
               ...result,
+              id: tempId,
               file_url: resolveMediaUrl(result.file_url),
               thumbnail_url: resolveMediaUrl(result.thumbnail_url),
               is_uploading: false,
@@ -201,10 +207,10 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
             }
           : m
       );
-      onUpdateFormData({ media: finalList });
+      publishMedia(finalList);
     } catch (error) {
       console.error("Lỗi khi tải tệp và đóng watermark:", error);
-      const failedList = updatedList.map((m) =>
+      const failedList = mediaListRef.current.map((m) =>
         m.id === tempId
           ? {
               ...m,
@@ -213,7 +219,7 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
             }
           : m
       );
-      onUpdateFormData({ media: failedList });
+      publishMedia(failedList);
       setGeneralError("Không thể xử lý tệp này. Vui lòng thử lại");
     }
   };
@@ -290,9 +296,9 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
       };
 
       recorder.onstop = () => {
-        const blob = new Blob(recordedChunksRef.current, { type: "video/mp4" });
-        const file = new File([blob], `record_${Date.now()}.mp4`, {
-          type: "video/mp4",
+        const blob = new Blob(recordedChunksRef.current, { type: mediaRecorderRef.current?.mimeType || "video/webm" });
+        const file = new File([blob], `record_${Date.now()}.${blob.type.includes("mp4") ? "mp4" : "webm"}`, {
+          type: blob.type,
         });
         handleUploadFile(file);
       };
@@ -337,7 +343,7 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
     if (!files || files.length === 0) return;
 
     for (let i = 0; i < files.length; i++) {
-      if (currentMediaList.length + i >= 5) {
+      if (mediaListRef.current.length >= 5) {
         setGeneralError("Tối đa 5 tệp đính kèm");
         break;
       }
@@ -352,8 +358,8 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
 
   // Xóa ảnh
   const handleRemoveMedia = (id: string) => {
-    const updated = currentMediaList.filter((m) => m.id !== id);
-    onUpdateFormData({ media: updated });
+    const updated = mediaListRef.current.filter((m) => m.id !== id);
+    publishMedia(updated);
     setGeneralError(null);
   };
 
@@ -518,7 +524,8 @@ export const Step2MediaCapture: React.FC<Step2Props> = ({
                         alt={`Bằng chứng ${index + 1}`}
                         className="thumb-media"
                         onError={(e) => {
-                          if (item.file) {
+                          if (item.file && !e.currentTarget.dataset.fallbackTried) {
+                            e.currentTarget.dataset.fallbackTried = "true";
                             (e.currentTarget as HTMLImageElement).src = URL.createObjectURL(item.file);
                           }
                         }}

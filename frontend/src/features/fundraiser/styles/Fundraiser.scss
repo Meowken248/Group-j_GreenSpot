@@ -2038,3 +2038,38 @@ $fund-blue-border: #bae6fd;
 }
 
 
+.pending-donations {
+  margin-top: 1rem;
+  overflow-wrap: anywhere;
+
+  .pending-donation-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e2e8f0;
+
+    span { min-width: 0; }
+  }
+}
+
+@media (max-width: 640px) {
+  .fund-modal-overlay .fund-modal-box .campaign-detail-footer {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+
+    .campaign-owner-actions {
+      flex-wrap: wrap;
+      min-width: 0;
+      width: 100%;
+    }
+
+    .footer-actions-right {
+      width: 100%;
+      margin-left: 0;
+
+      button { flex: 1; }
+    }
+  }
+}

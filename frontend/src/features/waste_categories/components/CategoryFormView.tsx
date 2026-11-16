@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import type {
   WasteCategoryItem,
   WasteCategoryCreateRequest,
@@ -15,6 +15,7 @@ interface Props {
   initialItem?: WasteCategoryItem | null;
   onSaveCreate: (data: WasteCategoryCreateRequest) => Promise<void>;
   onSaveUpdate: (id: number, data: WasteCategoryUpdateRequest) => Promise<void>;
+  onReload?: () => Promise<void>;
   onCancelRequest: (hasChanges: boolean) => void;
 }
 
@@ -24,7 +25,10 @@ export const CategoryFormView: React.FC<Props> = ({
   onSaveCreate,
   onSaveUpdate,
   onCancelRequest,
+  onReload,
 }) => {
+  const submittingRef = useRef(false);
+  const [conflict, setConflict] = useState(false);
   const isEdit = mode === "edit";
 
   // Form State
@@ -152,7 +156,7 @@ export const CategoryFormView: React.FC<Props> = ({
     }
 
     // 4. SLA (giờ)
-    const slaNum = parseInt(slaHours, 10);
+    const slaNum = /^[0-9]+$/.test(slaHours) ? Number(slaHours) : NaN;
     if (isNaN(slaNum) || slaNum < 1 || slaNum > 720) {
       setSlaError("Thời hạn SLA phải là số nguyên từ 1 đến 720 giờ");
       valid = false;
@@ -161,7 +165,7 @@ export const CategoryFormView: React.FC<Props> = ({
     }
 
     // 5. Cảnh báo trước hạn
-    const warnNum = parseInt(slaWarningHours, 10);
+    const warnNum = /^[0-9]+$/.test(slaWarningHours) ? Number(slaWarningHours) : NaN;
     if (isNaN(warnNum) || warnNum < 0) {
       setWarningError("Cảnh báo trước hạn phải là số nguyên không âm");
       valid = false;
@@ -177,13 +181,12 @@ export const CategoryFormView: React.FC<Props> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setServerError(null);
-
-    const isValid = await validateForm();
-    if (!isValid) return;
-
+    if (submittingRef.current || conflict) return;
+    submittingRef.current = true;
     setIsSubmitting(true);
+    setServerError(null);
     try {
+      if (!(await validateForm())) return;
       if (!isEdit) {
         await onSaveCreate({
           category_code: categoryCode.trim().toUpperCase(),
@@ -195,6 +198,7 @@ export const CategoryFormView: React.FC<Props> = ({
         });
       } else if (initialItem) {
         await onSaveUpdate(initialItem.category_id, {
+          updated_at: initialItem.updated_at,
           name: name.trim(),
           description: description.trim() || undefined,
           default_severity: defaultSeverity,
@@ -204,6 +208,7 @@ export const CategoryFormView: React.FC<Props> = ({
         });
       }
     } catch (err: any) {
+      if (err?.response?.status === 409) setConflict(true);
       const msg =
         err?.response?.data?.detail ||
         (isEdit
@@ -211,6 +216,7 @@ export const CategoryFormView: React.FC<Props> = ({
           : "Không thể lưu danh mục. Vui lòng thử lại");
       setServerError(typeof msg === "string" ? msg : JSON.stringify(msg));
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -482,7 +488,8 @@ export const CategoryFormView: React.FC<Props> = ({
           {/* DÒNG THÔNG BÁO LỖI TỔNG THỂ */}
           {serverError && (
             <div className="server-error-banner">
-              <span>{serverError}</span>
+              <span role="alert">{serverError}</span>
+              {conflict && onReload && <button type="button" onClick={() => { void onReload().catch(() => setServerError("Không thể tải lại danh mục. Vui lòng thử lại.")); }}>Tải lại dữ liệu</button>}
             </div>
           )}
 
@@ -493,7 +500,7 @@ export const CategoryFormView: React.FC<Props> = ({
                 isEdit && !isDirty ? "btn-disabled-clean" : ""
               }`}
               onClick={handleSubmit}
-              disabled={isSubmitting || (isEdit && !isDirty)}
+              disabled={isSubmitting || conflict || (isEdit && !isDirty)}
             >
               {isSubmitting ? (
                 <span>{isEdit ? "Đang cập nhật…" : "Đang lưu danh mục…"}</span>

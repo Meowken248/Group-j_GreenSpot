@@ -9,6 +9,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import type { GroupItem } from "../types/group";
 import { groupService } from "../services/groupService";
 import { resolveMediaUrl } from "../../../utils/mediaUrl";
+import { showImageFallback } from "../../../utils/imageFallback";
 import { DisbandGroupModal } from "./DisbandGroupModal";
 import { InviteFriendsModal } from "./InviteFriendsModal";
 import { GroupComposerBox } from "./GroupComposerBox";
@@ -282,6 +283,7 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
             <img
               src={resolveMediaUrl(group.cover_image_url)}
               alt="Ảnh bìa nhóm"
+              onError={showImageFallback}
               style={{ width: "100%", height: "100%", objectFit: "cover" }}
             />
           ) : (

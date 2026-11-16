@@ -99,8 +99,10 @@ class EventService:
             and HCM_BOUNDS["min_lon"] <= lon <= HCM_BOUNDS["max_lon"]
         )
 
-    async def _get_active_event(self, event_id: uuid.UUID) -> Event:
+    async def _get_active_event(self, event_id: uuid.UUID, *, lock: bool = False) -> Event:
         q = select(Event).where(Event.event_id == event_id, Event.is_deleted == False)  # noqa: E712
+        if lock:
+            q = q.with_for_update().execution_options(populate_existing=True)
         event = (await self.db.execute(q)).scalar_one_or_none()
         if not event:
             raise HTTPException(
@@ -389,6 +391,8 @@ class EventService:
         # Đếm tổng
         count_query = select(func.count()).select_from(query.subquery())
         total = (await self.db.execute(count_query)).scalar_one() or 0
+        if page > max(1, (total + page_size - 1) // page_size):
+            raise HTTPException(404, "Trang sự kiện không tồn tại. Vui lòng về trang đầu.")
 
         # Sắp xếp theo ngày diễn ra gần nhất
         if time_filter == "past":
@@ -424,7 +428,7 @@ class EventService:
         self, event_id: uuid.UUID, editor_id: uuid.UUID, data: EventUpdate
     ) -> EventResponse:
         """Người tạo chỉnh sửa sự kiện trước khi diễn ra; sự kiện quay lại trạng thái chờ duyệt."""
-        event = await self._get_active_event(event_id)
+        event = await self._get_active_event(event_id, lock=True)
         editor_is_admin = await self.is_admin(editor_id)
 
         if event.creator_id != editor_id and not editor_is_admin:
@@ -539,7 +543,7 @@ class EventService:
     async def toggle_interest(self, event_id: uuid.UUID, user_id: uuid.UUID) -> Dict[str, Any]:
         """Toggle Quan tâm sự kiện (Màn 3/4)."""
         now = datetime.now(timezone.utc)
-        event = await self._get_active_event(event_id)
+        event = await self._get_active_event(event_id, lock=True)
         self._ensure_interactable(event, now)
 
         existing = (
@@ -579,7 +583,7 @@ class EventService:
     async def toggle_join(self, event_id: uuid.UUID, user_id: uuid.UUID) -> Dict[str, Any]:
         """Toggle Tham gia sự kiện (Màn 3/4)."""
         now = datetime.now(timezone.utc)
-        event = await self._get_active_event(event_id)
+        event = await self._get_active_event(event_id, lock=True)
         self._ensure_interactable(event, now)
 
         existing = (
@@ -644,7 +648,7 @@ class EventService:
         - Cộng 50 Điểm Xanh, tối đa 150 GP/ngày cho mỗi tài khoản.
         """
         now = datetime.now(timezone.utc)
-        event = await self._get_active_event(event_id)
+        event = await self._get_active_event(event_id, lock=True)
         if event.status != EventStatus.APPROVED.value:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -792,7 +796,7 @@ class EventService:
         self, event_id: uuid.UUID, admin_id: uuid.UUID, data: EventReviewRequest
     ) -> EventResponse:
         """Quản trị viên duyệt hoặc từ chối sự kiện, đồng thời thông báo cho người tạo."""
-        event = await self._get_active_event(event_id)
+        event = await self._get_active_event(event_id, lock=True)
         if event.status == EventStatus.CANCELLED.value:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -831,7 +835,7 @@ class EventService:
 
     async def cancel_event(self, event_id: uuid.UUID, user_id: uuid.UUID) -> Dict[str, Any]:
         """Huỷ sự kiện (Người tạo hoặc Admin) và thông báo cho toàn bộ người tham gia."""
-        event = await self._get_active_event(event_id)
+        event = await self._get_active_event(event_id, lock=True)
         actor_is_admin = await self.is_admin(user_id)
         if event.creator_id != user_id and not actor_is_admin:
             raise HTTPException(

@@ -5,6 +5,7 @@ import "leaflet/dist/leaflet.css";
 import type { GreenEvent, CheckinResponse, ParticipantItem } from "../types/event.types";
 import { eventService } from "../services/eventService";
 import { EventCheckinModal } from "./EventCheckinModal";
+import { showImageFallback } from "../../../utils/imageFallback";
 import { CreateEventModal } from "./CreateEventModal";
 import { EVENT_MESSAGES } from "../utils/eventMessages";
 import {
@@ -317,7 +318,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             <div className="event-detail-view">
               {/* Hero Banner */}
               <div className="detail-hero-banner">
-                <img src={resolveMediaUrl(event.cover_image_url)} alt={event.title} />
+                <img src={resolveMediaUrl(event.cover_image_url)} alt={event.title} onError={showImageFallback} />
                 <div className="banner-overlay">
                   <h3 className="hero-title">{event.title}</h3>
                   <div className="hero-meta-row">
@@ -367,7 +368,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                             title={`${p.full_name} ${p.is_creator ? "(Người tạo)" : ""}`}
                           >
                             {p.avatar_url ? (
-                              <img src={resolveMediaUrl(p.avatar_url)} alt={p.full_name} />
+                              <img onError={showImageFallback} src={resolveMediaUrl(p.avatar_url)} alt={p.full_name} />
                             ) : (
                               <span>{p.full_name.charAt(0).toUpperCase()}</span>
                             )}
@@ -645,7 +646,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     <li key={p.user_id}>
                       <span className="participant-avatar-small">
                         {p.avatar_url ? (
-                          <img src={resolveMediaUrl(p.avatar_url)} alt={p.full_name} />
+                          <img onError={showImageFallback} src={resolveMediaUrl(p.avatar_url)} alt={p.full_name} />
                         ) : (
                           p.full_name.charAt(0).toUpperCase()
                         )}

@@ -1,3 +1,4 @@
+import { showImageFallback } from "../../../utils/imageFallback";
 import React, { useState, useEffect } from "react";
 import type { FundraiserCampaignItem } from "../types/fundraiser.types";
 import { commentService } from "../../comments/services/commentService";
@@ -220,7 +221,7 @@ export const CampaignShareModal: React.FC<CampaignShareModalProps> = ({
               }}
             >
               {campaign.cover_image_url ? (
-                <img
+                <img onError={showImageFallback}
                   src={campaign.cover_image_url}
                   alt={campaign.title}
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}

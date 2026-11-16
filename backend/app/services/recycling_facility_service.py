@@ -8,6 +8,7 @@ from sqlalchemy import select, func, text, and_, or_, desc
 from fastapi import HTTPException, status
 
 from app.models.spatial import RecyclingFacility, AdministrativeUnit
+from app.models.incident import WasteCategory
 from app.models.rbac import User
 from app.models.audit_log import AuditLog
 from app.schemas.recycling_facility import (
@@ -114,6 +115,8 @@ async def list_facilities(
     """
     conditions = [RecyclingFacility.is_deleted == False]
 
+    if status_filter not in {"ALL", "ACTIVE", "INACTIVE"}:
+        raise HTTPException(400, "Vui lòng chọn trạng thái hợp lệ")
     if status_filter == "ACTIVE":
         conditions.append(RecyclingFacility.is_active == True)
     elif status_filter == "INACTIVE":
@@ -136,6 +139,8 @@ async def list_facilities(
     count_stmt = select(func.count(RecyclingFacility.facility_id)).where(and_(*conditions))
     count_res = await db.execute(count_stmt)
     total = count_res.scalar() or 0
+    if page > max(1, (total + limit - 1) // limit):
+        raise HTTPException(404, "Trang danh sách trạm không tồn tại. Vui lòng về trang đầu.")
 
     # Đếm tổng đang hoạt động và tạm ngưng trong hệ thống
     stats_stmt = select(
@@ -336,6 +341,20 @@ async def check_proximity(
     return FacilityValidationCheckResponse(is_valid=True)
 
 
+async def validate_facility_selections(db: AsyncSession, unit_id: int, codes: List[str]) -> None:
+    district = (await db.execute(select(AdministrativeUnit).where(
+        AdministrativeUnit.unit_id == unit_id, AdministrativeUnit.level == "DISTRICT"
+    ))).scalar_one_or_none()
+    if district is None:
+        raise HTTPException(400, "Quận/huyện không hợp lệ. Vui lòng chọn lại từ danh sách.")
+    valid = (await db.execute(select(WasteCategory.category_code).where(
+        WasteCategory.is_active == True, WasteCategory.is_deleted == False,
+        WasteCategory.category_code.in_(codes)
+    ))).scalars().all()
+    if not codes or len(set(codes)) != len(codes) or set(codes) - set(valid):
+        raise HTTPException(400, "Danh mục rác không hợp lệ hoặc đã ngưng áp dụng. Vui lòng tải lại và chọn lại.")
+
+
 async def create_facility(
     db: AsyncSession,
     user: User,
@@ -351,6 +370,9 @@ async def create_facility(
     - Tự động sinh mã trạm và mã QR
     - Tự động ghi nhận Nhật ký kiểm toán (Audit Log)
     """
+    await db.execute(text("SELECT pg_advisory_xact_lock(231123)"))
+    await validate_facility_selections(db, req.unit_id, req.accepted_waste_types)
+
     # 1. Kiểm tra toạ độ trong TP.HCM
     if not is_within_hcmc_bounds(req.latitude, req.longitude):
         raise HTTPException(
@@ -440,7 +462,8 @@ async def update_facility(
     - Giữ nguyên mã trạm và mã QR
     - Tự động ghi nhận Nhật ký kiểm toán (Audit Log)
     """
-    stmt = select(RecyclingFacility).where(
+    await db.execute(text("SELECT pg_advisory_xact_lock(231123)"))
+    stmt = select(RecyclingFacility).with_for_update().execution_options(populate_existing=True).where(
         and_(RecyclingFacility.facility_id == facility_id, RecyclingFacility.is_deleted == False)
     )
     res = await db.execute(stmt)
@@ -449,11 +472,13 @@ async def update_facility(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trạm không còn tồn tại")
 
     # 0. Kiểm tra Khóa lạc quan (Optimistic Locking)
-    if req.version is not None and getattr(fac, "version", None) is not None and req.version < fac.version:
+    if req.version != fac.version:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Trạm đã được thay đổi bởi người khác. Vui lòng tải lại",
         )
+
+    await validate_facility_selections(db, req.unit_id, req.accepted_waste_types)
 
     # 1. Kiểm tra toạ độ trong TP.HCM
     if not is_within_hcmc_bounds(req.latitude, req.longitude):
@@ -544,7 +569,8 @@ async def delete_facility(
     - Mã QR vô hiệu hóa nhưng lịch sử quét mã và điểm thưởng được giữ nguyên
     - Tự động ghi nhận Nhật ký kiểm toán (Audit Log)
     """
-    stmt = select(RecyclingFacility).where(
+    await db.execute(text("SELECT pg_advisory_xact_lock(231123)"))
+    stmt = select(RecyclingFacility).with_for_update().execution_options(populate_existing=True).where(
         and_(RecyclingFacility.facility_id == facility_id, RecyclingFacility.is_deleted == False)
     )
     res = await db.execute(stmt)
