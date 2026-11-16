@@ -1,0 +1,512 @@
+/**
+ * @license
+ * Copyright 2017 Google Inc.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import {
+  firstValueFrom,
+  from,
+  merge,
+  raceWith,
+} from '../../third_party/rxjs/rxjs.js';
+import type {ConsoleMessage} from '../common/ConsoleMessage.js';
+import type {
+  Cookie,
+  CookieData,
+  CookiePartitionKey,
+  DeleteCookiesRequest,
+} from '../common/Cookie.js';
+import {DEBUG_PREFIXES, type Logger} from '../common/Debug.js';
+import {EventEmitter, type EventType} from '../common/EventEmitter.js';
+import {fromEmitterEvent, filterAsync, timeout} from '../common/util.js';
+import {asyncDisposeSymbol, disposeSymbol} from '../util/disposable.js';
+import {Mutex} from '../util/Mutex.js';
+
+import type {
+  Browser,
+  CreatePageOptions,
+  Permission,
+  PermissionDescriptor,
+  PermissionState,
+  WaitForTargetOptions,
+} from './Browser.js';
+import type {HTTPRequest} from './HTTPRequest.js';
+import type {HTTPResponse} from './HTTPResponse.js';
+import type {Page} from './Page.js';
+import type {Target} from './Target.js';
+
+/**
+ * @public
+ */
+export const enum BrowserContextEvent {
+  /**
+   * Emitted when the url of a target inside the browser context changes.
+   * Contains a {@link Target} instance.
+   */
+  TargetChanged = 'targetchanged',
+
+  /**
+   * Emitted when a target is created within the browser context, for example
+   * when a new page is opened by
+   * {@link https://developer.mozilla.org/en-US/docs/Web/API/Window/open | window.open}
+   * or by {@link BrowserContext.newPage | browserContext.newPage}
+   *
+   * Contains a {@link Target} instance.
+   */
+  TargetCreated = 'targetcreated',
+  /**
+   * Emitted when a target is destroyed within the browser context, for example
+   * when a page is closed. Contains a {@link Target} instance.
+   */
+  TargetDestroyed = 'targetdestroyed',
+  /**
+   * Emitted when JavaScript within any page or worker in the browser context
+   * calls one of the console API methods, e.g. `console.log` or
+   * `console.dir`. Contains a {@link ConsoleMessage} instance.
+   *
+   * @remarks
+   * Use {@link ConsoleMessage.page}, {@link ConsoleMessage.frame} or
+   * {@link ConsoleMessage.worker} to identify the originating context.
+   * Messages from workers have no page or frame: use
+   * {@link ConsoleMessage.worker} for them. Messages logged by the browser
+   * itself (e.g. network errors or violations) can have no page, frame or
+   * worker.
+   *
+   * Events are only delivered for pages and workers that Puppeteer has
+   * attached to, e.g. via {@link BrowserContext.pages} or
+   * {@link Target.page}. Registering the listener before attaching
+   * guarantees that console messages replayed by the browser on attachment
+   * are not lost.
+   *
+   * With WebDriver BiDi, console messages that the browser replays while
+   * connecting are delivered once, right after {@link Puppeteer.connect}
+   * resolves: register the listener before awaiting anything else, or they
+   * are missed. Replayed messages can be delivered after messages logged
+   * later.
+   *
+   * Service workers and shared workers are not attached automatically:
+   * their console messages are only delivered after {@link Target.worker}
+   * has been called for their target. With WebDriver BiDi, their console
+   * messages are not reported.
+   *
+   * The {@link ConsoleMessage.args | arguments} are shared with listeners
+   * registered on {@link Page}, {@link WebWorker} and {@link Browser}.
+   * Disposing them in one listener invalidates them for all other listeners.
+   *
+   * @experimental
+   */
+  Console = 'console',
+  /**
+   * Emitted when any page in the browser context issues a request. Contains
+   * a {@link HTTPRequest} instance.
+   *
+   * @remarks
+   * Use {@link HTTPRequest.page} or {@link HTTPRequest.frame} to identify
+   * the originating context. Requests from dedicated workers have no page
+   * or frame: use {@link HTTPRequest.worker} for them. Dedicated worker
+   * requests and {@link HTTPRequest.worker} are not supported with
+   * WebDriver BiDi.
+   *
+   * With CDP, events are only delivered for pages that have a {@link Page}
+   * instance, e.g. created via {@link BrowserContext.pages} or {@link Target.page}.
+   * Requests issued before the instance exists, such as the initial
+   * navigation of a popup, are not reported. With WebDriver BiDi, requests
+   * from all pages are reported. Requests from service workers and shared
+   * workers are not reported.
+   *
+   * These listeners only observe requests. Do not call
+   * `request.continue()`, `abort()` or `respond()` from them: they are not
+   * coordinated with page-level handlers (see
+   * {@link https://pptr.dev/guides/network-interception#cooperative-intercept-mode | cooperative intercept mode}).
+   * To intercept requests, use {@link Page.setRequestInterception} with a
+   * {@link PageEvent.Request} listener.
+   *
+   * @experimental
+   */
+  Request = 'request',
+  /**
+   * Emitted when a request issued by any page in the browser context is
+   * served from the memory cache. Contains a {@link HTTPRequest} instance.
+   *
+   * @remarks
+   * The same delivery rules as for {@link BrowserContextEvent.Request} apply.
+   *
+   * @experimental
+   */
+  RequestServedFromCache = 'requestservedfromcache',
+  /**
+   * Emitted when a response is received for a request issued by any page in
+   * the browser context. Contains a {@link HTTPResponse} instance.
+   *
+   * @remarks
+   * Use {@link HTTPResponse.request} to access the originating request. The
+   * same delivery rules as for {@link BrowserContextEvent.Request} apply.
+   *
+   * @experimental
+   */
+  Response = 'response',
+  /**
+   * Emitted when a request issued by any page in the browser context fails,
+   * for example by timing out. Contains a {@link HTTPRequest} instance.
+   *
+   * @remarks
+   * HTTP error responses, such as 404 or 503, are still successful responses
+   * from HTTP standpoint, so the request completes with
+   * {@link BrowserContextEvent.RequestFinished} and not with
+   * {@link BrowserContextEvent.RequestFailed}. The same delivery rules as
+   * for {@link BrowserContextEvent.Request} apply.
+   *
+   * @experimental
+   */
+  RequestFailed = 'requestfailed',
+  /**
+   * Emitted when a request issued by any page in the browser context
+   * finishes successfully. Contains a {@link HTTPRequest} instance.
+   *
+   * @remarks
+   * The same delivery rules as for {@link BrowserContextEvent.Request} apply.
+   *
+   * @experimental
+   */
+  RequestFinished = 'requestfinished',
+}
+
+/**
+ * @public
+ */
+export interface BrowserContextEvents extends Record<EventType, unknown> {
+  [BrowserContextEvent.TargetChanged]: Target;
+  [BrowserContextEvent.TargetCreated]: Target;
+  [BrowserContextEvent.TargetDestroyed]: Target;
+  [BrowserContextEvent.Console]: ConsoleMessage;
+  [BrowserContextEvent.Request]: HTTPRequest;
+  [BrowserContextEvent.RequestServedFromCache]: HTTPRequest;
+  [BrowserContextEvent.Response]: HTTPResponse;
+  [BrowserContextEvent.RequestFailed]: HTTPRequest;
+  [BrowserContextEvent.RequestFinished]: HTTPRequest;
+}
+
+/**
+ * {@link BrowserContext} represents individual user contexts within a
+ * {@link Browser | browser}.
+ *
+ * When a {@link Browser | browser} is launched, it has at least one default
+ * {@link BrowserContext | browser context}. Others can be created
+ * using {@link Browser.createBrowserContext}. Each context has isolated storage
+ * (cookies/localStorage/etc.)
+ *
+ * {@link BrowserContext} {@link EventEmitter | emits} various events which are
+ * documented in the {@link BrowserContextEvent} enum.
+ *
+ * If a {@link Page | page} opens another {@link Page | page}, e.g. using
+ * `window.open`, the popup will belong to the parent {@link Page.browserContext
+ * | page's browser context}.
+ *
+ * @example Creating a new {@link BrowserContext | browser context}:
+ *
+ * ```ts
+ * // Create a new browser context
+ * const context = await browser.createBrowserContext();
+ * // Create a new page inside context.
+ * const page = await context.newPage();
+ * // ... do stuff with page ...
+ * await page.goto('https://example.com');
+ * // Dispose context once it's no longer needed.
+ * await context.close();
+ * ```
+ *
+ * @remarks
+ *
+ * In Chrome all non-default contexts are incognito,
+ * and {@link Browser.defaultBrowserContext | default browser context}
+ * might be incognito if you provide the `--incognito` argument when launching
+ * the browser.
+ *
+ * @public
+ */
+
+export abstract class BrowserContext extends EventEmitter<BrowserContextEvents> {
+  #logger: Logger;
+
+  /**
+   * @internal
+   */
+  constructor(logger: Logger) {
+    super(undefined, logger);
+    this.#logger = logger;
+  }
+
+  /**
+   * @internal
+   */
+  protected get logger(): Logger {
+    return this.#logger;
+  }
+
+  /**
+   * Gets all active {@link Target | targets} inside this
+   * {@link BrowserContext | browser context}.
+   */
+  abstract targets(): Target[];
+
+  /**
+   * If defined, indicates an ongoing screenshot operation.
+   */
+  #pageScreenshotMutex?: Mutex;
+  #screenshotOperationsCount = 0;
+
+  /**
+   * @internal
+   */
+  startScreenshot(): Promise<InstanceType<typeof Mutex.Guard>> {
+    const mutex = this.#pageScreenshotMutex || new Mutex();
+    this.#pageScreenshotMutex = mutex;
+    this.#screenshotOperationsCount++;
+    return mutex.acquire(() => {
+      this.#screenshotOperationsCount--;
+      if (this.#screenshotOperationsCount === 0) {
+        // Remove the mutex to indicate no ongoing screenshot operation.
+        this.#pageScreenshotMutex = undefined;
+      }
+    });
+  }
+
+  /**
+   * @internal
+   */
+  waitForScreenshotOperations():
+    Promise<InstanceType<typeof Mutex.Guard>> | undefined {
+    return this.#pageScreenshotMutex?.acquire();
+  }
+
+  /**
+   * Waits until a {@link Target | target} matching the given `predicate`
+   * appears and returns it.
+   *
+   * This will look all open {@link BrowserContext | browser contexts}.
+   *
+   * @example Finding a target for a page opened via `window.open`:
+   *
+   * ```ts
+   * await page.evaluate(() => window.open('https://www.example.com/'));
+   * const newWindowTarget = await browserContext.waitForTarget(
+   *   target => target.url() === 'https://www.example.com/',
+   * );
+   * ```
+   */
+  async waitForTarget(
+    predicate: (x: Target) => boolean | Promise<boolean>,
+    options: WaitForTargetOptions = {},
+  ): Promise<Target> {
+    const {timeout: ms = 30000} = options;
+    return await firstValueFrom(
+      merge(
+        fromEmitterEvent(this, BrowserContextEvent.TargetCreated),
+        fromEmitterEvent(this, BrowserContextEvent.TargetChanged),
+        from(this.targets()),
+      ).pipe(filterAsync(predicate), raceWith(timeout(ms))),
+    );
+  }
+
+  /**
+   * Gets a list of all open {@link Page | pages} inside this
+   * {@link BrowserContext | browser context}.
+   *
+   * @param includeAll - experimental, setting to true includes all kinds of pages.
+   *
+   * @remarks Non-visible {@link Page | pages}, such as `"background_page"`,
+   * will not be listed here. You can find them using {@link Target.page}.
+   */
+  abstract pages(includeAll?: boolean): Promise<Page[]>;
+
+  /**
+   * Grants this {@link BrowserContext | browser context} the given
+   * `permissions` within the given `origin`.
+   *
+   * @example Overriding permissions in the
+   * {@link Browser.defaultBrowserContext | default browser context}:
+   *
+   * ```ts
+   * const context = browser.defaultBrowserContext();
+   * await context.overridePermissions('https://html5demos.com', [
+   *   'geolocation',
+   * ]);
+   * ```
+   *
+   * @param origin - The origin to grant permissions to, e.g.
+   * "https://example.com".
+   * @param permissions - An array of permissions to grant. All permissions that
+   * are not listed here will be automatically denied.
+   *
+   * @deprecated in favor of {@link BrowserContext.setPermission}.
+   */
+  abstract overridePermissions(
+    origin: string,
+    permissions: Permission[],
+  ): Promise<void>;
+
+  /**
+   * Sets the permission for a specific origin.
+   *
+   * @param origin - The origin to set the permission for.
+   * @param permission - The permission descriptor.
+   * @param state - The state of the permission.
+   *
+   * @public
+   */
+  abstract setPermission(
+    origin: string | '*',
+    ...permissions: Array<{
+      permission: PermissionDescriptor;
+      state: PermissionState;
+    }>
+  ): Promise<void>;
+
+  /**
+   * Clears all permission overrides for this
+   * {@link BrowserContext | browser context}.
+   *
+   * @example Clearing overridden permissions in the
+   * {@link Browser.defaultBrowserContext | default browser context}:
+   *
+   * ```ts
+   * const context = browser.defaultBrowserContext();
+   * context.overridePermissions('https://example.com', ['clipboard-read']);
+   * // do stuff ..
+   * context.clearPermissionOverrides();
+   * ```
+   */
+  abstract clearPermissionOverrides(): Promise<void>;
+
+  /**
+   * Creates a new {@link Page | page} in this
+   * {@link BrowserContext | browser context}.
+   */
+  abstract newPage(options?: CreatePageOptions): Promise<Page>;
+
+  /**
+   * Gets the {@link Browser | browser} associated with this
+   * {@link BrowserContext | browser context}.
+   */
+  abstract browser(): Browser;
+
+  /**
+   * Closes this {@link BrowserContext | browser context} and all associated
+   * {@link Page | pages}.
+   *
+   * @remarks The
+   * {@link Browser.defaultBrowserContext | default browser context} cannot be
+   * closed.
+   */
+  abstract close(): Promise<void>;
+
+  /**
+   * Gets all cookies in the browser context.
+   */
+  abstract cookies(): Promise<Cookie[]>;
+
+  /**
+   * Sets a cookie in the browser context.
+   */
+  abstract setCookie(...cookies: CookieData[]): Promise<void>;
+
+  /**
+   * Removes cookie in this browser context.
+   *
+   * @param cookies - Complete {@link Cookie | cookie} object to be removed.
+   */
+  async deleteCookie(...cookies: Cookie[]): Promise<void> {
+    return await this.setCookie(
+      ...cookies.map(cookie => {
+        return {
+          ...cookie,
+          expires: 1,
+        };
+      }),
+    );
+  }
+
+  /**
+   * Deletes cookies matching the provided filters in this browser context.
+   *
+   * @param filters - {@link DeleteCookiesRequest}
+   */
+  async deleteMatchingCookies(
+    ...filters: DeleteCookiesRequest[]
+  ): Promise<void> {
+    const cookies = await this.cookies();
+    const cookiesToDelete = cookies.filter(cookie => {
+      return filters.some(filter => {
+        if (filter.name === cookie.name) {
+          if (filter.domain !== undefined && filter.domain !== cookie.domain) {
+            return false;
+          }
+
+          if (filter.path !== undefined && filter.path !== cookie.path) {
+            return false;
+          }
+          if (filter.partitionKey !== undefined) {
+            if (cookie.partitionKey === undefined) {
+              return false;
+            }
+            if (typeof cookie.partitionKey !== 'object') {
+              throw new Error('Unexpected string partition key');
+            }
+            const filterKey: CookiePartitionKey =
+              typeof filter.partitionKey === 'string'
+                ? {sourceOrigin: filter.partitionKey}
+                : filter.partitionKey;
+            if (filterKey.sourceOrigin !== cookie.partitionKey.sourceOrigin) {
+              return false;
+            }
+            if (
+              filterKey.hasCrossSiteAncestor !== undefined &&
+              filterKey.hasCrossSiteAncestor !==
+                cookie.partitionKey.hasCrossSiteAncestor
+            ) {
+              return false;
+            }
+          }
+          if (filter.url !== undefined) {
+            const url = new URL(filter.url);
+            if (
+              url.hostname !== cookie.domain ||
+              url.pathname !== cookie.path
+            ) {
+              return false;
+            }
+          }
+          return true;
+        }
+        return false;
+      });
+    });
+    await this.deleteCookie(...cookiesToDelete);
+  }
+
+  /**
+   * Whether this {@link BrowserContext | browser context} is closed.
+   */
+  get closed(): boolean {
+    return !this.browser().browserContexts().includes(this);
+  }
+
+  /**
+   * Identifier for this {@link BrowserContext | browser context}.
+   */
+  get id(): string | undefined {
+    return undefined;
+  }
+
+  override [disposeSymbol](): void {
+    return void this[asyncDisposeSymbol]().catch(error => {
+      this.#logger?.(DEBUG_PREFIXES.error)?.(error);
+    });
+  }
+
+  override async [asyncDisposeSymbol](): Promise<void> {
+    await this.close();
+    await super[asyncDisposeSymbol]();
+  }
+}
