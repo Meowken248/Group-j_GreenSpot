@@ -37,6 +37,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="EcoReport API", version="1.0.0", lifespan=lifespan)
+from fastapi.exceptions import RequestValidationError
+from app.core.crud_errors import crud_validation_error_handler
+app.add_exception_handler(RequestValidationError, crud_validation_error_handler)
 
 origins = [
     "http://localhost:5173",

@@ -1,3 +1,4 @@
+from app.core.media_validation import validate_image_bytes
 import os
 import json
 import uuid
@@ -168,7 +169,7 @@ class PostService:
         - Kiểm tra version hiện tại, nếu không khớp trả về HTTP 409 Conflict
         - Tự động tăng version + 1
         """
-        stmt = select(Post).with_for_update().where(
+        stmt = select(Post).with_for_update().execution_options(populate_existing=True).where(
             and_(
                 Post.post_id == post_id,
                 Post.deleted_at.is_(None),
@@ -199,6 +200,20 @@ class PostService:
                     "current_version": post.version,
                 }
             )
+
+        if request.content is not None or request.media_urls is not None:
+            text = request.content if request.content is not None else post.content or ""
+            media = request.media_urls
+            if media is None:
+                stored = post.media_urls or []
+                media = json.loads(stored) if isinstance(stored, str) else stored
+            if not text.strip() and not media:
+                raise HTTPException(422, "Vui lòng nhập nội dung hoặc thêm ảnh/video")
+            if request.media_urls is not None:
+                images = sum(m.media_type == MediaTypeEnum.IMAGE for m in media)
+                videos = len(media) - images
+                if images > 5 or videos > 1 or (images and videos):
+                    raise HTTPException(422, "Chỉ được đăng tối đa 5 ảnh hoặc 1 video")
 
         # Validate the destination before changing the post or any counters.
         if "group_id" in request.model_fields_set and request.group_id != post.group_id:
@@ -282,7 +297,7 @@ class PostService:
         is_hidden: bool,
     ) -> Post:
         """Ẩn hoặc hiện lại bài viết của chính mình (Feature STT 13 Màn 5/5)"""
-        stmt = select(Post).where(
+        stmt = select(Post).with_for_update().execution_options(populate_existing=True).where(
             and_(
                 Post.post_id == post_id,
                 Post.deleted_at.is_(None),
@@ -303,6 +318,7 @@ class PostService:
                 detail={"error_code": "PERMISSION_DENIED", "message": "Bạn không có quyền ẩn/hiện bài viết này"}
             )
 
+        post.version += 1
         post.is_hidden = is_hidden
         post.updated_at = datetime.now(timezone.utc)
         await db.commit()
@@ -316,7 +332,7 @@ class PostService:
         user_id: uuid.UUID,
     ) -> bool:
         """Xóa mềm bài viết (Rule 6: deleted_at, Feature STT 13 Màn 3/5 & 4/5)"""
-        stmt = select(Post).where(
+        stmt = select(Post).with_for_update().execution_options(populate_existing=True).where(
             and_(
                 Post.post_id == post_id,
                 Post.deleted_at.is_(None),
@@ -338,6 +354,7 @@ class PostService:
             )
 
         now = datetime.now(timezone.utc)
+        post.version += 1
         post.deleted_at = now
 
         # Soft delete các lượt gắn thẻ liên quan
@@ -374,7 +391,7 @@ class PostService:
                 detail={"error_code": "INVALID_FILE_TYPE", "message": "Tệp không hợp lệ (ảnh tối đa 10MB, video MP4 tối đa 50MB)"}
             )
 
-        content = await file.read()
+        content = await file.read(max_size + 1)
         file_size = len(content)
 
         if file_size > max_size:
@@ -382,6 +399,11 @@ class PostService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={"error_code": "FILE_TOO_LARGE", "message": "Tệp không hợp lệ (ảnh tối đa 10MB, video MP4 tối đa 50MB)"}
             )
+
+        if media_type == MediaTypeEnum.IMAGE:
+            ext = validate_image_bytes(content)
+        elif len(content) < 12 or content[4:8] != b"ftyp":
+            raise HTTPException(400, "Tệp video không hợp lệ. Vui lòng chọn video MP4 hoặc MOV.")
 
         # Lưu file với UUID duy nhất
         unique_name = f"{uuid.uuid4().hex}{ext}"
@@ -868,7 +890,7 @@ class PostService:
                 detail=f"Loại cảm xúc không hợp lệ. Hỗ trợ: {', '.join(valid_types)}"
             )
 
-        stmt = select(Post).where(Post.post_id == post_id, Post.deleted_at.is_(None))
+        stmt = select(Post).with_for_update().execution_options(populate_existing=True).where(Post.post_id == post_id, Post.deleted_at.is_(None))
         res = await db.execute(stmt)
         post = res.scalar_one_or_none()
         if not post:
@@ -933,7 +955,7 @@ class PostService:
         - Trả về số lượng từng loại cảm xúc
         - Kèm trạng thái bạn bè / follow để hiển thị nút hành động
         """
-        post_stmt = select(Post).where(Post.post_id == post_id, Post.deleted_at.is_(None))
+        post_stmt = select(Post).with_for_update().execution_options(populate_existing=True).where(Post.post_id == post_id, Post.deleted_at.is_(None))
         post_res = await db.execute(post_stmt)
         post = post_res.scalar_one_or_none()
         if not post:

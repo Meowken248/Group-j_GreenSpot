@@ -152,7 +152,9 @@ class ChatService:
             "group": ConversationType.GROUP.value,
             "district": ConversationType.DISTRICT.value,
         }
-        target_type = type_mapping.get(clean_tab, ConversationType.DIRECT.value)
+        if clean_tab not in type_mapping:
+            raise HTTPException(400, "Vui lòng chọn loại hội thoại hợp lệ")
+        target_type = type_mapping[clean_tab]
 
         # Base query: Lấy các conversation mà user là thành viên và chưa rời nhóm
         stmt = (
@@ -173,6 +175,10 @@ class ChatService:
                 Conversation.deleted_at.is_(None),
             )
         )
+
+        if target_type == ConversationType.DIRECT.value:
+            stmt = stmt.where(or_(ConversationMember.cleared_at.is_(None),
+                                  Conversation.last_message_at > ConversationMember.cleared_at))
 
         # Nếu là tab quận: chỉ hiển thị phòng chat của quận mà user thuộc về
         if target_type == ConversationType.DISTRICT.value:
@@ -207,6 +213,9 @@ class ChatService:
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total_res = await db.execute(count_stmt)
         total = total_res.scalar() or 0
+
+        if page > max(1, (total + limit - 1) // limit):
+            raise HTTPException(404, "Trang hội thoại không tồn tại. Vui lòng về trang đầu.")
 
         # Phân trang
         offset = (page - 1) * limit

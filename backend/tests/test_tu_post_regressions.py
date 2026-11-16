@@ -16,7 +16,7 @@ class PostGroupRegressionTests(unittest.IsolatedAsyncioTestCase):
         self.author = uuid.uuid4()
         self.group = uuid.uuid4()
         self.post = SimpleNamespace(post_id=uuid.uuid4(), user_id=self.author,
-                                    group_id=self.group, version=1)
+                                    group_id=self.group, version=1, content="Nội dung", media_urls="[]")
         result = MagicMock()
         result.scalars.return_value.first.return_value = self.post
         self.db = MagicMock(spec=AsyncSession)
@@ -52,4 +52,20 @@ class PostGroupRegressionTests(unittest.IsolatedAsyncioTestCase):
                                            UpdatePostRequest(version=2, group_id=None))
         self.assertEqual(error.exception.status_code, 409)
         self.assertEqual(self.post.group_id, self.group)
+
+    async def test_removing_last_media_cannot_leave_empty_post(self):
+        self.post.content = "　"
+        self.post.media_urls = '[{"url":"/uploads/a.jpg","media_type":"IMAGE"}]'
+        with self.assertRaises(HTTPException) as error:
+            await self.service.update_post(self.db, self.post.post_id, self.author,
+                UpdatePostRequest(version=1, media_urls=[]))
+        self.assertEqual(error.exception.status_code, 422)
+        self.db.commit.assert_not_awaited()
+
+    async def test_edit_text_preserves_previous_uploaded_media(self):
+        self.post.media_urls = '[{"url":"/uploads/a.jpg","media_type":"IMAGE"}]'
+        previous = self.post.media_urls
+        await self.service.update_post(self.db, self.post.post_id, self.author,
+            UpdatePostRequest(version=1, content="Lần sửa thứ hai"))
+        self.assertEqual(self.post.media_urls, previous)
 

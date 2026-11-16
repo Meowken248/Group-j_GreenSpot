@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
-from typing import List, Optional
-from pydantic import BaseModel, Field
+from typing import List, Literal, Optional
+from pydantic import BaseModel, Field, field_validator
 
 
 class WasteCategoryResponse(BaseModel):
@@ -21,7 +21,7 @@ class WasteCategoryResponse(BaseModel):
 
 class MediaUploadResponse(BaseModel):
     media_id: str
-    file_url: str
+    file_url: str = Field(..., max_length=1000)
     thumbnail_url: str
     media_type: str  # IMAGE / VIDEO
     file_size_bytes: int
@@ -33,22 +33,39 @@ class MediaUploadResponse(BaseModel):
 class IncidentMediaItem(BaseModel):
     file_url: str
     thumbnail_url: Optional[str] = None
-    media_type: str = "IMAGE"
+    media_type: Literal["IMAGE", "VIDEO"] = "IMAGE"
     file_size_bytes: Optional[int] = None
     mime_type: Optional[str] = None
 
 
+    @field_validator("file_url", "thumbnail_url")
+    @classmethod
+    def uploaded_url(cls, value):
+        if value is not None and (not value.strip() or value.startswith(("blob:", "data:", "javascript:"))):
+            raise ValueError("Ảnh/video chưa được tải lên. Vui lòng tải lại tệp trước khi gửi.")
+        return value
+
+
 class IncidentCreateRequest(BaseModel):
-    category_id: int = Field(..., description="ID danh mục sự cố")
+    category_id: int = Field(..., strict=True, ge=1, le=2147483647, description="ID danh mục sự cố")
     title: str = Field(..., min_length=1, max_length=100, description="Tiêu đề sự cố tối đa 100 ký tự")
     description: str = Field(..., min_length=1, max_length=500, description="Mô tả sự cố tối đa 500 ký tự")
-    severity: str = Field(default="MEDIUM", description="Mức khẩn cấp: LOW, MEDIUM, HIGH, CRITICAL")
+    severity: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"] = Field(default="MEDIUM", description="Mức khẩn cấp: LOW, MEDIUM, HIGH, CRITICAL")
     latitude: float = Field(..., ge=-90, le=90, description="Vĩ độ GPS")
     longitude: float = Field(..., ge=-180, le=180, description="Kinh độ GPS")
     address_text: str = Field(..., min_length=1, max_length=500, description="Địa chỉ giải mã từ GPS")
-    media: List[IncidentMediaItem] = Field(default_factory=list, description="Danh sách tệp bằng chứng đính kèm (tối đa 5)")
+    media: List[IncidentMediaItem] = Field(..., min_length=1, max_length=5, description="Danh sách tệp bằng chứng đính kèm (tối đa 5)")
     is_anonymous: bool = Field(default=False, description="Báo cáo ẩn danh")
     reporter_phone: Optional[str] = Field(default=None, description="Số điện thoại người báo cáo")
+
+
+    @field_validator("title", "description", "address_text")
+    @classmethod
+    def required_text(cls, value):
+        value = value.strip()
+        if not value:
+            raise ValueError("Tiêu đề, mô tả và địa chỉ không được chỉ chứa khoảng trắng.")
+        return value
 
 
 class IncidentCreateResponse(BaseModel):

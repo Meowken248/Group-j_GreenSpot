@@ -52,7 +52,7 @@ def is_within_hcmc_bounds(lat: float, lng: float) -> bool:
 
 async def get_active_waste_categories(db: AsyncSession) -> List[WasteCategoryResponse]:
     """Lấy danh sách các loại sự cố môi trường đang hoạt động kèm thời hạn SLA"""
-    stmt = select(WasteCategory).where(WasteCategory.is_active == True).order_by(WasteCategory.category_id.asc())
+    stmt = select(WasteCategory).where(WasteCategory.is_active == True, WasteCategory.is_deleted == False).order_by(WasteCategory.category_id.asc())
     result = await db.execute(stmt)
     categories = result.scalars().all()
     return [WasteCategoryResponse.model_validate(c) for c in categories]
@@ -207,7 +207,8 @@ async def create_new_incident(
             raise PermissionError("Bạn gửi phản ánh quá nhiều. Vui lòng thử lại sau.")
 
     # 3. Lấy thông tin danh mục sự cố để tính SLA
-    cat_stmt = select(WasteCategory).where(WasteCategory.category_id == data.category_id)
+    cat_stmt = select(WasteCategory).where(WasteCategory.category_id == data.category_id,
+        WasteCategory.is_active == True, WasteCategory.is_deleted == False)
     cat_res = await db.execute(cat_stmt)
     category = cat_res.scalar_one_or_none()
     if not category:

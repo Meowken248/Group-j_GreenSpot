@@ -1,3 +1,4 @@
+from app.core.media_validation import validate_image_bytes
 import uuid
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, status, Header, Request
@@ -65,7 +66,7 @@ async def upload_and_watermark_media(
     - Toạ độ GPS (Kinh độ & Vĩ độ)
     - Ràng buộc: Ảnh tối đa 10MB (JPG/PNG), Video tối đa 50MB (MP4, tối đa 30s).
     """
-    content = await file.read()
+    content = await file.read(50 * 1024 * 1024 + 1)
     file_size = len(content)
     filename = file.filename or "media.jpg"
     content_type = file.content_type or ""
@@ -93,6 +94,9 @@ async def upload_and_watermark_media(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Tệp không hợp lệ (ảnh JPG/PNG tối đa 10MB, video MP4 tối đa 50MB)",
         )
+
+    if is_image:
+        validate_image_bytes(content)
 
     try:
         if is_image:

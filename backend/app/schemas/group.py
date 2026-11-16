@@ -129,7 +129,7 @@ class GroupListResponse(BaseModel):
 
 
 class GroupDisbandRequest(BaseModel):
-    confirmation_name: str = Field(..., description="Phải nhập khớp hoàn toàn tên nhóm để xác nhận")
+    confirmation_name: str = Field(..., max_length=50, description="Phải nhập khớp hoàn toàn tên nhóm để xác nhận")
 
 
 class InviteFriendsRequest(BaseModel):

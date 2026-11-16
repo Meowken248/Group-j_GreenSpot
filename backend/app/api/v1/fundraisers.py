@@ -1,3 +1,4 @@
+from app.core.media_validation import validate_image_bytes
 """Router API cho Chức năng 20: Gây quỹ cộng đồng (Fundraiser)
 Tài liệu căn cứ: Đồ Án Chuyên Đề Web 1 - Báo Cáo.docx.pdf (Trang 160 - 168)
 """
@@ -70,7 +71,7 @@ async def upload_fundraiser_image(
             detail="Ảnh không hợp lệ (chỉ nhận JPG, PNG, tối đa 5MB)",
         )
 
-    content = await file.read()
+    content = await file.read(5 * 1024 * 1024 + 1)
     if len(content) > MAX_IMAGE_SIZE_BYTES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -82,6 +83,7 @@ async def upload_fundraiser_image(
             detail="Tệp ảnh rỗng, vui lòng chọn ảnh khác",
         )
 
+    ext = validate_image_bytes(content, ("JPEG", "PNG"))
     folder = os.path.join(UPLOAD_DIR, "fundraisers")
     os.makedirs(folder, exist_ok=True)
     unique_name = f"{uuid.uuid4().hex}{ext}"

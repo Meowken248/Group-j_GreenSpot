@@ -81,7 +81,7 @@ class CommentService:
         """Apply the same privacy boundary to comments, replies and writes."""
         stmt = select(Post).where(Post.post_id == post_id, Post.deleted_at.is_(None))
         if lock:
-            stmt = stmt.with_for_update()
+            stmt = stmt.with_for_update().execution_options(populate_existing=True)
         post = (await db.execute(stmt)).scalar_one_or_none()
         denied = HTTPException(404, "Bài viết không còn tồn tại hoặc bạn không có quyền xem")
         if not post:
@@ -374,6 +374,16 @@ class CommentService:
         # Kiểm tra bài viết gốc
         post = await self._require_visible_post(db, root_comment.post_id, user_id, lock=True)
 
+        # Re-read after obtaining the post lock: another tab may have deleted the thread.
+        root_comment = (await db.execute(select(Comment).where(
+            Comment.comment_id == root_id, Comment.deleted_at.is_(None)
+        ).execution_options(populate_existing=True))).scalar_one_or_none()
+        target_exists = (await db.execute(select(Comment.comment_id).where(
+            Comment.comment_id == comment_id, Comment.deleted_at.is_(None)
+        ))).scalar_one_or_none()
+        if root_comment is None or target_exists is None:
+            raise HTTPException(404, "Bình luận gốc không còn tồn tại")
+
         new_reply = Comment(
             comment_id=uuid.uuid4(),
             post_id=root_comment.post_id,
@@ -420,6 +430,13 @@ class CommentService:
                 detail="Bình luận không còn tồn tại",
             )
 
+        # All comment mutations lock the post first, then refresh the comment.
+        post = (await db.execute(select(Post).where(Post.post_id == comment.post_id)
+            .with_for_update().execution_options(populate_existing=True))).scalar_one_or_none()
+        comment = (await db.execute(stmt.with_for_update().execution_options(populate_existing=True))).scalar_one_or_none()
+        if not comment:
+            raise HTTPException(404, "Bình luận không còn tồn tại hoặc đã bị xóa")
+
         if comment.user_id != user_id and not is_admin:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -427,10 +444,12 @@ class CommentService:
             )
 
         comment.deleted_at = datetime.now(timezone.utc)
+        if comment.parent_id is None:
+            await db.execute(update(Comment).where(
+                Comment.parent_id == comment_id, Comment.deleted_at.is_(None)
+            ).values(deleted_at=comment.deleted_at))
 
         # Giảm số lượng
-        post_stmt = select(Post).where(Post.post_id == comment.post_id)
-        post = (await db.execute(post_stmt)).scalar_one_or_none()
         if post:
             if comment.parent_id is None:
                 post.comments_count = max(0, post.comments_count - (1 + comment.replies_count))

@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import List, Optional, Tuple
 from fastapi import HTTPException, status
-from sqlalchemy import select, func, and_, or_, text, desc, case
+from sqlalchemy import select, func, and_, or_, text, desc, case, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -19,6 +19,7 @@ from app.models.group import (
 )
 from app.models.post import Post, PostReaction, PostTaggedFriend
 from app.models.comment import Comment
+from app.models.notification import Notification
 from app.models.rbac import User, Role
 from app.models.audit_log import AuditLog
 from app.schemas.group import (
@@ -312,6 +313,7 @@ class GroupService:
         4. Kiểm tra trùng lặp tên nhóm trong cùng phạm vi.
         5. Tạo nhóm, gán creator làm ADMIN.
         """
+        await db.execute(text("SELECT pg_advisory_xact_lock(161116)"))
         # 1. Kiểm tra giới hạn 5 nhóm
         admin_count = await GroupService.count_admin_groups(db, creator.user_id)
         if admin_count >= 5:
@@ -600,7 +602,8 @@ class GroupService:
         3. Tên xác nhận phải khớp hoàn toàn với tên nhóm.
         4. Soft delete nhóm, set status = DISBANDED, xóa thành viên.
         """
-        group = await db.get(Group, group_id)
+        group = (await db.execute(select(Group).where(Group.group_id == group_id)
+            .with_for_update().execution_options(populate_existing=True))).scalar_one_or_none()
         if not group or group.deleted_at is not None or group.status == GroupStatus.DISBANDED.value:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Nhóm không còn tồn tại"
@@ -608,7 +611,8 @@ class GroupService:
 
         # Kiểm tra quyền ADMIN
         mem_stmt = select(GroupMember).where(
-            GroupMember.group_id == group_id, GroupMember.user_id == user_id
+            GroupMember.group_id == group_id, GroupMember.user_id == user_id,
+            GroupMember.deleted_at.is_(None), GroupMember.status == GroupMemberStatus.ACTIVE.value
         )
         member = (await db.execute(mem_stmt)).scalars().first()
         if not member or member.role != GroupMemberRole.ADMIN.value:
@@ -623,6 +627,23 @@ class GroupService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Tên nhóm không khớp",
             )
+
+        recipients = (await db.execute(select(GroupMember.user_id).where(
+            GroupMember.group_id == group_id, GroupMember.deleted_at.is_(None),
+            GroupMember.status == GroupMemberStatus.ACTIVE.value
+        ))).scalars().all()
+        now = datetime.now(timezone.utc)
+        post_ids = select(Post.post_id).where(Post.group_id == group_id)
+        await db.execute(update(Comment).where(
+            Comment.post_id.in_(post_ids), Comment.deleted_at.is_(None)
+        ).values(deleted_at=now))
+        await db.execute(update(Post).where(
+            Post.group_id == group_id, Post.deleted_at.is_(None)
+        ).values(deleted_at=now, version=Post.version + 1))
+        for recipient_id in set(recipients):
+            db.add(Notification(user_id=recipient_id, title="Nhóm đã giải tán",
+                message=f"Nhóm {group.name} đã được quản trị nhóm giải tán.",
+                notification_type="GROUP_DISBANDED", reference_id=str(group_id)))
 
         # Thực hiện soft delete nhóm và thành viên
         group.status = GroupStatus.DISBANDED.value
@@ -670,7 +691,8 @@ class GroupService:
     @staticmethod
     async def join_group(db: AsyncSession, group_id: uuid.UUID, user_id: uuid.UUID):
         """Tham gia nhóm."""
-        group = await db.get(Group, group_id)
+        group = (await db.execute(select(Group).where(Group.group_id == group_id)
+            .with_for_update().execution_options(populate_existing=True))).scalar_one_or_none()
         if not group or group.deleted_at is not None or group.status == GroupStatus.DISBANDED.value:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Nhóm không còn tồn tại"
@@ -681,8 +703,12 @@ class GroupService:
         )).scalars().first()
 
         if existing:
-            if existing.status == GroupMemberStatus.ACTIVE.value:
+            if existing.status == GroupMemberStatus.ACTIVE.value and existing.deleted_at is None:
                 return {"message": "Bạn đã là thành viên của nhóm này"}
+            if existing.status == GroupMemberStatus.BANNED.value:
+                raise HTTPException(403, "Bạn đã bị chặn tham gia nhóm này")
+            existing.deleted_at = None
+            existing.role = GroupMemberRole.MEMBER.value
             existing.status = GroupMemberStatus.ACTIVE.value
             group.members_count += 1
         else:
@@ -701,14 +727,16 @@ class GroupService:
     @staticmethod
     async def leave_group(db: AsyncSession, group_id: uuid.UUID, user_id: uuid.UUID):
         """Rời nhóm (ngăn cản nếu là ADMIN duy nhất)."""
-        group = await db.get(Group, group_id)
+        group = (await db.execute(select(Group).where(Group.group_id == group_id)
+            .with_for_update().execution_options(populate_existing=True))).scalar_one_or_none()
         if not group or group.deleted_at is not None or group.status == GroupStatus.DISBANDED.value:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Nhóm không còn tồn tại"
             )
 
         mem = (await db.execute(
-            select(GroupMember).where(GroupMember.group_id == group_id, GroupMember.user_id == user_id)
+            select(GroupMember).where(GroupMember.group_id == group_id, GroupMember.user_id == user_id,
+                GroupMember.deleted_at.is_(None), GroupMember.status == GroupMemberStatus.ACTIVE.value)
         )).scalars().first()
 
         if not mem:
@@ -722,6 +750,7 @@ class GroupService:
                 select(GroupMember).where(
                     GroupMember.group_id == group_id,
                     GroupMember.user_id != user_id,
+                    GroupMember.deleted_at.is_(None),
                     GroupMember.role == GroupMemberRole.ADMIN.value,
                     GroupMember.status == GroupMemberStatus.ACTIVE.value,
                 )
@@ -732,7 +761,8 @@ class GroupService:
                     detail="Bạn là quản trị nhóm duy nhất. Hãy chuyển quyền quản trị cho thành viên khác trước khi rời",
                 )
 
-        await db.delete(mem)
+        mem.deleted_at = datetime.now(timezone.utc)
+        mem.version += 1
         group.members_count = max(0, group.members_count - 1)
         await db.commit()
         return {"message": "Đã rời nhóm thành công"}
