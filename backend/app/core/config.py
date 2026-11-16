@@ -7,7 +7,7 @@ ROOT_DIR = os.path.dirname(BASE_DIR)
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/ecoreport_db"
+    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5433/ecoreport_db"
     ELASTICSEARCH_URL: str = "http://localhost:9200"
     ELASTICSEARCH_USER: str = "elastic"
     ELASTICSEARCH_PASSWORD: str = "GreenSpotSecure2026!"

@@ -63,7 +63,7 @@ model air_quality_records {
 }
 
 model alembic_version {
-  version_num String @id(map: "alembic_version_pkc") @db.VarChar(32)
+  version_num String @id(map: "alembic_version_pkc") @db.VarChar(255)
 }
 
 model badges {
@@ -274,9 +274,9 @@ model incidents {
   incident_duplicate_clusters_incident_duplicate_clusters_incident_b_idToincidents      incident_duplicate_clusters[] @relation("incident_duplicate_clusters_incident_b_idToincidents")
   incident_duplicate_clusters_incident_duplicate_clusters_master_incident_idToincidents incident_duplicate_clusters[] @relation("incident_duplicate_clusters_master_incident_idToincidents")
   incident_media                                                                        incident_media[]
-  waste_categories                                                                      waste_categories              @relation(fields: [category_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction)
-  incidents                                                                             incidents?                    @relation("incidentsToincidents", fields: [master_incident_id], references: [incident_id], onUpdate: NoAction)
+  incidents                                                                             incidents?                    @relation("incidentsToincidents", fields: [master_incident_id], references: [incident_id], onUpdate: NoAction, map: "fk_incidents_master_incident_id")
   other_incidents                                                                       incidents[]                   @relation("incidentsToincidents")
+  waste_categories                                                                      waste_categories              @relation(fields: [category_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction)
   users_incidents_priority_modified_byTousers                                           users?                        @relation("incidents_priority_modified_byTousers", fields: [priority_modified_by], references: [user_id], onUpdate: NoAction)
   users                                                                                 users?                        @relation(fields: [reporter_id], references: [user_id], onUpdate: NoAction)
   administrative_units                                                                  administrative_units?         @relation(fields: [unit_id], references: [unit_id], onUpdate: NoAction)
@@ -343,15 +343,22 @@ model posts {
   longitude                                  Float?
   address                                    String?               @db.VarChar(500)
   version                                    Int                   @default(1)
+  shares_count                               Int                   @default(0)
+  shared_post_id                             String?               @db.Uuid
   comments                                   comments[]
   post_reactions                             post_reactions[]
   post_shares_post_shares_new_post_idToposts post_shares[]         @relation("post_shares_new_post_idToposts")
   post_shares_post_shares_post_idToposts     post_shares[]         @relation("post_shares_post_idToposts")
   post_tagged_friends                        post_tagged_friends[]
+  posts                                      posts?                @relation("postsToposts", fields: [shared_post_id], references: [post_id], onUpdate: NoAction, map: "fk_posts_shared_post_id")
+  other_posts                                posts[]               @relation("postsToposts")
   users                                      users                 @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([user_id], map: "ix_posts_user_id")
   @@index([latitude, longitude], map: "idx_posts_lat_lng")
+  @@index([group_id], map: "idx_posts_group_id")
+  @@index([group_id], map: "ix_posts_group_id")
+  @@index([shared_post_id], map: "ix_posts_shared_post_id")
 }
 
 model recycling_facilities {
@@ -368,6 +375,12 @@ model recycling_facilities {
   is_active            Boolean                 @default(true)
   created_at           DateTime                @default(now()) @db.Timestamptz(6)
   updated_at           DateTime                @default(now()) @db.Timestamptz(6)
+  open_time            String?                 @db.VarChar(10)
+  close_time           String?                 @db.VarChar(10)
+  qr_code              String?                 @unique(map: "uq_recycling_facilities_qr_code") @db.VarChar(100)
+  is_deleted           Boolean                 @default(false)
+  deleted_at           DateTime?               @db.Timestamptz(6)
+  version              Int                     @default(1)
   administrative_units administrative_units?   @relation(fields: [unit_id], references: [unit_id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([location], map: "idx_recycling_facilities_location", type: Gist)
@@ -567,6 +580,8 @@ model users {
   deleted_at                                                         DateTime?                    @db.Timestamptz(6)
   green_points                                                       Int                          @default(0)
   lifetime_points                                                    Int                          @default(0)
+  show_birthday                                                      Boolean                      @default(true)
+  district                                                           String?                      @db.VarChar(100)
   audit_logs                                                         audit_logs[]
   birthday_wishes_birthday_wishes_recipient_idTousers                birthday_wishes[]            @relation("birthday_wishes_recipient_idTousers")
   birthday_wishes_birthday_wishes_sender_idTousers                   birthday_wishes[]            @relation("birthday_wishes_sender_idTousers")
@@ -673,18 +688,21 @@ model voice_sample_commands {
 }
 
 model waste_categories {
-  category_id      Int         @id @default(autoincrement())
-  category_code    String      @unique @db.VarChar(50)
-  name             String      @db.VarChar(150)
-  description      String?
-  default_severity String      @default("MEDIUM") @db.VarChar(20)
-  sla_hours        Int         @default(48)
-  color_hex        String      @default("#22C55E") @db.VarChar(10)
-  icon_name        String      @default("trash-2") @db.VarChar(50)
-  is_active        Boolean     @default(true)
-  created_at       DateTime    @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime    @default(now()) @db.Timestamptz(6)
-  incidents        incidents[]
+  category_id       Int         @id @default(autoincrement())
+  category_code     String      @unique @db.VarChar(50)
+  name              String      @db.VarChar(150)
+  description       String?
+  default_severity  String      @default("MEDIUM") @db.VarChar(20)
+  sla_hours         Int         @default(48)
+  color_hex         String      @default("#22C55E") @db.VarChar(10)
+  icon_name         String      @default("trash-2") @db.VarChar(50)
+  is_active         Boolean     @default(true)
+  created_at        DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime    @default(now()) @db.Timestamptz(6)
+  sla_warning_hours Int         @default(4)
+  is_deleted        Boolean     @default(false)
+  deleted_at        DateTime?   @db.Timestamptz(6)
+  incidents         incidents[]
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1664,12 +1682,14 @@ model group_members {
   status     String    @db.VarChar(20)
   joined_at  DateTime  @default(now()) @db.Timestamptz(6)
   deleted_at DateTime? @db.Timestamptz(6)
+  version    Int       @default(1)
   groups     groups    @relation(fields: [group_id], references: [group_id], onDelete: Cascade, onUpdate: NoAction)
   users      users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([group_id, user_id], map: "uq_group_user_member")
   @@index([group_id], map: "ix_group_members_group_id")
   @@index([user_id], map: "ix_group_members_user_id")
+  @@index([group_id, role, status], map: "ix_group_members_group_role_status")
 }
 
 model groups {

@@ -44,7 +44,26 @@ def db_down():
     run_cmd("docker compose stop db", cwd=root_dir)
 
 
+def ensure_prisma_env():
+    """Đảm bảo DATABASE_URL luôn dùng giao thức postgresql:// hoặc postgres:// tương thích với Prisma CLI."""
+    import os
+    env_file = backend_dir / ".env"
+    db_url = os.environ.get("DATABASE_URL", "")
+    if not db_url and env_file.exists():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line.startswith("DATABASE_URL="):
+                db_url = line.split("=", 1)[1].strip().strip('"').strip("'")
+                break
+    if "+asyncpg" in db_url:
+        clean_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
+        os.environ["DATABASE_URL"] = clean_url
+    elif db_url:
+        os.environ["DATABASE_URL"] = db_url
+
+
 def db_studio():
+    ensure_prisma_env()
     print("🌐 Mở giao diện trực quan Prisma Studio (cổng 5555)...")
     run_cmd("prisma studio", cwd=backend_dir)
 
@@ -66,6 +85,7 @@ def db_migrate():
 
 
 def db_pull():
+    ensure_prisma_env()
     print("📥 Kéo cấu trúc bảng từ PostgreSQL về Prisma schema...")
     run_cmd("prisma db pull", cwd=backend_dir)
 
