@@ -227,13 +227,7 @@ function App() {
     canAccess("DISPATCH_TASKS") ||
     canAccess("INCIDENTS");
 
-  const hasHotspotsAccess =
-    currentUser?.role === "ADMIN" ||
-    currentUser?.role === "OFFICER" ||
-    currentUser?.role === "DISTRICT_MANAGER" ||
-    currentUser?.role === "COORDINATOR" ||
-    canAccess("STATISTICS") ||
-    canAccess("INCIDENTS");
+
 
   const hasPenaltyReportsAccess =
     currentUser?.role === "ADMIN" ||
@@ -342,7 +336,7 @@ function App() {
     "lucky-wheel",
     "milestone",
   ].includes(activeTab);
-  const isPenaltiesActive = activeTab === "penalties";
+
 
   useEffect(() => {
     const unsubscribe = subscribeSessionExpired(() => {
@@ -685,21 +679,7 @@ function App() {
                   {activeTab === "navigation" && <span className="active-indicator">●</span>}
                 </button>
 
-                {hasHotspotsAccess && (
-                  <button
-                    type="button"
-                    className={`panel-item-btn ${activeTab === "hotspots" ? "active" : ""}`}
-                    onClick={() => navigateTo("hotspots", "#hotspots")}
-                    data-testid="tab-btn-hotspots"
-                  >
-                    <span className="panel-item-icon">🔥</span>
-                    <div className="panel-item-content">
-                      <span className="panel-item-title">Điểm nóng & Dự báo</span>
-                      <span className="panel-item-desc">Dự báo ô nhiễm 7 ngày & chuỗi thời gian</span>
-                    </div>
-                    {activeTab === "hotspots" && <span className="active-indicator">●</span>}
-                  </button>
-                )}
+
 
                 {hasRiskDashboardAccess && (
                   <button
@@ -767,21 +747,7 @@ function App() {
                     </button>
                   )}
 
-                  {hasPenaltyReportsAccess && (
-                    <button
-                      type="button"
-                      className={`panel-item-btn ${activeTab === "penalty-reports" ? "active" : ""}`}
-                      onClick={() => navigateTo("penalty-reports", "#penalty-reports")}
-                      data-testid="tab-btn-penalty-reports"
-                    >
-                      <span className="panel-item-icon">📢</span>
-                      <div className="panel-item-content">
-                        <span className="panel-item-title">Quản lý vi phạm</span>
-                        <span className="panel-item-desc">Giám sát & xử lý phản ánh từ công dân</span>
-                      </div>
-                      {activeTab === "penalty-reports" && <span className="active-indicator">●</span>}
-                    </button>
-                  )}
+
 
                   {hasTriageAccess && (
                     <button
@@ -879,35 +845,7 @@ function App() {
                     </button>
                   )}
 
-                  {currentUser?.role === "ADMIN" && (
-                    <>
-                      <button
-                        type="button"
-                        className={`panel-item-btn ${activeTab === "waste_categories" ? "active" : ""}`}
-                        onClick={() => navigateTo("waste_categories", "#waste-categories")}
-                      >
-                        <span className="panel-item-icon">🗑️</span>
-                        <div className="panel-item-content">
-                          <span className="panel-item-title">Danh mục rác & Quy chuẩn SLA</span>
-                          <span className="panel-item-desc">Cấu hình loại chất thải & hạn mức xử lý</span>
-                        </div>
-                        {activeTab === "waste_categories" && <span className="active-indicator">●</span>}
-                      </button>
 
-                      <button
-                        type="button"
-                        className={`panel-item-btn ${activeTab === "recycling_facilities" ? "active" : ""}`}
-                        onClick={() => navigateTo("recycling_facilities", "#recycling-facilities")}
-                      >
-                        <span className="panel-item-icon">♻️</span>
-                        <div className="panel-item-content">
-                          <span className="panel-item-title">Trạm thu gom tái chế</span>
-                          <span className="panel-item-desc">Mạng lưới trạm tái chế và điểm tiếp nhận</span>
-                        </div>
-                        {activeTab === "recycling_facilities" && <span className="active-indicator">●</span>}
-                      </button>
-                    </>
-                  )}
                 </div>
               )}
             </div>
@@ -1061,19 +999,7 @@ function App() {
                   {activeTab === "events" && <span className="active-indicator">●</span>}
                 </button>
 
-                <button
-                  type="button"
-                  className={`panel-item-btn ${activeTab === "fundraiser" ? "active" : ""}`}
-                  onClick={() => navigateTo("fundraiser", "#fundraiser")}
-                  data-testid="nav-tab-fundraiser"
-                >
-                  <span className="panel-item-icon">💚</span>
-                  <div className="panel-item-content">
-                    <span className="panel-item-title">Gây quỹ cộng đồng</span>
-                    <span className="panel-item-desc">Chung tay tài trợ các dự án môi trường xanh</span>
-                  </div>
-                  {activeTab === "fundraiser" && <span className="active-indicator">●</span>}
-                </button>
+
 
                 <button
                   type="button"
@@ -1112,48 +1038,6 @@ function App() {
 
                 <button
                   type="button"
-                  className={`panel-item-btn ${activeTab === "rewards" ? "active" : ""}`}
-                  onClick={() => navigateTo("rewards", "#wallet")}
-                  data-testid="tab-btn-rewards"
-                >
-                  <span className="panel-item-icon">💳</span>
-                  <div className="panel-item-content">
-                    <span className="panel-item-title">Ví điểm xanh & Đổi quà</span>
-                    <span className="panel-item-desc">Đổi voucher sinh thái, quà tặng & chính sách điểm</span>
-                  </div>
-                  {activeTab === "rewards" && <span className="active-indicator">●</span>}
-                </button>
-
-                <button
-                  type="button"
-                  className={`panel-item-btn ${activeTab === "challenges" ? "active" : ""}`}
-                  onClick={() => navigateTo("challenges", "#challenges")}
-                  data-testid="tab-btn-challenges"
-                >
-                  <span className="panel-item-icon">🎯</span>
-                  <div className="panel-item-content">
-                    <span className="panel-item-title">Thử thách xanh hàng tuần</span>
-                    <span className="panel-item-desc">Làm nhiệm vụ sống xanh & nhận điểm thưởng</span>
-                  </div>
-                  {activeTab === "challenges" && <span className="active-indicator">●</span>}
-                </button>
-
-                <button
-                  type="button"
-                  className={`panel-item-btn ${activeTab === "handbook" ? "active" : ""}`}
-                  onClick={() => navigateTo("handbook", "#handbook")}
-                  data-testid="tab-btn-handbook"
-                >
-                  <span className="panel-item-icon">📖</span>
-                  <div className="panel-item-content">
-                    <span className="panel-item-title">Cẩm nang phân loại rác</span>
-                    <span className="panel-item-desc">Tra cứu hướng dẫn phân loại & tái chế tại nguồn</span>
-                  </div>
-                  {activeTab === "handbook" && <span className="active-indicator">●</span>}
-                </button>
-
-                <button
-                  type="button"
                   className={`panel-item-btn ${activeTab === "leaderboard" ? "active" : ""}`}
                   onClick={() => navigateTo("leaderboard", "#leaderboard")}
                   data-testid="tab-btn-leaderboard"
@@ -1165,62 +1049,9 @@ function App() {
                   </div>
                   {activeTab === "leaderboard" && <span className="active-indicator">●</span>}
                 </button>
-
-                <button
-                  type="button"
-                  className={`panel-item-btn ${activeTab === "lucky-wheel" ? "active" : ""}`}
-                  onClick={() => navigateTo("lucky-wheel", "#lucky-wheel")}
-                  data-testid="tab-btn-lucky-wheel"
-                >
-                  <span className="panel-item-icon">🎡</span>
-                  <div className="panel-item-content">
-                    <span className="panel-item-title">Vòng quay may mắn hằng ngày</span>
-                    <span className="panel-item-desc">Quay thưởng mỗi ngày nhận điểm & quà may mắn</span>
-                  </div>
-                  {activeTab === "lucky-wheel" && <span className="active-indicator">●</span>}
-                </button>
-
-                <button
-                  type="button"
-                  className={`panel-item-btn ${activeTab === "milestone" ? "active" : ""}`}
-                  onClick={() => navigateTo("milestone", "#milestone")}
-                  data-testid="tab-btn-milestone"
-                >
-                  <span className="panel-item-icon">🏅</span>
-                  <div className="panel-item-content">
-                    <span className="panel-item-title">Cột mốc & Danh hiệu xanh</span>
-                    <span className="panel-item-desc">Lộ trình thăng cấp danh hiệu công dân sinh thái</span>
-                  </div>
-                  {activeTab === "milestone" && <span className="active-indicator">●</span>}
-                </button>
-
-                <button
-                  type="button"
-                  className={`panel-item-btn ${activeTab === "qr-scan" ? "active" : ""}`}
-                  onClick={() => navigateTo("qr-scan", "#qr-scan")}
-                  data-testid="tab-btn-qr-scan"
-                >
-                  <span className="panel-item-icon">📷</span>
-                  <div className="panel-item-content">
-                    <span className="panel-item-title">Quét mã QR nhận điểm</span>
-                    <span className="panel-item-desc">Quét mã QR tại các trạm tái chế để tích điểm tức thì</span>
-                  </div>
-                  {activeTab === "qr-scan" && <span className="active-indicator">●</span>}
-                </button>
               </div>
             )}
           </div>
-
-          {/* NHÓM 5: TRA CỨU XỬ PHẠT (Nút trực tiếp) */}
-          <button
-            type="button"
-            className={`nav-group-btn single-btn ${isPenaltiesActive ? "active" : ""}`}
-            onClick={() => navigateTo("penalties", "#penalties")}
-            title="Tra cứu quy định xử phạt vi phạm hành chính (Nghị định 45/2022/NĐ-CP)"
-          >
-            <span className="nav-icon">⚖️</span>
-            <span className="nav-label">Tra cứu xử phạt</span>
-          </button>
         </nav>
 
         {/* KHỐI PHẢI: TIỆN ÍCH & TÀI KHOẢN */}
@@ -1398,41 +1229,11 @@ function App() {
                   <button
                     type="button"
                     className="dropdown-menu-action"
-                    onClick={() => navigateTo("rewards", "#wallet")}
-                    data-testid="user-menu-rewards"
-                  >
-                    <span className="action-icon">💳</span>
-                    <span>Ví Điểm Thưởng & Danh Hiệu</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="dropdown-menu-action"
-                    onClick={() => navigateTo("challenges", "#challenges")}
-                    data-testid="user-menu-challenges"
-                  >
-                    <span className="action-icon">🎯</span>
-                    <span>Thử Thách Xanh Trong Tuần</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="dropdown-menu-action"
                     onClick={() => navigateTo("outbox", "#outbox")}
                     data-testid="user-menu-outbox"
                   >
                     <span className="action-icon">📤</span>
                     <span>Hàng Đợi Ngoại Tuyến & Bản Nháp</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="dropdown-menu-action"
-                    onClick={() => navigateTo("handbook", "#handbook")}
-                    data-testid="user-menu-handbook"
-                  >
-                    <span className="action-icon">📖</span>
-                    <span>Cẩm Nang Phân Loại Rác</span>
                   </button>
 
                   <button
@@ -1453,36 +1254,6 @@ function App() {
                   >
                     <span className="action-icon">🛰️</span>
                     <span>Bản Đồ Nhiệt Môi Trường (GIS)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="dropdown-menu-action"
-                    onClick={() => navigateTo("qr-scan", "#qr-scan")}
-                    data-testid="user-menu-qr-scan"
-                  >
-                    <span className="action-icon">📷</span>
-                    <span>Quét Mã QR Nhận Điểm</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="dropdown-menu-action"
-                    onClick={() => navigateTo("lucky-wheel", "#lucky-wheel")}
-                    data-testid="user-menu-lucky-wheel"
-                  >
-                    <span className="action-icon">🎡</span>
-                    <span>Vòng Quay May Mắn Mỗi Ngày</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="dropdown-menu-action"
-                    onClick={() => navigateTo("milestone", "#milestone")}
-                    data-testid="user-menu-milestone"
-                  >
-                    <span className="action-icon">🏅</span>
-                    <span>Lộ Trình Danh Hiệu</span>
                   </button>
 
                   <button
@@ -1573,15 +1344,7 @@ function App() {
                         <span>Phát lệnh cảnh báo khẩn cấp (PCTT)</span>
                       </button>
 
-                      <button
-                        type="button"
-                        className="dropdown-menu-action"
-                        onClick={() => navigateTo("fundraiser", "#fundraiser-admin")}
-                        data-testid="user-menu-fundraiser-admin"
-                      >
-                        <span className="action-icon">💚</span>
-                        <span>Trung tâm Quản trị Gây quỹ</span>
-                      </button>
+
                     </>
                   )}
 
