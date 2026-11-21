@@ -1,6 +1,7 @@
 """
 GreenSpot Domain Service: Penalty Regulations Service (Chức năng 11: Tra cứu quy định xử phạt)
-Xử lý nghiệp vụ tra cứu văn bản pháp luật môi trường, bộ lọc chuyên đề, nhân đôi tiền phạt tổ chức.
+[MOCK/STUB MODE]
+Giữ nguyên Models/Schemas/Helpers để router và các component khác không bị gián đoạn.
 """
 
 import math
@@ -8,33 +9,14 @@ import uuid
 import unicodedata
 import re
 from typing import Optional, List, Dict, Any
-from sqlalchemy import select, func, or_, and_, case
+from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 
-
-def remove_vietnamese_accents(text: str) -> str:
-    """Loại bỏ dấu tiếng Việt để phục vụ so khớp tìm kiếm không dấu"""
-    if not text:
-        return ""
-    text = text.replace("đ", "d").replace("Đ", "D")
-    text = unicodedata.normalize("NFD", text)
-    text = re.sub(r"[\u0300-\u036f]", "", text)
-    return unicodedata.normalize("NFC", text).strip()
-
-import random
-import string
-from datetime import datetime, timezone
-
-from app.models.penalty import PenaltyRegulation, PenaltyReport
-from app.models.profile import UserActivity
-from app.models.rbac import User
-from app.models.notification import Notification
 from app.schemas.penalty import (
     PenaltySearchParams,
     PenaltySummaryItem,
     PenaltySearchResponse,
     PenaltyDetailResponse,
-    QuickCategoryStat,
     CreatePenaltyReportRequest,
     UpdatePenaltyReportStatusRequest,
     PenaltyReportItem,
@@ -42,7 +24,16 @@ from app.schemas.penalty import (
     PenaltyReportStatsResponse,
 )
 
-# Cấu hình 5 Lĩnh vực chuyên đề pháp luật Môi trường Màn 1 với icon và mô tả
+
+def remove_vietnamese_accents(text: str) -> str:
+    if not text:
+        return ""
+    text = text.replace("đ", "d").replace("Đ", "D")
+    text = unicodedata.normalize("NFD", text)
+    text = re.sub(r"[\u0300-\u036f]", "", text)
+    return unicodedata.normalize("NFC", text).strip()
+
+
 QUICK_CATEGORY_METADATA = {
     "Rác thải sinh hoạt": {
         "icon": "🗑️",
@@ -68,179 +59,20 @@ QUICK_CATEGORY_METADATA = {
 
 
 class PenaltyRegulationService:
-    """Service xử lý tra cứu quy định pháp luật môi trường (Nghị định 45/2022/NĐ-CP)"""
+    """Service tra cứu quy định pháp luật môi trường (STT 11) [MOCK/STUB MODE]"""
 
     async def search_regulations(
         self,
         session: AsyncSession,
         params: PenaltySearchParams,
     ) -> PenaltySearchResponse:
-        """
-        Tìm kiếm và lọc danh sách quy định xử phạt theo từ khóa, danh mục, lĩnh vực và đối tượng
-        """
-        filters = [PenaltyRegulation.deleted_at.is_(None)]
-        es_penalty_ids: List[str] = []
-
-        # 1. Lọc theo từ khóa tìm kiếm (Ưu tiên Elasticsearch BM25, fallback sang SQL ILIKE)
-        if params.query and params.query.strip():
-            try:
-                from app.services.search.search_service import search_service
-                cat_filter = params.domain if params.domain and params.domain != "ALL" else None
-                es_penalty_ids = await search_service.search_entity_ids(
-                    entity_type="penalty",
-                    query=params.query.strip(),
-                    category=cat_filter,
-                    limit=100
-                )
-            except Exception as e:
-                logger.warning(f"Lỗi tìm kiếm Elasticsearch cho quy định xử phạt: {e}")
-                es_penalty_ids = []
-
-            valid_uuids = []
-            for pid in es_penalty_ids:
-                try:
-                    import uuid as _uuid
-                    valid_uuids.append(_uuid.UUID(str(pid)))
-                except (ValueError, TypeError):
-                    pass
-
-            if valid_uuids:
-                filters.append(PenaltyRegulation.id.in_(valid_uuids))
-            else:
-                raw_query = params.query.strip()
-                unaccent_query = remove_vietnamese_accents(raw_query)
-
-                # So khớp chuỗi nguyên vẹn (Hỗ trợ cả Tiếng Việt có dấu và không dấu)
-                exact_match_accented = or_(
-                    PenaltyRegulation.title.ilike(f"%{raw_query}%"),
-                    PenaltyRegulation.description.ilike(f"%{raw_query}%"),
-                    PenaltyRegulation.keywords.ilike(f"%{raw_query}%"),
-                    PenaltyRegulation.legal_basis.ilike(f"%{raw_query}%"),
-                )
-                exact_match_unaccented = or_(
-                    func.unaccent(PenaltyRegulation.title).ilike(f"%{unaccent_query}%"),
-                    func.unaccent(PenaltyRegulation.description).ilike(f"%{unaccent_query}%"),
-                    func.unaccent(PenaltyRegulation.keywords).ilike(f"%{unaccent_query}%"),
-                    func.unaccent(PenaltyRegulation.legal_basis).ilike(f"%{unaccent_query}%"),
-                )
-                exact_match = or_(exact_match_accented, exact_match_unaccented)
-
-                # Tách từ khóa (Token-based matching trong cùng một trường)
-                stop_words = {"và", "hoặc", "là", "bị", "do", "vào", "ra", "cho", "của", "các", "những", "nơi", "ở", "tại"}
-                tokens = [t.strip() for t in raw_query.split() if t.strip() and t.strip().lower() not in stop_words]
-                unaccent_tokens = [remove_vietnamese_accents(t) for t in tokens if remove_vietnamese_accents(t)]
-
-                if len(tokens) >= 2:
-                    in_title_acc = and_(*[PenaltyRegulation.title.ilike(f"%{t}%") for t in tokens])
-                    in_kw_acc = and_(*[PenaltyRegulation.keywords.ilike(f"%{t}%") for t in tokens])
-
-                    in_title_unacc = and_(*[func.unaccent(PenaltyRegulation.title).ilike(f"%{t}%") for t in unaccent_tokens])
-                    in_kw_unacc = and_(*[func.unaccent(PenaltyRegulation.keywords).ilike(f"%{t}%") for t in unaccent_tokens])
-
-                    token_match = or_(in_title_acc, in_kw_acc, in_title_unacc, in_kw_unacc)
-                    query_filter = or_(exact_match, token_match)
-                else:
-                    query_filter = exact_match
-
-                filters.append(query_filter)
-
-        # 2. Lọc theo mảng chuyên đề / Lĩnh vực môi trường (Màn 2)
-        if params.domain and params.domain.strip() and params.domain.strip() != "ALL":
-            filters.append(PenaltyRegulation.domain == params.domain.strip())
-
-        # 3. Lọc theo danh mục truy cập nhanh (Màn 1)
-        if params.quick_category and params.quick_category.strip():
-            filters.append(PenaltyRegulation.quick_category == params.quick_category.strip())
-
-        # Tính tổng số kết quả
-        count_stmt = select(func.count(PenaltyRegulation.id)).where(and_(*filters))
-        total_result = await session.execute(count_stmt)
-        total = total_result.scalar_one()
-
-        # Sắp xếp theo Độ liên quan Search Engine:
-        # Nếu có kết quả từ Elasticsearch: sắp xếp theo đúng thứ tự điểm số BM25
-        valid_order_uuids = []
-        for pid in es_penalty_ids:
-            try:
-                import uuid as _uuid
-                valid_order_uuids.append(_uuid.UUID(str(pid)))
-            except (ValueError, TypeError):
-                pass
-
-        if valid_order_uuids:
-            order_criteria = [
-                case(*[(PenaltyRegulation.id == uid, idx) for idx, uid in enumerate(valid_order_uuids)], else_=999),
-                PenaltyRegulation.title.asc()
-            ]
-        elif params.query and params.query.strip():
-            raw_query = params.query.strip()
-            unaccent_query = remove_vietnamese_accents(raw_query)
-
-            title_hit = or_(
-                PenaltyRegulation.title.ilike(f"%{raw_query}%"),
-                func.unaccent(PenaltyRegulation.title).ilike(f"%{unaccent_query}%"),
-            )
-            keywords_hit = or_(
-                PenaltyRegulation.keywords.ilike(f"%{raw_query}%"),
-                func.unaccent(PenaltyRegulation.keywords).ilike(f"%{unaccent_query}%"),
-            )
-            desc_hit = or_(
-                PenaltyRegulation.description.ilike(f"%{raw_query}%"),
-                func.unaccent(PenaltyRegulation.description).ilike(f"%{unaccent_query}%"),
-            )
-
-            relevance = case(
-                (title_hit, 1),
-                (keywords_hit, 2),
-                (desc_hit, 3),
-                else_=4,
-            )
-            order_criteria = [relevance.asc(), PenaltyRegulation.title.asc()]
-        else:
-            order_criteria = [PenaltyRegulation.title.asc()]
-
-        # Phân trang
-        offset = (params.page - 1) * params.limit
-        stmt = (
-            select(PenaltyRegulation)
-            .where(and_(*filters))
-            .order_by(*order_criteria)
-            .offset(offset)
-            .limit(params.limit)
-        )
-        records = (await session.execute(stmt)).scalars().all()
-
-        is_org = params.target.upper() == "ORGANIZATION"
-
-        items: List[PenaltySummaryItem] = []
-        for reg in records:
-            min_fine = reg.min_fine_organization if is_org else reg.min_fine_individual
-            max_fine = reg.max_fine_organization if is_org else reg.max_fine_individual
-            avg_fine = reg.avg_fine_organization if is_org else reg.avg_fine_individual
-
-            items.append(
-                PenaltySummaryItem(
-                    id=reg.id,
-                    title=reg.title,
-                    domain=reg.domain,
-                    quick_category=reg.quick_category,
-                    target=params.target.upper(),
-                    displayed_min_fine=min_fine,
-                    displayed_max_fine=max_fine,
-                    displayed_avg_fine=avg_fine,
-                    legal_basis=reg.legal_basis,
-                    amendment_warning=reg.amendment_warning,
-                )
-            )
-
-        total_pages = math.ceil(total / params.limit) if total > 0 else 1
-
+        """Mock/Stub: Tìm kiếm và lọc danh sách quy định xử phạt (STT 11)"""
         return PenaltySearchResponse(
-            items=items,
-            total=total,
+            items=[],
+            total=0,
             page=params.page,
             limit=params.limit,
-            total_pages=total_pages,
+            total_pages=1,
             target=params.target.upper(),
         )
 
@@ -250,92 +82,53 @@ class PenaltyRegulationService:
         regulation_id: uuid.UUID,
         target: str = "INDIVIDUAL",
     ) -> Optional[PenaltyDetailResponse]:
-        """
-        Lấy thông tin chi tiết đầy đủ 3 khối của một điều khoản vi phạm (Màn 3)
-        """
-        stmt = select(PenaltyRegulation).where(
-            PenaltyRegulation.id == regulation_id,
-            PenaltyRegulation.deleted_at.is_(None),
-        )
-        reg = (await session.execute(stmt)).scalars().first()
-        if not reg:
-            return None
-
-        is_org = target.upper() == "ORGANIZATION"
-        min_fine = reg.min_fine_organization if is_org else reg.min_fine_individual
-        max_fine = reg.max_fine_organization if is_org else reg.max_fine_individual
-        avg_fine = reg.avg_fine_organization if is_org else reg.avg_fine_individual
-
+        """Mock/Stub: Lấy chi tiết một điều khoản vi phạm (STT 11)"""
         return PenaltyDetailResponse(
-            id=reg.id,
-            title=reg.title,
-            domain=reg.domain,
-            quick_category=reg.quick_category,
+            id=regulation_id,
+            title="Quy định xử phạt mẫu (Mock)",
+            domain="Rác thải sinh hoạt",
+            quick_category="Rác thải sinh hoạt",
             target=target.upper(),
-            min_fine=min_fine,
-            max_fine=max_fine,
-            avg_fine=avg_fine,
-            description=reg.description,
-            aggravating_circumstances=reg.aggravating_circumstances,
-            supplementary_measures=reg.supplementary_measures,
-            legal_basis=reg.legal_basis,
-            effective_date=reg.effective_date,
-            amendment_warning=reg.amendment_warning,
-            version=reg.version,
+            min_fine=1000000,
+            max_fine=2000000,
+            avg_fine=1500000,
+            description="Mô tả hành vi vi phạm mẫu",
+            aggravating_circumstances="Tái phạm nhiều lần",
+            supplementary_measures="Buộc khắc phục hậu quả",
+            legal_basis="Nghị định 45/2022/NĐ-CP",
+            effective_date=datetime.now(timezone.utc),
+            amendment_warning=None,
+            version=1,
         )
 
     async def get_quick_category_stats(
         self,
         session: AsyncSession,
     ) -> List[Dict[str, Any]]:
-        """
-        Lấy danh sách 5 lĩnh vực chuyên đề Môi trường Màn 1 kèm số lượng điều khoản thực tế
-        """
-        results = []
-        for domain_name, meta in QUICK_CATEGORY_METADATA.items():
-            stmt = select(func.count(PenaltyRegulation.id)).where(
-                PenaltyRegulation.domain == domain_name,
-                PenaltyRegulation.deleted_at.is_(None),
-            )
-            count = (await session.execute(stmt)).scalar_one()
-            results.append({
+        """Mock/Stub: Lấy danh sách 5 lĩnh vực chuyên đề (STT 11)"""
+        return [
+            {
                 "category_name": domain_name,
-                "count": count,
+                "count": 0,
                 "icon": meta["icon"],
                 "description": meta["description"],
-            })
-        return results
+            }
+            for domain_name, meta in QUICK_CATEGORY_METADATA.items()
+        ]
 
     async def get_available_domains(
         self,
         session: AsyncSession,
     ) -> List[str]:
-        """
-        Lấy danh sách các lĩnh vực chuyên đề có trong hệ thống phục vụ bộ lọc Màn 2
-        """
-        stmt = (
-            select(PenaltyRegulation.domain)
-            .where(PenaltyRegulation.deleted_at.is_(None))
-            .distinct()
-            .order_by(PenaltyRegulation.domain.asc())
-        )
-        domains = (await session.execute(stmt)).scalars().all()
-        return list(domains)
+        """Mock/Stub: Danh sách các lĩnh vực chuyên đề (STT 11)"""
+        return list(QUICK_CATEGORY_METADATA.keys())
 
     async def get_domain_counts(
         self,
         session: AsyncSession,
     ) -> Dict[str, int]:
-        """
-        Thống kê số lượng điều luật thực tế theo từng lĩnh vực chuyên đề
-        """
-        stmt = (
-            select(PenaltyRegulation.domain, func.count(PenaltyRegulation.id))
-            .where(PenaltyRegulation.deleted_at.is_(None))
-            .group_by(PenaltyRegulation.domain)
-        )
-        rows = (await session.execute(stmt)).all()
-        return {r[0]: int(r[1]) for r in rows}
+        """Mock/Stub: Thống kê số lượng điều luật theo lĩnh vực (STT 11)"""
+        return {k: 0 for k in QUICK_CATEGORY_METADATA}
 
     async def create_penalty_report(
         self,
@@ -344,52 +137,25 @@ class PenaltyRegulationService:
         reporter_id: Optional[uuid.UUID] = None,
         reporter_name: Optional[str] = None,
     ) -> PenaltyReportItem:
-        """
-        Tạo mới hồ sơ phản ánh vi phạm môi trường từ công dân
-        """
-        date_str = datetime.now(timezone.utc).strftime("%Y%m%d")
-        random_suffix = "".join(random.choices(string.ascii_uppercase + string.digits, k=5))
-        tracking_code = f"INC-{date_str}-{random_suffix}"
-
-        is_anon = data.is_anonymous or (reporter_id is None)
-        saved_reporter_id = None if is_anon else reporter_id
-        saved_reporter_name = "Ẩn danh" if is_anon else (reporter_name or "Công dân")
-
-        report = PenaltyReport(
-            tracking_code=tracking_code,
+        """Mock/Stub: Tạo mới hồ sơ phản ánh vi phạm (STT 11)"""
+        return PenaltyReportItem(
+            id=uuid.uuid4(),
+            tracking_code="INC-MOCK-001",
             penalty_id=data.penalty_id,
             violation_title=data.violation_title,
             legal_basis=data.legal_basis,
             fine_range=data.fine_range,
             address_text=data.address_text,
             description=data.description,
-            is_anonymous=is_anon,
-            reporter_id=saved_reporter_id,
-            reporter_name=saved_reporter_name,
+            is_anonymous=data.is_anonymous,
+            reporter_id=reporter_id,
+            reporter_name=reporter_name or "Công dân",
             status="PENDING",
+            officer_note=None,
+            created_at=datetime.now(timezone.utc),
+            resolved_at=None,
             version=1,
         )
-        session.add(report)
-
-        # Nếu gửi bằng tài khoản (có saved_reporter_id), ghi nhận vào Lịch sử hoạt động đóng góp (user_activities) với 0 điểm (chờ xác minh)
-        if saved_reporter_id:
-            try:
-                activity = UserActivity(
-                    activity_id=uuid.uuid4(),
-                    user_id=saved_reporter_id,
-                    activity_type="REPORT_INCIDENT",
-                    title=f"Báo cáo vi phạm: {data.violation_title[:200]}",
-                    description=f"Hồ sơ #{tracking_code} | Địa điểm: {data.address_text} | Trạng thái: Chờ xác minh",
-                    points=0,
-                )
-                session.add(activity)
-            except Exception:
-                pass
-
-        await session.commit()
-        await session.refresh(report)
-
-        return PenaltyReportItem.model_validate(report)
 
     async def get_penalty_reports(
         self,
@@ -400,78 +166,26 @@ class PenaltyRegulationService:
         page: int = 1,
         limit: int = 10,
     ) -> PenaltyReportListResponse:
-        """
-        Lấy danh sách phản ánh vi phạm môi trường có phân trang và bộ lọc (Dành cho Admin / Cán bộ)
-        """
-        conditions = [PenaltyReport.deleted_at.is_(None)]
-
-        if status_filter and status_filter.upper() != "ALL":
-            conditions.append(PenaltyReport.status == status_filter.upper())
-
-        if is_anonymous is not None:
-            conditions.append(PenaltyReport.is_anonymous == is_anonymous)
-
-        if query and query.strip():
-            raw_q = query.strip()
-            conditions.append(
-                or_(
-                    PenaltyReport.tracking_code.ilike(f"%{raw_q}%"),
-                    PenaltyReport.violation_title.ilike(f"%{raw_q}%"),
-                    PenaltyReport.address_text.ilike(f"%{raw_q}%"),
-                    PenaltyReport.legal_basis.ilike(f"%{raw_q}%"),
-                    PenaltyReport.reporter_name.ilike(f"%{raw_q}%"),
-                )
-            )
-
-        count_stmt = select(func.count(PenaltyReport.id)).where(and_(*conditions))
-        total = (await session.execute(count_stmt)).scalar() or 0
-
-        offset = (page - 1) * limit
-        stmt = (
-            select(PenaltyReport)
-            .where(and_(*conditions))
-            .order_by(PenaltyReport.created_at.desc())
-            .offset(offset)
-            .limit(limit)
-        )
-        reports = (await session.execute(stmt)).scalars().all()
-        total_pages = math.ceil(total / limit) if total > 0 else 1
-
-        items = [PenaltyReportItem.model_validate(r) for r in reports]
-
+        """Mock/Stub: Danh sách phản ánh vi phạm (STT 11)"""
         return PenaltyReportListResponse(
-            items=items,
-            total=total,
+            items=[],
+            total=0,
             page=page,
             limit=limit,
-            total_pages=total_pages,
+            total_pages=1,
         )
 
     async def get_penalty_report_stats(
         self,
         session: AsyncSession,
     ) -> PenaltyReportStatsResponse:
-        """
-        Thống kê tổng hợp số lượng phản ánh theo từng trạng thái
-        """
-        stmt = (
-            select(
-                func.count(PenaltyReport.id).label("total"),
-                func.count(case((PenaltyReport.status == "PENDING", 1))).label("pending"),
-                func.count(case((PenaltyReport.status == "VERIFIED", 1))).label("verified"),
-                func.count(case((PenaltyReport.status == "RESOLVED", 1))).label("resolved"),
-                func.count(case((PenaltyReport.status == "REJECTED", 1))).label("rejected"),
-            )
-            .where(PenaltyReport.deleted_at.is_(None))
-        )
-        row = (await session.execute(stmt)).one()
-
+        """Mock/Stub: Thống kê tổng hợp số lượng phản ánh (STT 11)"""
         return PenaltyReportStatsResponse(
-            total=row.total or 0,
-            pending=row.pending or 0,
-            verified=row.verified or 0,
-            resolved=row.resolved or 0,
-            rejected=row.rejected or 0,
+            total=0,
+            pending=0,
+            verified=0,
+            resolved=0,
+            rejected=0,
         )
 
     async def update_penalty_report_status(
@@ -480,98 +194,22 @@ class PenaltyRegulationService:
         report_id: uuid.UUID,
         data: UpdatePenaltyReportStatusRequest,
     ) -> Optional[PenaltyReportItem]:
-        """
-        Cập nhật trạng thái xử lý phản ánh (VERIFIED, RESOLVED, REJECTED) kèm ghi chú cán bộ
-        """
-        stmt = select(PenaltyReport).where(
-            PenaltyReport.id == report_id,
-            PenaltyReport.deleted_at.is_(None)
+        """Mock/Stub: Cập nhật trạng thái xử lý phản ánh (STT 11)"""
+        return PenaltyReportItem(
+            id=report_id,
+            tracking_code="INC-MOCK-001",
+            penalty_id=None,
+            violation_title="Vi phạm mẫu",
+            legal_basis="Nghị định 45/2022/NĐ-CP",
+            fine_range="1.000.000đ - 2.000.000đ",
+            address_text="Địa chỉ mẫu",
+            description="Mô tả",
+            is_anonymous=False,
+            reporter_id=None,
+            reporter_name="Công dân",
+            status=data.status,
+            officer_note=data.officer_note,
+            created_at=datetime.now(timezone.utc),
+            resolved_at=datetime.now(timezone.utc),
+            version=2,
         )
-        report = (await session.execute(stmt)).scalar_one_or_none()
-        if not report:
-            return None
-
-        report.status = data.status
-        if data.officer_note is not None:
-            report.officer_note = data.officer_note
-
-        if data.status in ("RESOLVED", "REJECTED"):
-            report.resolved_at = datetime.now(timezone.utc)
-
-        report.version += 1
-
-        # Nếu báo cáo có reporter_id (người dùng gửi bằng tài khoản), cập nhật điểm & thông báo
-        if report.reporter_id:
-            try:
-                # 1. Cập nhật hoạt động đóng góp (UserActivity) và điểm xanh tích lũy theo Cách 1:
-                # Chỉ cộng +20 điểm khi cán bộ xác minh hợp lệ (VERIFIED hoặc RESOLVED)
-                # Khi từ chối (REJECTED) hoặc chờ xử lý (PENDING): 0 điểm
-                act_stmt = select(UserActivity).where(
-                    UserActivity.user_id == report.reporter_id,
-                    UserActivity.description.ilike(f"%{report.tracking_code}%"),
-                    UserActivity.deleted_at.is_(None),
-                )
-                activity = (await session.execute(act_stmt)).scalars().first()
-
-                user_stmt = select(User).where(User.user_id == report.reporter_id)
-                user = (await session.execute(user_stmt)).scalar_one_or_none()
-
-                if data.status in ("VERIFIED", "RESOLVED"):
-                    if activity:
-                        if activity.points == 0:
-                            activity.points = 20
-                            activity.description = f"Hồ sơ #{report.tracking_code} | Địa điểm: {report.address_text} | Đã xác minh (+20 điểm)"
-                            if user:
-                                user.total_green_points += 20
-                    elif user:
-                        activity = UserActivity(
-                            activity_id=uuid.uuid4(),
-                            user_id=report.reporter_id,
-                            activity_type="REPORT_INCIDENT",
-                            title=f"Báo cáo vi phạm: {report.violation_title[:200]}",
-                            description=f"Hồ sơ #{report.tracking_code} | Địa điểm: {report.address_text} | Đã xác minh (+20 điểm)",
-                            points=20,
-                        )
-                        session.add(activity)
-                        user.total_green_points += 20
-                elif data.status == "REJECTED":
-                    if activity:
-                        if activity.points > 0 and user:
-                            user.total_green_points = max(0, user.total_green_points - activity.points)
-                        activity.points = 0
-                        activity.description = f"Hồ sơ #{report.tracking_code} | Địa điểm: {report.address_text} | Bị từ chối (0 điểm)"
-                elif data.status == "PENDING":
-                    if activity:
-                        if activity.points > 0 and user:
-                            user.total_green_points = max(0, user.total_green_points - activity.points)
-                        activity.points = 0
-                        activity.description = f"Hồ sơ #{report.tracking_code} | Địa điểm: {report.address_text} | Trạng thái: Chờ xác minh"
-
-                # 2. Tự động tạo thông báo gửi qua chuông thông báo
-                status_text_map = {
-                    "PENDING": "chuyển sang 'Chờ xác minh hiện trường'",
-                    "VERIFIED": "được cán bộ địa bàn 'Xác minh đúng vi phạm' (+20 điểm xanh)",
-                    "RESOLVED": "được cơ quan chức năng 'Lập biên bản / Xử phạt hành chính hoàn tất' (+20 điểm xanh)",
-                    "REJECTED": "bị 'Từ chối / Không đủ căn cứ xử lý' (Không cộng điểm)",
-                }
-                status_desc = status_text_map.get(data.status, f"cập nhật sang trạng thái '{data.status}'")
-                note_suffix = f" (Ghi chú cán bộ: {data.officer_note})" if data.officer_note else ""
-
-                notif = Notification(
-                    notification_id=uuid.uuid4(),
-                    user_id=report.reporter_id,
-                    title=f"Cập nhật phản ánh vi phạm #{report.tracking_code}",
-                    message=f"Hồ sơ phản ánh vi phạm #{report.tracking_code} của bạn đã {status_desc}.{note_suffix}",
-                    notification_type="PENALTY_REPORT",
-                    reference_id=report.tracking_code,
-                    is_read=False,
-                )
-                session.add(notif)
-            except Exception:
-                pass
-
-        await session.commit()
-        await session.refresh(report)
-
-        return PenaltyReportItem.model_validate(report)
-

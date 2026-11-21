@@ -1,31 +1,11 @@
-import api from "../../api/client";
-import type {
-  MilestoneProgressionResponse,
-  CreateMilestonePostRequest,
-  CreateMilestonePostResponse,
-  MilestonePostListResponse,
-} from "./types";
-
-export const milestoneApi = {
-  getProgression: async (): Promise<MilestoneProgressionResponse> => {
-    const res = await api.get<MilestoneProgressionResponse>("/api/v1/gamification/milestone/progression");
-    return res.data;
-  },
-
-  createPost: async (payload: CreateMilestonePostRequest): Promise<CreateMilestonePostResponse> => {
-    const res = await api.post<CreateMilestonePostResponse>("/api/v1/gamification/milestone/post", payload);
-    return res.data;
-  },
-
-  getPosts: async (limit: number = 20, offset: number = 0): Promise<MilestonePostListResponse> => {
-    const res = await api.get<MilestonePostListResponse>("/api/v1/gamification/milestone/posts", {
-      params: { limit, offset },
-    });
-    return res.data;
-  },
-
-  likePost: async (postId: string): Promise<{ success: boolean; post_id: string; likes_count: number }> => {
-    const res = await api.post(`/api/v1/gamification/milestone/like/${postId}`);
-    return res.data;
-  },
-};
+export const fetchMilestoneProgression = async () => ({
+  current_tier: "Mầm Xanh",
+  next_tier: "Lá Xanh",
+  current_points: 0,
+  target_points: 100,
+  progress_percent: 0,
+  tiers: [],
+});
+export const postMilestoneFeed = async () => ({ post_id: "mock-post-id", success: true });
+export const fetchMilestonePosts = async () => ({ items: [], total: 0 });
+export const likeMilestonePost = async () => ({ success: true });

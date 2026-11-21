@@ -1,23 +1,11 @@
-import api from "../../api/client";
-import type {
-  WheelStatusResponse,
-  SpinResultResponse,
-  SpinHistoryResponse,
-} from "./types";
-
-export const luckyWheelApi = {
-  getWheelStatus: async (): Promise<WheelStatusResponse> => {
-    const res = await api.get<WheelStatusResponse>("/api/v1/gamification/lucky-wheel/status");
-    return res.data;
-  },
-
-  spinWheel: async (): Promise<SpinResultResponse> => {
-    const res = await api.post<SpinResultResponse>("/api/v1/gamification/lucky-wheel/spin");
-    return res.data;
-  },
-
-  getSpinHistory: async (): Promise<SpinHistoryResponse> => {
-    const res = await api.get<SpinHistoryResponse>("/api/v1/gamification/lucky-wheel/history");
-    return res.data;
-  },
-};
+export const fetchWheelStatus = async () => ({
+  can_spin: true,
+  spins_left_today: 1,
+  prizes: [],
+});
+export const spinLuckyWheel = async () => ({
+  prize_index: 0,
+  prize_label: "Chúc may mắn lần sau",
+  points_awarded: 0,
+});
+export const fetchSpinHistory = async () => ({ history: [] });

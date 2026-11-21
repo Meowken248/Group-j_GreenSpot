@@ -1,8 +1,9 @@
 """
-Hotspot Spatial Analytics & 7-Day Forecasting Business Logic Service
+Hotspot Spatial Analytics & 7-Day Forecasting Business Logic Service (STT 44)
+[MOCK/STUB MODE]
 Tuân thủ Clean Architecture Tầng 5 (Core Business Logic) & Dependency Inversion Principle (DIP).
-STT 44
 """
+
 from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
@@ -23,8 +24,8 @@ from app.schemas.hotspots.schemas import (
 
 class HotspotService:
     """
-    Business Logic Layer cho Phân tích điểm nóng KDE & Dự báo chuỗi thời gian 7 ngày
-    Phụ thuộc hoàn toàn vào IHotspotRepository trừu tượng (DIP)
+    Business Logic Layer cho Phân tích điểm nóng KDE & Dự báo chuỗi thời gian 7 ngày (STT 44)
+    [MOCK/STUB MODE]
     """
 
     def __init__(self, repository: IHotspotRepository = hotspot_repository):
@@ -35,36 +36,13 @@ class HotspotService:
         db: AsyncSession,
         filters: HotspotFilterRequest,
     ) -> HotspotMapResponse:
-        """
-        Nghiệp vụ  Phân tích cụm điểm nóng KDE, xếp hạng Top 5 và tạo thông điệp trạng thái
-        """
-        clusters = await self.repo.get_hotspot_clusters(
-            db,
-            incident_type=filters.incident_type,
-            time_range=filters.time_range,
-            start_date=filters.start_date,
-            end_date=filters.end_date,
-        )
-
-        top_5 = await self.repo.get_top_5_hotspots(
-            db,
-            incident_type=filters.incident_type,
-        )
-
-        total_count = len(clusters)
-        has_data = total_count > 0
-
-        if has_data:
-            msg = f"Đã tải xong dữ liệu phân tích cụm điểm nóng ({total_count} điểm nóng phát hiện)."
-        else:
-            msg = "Không phát hiện cụm điểm nóng nào trong khoảng thời gian đã chọn."
-
+        """Mock/Stub: Bản đồ cụm điểm nóng (STT 44)"""
         return HotspotMapResponse(
-            clusters=clusters,
-            top_5_hotspots=top_5,
-            total_clusters=total_count,
-            has_data=has_data,
-            status_message=msg,
+            clusters=[],
+            top_5_hotspots=[],
+            total_clusters=0,
+            has_data=False,
+            status_message="Chế độ Mock: Chưa có dữ liệu cụm điểm nóng được phát hiện.",
             tile_server_status="ONLINE",
         )
 
@@ -73,56 +51,50 @@ class HotspotService:
         db: AsyncSession,
         hotspot_id: str,
     ) -> HotspotDetailResponse:
-        """
-        Nghiệp vụ  Xem chi tiết điểm nóng, kiểm tra lệnh điều phối đang thực thi (STT 43)
-        và chuẩn bị dữ liệu điền sẵn tự động (prefill) sang Màn 2/6 của STT 43
-        """
-        if not hotspot_id or not hotspot_id.strip():
-            raise HTTPException(status_code=400, detail="Mã điểm nóng không được để trống.")
-
-        hotspot = await self.repo.get_hotspot_by_id(db, hotspot_id)
-        if not hotspot:
-            raise HTTPException(status_code=404, detail="Không tìm thấy thông tin cụm điểm nóng yêu cầu.")
-
-        has_active = bool(hotspot.active_dispatch_order_code)
-
-        # Chuẩn bị dữ liệu điền sẵn tự động cho STT 43 - Màn 2/6 Tạo lệnh mới
-        priority_map = {
-            "CRITICAL": "URGENT",
-            "SEVERE": "HIGH",
-            "POTENTIAL": "MEDIUM",
-        }
-        prefill_payload: Dict[str, Any] = {
-            "incident_id": f"inc-{hotspot.hotspot_code}",
-            "incident_code": f"SC-{hotspot.hotspot_code}",
-            "title": f"[{hotspot.incident_type_label}] {hotspot.name}",
-            "category": hotspot.incident_type_label,
-            "urgency": "KHẨN" if hotspot.severity_level == "CRITICAL" else "CAO",
-            "location_address": f"{hotspot.name}, {hotspot.district}",
-            "district": hotspot.district,
-            "latitude": hotspot.latitude,
-            "longitude": hotspot.longitude,
-            "suggested_priority": priority_map.get(hotspot.severity_level, "HIGH"),
-            "hotspot_id": hotspot.hotspot_id,
-            "hotspot_code": hotspot.hotspot_code,
-        }
-
+        """Mock/Stub: Chi tiết điểm nóng (STT 44)"""
+        mock_cluster = HotspotClusterItem(
+            hotspot_id=hotspot_id,
+            hotspot_code=f"HS-{hotspot_id[:6].upper()}",
+            name="Điểm nóng mẫu (Mock)",
+            district="Quận 1",
+            latitude=10.7769,
+            longitude=106.7009,
+            incident_type="DOMESTIC_WASTE",
+            incident_type_label="Rác thải sinh hoạt",
+            severity_level="POTENTIAL",
+            incident_count=5,
+            density_score=0.5,
+            radius_meters=150.0,
+            active_dispatch_order_code=None,
+            active_dispatch_order_id=None,
+        )
         return HotspotDetailResponse(
-            hotspot=hotspot,
-            has_active_dispatch=has_active,
-            active_order_code=hotspot.active_dispatch_order_code,
-            active_order_id=hotspot.active_dispatch_order_id,
-            dispatch_prefill=prefill_payload,
+            hotspot=mock_cluster,
+            has_active_dispatch=False,
+            active_order_code=None,
+            active_order_id=None,
+            dispatch_prefill={
+                "incident_id": f"inc-{mock_cluster.hotspot_code}",
+                "incident_code": f"SC-{mock_cluster.hotspot_code}",
+                "title": f"[{mock_cluster.incident_type_label}] {mock_cluster.name}",
+                "category": mock_cluster.incident_type_label,
+                "urgency": "TRUNG BÌNH",
+                "location_address": f"{mock_cluster.name}, {mock_cluster.district}",
+                "district": mock_cluster.district,
+                "latitude": mock_cluster.latitude,
+                "longitude": mock_cluster.longitude,
+                "suggested_priority": "MEDIUM",
+                "hotspot_id": mock_cluster.hotspot_id,
+                "hotspot_code": mock_cluster.hotspot_code,
+            },
         )
 
     async def get_available_areas(
         self,
         db: AsyncSession,
     ) -> List[AreaOptionItem]:
-        """
-        Lấy danh sách các Quận/Huyện và Điểm nóng phục vụ combobox Màn 2/3
-        """
-        return await self.repo.get_available_areas(db)
+        """Mock/Stub: Danh sách Quận/Huyện phục vụ chọn vùng (STT 44)"""
+        return []
 
     async def get_7day_forecast(
         self,
@@ -130,32 +102,30 @@ class HotspotService:
         target_id: str,
         target_type: str = "DISTRICT",
     ) -> ForecastResponse:
-        """
-        Nghiệp vụ Màn 2/3: Dự báo xu hướng chuỗi thời gian 7 ngày kèm khoảng tin cậy 95%
-        """
-        if not target_id or not target_id.strip():
-            target_id = "dist-q8"
-            target_type = "DISTRICT"
-
-        return await self.repo.get_7day_forecast(db, target_id, target_type)
+        """Mock/Stub: Dự báo 7 ngày (STT 44)"""
+        return ForecastResponse(
+            target_id=target_id,
+            target_name="Khu vực mẫu",
+            target_type=target_type,
+            forecast_points=[],
+            trend="STABLE",
+            confidence_level="95%",
+            model_used="SARIMA_MOCK",
+        )
 
     async def export_forecast_report(
         self,
         db: AsyncSession,
         request: ExportReportRequest,
     ) -> ExportReportResponse:
-        """
-        Nghiệp vụ Màn 2/3: Xuất báo cáo dự báo 7 ngày (PDF / Excel)
-        """
+        """Mock/Stub: Xuất báo cáo dự báo (STT 44)"""
         ext = "pdf" if request.format.upper() == "PDF" else "xlsx"
         filename = f"BaoCao_DuBao_7Ngay.{ext}"
-        file_url = f"/static/reports/exports/{filename}"
-
         return ExportReportResponse(
             success=True,
             file_name=filename,
-            file_url=file_url,
-            message=f"Xuất báo cáo dự báo 7 ngày thành công (Tệp: {filename}).",
+            file_url=f"/static/reports/exports/{filename}",
+            message=f"Xuất báo cáo dự báo 7 ngày thành công (Mock: {filename}).",
         )
 
 

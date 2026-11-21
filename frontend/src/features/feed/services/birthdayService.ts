@@ -1,63 +1,33 @@
-/**
- * Service API Client: Sinh nhật bạn bè & Thiệp xanh sinh thái (Feature STT 17)
- * Căn cứ tài liệu: Đồ Án Chuyên Đề Web 1 - Báo Cáo.docx.pdf (Trang 142 - 147)
- */
-
-import api from "../../../api/client";
-import type {
-  BirthdayCardTemplate,
-  BirthdayTodayResponse,
-  BirthdayWishListResponse,
-  BirthdayWishReadResponse,
-  BirthdayWishSendPayload,
-  BirthdayWishSendResponse,
-} from "../types/birthday.types";
+import type { BirthdayTodayResponse } from "../types/birthday.types";
 
 export const birthdayService = {
-  /**
-   * Khối "SINH NHẬT HÔM NAY" trên Bảng tin (chỉ bạn bè đang bật hiển thị ngày sinh)
-   */
-  async getTodayBirthdays(limit = 3): Promise<BirthdayTodayResponse> {
-    const res = await api.get<BirthdayTodayResponse>("/api/v1/birthday/today", {
-      params: { limit },
-    });
-    return res.data;
-  },
-
-  /**
-   * Danh sách mẫu thiệp xanh sinh thái dùng cho popup tặng thiệp
-   */
-  async getCardTemplates(): Promise<BirthdayCardTemplate[]> {
-    const res = await api.get<BirthdayCardTemplate[]>("/api/v1/birthday/card-templates");
-    return res.data;
-  },
-
-  /**
-   * Gửi lời chúc xanh (MESSAGE) hoặc tặng thiệp xanh sinh thái (CARD)
-   */
-  async sendWish(payload: BirthdayWishSendPayload): Promise<BirthdayWishSendResponse> {
-    const res = await api.post<BirthdayWishSendResponse>("/api/v1/birthday/wishes", payload);
-    return res.data;
-  },
-
-  /**
-   * Hộp thư lời chúc / thiệp xanh sinh nhật đã nhận
-   */
-  async getReceivedWishes(limit = 20, offset = 0): Promise<BirthdayWishListResponse> {
-    const res = await api.get<BirthdayWishListResponse>("/api/v1/birthday/wishes/received", {
-      params: { limit, offset },
-    });
-    return res.data;
-  },
-
-  /**
-   * Đánh dấu đã đọc (không truyền wish_ids = đánh dấu toàn bộ hộp thư)
-   */
-  async markWishesRead(wishIds?: string[]): Promise<BirthdayWishReadResponse> {
-    const res = await api.post<BirthdayWishReadResponse>(
-      "/api/v1/birthday/wishes/read",
-      wishIds && wishIds.length > 0 ? { wish_ids: wishIds } : {}
-    );
-    return res.data;
-  },
+  getTodayBirthdays: async (_limit = 3): Promise<BirthdayTodayResponse> => ({
+    total: 0,
+    has_more: false,
+    limit: _limit,
+    today: new Date().toISOString().slice(0, 10),
+    points_per_card: 10,
+    daily_points_cap: 100,
+    daily_points_earned: 0,
+    daily_reward_limit_reached: false,
+    card_templates: [],
+    default_suggestion: "Chúc mừng sinh nhật xanh!",
+    items: [],
+  }),
+  getCardTemplates: async () => [],
+  sendWish: async () => ({
+    success: true,
+    message: "Gửi lời chúc thành công (Mock)",
+    points_transferred: 0,
+    wish_id: "mock-wish-id",
+    wish_type: "MESSAGE" as const,
+    recipient_id: "mock-recipient",
+    recipient_name: "Mock",
+  }),
+  getReceivedWishes: async (_page = 1, _limit = 10) => ({
+    total: 0,
+    unread_count: 0,
+    items: [],
+  }),
+  markAsRead: async () => ({ success: true }),
 };
