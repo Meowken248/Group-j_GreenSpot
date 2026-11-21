@@ -1,0 +1,639 @@
+/* ==========================================================================
+   GreenSpot - Chức năng 32: Bảng xếp hạng vinh danh Top Công dân Xanh
+   (Cá nhân, Nhóm tình nguyện, Quận/Huyện)
+   ========================================================================== */
+
+.lb-page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  color: #1e293b;
+  animation: lbFadeIn 0.3s ease-out;
+}
+
+@keyframes lbFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header Banner */
+.lb-header {
+  background: linear-gradient(135deg, #064e3b 0%, #047857 50%, #059669 100%);
+  border-radius: 1rem;
+  padding: 2rem 2.5rem;
+  color: #ffffff;
+  box-shadow: 0 10px 25px -5px rgba(6, 78, 59, 0.25);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.lb-header::after {
+  content: "🏆";
+  position: absolute;
+  right: 2rem;
+  bottom: -1rem;
+  font-size: 8rem;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.lb-header-title {
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lb-header-subtitle {
+  font-size: 0.95rem;
+  color: #d1fae5;
+  max-width: 600px;
+  line-height: 1.5;
+}
+
+/* Navigation Tabs */
+.lb-tabs-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+}
+
+.lb-nav-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.lb-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lb-tab-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.lb-tab-btn.active {
+  background: #ecfdf5;
+  color: #059669;
+  font-weight: 700;
+  border-bottom: 3px solid #059669;
+}
+
+/* Cycle Filter */
+.lb-cycle-filters {
+  display: flex;
+  gap: 0.35rem;
+  background: #f1f5f9;
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+}
+
+.lb-cycle-btn {
+  padding: 0.45rem 0.95rem;
+  border-radius: 0.375rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lb-cycle-btn.active {
+  background: #ffffff;
+  color: #047857;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  font-weight: 700;
+}
+
+/* 2-Column Layout for Individual Tab */
+.lb-grid-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .lb-grid-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Top 10 List Card */
+.lb-card {
+  background: #ffffff;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.lb-card-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lb-card-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lb-card-badge {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.65rem;
+  background: #f1f5f9;
+  border-radius: 1rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+/* Individual Leaderboard List */
+.lb-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.lb-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.95rem 1.5rem;
+  border-bottom: 1px solid #f8fafc;
+  transition: all 0.15s ease;
+}
+
+.lb-item:last-child {
+  border-bottom: none;
+}
+
+.lb-item:hover {
+  background: #f8fafc;
+}
+
+/* Podium highlights */
+.lb-item.podium-1 {
+  background: linear-gradient(90deg, #fffbeb 0%, #ffffff 100%);
+  border-left: 4px solid #f59e0b;
+}
+
+.lb-item.podium-2 {
+  background: linear-gradient(90deg, #f8fafc 0%, #ffffff 100%);
+  border-left: 4px solid #94a3b8;
+}
+
+.lb-item.podium-3 {
+  background: linear-gradient(90deg, #fff7ed 0%, #ffffff 100%);
+  border-left: 4px solid #d97706;
+}
+
+.lb-item-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.lb-rank-badge {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.lb-avatar {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e2e8f0;
+}
+
+.lb-avatar-fallback {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  text-transform: uppercase;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.lb-user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.lb-user-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.lb-user-tier {
+  font-size: 0.75rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.lb-tier-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+}
+
+.tier-DIAMOND { background: #e0f2fe; color: #0284c7; }
+.tier-GOLD { background: #fef3c7; color: #b45309; }
+.tier-SILVER { background: #f1f5f9; color: #475569; }
+.tier-BRONZE { background: #ffedd5; color: #c2410c; }
+
+.lb-points-badge {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.lb-points-num {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #059669;
+}
+
+.lb-points-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* My Rank Card */
+.lb-my-rank-card {
+  background: #ffffff;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 1.5rem;
+}
+
+.lb-my-rank-card.golden-glow {
+  border: 2px solid #f59e0b;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.35), 0 4px 6px -1px rgba(0,0,0,0.05);
+  animation: goldPulse 2.5s infinite;
+}
+
+@keyframes goldPulse {
+  0% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.25); }
+  50% { box-shadow: 0 0 25px rgba(245, 158, 11, 0.5); }
+  100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.25); }
+}
+
+.lb-my-rank-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lb-rank-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.lb-stat-box {
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  text-align: center;
+  border: 1px solid #f1f5f9;
+}
+
+.lb-stat-val {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #047857;
+}
+
+.lb-stat-lbl {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+  margin-top: 0.25rem;
+}
+
+.lb-top100-progress {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 0.5rem;
+  padding: 0.85rem;
+  font-size: 0.85rem;
+  color: #166534;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lb-top10-congrats {
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: 0.5rem;
+  padding: 0.85rem;
+  font-size: 0.85rem;
+  color: #92400e;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Anonymous / Not logged in prompt */
+.lb-login-prompt {
+  text-align: center;
+  padding: 1.5rem 1rem;
+}
+
+.lb-login-prompt-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.lb-login-prompt-text {
+  font-size: 0.95rem;
+  color: #475569;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+}
+
+.lb-login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1.25rem;
+  background: #059669;
+  color: #ffffff;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  text-decoration: none;
+}
+
+.lb-login-btn:hover {
+  background: #047857;
+}
+
+/* Group & District Cards */
+.lb-group-item,
+.lb-district-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.lb-group-item:hover,
+.lb-district-item:hover {
+  background: #f8fafc;
+}
+
+/* User Group highlight per Table 136 */
+.lb-group-item.user-group {
+  background: #f0fdf4;
+  border: 2px solid #22c55e;
+  border-radius: 0.5rem;
+  margin: 0.25rem 0.5rem;
+}
+
+/* User District highlight per Table 137 */
+.lb-district-item.user-district {
+  background: linear-gradient(90deg, #eff6ff 0%, #ffffff 100%);
+  border-left: 4px solid #3b82f6;
+  font-weight: 600;
+}
+
+.lb-district-highlight-tag {
+  background: #dbeafe;
+  color: #1d4f91;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.25rem;
+  margin-left: 0.5rem;
+}
+
+.lb-user-group-tag {
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.25rem;
+  margin-left: 0.5rem;
+}
+
+/* Stat pills for Group / District */
+.lb-metric-pills {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.lb-metric-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.lb-metric-pill .val {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.lb-metric-pill .lbl {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+/* Loading & Error States */
+.lb-error-box {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.75rem;
+  padding: 2rem;
+  text-align: center;
+  color: #991b1b;
+  margin: 1.5rem 0;
+}
+
+.lb-error-msg {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.lb-retry-btn {
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  padding: 0.55rem 1.25rem;
+  border-radius: 0.375rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.lb-retry-btn:hover {
+  background: #b91c1c;
+}
+
+/* Skeleton Loading for Groups */
+.lb-skeleton-row {
+  display: flex;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  gap: 1rem;
+}
+
+.lb-skeleton-avatar {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: #e2e8f0;
+  animation: lbPulse 1.5s infinite;
+}
+
+.lb-skeleton-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.lb-skeleton-line {
+  height: 0.85rem;
+  background: #e2e8f0;
+  border-radius: 0.25rem;
+  animation: lbPulse 1.5s infinite;
+}
+
+@keyframes lbPulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* Spinner */
+.lb-spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid #e2e8f0;
+  border-top-color: #059669;
+  border-radius: 50%;
+  animation: lbSpin 0.8s linear infinite;
+  margin: 2.5rem auto;
+}
+
+@keyframes lbSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Group Detail Modal */
+.lb-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
+.lb-modal-card {
+  background: #ffffff;
+  border-radius: 1rem;
+  max-width: 500px;
+  width: 100%;
+  padding: 2rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  position: relative;
+  animation: lbModalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes lbModalPop {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.lb-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: #64748b;
+}

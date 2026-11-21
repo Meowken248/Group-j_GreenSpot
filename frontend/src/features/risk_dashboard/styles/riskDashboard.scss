@@ -1,0 +1,1105 @@
+// =============================================================================
+// SCSS STYLESHEET CHO STT 42: DASHBOARD PHÂN TÍCH RỦI RO ĐÔ THỊ
+// Tuân thủ triệt để Quy tắc SASS (.scss): Variables, Mixins, Nesting & Dark Theme
+// =============================================================================
+
+// 1. SASS VARIABLES
+$color-primary: #10b981;
+$color-primary-dark: #059669;
+$color-primary-light: #d1fae5;
+
+$color-danger: #ef4444;
+$color-danger-dark: #b91c1c;
+$color-danger-light: #fee2e2;
+
+$color-warning: #f59e0b;
+$color-warning-dark: #d97706;
+$color-warning-light: #fef3c7;
+
+$color-info: #0ea5e9;
+$color-info-light: #e0f2fe;
+
+$color-purple: #8b5cf6;
+$color-purple-light: #ede9fe;
+
+$color-text-main: #0f172a;
+$color-text-muted: #64748b;
+$color-text-light: #94a3b8;
+
+$color-bg-body: #f8fafc;
+$color-bg-card: #ffffff;
+$color-bg-subtle: #f1f5f9;
+$color-border: #e2e8f0;
+
+$radius-sm: 6px;
+$radius-md: 10px;
+$radius-lg: 14px;
+$radius-full: 9999px;
+
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+$transition-normal: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+// 2. SASS MIXINS
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin card-box {
+  background: $color-bg-card;
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
+  transition: $transition-normal;
+
+  &:hover {
+    box-shadow: $shadow-md;
+  }
+}
+
+@mixin pulse-danger {
+  animation: pulseBorder 1.5s infinite ease-in-out;
+}
+
+@keyframes pulseBorder {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+    border-color: rgba(239, 68, 68, 0.9);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 1);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    border-color: rgba(239, 68, 68, 0.9);
+  }
+}
+
+@keyframes bellRing {
+  0%, 100% { transform: rotate(0); }
+  20%, 60% { transform: rotate(15deg); }
+  40%, 80% { transform: rotate(-15deg); }
+}
+
+@keyframes spinLoader {
+  to { transform: rotate(360deg); }
+}
+
+// 3. MAIN CONTAINER
+.risk-dashboard-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: $color-bg-body;
+  color: $color-text-main;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  position: relative;
+
+  // Dark mode overrides
+  &.dark-mode {
+    background-color: #0b1120;
+    color: #f1f5f9;
+
+    .exec-header {
+      background: #0f172a;
+      border-bottom-color: #1e293b;
+    }
+
+    .exec-footer {
+      background: #0f172a;
+      border-top-color: #1e293b;
+      color: #94a3b8;
+    }
+
+    .sub-nav-bar {
+      background: #0f172a;
+      border-bottom-color: #1e293b;
+
+      .nav-tab-btn {
+        color: #94a3b8;
+
+        &:hover {
+          color: #f8fafc;
+          background: #1e293b;
+        }
+
+        &.active {
+          color: #34d399;
+          background: rgba(16, 185, 129, 0.15);
+          border-bottom-color: #34d399;
+        }
+      }
+    }
+
+    .col-card {
+      background: #0f172a;
+      border-color: #1e293b;
+    }
+
+    .metric-card {
+      background: #1e293b;
+      border-color: #334155;
+      color: #f8fafc;
+
+      .card-title {
+        color: #94a3b8;
+      }
+    }
+
+    .alert-item {
+      background: #1e293b;
+      border-color: #334155;
+
+      &:hover {
+        background: #253349;
+      }
+    }
+
+    .filter-group {
+      select, input[type="date"], input[type="text"] {
+        background: #1e293b;
+        color: #f8fafc;
+        border-color: #334155;
+      }
+    }
+
+    .results-table-wrapper table {
+      th {
+        background: #1e293b;
+        color: #94a3b8;
+        border-bottom-color: #334155;
+      }
+      td {
+        border-bottom-color: #1e293b;
+        color: #f8fafc;
+      }
+    }
+
+    .district-popup-card {
+      background: #0f172a;
+      border-color: #1e293b;
+      color: #f8fafc;
+
+      .popup-data-grid .data-box {
+        background: #1e293b;
+        border-color: #334155;
+      }
+    }
+  }
+
+  // 4. HEADER THEO PROTOTYPE: logo | menu quản trị | chuông | avatar
+  .exec-header {
+    height: 64px;
+    background: $color-bg-card;
+    border-bottom: 1px solid $color-border;
+    padding: 0 24px;
+    @include flex-between;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    box-shadow: $shadow-sm;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .app-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: inherit;
+
+        .brand-icon {
+          width: 36px;
+          height: 36px;
+          border-radius: $radius-md;
+          background: linear-gradient(135deg, $color-primary, #047857);
+          @include flex-center;
+          color: white;
+          font-size: 18px;
+          font-weight: bold;
+        }
+
+        .brand-text {
+          display: flex;
+          flex-direction: column;
+
+          .brand-title {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+          }
+
+          .brand-sub {
+            font-size: 11px;
+            color: $color-text-muted;
+          }
+        }
+      }
+
+      .gov-badge {
+        padding: 4px 10px;
+        background: $color-primary-light;
+        color: $color-primary-dark;
+        border-radius: $radius-full;
+        font-size: 12px;
+        font-weight: 600;
+      }
+    }
+
+    .header-center {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .screen-indicator {
+        font-size: 13px;
+        font-weight: 600;
+        color: $color-text-muted;
+        background: $color-bg-subtle;
+        padding: 6px 14px;
+        border-radius: $radius-full;
+      }
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+
+      .bell-btn {
+        position: relative;
+        width: 40px;
+        height: 40px;
+        border-radius: $radius-md;
+        border: 1px solid $color-border;
+        background: transparent;
+        cursor: pointer;
+        @include flex-center;
+        font-size: 18px;
+        transition: $transition-normal;
+
+        &:hover {
+          background: $color-bg-subtle;
+        }
+
+        &.active-emergency {
+          border-color: $color-danger;
+          background: $color-danger-light;
+          animation: bellRing 1.8s infinite;
+
+          .bell-badge {
+            background-color: $color-danger;
+            animation: pulseBorder 1s infinite;
+          }
+        }
+
+        .bell-badge {
+          position: absolute;
+          top: -3px;
+          right: -3px;
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: $color-danger;
+          border: 2px solid white;
+        }
+      }
+
+      .admin-menu-dropdown {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 5px 10px;
+        border-radius: $radius-md;
+        border: 1px solid $color-border;
+        cursor: pointer;
+        background: transparent;
+
+        .user-avatar {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: #3b82f6;
+          color: white;
+          @include flex-center;
+          font-weight: 600;
+          font-size: 13px;
+        }
+
+        .user-info {
+          display: flex;
+          flex-direction: column;
+          text-align: left;
+
+          .user-name {
+            font-size: 13px;
+            font-weight: 600;
+          }
+          .user-role {
+            font-size: 11px;
+            color: $color-text-muted;
+          }
+        }
+      }
+    }
+  }
+
+  // 5. SUB NAVIGATION: CHUYỂN MÀN 1 VÀ MÀN 2
+  .sub-nav-bar {
+    background: $color-bg-card;
+    border-bottom: 1px solid $color-border;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .nav-tab-btn {
+      padding: 12px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      color: $color-text-muted;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: $transition-normal;
+
+      &:hover {
+        color: $color-primary;
+      }
+
+      &.active {
+        color: $color-primary-dark;
+        border-bottom-color: $color-primary;
+        background: rgba(16, 185, 129, 0.06);
+      }
+    }
+
+    .refresh-btn {
+      margin-left: auto;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: $color-text-muted;
+      background: $color-bg-subtle;
+      border: 1px solid $color-border;
+      border-radius: $radius-md;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      &:hover {
+        color: $color-text-main;
+        background: #e2e8f0;
+      }
+
+      &.is-refreshing span {
+        animation: spinLoader 0.8s linear infinite;
+      }
+    }
+  }
+
+  // 6. EMERGENCY BANNER
+  .critical-banner {
+    background: linear-gradient(90deg, #dc2626, #ef4444);
+    color: white;
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: $shadow-md;
+
+    .banner-content {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .banner-action-btn {
+      padding: 4px 12px;
+      background: white;
+      color: #b91c1c;
+      border: none;
+      border-radius: $radius-sm;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 12px;
+
+      &:hover {
+        background: #fee2e2;
+      }
+    }
+  }
+
+  // 7. PHẦN GIỮA: 3 KHỐI THEO CHIỀU NGANG (3-COLUMN LAYOUT)
+  .exec-content-area {
+    flex: 1;
+    padding: 20px 24px;
+    max-width: 1600px;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+
+    .three-column-grid {
+      display: grid;
+      grid-template-columns: 310px 1fr 340px;
+      gap: 20px;
+      align-items: stretch;
+
+      @media (max-width: 1200px) {
+        grid-template-columns: 280px 1fr 300px;
+      }
+
+      @media (max-width: 992px) {
+        grid-template-columns: 1fr;
+      }
+
+      .col-card {
+        @include card-box;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+
+        .col-header {
+          @include flex-between;
+          border-bottom: 1px solid $color-border;
+          padding-bottom: 12px;
+
+          .col-title {
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: $color-text-main;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+
+          .col-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: $radius-full;
+            background: $color-bg-subtle;
+            color: $color-text-muted;
+          }
+        }
+      }
+    }
+  }
+
+  // 8. MÀN 1: KHỐI CHỈ SỐ (CỘT TRÁI)
+  .metric-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+
+    .metric-card {
+      padding: 16px;
+      background: $color-bg-subtle;
+      border: 1px solid $color-border;
+      border-radius: $radius-md;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: $transition-normal;
+
+      .card-title {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: $color-text-muted;
+      }
+
+      .card-value {
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+      }
+
+      .card-desc {
+        font-size: 12px;
+        font-weight: 500;
+        color: $color-text-muted;
+      }
+
+      &.danger-pulsing {
+        @include pulse-danger;
+        background: $color-danger-light;
+
+        .card-value {
+          color: $color-danger-dark;
+        }
+      }
+
+      &.primary-accent {
+        border-left: 4px solid $color-primary;
+      }
+
+      &.warning-accent {
+        border-left: 4px solid $color-warning;
+      }
+
+      &.danger-accent {
+        border-left: 4px solid $color-danger;
+      }
+    }
+  }
+
+  // 9. MÀN 1: KHỐI BIỂU ĐỒ (CỘT GIỮA)
+  .charts-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    height: 100%;
+
+    .chart-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+
+      .chart-panel-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: $color-text-muted;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+    }
+  }
+
+  // 10. MÀN 1: KHỐI CẢNH BÁO (CỘT PHẢI)
+  .alerts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    .alert-item {
+      padding: 12px 14px;
+      background: $color-bg-subtle;
+      border: 1px solid $color-border;
+      border-radius: $radius-md;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: $transition-normal;
+
+      &:hover {
+        background: #f1f5f9;
+        transform: translateY(-2px);
+        box-shadow: $shadow-sm;
+      }
+
+      .alert-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        .alert-rank {
+          width: 26px;
+          height: 26px;
+          border-radius: 50%;
+          background: #cbd5e1;
+          color: #334155;
+          font-size: 12px;
+          font-weight: 700;
+          @include flex-center;
+        }
+
+        .alert-info {
+          display: flex;
+          flex-direction: column;
+
+          .district-name {
+            font-size: 14px;
+            font-weight: 700;
+          }
+
+          .alert-sub {
+            font-size: 11px;
+            color: $color-text-muted;
+          }
+        }
+      }
+
+      .alert-right {
+        text-align: right;
+
+        .risk-badge {
+          display: inline-block;
+          padding: 3px 8px;
+          border-radius: $radius-full;
+          font-size: 12px;
+          font-weight: 700;
+
+          &.critical {
+            background: $color-danger-light;
+            color: $color-danger-dark;
+          }
+
+          &.high {
+            background: $color-warning-light;
+            color: $color-warning-dark;
+          }
+
+          &.medium {
+            background: $color-info-light;
+            color: #0369a1;
+          }
+
+          &.low {
+            background: $color-primary-light;
+            color: $color-primary-dark;
+          }
+        }
+      }
+
+      &.is-urgent {
+        border-color: #fca5a5;
+        border-left: 4px solid $color-danger;
+
+        .alert-rank {
+          background: $color-danger;
+          color: white;
+        }
+      }
+    }
+  }
+
+  // 11. MÀN 2: BỘ LỌC (CỘT TRÁI)
+  .filters-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+
+      label {
+        font-size: 12px;
+        font-weight: 700;
+        color: $color-text-muted;
+      }
+
+      select, input[type="date"] {
+        padding: 8px 12px;
+        font-size: 13px;
+        border: 1px solid $color-border;
+        border-radius: $radius-md;
+        background: $color-bg-card;
+        color: inherit;
+        outline: none;
+        transition: $transition-normal;
+
+        &:focus {
+          border-color: $color-primary;
+          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
+      }
+
+      .checkbox-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        .checkbox-label {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+
+          input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: $color-primary;
+            cursor: pointer;
+          }
+        }
+      }
+    }
+
+    .btn-apply-filter {
+      padding: 10px 18px;
+      background: $color-primary;
+      color: white;
+      border: none;
+      border-radius: $radius-md;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: $transition-normal;
+      margin-top: 6px;
+
+      &:hover {
+        background: $color-primary-dark;
+      }
+
+      &:active {
+        transform: scale(0.98);
+      }
+    }
+
+    .export-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+
+      .btn-export {
+        flex: 1;
+        padding: 7px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: $radius-sm;
+        border: 1px solid $color-border;
+        background: $color-bg-subtle;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+
+        &:hover {
+          background: #e2e8f0;
+        }
+      }
+    }
+  }
+
+  // 12. MÀN 2: KẾT QUẢ (CỘT GIỮA)
+  .results-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+
+    .results-table-wrapper {
+      overflow-x: auto;
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+
+        th {
+          background: $color-bg-subtle;
+          text-align: left;
+          padding: 8px 12px;
+          font-weight: 700;
+          color: $color-text-muted;
+          border-bottom: 1px solid $color-border;
+        }
+
+        td {
+          padding: 10px 12px;
+          border-bottom: 1px solid $color-border;
+        }
+      }
+    }
+  }
+
+  // 13. MÀN 2: SO SÁNH (CỘT PHẢI)
+  .comparison-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    .comparison-metric-box {
+      padding: 18px;
+      border-radius: $radius-md;
+      border: 1px solid $color-border;
+      background: $color-bg-subtle;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+
+      &.positive-trend {
+        background: $color-primary-light;
+        border-color: #6ee7b7;
+
+        .trend-value {
+          color: $color-primary-dark;
+        }
+      }
+
+      &.negative-trend {
+        background: $color-danger-light;
+        border-color: #fca5a5;
+
+        .trend-value {
+          color: $color-danger-dark;
+        }
+      }
+
+      .trend-label {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: $color-text-muted;
+      }
+
+      .trend-value {
+        font-size: 26px;
+        font-weight: 900;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .trend-note {
+        font-size: 13px;
+        font-weight: 600;
+      }
+    }
+  }
+
+  // 14. TRẠNG THÁI LOADING VÀ ERROR
+  .loading-container {
+    padding: 60px 0;
+    @include flex-center;
+    flex-direction: column;
+    gap: 14px;
+    color: $color-text-muted;
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(16, 185, 129, 0.2);
+      border-top-color: $color-primary;
+      border-radius: 50%;
+      animation: spinLoader 0.8s linear infinite;
+    }
+  }
+
+  .error-container {
+    padding: 40px 20px;
+    @include flex-center;
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+    color: $color-danger;
+
+    .btn-retry {
+      padding: 8px 18px;
+      background: $color-danger;
+      color: white;
+      border: none;
+      border-radius: $radius-md;
+      font-weight: 600;
+      cursor: pointer;
+
+      &:hover {
+        background: $color-danger-dark;
+      }
+    }
+  }
+
+  .empty-state {
+    padding: 40px 20px;
+    @include flex-center;
+    flex-direction: column;
+    gap: 8px;
+    color: $color-text-muted;
+    font-size: 14px;
+  }
+
+  // 15. FOOTER THEO PROTOTYPE: bản quyền | liên hệ | chính sách
+  .exec-footer {
+    height: 50px;
+    background: $color-bg-card;
+    border-top: 1px solid $color-border;
+    padding: 0 24px;
+    @include flex-between;
+    font-size: 12px;
+    color: $color-text-muted;
+    margin-top: auto;
+
+    .footer-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+
+      a, button {
+        color: inherit;
+        text-decoration: none;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        font-size: 12px;
+
+        &:hover {
+          color: $color-primary;
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+}
+
+// 16. MÀN 3: POPUP CHI TIẾT QUẬN (MODAL OVERLAY)
+.district-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  @include flex-center;
+  padding: 16px;
+
+  .district-popup-card {
+    background: $color-bg-card;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-xl;
+    width: 100%;
+    max-width: 480px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    border: 1px solid $color-border;
+    animation: popupFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+    .popup-badge-small {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: $color-text-muted;
+      text-transform: uppercase;
+    }
+
+    .popup-title-bold {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      margin-top: -6px;
+      color: $color-text-main;
+    }
+
+    .district-name-heading {
+      font-size: 16px;
+      font-weight: 700;
+      color: $color-primary-dark;
+      padding-bottom: 6px;
+      border-bottom: 1px solid $color-border;
+    }
+
+    .popup-data-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+
+      .data-box {
+        padding: 12px;
+        background: $color-bg-subtle;
+        border-radius: $radius-md;
+        border: 1px solid $color-border;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+
+        .box-label {
+          font-size: 11px;
+          font-weight: 700;
+          color: $color-text-muted;
+          text-transform: uppercase;
+        }
+
+        .box-value {
+          font-size: 14px;
+          font-weight: 600;
+        }
+      }
+    }
+
+    .popup-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 6px;
+
+      .btn-map-view {
+        width: 100%;
+        padding: 12px;
+        background: linear-gradient(135deg, $color-primary, $color-primary-dark);
+        color: white;
+        border: none;
+        border-radius: $radius-full;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: $transition-normal;
+
+        &:hover {
+          filter: brightness(1.05);
+          box-shadow: $shadow-md;
+        }
+      }
+
+      .btn-close-popup {
+        width: 100%;
+        padding: 11px;
+        background: transparent;
+        color: $color-text-muted;
+        border: 1px solid $color-border;
+        border-radius: $radius-full;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: $transition-normal;
+
+        &:hover {
+          background: $color-bg-subtle;
+          color: $color-text-main;
+        }
+      }
+    }
+  }
+}
+
+@keyframes popupFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

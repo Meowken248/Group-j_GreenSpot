@@ -1,0 +1,416 @@
+Total paragraphs: 912
+Total tables: 72
+
+=== PARAGRAPHS 300 to 500 ===
+P[250]: Khi công tắc "Bật chế độ gửi báo cáo ẩn danh" được kích hoạt, hệ thống sẽ mở ra hộp thoại xác nhận (Modal Popup) giải thích rõ các quyền lợi và ràng buộc khi ẩn danh.
+P[251]: Khi người dùng xác nhận, toàn bộ thông tin định danh cá nhân (Họ tên, Số điện thoại, Email, Số CCCD, Ảnh đại diện) sẽ được tách rời và che giấu hoàn toàn khỏi hồ sơ báo cáo. Đơn vị thu gom rác tại hiện trường, tài xế vận chuyển và người dân theo dõi trên bản đồ công khai chỉ thấy báo cáo được gửi từ "Người dùng ẩn danh".
+P[252]: Hệ thống tự động khởi tạo một Mã theo dõi ẩn danh ngẫu nhiên (Anonymous Tracking Token, ví dụ ANON-83921) lưu cục bộ trên thiết bị của người dùng, cho phép công dân tra cứu tiến độ xử lý mà không cần để lộ bất kỳ thông tin cá nhân nào.
+P[253]: Mục đích:
+P[254]: Bảo vệ tuyệt đối danh tính và an toàn cho người phản ánh: Loại bỏ triệt để nguy cơ bị trả thù, đe dọa hoặc làm phiền khi công dân dũng cảm tố cáo các điểm đổ trộm chất thải nguy hại, rác thải công nghiệp hoặc vi phạm quy mô lớn.
+P[255]: Tăng tỷ lệ tố giác vi phạm môi trường: Tạo tâm lý yên tâm, thoải mái cho người dân khi tham gia phản ánh các điểm nóng môi trường phức tạp tại khu dân cư.
+P[256]: Vẫn đảm bảo quyền giám sát tiến độ: Nhờ mã Token theo dõi ẩn danh, công dân vẫn nắm được lộ trình giải quyết sự cố của chính quyền địa phương mà không cần đăng nhập hay để lại số điện thoại.
+P[257]: 8. Gợi ý câu trả lời cho Admin
+P[259]: Mô tả: Chức năng hỗ trợ cán bộ tiếp nhận, chuyên viên môi trường đô thị và tổ trưởng phản ứng nhanh soạn thảo phản hồi gửi tới người dân một cách nhanh chóng, chuẩn mực và đồng bộ:
+P[260]: Hệ thống cung cấp Thư viện mẫu câu trả lời chuẩn hóa (Canned Responses Library) được phân loại theo từng giai đoạn xử lý vụ việc: [Đã tiếp nhận], [Đang xử lý], [Đã xử lý xong], và [Từ chối / Sai địa bàn].
+P[261]: Khi cán bộ chọn một mẫu phản hồi, hệ thống sẽ tự động chèn nội dung vào khung soạn thảo và tự động thay thế các biến thông tin động (Dynamic Placeholders) như: {ten cong_dan}, {ma bao_cao}, {dia_diem}, {doi_xu_ly}, {thoi gian hoan thanh}.
+P[262]: Cán bộ có thể chỉnh sửa, bổ sung thông tin cụ thể trước khi phát hành. Khi bấm nút gửi, hệ thống bật hộp thoại xác nhận (Modal Popup) để kiểm tra lần cuối trước khi phát đi thông báo đẩy (Push Notification), tin nhắn Zalo ZNS hoặc SMS tới người dân.
+P[263]: Mục đích:
+P[264]: Rút ngắn thời gian phản hồi công dân: Giúp cán bộ trả lời hàng trăm lượt phản ánh mỗi ngày chỉ với vài thao tác nhấp chuột, giảm tải áp lực gõ phím lặp đi lặp lại.
+P[265]: Đảm bảo tính chuẩn mực hành chính và văn hóa giao tiếp công vụ: Tránh các lỗi diễn đạt thiếu văn minh, câu từ cộc lốc hoặc không đầy đủ căn cứ pháp lý từ phía cán bộ xử lý hiện trường.
+P[266]: Minh bạch hóa thông tin tương tác hai chiều: Người dân nhận được phản hồi nhanh chóng, rõ ràng về đơn vị chịu trách nhiệm và mốc thời gian xử lý cụ thể, từ đó nâng cao mức độ hài lòng đối với chính quyền số.
+P[267]: 9. Bộ lọc từ khóa nhạy cảm & Giới hạn tần suất gửi báo cáo
+P[269]: Mô tả: Chức năng đóng vai trò là "bức tường lửa" tiền kiểm duyệt tự động trên cả phía ứng dụng (Client-side) và máy chủ (Server-side API Gateway):
+P[270]: Bộ lọc từ khóa nhạy cảm (Profanity & Hate Speech Filter): Tự động quét nội dung mô tả phản ánh theo thời gian thực dựa trên từ điển ngôn ngữ chuẩn mực (chặn các từ thô tục, xúc phạm danh dự cá nhân/cơ quan công quyền, kích động bạo lực, phân biệt vùng miền hoặc quảng cáo rác). Các từ vi phạm sẽ được làm nổi bật viền đỏ hoặc tự động che bằng dấu ***, kèm thông báo yêu cầu người dùng dùng ngôn từ văn minh.
+P[271]: Giới hạn tần suất gửi báo cáo (Rate Limiting & Anti-Spam): Áp dụng thuật toán Token Bucket / Sliding Window Counter trên từng tài khoản và địa chỉ IP/Device ID (giới hạn tối đa 3 báo cáo / 15 phút). Khi chạm ngưỡng hạn mức, hệ thống kích hoạt bộ đếm ngược thời gian chờ (Cooldown Timer), tạm khóa nút gửi và hiển thị hộp thoại thông báo (Modal Popup) để ngăn chặn hành vi quấy phá, spam dữ liệu giả mạo.
+P[272]: Mục đích:
+P[273]: Làm sạch môi trường dữ liệu và văn hóa giao tiếp số: Ngăn chặn những phản ánh mang tính chửi bới, vu khống, xúc phạm cán bộ giải quyết hoặc bôi nhọ danh dự tổ chức.
+P[274]: Bảo vệ hệ thống máy chủ và cơ quan tiếp nhận khỏi tấn công DoS/Spam: Chống tình trạng một người dùng hoặc mạng bot gửi dồn dập hàng trăm yêu cầu ảo cùng lúc làm nghẽn luồng xử lý của trung tâm điều hành.
+P[275]: Tối ưu hóa nguồn lực thực địa: Đảm bảo nhân viên vệ sinh môi trường và đội phản ứng nhanh không bị phân tâm bởi các báo cáo rác, báo cáo trùng lặp vô nghĩa.
+P[276]: 10. Hỗ trợ dịch đa ngôn ngữ
+P[278]: Mô tả: Chức năng tích hợp công nghệ trí tuệ nhân tạo xử lý ngôn ngữ tự nhiên (NLP) nhằm phá vỡ rào cản ngôn ngữ giữa cộng đồng người nước ngoài/khách du lịch quốc tế và các cơ quan quản lý môi trường tại địa phương:
+P[279]: Tự động nhận diện ngôn ngữ nguồn (Auto-Detect Language): Khi người dùng nhập mô tả bằng bất kỳ ngôn ngữ nào (Tiếng Anh, Tiếng Trung, Tiếng Hàn, Tiếng Nhật, Tiếng Pháp...), hệ thống lập tức phát hiện mã ngôn ngữ và đưa ra gợi ý dịch song song.
+P[280]: Chuyển dịch hai chiều theo thời gian thực (Bidirectional Real-time Translation):
+P[281]: Dành cho người dân / du khách quốc tế: Cho phép du khách nhập phản ánh bằng tiếng mẹ đẻ và tự động chuyển sang Tiếng Việt để gửi tới cơ quan chức năng.
+P[282]: Dành cho cán bộ tiếp nhận & đội xử lý hiện trường: Tự động dịch phản ánh của du khách sang Tiếng Việt chuẩn mực kèm danh mục thuật ngữ rác thải/môi trường chuyên dụng; đồng thời hỗ trợ dịch ngược phản hồi của cán bộ sang ngôn ngữ của du khách.
+P[283]: Hệ thống hỗ trợ hiển thị giao diện đối sánh song ngữ (Bilingual Comparison View) và cung cấp hộp thoại xác nhận (Modal Popup) trước khi lưu nội dung dịch vào hồ sơ cơ sở dữ liệu.
+P[284]: Mục đích:
+P[285]: Phục vụ đa dạng đối tượng: Tạo điều kiện cho hàng triệu khách du lịch quốc tế, chuyên gia nước ngoài và người nước ngoài đang sinh sống tại Việt Nam dễ dàng tham gia bảo vệ môi trường, giữ gìn mỹ quan đô thị.
+P[286]: Tăng tốc độ xử lý của cán bộ địa phương: Giúp cán bộ tiếp nhận và công nhân thu gom hiểu ngay lập tức nội dung phản ánh mà không cần sao chép sang các công cụ dịch thuật bên ngoài một cách thủ công.
+P[287]: Chuẩn hóa dữ liệu quốc tế: Lưu trữ song song cả văn bản gốc (Original Text) và văn bản dịch chuẩn (Translated Text) phục vụ công tác thanh tra, thống kê và báo cáo môi trường theo tiêu chuẩn quốc tế (ESG).
+P[288]: 11.Tra cứu quy định xử phạt
+P[290]: Mô tả: Chức năng tích hợp cơ sở dữ liệu pháp điển hóa điện tử về các chế tài xử phạt hành chính trong lĩnh vực bảo vệ môi trường (trọng tâm là Nghị định 45/2022/NĐ-CP và các văn bản quy phạm pháp luật liên quan):
+P[291]: Công cụ tìm kiếm thông minh theo hành vi (Smart Semantic Search): Cho phép người dân, tình nguyện viên và cán bộ thanh tra nhập từ khóa tự nhiên (ví dụ: "vứt tàn thuốc", "đổ xà bần bừa bãi", "xả nước thải đen ngòm", "đốt rác khói mù mịt"). Hệ thống tự động phân tích ngữ nghĩa và trả về điều khoản pháp lý tương ứng.
+P[292]: Bộ lọc đa chiều (Category & Decree Filters): Phân loại theo nhóm vi phạm: [Rác sinh hoạt], [Chất thải công nghiệp], [Nước thải], [Khí thải / Tiếng ồn].
+P[293]: Thẻ hiển thị thông tin chế tài chi tiết:
+P[294]: Nêu rõ:
+P[295]: Hành vi vi phạm quy chuẩn.
+P[296]: Căn cứ pháp lý (Điều, Khoản, Điểm của Nghị định).
+P[297]: Khung tiền phạt đối với cá nhân và mức phạt gấp đôi đối với tổ chức/doanh nghiệp.
+P[298]: Biện pháp khắc phục hậu quả bắt buộc (buộc thu dọn sạch sẽ, nộp lại số lợi bất hợp pháp, đình chỉ hoạt động có thời hạn).
+P[299]: Hỗ trợ nút trích dẫn trực tiếp điều khoản xử phạt vào biên bản hiện trường hoặc hồ sơ phản ánh thông qua hộp thoại xác nhận (Modal Popup).
+P[300]: Mục đích:
+P[301]: Tuyên truyền, phổ biến và nâng cao ý thức chấp hành pháp luật: Giúp người dân hiểu rõ hậu quả pháp lý và mức tiền phạt cụ thể của từng hành vi vứt rác, xả thải bừa bãi, từ đó hình thành ý thức tự giác bảo vệ môi trường.
+P[302]: Cung cấp căn cứ pháp lý chuẩn xác cho lực lượng thực thi công vụ: Hỗ trợ cán bộ thanh tra đô thị, công an khu vực và tổ công tác liên ngành lập biên bản vi phạm hành chính tại chỗ nhanh chóng, đúng thẩm quyền và đúng điều khoản luật định.
+P[303]: Răn đe các đối tượng cố tình vi phạm: Tăng tính thuyết phục và minh bạch trong các thông báo nhắc nhở gửi đến các hộ gia đình hoặc cơ sở kinh doanh tái phạm.
+P[304]: 12. Giao diện đơn giản hóa dành cho người cao tuổi
+P[305]: Mục đích:
+P[306]: Xóa bỏ rào cản công nghệ số cho người cao tuổi: Giúp các bậc cao niên, hưu trí – lực lượng nòng cốt thường xuyên tham gia các phong trào tự quản khu phố, "Chủ nhật xanh" – dễ dàng phản ánh rác thải mà không gặp khó khăn về thị lực hay thao tác ngón tay.
+P[307]: Tối giản hóa quy trình báo cáo: Giảm thiểu các bước từ 6-7 bước phức tạp xuống còn 1 chạm duy nhất, tăng độ bao phủ người dùng của nền tảng chính quyền số.
+P[308]: Thực hiện cam kết chuyển đổi số toàn diện: Đảm bảo nguyên tắc "không ai bị bỏ lại phía sau" trong các dịch vụ công ích xã hội và môi trường đô thị.
+P[309]: IV.2. Phân hệ các chức năng do sinh viên Huỳnh Anh Tú thực hiện (Chức năng 13 -> 24)
+P[310]: Phân hệ này đảm nhiệm trọng tâm Bản đồ số không gian GIS, định vị người dùng, thuật toán Heatmap/Clustering, lớp chuyên đề, phân vùng ranh giới hành chính, so sánh Before/After và rào chắn cảnh báo địa lý (Geofencing):
+P[311]: 13. Cơ chế tích lũy Điểm thưởng Công dân Xanh
+P[313]: *Hình 4.13: Giao diện Cơ chế tích lũy Điểm thưởng Công dân Xanh
+P[314]: • Mục tiêu nghiệp vụ: Trực quan hóa toàn bộ các điểm rác thải và sự cố môi trường trên nền bản đồ không gian tương tác; áp dụng thuật toán gom cụm động (marker clustering) giúp tối ưu hiệu năng render hàng chục nghìn điểm mà không giật lag.
+P[315]: • Tác nhân (Actor): Công dân, Cán bộ quản lý, Đội thu gom
+P[316]: • Tiền điều kiện: Dữ liệu không gian được truy vấn từ API /map/incidents.geojson.
+P[317]: • Hậu điều kiện: Bản đồ hiển thị các điểm ghim theo màu sắc trạng thái và số lượng điểm rác theo cụm.
+P[318]: Quy trình xử lý nghiệp vụ (Workflow):
+P[319]: 1. Người dùng truy cập trang Bản đồ môi trường.
+P[320]: 2. Hệ thống tải dữ liệu GeoJSON các điểm ô nhiễm trong viewport khung nhìn hiện tại.
+P[321]: 3. Thuật toán Supercluster gom nhóm các điểm rác gần nhau thành các vòng tròn cụm có số đếm (VD: Cụm 15 điểm rác).
+P[322]: 4. Khi người dùng phóng to (zoom in), cụm tự động tách rã thành các marker riêng lẻ.
+P[323]: 5. Người dùng chạm vào một marker, hệ thống mở cửa sổ bật lên (Popup) hiển thị: Ảnh bãi rác, Loại ô nhiễm, Mức độ nghiêm trọng, Thời gian báo cáo và nút 'Xem chi tiết'.
+P[324]: 6. Khi có báo cáo mới hoặc điểm rác vừa được xử lý, WebSocket đẩy sự kiện và cập nhật marker tức thì mà không cần tải lại trang.
+P[325]: Luồng thay thế (Alternative Flow):
+P[326]: Người dùng chuyển đổi lớp bản đồ nền: Cho phép chọn giữa Bản đồ đường phố (OpenStreetMap), Bản đồ Vệ tinh (Satellite imagery) và Bản đồ giao thông tối giản.
+P[327]: Luồng ngoại lệ (Exception Flow):
+P[328]: Mất kết nối WebSocket: Hệ thống tự động chuyển sang cơ chế Polling định kỳ mỗi 30 giây để cập nhật dữ liệu mới.
+P[329]: Mô tả thành phần giao diện (UI Specification):
+P[330]: Quy tắc kiểm tra và thông báo lỗi (Validation & Error Handling):
+P[331]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 13*
+P[332]: 14. Xem số dư ví điểm và Lịch sử biến động điểm xanh
+P[334]: *Hình 4.14: Giao diện xem số dư ví điểm và lịch sử biến động điểm xanh
+P[335]: • Mục tiêu nghiệp vụ: Tự động xác định tọa độ hiện tại của người dùng trên bản đồ số kèm theo vòng tròn bán kính lân cận; giúp công dân biết ngay xung quanh mình có điểm rác nào đang chờ xử lý.
+P[336]: • Tác nhân (Actor): Công dân, Nhân viên tuần tra đô thị
+P[337]: • Tiền điều kiện: Trình duyệt được cấp quyền truy cập GPS.
+P[338]: • Hậu điều kiện: Tâm bản đồ tự động di chuyển về vị trí người dùng kèm theo chấm tròn màu xanh phát sóng.
+P[339]: Quy trình xử lý nghiệp vụ (Workflow):
+P[340]: 1. Người dùng bấm nút 'Vị trí của tôi' trên thanh công cụ bản đồ.
+P[341]: 2. Hệ thống gọi API định vị thời gian thực, xác định kinh độ, vĩ độ và độ chính xác.
+P[342]: 3. Bản đồ lướt mượt mà (flyTo) về vị trí người dùng, hiển thị chấm xanh (Blue Pulse Dot).
+P[343]: 4. Vẽ vòng tròn bán kính tương tác (mặc định 1km) xung quanh người dùng.
+P[344]: 5. Tự động liệt kê danh sách các điểm ô nhiễm nằm trọn trong bán kính này ở bảng bên cạnh.
+P[345]: Luồng thay thế (Alternative Flow):
+P[346]: Người dùng di chuyển trên đường: Tính năng 'Theo dõi hành trình' (WatchPosition) cập nhật vị trí chấm xanh liên tục theo bước chân của người dùng.
+P[347]: Luồng ngoại lệ (Exception Flow):
+P[348]: Người dùng tắt GPS: Hệ thống hiển thị hộp thoại hướng dẫn cách bật lại quyền định vị trong cài đặt trình duyệt.
+P[349]: Mô tả thành phần giao diện (UI Specification):
+P[350]: Quy tắc kiểm tra và thông báo lỗi (Validation & Error Handling):
+P[351]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 14*
+P[352]: 15. Danh mục quà tặng xanh và Vật phẩm quy đổi
+P[354]: *Hình 4.15: Giao diện quà tặng xanh và vật phẩm
+P[355]: • Mục tiêu nghiệp vụ: Sử dụng giải thuật nội suy mật độ hạt nhân tản nhiệt (Kernel Density Estimation) để tạo bản đồ nhiệt trực quan hóa các 'điểm nóng' bãi rác tự phát; giúp lãnh đạo Sở TN&MT nhận diện ngay các khu vực ô nhiễm báo động đỏ.
+P[356]: • Tác nhân (Actor): Lãnh đạo Sở TN&MT, Cán bộ quản lý môi trường Quận
+P[357]: • Tiền điều kiện: Bản đồ đã nạp dữ liệu tọa độ và trọng số mức độ nghiêm trọng.
+P[358]: • Hậu điều kiện: Lớp bản đồ nhiệt hiển thị dải màu từ xanh lục (mật độ thấp) qua vàng, cam đến đỏ rực (mật độ cực cao).
+P[359]: Quy trình xử lý nghiệp vụ (Workflow):
+P[360]: 1. Cán bộ quản lý chọn chế độ hiển thị 'Bản đồ nhiệt (Heatmap)' trên thanh công cụ.
+P[361]: 2. Hệ thống ẩn các marker đơn lẻ và kích hoạt lớp Heatmap Layer.
+P[362]: 3. Giải thuật tính toán mật độ không gian dựa trên 2 tham số: Tần suất điểm rác trong khu vực và Trọng số nghiêm trọng (Trọng số 1 đến 4).
+P[363]: 4. Các khu vực có nhiều bãi rác lớn dồn dập (như dọc kênh rạch hoặc đất quy hoạch treo) sẽ nổi bật với quầng sáng màu đỏ rực rỡ.
+P[364]: 5. Cán bộ có thể điều chỉnh thanh trượt bán kính tỏa nhiệt (Radius) và độ nhạy (Intensity) để soi chiếu chi tiết từng ngõ hẻm.
+P[365]: Luồng thay thế (Alternative Flow):
+P[366]: Cán bộ lọc bản đồ nhiệt theo khoảng thời gian: Chọn '30 ngày qua' hoặc 'Cả năm 2026' để so sánh diễn biến dịch chuyển của các điểm nóng.
+P[367]: Luồng ngoại lệ (Exception Flow):
+P[368]: Số lượng điểm rác quá ít trong vùng nhìn: Bản đồ nhiệt hiển thị các quầng mờ nhạt kèm thông báo 'Mật độ ô nhiễm thấp'.
+P[369]: Mô tả thành phần giao diện (UI Specification):
+P[370]: Quy tắc kiểm tra và thông báo lỗi (Validation & Error Handling):
+P[371]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 15*
+P[372]: 16. Thực hiện đổi điểm lấy quà tặng / Voucher
+P[374]: *Hình 4.16: Giao diện đổi điểm lấy quà
+P[375]: • Mục tiêu nghiệp vụ: Cung cấp bộ lọc thông minh kết hợp đa điều kiện giúp người dùng lọc tức thời hàng nghìn điểm ô nhiễm theo: Loại hình rác, Mức độ nghiêm trọng, Trạng thái xử lý và Khoảng thời gian ghi nhận.
+P[376]: • Tác nhân (Actor): Công dân, Cán bộ địa bàn, Điều phối viên
+P[377]: • Tiền điều kiện: Người dùng đang ở màn hình bản đồ tương tác.
+P[378]: • Hậu điều kiện: Bản đồ chỉ hiển thị chính xác các điểm rác thỏa mãn toàn bộ tiêu chí lọc.
+P[379]: Quy trình xử lý nghiệp vụ (Workflow):
+P[380]: 1. Người dùng bấm vào nút 'Bộ lọc nâng cao' trên bản đồ.
+P[381]: 2. Bảng điều khiển bộ lọc mở ra với các trường chọn:
+P[382]: - Loại ô nhiễm: [Tất cả, Rác sinh hoạt, Phế thải công nghiệp, Nước thải...]
+P[383]: - Mức độ: [Thấp, Trung bình, Cao, Khẩn cấp]
+P[384]: - Trạng thái xử lý: [Chờ tiếp nhận, Đang xử lý, Đã dọn sạch]
+P[385]: - Thời gian: [Hôm nay, 7 ngày qua, Tháng này, Tùy chọn ngày]
+P[386]: 3. Người dùng tích chọn các điều kiện và bấm 'Áp dụng bộ lọc'.
+P[387]: 4. Bản đồ thực hiện cập nhật tức thời các marker và tính toán lại số đếm kết quả (VD: 'Tìm thấy 24 điểm rác sinh hoạt đang xử lý').
+P[388]: 5. Cho phép lưu bộ lọc thành 'Bộ lọc yêu thích' cho các lần làm việc sau.
+P[389]: Luồng thay thế (Alternative Flow):
+P[390]: Người dùng bấm nút 'Đặt lại bộ lọc': Hệ thống khôi phục trạng thái mặc định hiển thị toàn bộ điểm ô nhiễm.
+P[391]: Luồng ngoại lệ (Exception Flow):
+P[392]: Bộ lọc không tìm thấy kết quả nào phù hợp: Bản đồ hiển thị thông báo 'Không có điểm ô nhiễm nào thỏa mãn điều kiện lọc' kèm nút xóa bộ lọc.
+P[393]: Mô tả thành phần giao diện (UI Specification):
+P[394]: Quy tắc kiểm tra và thông báo lỗi (Validation & Error Handling):
+P[395]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 16*
+P[396]: 17. Quản lý danh sách quà tặng cá nhân đã đổi
+P[398]: *Hình 4.17: Giao diện danh sách quà tặng cá nhân đã đổi
+P[399]: • Mục tiêu nghiệp vụ: Tổ chức dữ liệu môi trường thành các lớp chuyên đề (GIS Layers) độc lập, cho phép người dùng bật/tắt từng lớp dữ liệu hoặc xếp chồng nhiều lớp để phân tích ô nhiễm tổng hợp.
+P[400]: • Tác nhân (Actor): Chuyên viên phân tích môi trường, Lãnh đạo
+P[401]: • Tiền điều kiện: Hệ thống có cơ sở dữ liệu phân loại theo các nguồn ô nhiễm khác nhau.
+P[402]: • Hậu điều kiện: Bản đồ hiển thị các lớp chuyên đề được chọn với ký hiệu học (Symbology) riêng biệt.
+P[403]: Quy trình xử lý nghiệp vụ (Workflow):
+P[404]: 1. Người dùng mở bảng điều khiển 'Quản lý lớp bản đồ (Layer Control)'.
+P[405]: 2. Danh sách các lớp chuyên đề hiển thị với hộp kiểm (Checkbox):
+P[406]: - Lớp [x] Điểm nóng Rác thải đô thị (Icon thùng rác màu cam)
+P[407]: - Lớp [x] Ô nhiễm Nguồn nước & Kênh rạch (Icon dòng nước màu xanh đen)
+P[408]: - Lớp [ ] Điểm xả Khói bụi / Ô nhiễm không khí (Icon khói màu xám)
+P[409]: - Lớp [ ] Ô nhiễm Tiếng ồn khu dân cư (Icon loa phát thanh)
+P[410]: - Lớp [x] Trạm trung chuyển rác & Điểm thu gom tái chế (Icon tái chế xanh)
+P[411]: 3. Người dùng bật/tắt từng lớp, bản đồ lập tức ẩn hoặc hiện lớp dữ liệu tương ứng.
+P[412]: 4. Mỗi lớp có bảng chú giải ký hiệu học (Legend) riêng ở góc màn hình.
+P[413]: Luồng thay thế (Alternative Flow):
+P[414]: Chuyên viên chọn 'Chế độ Xếp chồng phân tích': Hệ thống đối chiếu lớp điểm rác với lớp mạng lưới cống thoát nước để tìm các miệng cống có nguy cơ bị rác nghẹt gây ngập úng khi mưa lớn.
+P[415]: Luồng ngoại lệ (Exception Flow):
+P[416]: Lỗi tải một lớp chuyên đề: Các lớp khác vẫn hiển thị bình thường và lớp lỗi hiển thị biểu tượng chấm than cảnh báo.
+P[417]: Mô tả thành phần giao diện (UI Specification):
+P[418]: Quy tắc kiểm tra và thông báo lỗi (Validation & Error Handling):
+P[419]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 17*
+P[420]: 18. Bảng xếp hạng vinh danh Top Công dân Xanh
+P[422]: *Hình 4.18: Giao diện xếp hạng vinh danh Top Công dân Xanh
+P[423]: • Mục tiêu nghiệp vụ: Tích hợp thuật toán định tuyến đường đi ngắn nhất (Dijkstra / A* qua OSRM Engine) giúp đội xe thu gom tìm đường nhanh nhất từ vị trí hiện tại đến điểm rác cần dọn dẹp, tránh kẹt xe và đường cấm xe tải.
+P[424]: • Tác nhân (Actor): Tài xế xe thu gom rác, Đội dọn dẹp hiện trường
+P[425]: • Tiền điều kiện: Thiết bị có GPS và điểm ô nhiễm đã có tọa độ chính xác.
+P[426]: • Hậu điều kiện: Bản đồ vẽ lộ trình di chuyển màu xanh đậm kèm thông tin khoảng cách (km) và thời gian di chuyển dự kiến.
+P[427]: Quy trình xử lý nghiệp vụ (Workflow):
+P[428]: 1. Tài xế thu gom mở lệnh phân công sự cố trên ứng dụng và bấm nút 'Chỉ đường đến bãi rác'.
+P[429]: 2. Hệ thống lấy vị trí GPS tức thời của xe thu gom làm điểm xuất phát (Origin) và tọa độ bãi rác làm điểm đến (Destination).
+P[430]: 3. Gọi máy chủ định tuyến OSRM / Mapbox Navigation API để tính toán đường đi tối ưu theo mạng lưới giao thông thực tế.
+P[431]: 4. Hiển thị đường vẽ lộ trình (Polyline) trên bản đồ và bảng chỉ dẫn từng bước (Turn-by-turn: Rẽ trái vào đường Lê Văn Việt sau 200m).
+P[432]: 5. Hiển thị tổng cự ly (VD: 3.2 km) và thời gian ước tính (VD: 12 phút).
+P[433]: 6. Có tùy chọn nút 'Mở qua Google Maps / Apple Maps' nếu tài xế muốn dẫn đường giọng nói qua ứng dụng ngoài.
+P[434]: Luồng thay thế (Alternative Flow):
+P[435]: Tài xế có nhiều điểm rác cần dọn trong ca: Hệ thống kích hoạt thuật toán Giải bài toán Người giao hàng (TSP - Traveling Salesperson Problem) để sắp xếp lộ trình gom rác qua 5 điểm tối ưu quãng đường nhất.
+P[436]: Luồng ngoại lệ (Exception Flow):
+P[437]: Điểm rác nằm trong hẻm sâu xe tải không vào được: Hệ thống cảnh báo 'Điểm đến trong hẻm nhỏ (< 2m), đề xuất đỗ xe tải tại đầu hẻm và dùng xe đẩy tay'.
+P[438]: Mô tả thành phần giao diện (UI Specification):
+P[439]: Quy tắc kiểm tra và thông báo lỗi (Validation & Error Handling):
+P[440]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 18*
+P[441]: 19. Xem danh sách các Chiến dịch ra quân dọn rác
+P[443]: *Hình 4.19: Giao diện  Chiến dịch ra quân dọn rác
+P[444]: • Mục tiêu nghiệp vụ: Số hóa đa giác ranh giới địa giới hành chính của từng Phường/Xã và Quận/Huyện; ứng dụng hàm PostGIS ST_Contains để tự động xác định bãi rác phát sinh thuộc trách nhiệm xử lý của đơn vị hành chính nào.
+P[445]: • Tác nhân (Actor): Cán bộ quản lý cấp Quận, Quản trị viên hệ thống
+P[446]: • Tiền điều kiện: Dữ liệu hình học ranh giới các Phường/Quận đã được nạp vào bảng AdministrativeZones.
+P[447]: • Hậu điều kiện: Mỗi báo cáo được tự động gán zone_id chính xác 100% ngay khi vừa ghim vị trí.
+P[448]: Quy trình xử lý nghiệp vụ (Workflow):
+P[449]: 1. Khi công dân ghim vị trí bãi rác tại tọa độ (kinh độ X, vĩ độ Y).
+P[450]: 2. Hệ thống thực hiện câu truy vấn không gian:
+P[451]: 3. Hệ thống trả về chính xác: Điểm này thuộc 'Phường Linh Trung, Thành phố Thủ Đức'.
+P[452]: 4. Bản đồ tự động tô viền màu ranh giới của Phường đó để trực quan hóa phạm vi quản lý.
+P[453]: 5. Báo cáo được tự động chuyển vào hòm thư công việc của UBND Phường Linh Trung mà không cần người dân phải tự chọn cơ quan tiếp nhận.
+P[454]: Luồng thay thế (Alternative Flow):
+P[455]: Điểm rác nằm chính xác trên đường ranh giới giáp ranh giữa 2 Phường: Hệ thống gắn cờ 'Khu vực giáp ranh' và gửi thông báo cho cả 2 Phường cùng phối hợp giải quyết.
+P[456]: Luồng ngoại lệ (Exception Flow):
+P[457]: Tọa độ rơi ra ngoài ranh giới thành phố: Hệ thống thông báo 'Vị trí này nằm ngoài địa bàn triển khai của hệ thống'.
+P[458]: Mô tả thành phần giao diện (UI Specification):
+P[459]: Quy tắc kiểm tra và thông báo lỗi (Validation & Error Handling):
+P[460]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 19*
+P[461]: 20. Đăng ký tham gia chiến dịch tình nguyện xanh
+P[463]: *Hình 4.20: Giao diện tham gia chiến dịch tình nguyện xanh
+P[464]: • Mục tiêu nghiệp vụ: Cung cấp công cụ thanh trượt so sánh thời gian (Before/After Time Slider) và so sánh ảnh đối chiếu trực tiếp; giúp cộng đồng và cơ quan thanh tra kiểm chứng rõ ràng hiện trạng khu vực trước và sau khi được dọn sạch.
+P[465]: • Tác nhân (Actor): Công dân, Thanh tra Sở TN&MT, Cơ quan báo chí
+P[466]: • Tiền điều kiện: Sự cố đã được hoàn tất xử lý và có đầy đủ ảnh Before và After trong bảng ReportMedia.
+P[467]: • Hậu điều kiện: Giao diện thanh trượt tương tác cho phép người dùng kéo qua lại để thấy sự lột xác của hiện trường.
+P[468]: Quy trình xử lý nghiệp vụ (Workflow):
+P[469]: 1. Người dùng mở trang chi tiết của một điểm ô nhiễm đã hoàn thành xử lý.
+P[470]: 2. Hệ thống hiển thị khung so sánh ảnh đôi với thanh trượt ở chính giữa.
+P[471]: 3. Bên trái là bức ảnh bãi rác ngập ngụa phế thải lúc công dân phát hiện (Before).
+P[472]: 4. Bên phải là bức ảnh cùng góc chụp nhưng mặt bằng đã được thu dọn sạch sẽ, vỉa hè thông thoáng (After).
+P[473]: 5. Người dùng kéo thanh trượt sang trái hoặc phải để so sánh từng chi tiết thay đổi trên mặt đất.
+P[474]: 6. Hiển thị thông số: Thời gian từ lúc báo đến lúc dọn sạch (VD: 'Thời gian dọn dẹp: 4 giờ 15 phút').
+P[475]: Luồng thay thế (Alternative Flow):
+P[476]: So sánh bản đồ nhiệt theo tháng: Cán bộ kéo thanh trượt dòng thời gian để xem mật độ bãi rác tháng 1 so với tháng 6 đã giảm bao nhiêu phần trăm.
+P[477]: Luồng ngoại lệ (Exception Flow):
+P[478]: Ảnh chụp sau xử lý bị lệch góc quá nhiều so với ảnh trước: Hệ thống hiển thị cảnh báo cho cán bộ kiểm tra lại trước khi phê duyệt.
+P[479]: Mô tả thành phần giao diện (UI Specification):
+P[480]: Quy tắc kiểm tra và thông báo lỗi (Validation & Error Handling):
+P[481]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 20*
+P[482]: 21. Bình luận và Thảo luận dưới bài phản ánh sự cố
+P[484]: • Mục tiêu nghiệp vụ: Cho phép cán bộ quản lý xuất bản đồ hiện trạng bãi rác ra tệp hình ảnh độ phân giải cao, tệp dữ liệu chuẩn GIS (GeoJSON / Shapefile) hoặc báo cáo hồ sơ môi trường định dạng PDF để phục vụ họp giao ban và lưu trữ hành chính.
+P[485]: • Tác nhân (Actor): Cán bộ quản lý môi trường, Quản trị viên GIS
+P[486]: • Tiền điều kiện: Bản đồ đang hiển thị vùng dữ liệu cần xuất.
+P[487]: • Hậu điều kiện: Tệp tin báo cáo PDF/GeoJSON được tải xuống máy tính của cán bộ.
+P[488]: Quy trình xử lý nghiệp vụ (Workflow):
+P[489]: 1. Cán bộ bấm vào biểu tượng 'Xuất dữ liệu / Báo cáo bản đồ'.
+P[490]: 2. Chọn định dạng xuất:
+P[491]: - Định dạng PDF: Hồ sơ báo cáo chuẩn gồm ảnh chụp bản đồ, danh sách bảng thống kê các điểm rác, đơn vị xử lý và tỷ lệ hoàn thành.
+P[492]: - Định dạng Hình ảnh (PNG/JPEG): Chụp khung bản đồ hiện tại với độ phân giải cao 300 DPI kèm thước tỷ lệ và hướng bắc.
+P[493]: - Định dạng GeoJSON: Tệp vector không gian để nạp vào phần mềm ArcGIS hoặc QGIS chuyên ngành.
+P[494]: 3. Chọn phạm vi: 'Toàn bộ Quận' hoặc 'Vùng nhìn hiện tại'.
+P[495]: 4. Bấm 'Khởi tạo tệp xuất'. Hệ thống tiến hành render và tự động tải tệp tin về máy tính.
+P[496]: Luồng thay thế (Alternative Flow):
+P[497]: Cán bộ cấu hình thêm logo cơ quan và chữ ký số vào tệp PDF trước khi tải xuống.
+P[498]: Luồng ngoại lệ (Exception Flow):
+P[499]: Dữ liệu xuất vượt quá 10.000 điểm: Hệ thống chia nhỏ tệp hoặc gửi liên kết tải về qua email sau khi xử lý nền hoàn tất.
+P[500]: Mô tả thành phần giao diện (UI Specification):
+P[501]: Quy tắc kiểm tra và thông báo lỗi (Validation & Error Handling):
+P[502]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 21*
+P[503]: 22. Đánh giá mức độ hài lòng (1–5 sao) sau khi dọn sạch
+P[505]: • Mục tiêu nghiệp vụ: Cho phép người dân tự khoanh vùng các khu vực quan tâm cá nhân (như quanh nhà ở, trường học của con, cơ quan làm việc) với bán kính tùy chỉnh từ 200m đến 2km để tự động nhận thông báo đẩy ngay khi có bãi rác mới hoặc điểm xả thải trộm phát sinh gần đó.
+P[506]: • Tác nhân (Actor): Công dân, Trưởng ban điều hành khu phố
+P[507]: • Tiền điều kiện: Người dùng đã đăng nhập tài khoản.
+P[508]: • Hậu điều kiện: Bản ghi rào chắn được lưu vào bảng GeofenceAlerts và kích hoạt trình lắng nghe không gian ngầm.
+P[509]: Quy trình xử lý nghiệp vụ (Workflow):
+P[510]: 1. Công dân vào mục 'Cài đặt Cảnh báo Môi trường' và chọn 'Thêm vùng theo dõi'.
+P[511]: 2. Người dùng tìm kiếm địa chỉ nhà riêng hoặc chạm vào vị trí trên bản đồ để đặt tâm rào chắn.
+P[512]: 3. Kéo thanh trượt để chỉnh bán kính cảnh báo (VD: 500 mét xung quanh nhà).
+P[513]: 4. Đặt tên gợi nhớ cho vùng (VD: 'Khu vực quanh nhà tôi').
+P[514]: 5. Chọn hình thức nhận cảnh báo: Thông báo ứng dụng (Push), Email hoặc SMS.
+P[515]: 6. Khi có bất kỳ báo cáo rác thải nào rơi vào vòng tròn này, hệ thống sẽ tự động phát cảnh báo đến điện thoại của công dân.
+P[516]: Luồng thay thế (Alternative Flow):
+P[517]: Trưởng khu phố thiết lập rào chắn bao trọn ranh giới tổ dân phố để theo dõi vệ sinh toàn bộ khu dân cư.
+P[518]: Luồng ngoại lệ (Exception Flow):
+P[519]: Người dùng tạo quá số lượng rào chắn cho phép: Hệ thống thông báo 'Mỗi tài khoản công dân được tạo tối đa 3 vùng cảnh báo miễn phí'.
+P[520]: Mô tả thành phần giao diện (UI Specification):
+P[521]: Quy tắc kiểm tra và thông báo lỗi (Validation & Error Handling):
+P[522]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 22*
+P[523]: 23. Gửi ý kiến đóng góp và Sáng kiến bảo vệ môi trường
+P[525]: • Mục tiêu nghiệp vụ: Thuật toán giám sát không gian tự động quét định kỳ (mỗi giờ); khi phát hiện số lượng báo cáo rác thải tại một khu vực tăng đột biến vượt ngưỡng cho phép (Spike Threshold), hệ thống lập tức phát cảnh báo khẩn cấp (Auto-escalation) đến Lãnh đạo Quận để chỉ đạo thanh tra đột xuất.
+P[526]: • Tác nhân (Actor): Hệ thống tự động, Lãnh đạo Phòng TN&MT Quận
+P[527]: • Tiền điều kiện: Dịch vụ tác vụ nền Cron Service hoạt động liên tục.
+P[528]: • Hậu điều kiện: Cảnh báo bùng phát điểm nóng được ghi nhận và gửi thông báo khẩn cấp đến các cấp lãnh đạo.
+P[529]: Quy trình xử lý nghiệp vụ (Workflow):
+P[530]: 1. Tác vụ ngầm quét dữ liệu báo cáo trong 24 giờ qua theo từng ô lưới không gian (Spatial Grid 200m x 200m).
+P[531]: 2. Thuật toán phát hiện tại tọa độ X, Y có 8 báo cáo rác thải mới xuất hiện trong vòng 6 giờ (vượt ngưỡng quy chuẩn là 3 báo cáo).
+P[532]: 3. Hệ thống kích hoạt trạng thái: 'Cảnh báo: Bùng phát điểm đen ô nhiễm bất thường tại khu phố 4, Phường Linh Trung'.
+P[533]: 4. Bản đồ tự động đánh dấu vùng này bằng quầng nhấp nháy màu đỏ nguy cấp.
+P[534]: 5. Gửi thông báo khẩn cấp qua SMS/Email cho Chủ tịch UBND Phường và Trưởng phòng TN&MT Quận kèm đường dẫn định vị trực tiếp.
+P[535]: Luồng thay thế (Alternative Flow):
+P[536]: Hệ thống phát hiện các báo cáo có cùng nội dung về một xe tải lạ đổ rác: Tự động gom nhóm và đề xuất cơ quan công an trích xuất camera giao thông.
+P[537]: Luồng ngoại lệ (Exception Flow):
+P[538]: Bùng phát điểm nóng do tin báo spam giả mạo: Sau khi cán bộ xác minh là tin giả, hệ thống tự động gỡ trạng thái cảnh báo và hạ điểm uy tín của các tài khoản gửi tin.
+P[539]: Mô tả thành phần giao diện (UI Specification):
+P[540]: Quy tắc kiểm tra và thông báo lỗi (Validation & Error Handling):
+P[541]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 23*
+P[542]: 24. Cẩm nang hướng dẫn phân loại rác và sống xanh
+P[544]: • Mục tiêu nghiệp vụ: Mở rộng tính năng của bản đồ số sang hướng giải pháp tích cực: Hiển thị mạng lưới các điểm thu gom rác tái chế, thùng thu gom pin cũ, đồ điện tử hỏng và dầu ăn thải đúng quy chuẩn; khuyến khích người dân phân loại rác tại nguồn thay vì vứt bừa bãi.
+P[545]: • Tác nhân (Actor): Công dân, Doanh nghiệp tái chế, Tình nguyện viên
+P[546]: • Tiền điều kiện: Dữ liệu bảng RecyclingLocations đã được cập nhật đầy đủ.
+P[547]: • Hậu điều kiện: Người dân dễ dàng tìm thấy địa chỉ bỏ pin cũ hoặc điểm đổi rác tái chế lấy cây xanh gần nhất.
+P[548]: Quy trình xử lý nghiệp vụ (Workflow):
+P[549]: 1. Công dân chuyển sang chế độ bản đồ 'Điểm thu gom rác tái chế & Rác nguy hại'.
+
+=== ALL PARAGRAPHS WITH 'Chức năng' ===
+P[13]: 1. Bảng phân chia công việc (48 chức năng nghiệp vụ)	3
+P[28]: CHƯƠNG IV. THIẾT KẾ GIAO DIỆN DEMO VÀ ĐẶC TẢ PHÂN HỆ CHỨC NĂNG	28
+P[31]: IV.3. Phân hệ các chức năng do sinh viên Bùi Nguyễn Minh Quân thực hiện	65
+P[44]: Hình 4.1: Giao diện Tự động thu thập tọa độ GPS và cơ chế ghim vị trí thủ công	29
+P[45]: Hình 4.2: Giao diện Thu thập và nén hình ảnh, video bằng chứng hiện trường	30
+P[46]: Hình 4.3: Giao diện Phân loại danh mục ô nhiễm và vật liệu chất thải	32
+P[47]: Hình 4.4: Giao diện Đánh giá mức độ nghiêm trọng và thang điểm khẩn cấp	33
+P[48]: Hình 4.5: Giao diện Nhập mô tả chi tiết và chuyển đổi giọng nói thành văn bản	35
+P[49]: Hình 4.6: Giao diện Ghi nhận thời gian phát hiện thực tế và thời gian gửi báo cáo	36
+P[50]: Hình 4.7: Giao diện Tùy chọn kích hoạt chế độ gửi phản ánh ẩn danh	38
+P[51]: Hình 4.8: Giao diện Gợi ý câu trả lời mẫu thông minh cho cán bộ tiếp nhận	39
+P[52]: Hình 4.9: Giao diện Bộ lọc từ khóa nhạy cảm và giới hạn tần suất gửi tin	41
+P[53]: Hình 4.10: Giao diện Tự động dịch đa ngôn ngữ nội dung phản ánh	42
+P[54]: Hình 4.11: Giao diện Tra cứu cơ sở dữ liệu pháp điển xử phạt vi phạm môi trường	43
+P[55]: Hình 4.12: Giao diện Đơn giản hóa trợ năng tương tác cho người cao tuổi	44
+P[56]: Hình 4.13: Giao diện Cơ chế tích lũy Điểm thưởng Công dân Xanh 	46
+P[57]: Hình 4.14: Giao diện xem số dư ví điểm và Lịch sử biến động điểm xanh	48
+P[58]: Hình 4.15: Giao diện quà tặng xanh và Vật phẩm quy đổi	49
+P[59]: Hình 4.16: Giao diện đổi điểm lấy quà tặng / Voucher	51
+P[60]: Hình 4.17: Giao diện quản lý danh sách quà tặng cá nhân đã đổi	53
+P[61]: Hình 4.18: Giao diện bảng xếp hạng vinh danh Top công dân xanh	54
+P[62]: Hình 4.19: Giao diện chiến dịch ra quân dọn rác	56
+P[63]: Hình 4.20: Giao diện đăng ký tham gia chiến dịch tình nguyện xanh	57
+P[64]: Hình 4.21: Giao diện bình luận và thảo luận dưới bài phản ánh sự cố	59
+P[65]: Hình 4.22: Giao diện đánh giá mức độ hài lòng sau khi dọn sạch	60
+P[66]: Hình 4.23: Giao diện ý kiến đóng góp và Sáng kiến bảo vệ môi trường	62
+P[67]: Hình 4.24: Giao diện cẩm nang hướng dẫn phân loại rác và sống xanh	63
+P[68]: Hình 4.25: Giao diện Cổng xác thực tập trung đa nền tảng và Quản lý phiên JWT an toàn	65
+P[69]: Hình 4.26: Giao diện Quản trị người dùng và Ma trận phân quyền động RBAC đa cấp độ	68
+P[70]: Hình 4.27: Giao diện Quản lý năng lực phương tiện đội xe thu gom và điều phối tài xế hiện trường	71
+P[71]: Hình 4.28: Giao diện Hệ thống Nhật ký kiểm toán an ninh Audit Log và truy vết biến động dữ liệu	74
+P[72]: Hình 4.29: Giao diện Trung tâm điều phối tác nghiệp và phân công lệnh xử lý hiện trường	77
+P[73]: Hình 4.30: Giao diện Quy trình thẩm định chất lượng xử lý và ký số nghiệm thu hoàn thành	80
+P[74]: Hình 4.31: Giao diện Phân cấp quản lý hành chính liên thông 3 cấp và chuyển tiếp hồ sơ thẩm quyền	83
+P[75]: Hình 4.32: Giao diện Giám sát hạn mức thời gian xử lý SLA theo thời gian thực và tự động kích hoạt cảnh báo trễ hạn	86
+P[76]: Hình 4.33: Giao diện Trung tâm điều phối thông báo đẩy thời gian thực qua WebSocket và Push Service	89
+P[77]: Hình 4.34: Giao diện Tự động hóa tạo và kết xuất báo cáo thống kê môi trường định kỳ PDF/Excel	92
+P[78]: Hình 4.35: Giao diện Hệ thống điểm thưởng Công dân Xanh và quản trị đổi quà khuyến khích cộng đồng	95
+P[79]: Hình 4.36: Giao diện Quản trị cấu hình tham số hệ thống, danh mục chất thải và sao lưu phục hồi CSDL	98
+P[80]: Hình 4.37: Giao diện Cơ chế tính toán điểm rủi ro Risk Score sự cố môi trường	101
+P[81]: Hình 4.38: Giao diện Tự động phân loại mức độ nguy hiểm sự cố theo 4 cấp	102
+P[82]: Hình 4.39: Giao diện Phát hiện và gom cụm sự cố theo tọa độ không gian	104
+P[83]: Hình 4.40: Giao diện Phân tích và xác định điểm nóng ô nhiễm theo không gian - thời gian	105
+P[84]: Hình 4.41: Giao diện Tính toán chỉ số nguy cơ ngập dựa trên lượng mưa và lịch sử	107
+P[85]: Hình 4.42: Giao diện Xây dựng bản đồ nguy cơ ngập động theo từng khu vực	108
+P[86]: Hình 4.43: Giao diện Tìm kiếm tuyến đường an toàn tránh các khu vực ngập úng	110
+P[87]: Hình 4.44: Giao diện So sánh tuyến đường nhanh nhất và tuyến đường an toàn nhất	111
+P[88]: Hình 4.45: Giao diện Phân tích và tìm kiếm các cơ sở thiết yếu quanh điểm sự cố	113
+P[89]: Hình 4.46: Giao diện Ứng dụng AI phát hiện báo cáo trùng lặp và nội dung tương đồng	114
+P[90]: Hình 4.47: Giao diện Ứng dụng AI tự động tóm tắt sự cố và gợi ý mức ưu tiên	116
+P[91]: Hình 4.48: Giao diện Executive Dashboard phân tích tổng hợp rủi ro đô thị	117
+P[112]: Mặc dù các cơ quan chức năng, chính quyền địa phương (Ủy ban Nhân dân cấp Phường/Xã, Phòng Tài nguyên & Môi trường cấp Quận/Huyện) và các đơn vị dịch vụ công ích đã có nhiều nỗ lực cải thiện, tuy nhiên phương thức quản lý và tiếp nhận phản ánh truyền thống hiện nay đang bộc lộ hàng loạt điểm nghẽn nghiêm trọng: Người dân khi phát hiện điểm xả thải trộm hoặc bãi rác ô nhiễm thường không biết phản ánh đến đâu, hoặc việc phản ánh qua đơn từ, gọi điện đường dây nóng rất mất thời gian, thiếu thông tin định vị chính xác và thiếu bằng chứng hình ảnh trực quan; Về phía chính quyền và lực lượng thu gom, việc tiếp nhận thông tin rời rạc, phân mảnh khiến quá trình thẩm tra, điều phối nhân lực và phương tiện hiện trường diễn ra chậm chạp; Không có hệ thống đo lường tiến độ giải quyết (SLA) và thiếu cơ chế nghiệm thu minh bạch bằng hình ảnh 'Trước - Sau' để phản hồi lại cho người dân; Đồng thời, dữ liệu rác thải không được số hóa trên bản đồ địa lý dẫn đến việc thiếu căn cứ khoa học để phân tích mật độ 'điểm nóng' (hotspot) và quy hoạch lộ trình thu gom tối ưu.
+P[134]: 1. Bảng phân chia công việc (48 chức năng nghiệp vụ)
+P[135]: Bảng phân chia công việc được phân bổ đồng đều tuyệt đối cho 4 thành viên trong nhóm, mỗi thành viên đảm nhiệm trọn vẹn 12 chức năng nghiệp vụ chuyên sâu từ phân tích, thiết kế giao diện đến hiện thực hóa API:
+P[142]: • Sự bùng phát của các bãi rác tự phát và điểm xả thải trộm: Do ý thức của một bộ phận người dân và cơ sở sản xuất kinh doanh chưa cao, cùng với việc giám sát thủ công của lực lượng chức năng gặp nhiều hạn chế, các khu vực đất trống ven đường, chân cầu, bờ kênh thường xuyên trở thành bãi tập kết rác trái phép.
+P[203]: Chương IV. Thiết Kế Giao Diện Demo Và Đặc Tả Phân Hệ Chức Năng
+P[204]: Chương này đặc tả chi tiết toàn diện 48 chức năng nghiệp vụ của hệ thống theo chuẩn tài liệu đặc tả yêu cầu phần mềm (SRS) của Business Analyst (BA) và Project Manager (PM). 48 chức năng được phân chia đồng đều tuyệt đối cho 4 thành viên trong nhóm dự án, mỗi thành viên phụ trách đúng 12 chức năng hoàn chỉnh:
+P[205]: IV.1. Phân hệ các chức năng do sinh viên Nguyễn Thành Đạt
+P[239]: Mô tả: Chức năng cho phép hệ thống phân biệt và ghi nhận độc lập hai mốc thời gian pháp lý: Thời điểm phát hiện vi phạm thực tế (Discovered Timestamp) và Thời điểm gửi hồ sơ phản ánh (Submitted Timestamp).
+P[244]: Đảm bảo tính chân thực và cơ sở thời hiệu pháp lý: Giúp cơ quan chức năng và đội phản ứng nhanh nắm bắt chính xác thời điểm bãi rác xuất hiện hoặc thời điểm hành vi đổ trộm diễn ra (ví dụ: xả thải lúc 02:00 sáng nhưng báo cáo lúc 08:00 sáng), hỗ trợ truy xuất camera giám sát giao thông / an ninh xung quanh đúng khung giờ.
+P[249]: Mô tả: Chức năng cho phép người dùng chủ động kích hoạt chế độ ẩn danh khi gửi phản ánh hiện trường về các điểm rác thải hoặc hành vi xả thải gây ô nhiễm:
+P[259]: Mô tả: Chức năng hỗ trợ cán bộ tiếp nhận, chuyên viên môi trường đô thị và tổ trưởng phản ứng nhanh soạn thảo phản hồi gửi tới người dân một cách nhanh chóng, chuẩn mực và đồng bộ:
+P[269]: Mô tả: Chức năng đóng vai trò là "bức tường lửa" tiền kiểm duyệt tự động trên cả phía ứng dụng (Client-side) và máy chủ (Server-side API Gateway):
+P[278]: Mô tả: Chức năng tích hợp công nghệ trí tuệ nhân tạo xử lý ngôn ngữ tự nhiên (NLP) nhằm phá vỡ rào cản ngôn ngữ giữa cộng đồng người nước ngoài/khách du lịch quốc tế và các cơ quan quản lý môi trường tại địa phương:
+P[281]: Dành cho người dân / du khách quốc tế: Cho phép du khách nhập phản ánh bằng tiếng mẹ đẻ và tự động chuyển sang Tiếng Việt để gửi tới cơ quan chức năng.
+P[290]: Mô tả: Chức năng tích hợp cơ sở dữ liệu pháp điển hóa điện tử về các chế tài xử phạt hành chính trong lĩnh vực bảo vệ môi trường (trọng tâm là Nghị định 45/2022/NĐ-CP và các văn bản quy phạm pháp luật liên quan):
+P[309]: IV.2. Phân hệ các chức năng do sinh viên Huỳnh Anh Tú thực hiện (Chức năng 13 -> 24)
+P[313]: *Hình 4.13: Giao diện Cơ chế tích lũy Điểm thưởng Công dân Xanh
+P[331]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 13*
+P[334]: *Hình 4.14: Giao diện xem số dư ví điểm và lịch sử biến động điểm xanh
+P[351]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 14*
+P[354]: *Hình 4.15: Giao diện quà tặng xanh và vật phẩm
+P[371]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 15*
+P[374]: *Hình 4.16: Giao diện đổi điểm lấy quà
+P[395]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 16*
+P[398]: *Hình 4.17: Giao diện danh sách quà tặng cá nhân đã đổi
+P[419]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 17*
+P[422]: *Hình 4.18: Giao diện xếp hạng vinh danh Top Công dân Xanh
+P[440]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 18*
+P[443]: *Hình 4.19: Giao diện  Chiến dịch ra quân dọn rác
+P[460]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 19*
+P[463]: *Hình 4.20: Giao diện tham gia chiến dịch tình nguyện xanh
+P[481]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 20*
+P[502]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 21*
+P[522]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 22*
+P[541]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 23*
+P[561]: *Bảng đặc tả và quy tắc nghiệp vụ cho chức năng 24*
+P[562]: IV.3. Phân hệ các chức năng do sinh viên Bùi Nguyễn Minh Quân thực hiện
+P[580]: Hình 4.25: Giao diện Cổng xác thực tập trung đa nền tảng và Quản lý phiên JWT an toàn
+P[582]: *Bảng 48: Đặc tả thành phần giao diện chức năng 25 (Cổng xác thực tập trung và Quản lý phiên JWT)*
+P[585]: *Bảng 49: Quy tắc kiểm tra và thông báo lỗi chức năng 25 (Cổng xác thực tập trung và Quản lý phiên JWT)*
+P[603]: Hình 4.26: Giao diện Quản trị người dùng và Ma trận phân quyền động RBAC đa cấp độ
+P[605]: *Bảng 50: Đặc tả thành phần giao diện chức năng 26 (Quản trị người dùng và Phân quyền RBAC đa cấp)*
+P[608]: *Bảng 51: Quy tắc kiểm tra và thông báo lỗi chức năng 26 (Quản trị người dùng và Phân quyền RBAC đa cấp)*
+P[626]: Hình 4.27: Giao diện Quản lý năng lực phương tiện đội xe thu gom và điều phối tài xế hiện trường
+P[628]: *Bảng 52: Đặc tả thành phần giao diện chức năng 27 (Quản lý năng lực phương tiện và Điều phối tài xế)*
+P[631]: *Bảng 53: Quy tắc kiểm tra và thông báo lỗi chức năng 27 (Quản lý năng lực phương tiện và Điều phối tài xế)*
+P[649]: Hình 4.28: Giao diện Hệ thống Nhật ký kiểm toán an ninh Audit Log và truy vết biến động dữ liệu
+P[651]: *Bảng 54: Đặc tả thành phần giao diện chức năng 28 (Hệ thống Nhật ký kiểm toán an ninh Audit Log)*
+P[654]: *Bảng 55: Quy tắc kiểm tra và thông báo lỗi chức năng 28 (Hệ thống Nhật ký kiểm toán an ninh Audit Log)*
+P[672]: Hình 4.29: Giao diện Trung tâm điều phối tác nghiệp và phân công lệnh xử lý hiện trường
+P[674]: *Bảng 56: Đặc tả thành phần giao diện chức năng 29 (Trung tâm điều phối tác nghiệp và Phân công lệnh xử lý)*
+P[677]: *Bảng 57: Quy tắc kiểm tra và thông báo lỗi chức năng 29 (Trung tâm điều phối tác nghiệp và Phân công lệnh xử lý)*
+P[695]: Hình 4.30: Giao diện Quy trình thẩm định chất lượng xử lý và ký số nghiệm thu hoàn thành
+P[697]: *Bảng 58: Đặc tả thành phần giao diện chức năng 30 (Quy trình thẩm định chất lượng xử lý và Ký số nghiệm thu)*
+P[700]: *Bảng 59: Quy tắc kiểm tra và thông báo lỗi chức năng 30 (Quy trình thẩm định chất lượng xử lý và Ký số nghiệm thu)*
+P[718]: Hình 4.31: Giao diện Phân cấp quản lý hành chính liên thông 3 cấp và chuyển tiếp hồ sơ thẩm quyền
+P[720]: *Bảng 60: Đặc tả thành phần giao diện chức năng 31 (Phân cấp quản lý hành chính liên thông 3 cấp)*
+P[723]: *Bảng 61: Quy tắc kiểm tra và thông báo lỗi chức năng 31 (Phân cấp quản lý hành chính liên thông 3 cấp)*
+P[741]: Hình 4.32: Giao diện Giám sát hạn mức thời gian xử lý SLA theo thời gian thực và tự động kích hoạt cảnh báo trễ hạn
+P[743]: *Bảng 62: Đặc tả thành phần giao diện chức năng 32 (Giám sát hạn mức thời gian SLA và Cảnh báo trễ hạn)*
+P[746]: *Bảng 63: Quy tắc kiểm tra và thông báo lỗi chức năng 32 (Giám sát hạn mức thời gian SLA và Cảnh báo trễ hạn)*
+P[764]: Hình 4.33: Giao diện Trung tâm điều phối thông báo đẩy thời gian thực qua WebSocket và Push Service
+P[766]: *Bảng 64: Đặc tả thành phần giao diện chức năng 33 (Trung tâm điều phối thông báo đẩy qua WebSocket)*
+P[769]: *Bảng 65: Quy tắc kiểm tra và thông báo lỗi chức năng 33 (Trung tâm điều phối thông báo đẩy qua WebSocket)*
+P[787]: Hình 4.34: Giao diện Tự động hóa tạo và kết xuất báo cáo thống kê môi trường định kỳ PDF/Excel
+P[789]: *Bảng 66: Đặc tả thành phần giao diện chức năng 34 (Tự động hóa tạo và kết xuất báo cáo định kỳ PDF/Excel)*
+P[792]: *Bảng 67: Quy tắc kiểm tra và thông báo lỗi chức năng 34 (Tự động hóa tạo và kết xuất báo cáo định kỳ PDF/Excel)*
+P[810]: Hình 4.35: Giao diện Hệ thống điểm thưởng Công dân Xanh và quản trị đổi quà khuyến khích cộng đồng
+P[812]: *Bảng 68: Đặc tả thành phần giao diện chức năng 35 (Hệ thống điểm thưởng Công dân Xanh và Đổi quà)*
+P[815]: *Bảng 69: Quy tắc kiểm tra và thông báo lỗi chức năng 35 (Hệ thống điểm thưởng Công dân Xanh và Đổi quà)*
+P[833]: Hình 4.36: Giao diện Quản trị cấu hình tham số hệ thống, danh mục chất thải và sao lưu phục hồi CSDL
+P[835]: *Bảng 70: Đặc tả thành phần giao diện chức năng 36 (Quản trị tham số hệ thống, danh mục chất thải và Sao lưu CSDL)*
+P[838]: *Bảng 71: Quy tắc kiểm tra và thông báo lỗi chức năng 36 (Quản trị tham số hệ thống, danh mục chất thải và Sao lưu CSDL)*
+P[839]: IV.4. Phân hệ các chức năng do sinh viên Lê Anh Tuấn thực hiện (Chức năng 37 -> 48)
+P[889]: 1. Hoàn thiện đầy đủ 48 chức năng nghiệp vụ chuyên sâu, được phân chia đồng đều và hợp lý cho 4 thành viên (mỗi thành viên 12 chức năng) bao quát khép kín từ khâu tiếp nhận hiện trường, bản đồ không gian GIS, điều phối tác nghiệp hành chính đến trí tuệ nhân tạo (AI) và gắn kết cộng đồng.

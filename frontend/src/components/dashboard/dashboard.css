@@ -1,0 +1,723 @@
+/* ==============================================================================
+   EcoReport - macOS Dark Mode Vibrancy Dashboard Stylesheet
+   Designed according to Apple Human Interface Guidelines (macOS Sequoia)
+   Acrylic Vibrancy (saturate 190% blur 24px), Traffic Lights, Squircle Concentric Radii
+   ============================================================================== */
+
+:root {
+  --macos-bg-base: #0d0e11;
+  --macos-window-bg: rgba(20, 20, 24, 0.92);
+  --macos-card-bg: rgba(32, 33, 37, 0.72);
+  --macos-card-bg-elevated: rgba(42, 43, 48, 0.85);
+  --macos-inset-trench: rgba(0, 0, 0, 0.38);
+  --macos-border-light: rgba(255, 255, 255, 0.1);
+  --macos-border-highlight: rgba(255, 255, 255, 0.16);
+  --macos-specular: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  --macos-text-primary: #f5f5f7;
+  --macos-text-secondary: #a1a1a6;
+  --macos-text-tertiary: #6e6e73;
+
+  --macos-accent-blue: #0a84ff;
+  --macos-accent-green: #30d158;
+  --macos-accent-yellow: #ffd60a;
+  --macos-accent-orange: #ff9f0a;
+  --macos-accent-red: #ff453a;
+  --macos-accent-purple: #bf5af2;
+
+  --macos-radius-window: 24px;
+  --macos-radius-card: 16px;
+  --macos-radius-tabs: 12px;
+  --macos-radius-btn: 10px;
+}
+
+/* ==============================================================================
+   1. Root Dashboard Layout & Scroll Container
+   ============================================================================== */
+.macos-dashboard-root {
+  min-height: 100vh;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: 
+    radial-gradient(ellipse at 50% 0%, rgba(10, 132, 255, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(191, 90, 242, 0.05) 0%, transparent 50%),
+    var(--macos-bg-base);
+  color: var(--macos-text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  box-sizing: border-box;
+  padding: 16px 20px 40px 20px;
+}
+
+.macos-dashboard-root::-webkit-scrollbar {
+  width: 6px;
+}
+
+.macos-dashboard-root::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.macos-dashboard-root::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+
+.macos-dashboard-root::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.macos-dashboard-content {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ==============================================================================
+   2. Unified macOS Window Titlebar
+   ============================================================================== */
+.macos-titlebar-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(26, 26, 30, 0.85);
+  backdrop-filter: saturate(190%) blur(24px);
+  -webkit-backdrop-filter: saturate(190%) blur(24px);
+  border: 0.5px solid var(--macos-border-light);
+  border-radius: var(--macos-radius-card);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35), var(--macos-specular);
+  flex-shrink: 0;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.macos-titlebar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* macOS Traffic Lights */
+.macos-traffic-lights {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.macos-traffic-light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 0.5px solid rgba(0, 0, 0, 0.4);
+  position: relative;
+  cursor: pointer;
+  transition: transform 120ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.macos-traffic-light.close {
+  background: #ff5f57;
+  border-color: #e0443e;
+}
+
+.macos-traffic-light.minimize {
+  background: #febc2e;
+  border-color: #d89e24;
+}
+
+.macos-traffic-light.zoom {
+  background: #28c840;
+  border-color: #1aab29;
+}
+
+.macos-traffic-light-glyph {
+  font-size: 8px;
+  color: rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transition: opacity 120ms ease;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.macos-traffic-lights:hover .macos-traffic-light-glyph {
+  opacity: 1;
+}
+
+.macos-traffic-light:active {
+  transform: scale(0.9);
+}
+
+.macos-titlebar-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 0.5px solid var(--macos-border-light);
+  border-radius: 8px;
+  color: var(--macos-text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.macos-titlebar-back-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--macos-accent-blue);
+  transform: translateY(-0.5px);
+}
+
+.macos-titlebar-back-btn:active {
+  transform: scale(0.97);
+}
+
+.macos-titlebar-center {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.macos-titlebar-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--macos-text-primary);
+  letter-spacing: -0.2px;
+}
+
+.macos-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: rgba(48, 209, 88, 0.15);
+  border: 0.5px solid rgba(48, 209, 88, 0.35);
+  color: var(--macos-accent-green);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.macos-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--macos-accent-green);
+  box-shadow: 0 0 6px var(--macos-accent-green);
+  animation: pulse-live 1.8s infinite ease-in-out;
+}
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.macos-titlebar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.macos-last-refresh-text {
+  font-size: 11px;
+  color: var(--macos-text-tertiary);
+}
+
+.macos-titlebar-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: rgba(10, 132, 255, 0.15);
+  border: 0.5px solid rgba(10, 132, 255, 0.35);
+  border-radius: 8px;
+  color: var(--macos-accent-blue);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.macos-titlebar-refresh-btn:hover {
+  background: rgba(10, 132, 255, 0.25);
+  transform: translateY(-0.5px);
+}
+
+.macos-titlebar-refresh-btn:active {
+  transform: scale(0.97);
+}
+
+/* ==============================================================================
+   3. Filter Toolbar (macOS Inset Trench)
+   ============================================================================== */
+.macos-filter-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(26, 26, 30, 0.75);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border: 0.5px solid var(--macos-border-light);
+  border-radius: var(--macos-radius-card);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), var(--macos-specular);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.macos-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.macos-filter-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--macos-text-secondary);
+}
+
+/* Segmented Control Inset Trench */
+.macos-segmented-trench {
+  display: flex;
+  align-items: center;
+  background: var(--macos-inset-trench);
+  padding: 3px;
+  border-radius: 10px;
+  border: 0.5px solid rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.macos-segmented-btn {
+  padding: 5px 12px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--macos-text-secondary);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  white-space: nowrap;
+}
+
+.macos-segmented-btn:hover:not(.active) {
+  color: var(--macos-text-primary);
+}
+
+.macos-segmented-btn.active {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.macos-segmented-btn:active {
+  transform: scale(0.97);
+}
+
+.macos-select-dropdown {
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 0.5px solid var(--macos-border-light);
+  background: rgba(44, 44, 48, 0.9);
+  color: var(--macos-text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: all 150ms ease;
+}
+
+.macos-select-dropdown:focus {
+  border-color: var(--macos-accent-blue);
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.25);
+}
+
+/* ==============================================================================
+   4. macOS Tab Strip (5 Modules Navigation)
+   ============================================================================== */
+.macos-tabs-strip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(24, 24, 28, 0.8);
+  backdrop-filter: saturate(180%) blur(20px);
+  padding: 4px;
+  border-radius: var(--macos-radius-tabs);
+  border: 0.5px solid var(--macos-border-light);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+  overflow-x: auto;
+}
+
+.macos-tab-item-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 7px 12px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--macos-text-secondary);
+  cursor: pointer;
+  transition: all 180ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  white-space: nowrap;
+  min-width: 140px;
+}
+
+.macos-tab-item-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--macos-text-primary);
+}
+
+.macos-tab-item-btn.active {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.macos-tab-item-btn:active {
+  transform: scale(0.98);
+}
+
+.macos-tab-item-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.macos-tab-item-subtitle {
+  font-size: 10px;
+  color: var(--macos-text-tertiary);
+}
+
+.macos-tab-item-btn.active .macos-tab-item-subtitle {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ==============================================================================
+   5. macOS Dark Glass Cards (High Vibrancy & Specular Insets)
+   ============================================================================== */
+.macos-glass-card {
+  background: var(--macos-card-bg);
+  backdrop-filter: saturate(190%) blur(24px);
+  -webkit-backdrop-filter: saturate(190%) blur(24px);
+  border: 0.5px solid var(--macos-border-light);
+  border-radius: var(--macos-radius-card);
+  padding: 20px 22px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    var(--macos-specular);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.macos-glass-card:hover {
+  border-color: var(--macos-border-highlight);
+}
+
+.macos-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.macos-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--macos-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* Hero AQI Card */
+.macos-hero-aqi-card {
+  background: linear-gradient(135deg, rgba(38, 40, 46, 0.85) 0%, rgba(26, 27, 30, 0.95) 100%);
+  border: 0.5px solid var(--macos-border-highlight);
+  border-radius: var(--macos-radius-card);
+  padding: 22px 24px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4), var(--macos-specular);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+
+.macos-hero-pill-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.macos-hero-scope-name {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--macos-text-primary);
+  margin: 10px 0 2px 0;
+  letter-spacing: -0.3px;
+}
+
+.macos-hero-sublabel {
+  font-size: 12px;
+  color: var(--macos-text-secondary);
+}
+
+.macos-hero-aqi-number {
+  font-size: 54px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -1.5px;
+}
+
+.macos-hero-peak-box {
+  margin-top: 18px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+/* Cigarette & Health Advice Card */
+.macos-health-advice-card {
+  background: rgba(32, 33, 37, 0.75);
+  backdrop-filter: saturate(190%) blur(24px);
+  -webkit-backdrop-filter: saturate(190%) blur(24px);
+  border: 0.5px solid var(--macos-border-light);
+  border-radius: var(--macos-radius-card);
+  padding: 22px 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), var(--macos-specular);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.macos-cig-exposure-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(255, 159, 10, 0.12);
+  border: 0.5px solid rgba(255, 159, 10, 0.3);
+  border-radius: 12px;
+  margin-bottom: 14px;
+}
+
+.macos-cig-headline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffb340;
+}
+
+.macos-who-multi-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(255, 69, 58, 0.18);
+  border: 0.5px solid rgba(255, 69, 58, 0.35);
+  color: #ff6961;
+}
+
+/* 6 Core Pollutant Mini-Cards Grid */
+.macos-pollutants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.macos-pollutant-card {
+  background: rgba(30, 31, 35, 0.65);
+  backdrop-filter: saturate(180%) blur(16px);
+  border: 0.5px solid var(--macos-border-light);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), var(--macos-specular);
+  transition: transform 150ms ease, border-color 150ms ease;
+  min-height: 130px;
+}
+
+.macos-pollutant-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--macos-border-highlight);
+}
+
+.macos-pollutant-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.macos-pollutant-icon-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.macos-pollutant-svg-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+}
+
+.macos-pollutant-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--macos-text-primary);
+  line-height: 1.1;
+}
+
+.macos-pollutant-desc {
+  font-size: 10px;
+  color: var(--macos-text-tertiary);
+  margin-top: 1px;
+}
+
+.macos-pollutant-status-pill {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 5px;
+}
+
+.macos-pollutant-val {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--macos-text-primary);
+  margin-top: 10px;
+  letter-spacing: -0.5px;
+}
+
+.macos-pollutant-unit {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--macos-text-tertiary);
+}
+
+.macos-pollutant-who-limit {
+  font-size: 10.5px;
+  color: var(--macos-text-secondary);
+  margin-top: 3px;
+}
+
+.macos-pollutant-ratio-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.macos-pollutant-ratio-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 300ms ease;
+}
+
+/* Cleanest vs Polluted List */
+.macos-rankings-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.macos-ranking-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 0.5px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.macos-ranking-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(2px);
+}
+
+.macos-ranking-item:active {
+  transform: scale(0.98);
+}
+
+/* ==============================================================================
+   9. macOS Keyboard Shortcut Badges & Quick Indicators
+   ============================================================================== */
+.macos-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--macos-text-secondary);
+  background: rgba(255, 255, 255, 0.08);
+  border: 0.5px solid rgba(255, 255, 255, 0.18);
+  border-radius: 5px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 0.5px 0 rgba(255, 255, 255, 0.2);
+  line-height: 1;
+  letter-spacing: -0.2px;
+  user-select: none;
+}
+
+.macos-tab-item-btn .macos-kbd {
+  margin-left: 6px;
+  opacity: 0.65;
+  transition: opacity 150ms ease;
+}
+
+.macos-tab-item-btn:hover .macos-kbd {
+  opacity: 1;
+}
+
+.macos-tab-item-btn.active .macos-kbd {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.3);
+  opacity: 1;
+}
+
+.macos-titlebar-back-btn .macos-kbd,
+.macos-titlebar-refresh-btn .macos-kbd {
+  margin-left: 4px;
+}

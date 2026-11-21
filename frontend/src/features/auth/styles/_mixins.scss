@@ -1,0 +1,74 @@
+@use './variables' as *;
+
+// Flexbox Helpers
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+// Responsive Breakpoints
+@mixin mobile {
+  @media (max-width: 640px) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (max-width: 1024px) {
+    @content;
+  }
+}
+
+// Input styles with dynamic border and error state
+@mixin form-input-base {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  font-family: $font-family;
+  font-size: 0.95rem;
+  color: $neutral-800;
+  background-color: #ffffff;
+  border: 1.5px solid $neutral-200;
+  border-radius: $radius-md;
+  box-shadow: $shadow-sm;
+  outline: none;
+  transition: $transition-fast;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: $neutral-400;
+  }
+
+  &:focus {
+    border-color: $primary-500;
+    box-shadow: 0 0 0 3px rgba($primary-500, 0.15);
+  }
+
+  &:disabled {
+    background-color: $neutral-100;
+    color: $neutral-400;
+    cursor: not-allowed;
+    border-color: $neutral-200;
+  }
+
+  &.has-error {
+    border-color: $error-500 !important;
+    background-color: #fffaf9;
+
+    &:focus {
+      box-shadow: 0 0 0 3px rgba($error-500, 0.15);
+    }
+  }
+}
